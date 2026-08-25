@@ -245,6 +245,8 @@ counted in neither direction)
 `resources[]` — array
   - item keys: url, status, content_type, content_encoding, cache_control, etag, vary, content_length, issues, error
 `fetch_error` — NoneType
+`truncated` — bool — distinct linked assets after `MAX_ASSETS` remained unchecked,
+  so `issues` covers only the page and the assets before the cap
 
 ### canonical_checker.py
 
@@ -529,6 +531,8 @@ than fetching them.
 `rows[]` — array
   - item keys: url, path, params, facet_params, flags
 `issues[]` — array
+`truncated` — bool — internal URLs after `MAX_URLS_FROM_PAGE` remained unaudited,
+  so `rows` and `issues` cover only the page-derived URLs before the cap
 
 ### favicon_check.py
 

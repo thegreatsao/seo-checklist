@@ -4,15 +4,14 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.90.2 — see [CHANGELOG.md](CHANGELOG.md). A ledger release. `tests/census.json`
-had shipped `GO-143` under the first of the two titles 0.89.0 gave it — a title no
-release has carried — and the suite could not see it, because the only staleness check on
-that record was its `registry_version`, the one field in the file that a hand can set
-without re-recording anything. The record is re-taken, and the fields both recorded
-ledgers copy from the registry are now re-read on every suite, which costs milliseconds
-and is what would have caught it. The verdicts beside them, which cost five audits and
-were left to a hand-run command on that argument, take 101 seconds measured — so they
-are a CI job now too. No script changed and no verdict moves.
+Version 0.91.0 — see [CHANGELOG.md](CHANGELOG.md). Twenty-three scripts that cap their
+own input had never been read against the rule 0.88.0 wrote: a verdict passing *by
+absence* is withheld when the script says its input was cut. Twenty-one cut downstream of
+the number an item reads, or cut nothing. Two cut above it — `faceted_nav_audit.py` at
+300 page-derived URLs, live under `AR-163`, and `cache_compression_checker.py` at 25
+assets, on a path the registry never takes. Both report `truncated` now, so a page read
+in part answers `NO_DATA` instead of a clean `PASS`, and both numbers moved out of
+default arguments into constants the threshold inventory can see.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

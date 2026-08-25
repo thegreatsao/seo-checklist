@@ -796,12 +796,61 @@ def _the_other_caps_have_not_been_read() -> dict:
     import checklist_runner as runner
 
     reports = set(_truncation_reporters())
+    # Every entry here is a reading somebody did, in the form "what was read". The
+    # two things this ledger exists to keep apart are "not looked at" and "looked at
+    # and fine", so a script leaves `not_yet_read` only by acquiring a sentence
+    # saying where its cap stands relative to the number an item reads.
+    #
+    # Twenty-one of these were read for 0.91.0, and the reading has a provenance
+    # worth recording: an executor read all twenty-three against one question and
+    # wrote a file per script; every `critical` and `high` one was then re-read here
+    # against the code, and every cap-shaped construct in the rest — a slice, a
+    # `break`, a `MAX_*`, an `islice` — was enumerated rather than eyeballed, because
+    # a claim that a script has no cap is a claim of absence. Two of the
+    # twenty-three were upstream and are repaired in this release, which is why they
+    # are not here: they report truncation now and leave this list through
+    # `reports`.
     cleared = {
         # Read in 0.88.0 and found sound: `MAX_MESSAGES` trims `messages` after
         # `counts` has already been incremented, so `summary.errors` is the whole
         # number. Kept here rather than dropped, because "looked at and fine" and
         # "not looked at" are the two things this ledger exists to keep apart.
         "html_validator.py": "counts before the message cap",
+
+        # 0.91.0. Downstream of the number the item reads: the slice shortens what a
+        # person is shown after the count or the verdict was taken over everything.
+        "a11y_seo_checker.py":
+            "slices findings, not input, and CN-036 reads a contrast count instead",
+        "collection_page_checker.py": "slices the printed lines, not `issues`",
+        "font_audit.py": "slices an error string only",
+        "ga4_tag_checker.py": "slices an error string only",
+        "gsc_url_inspection.py": "its only break ends a retry loop on success",
+        "mobile_render_checker.py":
+            "counts every wide value, then slices the evidence list",
+        "rich_results_guard.py": "counts the whole `issues` before slicing the lines",
+        "schema_required_props.py":
+            "counts errors and warnings whole, then slices the lines",
+        "video_schema_checker.py": "slices the printed lines, not `issues`",
+        "domain_safety_check.py": "slices error text; no input is cut",
+        "entity_checker.py":
+            "head-checks the first three profiles, but GEO-006 reads the missing "
+            "count, not those findings",
+        "gsc_checker.py":
+            "GO-134 reads the sitemap report, which is not paged; the row and page "
+            "caps sit on `performance`, which nothing asserts",
+        "parse_html.py":
+            "the four items read whole fields; every slice is on evidence text",
+
+        # 0.91.0. No cap of any kind, established by enumerating slices, breaks and
+        # `MAX_*` constants in each file rather than by reading for an impression.
+        "canonical_checker.py": "no cap",
+        "critical_request_chain.py": "no cap",
+        "image_inventory.py": "no cap",
+        "javascript_render_audit.py": "no cap",
+        "rendered_audit.py": "no cap; its one constant is a viewport width",
+        "robots_path_tester.py": "no cap",
+        "third_party_script_audit.py": "no cap",
+        "url_quality.py": "no cap; its constants are the rule, not a limit on input",
     }
     unread: dict[str, list[str]] = {}
     for item in _items_by_id().values():
@@ -828,12 +877,23 @@ def _the_crawl_defaults_now_decide_whether_items_answer() -> dict:
     what a run reports, and an item can read one of these scripts without passing by
     absence. Both numbers are read from `site_crawl` rather than repeated here, so an
     entry that says "a hundred pages" cannot outlive a default that moved.
+
+    **The split is the repair 0.91.0 made to this probe.** It used to return one list —
+    every item whose script reports truncation and whose assertion passes by absence —
+    under a name that says *these two crawl numbers silence them*. That was already
+    wider than the claim: `CI-014` stops at `MAX_REDIRECT_HOPS`, `TE-174` at
+    `MAX_SHEETS`, `MS-023` and `KW-071` at a Search Console row page, and none of the
+    three has anything to do with how many pages the crawl read. Adding two per-page
+    caps in 0.91.0 made the same error visible rather than causing it. What the crawl
+    decides is now derived from `requires: crawl` in the registry, and what a script's
+    own cap decides is beside it, named as such.
     """
     import checklist_runner as runner
     import site_crawl
 
     reporters = set(_truncation_reporters())
     silenced = []
+    by_own_cap = []
     for item in _items_by_id().values():
         rule = (item.get("check") or {}).get("assert")
         if not rule or not runner.passes_by_absence(rule):
@@ -841,6 +901,7 @@ def _the_crawl_defaults_now_decide_whether_items_answer() -> dict:
         script = item["check"]["script"]
         if script not in reporters:
             continue
+        fed_by_the_crawl = item["check"].get("requires") == "crawl"
         parts = rule["path"].split(".")
         payload: dict = {}
         node = payload
@@ -850,13 +911,20 @@ def _the_crawl_defaults_now_decide_whether_items_answer() -> dict:
         payload["truncated"] = True
         key = (script, ())
         row = runner.grade([item], {key: [item["id"]]}, {key: payload}, {}, False)[0]
-        if row["status"] == runner.NO_DATA:
-            silenced.append(item["id"])
+        if row["status"] != runner.NO_DATA:
+            continue
+        (silenced if fed_by_the_crawl else by_own_cap).append(item["id"])
     return {
         "max_pages": site_crawl.DEFAULT_MAX_PAGES,
         "depth": site_crawl.DEFAULT_DEPTH,
         "both_bases": "inherited",
         "items_silenced_past_either_limit": sorted(silenced),
+        # Same withholding, decided by a cap neither of these two numbers reaches:
+        # nothing here is fed by the shared crawl. The list above is what these two
+        # *can* silence rather than what only they silence — a crawl-fed script may
+        # cap its own input as well, and then either number can be the one that
+        # stopped the reading.
+        "items_silenced_by_a_cap_other_than_these_two": sorted(by_own_cap),
     }
 
 

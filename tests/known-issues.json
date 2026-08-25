@@ -130,6 +130,7 @@
         "items_covered": [
           "AR-149",
           "AR-162",
+          "AR-163",
           "BL-081",
           "BL-083",
           "CI-008",
@@ -147,14 +148,17 @@
           "MS-023",
           "MS-029",
           "TE-168",
+          "TE-170",
           "TE-174"
         ],
         "scripts_that_report_a_cap": [
           "anchor_text_audit.py",
           "broken_links.py",
+          "cache_compression_checker.py",
           "css_minify_check.py",
           "duplicate_content.py",
           "external_link_quality.py",
+          "faceted_nav_audit.py",
           "gsc_cannibalization.py",
           "image_weight_audit.py",
           "internal_links.py",
@@ -623,31 +627,35 @@
       "state": "open"
     },
     "the-crawl-defaults-now-decide-whether-items-answer": {
-      "claim": "DEFAULT_MAX_PAGES 100 and DEFAULT_DEPTH 3 are both `inherited` and now decide whether twenty items answer at all; past either limit they report NO_DATA instead of PASS, and neither number has been examined as a threshold because until 0.88.0 neither was one.",
+      "claim": "DEFAULT_MAX_PAGES = 100 and DEFAULT_DEPTH = 3 decide whether the fifteen crawl-fed items answer at all, and both are inherited. The probe used to count every truncation reporter under that name, which was seven items too many; the crawl-fed set is now derived from requires: crawl and the rest are recorded beside it.",
       "measured": {
         "both_bases": "inherited",
         "depth": 3,
+        "items_silenced_by_a_cap_other_than_these_two": [
+          "AR-163",
+          "CI-014",
+          "KW-071",
+          "MD-185",
+          "MS-023",
+          "TE-170",
+          "TE-174"
+        ],
         "items_silenced_past_either_limit": [
           "AR-149",
           "AR-162",
           "BL-081",
           "BL-083",
           "CI-008",
-          "CI-014",
           "CI-018",
           "CN-039",
           "CN-041",
           "GO-136",
           "GO-137",
           "GO-138",
-          "KW-071",
-          "MD-185",
           "MD-187",
           "MS-022",
-          "MS-023",
           "MS-029",
-          "TE-168",
-          "TE-174"
+          "TE-168"
         ],
         "max_pages": 100
       },
@@ -655,102 +663,36 @@
       "state": "open"
     },
     "the-other-caps-have-not-been-read": {
-      "claim": "Twenty-three scripts behind an assertion that passes by absence cannot say their input was capped, and have not been read either way; html_validator.py was read and cleared.",
+      "claim": "All twenty-three scripts behind an assertion that passes by absence have been read against one question: does the cap stand upstream of the number the item reads. Twenty-one are downstream or have no cap; faceted_nav_audit.py under AR-163 and cache_compression_checker.py under TE-170 were upstream and now report truncation, and both numbers moved into module constants the threshold inventory can see.",
       "measured": {
         "cleared_by_reading": {
-          "html_validator.py": "counts before the message cap"
+          "a11y_seo_checker.py": "slices findings, not input, and CN-036 reads a contrast count instead",
+          "canonical_checker.py": "no cap",
+          "collection_page_checker.py": "slices the printed lines, not `issues`",
+          "critical_request_chain.py": "no cap",
+          "domain_safety_check.py": "slices error text; no input is cut",
+          "entity_checker.py": "head-checks the first three profiles, but GEO-006 reads the missing count, not those findings",
+          "font_audit.py": "slices an error string only",
+          "ga4_tag_checker.py": "slices an error string only",
+          "gsc_checker.py": "GO-134 reads the sitemap report, which is not paged; the row and page caps sit on `performance`, which nothing asserts",
+          "gsc_url_inspection.py": "its only break ends a retry loop on success",
+          "html_validator.py": "counts before the message cap",
+          "image_inventory.py": "no cap",
+          "javascript_render_audit.py": "no cap",
+          "mobile_render_checker.py": "counts every wide value, then slices the evidence list",
+          "parse_html.py": "the four items read whole fields; every slice is on evidence text",
+          "rendered_audit.py": "no cap; its one constant is a viewport width",
+          "rich_results_guard.py": "counts the whole `issues` before slicing the lines",
+          "robots_path_tester.py": "no cap",
+          "schema_required_props.py": "counts errors and warnings whole, then slices the lines",
+          "third_party_script_audit.py": "no cap",
+          "url_quality.py": "no cap; its constants are the rule, not a limit on input",
+          "video_schema_checker.py": "slices the printed lines, not `issues`"
         },
-        "not_yet_read": {
-          "a11y_seo_checker.py": [
-            "CN-036"
-          ],
-          "cache_compression_checker.py": [
-            "TE-170"
-          ],
-          "canonical_checker.py": [
-            "TE-176"
-          ],
-          "collection_page_checker.py": [
-            "AR-154"
-          ],
-          "critical_request_chain.py": [
-            "SP-110"
-          ],
-          "domain_safety_check.py": [
-            "SE-114",
-            "SE-116",
-            "TE-171",
-            "TE-178"
-          ],
-          "entity_checker.py": [
-            "GEO-006"
-          ],
-          "faceted_nav_audit.py": [
-            "AR-163"
-          ],
-          "font_audit.py": [
-            "TECH-002"
-          ],
-          "ga4_tag_checker.py": [
-            "GO-132"
-          ],
-          "gsc_checker.py": [
-            "GO-134"
-          ],
-          "gsc_url_inspection.py": [
-            "GO-135"
-          ],
-          "image_inventory.py": [
-            "CI-016",
-            "CN-054",
-            "MD-186"
-          ],
-          "javascript_render_audit.py": [
-            "MB-105"
-          ],
-          "mobile_render_checker.py": [
-            "MB-100"
-          ],
-          "parse_html.py": [
-            "AR-146",
-            "CI-004",
-            "CN-048",
-            "MS-031"
-          ],
-          "rendered_audit.py": [
-            "CN-034",
-            "CN-035",
-            "CN-051",
-            "MB-094",
-            "MB-103",
-            "MB-108"
-          ],
-          "rich_results_guard.py": [
-            "TE-172",
-            "TECH-001"
-          ],
-          "robots_path_tester.py": [
-            "CI-013",
-            "CI-019"
-          ],
-          "schema_required_props.py": [
-            "GO-143",
-            "MS-032"
-          ],
-          "third_party_script_audit.py": [
-            "SP-109"
-          ],
-          "url_quality.py": [
-            "AR-155"
-          ],
-          "video_schema_checker.py": [
-            "MB-102",
-            "MD-190"
-          ]
-        }
+        "not_yet_read": {}
       },
       "probe": "the_other_caps_have_not_been_read",
-      "state": "open"
+      "state": "closed"
     },
     "the-schema-property-tables-have-not-been-re-read": {
       "claim": "schema_required_props.py carries required and recommended property tables for twenty-three types and reads as though it quoted Google. Two were examined in 0.89.0 and both diverged; the rest have not been read against the documentation they claim to follow.",
@@ -891,7 +833,7 @@
     "threshold-declarations-unjudged": {
       "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants and the three detect_profile tables as inherited, DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and twenty module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
-        "counted": 144,
+        "counted": 146,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:31"
         ],

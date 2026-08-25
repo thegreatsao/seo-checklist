@@ -10,6 +10,60 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.91.0 — two caps stop answering for what they did not read
+
+Registry version: unchanged at `b0abf2819da0`. No item moves and no assertion changes.
+Two scripts change what they report, and one live verdict can move with them: `AR-163`
+answers `NO_DATA` where it used to answer `PASS` on a page it read only part of.
+
+**The reading behind it.** 0.88.0 made a rule — a verdict passing *by absence* becomes
+`NO_DATA` when the script says its input was capped — and left twenty-three scripts
+unread against it. All twenty-three are read now. Twenty-one cut something downstream of
+the number an item reads, or cut nothing at all. Two cut upstream:
+
+* `faceted_nav_audit.py` stopped at 300 page-derived URLs and then built `rows` and
+  `issues` from that list alone. `AR-163` (`medium`) asserts `issues` carries nothing
+  medium-or-worse and the registry calls the script `--from-page --fetch`, so this was
+  live: a category page linking past the cap passed the item on findings nobody looked
+  for. That is what the cap exists to describe, and the cap was hiding it;
+* `cache_compression_checker.py` stopped its asset walk at 25. `TE-170` reads `issues`
+  the same way — but the registry passes no `--include-assets`, so the loop never runs
+  and the cap is unreachable as invoked. Repaired anyway: a cap that is wrong on a path
+  nothing takes is wrong on the day something takes it.
+
+**What each now says.** A root `truncated`, always present, `false` when the input was
+read whole — because an absent field reads as "not truncated" and the difference between
+that and "this script cannot tell you" is the whole point. It is `true` only when
+something was *left*: the check sits before the append, so a list that fills exactly and
+leaves nothing unread says `false`. The boundary counts the page itself, so 299 internal
+links fill a 300-URL result completely and the 300th is the first unread one.
+
+**Both numbers become visible.** They were default arguments, which is a place the
+threshold inventory cannot look — the same blind spot `MAX_REDIRECT_HOPS` came out of in
+0.81.0. As module constants with a basis line each, verdict-deciding numbers go 144 to
+146 and `inherited` 75 to 77. Neither number changed: what a run costs is not what this
+release is about.
+
+**A check failed because the tree got better, so the check moved.**
+`test_known_issues` asserted that probes on open entries outnumbered every probe in the
+ledger. Closing an entry moves its probe from the asking side to the guarding side and
+none ever comes back, so that ratio falls with every release that repairs something —
+and closing the twenty-three-script entry pushed it under the line. The fear behind the
+line is real and is about the file rather than the probes: a list with three questions
+and sixty guarded repairs is a regression suite with a documentation file attached. It is
+asked of the entries now, `history` excluded, and the other half of the claim — that the
+live list is measured — is enforced entry by entry rather than as a ratio: an open entry
+carries a probe or carries a written reason it cannot. Eighteen of thirty-two current
+entries are open, and sixteen of the eighteen carry a probe.
+
+**A recorded number was wrong, and repairing it is half this release.** The entry saying
+the two crawl defaults decide whether twenty items answer measured every truncation
+reporter, not the crawl-fed ones — `CI-014` stops at a redirect cap, `TE-174` at a
+stylesheet cap, `MS-023` and `KW-071` at a Search Console row page, `MD-185` at its own.
+The crawl decides fifteen. The set is derived from `requires: crawl` now, with the other
+seven recorded beside it under a name that says what they are. Adding two per-page caps
+made the miscount visible rather than causing it.
+
 ## 0.90.2 — a record can be stale under a stamp that says it is current
 
 Registry version: unchanged at `b0abf2819da0`. No script changed, no item moves, no

@@ -98,19 +98,36 @@ class RecordedKnownIssues(unittest.TestCase):
 
         This runs every probe, which the two ledgers beside this one deliberately do
         not do in the suite. They recompute an AST scan over the whole tree; these
-        twenty-two probes take about two and a half seconds together, and paying that
-        locally is what makes a stale entry a failure somebody sees before pushing.
+        thirty-three probes take about seven seconds together, and paying that locally
+        is what makes a stale entry a failure somebody sees before pushing.
         """
         self.assertEqual(known_issues.differences(self.record), [])
 
-    def test_the_open_entries_are_still_the_majority_of_the_probes(self):
+    def test_the_file_is_still_asking_more_than_it_is_guarding(self):
         """A probe on a closed entry guards a repair; a probe on an open one is the
         measurement itself. Both belong here, and the second is what the instrument is
         for — if closed entries ever came to dominate it, this would have quietly
-        become a regression suite with a documentation file attached."""
-        probed = [entry for entry in self.record["entries"].values() if entry["probe"]]
-        open_probed = [entry for entry in probed if entry["state"] == "open"]
-        self.assertGreater(len(open_probed), len(probed) / 2)
+        become a regression suite with a documentation file attached.
+
+        **Counted over entries, because counting it over probes made repair the thing
+        that failed.** Until 0.91.0 this asserted that probes on open entries
+        outnumbered all probes. Every closure moves one probe from the open side to
+        the guarding side and none ever comes back, so the ratio falls with each
+        release that fixes something — and it fell below the line the day an entry
+        covering twenty-three scripts was closed by reading all of them. The fear the
+        line was drawn against is real and is about the file, not about the probes: a
+        list with three questions and sixty guarded repairs is a regression suite. So
+        the question is asked of the entries, and `history` is left out of it, being
+        neither a live question nor a guard.
+
+        The live half being measured is the other half of the claim, and it is not a
+        ratio: an open entry either carries a probe or carries a written reason it
+        cannot, which `differences()` enforces entry by entry.
+        """
+        entries = self.record["entries"].values()
+        current = [entry for entry in entries if entry["state"] in ("open", "closed")]
+        asking = [entry for entry in current if entry["state"] == "open"]
+        self.assertGreater(len(asking), len(current) / 2)
 
 
 if __name__ == "__main__":

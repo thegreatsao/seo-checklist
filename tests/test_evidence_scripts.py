@@ -57,7 +57,7 @@ from harness import served  # noqa: E402
 
 from checklist_runner import (  # noqa: E402
     FAIL, NEEDS_INPUT, NO_DATA, PASS, WARN, build_plan, evaluate,
-    input_truncated, passes_by_absence,
+    grade, input_truncated, passes_by_absence,
 )
 
 with open(REGISTRY, encoding="utf-8") as f:
@@ -81,6 +81,13 @@ def verdict(item_id: str, output: dict) -> str:
     if warn and evaluate(warn, output)[0]:
         return WARN
     return FAIL
+
+
+def graded_verdict(item_id: str, output: dict) -> str:
+    """The verdict after runner-level rules such as capped-input withholding."""
+    item = ITEMS[item_id]
+    key = (item["check"]["script"], ())
+    return grade([item], {key: [item_id]}, {key: output}, {}, False)[0]["status"]
 
 
 # ---------------------------------------------------------------------------
@@ -4559,6 +4566,23 @@ class LinkProfile(unittest.TestCase):
 class FacetedNavigation(unittest.TestCase):
     """AR-163 `issues`."""
 
+    PAGE_URL_LIMIT = 3
+
+    def from_page(self, internal_links: int) -> dict:
+        links = "".join(f'<a href="/plain-{i}">plain</a>'
+                        for i in range(internal_links))
+        page = f"<html><body>{links}</body></html>"
+        routes = {"/": page, **{f"/plain-{i}": page
+                                for i in range(internal_links)}}
+        with served(routes) as site:
+            proc = harness.spawn(
+                [sys.executable, os.path.join(SCRIPTS, "faceted_nav_audit.py"),
+                 f"{site.base}/", "--from-page", "--fetch", "--max-urls",
+                 str(self.PAGE_URL_LIMIT), "--json"],
+                env=script_env(), timeout=60)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return json.loads(proc.stdout)
+
     def test_a_site_with_no_parameter_urls_raises_nothing(self):
         self.assertEqual(verdict("AR-163", out("facets")), PASS)
 
@@ -4572,6 +4596,22 @@ class FacetedNavigation(unittest.TestCase):
         bad = out("facets_bad")
         self.assertEqual(verdict("AR-163", bad), WARN)
         self.assertRegex(json.dumps(bad["issues"]), "(?i)parameter")
+
+    def test_a_page_with_more_urls_than_the_limit_reports_truncation(self):
+        result = self.from_page(self.PAGE_URL_LIMIT)
+        self.assertEqual(result["count"], self.PAGE_URL_LIMIT)
+        self.assertIs(result["truncated"], True)
+
+    def test_a_page_with_fewer_urls_than_the_limit_reports_a_complete_input(self):
+        result = self.from_page(self.PAGE_URL_LIMIT - 1)
+        self.assertEqual(result["count"], self.PAGE_URL_LIMIT)
+        self.assertIs(result["truncated"], False)
+
+    def test_ar_163_withholds_only_the_clean_verdict_over_a_truncated_input(self):
+        capped = self.from_page(self.PAGE_URL_LIMIT)
+        complete = self.from_page(self.PAGE_URL_LIMIT - 1)
+        self.assertEqual(graded_verdict("AR-163", capped), NO_DATA)
+        self.assertEqual(graded_verdict("AR-163", complete), PASS)
 
     def test_robots_disallow_is_a_third_facet_control(self):
         """Checking only that the allowed facet errors would pass before this repair;
@@ -4606,6 +4646,35 @@ class FacetedNavigation(unittest.TestCase):
 
 class CacheAndCompression(unittest.TestCase):
     """TE-170 `issues`."""
+
+    ASSET_LIMIT = 1
+
+    def with_assets(self, asset_count: int) -> dict:
+        assets = "".join(f'<script src="/asset-{i}"></script>'
+                         for i in range(asset_count))
+        routes = {
+            "/": f"<html><body>{assets}</body></html>",
+            **{f"/asset-{i}": "ok" for i in range(asset_count)},
+        }
+        with served(routes) as site:
+            proc = harness.spawn(
+                [sys.executable,
+                 os.path.join(SCRIPTS, "cache_compression_checker.py"),
+                 f"{site.base}/", "--include-assets", "--max-assets",
+                 str(self.ASSET_LIMIT), "--json"],
+                env=script_env(), timeout=60)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return json.loads(proc.stdout)
+
+    def test_asset_cap_reports_completeness_and_controls_the_clean_verdict(self):
+        capped = self.with_assets(self.ASSET_LIMIT + 1)
+        complete = self.with_assets(self.ASSET_LIMIT)
+        self.assertIs(capped["truncated"], True)
+        self.assertIs(complete["truncated"], False)
+        self.assertEqual(capped["resources_checked"], self.ASSET_LIMIT + 1)
+        self.assertEqual(complete["resources_checked"], self.ASSET_LIMIT + 1)
+        self.assertEqual(graded_verdict("TE-170", capped), NO_DATA)
+        self.assertEqual(graded_verdict("TE-170", complete), PASS)
 
     def test_uncompressed_text_is_graded_by_known_size(self):
         """A large-only assertion would still pass before this repair; the small and
@@ -5556,7 +5625,7 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
                 and i["check"]["script"] in reporters]
 
     def test_the_set_it_covers_is_the_one_recorded(self):
-        """Nineteen items — ten `high`, eight `medium`, one `low`. The number is
+        """Twenty-two items — eleven `high`, ten `medium`, one `low`. The number is
         pinned because the ledger entry this closes said twelve and the command
         recorded beside it printed eleven, and neither counted the thing the entry
         was about. Twelve is right for that entry's own subject: the items handed
@@ -5568,9 +5637,9 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
         external links, GSC rows, a sitemap index walk and a stylesheet list."""
         ids = sorted(i["id"] for i in self._covered())
         self.assertEqual(ids, [
-            "AR-149", "AR-162", "BL-081", "BL-083", "CI-008", "CI-014", "CI-018",
+            "AR-149", "AR-162", "AR-163", "BL-081", "BL-083", "CI-008", "CI-014", "CI-018",
             "CN-039", "CN-041", "GO-136", "GO-137", "GO-138", "KW-071", "MD-185",
-            "MD-187", "MS-022", "MS-023", "MS-029", "TE-168", "TE-174",
+            "MD-187", "MS-022", "MS-023", "MS-029", "TE-168", "TE-170", "TE-174",
         ], "the covered set moved; say which definition gives the new one")
 
     def test_every_way_this_registry_spells_nothing_is_covered(self):

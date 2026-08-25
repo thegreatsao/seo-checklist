@@ -38,6 +38,14 @@ PATH_EXPLOSION_VARIANTS = 5
 # basis: inherited — a parameter seen on three URLs, present at import, and reported as
 #  info rather than a finding: frequency here is evidence for a human, not a verdict.
 FREQUENT_PARAM_COUNT = 3
+# basis: inherited — present at import as `limit=300` on `urls_from_page`, where the
+#  threshold inventory could not see it. It is a threshold and not a budget because
+#  AR-163 asserts that `issues` contains no medium-or-worse finding, and this number
+#  decides how many page-linked URLs can supply one. Measured for 0.91.0: 299 internal
+#  links fill the 300-URL result together with the page and leave nothing unread; a
+#  300th internal link is omitted from `rows` and `issues` and must mark the result
+#  incomplete rather than move the cap.
+MAX_URLS_FROM_PAGE = 300
 
 FACET_KEYS = {"sort", "filter", "color", "size", "brand", "price", "min_price", "max_price", "rating", "page", "view", "availability", "material"}
 
@@ -102,7 +110,8 @@ def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:
     return {"count": len(rows), "frequent_params": frequent_params, "path_explosions": path_explosions, "rows": rows, "issues": issues}
 
 
-def urls_from_page(url: str, timeout: int = 15, limit: int = 300) -> list[str]:
+def urls_from_page(url: str, timeout: int = 15,
+                   limit: int = MAX_URLS_FROM_PAGE) -> tuple[list[str], bool]:
     """The page's own internal links, plus the page itself.
 
     Same-host only: a facet on somebody else's site is not this site's crawl trap.
@@ -111,16 +120,18 @@ def urls_from_page(url: str, timeout: int = 15, limit: int = 300) -> list[str]:
     """
     page = fetch_url(url, timeout=timeout, max_bytes=2_000_000)
     if not page.get("text"):
-        return [url]
+        return [url], False
     parsed = parse_html(page["text"], page.get("url") or url)
     found = [url]
+    truncated = False
     for link in parsed.get("links") or []:
         href = link.get("href") if isinstance(link, dict) else link
         if href and same_host(href, url):
+            if len(found) >= limit:
+                truncated = True
+                break
             found.append(href)
-        if len(found) >= limit:
-            break
-    return found
+    return found, truncated
 
 
 def main() -> None:
@@ -134,13 +145,18 @@ def main() -> None:
                              "the page alone — a crawl trap is a property of a set of "
                              "URLs, so one URL can never show one")
     parser.add_argument("--fetch", action="store_true", help="Fetch pages for canonical/noindex checks")
+    parser.add_argument("--max-urls", type=int, default=MAX_URLS_FROM_PAGE,
+                        help="Maximum page-derived URLs to audit, including the page")
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
     urls = read_urls(args.urls, args.url_file)
+    truncated = False
     if args.from_page and urls:
-        urls = read_urls(urls_from_page(urls[0], args.timeout))
+        page_urls, truncated = urls_from_page(urls[0], args.timeout, args.max_urls)
+        urls = read_urls(page_urls)
     result = audit(urls, args.fetch, args.timeout)
+    result["truncated"] = truncated
     print(json.dumps(result, indent=2) if args.json else "\n".join(f"{','.join(r['flags']) or 'ok'}\t{r['url']}" for r in result["rows"]))
 
 

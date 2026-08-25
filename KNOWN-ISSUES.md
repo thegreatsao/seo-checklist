@@ -1813,28 +1813,64 @@ name. A column called `url` would be read as "fix this page".
   `inherited` from 67 to 75 — the count becoming honest, not the tree getting worse.
   <!-- ki: a-truncated-crawl-decides-the-whole-site -->
 
-1. **The other caps have not been read, only listed.** The rule above reaches an
-   assertion only when its script says `truncated`, and the enumeration behind 0.88.0
-   asked all fifty passes-by-absence items whether their script caps its own input.
-   Fourteen scripts now answer. One more, `html_validator.py`, was read and cleared:
-   `MAX_MESSAGES` trims the message list after `counts` has been incremented, so
-   `summary.errors` is the whole number. **The rest have not been read either way**,
-   and the probe holds that list rather than this paragraph — a list written twice is
-   a list that drifts, which is the failure the last release spent itself repairing.
-   Among them are `gsc_checker.py` under `GO-134` (`high`), `parse_html.py` under
-   `CI-004` (`critical`), and `rich_results_guard.py` under two `high` items, so the
-   remainder is not the low-severity tail. What is unknown for each is the same one
-   thing: whether its slice or row limit stands upstream of the count it reports or
-   downstream of it. Upstream is this defect; downstream is `html_validator.py`.
-   <!-- ki: the-other-caps-have-not-been-read -->
+- **Closed in 0.91.0 — the other caps have been read, and two of them answered for
+  what they had not read.** Twenty-three scripts stood behind an item that passes by
+  absence and said nothing about capping their own input. The question for each was one
+  thing: whether the slice or row limit stands upstream of the number the item reads, or
+  downstream of it. Upstream is the defect; downstream is `html_validator.py`, read in
+  0.88.0.
 
-2. **Two numbers nobody decided now decide whether twenty items answer at all.**
+  **Twenty-one are downstream or have no cap at all**, and the probe holds the reading
+  per script rather than this paragraph — a list written twice is a list that drifts.
+  Two were upstream:
+
+  * `faceted_nav_audit.py` under `AR-163` (`medium`): `urls_from_page` stopped at 300
+    page-derived URLs and `audit()` then built `rows` and `issues` from that list alone.
+    The registry calls it `--from-page --fetch`, so this was live — a category page
+    linking past the cap passed the item on findings nobody looked for;
+  * `cache_compression_checker.py` under `TE-170` (`medium`): `max_assets = 25` stopped
+    the asset walk before `issues` was assembled. **Unreachable as invoked** — the
+    registry passes no `--include-assets`, so the loop never runs — and repaired anyway,
+    because a cap that is wrong on a path nothing takes is wrong on the day something
+    does.
+
+  Both now report `truncated`, which is the whole repair: the 0.88.0 rule reaches an
+  assertion only when the script says its input was cut, and a clean verdict over a cut
+  input becomes `NO_DATA`. Both numbers moved from a default argument into a module
+  constant with a basis line, so the threshold inventory can see them: 144 verdict-
+  deciding numbers became 146 and `inherited` 75 became 77, the count getting truer
+  rather than the tree getting worse.
+
+  **How the reading was done, because a clearance is only worth its method.** An
+  executor read all twenty-three against the single question and wrote one file per
+  script; every `critical` and `high` one was then re-read here against the code, and
+  in the rest every cap-shaped construct — a slice, a `break`, a `MAX_*` — was
+  enumerated rather than eyeballed, because "this script has no cap" is a claim of
+  absence and an impression cannot support one. Two readings survived that check by
+  changing: `a11y_seo_checker.py` does slice findings rather than input, and
+  `entity_checker.py` head-checks only the first three profiles — but `CN-036` reads a
+  contrast count and `GEO-006` a missing-profile count, so neither slice can reach a
+  verdict.
+  <!-- ki: the-other-caps-have-not-been-read -->
+
+2. **Two numbers nobody decided now decide whether fifteen items answer at all.**
    Before 0.88.0 `DEFAULT_MAX_PAGES = 100` and `DEFAULT_DEPTH = 3` bounded work: past
    them the crawl stopped and the items graded what it had. They now bound *answers* —
-   a site past either reports `truncated`, and twenty items say `NO_DATA` instead of
-   `PASS`. That is the correct behaviour for the numbers as they stand, and it is the
-   first time either number has been load-bearing, so neither has ever been examined
-   as one. Both are `inherited`: present at import, chosen by nobody here.
+   a site past either reports `truncated`, and the items fed by that crawl say
+   `NO_DATA` instead of `PASS`. That is the correct behaviour for the numbers as they
+   stand, and it is the first time either number has been load-bearing, so neither has
+   ever been examined as one. Both are `inherited`: present at import, chosen by nobody
+   here.
+
+   **It said twenty until 0.91.0, and twenty was never this entry's number.** The probe
+   collected every item whose script reports truncation and whose assertion passes by
+   absence, under a name saying these two crawl numbers silence them — but `CI-014`
+   stops at `MAX_REDIRECT_HOPS`, `TE-174` at `MAX_SHEETS`, `MS-023` and `KW-071` at a
+   Search Console row page, and `MD-185` at its own limit. None of those five is fed by
+   the crawl. The set is now derived from `requires: crawl` in the registry and the
+   other seven are recorded beside it as silenced by a cap that is not one of these
+   two — which is where `AR-163` and `TE-170` joined in 0.91.0. Adding them made the
+   miscount visible; it did not cause it.
 
    **The two do not bite alike, and the difference was measured rather than assumed.**
    Pages a sitemap lists enter the crawl at depth 0, so on a site with a sitemap the

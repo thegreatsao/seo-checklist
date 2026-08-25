@@ -278,21 +278,29 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # passing by absence, so `inherited` rising from 67 to 75 is the count
         # getting truer, not the tree getting worse. ROADMAP.md wants this number
         # to fall; it can only fall from a number that is honest first.
+        #
+        # 0.91.0 names two more caps that were still hiding in default arguments:
+        # page-derived URLs in `faceted_nav_audit.py` and linked assets in
+        # `cache_compression_checker.py`. Both bound the evidence behind an empty
+        # `issues` assertion, so `inherited` rising from 75 to 77 is again the
+        # inventory getting more honest, not the checks getting worse.
         self.assertEqual(by_kind, {
             "standard": 11,
             "measured": 11,
             "convention": 47,
-            "inherited": 75,
+            "inherited": 77,
             "presentation": 13,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 144)
-        self.assertEqual(len(named), 157)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 146)
+        self.assertEqual(len(named), 159)
         self.assertEqual(len(uncounted), 13)
         # 169 -> 170: `external_link_quality.py`'s link cap was a default argument
         # value, which is a place no instrument here can see. Promoting it to a
         # module constant is what made it countable at all.
+        # 170 -> 172: the two caps above were also invisible to the module-level
+        # constant inventory until they were given names.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 170)
+                             for path in at._script_paths()), 172)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()

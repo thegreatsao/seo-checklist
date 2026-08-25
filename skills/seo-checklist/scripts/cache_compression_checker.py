@@ -28,6 +28,14 @@ STATIC_IMMUTABLE_MAX_AGE = 2_592_000
 #  header overhead rarely reduces what goes over the wire. Every serious server ships
 #  the same knob with a number of this order; none of them measured it here.
 COMPRESSIBLE_MIN_BYTES = 1024
+# basis: inherited — present at import as `max_assets=25` on `audit`, where the
+#  threshold inventory could not see it. It is a threshold and not a budget because
+#  TE-170 asserts that `issues` contains no medium-or-worse finding, and this number
+#  decides how many linked assets can supply one. Measured for 0.91.0 with a one-asset
+#  cap: one distinct linked asset leaves a complete answer, while a second is absent
+#  from `resources` and `issues` and must mark the answer incomplete rather than move
+#  the cap.
+MAX_ASSETS = 25
 
 STATIC_EXTENSIONS = (".css", ".js", ".mjs", ".png", ".jpg", ".jpeg", ".webp", ".avif", ".svg", ".woff2", ".woff")
 TEXT_EXTENSIONS = (".html", ".css", ".js", ".mjs", ".json", ".xml", ".svg", ".txt")
@@ -116,7 +124,8 @@ def _check_url(url: str, timeout: int) -> dict:
     return row
 
 
-def audit(source: str, include_assets: bool = False, timeout: int = 15, max_assets: int = 25) -> dict:
+def audit(source: str, include_assets: bool = False, timeout: int = 15,
+          max_assets: int = MAX_ASSETS) -> dict:
     if not is_url(source):
         html, url, fetched = load_source(source, timeout=timeout)
         require_bs4()
@@ -128,10 +137,12 @@ def audit(source: str, include_assets: bool = False, timeout: int = 15, max_asse
             "resources": [],
             "asset_count": len(_asset_urls(soup, url)),
             "fetch_error": fetched.get("error"),
+            "truncated": False,
         }
 
     html, url, fetched = load_source(source, timeout=timeout)
     resources = [_check_url(url or source, timeout)]
+    truncated = False
     if include_assets and html:
         require_bs4()
         soup = BeautifulSoup(html or "", html_parser())
@@ -139,10 +150,11 @@ def audit(source: str, include_assets: bool = False, timeout: int = 15, max_asse
         for asset in _asset_urls(soup, url):
             if asset in seen:
                 continue
+            if len(resources) - 1 >= max_assets:
+                truncated = True
+                break
             seen.add(asset)
             resources.append(_check_url(asset, timeout))
-            if len(resources) - 1 >= max_assets:
-                break
     issues = []
     for row in resources:
         for item in row["issues"]:
@@ -155,6 +167,7 @@ def audit(source: str, include_assets: bool = False, timeout: int = 15, max_asse
         "issues": issues,
         "resources": resources,
         "fetch_error": fetched.get("error"),
+        "truncated": truncated,
     }
 
 
@@ -162,7 +175,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Check cache and compression headers")
     parser.add_argument("source", help="URL or local HTML file")
     parser.add_argument("--include-assets", action="store_true", help="Also check linked CSS/JS/images/fonts")
-    parser.add_argument("--max-assets", type=int, default=25)
+    parser.add_argument("--max-assets", type=int, default=MAX_ASSETS)
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
