@@ -512,9 +512,10 @@ jobs:
   # staleness check, and a stamp is the one field in a record that a hand can set without
   # re-recording anything. The copied registry fields are read by the suite now, in
   # milliseconds. The verdicts are what is left, and the cost was assumed rather than
-  # measured - five audits over five served trees is 101 seconds on a developer machine.
-  # It gets a job rather than a step because it needs no matrix: what it compares is the
-  # tree's answers, not the interpreter's.
+  # measured - five audits over five served trees is 101 seconds on a developer machine
+  # and was 82 on this job's first runner, which finished it two minutes before the
+  # matrix beside it finished the suite. It gets a job rather than a step because it
+  # needs no matrix: what it compares is the tree's answers, not the interpreter's.
   #
   # A failure here is not "fix the code" either. It is a verdict that moved, and somebody
   # deciding whether the move is the repair they intended before re-recording with

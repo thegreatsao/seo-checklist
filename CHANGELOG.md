@@ -52,9 +52,10 @@ and one moved title witnesses one field of four.
 
 **The expensive half, measured instead of assumed.** The answers were left to a hand-run
 command on the argument that five audits are too much for CI. The five audits are 101
-seconds on a developer machine, which is not too much for anything, so `verdict_census.py
---check` is now a CI job of its own — no matrix, because what it compares is the tree's
-answers and not the interpreter's. `tests/inert_findings.py --check` is a step in both
+seconds on a developer machine and were 82 on the first runner that ran them, where the
+job finished two minutes before the matrix beside it finished the suite — so the cost is
+not the wall clock either. `verdict_census.py --check` is a CI job of its own now — no
+matrix, because what it compares is the tree's answers and not the interpreter's. `tests/inert_findings.py --check` is a step in both
 existing jobs at a quarter of a second. Both assert that a record still describes the
 tree; neither asserts that any finding or verdict in it is right, which stays the
 oracle's question and a person's.
