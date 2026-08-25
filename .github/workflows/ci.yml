@@ -102,6 +102,15 @@ jobs:
       - name: The defect list still describes this tree
         run: python tests/known_issues.py --check
 
+      # The other recorded ledger, and the cheap half of the same question. It asserts
+      # that the record still describes the tree - which findings each none_severity
+      # script can write that no rule reads - and not that any of them is acceptable
+      # advice; that judgement has no mechanical form and this tool deliberately makes
+      # none. The census answers the same question about verdicts and costs five
+      # audits, so it has a job of its own below rather than a step in this matrix.
+      - name: The inert-findings record still describes this tree
+        run: python tests/inert_findings.py --check tests/inert-findings.json
+
       # A smoke run against a local page proves the whole path still works end to
       # end — registry, runner, report — without touching the network.
       - name: Offline smoke run
@@ -488,3 +497,41 @@ jobs:
       # tree moved or the entry is now wrong, and then re-recording.
       - name: The defect list still describes this tree
         run: python tests/known_issues.py --check
+
+      # The other recorded ledger, and the cheap half of the same question. It asserts
+      # that the record still describes the tree - which findings each none_severity
+      # script can write that no rule reads - and not that any of them is acceptable
+      # advice; that judgement has no mechanical form and this tool deliberately makes
+      # none. The census answers the same question about verdicts and costs five
+      # audits, so it has a job of its own below rather than a step in this matrix.
+      - name: The inert-findings record still describes this tree
+        run: python tests/inert_findings.py --check tests/inert-findings.json
+
+  # The recorded census is the one ledger whose contents cost a run to reproduce, and
+  # until 0.90.2 that was the reason nothing read them: `registry_version` was its whole
+  # staleness check, and a stamp is the one field in a record that a hand can set without
+  # re-recording anything. The copied registry fields are read by the suite now, in
+  # milliseconds. The verdicts are what is left, and the cost was assumed rather than
+  # measured - five audits over five served trees is 101 seconds on a developer machine.
+  # It gets a job rather than a step because it needs no matrix: what it compares is the
+  # tree's answers, not the interpreter's.
+  #
+  # A failure here is not "fix the code" either. It is a verdict that moved, and somebody
+  # deciding whether the move is the repair they intended before re-recording with
+  # `python tests/verdict_census.py --out tests/census.json`.
+  census:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: The recorded census still describes this tree
+        run: python tests/verdict_census.py --check tests/census.json

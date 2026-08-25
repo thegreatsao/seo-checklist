@@ -1,5 +1,41 @@
 {
   "entries": {
+    "a-census-copied-a-title-no-item-has": {
+      "claim": "tests/census.json shipped GO-143's first-attempt title under registry_version b0abf2819da0, which a registry carrying that title does not hash to, so the content and the stamp came from different registries and the stamp was the only field the suite read. Both recorded ledgers now have every field they copy from the registry re-read on each run, in a reading that is itself witnessed field by field.",
+      "measured": {
+        "both_records_stamp_this_registry": [
+          true,
+          true
+        ],
+        "census_fields_read": [
+          "title",
+          "severity",
+          "source",
+          "script"
+        ],
+        "census_rows": 217,
+        "census_rows_that_disagree": [],
+        "inert_rows": 16,
+        "inert_rows_that_disagree": [],
+        "the_reading_sees_each_field_move": {
+          "script": [
+            "GO-143.script"
+          ],
+          "severity": [
+            "GO-143.severity"
+          ],
+          "source": [
+            "GO-143.source"
+          ],
+          "title": [
+            "GO-143.title"
+          ]
+        },
+        "the_row_moved_to_test_the_reading": "GO-143"
+      },
+      "probe": "a_census_copied_a_title_no_item_has",
+      "state": "closed"
+    },
     "a-greek-rho-killed-the-evidence-layer": {
       "claim": "subprocess.run(text=True) decoded a child's output with the platform's ANSI codepage, so one Greek rho (cf 81, and 0x81 is unmapped in cp1252) killed the reader thread, left stdout None and reported an AttributeError. The child half could not encode raw UTF-8 at all without PYTHONIOENCODING. Both are pinned to UTF-8 and a dead reader now reports itself.",
       "measured": {
@@ -940,7 +976,7 @@
       "state": "open"
     }
   },
-  "entry_count": 49,
-  "probed_entry_count": 32,
+  "entry_count": 50,
+  "probed_entry_count": 33,
   "unprobed_entry_count": 17
 }

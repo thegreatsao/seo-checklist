@@ -1891,7 +1891,7 @@
       "script": "schema_required_props.py",
       "severity": "low",
       "source": "script",
-      "title": "Provide Complete WebSite Data for the Site Name"
+      "title": "Complete Every WebSite Node Google Reads for the Site Name"
     },
     "GO-144": {
       "answers": {

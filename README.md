@@ -4,12 +4,15 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.90.1 — see [CHANGELOG.md](CHANGELOG.md). A documentation release. `KW-070`
-and `GO-139` both say *branded query* and nothing here identifies one: the highest-click
-query is treated as the brand. Measured on a live property whose head term is generic
-and whose brand name has zero impressions, both items failed the site over a query that
-is not its brand. Recorded rather than repaired — more than one repair is honest, and two
-of them move live verdicts everywhere. No code changed and no verdict moves.
+Version 0.90.2 — see [CHANGELOG.md](CHANGELOG.md). A ledger release. `tests/census.json`
+had shipped `GO-143` under the first of the two titles 0.89.0 gave it — a title no
+release has carried — and the suite could not see it, because the only staleness check on
+that record was its `registry_version`, the one field in the file that a hand can set
+without re-recording anything. The record is re-taken, and the fields both recorded
+ledgers copy from the registry are now re-read on every suite, which costs milliseconds
+and is what would have caught it. The verdicts beside them, which cost five audits and
+were left to a hand-run command on that argument, take 101 seconds measured — so they
+are a CI job now too. No script changed and no verdict moves.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -703,7 +706,8 @@ a `CHANGELOG.md` entry naming the shipped `registry_version` and must match
 holds them, every category must have a plain-language explanation in every shipped
 language, and the lowest Python in the CI matrix must be the floor `pyproject.toml`
 declares. CI runs the suite on 3.10, 3.11 and 3.13, along with `ruff`, the gates and
-four offline end-to-end audits.
+four offline end-to-end audits, and a job of its own re-takes the recorded verdict
+census over all five served trees and compares it with the one in the tree.
 
 **And the pair.** The whole registry is run against two served fixture sites — one
 satisfying as much of it as a static site can, one engineered to fail — and every

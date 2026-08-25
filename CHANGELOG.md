@@ -10,6 +10,58 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.90.2 — a record can be stale under a stamp that says it is current
+
+Registry version: unchanged at `b0abf2819da0`. No script changed, no item moves, no
+verdict moves. One recorded ledger shipped wrong three times over, and the reason
+nothing saw it is the same reason it was cheap to fix.
+
+`tests/census.json` recorded `GO-143` as *Provide Complete WebSite Data for the Site
+Name*. No item has ever carried that title into a release: it was the first of two
+attempts inside 0.89.0, the census was re-recorded while it stood, an independent reader
+called it a promise the item does not keep, and the second title — *Complete Every
+WebSite Node Google Reads for the Site Name* — went into the registry alone.
+`tests/known-issues.json` had the right title throughout, because the probe under the
+`GO-143` entry reads the title out of the registry on every run. Two ledgers disagreed
+with each other and nothing compared them.
+
+**The stamp is where it hid, and the mechanism is worse than a stale copy.** A census
+takes its `registry_version` from the same registry load its titles come from, so the
+two cannot disagree in anything the tool wrote. They disagree in the shipped file:
+`GO-143` under the first title, stamped `b0abf2819da0`, while a registry carrying that
+first title hashes to `872e9c3fd2fc`. So the content was recorded while the first title
+stood and the stamp was moved onto it afterwards — the way a release moves a stamp when
+the registry has changed under a record that costs five audits to re-take. 0.89.0 did
+exactly that to `tests/inert-findings.json` in the same commit, one line,
+`66d1b2037c32` to `b0abf2819da0`, and that record happened to be right.
+
+**The one field the suite read was the one field an edit could set.** That is the
+finding, not the wrong title. The reader that compares contents, `verdict_census.py
+--check`, costs five audits, is not in CI, and is run by hand at the start of a session,
+which is where this surfaced two releases later.
+
+**The cheap half, read by the suite.** Four of a census row's fields — title, severity,
+source, script — are copies of the registry; only the five answers beside them, one per
+served tree, need a run. `test_census.py` re-reads all four in four milliseconds on every
+suite, in both directions, so an item recorded and no longer in the registry and an item
+in the registry and never censused both fail by name; `test_inert_findings.py` does the
+same for the two fields its own record copies. The probe beside the entry re-reads the
+ledgers as they ship and then, once per copied field, a census with that field moved —
+a comparison that has stopped comparing reports zero exactly like a tree that is in step,
+and one moved title witnesses one field of four.
+
+**The expensive half, measured instead of assumed.** The answers were left to a hand-run
+command on the argument that five audits are too much for CI. The five audits are 101
+seconds on a developer machine, which is not too much for anything, so `verdict_census.py
+--check` is now a CI job of its own — no matrix, because what it compares is the tree's
+answers and not the interpreter's. `tests/inert_findings.py --check` is a step in both
+existing jobs at a quarter of a second. Both assert that a record still describes the
+tree; neither asserts that any finding or verdict in it is right, which stays the
+oracle's question and a person's.
+
+The re-taken census differs from the shipped one by that single title, and three
+independent recordings produced byte-identical files, so no verdict moved.
+
 ## 0.90.1 — the branded query is whatever got the most clicks
 
 Registry version: unchanged at `b0abf2819da0`. No code changes, no verdict moves, no

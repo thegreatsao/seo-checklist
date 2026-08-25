@@ -1668,7 +1668,7 @@ name. A column called `url` would be read as "fix this page".
   `MD-184` shape. `WebSite` is what Google reads for the site name in results, its
   documentation lists `name` and `url` as that type's required properties, and those
   two are exactly what `schema_required_props.py` requires. The item now says so:
-  *Provide Complete WebSite Data for the Site Name*. Measured either way — a `WebSite`
+  *Complete Every WebSite Node Google Reads for the Site Name*. Measured either way — a `WebSite`
   with name and url passes, one missing either fails, and the retired markup is
   neither asked for nor penalised.
 
@@ -1941,6 +1941,50 @@ name. A column called `url` would be read as "fix this page".
   `DEFAULT_MAX_REDIRECTS` does not govern these two items: it does not, and the number
   that does had never been looked at.
   <!-- ki: a-loop-past-the-tenth-hop-is-no-loop -->
+
+- **Closed in 0.90.2 — a record can be stale under a stamp that says it is current.**
+  `tests/census.json` shipped `GO-143` as *Provide Complete WebSite Data for the Site
+  Name*, a title no item in this checklist has ever carried into a release. It was the
+  first of two attempts inside 0.89.0: the census was re-recorded while it stood, an
+  independent reader called it a promise the item does not keep — an imperative to
+  publish something reads as a check that it exists, and this item never fails on
+  absence — and the second title went into the registry alone. 0.90.0 and 0.90.1 passed
+  over it. `tests/known-issues.json` had the right title the whole time, because the
+  probe under the `GO-143` entry reads it out of the registry on every run: two ledgers
+  disagreeing with each other, with a reader for neither pair.
+
+  **The stamp is where it hid, and it did not get stale by itself.** A census takes its
+  `registry_version` from the same registry load its titles come from, so nothing the
+  tool writes can hold one from each. The shipped file holds one from each: the first
+  title under `b0abf2819da0`, while a registry carrying that title hashes to
+  `872e9c3fd2fc`. The content was recorded while the first title stood and the stamp was
+  moved onto it afterwards — which is what a release does when the registry has changed
+  under a record that costs five audits to re-take. The same commit did it to
+  `tests/inert-findings.json` on its own, `66d1b2037c32` to `b0abf2819da0`, one line;
+  that record happened to be right.
+
+  **So the one field the suite read was the one field an edit could set**, and that is
+  the finding rather than the wrong title. The reader that compares contents,
+  `verdict_census.py --check`, costs five audits, is not in CI, and is run by hand at the
+  start of a session; that is exactly where this surfaced, two releases late.
+
+  **What was cheap all along.** Four fields of a census row — title, severity, source and
+  script — are copies of the registry, and only the answers beside them need a run.
+  `test_census.py` now re-reads all four against the registry on every suite, and
+  `test_inert_findings.py` does the same for the two fields its record copies. The probe
+  re-reads the ledgers as they ship and then, once per copied field, a census with that
+  field moved: a comparison that has stopped comparing reports zero exactly like a tree
+  that is in step, and one moved title witnesses one field of four.
+
+  **The half that costs a run is read too, because the cost was assumed.** The verdicts
+  beside the copies were left to a hand-run command on the argument that five audits are
+  too much for CI. Measured: 101 seconds for all five trees. `verdict_census.py --check`
+  is a CI job from this release and `tests/inert_findings.py --check` a step in both
+  existing ones, so a recorded ledger that stops describing this tree now fails on the
+  push rather than at the start of somebody's session. Neither says a verdict is right —
+  that is the oracle's question and a person's; they say the record is not lying about
+  what this tree answers.
+  <!-- ki: a-census-copied-a-title-no-item-has -->
 
 ---
 

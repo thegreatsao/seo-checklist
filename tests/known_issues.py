@@ -1072,6 +1072,82 @@ def _the_branded_query_is_whatever_got_the_most_clicks() -> dict:
     }
 
 
+@probe("a_census_copied_a_title_no_item_has")
+def _a_census_copied_a_title_no_item_has() -> dict:
+    """Whether the two recorded ledgers still copy this registry faithfully.
+
+    Both records carry, beside the measurement that cost a run, a handful of fields
+    lifted straight out of the registry, and both stamp themselves with the
+    `registry_version` their tool read at the time. The stamp is where this hid: it
+    comes from the same registry load as the fields beside it, so it cannot drift on
+    its own — and that made it the one field in the file an edit could set, which is
+    the field the suite was reading.
+
+    Counting disagreements is not enough on its own — a comparison that has stopped
+    comparing reports zero exactly like a tree that is in step. So the same reading is
+    made once against the ledgers as they ship, and then once per copied field against
+    a census with that field moved. The first has to be empty and each of the others
+    has to name the row and the field it broke, or the reading is not reading that
+    field. One title moved is not enough to witness four fields being read.
+    """
+    registry = _registry()
+    items = {item["id"]: item for item in registry["items"]}
+
+    def disagreements(rows: dict, fields: tuple[str, ...]) -> list[str]:
+        found = []
+        for item_id, row in sorted(rows.items()):
+            item = items.get(item_id)
+            if item is None:
+                found.append(item_id)
+                continue
+            for field in fields:
+                if field == "script":
+                    registered = (item.get("check") or {}).get("script")
+                else:
+                    registered = item.get(field)
+                if row.get(field) != registered:
+                    found.append(f"{item_id}.{field}")
+        return found
+
+    with open(os.path.join(ROOT, "tests", "census.json"), encoding="utf-8") as stream:
+        census = json.load(stream)
+    with open(os.path.join(ROOT, "tests", "inert-findings.json"),
+              encoding="utf-8") as stream:
+        inert = json.load(stream)
+
+    census_fields = ("title", "severity", "source", "script")
+    # This entry's own subject while it is in the registry, and the first row
+    # otherwise: a probe that raises KeyError on a deleted item reports a crash where
+    # it should report a reading.
+    moved = "GO-143" if "GO-143" in census["items"] else min(census["items"])
+
+    def with_one_field_moved(field: str) -> dict:
+        copy = {k: dict(v) for k, v in census["items"].items()}
+        was = copy[moved][field]
+        # A value of the same kind and not the same value, whatever the field holds:
+        # `script` is None for the items no script answers.
+        copy[moved][field] = (was + ".") if isinstance(was, str) else "moved"
+        return copy
+
+    return {
+        "census_rows": len(census["items"]),
+        "census_fields_read": list(census_fields),
+        "census_rows_that_disagree": disagreements(census["items"], census_fields),
+        "inert_rows": len(inert["items"]),
+        "inert_rows_that_disagree": disagreements(inert["items"],
+                                                  ("title", "script")),
+        "the_row_moved_to_test_the_reading": moved,
+        "the_reading_sees_each_field_move": {
+            field: disagreements(with_one_field_moved(field), census_fields)
+            for field in census_fields
+        },
+        "both_records_stamp_this_registry": [
+            census["registry_version"] == registry["registry_version"],
+            inert["registry_version"] == registry["registry_version"],
+        ],
+    }
+
+
 # ── the file, the record, and the comparison ──────────────────────────────────
 
 def entries_in_the_file(path: str = KNOWN_ISSUES) -> list[dict]:
