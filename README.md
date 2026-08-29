@@ -669,6 +669,39 @@ Two of the three are adapted from MIT-licensed work in
 [Everything Claude Code](https://github.com/affaan-m/ECC); provenance and the
 full notices are in [CREDITS.md](CREDITS.md).
 
+## Carrying the theory to another machine
+
+The registry, the specs, `SKILL.md` and the playbooks can be loaded into a
+NotebookLM notebook and asked questions from any machine. That carries the prose
+half: what a check means, how a verdict is decided, how the report is shaped. It
+does not carry the run — the scripts execute from a clone, and an audit begun on
+one machine is re-run on the other.
+
+The failure mode is specific: **a notebook is a snapshot, and a stale one still
+answers.** It will describe a registry version that no longer exists and give no
+sign it is out of date. `tools/notebook_sync.py` is the check for that.
+
+```bash
+export SEO_NOTEBOOK_ID=<your notebook id>                   # notebooklm list
+python3 skills/seo-checklist/tools/notebook_sync.py check   # exits 1 on drift
+python3 skills/seo-checklist/tools/notebook_sync.py sync    # re-upload what drifted
+```
+
+Each uploaded document carries a `source-sha256` of the repo file it was built
+from. `check` reads that stamp **back out of the notebook** and compares it with
+a hash computed from the clone right now; a ledger kept on the machine that did
+the uploading would agree with itself and prove nothing. Run it before taking on
+checklist work and again after closing it — the repo can move while the work is
+in progress.
+
+Verdicts are `OK`, `STALE` (the notebook holds an older file), `MISSING` (never
+uploaded), `UNSTAMPED` (uploaded by hand, provenance unknown), and `NO-UPSTREAM`
+— the notebook holds a document this clone does not, which usually means it was
+uploaded from a file that was never committed.
+
+Requires [notebooklm-py](https://github.com/teng-lin/notebooklm-py), which drives
+undocumented Google endpoints and is not affiliated with Google.
+
 ## Tests
 
 ```bash
