@@ -89,7 +89,15 @@ def nlm(*args, timeout=600):
 
 
 def sha(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
+    """Hash with line endings normalised.
+
+    Raw bytes are the wrong unit here. `core.autocrlf` rewrites newlines at
+    checkout, so the same commit yields CRLF on one clone and LF on another, and
+    a byte hash would call every one of those files stale on the machine that
+    did not upload it — a gate that cries wolf gets turned off. Normalising is
+    what makes the stamp mean "this content", not "this checkout".
+    """
+    return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
 
 
 def agent_files(repo: Path):
