@@ -695,9 +695,16 @@ checklist work and again after closing it — the repo can move while the work i
 in progress.
 
 Verdicts are `OK`, `STALE` (the notebook holds an older file), `MISSING` (never
-uploaded), `UNSTAMPED` (uploaded by hand, provenance unknown), and `NO-UPSTREAM`
+uploaded), `UNSTAMPED` (uploaded by hand, provenance unknown), `NO-UPSTREAM`
 — the notebook holds a document this clone does not, which usually means it was
-uploaded from a file that was never committed.
+uploaded from a file that was never committed — and `UNREAD`, meaning the copy
+could not be fetched at all.
+
+`UNREAD` is the one that has to stay separate. It is not a finding about the
+document, so `sync` leaves those alone rather than replacing what it failed to
+read; `check` still exits 1, because a gate that cannot see is not a gate that
+says fresh. An expired login ends the run at the first call that reports it,
+instead of becoming one verdict per source and a remedy that deletes them.
 
 Requires [notebooklm-py](https://github.com/teng-lin/notebooklm-py), which drives
 undocumented Google endpoints and is not affiliated with Google.

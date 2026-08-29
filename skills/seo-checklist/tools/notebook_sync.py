@@ -4,8 +4,12 @@ A notebook built from these documents is a *snapshot* of the repo. It keeps
 answering after the repo moves on, and nothing in the answer says so. This
 compares the two and refuses to call a stale notebook fresh.
 
-    check   read-only; exits 1 on any divergence
+    check   read-only; exits 1 on any divergence, and on anything it could not read
     sync    re-uploads only what diverged, then re-checks through the notebook
+
+`sync` never touches a source whose copy could not be read: replacing a document
+because the fetch failed is a remedy for not having looked. An expired session
+ends the run where it is first seen rather than becoming a verdict per source.
 
 The stamp is read back out of the notebook, never from a ledger this script
 keeps itself: a record written here is not evidence of what the notebook holds.
@@ -84,8 +88,26 @@ def resolve_notebook(explicit: str | None) -> str:
     return nb
 
 
+AUTH_DEAD = re.compile(r"Authentication expired or invalid|notebooklm login", re.I)
+AUTH_MESSAGE = (
+    "the notebooklm session has expired or was signed out — run `notebooklm login`.\n"
+    "Stopped at the first call that said so rather than working through the rest: a\n"
+    "run that carries on past a dead session deletes and re-adds against nothing.\n"
+    "Run `check` once logged in to see what the notebook actually holds.")
+
+
 def nlm(*args, timeout=600):
-    return run([CONFIG["cli"], *args, "-n", CONFIG["notebook"]], timeout=timeout)
+    """One CLI call; a dead session ends the run instead of being reported per source.
+
+    An expired cookie fails every call after it. Reported per source it reads as
+    seven documents having gone wrong, and that is the shape that sent `sync` off
+    to delete seven good ones. Ended here it reads as one session having gone
+    wrong, which is what happened.
+    """
+    r = run([CONFIG["cli"], *args, "-n", CONFIG["notebook"]], timeout=timeout)
+    if r.returncode != 0 and AUTH_DEAD.search((r.stderr or "") + (r.stdout or "")):
+        sys.exit(AUTH_MESSAGE)
+    return r
 
 
 def sha(data: bytes) -> str:
@@ -205,8 +227,30 @@ def build(kind: str, target: Path, repo: Path) -> tuple[str, str]:
 
 # ------------------------------------------------------------------ notebook
 
+class Unread:
+    """The notebook's copy could not be read at all.
+
+    Distinct from `None`, which means the copy was read and carries no stamp.
+    Collapsing the two makes a transport failure into a claim about a document —
+    the registry's own REG-8 and the verdict vocabulary's NO_DATA say the same
+    thing about a rule that finds nothing at its path, and this tool was breaking
+    the rule its repo is written to enforce. `sync` acted on the collapsed verdict
+    by deleting and re-adding, so an unreadable notebook was answered by emptying
+    it.
+    """
+
+    __slots__ = ("why",)
+
+    def __init__(self, why: str):
+        self.why = why
+
+
 def notebook_stamps() -> dict:
-    """Ask the notebook what it actually holds: title -> stamp (None if absent)."""
+    """Ask the notebook what it actually holds.
+
+    title -> stamp, or `None` when the copy carries none, or `Unread` when the
+    copy could not be read.
+    """
     r = nlm("source", "list", "--json")
     if r.returncode != 0:
         sys.exit("source list failed:\n" + (r.stderr or r.stdout))
@@ -218,7 +262,9 @@ def notebook_stamps() -> dict:
             dst = Path(td) / (s["id"] + ".txt")
             g = nlm("source", "fulltext", s["id"], "-o", str(dst), "--force")
             if g.returncode != 0 or not dst.exists():
-                out[s["title"]] = None
+                out[s["title"]] = Unread(
+                    (g.stderr or g.stdout or "no output").strip().splitlines()[0][:120]
+                    if (g.stderr or g.stdout) else "the copy came back empty")
                 continue
             # Strip every separator: extraction may wrap or space out the hex.
             blob = re.sub(r"[^0-9a-zA-Z]", "",
@@ -254,6 +300,8 @@ def do_check(repo: Path):
         got = live.get(title)
         if title not in live:
             verdict, why = "MISSING", "not in the notebook"
+        elif isinstance(got, Unread):
+            verdict, why = "UNREAD", "could not read the notebook's copy: %s" % got.why
         elif got is None:
             verdict, why = "UNSTAMPED", "notebook copy carries no stamp"
         elif got != want:
@@ -287,13 +335,28 @@ def do_sync(repo: Path) -> int:
             if verdict == "NO-UPSTREAM":
                 print("  skipped  %s: nothing in the clone to upload" % title)
                 continue
+            if verdict == "UNREAD":
+                # Nothing is known about this copy, so replacing it would be a
+                # remedy for a failure to look. The verdict stands and `check`
+                # still exits 1; a human decides after reading why.
+                print("  skipped  %s: its copy could not be read, so there is "
+                      "nothing to conclude about it" % title)
+                continue
             kind, target = spec[title]
             text, stamp = build(kind, target, repo)
             safe = re.sub(r"[^A-Za-z0-9]+", "-", title).strip("-").lower()
             path = Path(td) / (safe + ".md")
             path.write_text(text, encoding="utf-8", newline="\n")
             if verdict != "MISSING":
-                nlm("source", "delete-by-title", title, "--yes")
+                # Checked, because an unchecked delete followed by an add leaves
+                # two sources under one title when it fails, and the notebook
+                # then answers from whichever it likes.
+                d = nlm("source", "delete-by-title", title, "--yes")
+                if d.returncode != 0:
+                    print("  FAILED   %s: the old copy could not be removed, so the "
+                          "new one was not added: %s"
+                          % (title, (d.stderr or d.stdout).strip()[:160]))
+                    continue
             r = nlm("source", "add", str(path), "--type", "file", "--timeout", "300")
             if r.returncode != 0:
                 print("  FAILED   %s: %s" % (title, (r.stderr or r.stdout).strip()[:200]))
