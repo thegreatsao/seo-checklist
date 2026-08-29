@@ -6,7 +6,8 @@ what a verdict means (C1–C5 of the capability inventory).
 
 This document is normative and is written as though no code existed. Where the
 implementation disagrees, the implementation is presumed wrong until this document is
-changed by argument. Appendix A records disagreements measured on 26 August 2026.
+changed by argument. Appendix A records disagreements measured on 26 August 2026, one of
+them corrected on the 29th.
 
 Every requirement carries a **Reader** line naming what makes it fail when violated;
 Appendix B is the census of those lines. A requirement whose reader is `none` is an
@@ -101,12 +102,17 @@ The values in §2.1 are exhaustive. A new value is a change to this document fir
 **Why:** every consumer switches on these fields. An unknown `source` or `requires`
 silently falls through to a default, and the item is then decided by whichever branch
 happens to catch it.
-**Reader:** enforced for four of the five. `test_every_item_has_the_required_fields`
+**Reader:** partial — enforced for four of the five.
+`test_every_item_has_the_required_fields`
 asserts membership in `VALID_SEVERITY`, `VALID_SOURCES` and `VALID_EFFORT`, and
 `test_script_items_are_fully_specified` asserts it for `VALID_REQUIRES`. An unrecognised
 value in any of those four fails today. Only `lens` is unpinned as a vocabulary:
 `test_every_llm_item_has_a_lens` requires the field to exist on a model-judged item and
-does not constrain what it says.
+does not constrain what it says. There is no `VALID_LENS` beside the other four sets, and
+the four lens names that appear elsewhere in the tests are written as literals rather than
+read from the registry, so an item declaring a fifth lens builds, ships and scores. One
+vocabulary of five unheld is what puts this requirement in `partial` rather than
+`enforced`, by the rule this document applies to REG-1.
 
 ### REG-4 — ids are stable, unique, and never re-used
 
@@ -153,6 +159,9 @@ search-engine index its title names.
 ### REG-7 — the assertion language is closed, and every operator in it is specified
 
 A rule is a path, **exactly one** operator, and optionally a field and a `missing_is`.
+`assert`, `warn` and `applies_when` are all rules in this sense: one vocabulary, one
+evaluator, one test policing which operators may be named. A count of operator usage
+that reads only `assert` undercounts the language, and Appendix A.4 made that mistake.
 Two operators in one rule are an error, not a conjunction: the evaluator applies the
 first branch that matches and the second is silently discarded, so the rule means
 whichever the implementation happens to check first. Operators are enumerated in this
@@ -160,7 +169,7 @@ document. An operator the language implements but no item uses is either specifi
 or removed from the language.
 
 **Why:** the first item written against an unused operator inherits whatever semantics
-were never defended. Two of the five unused ones are already surprising: one inspects
+were never defended. Two of the four unused ones are already surprising: one inspects
 only the first matched text, the other stringifies its value before matching.
 **Reader:** partial, and thinner than it looks. `test_a_rule_does_more_than_name_a_path`
 requires *at least* one operator and `test_assert_rules_use_operators_the_runner_implements`
@@ -254,7 +263,11 @@ profile does it.
 ## 4. Invariants
 
 * **INV-R1** — `item_count` equals the number of items, and `registry_version` changes
-  if and only if an item changes. *Reader: enforced.*
+  if and only if an item changes. *Reader: partial* — `test_registry_is_versioned` pins
+  the count and the field's presence; the *if and only if* is held by REG-2's byte
+  comparison, not by any reader of this invariant. It read `enforced` while REG-1 called
+  the same fact `partial`, which is one document giving one fact two verdicts two
+  sections apart.
 * **INV-R2** — every script an item names exists, and every script the registry runs is
   described in the output-shape contract. *Reader: enforced —
   `test_every_referenced_script_exists`, `test_every_script_the_registry_runs_is_documented`.*
@@ -296,6 +309,9 @@ What would settle it: deciding whether provenance belongs in the id at all, give
 ## Appendix A — measured disagreements, 26 August 2026
 
 Observation, not specification. Measured at commit `11e3899`, registry `b0abf2819da0`.
+A.4 was re-measured on 29 August 2026 at commit `2a5b549` over the same registry version
+and corrected; the rest stands as first measured, and the distributions in §2.1 were
+re-derived from the artifact on the same day and agree.
 
 ### A.1 — the registry misstates its own composition
 
@@ -354,24 +370,31 @@ gate reads for a different purpose entirely — and nothing reads it as the admi
 measure what their titles ask. Their problem is applicability (REG-9), not aboutness, and
 conflating the two would have sent the repair to the wrong place.
 
-### A.4 — five operators are implemented and unused
+### A.4 — four operators are implemented and unused
 
-`ne`, `gt`, `between`, `contains`, `matches`. No item uses any of them. `contains`
+`ne`, `between`, `contains`, `matches`. No item uses any of them. `contains`
 inspects only the first matched text and `matches` stringifies its value before matching
 — semantics no item has had to defend.
+
+`gt` reads as a fifth and is not one. MB-102 and MD-190 use it, in their `applies_when`
+conditions rather than in an `assert` — the same vocabulary, the same evaluator, the same
+test. Removing it as unused would take with it the only two applicability declarations in
+the registry, which is the thing REG-9 wants seventeen more of. The count was taken over
+`assert` blocks alone, which is why it read five; REG-7 now says what a rule is so the
+next count is taken over all three.
 
 ## Appendix B — how much of this document is enforced
 
 | | requirements |
 |---|---|
-| **enforced** | REG-2, REG-3, REG-5, REG-10, REG-11 |
-| **partial** | REG-1, REG-4, REG-6, REG-7, REG-8, REG-13 |
+| **enforced** | REG-2, REG-5, REG-10, REG-11 |
+| **partial** | REG-1, REG-3, REG-4, REG-6, REG-7, REG-8, REG-13 |
 | **none** | REG-12 |
 | **opposed** | REG-9 |
 
-Invariants: INV-R1 and INV-R2 enforced; INV-R3 and INV-R4 partial.
+Invariants: INV-R2 enforced; INV-R1, INV-R3 and INV-R4 partial.
 
-**Five enforced, six partial, one unread, one opposed, of thirteen.**
+**Four enforced, seven partial, one unread, one opposed, of thirteen.**
 
 `opposed` is a fourth category this document introduces, and it earns its place: REG-9's
 reader does not merely fail to protect the requirement, it fires when the requirement is
@@ -380,9 +403,12 @@ the seventeen owed ones impossible to add without changing it. An unread require
 unprotected; an opposed one is barricaded, and the distinction changes what the closing
 release has to do first.
 
-This is the best-governed capability in the suite so far, and the shape of what remains
-is consistent: the readers cover *structure* — that a field exists, that a value is in a
-vocabulary, that a script exists, that a duplicate is ruled on — and stop at *meaning*.
+An earlier draft called this the best-governed capability in the suite, and the census
+does not support it: `verdicts/` has nine of seventeen enforced against four of thirteen
+here. What is distinctive about this document is not its coverage but the shape of what
+remains, and the shape is consistent: the readers cover *structure* — that a field
+exists, that a value is in a vocabulary, that a script exists, that a duplicate is ruled
+on — and stop at *meaning*.
 Nothing checks that an item measures its title, that an applicability declaration is
 owed, or that the registry's account of itself is true. Nine items answer a question
 other than the one they name, and every gate stays green.
