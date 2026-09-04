@@ -221,8 +221,17 @@ Two denominators exist and must not be confused:
 
 **Why:** the audit's reach must not improve by failing to answer. An item nobody could
 answer is still owed; an item that does not apply is not.
-**Reader:** enforced for the status routing, by the same unit tests as VRD-6 plus the
-coverage-stability test.
+**Reader:** enforced. Measured by mutation on 29 August 2026, in all five directions this
+requirement names: dropping `NO_DATA`, `NEEDS_INPUT`, `MANUAL` or `LLM_PENDING` out of the
+applicable set reddens three, one, two and one test respectively, and keeping `N/A` in it
+reddens two. The readers are the same unit tests as VRD-6, plus the coverage-stability
+test.
+
+An earlier draft read "enforced for the status routing", and `tests/test_specs.py` was
+right to object to that shape even though the classification turned out to be correct: a
+qualifier welded to a classification word claims less than the word alone, and nothing in
+the document said which was meant. The probe settled it. The qualifier is gone because it
+described the evidence rather than the claim.
 
 ### VRD-8 — a status is derived from structured output, never from prose
 
