@@ -22,6 +22,7 @@ import io
 import json
 import os
 import sys
+import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -120,14 +121,14 @@ class StampsSeparateTwoKindsOfSilence(unittest.TestCase):
 class CheckReportsWhatItCouldNotRead(unittest.TestCase):
 
     def check(self, cli, manifest):
-        old_nlm, old_manifest = N.nlm, N.MANIFEST
-        N.nlm, N.MANIFEST = cli, manifest
+        old_nlm, old_manifest = N.nlm, N.manifest
+        N.nlm, N.manifest = cli, lambda repo: manifest
         try:
             with redirect_stdout(io.StringIO()) as buf:
                 drift = N.do_check(REPO)
             return drift, buf.getvalue()
         finally:
-            N.nlm, N.MANIFEST = old_nlm, old_manifest
+            N.nlm, N.manifest = old_nlm, old_manifest
 
     def test_an_unreadable_copy_is_unread_rather_than_unstamped(self):
         manifest = [("README - project overview", "file", Path("README.md"))]
@@ -150,14 +151,14 @@ class CheckReportsWhatItCouldNotRead(unittest.TestCase):
 class SyncDoesNotRemedyAFailureToLook(unittest.TestCase):
 
     def sync(self, cli, manifest):
-        old_nlm, old_manifest = N.nlm, N.MANIFEST
-        N.nlm, N.MANIFEST = cli, manifest
+        old_nlm, old_manifest = N.nlm, N.manifest
+        N.nlm, N.manifest = cli, lambda repo: manifest
         try:
             with redirect_stdout(io.StringIO()) as buf:
                 code = N.do_sync(REPO)
             return code, buf.getvalue()
         finally:
-            N.nlm, N.MANIFEST = old_nlm, old_manifest
+            N.nlm, N.manifest = old_nlm, old_manifest
 
     def test_an_unread_source_is_never_deleted(self):
         manifest = [("README - project overview", "file", Path("README.md"))]
@@ -189,6 +190,47 @@ class SyncDoesNotRemedyAFailureToLook(unittest.TestCase):
         self.assertNotIn("source add", cli.verbs(),
                          "a second copy was added under a title still held by the first")
         self.assertIn("FAILED", printed)
+
+
+class TheSpecsAreDerivedRatherThanListed(unittest.TestCase):
+    """A hand-kept list cannot say what is missing from it.
+
+    Three specs were three literals in this tool. The fourth, `specs/declarations/`,
+    would have reached the notebook only once somebody remembered to add a line — and
+    the reader that would have noticed the omission was the same line. That is the
+    defect `specs/declarations/` itself specifies as DEC-6, in the manifest it is about.
+    """
+
+    def test_every_spec_in_the_tree_is_in_the_manifest(self):
+        on_disk = {p.parent.name for p in (REPO / "specs").glob("*/spec.md")}
+        self.assertTrue(on_disk, "no specs found; this test would pass on nothing")
+        listed = {t[len("Spec - "):] for t, _, _ in N.manifest(REPO)
+                  if t.startswith("Spec - ")}
+        self.assertEqual(listed, on_disk)
+
+    def test_a_new_spec_needs_no_edit_to_this_tool(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            for name in ("registry", "brand-new"):
+                (repo / "specs" / name).mkdir(parents=True)
+                (repo / "specs" / name / "spec.md").write_text("x", encoding="utf-8")
+            titles = [t for t, _, _ in N.manifest(repo) if t.startswith("Spec - ")]
+        self.assertEqual(titles, ["Spec - brand-new", "Spec - registry"])
+
+    def test_the_existing_three_keep_the_titles_the_notebook_knows_them_by(self):
+        """Title is a source's identity inside the notebook. A renamed spec uploads as
+        a new source and leaves the old one behind, named by no manifest entry and so
+        invisible to `check` — which is worse than the stale copy it replaced."""
+        titles = {t for t, _, _ in N.manifest(REPO)}
+        for known in ("Spec - registry", "Spec - scoring", "Spec - verdicts"):
+            self.assertIn(known, titles)
+
+    def test_a_spec_path_is_relative_to_the_repo_it_was_derived_from(self):
+        """`--repo` points the tool at another clone; an absolute path taken from this
+        one would read the wrong tree while reporting the right title."""
+        for title, _kind, target in N.manifest(REPO):
+            if title.startswith("Spec - "):
+                self.assertFalse(Path(target).is_absolute(), title)
 
 
 class ADeadSessionEndsTheRun(unittest.TestCase):
