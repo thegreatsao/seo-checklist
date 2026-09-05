@@ -133,11 +133,19 @@ on disk.
 **Why:** an operator auditing a client's site from that client's directory must not have
 their own credentials silently replaced by a `.env` the client shipped. "First hit wins" is
 only safe if the first place looked is the one the operator controls most directly.
-**Reader:** **none.** The order is stated in prose in two places — the credential finder
-and the environment loader's docstring, which lists four sources and says the real shell
-environment always wins — and asserted by nothing. Neither function is named in any test
-function. A reordering that put a repository `.env` above the process environment would
-pass the suite and change which key a run uses.
+**Reader:** enforced. `test_a_shipped_env_file_cannot_replace_the_operators_own_key`
+constructs the exact harm the paragraph above names — a client's `.env` in the directory
+the operator is audited from, against the operator's own exported key — and
+`test_a_file_supplies_only_what_the_shell_left_unset` holds the other side, since
+outranking is not ignoring. `test_the_working_directory_is_searched_before_the_shared
+_defaults` pins the file order and `test_the_key_search_prefers_the_flag_then_the
+_environment_then_disk` pins the finder's, with
+`test_a_named_key_that_does_not_exist_is_skipped_rather_than_returned` covering the case
+where a named path is a lie.
+
+Probed twice, on 5 September 2026, with both reorderings this line said would pass the
+suite: letting a `.env` overwrite an exported key, and putting the environment ahead of the
+flag. Each reddens.
 
 ### INP-7 — key material never reaches a written artifact; paths may
 
@@ -182,8 +190,18 @@ the score.
 **Why:** they are not verdicts about the site. Scoring them would make the number move with
 somebody else's index rather than with the site, and a client's score would change while
 they changed nothing.
-**Reader:** **none.** The carrying and the printing are implemented; nothing asserts that
-the opportunities stay out of the score, and nothing asserts they are printed at all.
+**Reader:** enforced, in both halves.
+`test_the_score_counts_items_and_knows_nothing_of_opportunities` asserts the registry
+partition still sums to the item count with opportunities present — an opportunity that
+leaked into a row would break that sum — and this had to be written over the partition
+rather than by comparing two scoring calls, because `score` takes items and handing it the
+same items twice proves nothing. `test_the_opportunities_are_printed_where_the_score_is_not`
+holds the "reported" half through `opportunity_section`, one of the six report sections
+[`specs/reporting/`](../reporting/spec.md) A.1 records at zero test functions, and asserts
+that an absent list prints nothing rather than an empty heading.
+`test_the_opportunities_are_lifted_out_of_the_payload` and
+`test_a_run_without_search_console_carries_an_empty_list_not_a_missing_key` cover the
+carrying.
 
 ### INP-10 — the public suffix list is bundled, dated, and announces its own decay
 
@@ -311,19 +329,28 @@ the one `specs/evidence/` A.4 states: a test can exercise something without nami
 
 | | requirements |
 |---|---|
-| **enforced** | INP-1, INP-4 |
+| **enforced** | INP-1, INP-4, INP-6, INP-9 |
 | **partial** | INP-2, INP-7, INP-8, INP-10 |
-| **none** | INP-3, INP-5, INP-6, INP-9 |
+| **none** | INP-3, INP-5 |
 | **opposed** | — none |
 
 Invariants: INV-I3 enforced; INV-I1 and INV-I2 partial; INV-I4 unread.
 
-**Two enforced, four partial, four unread, of ten.**
+**Four enforced, four partial, two unread, of ten.**
 
-The split falls along one line, and it is not the line effort would predict. Both enforced
-requirements are about a *file* — is it about this page, is it applied to the right page.
-Every unread one is about a *policy*: how old is too old, which credential wins, what may
+The split fell along one line, and it was not the line effort would predict. Both enforced
+requirements were about a *file* — is it about this page, is it applied to the right page.
+Every unread one was about a *policy*: how old is too old, which credential wins, what may
 be scored, what counts as field data.
+
+Two of those four policies were decided and read on 5 September 2026, and the observation
+below is what made them cheap rather than what made them hard. A policy has no artifact to
+construct, so the test has to assert an ordering or an absence — and once that is said out
+loud, the tests write themselves: for INP-6 an ordering, asserted by constructing the
+collision the requirement was written about, and for INP-9 an absence, asserted over the
+partition sum rather than over the number. What was missing was never the technique. It was
+somebody deciding that the current answer is the intended one, which is what a normative
+document is.
 
 INP-7 straddles the line and is the clearest case of it. Removing secrets from a payload is
 file-shaped, and it is enforced from five directions. Deciding *which* keys are secret is

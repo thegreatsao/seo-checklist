@@ -158,10 +158,13 @@ The fold is by the invocation, never by the item.
 numbers, and REG-11 rules on which twin carries the weight. Running the script twice
 doubles the cost of every audit and creates the possibility of two answers to one
 question — which the report has no way to show.
-**Reader:** **none.** No test gives two items the same script and arguments and asserts one
-plan entry, nor gives two items the same script with different arguments and asserts two.
-The two assertions on plan size in the suite are both single-item cases and demonstrate
-nothing about folding.
+**Reader:** enforced. `test_two_items_with_one_invocation_run_it_once` asserts one plan
+entry carrying both ids; `test_the_same_script_with_different_arguments_is_two_invocations`
+asserts two, which is what makes the first mean anything — a fold keyed on the script alone
+would satisfy it while silently dropping an argument; and
+`test_the_fold_is_by_invocation_and_not_by_item` puts three items across two invocations so
+the sharing is by what is run rather than by adjacency. Probed by keying the plan on the
+script alone: two of the three redden.
 
 ### RUN-5 — a missing input names its flag; a refused input says why it was refused
 
@@ -440,8 +443,18 @@ reports `NEEDS_INPUT`.
 changes nothing. Today the precedence exists — it is whatever sequence of `if` statements
 the run performs — and it is nowhere stated, so nobody can tell an intended order from an
 emergent one, and any reordering of the code silently reclassifies items.
-**Reader:** **none.** Nothing constructs an item with two applicable refusals and asserts
-which one is reported.
+**Reader:** enforced. Four tests, one per pair and one floor:
+`test_scope_beats_capability` — both answer `N/A`, so the reason is the discriminator and a
+profile exclusion may not be reported as a mode gap; `test_scope_beats_a_missing_input` and
+`test_capability_beats_a_missing_input` — an item nobody was going to ask, and an item no
+credential would help, are `N/A` rather than a to-do nobody can do; and
+`test_an_item_that_is_in_scope_and_answerable_is_the_only_one_asked_for_input`, without
+which all three would pass on an implementation that answered `N/A` to everything.
+
+Probed by making the profile skip stop short-circuiting, so scope is applied last instead
+of first: an excluded item comes back `NEEDS_INPUT`, and a profile exclusion is relabelled
+"needs 'crawl'; not available in archive mode". That is the silent reclassification the
+requirement was written about, and it now costs two red tests.
 
 ## 4. Invariants
 
@@ -655,14 +668,14 @@ requests, even though the suite does not).
 
 | | requirements |
 |---|---|
-| **enforced** | RUN-1, RUN-9, RUN-10, RUN-11, RUN-12, RUN-16 |
+| **enforced** | RUN-1, RUN-4, RUN-9, RUN-10, RUN-11, RUN-12, RUN-16, RUN-20 |
 | **partial** | RUN-2, RUN-5, RUN-6, RUN-7, RUN-8, RUN-13, RUN-14, RUN-15, RUN-17, RUN-18, RUN-19 |
-| **none** | RUN-3, RUN-4, RUN-20 |
+| **none** | RUN-3 |
 | **opposed** | — none |
 
 Invariants: INV-L1 enforced; INV-L2, INV-L3 and INV-L4 partial.
 
-**Six enforced, eleven partial, three unread, of twenty.**
+**Eight enforced, eleven partial, one unread, of twenty.**
 
 The shape is different from the documents before it. `verdicts/` and `registry/` are unread
 where they make *claims about meaning*; this document is unread where it makes claims about

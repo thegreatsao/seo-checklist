@@ -72,8 +72,8 @@
     },
     "inputs": {
       "counts": {
-        "enforced": 2,
-        "none": 4,
+        "enforced": 4,
+        "none": 2,
         "opposed": 0,
         "partial": 4
       },
@@ -81,9 +81,7 @@
       "requirements": 10,
       "unread": [
         "INP-3",
-        "INP-5",
-        "INP-6",
-        "INP-9"
+        "INP-5"
       ]
     },
     "operator-protocol": {
@@ -132,17 +130,15 @@
     },
     "run-lifecycle": {
       "counts": {
-        "enforced": 6,
-        "none": 3,
+        "enforced": 8,
+        "none": 1,
         "opposed": 0,
         "partial": 11
       },
       "opposed": [],
       "requirements": 20,
       "unread": [
-        "RUN-20",
-        "RUN-3",
-        "RUN-4"
+        "RUN-3"
       ]
     },
     "scoring": {
@@ -174,8 +170,8 @@
     }
   },
   "totals": {
-    "enforced": 43,
-    "none": 26,
+    "enforced": 47,
+    "none": 22,
     "opposed": 2,
     "partial": 78,
     "requirements": 149

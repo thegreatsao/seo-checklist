@@ -2052,6 +2052,253 @@ class TheModeTableIsTheContract(unittest.TestCase):
                         "second gate is describing nothing")
 
 
+class OneInvocationIsOneExecution(unittest.TestCase):
+    """`specs/run-lifecycle/` RUN-4. The registry asks some questions twice under
+    different source numbers on purpose, and REG-11 rules on which twin carries the
+    weight. Running the script twice doubles the cost of every audit and creates the
+    possibility of two answers to one question, which the report has no way to show.
+
+    Nothing held it: the two assertions on plan size in the suite were both single-item
+    cases, which demonstrate nothing about folding.
+    """
+
+    def item(self, item_id, *args):
+        return {"id": item_id, "severity": "high", "source": "script",
+                "check": {"script": "s.py", "requires": "offline", "args": list(args),
+                          "assert": {"path": "a", "op": "eq", "value": 1}}}
+
+    def plan_for(self, *items):
+        plan, skipped = build_plan(list(items), {}, {"offline"}, "archive")
+        self.assertEqual(skipped, {})
+        return plan
+
+    def test_two_items_with_one_invocation_run_it_once(self):
+        plan = self.plan_for(self.item("A-001"), self.item("B-002"))
+        self.assertEqual(len(plan), 1)
+        self.assertEqual(sorted(next(iter(plan.values()))), ["A-001", "B-002"])
+
+    def test_the_same_script_with_different_arguments_is_two_invocations(self):
+        """The other side, and the one that makes the first meaningful: a fold keyed on
+        the script alone would pass the test above and silently drop an argument."""
+        plan = self.plan_for(self.item("A-001", "--deep"), self.item("B-002"))
+        self.assertEqual(len(plan), 2)
+        self.assertEqual(sorted(ids[0] for ids in plan.values()), ["A-001", "B-002"])
+
+    def test_the_fold_is_by_invocation_and_not_by_item(self):
+        """Three items, two distinct invocations, and the item that shares goes with
+        the one it matches rather than with the one next to it."""
+        plan = self.plan_for(self.item("A-001", "--deep"), self.item("B-002"),
+                             self.item("C-003", "--deep"))
+        self.assertEqual(sorted(sorted(v) for v in plan.values()),
+                         [["A-001", "C-003"], ["B-002"]])
+
+
+class TwoRefusalsHaveAStatedOrder(unittest.TestCase):
+    """`specs/run-lifecycle/` RUN-20: scope before capability, capability before input.
+
+    An item can be refused twice over, exactly one reason reaches the report, and the
+    status names who can act — so the wrong one sends a reader to work that changes
+    nothing. The precedence existed as whatever sequence of `if` statements the run
+    performed, and nothing constructed an item with two applicable refusals to see
+    which reason came out. Any reordering of the code reclassified items in silence.
+    """
+
+    def item(self, requires="crawl", arg="{server_log}"):
+        return {"id": "X-001", "severity": "high", "source": "script",
+                "check": {"script": "s.py", "requires": requires, "args": [arg],
+                          "assert": {"path": "a", "op": "eq", "value": 1}}}
+
+    def test_scope_beats_capability(self):
+        """Both answer N/A, so the reason is what distinguishes them: a profile
+        exclusion must not be reported as a mode gap."""
+        _, skipped = build_plan([self.item(requires="crawl")], {}, {"offline"},
+                                "archive",
+                                preskip={"X-001": (NA, "excluded by the local profile")})
+        self.assertEqual(skipped["X-001"][0], NA)
+        self.assertIn("profile", skipped["X-001"][1])
+        self.assertNotIn("archive mode", skipped["X-001"][1])
+
+    def test_scope_beats_a_missing_input(self):
+        _, skipped = build_plan([self.item(requires="offline")], {}, {"offline"},
+                                "archive",
+                                preskip={"X-001": (NA, "excluded by the local profile")},
+                                rejected={"server_log": "the log is for another site"})
+        self.assertEqual(skipped["X-001"][0], NA,
+                         "an item nobody was going to ask cannot be waiting on input")
+
+    def test_capability_beats_a_missing_input(self):
+        """Supplying the credential would not help, so `NEEDS_INPUT` would be a
+        to-do item that cannot be done."""
+        _, skipped = build_plan([self.item(requires="crawl")], {}, {"offline"},
+                                "archive",
+                                rejected={"server_log": "the log is for another site"})
+        self.assertEqual(skipped["X-001"][0], NA)
+        self.assertIn("crawl", skipped["X-001"][1])
+
+    def test_an_item_that_is_in_scope_and_answerable_is_the_only_one_asked_for_input(self):
+        """The floor under the three above: without this they would all pass on an
+        implementation that answered N/A to everything."""
+        _, skipped = build_plan([self.item(requires="offline")], {}, {"offline"},
+                                "archive",
+                                rejected={"server_log": "the log is for another site"})
+        self.assertEqual(skipped["X-001"][0], NEEDS_INPUT)
+
+
+class CredentialDiscoveryIsAnOrderedContract(unittest.TestCase):
+    """`specs/inputs/` INP-6. The order was stated in prose in two places and asserted
+    by nothing; neither function was named in any test. A reordering that put a
+    repository `.env` above the process environment would have passed the suite and
+    changed which key a run uses.
+
+    The harm the requirement names is specific: an operator auditing a client's site
+    from that client's directory must not have their own credentials silently replaced
+    by a `.env` the client shipped. That is `test_a_shipped_env_file_cannot_replace_the
+    _operators_own_key`, and it is the reason "first hit wins" is only safe when the
+    first place looked is the one the operator controls most directly.
+    """
+
+    def setUp(self):
+        sys.path.insert(0, SCRIPTS)
+        import env_loader
+        self.loader = env_loader
+        self.saved = dict(os.environ)
+        self.addCleanup(self.restore)
+
+    def restore(self):
+        os.environ.clear()
+        os.environ.update(self.saved)
+        self.loader._LOADED = False
+        self.loader._LOADED_FROM = []
+
+    def write(self, directory, **pairs):
+        path = os.path.join(directory, ".env")
+        with open(path, "w", encoding="utf-8") as stream:
+            for key, value in pairs.items():
+                stream.write(f"{key}={value}\n")
+        return path
+
+    def test_a_shipped_env_file_cannot_replace_the_operators_own_key(self):
+        work = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, work, True)
+        self.write(work, PAGESPEED_API_KEY="the-clients-key")
+        os.environ["PAGESPEED_API_KEY"] = "the-operators-key"
+        here = os.getcwd()
+        self.addCleanup(os.chdir, here)
+        os.chdir(work)
+        self.loader.load_env(force=True)
+        self.assertEqual(os.environ["PAGESPEED_API_KEY"], "the-operators-key")
+
+    def test_a_file_supplies_only_what_the_shell_left_unset(self):
+        """The other half: outranking is not ignoring."""
+        work = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, work, True)
+        self.write(work, SEO_TEST_UNSET_KEY="from-the-file")
+        os.environ.pop("SEO_TEST_UNSET_KEY", None)
+        here = os.getcwd()
+        self.addCleanup(os.chdir, here)
+        os.chdir(work)
+        self.loader.load_env(force=True)
+        self.assertEqual(os.environ["SEO_TEST_UNSET_KEY"], "from-the-file")
+
+    def test_the_working_directory_is_searched_before_the_shared_defaults(self):
+        """The invocation directory is the one the operator chose deliberately."""
+        here = os.getcwd()
+        self.addCleanup(os.chdir, here)
+        work = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, work, True)
+        os.chdir(work)
+        found = [str(p) for p in self.loader._candidate_paths()]
+        self.assertEqual(os.path.dirname(found[0]), os.path.realpath(work))
+        self.assertGreaterEqual(len(found), 2,
+                                "the shared defaults are gone, so nothing is ordered")
+
+    def test_the_key_search_prefers_the_flag_then_the_environment_then_disk(self):
+        """`find_gsc_credentials` is the second half of the contract, and its order is
+        the same shape: what the operator said on this run, then what their shell says,
+        then whatever happens to be on the machine."""
+        work = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, work, True)
+        flag = os.path.join(work, "flag.json")
+        env = os.path.join(work, "env.json")
+        older = os.path.join(work, "older.json")
+        for path in (flag, env, older):
+            with open(path, "w", encoding="utf-8") as stream:
+                stream.write("{}")
+        os.environ["GSC_CREDENTIALS_PATH"] = env
+        os.environ["GV_SA_KEY"] = older
+        self.assertEqual(runner.find_gsc_credentials(flag), flag)
+        self.assertEqual(runner.find_gsc_credentials(""), env)
+        os.environ.pop("GSC_CREDENTIALS_PATH")
+        self.assertEqual(runner.find_gsc_credentials(""), older)
+
+    def test_a_named_key_that_does_not_exist_is_skipped_rather_than_returned(self):
+        """Returning a path to nothing would turn a missing credential into a crash
+        deep in a checker instead of a NEEDS_INPUT the operator can act on."""
+        os.environ["GSC_CREDENTIALS_PATH"] = os.path.join(tempfile.gettempdir(),
+                                                          "definitely-absent.json")
+        os.environ.pop("GV_SA_KEY", None)
+        self.assertEqual(runner.find_gsc_credentials(""), "")
+
+
+class OpportunitiesAreCarriedAndNeverScored(unittest.TestCase):
+    """`specs/inputs/` INP-9. Search Console's opportunities are work a person can do
+    and are not verdicts about the site. Scoring them would make a client's number move
+    with somebody else's index while they changed nothing — which is what `GO-134` did
+    for four releases, reporting "position 4.0, within striking distance" as a `high`
+    failure ranked first in the fix list.
+
+    Both halves were unread: nothing asserted the opportunities stay out of the score,
+    and nothing asserted they are carried at all.
+    """
+
+    PAYLOAD = {("gsc_checker.py", ()): {
+        "opportunities": [{"type": "striking_distance", "query": "cinnamon buns",
+                           "position": 4.0, "impressions": 115,
+                           "finding": "Position 4.0 with 115 impressions",
+                           "fix": "strengthen the page for this query"},
+                          "not a dict, and dropped"],
+        "issues": []}}
+
+    def test_the_opportunities_are_lifted_out_of_the_payload(self):
+        found = runner.gsc_opportunities(self.PAYLOAD)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0]["query"], "cinnamon buns")
+
+    def test_a_run_without_search_console_carries_an_empty_list_not_a_missing_key(self):
+        self.assertEqual(runner.gsc_opportunities({}), [])
+
+    def row(self, item_id, status):
+        return {"id": item_id, "title": item_id, "category": "content",
+                "category_label": "Content", "severity": "high", "effort": "low",
+                "status": status, "evidence": "", "fix": ""}
+
+    def test_the_score_counts_items_and_knows_nothing_of_opportunities(self):
+        """The requirement itself, and it has to be asserted over the partition rather
+        than over two equal calls: `score` takes items, so handing it the same items
+        twice proves nothing. What proves it is that the registry partition sums to the
+        item count with fourteen opportunities in the run — an opportunity that leaked
+        into any row would break that sum."""
+        rows = [self.row("A", PASS), self.row("B", FAIL)]
+        scored = runner.score(rows)
+        self.assertEqual(scored["total_items"], len(rows))
+        self.assertEqual(sum(scored["partition"].values()), len(rows))
+        self.assertNotIn("opportunit", json.dumps(scored))
+
+    def test_the_opportunities_are_printed_where_the_score_is_not(self):
+        """The other half of the requirement — "reported" — and `opportunity_section`
+        was one of the six report sections `specs/reporting/` A.1 records at zero test
+        functions."""
+        data = {"url": "https://example.com/", "mode": "live", "profile": "default",
+                "registry_version": "test", "runs": {},
+                "items": [self.row("A", PASS)],
+                "gsc_opportunities": runner.gsc_opportunities(self.PAYLOAD)}
+        data["scores"] = runner.score(data["items"])
+        printed = chr(10).join(report.opportunity_section(data))
+        self.assertIn("cinnamon buns", printed)
+        self.assertEqual(report.opportunity_section(dict(data, gsc_opportunities=[])),
+                         [], "an absent list must print nothing, not an empty heading")
+
+
 class NetworkOptIns(unittest.TestCase):
     def test_return_tags_are_verified_in_both_network_modes(self):
         for mode in ("live", "page"):
