@@ -1,5 +1,12 @@
 # History — what two runs of the same site may be said to show
 
+## Purpose
+
+The stored record of past runs, the comparison between the current run and its
+predecessor, and the trend across a series — C36 of the capability inventory. This
+capability decides what two audits of one site may be said to show, which is the
+claim a client acts on and the one the tool is least entitled to make.
+
 **Capability:** the stored record of past runs, the comparison between the current run and
 its predecessor, and the trend across a series (C36 of the capability inventory).
 
@@ -37,7 +44,7 @@ direction is uniform: every unstated difference makes the tool sound more confid
 is, and the sentence a client repeats — "our SEO score went from 72 to 96" — is the one with
 the fewest caveats attached.
 
-The single most consequential rule is the three-way split in §3's RUN of change classes. A
+The single most consequential rule is the three-way split in HST-1. A
 `PASS` that becomes `NO_DATA` is not a regression. Filing it as one tells a client their
 site broke when what broke was the measurement; filing its reverse as an improvement takes
 credit for a fix nobody made. The code says this, in an unusually clear comment. Nothing
@@ -55,13 +62,15 @@ predecessor was, the series, and for each still-failing item how long it has bee
 `--no-history` stops the writing. `--diff` controls only whether the comparison is
 *printed* — the comparison happens either way, because the payload carries it.
 
-## 3. Requirements
+## Requirements
 
-### HST-1 — a status change is classified as improvement, regression, or loss of evidence
+### Requirement: HST-1 — a status change is classified as improvement, regression, or loss of evidence
 
-Three classes, not two. A change between two quality verdicts is an improvement or a
-regression. A change where either side is not a quality verdict — `PASS` to `NO_DATA`,
-`NEEDS_INPUT` to `WARN` — is neither: it is a change in what the audit could see.
+Three classes, not two. A change between two quality verdicts SHALL be reported as an
+improvement or a regression. A change where either side is not a quality verdict —
+`PASS` to `NO_DATA`, `NEEDS_INPUT` to `WARN` — MUST be reported as neither: it is a
+change in what the audit could see, and the report SHALL say so rather than reach for
+the nearer of the other two words.
 
 **Why:** the two-class version is wrong in both directions and wrong in the expensive way.
 `PASS → NO_DATA` reported as a regression tells a client their site broke when a service
@@ -83,10 +92,33 @@ test function, and the renderer tests that appeared to cover it supplied the cla
 as fixture data — asserting that a change *labelled* `improved` renders as an improvement,
 which reads the renderer and not the rule.
 
-### HST-2 — a comparison across a changed registry says so
+#### Scenario: a site gets worse
+- **WHEN** an item answered `PASS` in the previous run and `FAIL` in this one
+- **THEN** the change is classified `regressed`
 
-Where the two runs were computed over different registry versions, the comparison warns.
-The same holds for a change of profile or of mode.
+#### Scenario: the measurement is lost, and the site is not accused of it
+- **WHEN** an item answered `PASS` in the previous run and any of `NO_DATA`,
+  `NEEDS_INPUT`, `MANUAL`, `LLM_PENDING` or `N/A` in this one
+- **THEN** the change is classified `evidence`
+- **AND** it is not classified `regressed`, because a service being down is not the
+  site breaking
+
+#### Scenario: the measurement returns, and nobody is credited for it
+- **WHEN** an item answered one of those five in the previous run and `PASS` in this one
+- **THEN** the change is classified `evidence`
+- **AND** it is not classified `improved`, because no fix was made
+
+#### Scenario: the scale carries exactly three words
+- **WHEN** the quality scale is widened to admit a status that is the absence of a
+  verdict rather than a worse one
+- **THEN** the classification of every pair involving that status changes, and the
+  reader reddens
+
+### Requirement: HST-2 — a comparison across a changed registry says so
+
+Where the two runs were computed over different registry versions, the comparison SHALL
+warn. The same holds for a change of profile or of mode. A comparison that reports no
+difference MUST be a comparison over the same registry, profile and mode.
 
 **Why:** the score is a fraction of the registry, so a registry that gained eight items
 moves it without the site moving. A profile change moves the denominator; a mode change
@@ -95,9 +127,25 @@ moves what could be answered at all. All three produce a number that looks like 
 directly — that a changed registry version warns, and that a barely-overlapping pair of
 runs warns. The profile and mode halves have no test.
 
-### HST-3 — the baseline is named
+#### Scenario: the checklist itself changed between the runs
+- **WHEN** the previous run recorded one `registry_version` and this run another
+- **THEN** the comparison carries a note naming the registry
+- **AND** the note says the item set changed, so a difference may be an edit to the
+  checklist rather than to the site
 
-A comparison states which run it is against, by identity rather than by "the last one".
+#### Scenario: the two runs barely overlap
+- **WHEN** the previous run reported on items this run does not
+- **THEN** the note states how many were dropped and how many the diff covers
+- **AND** it does not report "no status changes" over an empty intersection
+
+#### Scenario: the run was narrowed or widened
+- **WHEN** the profile or the mode differs between the two runs
+- **THEN** the comparison says so
+
+### Requirement: HST-3 — the baseline is named
+
+A comparison SHALL state which run it is against by identity — a timestamp and that
+run's own recorded fields — and never by a phrase such as "the last one".
 
 **Why:** "since the previous audit" is ambiguous the moment two audits happen on one day,
 or a run is deleted, or the operator has two machines. A reader who cannot identify the
@@ -107,10 +155,21 @@ report with no baseline prints no trend section and that neither renderer prints
 number. That the baseline is *named* where the comparison is shown is asserted for the
 absence case and not the presence case.
 
-### HST-4 — the current run is not part of its own history
+#### Scenario: a comparison names the run it was made against
+- **WHEN** a run finds a predecessor for the same site
+- **THEN** the payload records that predecessor's `started_at`, `registry_version`,
+  `mode` and `profile`
+- **AND** those values are the predecessor's own rather than this run's
+
+#### Scenario: the first audit of a site
+- **WHEN** no previous run exists for the domain
+- **THEN** the comparison is recorded as absent rather than as an empty one
+- **AND** no surface prints a trend section or a missing number
+
+### Requirement: HST-4 — the current run is not part of its own history
 
 The series a trend is computed from, and the streak that says how long an item has been
-failing, exclude the run being reported.
+failing, MUST exclude the run being reported.
 
 **Why:** including it makes every first run a one-run trend and shifts every streak by one.
 The error is small, constant, and invisible — which is why it needs a rule rather than
@@ -120,10 +179,19 @@ care.
 filename — and nine test functions cover the series construction, including that it is
 ordered by the timestamp inside the file rather than by the name.
 
-### HST-5 — a streak counts consecutive failures and breaks when the item passed
+#### Scenario: the run being reported is not part of its own history
+- **WHEN** a trend is computed for a run already written to disk
+- **THEN** that run is excluded from the series, both by its content and by its filename
 
-"Open since" is the length of the current unbroken run of failures. An item that failed,
-was fixed, and broke again is not described as having been broken the whole time.
+#### Scenario: the series is ordered by when a run happened
+- **WHEN** stored runs are named so that filename order and timestamp order disagree
+- **THEN** the series follows the timestamp recorded inside each file
+
+### Requirement: HST-5 — a streak counts consecutive failures and breaks when the item passed
+
+"Open since" SHALL be the length of the current unbroken run of failures. An item that
+failed, was fixed, and broke again MUST NOT be described as having been broken the whole
+time.
 
 **Why:** this is the number that goes in the sentence "this has been broken since March",
 and the version that ignores the fix in between is a false statement about the client's own
@@ -131,10 +199,18 @@ work.
 **Reader:** enforced. Three test functions pin the arithmetic, including the fixed-and-broke-
 again case and that an item passing now is not listed at all.
 
-### HST-6 — history is per site, and two runs in one second do not collide
+#### Scenario: a fix in the middle breaks the streak
+- **WHEN** an item failed, then passed, then failed again across three stored runs
+- **THEN** the streak counts only the failures since the last pass
 
-Runs are stored under the site they describe, and two runs that start within the same clock
-tick get separate files.
+#### Scenario: an item that is not failing has no streak
+- **WHEN** an item answers a quality verdict that is not a failure in this run
+- **THEN** it does not appear in the open-since list at all
+
+### Requirement: HST-6 — history is per site, and two runs in one second do not collide
+
+Runs SHALL be stored under the site they describe, and two runs that start within the
+same clock tick MUST get separate files.
 
 **Why:** a collision loses an audit silently. A shared directory across sites would compare
 one client's run against another's, which is worse than losing it.
@@ -142,9 +218,18 @@ one client's run against another's, which is worse than losing it.
 case. The per-site keying is exercised by every test that writes history and asserted by
 none.
 
-### HST-7 — a corrupt stored run is skipped, never fatal
+#### Scenario: two runs in the same clock tick
+- **WHEN** two audits of one site produce the same timestamp
+- **THEN** both are stored, in separate files, and neither overwrites the other
 
-A history file that cannot be read is ignored, and the run continues.
+#### Scenario: two sites audited from one directory
+- **WHEN** runs exist for two different domains
+- **THEN** each is stored under its own site, and a comparison never reads across them
+
+### Requirement: HST-7 — a corrupt stored run is skipped, never fatal
+
+A history file that cannot be read MUST be ignored, and the run SHALL continue. A
+failure to read the past is never allowed to end the present audit.
 
 **Why:** an audit that dies because a file from three months ago is truncated has made an
 old accident into a current outage. The comparison is a convenience; the audit is the
@@ -153,9 +238,20 @@ product.
 `test_the_newest_run_wins_regardless_of_filename_format` pins that selection does not depend
 on a naming convention.
 
-### HST-8 — printing the comparison is optional; computing it is not
+#### Scenario: a stored run is truncated or unparseable
+- **WHEN** a file in the site's history cannot be parsed
+- **THEN** it is skipped
+- **AND** the audit completes and still reports whatever comparison the readable runs
+  support
 
-The payload carries the comparison whether or not the operator asked to see it.
+#### Scenario: the newest run is chosen by its content
+- **WHEN** stored runs use more than one filename convention
+- **THEN** the predecessor is the newest by recorded timestamp, not by name
+
+### Requirement: HST-8 — printing the comparison is optional; computing it is not
+
+The payload SHALL carry the comparison whether or not the operator asked to see it.
+`--diff` decides only whether it is *printed*, and MUST NOT decide whether it exists.
 
 **Why:** the artifact is what a later run and a later reader work from. A comparison that
 exists only when a flag was passed makes the record depend on how somebody invoked the tool
@@ -181,6 +277,19 @@ requirement, and writing this test is what found it: `history_path` files a run 
 unseen is the reason this requirement went unread: **every invocation of the runner in this
 suite and in CI passes `--no-history`**, all six in `ci.yml`, so the history subsystem this
 document is about has never run end to end in CI on any platform.
+
+#### Scenario: nobody asked to see the comparison
+- **WHEN** a second audit of one site runs without `--diff`
+- **THEN** the payload carries the comparison and names the run it was made against
+- **AND** nothing about the comparison is printed
+
+#### Scenario: an unchanged site
+- **WHEN** two audits of one unchanged site are compared
+- **THEN** the recorded comparison is empty rather than absent, and invents no changes
+
+#### Scenario: history is turned off
+- **WHEN** a run is given `--no-history`
+- **THEN** nothing is written, and no comparison is claimed
 
 ## 4. Invariants
 
@@ -226,7 +335,7 @@ stored run's identity rather than in a warning about it.
 Observation, not specification. Measured at commit `64d2ddc`, by parsing all 1 280 test
 functions and asking which bodies name each symbol.
 
-### A.1 — the classifier that decides what a client is told is called by no test
+#### A.1 — the classifier that decides what a client is told is called by no test
 
 `direction()` turns a pair of statuses into `improved`, `regressed` or `evidence`. Searching
 every test function for a call to it returns nothing. The single grep hit is a test *name*
@@ -251,7 +360,7 @@ holds it. This is the gap the capability inventory recorded as G11, and the meas
 the sharpest form of it: the two-class regression the comment warns against would pass the
 whole suite.
 
-### A.2 — the parts of history that are well read are the mechanical ones
+#### A.2 — the parts of history that are well read are the mechanical ones
 
 | symbol | test functions |
 |---|---:|

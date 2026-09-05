@@ -185,7 +185,7 @@ and no identifier means two things.
 times across the twelve documents, always in the same direction, and always by the same
 mechanism — a `Reader:` line that qualifies its verdict, summarised in the table as though
 it did not.
-**Reader:** enforced. `tests/test_specs.py` holds twenty properties across every document,
+**Reader:** enforced. `tests/test_specs.py` holds twenty-three properties across every document,
 discovers documents rather than listing them, and caught four of those seven — REG-3, DEC-7
 and DEC-10 were found by hand before it existed — plus one cross-document identifier
 collision and the count in this very sentence, which read `fourteen` while the module held

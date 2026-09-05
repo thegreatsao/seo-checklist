@@ -47,7 +47,11 @@ NUMBER = {"nothing": 0, "no": 0, "zero": 0, "one": 1, "two": 2, "three": 3, "fou
 SUMMARY_WORD = {"enforced": "enforced", "partial": "partial", "none": "unread",
                 "opposed": "opposed"}
 
-REQUIREMENT = re.compile(r"^### ([A-Z]{2,4})-(\d+) — (.+)$")
+# `### Requirement: HST-1 — title` is the OpenSpec grammar; `### HST-1 — title` is what
+# these documents used before the migration. Both are read while the twelve are being
+# converted one at a time, and `test_every_document_is_in_the_openspec_grammar` below
+# says how many are still on the old one, so the second form cannot be forgotten.
+REQUIREMENT = re.compile(r"^### (?:Requirement: )?([A-Z]{2,4})-(\d+) — (.+)$")
 READER = re.compile(r"^\*\*Reader:\*\*\s+(.*)$")
 WHY = re.compile(r"^\*\*Why:\*\*")
 ROW = re.compile(r"^\| \*\*(enforced|partial|none|opposed)\*\* \| (.+?) \|$")
@@ -394,6 +398,78 @@ class ADocumentNamesThingsThatExist(unittest.TestCase):
                                     f"root nor the skill directory")
 
 
+class TheMigrationIntoOpenSpecGrammarIsCheckable(unittest.TestCase):
+    """The twelve are being converted into OpenSpec's grammar one at a time.
+
+    A migration in flight is the state where things get lost: half a document in each
+    grammar, a requirement that quietly stops being counted, a conversion that goes
+    backwards when somebody edits an old copy. These three properties make each of
+    those loud.
+
+    The point of the conversion is the scenarios. A requirement states a rule; a
+    scenario states a case. Every vacuous reader this suite has found — the prompt
+    tested only where detection was absent, the archive sweep run over an empty plan,
+    the comparison whose body was never inspected — was a missing case that a
+    scenario list would have named.
+    """
+
+    #: Raised deliberately as documents convert. It may not fall.
+    CONVERTED_AT_LEAST = 1
+
+    @staticmethod
+    def converted(lines):
+        return any(line.strip() == "## Requirements" for line in lines)
+
+    def test_a_document_is_in_one_grammar_or_the_other_never_half(self):
+        for name, lines, _ in DOCS:
+            with self.subTest(document=name):
+                purpose = any(line.strip() == "## Purpose" for line in lines)
+                headings = [line for line in lines
+                            if line.startswith("### ") and REQUIREMENT.match(line)]
+                openspec_style = [line for line in headings
+                                  if line.startswith("### Requirement: ")]
+                if not self.converted(lines):
+                    self.assertEqual(
+                        openspec_style, [],
+                        f"{name} has OpenSpec requirement headings but no "
+                        f"'## Requirements' section, so openspec cannot read it")
+                    continue
+                self.assertTrue(purpose, f"{name} has '## Requirements' and no "
+                                         f"'## Purpose'; openspec rejects that")
+                self.assertEqual(
+                    len(openspec_style), len(headings),
+                    f"{name} is converted but {len(headings) - len(openspec_style)} of "
+                    f"its requirements still use the old heading")
+
+    def test_a_converted_requirement_states_at_least_one_case(self):
+        """The scenarios are the reason for the conversion. A converted document whose
+        requirements carry none has paid the cost and taken none of the value."""
+        for name, lines, path in DOCS:
+            if not self.converted(lines):
+                continue
+            current, seen = None, {}
+            for line in lines:
+                found = REQUIREMENT.match(line)
+                if found:
+                    current = f"{found.group(1)}-{found.group(2)}"
+                    seen[current] = 0
+                elif line.startswith("## "):
+                    current = None
+                elif current and line.startswith("#### Scenario:"):
+                    seen[current] += 1
+            barren = sorted(k for k, n in seen.items() if not n)
+            self.assertEqual(barren, [], f"{name}: these state a rule and no case")
+
+    def test_the_conversion_does_not_go_backwards(self):
+        done = sorted(name for name, lines, _ in DOCS if self.converted(lines))
+        self.assertGreaterEqual(
+            len(done), self.CONVERTED_AT_LEAST,
+            f"fewer documents in the OpenSpec grammar than there were: {done}")
+        self.assertLessEqual(
+            len(done), len(DOCS),
+            "more converted documents than documents, which cannot happen")
+
+
 class ACitationPointsAtSomething(unittest.TestCase):
     """These twelve documents route rather than repeat, and a route can go stale.
 
@@ -447,14 +523,20 @@ class ACitationPointsAtSomething(unittest.TestCase):
             # Anchored on the module's own path: the first version matched "holds
             # seven properties" in `run-lifecycle/`, which counts a test class rather
             # than this file, and reported the document as wrong when it was right.
-            for word in re.findall(r"`tests/test_specs\.py` holds (\w+) properties",
+            # `[\w-]` and not `\w`: the count reached "twenty-three" and the hyphen
+            # took the sentence out of the pattern's sight, so the guard below fired
+            # rather than the comparison — which is the guard working, and the reason
+            # it is there.
+            for word in re.findall(r"`tests/test_specs\.py` holds ([\w-]+) properties",
                                    "\n".join(lines)):
                 claimed[name] = word
         self.assertTrue(claimed, "no document counts this module; this test is vacuous")
         for name, word in sorted(claimed.items()):
             with self.subTest(document=name):
-                self.assertIn(word.lower(), NUMBER, f"{name} spells the count {word!r}")
-                self.assertEqual(NUMBER[word.lower()], held,
+                parts = word.lower().split("-")
+                self.assertTrue(all(p in NUMBER for p in parts),
+                                f"{name} spells the count {word!r}")
+                self.assertEqual(sum(NUMBER[p] for p in parts), held,
                                  f"{name} says this module holds {word} properties; "
                                  f"it holds {held}")
 
