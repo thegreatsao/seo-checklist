@@ -5762,5 +5762,144 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
                          "a script carries the truncation key and cannot set it")
 
 
+
+class EveryCheckerHasSomethingThatJudgesIt(unittest.TestCase):
+    """`specs/evidence/` EVD-7. Running is not the same as being right: a checker with
+    no test and no settled declaration produces a verdict on every audit and nothing
+    anywhere says the verdict is correct.
+
+    This was computed by hand for that document's Appendix A.2, by looking for each
+    script's filename inside test function bodies, and the answer — one checker short of
+    clean — **was wrong**. `collection_page_checker.py` is judged in both directions by
+    `class CollectionPage`, which reaches it through the RUNS keys `collection` and
+    `collection_bad` and never types the script's name. A search finds only the spellings
+    put into it.
+
+    So the union is computed rather than searched, and the fixture-key indirection is
+    resolved: a checker is judged if a test *body* names it, or names a RUNS key that
+    runs it, or decides an item the oracle predicts with a word the audit can emit.
+    Bodies are taken by AST, because the RUNS table is module-level and naming a script
+    there is scheduling it, not judging it.
+    """
+
+    NOT_A_CHECKER = {"checklist_runner.py", "checklist_report.py", "site_crawl.py",
+                     "detect_profile.py", "env_loader.py", "seo_common.py"}
+    HERE = os.path.dirname(os.path.abspath(__file__))
+
+    @classmethod
+    def registry_scripts(cls):
+        with open(REGISTRY, encoding="utf-8") as stream:
+            items = json.load(stream)["items"]
+        out = {}
+        for item in items:
+            script = (item.get("check") or {}).get("script")
+            if script and script not in cls.NOT_A_CHECKER:
+                out.setdefault(script, set()).add(item["id"])
+        return out
+
+    @classmethod
+    def written_in_a_function(cls):
+        """The executable body of every function in `tests/test_*.py`, with prose gone.
+
+        Three exclusions, each of which was a false credit before it was made:
+
+        * **module level** — the RUNS table names every script there, and scheduling a
+          script is not judging it;
+        * **files that are not `test_*.py`** — `known_issues.py` keeps a table of
+          per-script caps, and a ledger's bookkeeping is not an assertion about an
+          answer;
+        * **docstrings and comments** — this class's own docstring names
+          `collection_page_checker.py` while explaining it, which credited the checker
+          for being discussed. `ast.unparse` drops comments; the walk below drops
+          docstrings.
+        """
+        def strip_prose(node):
+            for child in ast.walk(node):
+                body = getattr(child, "body", None)
+                if isinstance(body, list):
+                    child.body = [s for s in body
+                                  if not (isinstance(s, ast.Expr)
+                                          and isinstance(s.value, ast.Constant)
+                                          and isinstance(s.value.value, str))] or [
+                        ast.Pass()]
+            return node
+
+        chunks = []
+        for name in sorted(os.listdir(cls.HERE)):
+            if not (name.startswith("test_") and name.endswith(".py")):
+                continue
+            with open(os.path.join(cls.HERE, name), encoding="utf-8") as stream:
+                text = stream.read()
+            try:
+                tree = ast.parse(text)
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    try:
+                        chunks.append(ast.unparse(strip_prose(node)))
+                    except Exception:
+                        continue
+        return chr(10).join(chunks)
+
+    @staticmethod
+    def mentions(script, bodies):
+        """`"canonical_checker.py"` and `import canonical_checker as cc` are the same
+        claim. Matching only the first is how the hand count lost four more.
+
+        The word boundaries matter: without them `link_profile` would be found
+        inside a longer name, and a checker would look judged because a
+        differently named one is.
+        """
+        pattern = r"\b" + re.escape(script[:-3]) + r"\b"
+        return script in bodies or bool(re.search(pattern, bodies))
+
+    @staticmethod
+    def settled_items():
+        """Items the oracle predicts with a word the audit can emit. `INDETERMINATE` is
+        skipped by the comparison, so it judges nothing — `specs/declarations/` DEC-2."""
+        path = os.path.join(ROOT, "tests", "fixtures", "expectations.json")
+        with open(path, encoding="utf-8") as stream:
+            manifest = json.load(stream)
+        settled = set()
+        for value in manifest.values():
+            if not isinstance(value, dict):
+                continue
+            for item_id, entry in value.items():
+                if isinstance(entry, dict) and entry.get("expect") != "INDETERMINATE":
+                    settled.add(item_id)
+        return settled
+
+    def coverage(self):
+        scripts = self.registry_scripts()
+        bodies = self.written_in_a_function()
+        key_to_script = {key: script for key, script, _ in RUNS}
+        named = {s for s in scripts if self.mentions(s, bodies)}
+        through_a_key = {key_to_script[k] for k in key_to_script
+                         if ('out("%s")' % k) in bodies or ("out('%s')" % k) in bodies}
+        settled = self.settled_items()
+        declared = {s for s, ids in scripts.items() if ids & settled}
+        return scripts, named, through_a_key, declared
+
+    def test_no_checker_runs_on_every_audit_with_nothing_judging_it(self):
+        scripts, named, through_a_key, declared = self.coverage()
+        self.assertGreater(len(scripts), 50, "the registry lost its checkers")
+        self.assertEqual(sorted(set(scripts) - (named | through_a_key | declared)), [],
+                         "these checkers decide items on every audit and nothing "
+                         "asserts their answers are right")
+
+    def test_the_fixture_key_indirection_is_load_bearing(self):
+        """The correction, pinned as a property rather than as a sentence. At least one
+        checker is judged *only* through a RUNS key, so a future reader that searched
+        for script names would report it uncovered — which is the error the hand count
+        made. If this set ever empties, the resolution can be dropped; until then,
+        dropping it makes this reader lie in the flattering direction."""
+        scripts, named, through_a_key, declared = self.coverage()
+        key_only = set(scripts) - named - declared
+        self.assertTrue(
+            key_only & through_a_key,
+            "no checker depends on resolving RUNS keys any more; re-read Appendix A.2 "
+            "of specs/evidence/ before simplifying this reader")
+
 if __name__ == "__main__":
     unittest.main()

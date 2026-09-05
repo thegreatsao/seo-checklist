@@ -2209,7 +2209,14 @@ class CredentialDiscoveryIsAnOrderedContract(unittest.TestCase):
         self.addCleanup(shutil.rmtree, work, True)
         os.chdir(work)
         found = [str(p) for p in self.loader._candidate_paths()]
-        self.assertEqual(os.path.dirname(found[0]), os.path.realpath(work))
+        # Both sides through realpath and normcase: Windows CI hands `os.getcwd()` the
+        # 8.3 short form (`RUNNER~1`) while `realpath` returns the long one, and the
+        # two name the same directory. Caught by the Windows job, not by this machine.
+        def same(a, b):
+            return (os.path.normcase(os.path.realpath(a))
+                    == os.path.normcase(os.path.realpath(b)))
+        self.assertTrue(same(os.path.dirname(found[0]), work),
+                        f"{found[0]} is not in the working directory {work}")
         self.assertGreaterEqual(len(found), 2,
                                 "the shared defaults are gone, so nothing is ordered")
 

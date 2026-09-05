@@ -181,9 +181,25 @@ trees — so the suite's green is evidence that they *run*, and evidence of noth
 What stands behind them is the oracle, which is a different instrument with a different
 cost, and knowing which checkers rest on it is the difference between a covered layer and
 a lucky one.
-**Reader:** **none.** Nothing computes this. It was computed by hand for Appendix A.2 and
-the answer is one checker short of clean, which is exactly the kind of margin that will not
-survive the next release unwatched.
+**Reader:** enforced, and writing it corrected the hand count it replaces.
+`test_no_checker_runs_on_every_audit_with_nothing_judging_it` computes the union rather
+than searching for it: a checker is judged if a test body names it — as a filename *or* as
+the module it imports — or names a RUNS key that runs it, or decides an item the oracle
+predicts with a word the audit can emit. The answer is **58 of 58**, not 57.
+
+Three exclusions make that number mean something, and each was a false credit until it was
+made. Module level is excluded, because the RUNS table names every script there and
+scheduling is not judging. Files that are not `test_*.py` are excluded, because
+`known_issues.py` keeps a per-script cap table and a ledger's bookkeeping asserts nothing
+about an answer. Docstrings and comments are stripped, because this reader's own docstring
+names `collection_page_checker.py` while explaining it — the reader was, briefly, crediting
+a checker for being discussed by the reader.
+
+Probed by deleting `class CollectionPage`, the only thing that judges `AR-154`: the reader
+reddens naming `collection_page_checker.py`, and it is the only single deletion that does.
+`test_the_fixture_key_indirection_is_load_bearing` pins that at least one checker is judged
+*only* through a RUNS key, so the resolution cannot be simplified away without the failure
+that follows saying why.
 
 ### EVD-8 — a log format the audit cannot read is refused by name
 
@@ -313,7 +329,21 @@ Nothing reads any of it. This is the same shape as the registry's own `source` s
 (REG-12) and the four drifted counts in the census tooling: a number written beside the
 thing it counts, reproduced faithfully by every gate, compared with nothing.
 
-### A.2 — twenty checkers are exercised and unjudged, and one is neither
+### A.2 — twenty checkers are exercised and unjudged, and none is unjudged
+
+**Corrected 5 September 2026. This heading used to end "and one is neither", and the
+paragraph naming that one was wrong.** The count behind it looked for each script's
+filename inside test function bodies. `collection_page_checker.py` is judged in both
+directions by `class CollectionPage`, which reaches it through the RUNS keys `collection`
+and `collection_bad` and never types the script's name — so the search could not see it,
+and reported the only gap in the layer. Three more — `indexability_matrix.py`,
+`local_seo_checker.py`, `security_headers.py` — are written `import security_headers as sh`
+rather than `"security_headers.py"`, and the same search would have missed them too had it
+been asked. The corrected figure is **58 of 58 judged**, now computed by EVD-7's reader
+rather than by hand.
+
+The rest of this section is kept as written, because its reasoning about the twenty is
+still right and because the way it went wrong is itself the finding.
 
 Counted three ways, because the obvious count is misleading.
 
@@ -329,18 +359,20 @@ declaration in the fixture oracle. That is what stands behind this layer — not
 suite but the instrument `specs/declarations/` specifies, one hand-written prediction at a
 time.
 
-Which leaves exactly one checker with neither:
+This is where the original concluded "which leaves exactly one checker with neither", and
+named `collection_page_checker.py` / `AR-154`. It does not.
 
-| checker | item | why nothing judges it |
-|---|---|---|
-| `collection_page_checker.py` | `AR-154` | named by no test; its only declarations are `INDETERMINATE` on both origins |
+`AR-154` is genuinely one of the twenty-seven declarations
+[`specs/declarations/`](../declarations/spec.md) A.1 found compared with nothing — one of
+the seventeen whose written reason is "the fixture has no subject for this item", because
+the fixture is a five-page bakery with no category page. And its checker is genuinely named
+by no test. Both halves were true.
 
-`AR-154` is one of the twenty-seven declarations `specs/declarations/` A.1 found compared
-with nothing — one of the seventeen whose written reason is "the fixture has no subject for
-this item", because the fixture is a five-page bakery with no category page. So the single
-checker in this tree that nothing asserts anything about is the one whose declaration was
-parked under the ninth word. Two documents found the same hole from opposite ends, and it
-is one item wide.
+The conclusion drawn from them was not, and that is the part worth keeping. Two documents
+appeared to find one hole from opposite ends, and the agreement read as corroboration:
+*unpredicted* from the declaration side, *unnamed* from the test side, and the conjunction
+taken for *unjudged*. Neither side was wrong about its own half; the conjunction was, and it
+made the most convincing finding in this document the only false one.
 
 ### A.3 — two checkers speak a severity vocabulary nothing translates
 
@@ -382,14 +414,14 @@ half it believes unread.
 
 | | requirements |
 |---|---|
-| **enforced** | EVD-3, EVD-5, EVD-6 |
+| **enforced** | EVD-3, EVD-5, EVD-6, EVD-7 |
 | **partial** | EVD-1, EVD-2, EVD-8, EVD-9, EVD-10 |
-| **none** | EVD-4, EVD-7 |
+| **none** | EVD-4 |
 | **opposed** | — none |
 
 Invariants: INV-E1 and INV-E2 enforced; INV-E3 and INV-E4 partial.
 
-**Three enforced, five partial, two unread, of ten.**
+**Four enforced, five partial, one unread, of ten.**
 
 This is the best-read layer in the suite so far, and the reason is specific enough to be
 worth copying. Its three enforced requirements are all held by *generated* readers — a
@@ -398,10 +430,12 @@ census that classifies every number a verdict depends on. None of them is a test
 wrote about a case they thought of; each is a derivation over the whole population, which
 is why none of them has the coverage gaps the hand-written tests have.
 
-The two unread requirements are the two that ask the layer to describe *itself*: whether
+The two requirements that ask the layer to describe *itself* were the unread ones: whether
 the catalogue's own account is true (EVD-4), and whether anything judges each checker
-(EVD-7). Both were computed by hand for Appendix A, both found something, and neither has
-a reader — which is the same sentence this suite has now written about the registry's
+(EVD-7). Both were computed by hand for Appendix A, both found something, and neither had
+a reader. EVD-7 has one now, and the first thing it did was overturn what the hand count
+found — the layer is clean, and the gap the document reported did not exist. EVD-4's hand
+count stands and is a defect in the catalogue's own prose rather than a missing reader — which is the same sentence this suite has now written about the registry's
 `source` string, the census tooling's four counts, and the notebook's spec list. Four
 instances is not a coincidence; a derivation is only as good as the question somebody
 thought to derive.
