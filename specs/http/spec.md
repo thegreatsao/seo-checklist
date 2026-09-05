@@ -202,10 +202,21 @@ earlier in the run.
 host, an overridden guard, a stale artifact — appears in the report's provenance. The cache
 belongs in that list for the same reason: it is the difference between "this is the page"
 and "this was the page a few minutes ago".
-**Reader:** **none.** The field is written into the artifact and read by nothing: the
-suite mentions it zero times, and the report's provenance warnings cover the parser, the
-private host, the allowance, the guard, the thin entry and the artifacts — and not the
-cache. `--no-http-cache` has no test either.
+**Reader:** partial, and the unread half is a defect rather than a gap in the tests.
+`test_a_normal_run_records_that_the_cache_was_on` and
+`test_turning_the_cache_off_is_recorded_too` hold the requirement's own sentence in both
+directions — a field hard-coded to `True` would satisfy the first alone — and
+`--no-http-cache`, which had no test at all, is now exercised end to end.
+
+What is not held is what the **Why** argues for, because it does not exist:
+`provenance_warnings` covers the parser, the private host, the allowance, the guard, the
+thin entry and the artifacts, and **not the cache**. So the fact is recorded in the
+artifact and never reaches the reader the requirement was written for.
+`test_the_provenance_list_still_omits_the_cache` pins that absence rather than asserting a
+failure on purpose — a test pinned to a defect is a test that breaks when the defect is
+fixed, so this one is written to fail *at the moment the cache joins the list* and to say,
+in its own failure message, that it should then be replaced by the positive assertion.
+Closing it is a release, not an edit here.
 
 ### HTTP-9 — a failed fetch is classified into a closed vocabulary, and the classification travels
 
@@ -414,7 +425,8 @@ direction.
 guard tests. HTTP-7 — making a cache hit skip the robots re-check fails one test, which is
 the clause the Reader line singles out. HTTP-11 — turning the unconditional `verify = True`
 into a `setdefault`, so a caller may relax it, left 319 tests green when this was written
-and reddens two of its four readers now. HTTP-8 — the string
+and reddens two of its four readers now. HTTP-8 — as of 5 September 2026 the recording is read in both directions and the
+provenance omission is pinned as an absence; before that, the string
 `http_cache` appears nowhere under `tests/`.
 
 **Derived, not probed:** the eight `partial` rows. Each names which half it believes is
@@ -425,13 +437,13 @@ the error this method leaves open, and the halves are where to look first.
 | | requirements |
 |---|---|
 | **enforced** | HTTP-1, HTTP-7, HTTP-11 |
-| **partial** | HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-9, HTTP-10, HTTP-12 |
-| **none** | HTTP-8 |
+| **partial** | HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-8, HTTP-9, HTTP-10, HTTP-12 |
+| **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-H2 and INV-H3 enforced; INV-H1 and INV-H4 partial.
 
-**Three enforced, eight partial, one unread, of twelve.**
+**Three enforced, nine partial, nothing unread, of twelve.**
 
 The first two enforced are the cache and the pinned connection, and they have in common
 something worth noticing: both were built *after* a specific failure was understood, and

@@ -60,15 +60,13 @@
     "http": {
       "counts": {
         "enforced": 3,
-        "none": 1,
+        "none": 0,
         "opposed": 0,
-        "partial": 8
+        "partial": 9
       },
       "opposed": [],
       "requirements": 12,
-      "unread": [
-        "HTTP-8"
-      ]
+      "unread": []
     },
     "inputs": {
       "counts": {
@@ -169,9 +167,9 @@
   },
   "totals": {
     "enforced": 48,
-    "none": 21,
+    "none": 20,
     "opposed": 2,
-    "partial": 78,
+    "partial": 79,
     "requirements": 149
   }
 }

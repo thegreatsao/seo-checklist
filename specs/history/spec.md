@@ -165,6 +165,13 @@ audits one served fixture twice without `--diff`, and asserts that the first run
 comparison, that the second records one naming the first run's `started_at`, and that
 nothing about it was printed. Making the comparison conditional on the flag reddens it.
 
+An independent review of that test found it weaker than the other readers written the same
+day: it asserted the comparison *existed* and never looked inside it, so a body that was
+empty, garbage, or another run's would have passed. It now requires the diff of two audits
+of one unchanged fixture to be exactly empty, guards that claim by checking the fixture did
+answer identically — otherwise the empty diff proves nothing — and compares the registry
+version, mode and profile the comparison reports against the run it names.
+
 It is skipped on Windows, which is a defect in the tree rather than a weakness in the
 requirement, and writing this test is what found it: `history_path` files a run under
 `os.getcwd()/.seo-runs/<netloc>` with the netloc used verbatim, so a fixture served on

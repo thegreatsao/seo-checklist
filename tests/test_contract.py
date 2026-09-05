@@ -776,6 +776,44 @@ class NothingIsDecidedWithoutEvidence(unittest.TestCase):
                              f"{label} did not report on every registry item")
 
 
+class TheRunSaysWhetherItUsedACache(unittest.TestCase):
+    """`specs/http/` HTTP-8. With the cache off two items may describe two states of the
+    same document; with it on, a verdict may be about a response fetched earlier in the
+    run. Either way the artifact has to say which, because it is the difference between
+    "this is the page" and "this was the page a few minutes ago".
+
+    The field was written and read by nothing — the suite mentioned it zero times and
+    `--no-http-cache` had no test. What is held here is the recording. The other half of
+    the requirement's argument, that the cache belongs in the report's provenance list
+    beside the parser and the private host and the stale artifact, is **not implemented**
+    and is recorded as a defect in that document rather than papered over here.
+    """
+
+    def test_a_normal_run_records_that_the_cache_was_on(self):
+        self.assertIs(RESULTS["good"]["http_cache"], True)
+
+    def test_turning_the_cache_off_is_recorded_too(self):
+        """Both directions, because a field hard-coded to `True` would satisfy the
+        first test and record nothing."""
+        run = partial_audit("nocache", SITE.good, "--no-http-cache")
+        self.assertIs(run["http_cache"], False)
+
+    def test_the_provenance_list_still_omits_the_cache(self):
+        """A failing-on-purpose assertion would be a test pinned to a defect, so this
+        pins the *absence* instead and says what closing it looks like: when the cache
+        joins the provenance warnings, this test fails and is replaced by one asserting
+        the warning appears. Until then it stops the omission being rediscovered."""
+        from checklist_report import provenance_warnings
+        data = dict(RESULTS["good"], html_parser="lxml", entry_private=False,
+                    allow_private=False, entry_guard="", entry_thin=False,
+                    artifacts={})
+        printed = " ".join(provenance_warnings(data)).lower()
+        self.assertNotIn("cache", printed,
+                         "the cache now reaches provenance — good; replace this test "
+                         "with one asserting it appears, and close HTTP-8 in "
+                         "specs/http/")
+
+
 class TheRecordDoesNotDependOnHowItWasInvoked(unittest.TestCase):
     """`--diff` decides whether the comparison is *printed*, never whether it exists.
 
@@ -840,6 +878,24 @@ class TheRecordDoesNotDependOnHowItWasInvoked(unittest.TestCase):
         self.assertIsNotNone(second["compared_with"])
         self.assertEqual(second["compared_with"]["started_at"], first["started_at"],
                          "the comparison does not name the run it was made against")
+
+        # The content, not just the key. An independent review of this test pointed out
+        # that `is not None` passes on a comparison with a wrong or garbage body, which
+        # is the one thing an integration test is well placed to catch and this one was
+        # not catching. Two audits of one unchanged fixture have nothing to report, so
+        # the body must be exactly empty — a comparison inventing changes, or carrying
+        # some other run's, fails here.
+        self.assertEqual(second["diff"], [],
+                         "two audits of an unchanged fixture reported status changes")
+        before = {i["id"]: i["status"] for i in first["items"]}
+        after = {i["id"]: i["status"] for i in second["items"]}
+        self.assertEqual(
+            sorted(i for i in before if before[i] != after.get(i)), [],
+            "the fixture answered differently on the second pass, so the empty diff "
+            "above is not evidence of anything; this test needs a stable fixture")
+        for field in ("registry_version", "mode", "profile"):
+            self.assertEqual(second["compared_with"][field], first[field],
+                             f"the comparison misreports the previous run's {field}")
 
         # The other half of the requirement: the flag was not passed, so nothing about
         # the comparison was printed — and the record carries it anyway.

@@ -291,6 +291,56 @@ class CertificateVerificationCannotBeTurnedOff(unittest.TestCase):
                          "these disable certificate verification; every request goes "
                          "through lib/safe_http, which sets verify=True and means it")
 
+    # The one place an unverified handshake is legitimate, and why. `tls_certificate.py`
+    # decides `valid` on a verifying pass first; the second pass exists only to read a
+    # certificate that already failed, so the report can say what was wrong with it. An
+    # allowlist of one, named with its reason, because a census whose exceptions are
+    # unexplained stops being read.
+    UNVERIFIED_ALLOWED = {"tls_certificate.py"}
+
+    def test_no_script_reaches_past_requests_to_turn_verification_off(self):
+        """The gap an independent review found in the census above: it recognises
+        `verify=False` and nothing else, so a script disabling TLS through an SSL
+        context — `ssl._create_unverified_context()`, `check_hostname = False`,
+        `verify_mode = ssl.CERT_NONE` — walked past it. `verify=` is one spelling of
+        this decision, not the decision.
+        """
+        import ast
+
+        offenders = []
+        for path in sorted(SCRIPTS.rglob("*.py")):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if (isinstance(node, ast.Call)
+                        and getattr(node.func, "attr", "") == "_create_unverified_context"
+                        and path.name not in self.UNVERIFIED_ALLOWED):
+                    offenders.append(f"{path.name}:{node.lineno} unverified context")
+                if not isinstance(node, ast.Assign):
+                    continue
+                for target in node.targets:
+                    attr = getattr(target, "attr", "")
+                    value = node.value
+                    if attr == "check_hostname" and isinstance(value, ast.Constant)                             and value.value is False:
+                        offenders.append(f"{path.name}:{node.lineno} check_hostname off")
+                    if attr == "verify_mode" and getattr(value, "attr", "") == "CERT_NONE":
+                        offenders.append(f"{path.name}:{node.lineno} CERT_NONE")
+        self.assertEqual(offenders, [],
+                         "these turn off certificate verification below the requests "
+                         "layer, where the substrate's verify=True cannot reach")
+
+    def test_the_one_allowed_exception_still_decides_its_verdict_on_a_verifying_pass(self):
+        """An allowlist entry is a claim about a file, and it goes stale the way every
+        other unread list in this repository has. This is the claim: the file that may
+        build an unverified context also builds a verifying one and requires a
+        certificate."""
+        source = (SCRIPTS / "tls_certificate.py").read_text(encoding="utf-8")
+        for required in ("ssl.create_default_context()", "context.check_hostname = True",
+                         "context.verify_mode = ssl.CERT_REQUIRED"):
+            with self.subTest(line=required):
+                self.assertIn(required, source,
+                              "tls_certificate.py is allowed an unverified handshake "
+                              "only because its verdict comes from a verifying one")
+
 
 if __name__ == "__main__":
     unittest.main()
