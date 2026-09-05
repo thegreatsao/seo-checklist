@@ -1,5 +1,15 @@
 # Verdicts — the vocabulary every layer shares
 
+## Purpose
+
+What an audit is allowed to say about one checklist item, and when — the eight statuses
+every other layer inherits, and the rules that keep them from collapsing into each other.
+
+This is the first document in the suite because every other one consumes it. A registry
+rule, a run's refusal, a report's row and a stored comparison are each a single word
+about a single item, and if two layers spell that word differently or mean different
+things by it, no gate can compare them and every comparison silently passes.
+
 **Capability:** what an audit is allowed to say about one checklist item, and when.
 
 This document is normative and is written as though no code existed. Where the
@@ -65,12 +75,12 @@ whole purpose of that status — and the tree already ships the alternative: a c
 verdict is stamped `claimed` and the report is forbidden from presenting it as a
 measurement. Provenance travels with the verdict; it does not change which word is used.
 
-## 3. Requirements
+## Requirements
 
-### VRD-1 — one status per item per run
+### Requirement: VRD-1 — one status per item per run
 
-Every registry item receives exactly one status in every audit. No item is absent from a
-report, and no item carries two.
+Every registry item SHALL receive exactly one status in every audit. No item may be
+absent from a report, and no item may carry two.
 
 **Why:** a report that omits items cannot be compared with another report, and a
 denominator that varies between runs means nothing.
@@ -78,7 +88,17 @@ denominator that varies between runs means nothing.
 all 217 registry ids, which catches omission; set equality would still accept a
 duplicate row, so "exactly once" is not fully read.
 
-### VRD-2 — a quality verdict requires a subject and a basis
+#### Scenario: every item is answered
+- **WHEN** an audit finishes, whatever its mode, profile or reach
+- **THEN** the report carries a row for every id in the registry
+
+#### Scenario: an item is answered twice
+- **WHEN** two rows in one report carry the same item id
+- **THEN** the run is wrong, whether or not the two rows agree
+- **AND** comparing id *sets* between report and registry cannot see this, which is why
+  the requirement says "exactly one" and not "at least one"
+
+### Requirement: VRD-2 — a quality verdict requires a subject and a basis
 
 `PASS`, `WARN` and `FAIL` may be assigned only when the entity whose quality the item
 judges exists on this site (VRD-3) and the verdict rests on a stated basis — a
@@ -87,7 +107,7 @@ That entity is the **subject**. A required feature or a defect that an item forb
 never the subject: its presence or absence may be the measured fact that decides a rule
 about an existing page or site.
 
-An item whose subject does not exist **must not** report `PASS`.
+An item whose subject does not exist **MUST NOT** report `PASS`.
 
 **Why:** `PASS` carries weight in the score, and an item that passes for lack of a
 subject awards credit the site never earned — a five-page bakery scoring for *Optimize
@@ -97,9 +117,26 @@ confirmation that something was checked.
 is absent to be `N/A` rather than `PASS`, but only through the `applies_when` mechanism,
 which most items do not declare — see VRD-3 and Appendix A.1.
 
-### VRD-3 — missing data, a missing subject, and an absent defect are distinct
+#### Scenario: the thing being judged is not on the site
+- **WHEN** an item judges the quality of an entity the site may legitimately not have,
+  and the site does not have it
+- **THEN** the item reports `N/A`
+- **AND** it does not report `PASS`, which would award score for a subject that never
+  existed
 
-Absence is resolved by three mechanisms, in this order:
+#### Scenario: a rule counts defects and finds none because there is nothing to count
+- **WHEN** the rule passes by counting zero violations over an absent subject
+- **THEN** that is the same absence, and still not a `PASS`
+
+#### Scenario: the absent thing is the defect rather than the subject
+- **WHEN** an item forbids something and the site does not do it
+- **THEN** `PASS` is correct: the subject is the page or the site, which exists, and the
+  absent thing is the measured fact
+
+### Requirement: VRD-3 — missing data, a missing subject, and an absent defect are distinct
+
+Absence SHALL be resolved by three mechanisms, in this order, and they MUST NOT be
+collapsed into one:
 
 * **The data field is missing.** The audit is undecided unless the item declares
   `missing_is: pass | fail`. A parser that never emits a key says nothing about whether
@@ -172,10 +209,30 @@ of 217, MB-102 and MD-190, declare it, at `item["check"]["applies_when"]`. That 
 cannot express applicability for a sourceless item such as LO-199. Neither declaration
 completeness nor that sourceless gap has a reader; both belong to the registry document.
 
-### VRD-4 — a missing input is never `N/A` and never a quality verdict
+#### Scenario: the checker never wrote the field
+- **WHEN** an item's assertion reads a key the checker did not emit
+- **THEN** the item is undecided, unless it declares `missing_is`
+- **AND** silence from a parser is not evidence that the site is clean
 
-When a named input a check requires was not present, the status is `NEEDS_INPUT`,
-whatever the reason. The evidence names a supply route only when one exists. Where no
+#### Scenario: the field is absent and its absence is the answer
+- **WHEN** the item declares `missing_is: pass` or `missing_is: fail`
+- **THEN** the declared verdict is taken, because the item said in advance what an
+  absent field means
+
+#### Scenario: the subject may legitimately not exist
+- **WHEN** the entity whose quality the item judges is absent, and the item declares the
+  applicability condition that says so
+- **THEN** the item reports `N/A`, with evidence naming what was sought
+
+#### Scenario: absence inferred from the kind of business
+- **WHEN** `N/A` would rest on what kind of site this appears to be rather than on what
+  the sampled pages contain
+- **THEN** the requirement is violated; that inference is VRD-11's, and needs consent
+
+### Requirement: VRD-4 — a missing input is never `N/A` and never a quality verdict
+
+When a named input a check requires was not present, the status SHALL be
+`NEEDS_INPUT`, whatever the reason. The evidence names a supply route only when one exists. Where no
 route exists — for example, for a fetched page or crawl inventory — the evidence names
 the cause instead and must not instruct the operator to produce something they cannot.
 
@@ -186,11 +243,27 @@ verdict is worse: it claims a decision that never happened.
 missing Search Console credentials and a missing Safe Browsing key to `NEEDS_INPUT`;
 they also pin a supply route where one exists and cause-only evidence where none does.
 
-### VRD-5 — `NO_DATA` and `NEEDS_INPUT` split by what failed
+#### Scenario: an input the operator can supply is missing
+- **WHEN** a check needs a file or a credential that was not given
+- **THEN** the item reports `NEEDS_INPUT`, and the evidence names the flag or variable
+  that would supply it
 
-`NO_DATA` says the audit tried to make the measurement and could not: the service was
-unreachable, the script errored, or the result supplied no decidable value.
-`NEEDS_INPUT` says a named argument required to make that attempt was absent. Its cause
+#### Scenario: an input nobody can supply is missing
+- **WHEN** the absent input is something the run itself produces, such as a fetched page
+  or a crawl inventory
+- **THEN** the item still reports `NEEDS_INPUT`, and the evidence names the cause
+- **AND** it does not instruct the operator to produce what they cannot
+
+#### Scenario: a missing input dressed as out of scope
+- **WHEN** a missing input is reported `N/A`
+- **THEN** the requirement is violated: the item leaves the applicable set and the
+  audit's reach improves exactly where it is thinnest
+
+### Requirement: VRD-5 — `NO_DATA` and `NEEDS_INPUT` split by what failed
+
+`NO_DATA` SHALL mean the audit tried to make the measurement and could not: the
+service was unreachable, the script errored, or the result supplied no decidable value.
+`NEEDS_INPUT` SHALL mean a named argument required to make that attempt was absent. Its cause
 belongs in evidence and does not change the status.
 
 **Why:** the two sentences identify different boundaries. A missing argument says the
@@ -199,10 +272,24 @@ back. The evidence, not a second status vocabulary, says who can act on the caus
 **Reader:** partial. Unreachable measurements, execution failures and missing
 credentials are each pinned to the right status by tests; the general rule is not read.
 
-### VRD-6 — only quality verdicts carry weight
+#### Scenario: the attempt was made and produced nothing
+- **WHEN** a service is unreachable, a script crashes, or a result carries no decidable
+  value
+- **THEN** the item reports `NO_DATA`
 
-The score is computed over `PASS`, `WARN` and `FAIL` alone. No other status contributes
-to either half of it. A row carrying `scores_with` is the exception among quality
+#### Scenario: the attempt was never possible
+- **WHEN** a named argument the check requires was absent
+- **THEN** the item reports `NEEDS_INPUT`
+
+#### Scenario: one absence answered two ways in one run
+- **WHEN** two layers of a single run classify the same missing thing differently, one
+  calling it `NO_DATA` and the other `NEEDS_INPUT`
+- **THEN** the requirement is violated, whichever of the two is right
+
+### Requirement: VRD-6 — only quality verdicts carry weight
+
+The score SHALL be computed over `PASS`, `WARN` and `FAIL` alone. No other status may
+contribute to either half of it. A row carrying `scores_with` is the exception among quality
 verdicts: it reports its status but contributes no weight, because the row it names
 already carries the shared measurement's weight (VRD-17).
 
@@ -211,9 +298,18 @@ instance when a credential is supplied or withheld.
 **Reader:** enforced. Unit tests pin `N/A`, `NO_DATA`, `LLM_PENDING`, `MANUAL` and
 `NEEDS_INPUT` out of the scored set, and pin the three quality outcomes into it.
 
-### VRD-7 — `N/A` leaves the applicable set; the other four remain in it
+#### Scenario: a credential arrives and the score does not move
+- **WHEN** an item changes between `NEEDS_INPUT` and `NO_DATA`, or between `MANUAL` and
+  `LLM_PENDING`, with no quality verdict on either side
+- **THEN** neither half of the score changes
 
-Two denominators exist and must not be confused:
+#### Scenario: a shared measurement is weighed once
+- **WHEN** a row carries `scores_with`
+- **THEN** it reports its quality status and contributes no weight
+
+### Requirement: VRD-7 — `N/A` leaves the applicable set; the other four remain in it
+
+Two denominators exist and MUST NOT be confused:
 
 * the **scored set** — items carrying `PASS`, `WARN` or `FAIL`, governed by VRD-6;
 * the **applicable set** — every item this audit still owes an answer for. `N/A` is
@@ -234,10 +330,23 @@ qualifier welded to a classification word claims less than the word alone, and n
 the document said which was meant. The probe settled it. The qualifier is gone because it
 described the evidence rather than the claim.
 
-### VRD-8 — a status is derived from structured output, never from prose
+#### Scenario: an item nobody could answer is still owed
+- **WHEN** an item reports `NO_DATA`, `NEEDS_INPUT`, `MANUAL` or `LLM_PENDING`
+- **THEN** it stays in the applicable set and counts as unanswered
+- **AND** the audit's reach does not improve by failing to answer
 
-A status is decided by reading named fields of a checker's structured result. It is
-never decided by matching words in a human-readable message.
+#### Scenario: an item that does not apply is not owed
+- **WHEN** an item reports `N/A`
+- **THEN** it leaves the applicable set
+
+#### Scenario: the two denominators are not interchangeable
+- **WHEN** the scored set and the applicable set are compared on one run
+- **THEN** they differ by exactly the items that are unanswered rather than unscored
+
+### Requirement: VRD-8 — a status is derived from structured output, never from prose
+
+A status SHALL be decided by reading named fields of a checker's structured result.
+It MUST NOT be decided by matching words in a human-readable message.
 
 **Why:** wording is the first thing that drifts. A pattern aimed at a phrase a checker
 no longer emits matches nothing — and a rule that passes when nothing matches passes
@@ -248,10 +357,24 @@ does not ask whether a verdict should have come from a pattern at all. It also d
 census `count_matching_lte`, so MB-095 and MB-098 are outside what it inspects even in
 principle. The audit therefore stays green on all four violations.
 
-### VRD-9 — an unmapped value is undecided, never a pass
+#### Scenario: a rule reads a field
+- **WHEN** an item's assertion names a key of the checker's structured output
+- **THEN** the verdict follows that field's value
+
+#### Scenario: a rule reads a sentence
+- **WHEN** an item's assertion matches a pattern against prose intended for a human,
+  such as an `issues` message
+- **THEN** the requirement is violated, whatever the pattern currently matches
+
+#### Scenario: the checker rewords its message
+- **WHEN** a checker changes the wording of a message a rule was matching
+- **THEN** the pattern matches nothing, the rule passes, and the site is never checked —
+  which is why this is forbidden rather than discouraged
+
+### Requirement: VRD-9 — an unmapped value is undecided, never a pass
 
 When a checker result contains a value the item's contract does not enumerate, a mapped
-failure in the same result outranks it: the status is `FAIL`. Only when no element maps
+failure in the same result SHALL outrank it: the status is `FAIL`. Only when no element maps
 to failure does the unmapped value make the item `NO_DATA`, with evidence naming the
 value.
 
@@ -260,10 +383,24 @@ change raise scores silently.
 **Reader:** enforced. Evaluator tests pin an unmapped scalar and row to undecided and
 pin a mixed result containing an unmapped value and mapped failure to failure.
 
-### VRD-10 — every status carries evidence
+#### Scenario: a value the contract does not enumerate
+- **WHEN** a checker result contains a value the item's contract does not name, and
+  nothing else in the result maps to failure
+- **THEN** the item is `NO_DATA`, with evidence naming the value
 
-No status is emitted without a sentence saying what was decided, or what was sought and
-not found, or which input was missing. This includes `PASS`.
+#### Scenario: an unrecognised value beside a recognised failure
+- **WHEN** the same result carries both an unmapped value and a mapped failure
+- **THEN** the item is `FAIL`
+
+#### Scenario: a vocabulary grows
+- **WHEN** a checker begins emitting a value no item was written to expect
+- **THEN** scores do not rise, because the unrecognised value is undecided rather than
+  acceptable
+
+### Requirement: VRD-10 — every status carries evidence
+
+No status SHALL be emitted without a sentence saying what was decided, or what was
+sought and not found, or which input was missing. This includes `PASS`.
 
 **Why:** a bare status cannot be triaged, and a `PASS` with no evidence is
 indistinguishable from a `PASS` for lack of a subject — which is how the Appendix A.1
@@ -271,7 +408,17 @@ violations went unnoticed.
 **Reader:** partial. Evidence is checked for `PASS`, `WARN`, `FAIL`, `N/A`, `NO_DATA` and
 `MANUAL`; it is not checked for `NEEDS_INPUT` or `LLM_PENDING`.
 
-### VRD-11 — narrowing the registry by site type needs consent, given in advance or on sight
+#### Scenario: a passing item says what it checked
+- **WHEN** an item reports `PASS`
+- **THEN** it carries evidence, because a bare `PASS` cannot be told apart from a `PASS`
+  awarded for lack of a subject
+
+#### Scenario: every one of the eight
+- **WHEN** any of the eight statuses is emitted, including `NEEDS_INPUT` and
+  `LLM_PENDING`
+- **THEN** evidence travels with it
+
+### Requirement: VRD-11 — narrowing the registry by site type needs consent, given in advance or on sight
 
 An audit may infer that a site is of a kind for which some items do not apply, and may
 act on that inference only with the operator's consent. Consent takes exactly two forms:
@@ -280,7 +427,7 @@ act on that inference only with the operator's consent. Consent takes exactly tw
   whatever category is detected;
 * **on sight** — the operator is shown the detected category and confirms it.
 
-Absent both, the audit runs the full registry. Silence is never consent.
+Absent both, the audit SHALL run the full registry. Silence is never consent.
 
 **Why:** dropping checks raises the score without anyone choosing that. The detection is
 structural evidence, but the scoping is a decision and belongs to a person — who may
@@ -290,10 +437,30 @@ non-interactive fallback to the full registry, and the rule that no profile drop
 critical item. They do not cover a detected non-default profile followed by EOF,
 interruption, or three invalid answers; Appendix A.1 records those violations.
 
-### VRD-12 — the outcome vocabulary is closed, and "no expectation" is not a status
+#### Scenario: consent given in advance
+- **WHEN** the operator selects automatic scoping for the run
+- **THEN** the detected category is applied, because delegation is a decision they made
 
-No layer may introduce a ninth status. This binds every consumer: runner, registry,
-report renderer, and the manifest of expected verdicts.
+#### Scenario: consent given on sight
+- **WHEN** the operator is shown the detected category and confirms it
+- **THEN** the detected category is applied
+
+#### Scenario: the operator says nothing
+- **WHEN** a category is detected and the operator ends the prompt without answering —
+  end of input, an interrupt, or repeated unrecognised replies
+- **THEN** the audit runs the full registry
+- **AND** it does not fall back to the detected category, which would narrow the audit,
+  raise the score, and name a profile nobody chose
+
+#### Scenario: no terminal to ask at
+- **WHEN** the run is non-interactive and no scoping was requested in advance
+- **THEN** the audit runs the full registry
+
+### Requirement: VRD-12 — the outcome vocabulary is closed, and "no expectation" is not a status
+
+The outcome vocabulary SHALL remain closed at eight, and no layer may introduce a
+ninth. This binds every consumer: runner, registry, report renderer, and the manifest of
+expected verdicts.
 
 A layer that needs to say **"no expectation is recorded here"** must express it
 structurally — by carrying no declaration for that item — never by inventing a word and
@@ -313,12 +480,30 @@ a declarations manifest represents absence of expectation — belongs to
 [`openspec/specs/declarations/`](../declarations/spec.md) and is settled there by DEC-2; the
 withdrawal itself is owed by whichever release removes the word.
 
-## 3.1 Composition and transition requirements
+#### Scenario: a layer invents a word
+- **WHEN** any consumer writes a status outside the eight
+- **THEN** the requirement is violated, whether or not anything currently reads that
+  field
 
-### VRD-13 — a decided page outranks an undecided page in a sample
+#### Scenario: a layer needs to say it expects nothing
+- **WHEN** a declaration manifest has no expectation for an item
+- **THEN** it carries no declaration for that item
+- **AND** it does not write a ninth word into the status field, which describes the site
+  rather than the declaration
 
-When sampled pages are combined for one item, undecided rows are dropped if any sampled
-page carries a quality verdict. The worst remaining status wins, in the order
+#### Scenario: the invented word is skipped rather than rejected
+- **WHEN** a comparison meets a status it does not recognise and continues past it
+- **THEN** the skipped comparison is indistinguishable from a passing one, which is the
+  harm this requirement exists to prevent
+
+**Composition and transition.** The five requirements below are about statuses that
+come from more than one place — several sampled pages, a capped input, an answer arriving
+after the fact, a second reading, a shared measurement.
+
+### Requirement: VRD-13 — a decided page outranks an undecided page in a sample
+
+When sampled pages are combined for one item, undecided rows SHALL be dropped if any
+sampled page carries a quality verdict. The worst remaining status wins, in the order
 `FAIL` > `WARN` > `PASS`. If no sampled page carries a quality verdict, the item remains
 undecided.
 
@@ -328,10 +513,18 @@ worst result hides a finding already measured.
 **Reader:** enforced. Aggregation tests mix decided and undecided pages, pin `FAIL` and
 `WARN` over `PASS`, and keep an all-undecided sample at `NO_DATA`.
 
-### VRD-14 — truncation withholds only a clean absence assertion
+#### Scenario: one page shows the defect and another could not be read
+- **WHEN** a sample mixes a quality verdict with undecided rows
+- **THEN** the undecided rows are dropped and the worst quality verdict wins
+
+#### Scenario: no page could be judged
+- **WHEN** every sampled page is undecided
+- **THEN** the item stays undecided
+
+### Requirement: VRD-14 — truncation withholds only a clean absence assertion
 
 When an assertion passes because the sought defect is absent but its input is marked
-truncated, that `PASS` becomes `NO_DATA`. A `WARN` or `FAIL` established in the part that
+truncated, that `PASS` SHALL become `NO_DATA`. A `WARN` or `FAIL` established in the part that
 was read survives, and its evidence says the reported measurement is a floor.
 
 **Why:** a truncated input cannot prove that nothing exists beyond its cap, but a defect
@@ -341,11 +534,24 @@ would turn an incomplete search into a clean bill of health.
 pin the `PASS` to `NO_DATA` transition, preserve both `WARN` and `FAIL`, and require floor
 evidence for the surviving non-pass.
 
-### VRD-15 — answers may replace only their own pending status
+#### Scenario: a clean bill of health over a capped search
+- **WHEN** an assertion passes by finding none of the thing it forbids, and the input
+  says it was truncated
+- **THEN** the `PASS` becomes `NO_DATA`
 
-A language-model answer may replace only `LLM_PENDING`, and a person's answer may
-replace only `MANUAL`. Neither answer path may overwrite a measured verdict, and neither
-may answer the other path's queue.
+#### Scenario: a defect found in the part that was read
+- **WHEN** a `WARN` or `FAIL` was established before the cap
+- **THEN** it survives, and its evidence says the reported measurement is a floor
+
+#### Scenario: a pass by presence
+- **WHEN** an item passes because it found something it requires, over a truncated input
+- **THEN** the `PASS` stands, because reading more pages cannot take it away
+
+### Requirement: VRD-15 — answers may replace only their own pending status
+
+A language-model answer MAY replace only `LLM_PENDING`, and a person's answer MAY
+replace only `MANUAL`. An answer path MUST NOT overwrite a measured verdict, and MUST NOT
+answer the other path's queue.
 
 **Why:** an answer is a transition from a named kind of pending work, not a general
 permission to rewrite the report. Keeping the doors separate preserves measured results
@@ -353,10 +559,23 @@ and the provenance of each judgement.
 **Reader:** enforced. Merge tests pin both allowed transitions, reject overwriting a
 script verdict, and reject a person's attempt to answer `LLM_PENDING`.
 
-### VRD-16 — a disagreeing second model reading returns to `NO_DATA`
+#### Scenario: an answer fills its own queue
+- **WHEN** a model answer arrives for an `LLM_PENDING` item, or a person's answer for a
+  `MANUAL` one
+- **THEN** the status is replaced
 
-When a second model reading disagrees with a model verdict already assigned to an item,
-the item becomes `NO_DATA`. The report records both statuses; it does not choose either
+#### Scenario: an answer reaches for a measured verdict
+- **WHEN** either answer path targets an item a script already decided
+- **THEN** the measured verdict stands
+
+#### Scenario: an answer reaches for the other queue
+- **WHEN** a person's answer targets `LLM_PENDING`, or a model's targets `MANUAL`
+- **THEN** it is refused
+
+### Requirement: VRD-16 — a disagreeing second model reading returns to `NO_DATA`
+
+When a second model reading disagrees with a model verdict already assigned to an
+item, the item SHALL become `NO_DATA`. The report records both statuses; it does not choose either
 reading as the winner.
 
 **Why:** disagreement is evidence that the question was not settled, not a basis for
@@ -364,15 +583,35 @@ silently preferring the first or second answer.
 **Reader:** enforced. Review tests pin agreement to corroboration, disagreement to
 `NO_DATA` with both statuses recorded, and the resulting reduction in scored reach.
 
-### VRD-17 — `scores_with` reports twice and carries weight once
+#### Scenario: the second reading agrees
+- **WHEN** a review confirms the verdict already assigned
+- **THEN** the verdict stands, corroborated
 
-A row carrying `scores_with` is graded and reported with its quality status, but
-contributes no weight. The row it names carries the shared measurement's weight.
+#### Scenario: the second reading disagrees
+- **WHEN** a review contradicts the verdict already assigned
+- **THEN** the item becomes `NO_DATA`, both statuses are recorded, and neither reading is
+  named the winner
+- **AND** the scored reach falls, which is the cost of an unsettled question
+
+### Requirement: VRD-17 — `scores_with` reports twice and carries weight once
+
+A row carrying `scores_with` SHALL be graded and reported with its quality status, and
+MUST contribute no weight. The row it names carries the shared measurement's weight.
 
 **Why:** synonym items remain visible as two registry obligations, while one defect from
 one shared check changes the headline score only once.
 **Reader:** enforced. Scoring tests pin the twin's reported decided status, partition
 membership, zero additional score effect and unchanged weight coverage.
+
+#### Scenario: two obligations, one measurement
+- **WHEN** two registry items resolve to one shared check and one carries `scores_with`
+- **THEN** both are reported with their quality status
+- **AND** the headline score and the weight coverage move exactly as they would for one
+
+#### Scenario: the twin is still an item
+- **WHEN** the partition of the registry is counted
+- **THEN** the twin appears in it, decided, rather than vanishing because it carries no
+  weight
 
 ## 4. Invariants
 
@@ -440,7 +679,7 @@ That is not a worry, it is the measurement in
 files whose own subject is measurement, and [`openspec/specs/registry/`](../registry/spec.md)
 REG-12 records the same shape three more times.
 
-### A.1 — items contradicting these requirements
+#### A.1 — items contradicting these requirements
 
 Observed values in the table are for the `good` and `broken` HTTP origins only.
 
@@ -498,7 +737,7 @@ none. What their declarations recorded is a limit of the harness rather than a w
 verdict, and a limit of the instrument belongs beside the instrument's output —
 [`openspec/specs/declarations/`](../declarations/spec.md) DEC-13.
 
-### A.2 — the violation of VRD-12, and how long it has been running
+#### A.2 — the violation of VRD-12, and how long it has been running
 
 The expected-verdict manifest declares `INDETERMINATE`, which no audit code emits. Its
 reader skips such declarations instead of comparing them. What the ninth word is hiding
@@ -517,7 +756,7 @@ both HTTP origins begin at `v0.48.0`. The unread window remains `v0.41.0` throug
 `v0.91.0`, fifty-five releases over about thirteen days and sixteen hours; the number
 of unread declarations changed within it.
 
-### A.3 — the census entry these findings re-read
+#### A.3 — the census entry these findings re-read
 
 AR-146, AR-150, AR-154, AR-163, CI-014 and GO-137 all sit in the census class
 *answered somewhere, never FAIL* — a count kept by `tests/census.json` and reported
