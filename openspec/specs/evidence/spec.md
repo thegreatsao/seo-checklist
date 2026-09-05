@@ -1,5 +1,16 @@
 # Evidence — what a checker owes, and what may be believed of what it returns
 
+## Purpose
+
+What the fifty-eight checker scripts owe the runner, and what the runner is entitled to
+assume about anything one of them returns. One contract plus a generated catalogue, not
+fifty-eight documents.
+
+The contract exists because the runner cannot read a checker's mind: it launches a
+process, reads one JSON document, and grades an item against a path in it. Every rule in
+the registry is written against that shape, so a checker that breaks it does not fail
+loudly — it produces a verdict about a site from a shape nobody expected.
+
 **Capability:** the contract every one of the fifty-eight checkers answers to, the
 checkers themselves, and the server-log evidence one of them reads (C24, C25, C26 of the
 capability inventory).
@@ -74,12 +85,13 @@ that.
 * `truncated`, a claim that the input the checker read was capped;
 * the shared fetch result, whose `error_kind` is `None` exactly when `error` is `None`.
 
-## 3. Requirements
+## Requirements
 
-### EVD-1 — a checker is a process with one output, and exit 0 means "I ran"
+### Requirement: EVD-1 — a checker is a process with one output, and exit 0 means "I ran"
 
-One JSON document on standard output, exit 0. A checker that cannot reach the site, cannot
-parse the page, or has nothing to say still exits 0 and returns its defined empty shape.
+A checker SHALL write one JSON document to standard output and exit 0. A checker that
+cannot reach the site, cannot parse the page, or has nothing to say MUST still exit 0 and
+return its defined empty shape.
 
 **Why:** the runner classifies a non-zero exit as a crash, which is a defect report about
 the checker. A checker that exits non-zero to mean "the site was down" produces a
@@ -91,11 +103,25 @@ is unread is the *empty* case as a contract: nothing asserts that each checker, 
 nothing to work with, exits 0 rather than raising — it is asserted for the handful whose
 tests construct that case and inherited for the rest.
 
-### EVD-2 — findings speak one severity vocabulary, normalised once
+#### Scenario: the site could not be reached
+- **WHEN** a checker cannot fetch what it was asked about
+- **THEN** it exits 0 and returns its empty shape, saying so in its own fields
+- **AND** it does not exit non-zero, which the runner would classify as a crash and
+  report as a defect in the checker rather than a fact about the site
 
-A finding's severity is `critical`, `high`, `medium` or `low`. Where a checker inherited
-another vocabulary, exactly one place translates it, and no rule and no report ever sees
-the untranslated word.
+#### Scenario: the checker genuinely broke
+- **WHEN** a checker raises rather than returning
+- **THEN** a non-zero exit is correct, and the runner is right to call it a crash
+
+#### Scenario: output that is not one JSON document
+- **WHEN** anything other than a single JSON document reaches standard output
+- **THEN** the contract is broken, whatever the exit code says
+
+### Requirement: EVD-2 — findings speak one severity vocabulary, normalised once
+
+A finding's severity SHALL be `critical`, `high`, `medium` or `low`. Where a checker
+inherited another vocabulary, exactly one place translates it, and no rule and no report
+MAY see the untranslated word — every consumer MUST see the normalised one.
 
 **Why:** thirteen rules once asked for `critical` or `high` over checkers that never say
 either word, and every one of them reported `PASS` on every site ever audited. A second
@@ -108,11 +134,24 @@ original defect. What is unread is uniqueness: nothing forbids a second normalis
 elsewhere, and Appendix A.3 shows two checkers shipping capitalised severities that the
 map does not translate at all.
 
-### EVD-3 — the output shape is probed, never described
+#### Scenario: a checker speaks another vocabulary
+- **WHEN** a checker emits a severity word from a vocabulary it inherited
+- **THEN** exactly one place translates it, before any rule or report sees it
 
-The catalogue of what each checker emits is produced by running the checkers and recording
-what came back. It is not written by hand, and a rule may only be written against a path
-that appears in it.
+#### Scenario: a rule written against the untranslated word
+- **WHEN** a registry rule names a severity the normalisation would have removed
+- **THEN** it can never match, and the item quietly stops deciding anything
+
+#### Scenario: a fifth word appears
+- **WHEN** a checker emits a severity outside the four
+- **THEN** it is caught rather than passed through, on the checker's side as well as the
+  rule's
+
+### Requirement: EVD-3 — the output shape is probed, never described
+
+The catalogue of what each checker emits SHALL be produced by running the checkers and
+recording what came back. It MUST NOT be written by hand, and a rule MAY only be written
+against a path that appears in it.
 
 **Why:** a hand-written shape is a claim about a program, and it decays the moment the
 program changes. The registry's rules are written against these paths; a path that was
@@ -123,10 +162,26 @@ names a path the catalogue does not document, and the catalogue is regenerated b
 `tools/probe_shapes.py` from the registry's own job list. This is the strongest reader in
 the document and the reason the "58 documents" problem is not one.
 
-### EVD-4 — the catalogue describes this tree, and says so accurately
+#### Scenario: a rule names a path no checker emits
+- **WHEN** a registry rule asserts on a key absent from the catalogue
+- **THEN** the build fails, naming the path
+- **AND** the item does not ship reading a field that will never arrive
 
-The catalogue's own account of itself — how many checkers it covers, which of them break
-the shared convention and how — is derived from the tree rather than written beside it.
+#### Scenario: the catalogue is edited by hand
+- **WHEN** a section is written rather than probed
+- **THEN** it describes what somebody believed, which is the thing this requirement
+  exists to prevent
+
+#### Scenario: a checker's shape changes
+- **WHEN** a checker starts or stops emitting a key
+- **THEN** regenerating the catalogue shows it, and any rule left pointing at the old
+  path fails
+
+### Requirement: EVD-4 — the catalogue describes this tree, and says so accurately
+
+The catalogue's own account of itself — how many checkers it covers, which of them
+break the shared convention and how — SHALL be derived from the tree rather than written
+beside it.
 
 **Why:** the catalogue is the document a rule-writer reads before writing a rule. Its
 opening paragraph is where they learn which checkers are exceptions, and an exception it
@@ -137,10 +192,23 @@ omits one of the two extra checkers it actually documents. Its account of the de
 names three scripts and calls them four, and attributes to one script a deviation that
 both of them have.
 
-### EVD-5 — `truncated` is a claim about coverage, and it changes verdicts
+#### Scenario: the catalogue counts itself
+- **WHEN** the catalogue states how many checkers it documents
+- **THEN** that number is computed from the registry and the tree at generation time
 
-A checker that read a capped input says so. The claim travels: a rule that would pass *by
-absence* over a truncated input is downgraded rather than believed.
+#### Scenario: a checker is added
+- **WHEN** the registry gains a script
+- **THEN** the stated count moves with it, without anyone editing a sentence
+
+#### Scenario: the count is a literal
+- **WHEN** the number is typed into the prose beside the thing it counts
+- **THEN** it is wrong within a release and nothing says so — which is the state this
+  requirement records as its own violation
+
+### Requirement: EVD-5 — `truncated` is a claim about coverage, and it changes verdicts
+
+A checker that read a capped input SHALL say so. The claim travels: a rule that would
+pass *by absence* over a truncated input MUST be downgraded rather than believed.
 
 **Why:** "no violations found" over half a site is not a finding about the site. This is
 the field-level half of the rule `openspec/specs/run-lifecycle/` RUN-19 states.
@@ -153,11 +221,27 @@ ability and did not use it would be caught. The one unread half — that the fla
 from a real truncated crawl rather than being injected by a test — is not this
 requirement's: `openspec/specs/run-lifecycle/` RUN-19 states it and records it as unread there.
 
-### EVD-6 — every number a verdict depends on names what it rests on
+#### Scenario: half a site, nothing found
+- **WHEN** a checker caps its input and a rule passes because it found none of the thing
+  it forbids
+- **THEN** the pass is downgraded, because absence over part of a site is not a finding
+  about the site
 
-A threshold in a checker is `standard` (somebody else's published rule), `measured` (from
-data recorded here), `convention` (this tree's choice, stated) or `inherited` (it came with
-the code and nobody has defended it). Every such number carries its basis in the source,
+#### Scenario: a defect found before the cap
+- **WHEN** the same truncated input yielded a real finding
+- **THEN** the finding survives, and its count is named as a floor
+
+#### Scenario: a checker that caps and does not say so
+- **WHEN** a checker limits what it read and returns no truncation claim
+- **THEN** every absence it reports is believed, which is the failure this requirement
+  exists to prevent
+
+### Requirement: EVD-6 — every number a verdict depends on names what it rests on
+
+A threshold in a checker SHALL be `standard` (somebody else's published rule),
+`measured` (from data recorded here), `convention` (this tree's choice, stated) or
+`inherited` (it came with the code and nobody has defended it). Every such number MUST
+carry its basis in the source,
 and no number that decides a verdict may carry none.
 
 **Why:** a threshold with no stated basis cannot be argued with, and a client's first
@@ -168,11 +252,24 @@ verdict depends on and fails when one names no basis. It reports 146 such number
 11 `standard`, 11 `measured`, 47 `convention`, 77 `inherited`, and **0 with no basis**.
 The gate holds the floor; the 77 are the debt it makes visible.
 
-### EVD-7 — something must assert that a checker's answer is right
+#### Scenario: a number decides a verdict
+- **WHEN** a threshold in a checker separates one verdict from another
+- **THEN** the source states which of the four kinds of basis it has
 
-For every checker, at least one of two things exists: a test that names it and asserts
-what it returns for a constructed input, or a settled declaration in the fixture oracle for
-an item it decides. A checker with neither is exercised and unjudged: it runs on every
+#### Scenario: a number with no basis at all
+- **WHEN** a threshold carries no stated basis
+- **THEN** the gate fails, because a number a client can be shown must be arguable
+
+#### Scenario: an undefended number is honest about being undefended
+- **WHEN** a threshold came with the code and nobody has justified it
+- **THEN** `inherited` is the correct answer, and it licenses no conclusion beyond
+  "this is what it has always been"
+
+### Requirement: EVD-7 — something must assert that a checker's answer is right
+
+For every checker, at least one of two things SHALL exist: a test that names it and
+asserts what it returns for a constructed input, or a settled declaration in the fixture
+oracle for an item it decides. A checker with neither is exercised and unjudged: it runs on every
 audit, produces a verdict, and nothing anywhere says that verdict is correct.
 
 **Why:** running is not the same as being right. Twenty of the fifty-eight are named by no
@@ -201,10 +298,29 @@ reddens naming `collection_page_checker.py`, and it is the only single deletion 
 *only* through a RUNS key, so the resolution cannot be simplified away without the failure
 that follows saying why.
 
-### EVD-8 — a log format the audit cannot read is refused by name
+#### Scenario: a checker with a test
+- **WHEN** a test constructs an input and asserts what the checker returns for it
+- **THEN** the checker is judged
 
-Server-log evidence accepts Combined Log Format and its JSON equivalents. Common Log
-Format is **refused**, with the reason: it has no User-Agent field, and every question this
+#### Scenario: a checker with a settled declaration
+- **WHEN** the fixture oracle predicts a verdict, in a word the audit can emit, for an
+  item the checker decides
+- **THEN** the checker is judged, by a different instrument at a different cost
+
+#### Scenario: a checker with neither
+- **WHEN** no test names it and every declaration for its items declines to predict
+- **THEN** it runs on every audit, produces a verdict, and nothing anywhere says the
+  verdict is right
+
+#### Scenario: judged through a name it is never called by
+- **WHEN** a test reaches a checker through a fixture key rather than its filename
+- **THEN** it is judged nonetheless, and a census that searched for the filename would
+  have reported it uncovered
+
+### Requirement: EVD-8 — a log format the audit cannot read is refused by name
+
+Server-log evidence SHALL accept Combined Log Format and its JSON equivalents. Common
+Log Format MUST be **refused**, with the reason: it has no User-Agent field, and every question this
 evidence answers is a question about which agent made the request.
 
 **Why:** a format that parses but cannot carry the answer is worse than one that fails to
@@ -214,11 +330,20 @@ file and a false one about the site.
 into the checker with its reason; what is unread is the refusal as a *contract* — nothing
 asserts that a CLF file produces the refusal rather than an empty result.
 
-### EVD-9 — below a week, "never crawled" is not a finding
+#### Scenario: a log without a user agent
+- **WHEN** an operator supplies Common Log Format
+- **THEN** it is refused, and the refusal says the format has no User-Agent field
 
-Server-log coverage claims require a window of at least seven days, and rate claims require
-a minimum volume of requests. Below either, the checker declines to report rather than
-reporting an absence.
+#### Scenario: a refusal that reads as an absence
+- **WHEN** an unreadable log produces "no crawler activity" instead of a refusal
+- **THEN** the operator is told something false about their site rather than something
+  true about their file
+
+### Requirement: EVD-9 — below a week, "never crawled" is not a finding
+
+Server-log coverage claims SHALL require a window of at least seven days, and rate
+claims a minimum volume of requests. Below either, the checker MUST decline to report
+rather than report an absence.
 
 **Why:** a crawler that visits weekly has not skipped a URL it has not reached yet. An
 absence over three days of logs is a statement about the log, and reporting it as a
@@ -227,11 +352,21 @@ statement about the site produces work nobody needed to do.
 — seven days for coverage, fifty requests for rates. Whether the decline actually happens
 below them is asserted for one of the two.
 
-### EVD-10 — AI crawlers are counted apart from search engines, and verification is opt-in
+#### Scenario: three days of log
+- **WHEN** the supplied window is shorter than seven days
+- **THEN** the checker declines to claim anything about crawl coverage
 
-An AI crawler's requests are reported separately from a search engine's. Confirming that a
-request claiming to be a crawler really came from one costs reverse DNS, so it is opt-in
-and its absence is stated rather than assumed.
+#### Scenario: a page absent from a short window
+- **WHEN** a page does not appear in a three-day log
+- **THEN** that is not reported as "never crawled", because the window is too short for
+  the absence to mean anything
+
+### Requirement: EVD-10 — AI crawlers are counted apart from search engines, and verification is opt-in
+
+An AI crawler's requests SHALL be reported separately from a search engine's.
+Confirming that a request claiming to be a crawler really came from one costs reverse DNS,
+so it MAY be opt-in, and where it was not done the report MUST say so rather than let the
+reader assume it was.
 
 **Why:** the two populations answer different questions — one is about being indexed, the
 other about being ingested — and averaging them answers neither. And a user agent string is
@@ -239,6 +374,15 @@ a claim by the client: counting unverified claims as crawler traffic is how a lo
 reports a bot problem that is somebody's scraper.
 **Reader:** partial. The separation is implemented and exercised; the opt-in flag exists.
 Nothing asserts that unverified counts are labelled as unverified where they are read.
+
+#### Scenario: two kinds of crawler in one log
+- **WHEN** a log contains both search-engine and AI-crawler requests
+- **THEN** they are counted and reported apart
+
+#### Scenario: verification was not requested
+- **WHEN** reverse-DNS confirmation is off
+- **THEN** the report says the user-agent strings were taken at their word
+- **AND** it does not present unverified counts as verified ones
 
 ## 4. Invariants
 
@@ -297,7 +441,7 @@ a stretch. What would settle it: a ratchet — `inherited` permitted but never p
 
 Observation, not specification. Measured at commit `f81f0a3`, registry `b0abf2819da0`.
 
-### A.1 — the catalogue's account of itself is wrong in two ways
+#### A.1 — the catalogue's account of itself is wrong in two ways
 
 The first paragraph of `script-output-shapes.md` is what a rule-writer reads before writing
 a rule. It says:
@@ -329,7 +473,7 @@ Nothing reads any of it. This is the same shape as the registry's own `source` s
 (REG-12) and the four drifted counts in the census tooling: a number written beside the
 thing it counts, reproduced faithfully by every gate, compared with nothing.
 
-### A.2 — twenty checkers are exercised and unjudged, and none is unjudged
+#### A.2 — twenty checkers are exercised and unjudged, and none is unjudged
 
 **Corrected 5 September 2026. This heading used to end "and one is neither", and the
 paragraph naming that one was wrong.** The count behind it looked for each script's
@@ -374,7 +518,7 @@ appeared to find one hole from opposite ends, and the agreement read as corrobor
 taken for *unjudged*. Neither side was wrong about its own half; the conjunction was, and it
 made the most convincing finding in this document the only false one.
 
-### A.3 — two checkers speak a severity vocabulary nothing translates
+#### A.3 — two checkers speak a severity vocabulary nothing translates
 
 `SEVERITY_ALIAS` maps `error`, `warning`, `warn`, `info` and `notice` onto the four. It
 does not map `High`, `Medium` or `Critical`, and `gsc_checker.py` and
@@ -386,7 +530,7 @@ Nothing states that it works, and nothing would fail if a checker emitted `Warni
 lowercases to `warning`, which the alias maps to `medium`, so that one would work too, for
 a different reason. Three spellings, two mechanisms, one of them unwritten.
 
-### A.4 — the method behind A.2, and its limit
+#### A.4 — the method behind A.2, and its limit
 
 The three counts above were computed by parsing every test file into its 1 280 test
 functions and asking, for each of the 58 checkers, how many function bodies name it. That
