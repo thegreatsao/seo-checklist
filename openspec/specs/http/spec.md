@@ -1,5 +1,16 @@
 # HTTP — what the audit is allowed to ask the network, and what it must not
 
+## Purpose
+
+The acquisition substrate every checker sits on — the SSRF guard and the
+private-address allowance, pacing and robots, the response cache, the fetch contract,
+and the choice of HTML parser (C19–C23 of the capability inventory). It exists because
+an audit owes two things at once to two different parties: the site being audited is
+owed politeness, and the machine running the audit is owed a guard against a URL that
+came from outside it. Every checker that opens a connection reaches the network through
+this one layer, which is what makes a rule stated here stated once — and a hole opened
+here open in all of them.
+
 **Capability:** the acquisition substrate every checker sits on — the SSRF guard and the
 private-address allowance, pacing and robots, the response cache, the fetch contract, and
 the choice of HTML parser (C19–C23 of the capability inventory).
@@ -69,31 +80,58 @@ Failed requests, `POST`, a streamed body nobody read, and a body above the ceili
 *is* cached is `GET` and `HEAD`, keyed so that a `HEAD` and a `GET` of one URL are two
 questions and a different `Accept` header is a different request.
 
-## 3. Requirements
+## Requirements
 
-### HTTP-1 — a URL is validated before it is requested, and the address it validated is the address it connects to
+### Requirement: HTTP-1 — a URL is validated before it is requested, and the address it validated is the address it connects to
 
-Every request passes the guard first. The guard resolves the host, refuses the resolved
-address if it is private, link-local, reserved, multicast or unspecified, and then the
-connection is pinned to the address that was validated — so a name that resolves twice
-cannot answer the check with one address and the request with another.
+Every request MUST pass the guard first. The guard SHALL resolve the host, SHALL refuse
+the resolved address if it is private, link-local, reserved, multicast or unspecified, and
+the connection SHALL then be pinned to the address that was validated — so a name that
+resolves twice cannot answer the check with one address and the request with another.
 
 **Why:** a validate-then-connect gap is the whole of DNS rebinding, and it turns the guard
 into decoration. The audited URL is attacker-controlled by construction: it is whatever the
 operator was given.
-**Reader:** enforced. `test_dns_rebinding_connects_only_to_the_answer_the_guard_validated`
+**Reader:** partial, and the missing half is a request rather than a test — see A.5.
+`test_dns_rebinding_connects_only_to_the_answer_the_guard_validated`
 resolves a name to a public address and then to loopback and asserts one lookup, a
 connection to the public address only, and the `Host` header preserved;
 `test_redirect_refuses_a_private_second_hop_without_reusing_the_first_pin` pins the redirect
 case; `test_resolution_failure_is_refused_before_a_request` asserts that a name that does
-not resolve costs no request at all.
+not resolve costs no request at all. All three read the path a checker's fetch takes.
 
-### HTTP-2 — the private allowance is per-run, narrower than "not public", and announced
+What no reader covers is the one request the substrate makes on its own account:
+`_fetch_robots` calls `requests.get` directly, so every origin's `/robots.txt` is
+fetched without the guard and without the pin. The requirement says *every* request.
 
-`--allow-private` opens the guard for the whole run, not for one script — fifty-five
+#### Scenario: a name that answers the guard and the connection differently
+- **WHEN** a host resolves to a public address for the guard's lookup and to loopback for
+  the one the transport would make
+- **THEN** exactly one lookup happens, and the connection is made to the address the
+  guard validated
+- **AND** the `Host` header, the SNI name and the certificate check still carry the
+  original hostname, so pinning does not quietly weaken TLS
+
+#### Scenario: a redirect onto a private second hop
+- **WHEN** a validated first hop answers with a `Location` naming a private address
+- **THEN** the second hop is validated in its own right and refused
+- **AND** the first hop's pin is not reused for it
+
+#### Scenario: a name with no address costs no request
+- **WHEN** the host does not resolve
+- **THEN** the call raises before anything goes out, and no server sees a request
+
+#### Scenario: several answers, all of them validated
+- **WHEN** the resolver returns more than one address and the first refuses the connection
+- **THEN** the remaining addresses are tried in resolver order
+- **AND** every one of them is an address this call validated, never one looked up again
+
+### Requirement: HTTP-2 — the private allowance is per-run, narrower than "not public", and announced
+
+`--allow-private` SHALL open the guard for the whole run, not for one script — fifty-five
 checkers each guard themselves and a per-call allowance cannot reach them. It permits
-loopback, RFC 1918, unique-local and carrier-grade NAT. It does **not** permit link-local,
-reserved, multicast or unspecified addresses, and no flag does. The run says it is on.
+loopback, RFC 1918, unique-local and carrier-grade NAT. It MUST NOT permit link-local,
+reserved, multicast or unspecified addresses, and no flag may. The run SHALL say it is on.
 
 **Why:** the allowance exists so an operator can audit a staging box or a fixture on
 loopback. The addresses it must never reach are exactly the ones an SSRF attack wants —
@@ -108,11 +146,43 @@ spellings of yes count. The announcement is pinned once. What is unread is the *
 half, which is the requirement's first clause: nothing asserts that the allowance reaches a
 child process. The suite's own docstring concedes the point and defers to CI.
 
-### HTTP-3 — a private entry costs coverage, and says so
+#### Scenario: the allowance does not reach the metadata service
+- **WHEN** the allowance is on and the URL resolves to `169.254.169.254`, to another
+  link-local address, or to a link-local IPv6 address
+- **THEN** the request is refused
+- **AND** the refusal says the flag will not help, rather than sending the reader to set
+  a flag that is already set
+
+#### Scenario: the allowance does not reach reserved, multicast or unspecified addresses
+- **WHEN** the allowance is on and the URL resolves into a reserved or multicast range, or
+  to the unspecified address
+- **THEN** the request is refused, because nothing legitimate is served there and
+  permitting it would only widen the hole
+
+#### Scenario: a staging box and a fixture on loopback
+- **WHEN** the allowance is on and the URL resolves into loopback, RFC 1918, unique-local
+  or carrier-grade NAT
+- **THEN** the request is permitted
+- **AND** the run says once, on a surface a single hand-run script also has, which address
+  it allowed
+
+#### Scenario: a typo does not open the guard
+- **WHEN** the allowance is set to anything but the four spellings of yes — a blank, a
+  nonsense word, a trailing space
+- **THEN** the guard stays closed, the way an unparseable rate falls back to the default
+  rather than to no limit
+
+#### Scenario: the allowance belongs to the run, not to the caller
+- **WHEN** a run given the allowance launches its checkers as separate processes
+- **THEN** every one of those processes may reach the permitted addresses without being
+  told again, because a per-call allowance cannot reach fifty-five scripts that each
+  guard themselves
+
+### Requirement: HTTP-3 — a private entry costs coverage, and says so
 
 When the audited host resolves to a private address, every item that would call an outside
-service reports `NO_DATA` — not `N/A` — and the report says the audit ran against a host
-only reachable from here.
+service SHALL report `NO_DATA` — never `N/A` — and the report SHALL say the audit ran
+against a host only reachable from here.
 
 **Why:** those items are not out of scope; they are unanswerable from where the audit
 stands, and the difference is the score's denominator. `N/A` would remove them and lift the
@@ -123,12 +193,36 @@ status and the reason for all three outside-world capabilities, and
 the coverage falls rather than the denominator shrinking has no test, and no test observes
 `entry_private` true from a real resolution — every test that uses it sets it by hand.
 
-### HTTP-4 — requests to one host are paced, across processes and across audits
+#### Scenario: a host only this machine can reach
+- **WHEN** the audited host resolves to a private address
+- **THEN** every item whose check needs an outside service — a measurement from another
+  network, a reputation lookup, a property's history — reports `NO_DATA` with a reason
+  naming the host
+- **AND** the items that need only the page itself are left to answer for themselves
 
-Requests to a host are spaced by a default rate. The state is shared between processes and
-between concurrent audits on the machine, so two runs against one site do not add up to
-twice the rate. A corrupt, stale or unwritable pacing state slows the audit down, never
-stops it.
+#### Scenario: the score is not lifted by what could not be seen
+- **WHEN** those items are set aside
+- **THEN** they stay in the denominator and the run's coverage falls
+- **AND** they are not `N/A`, which would remove them and let a staging audit report the
+  same coverage as a live one
+
+#### Scenario: the audit finds out by resolving, not by being told
+- **WHEN** a run audits a fixture or a staging box that is genuinely on a private address
+- **THEN** it records the entry host as private because that is where the name resolved
+- **AND** a public host audited with the allowance on is not recorded as private, and a
+  host that does not resolve is unreachable rather than private
+
+#### Scenario: the reader of the report is told
+- **WHEN** a report is produced for such a run
+- **THEN** it says this describes a local or staging copy rather than the site a visitor
+  or a search engine sees, and that the outside-world items could not be decided at all
+
+### Requirement: HTTP-4 — requests to one host are paced, across processes and across audits
+
+Requests to a host SHALL be spaced by a stated default rate. The state MUST be shared
+between processes and between concurrent audits on the machine, so two runs against one
+site do not add up to twice the rate. A corrupt, stale or unwritable pacing state SHALL
+slow the audit down and MUST NOT stop it.
 
 **Why:** the fan-out is what makes an audit rude: fifty-eight checkers and a crawl against
 one server. Per-process pacing would be no pacing at all, since the run is a process tree.
@@ -140,11 +234,34 @@ behind each other; a stale slot, a corrupt slot, junk contents and an unwritable
 are each asserted not to stop the run. The default rate itself is asserted only against its
 own constant, so `DEFAULT_MAX_RPS` could be 40 and the suite would stay green.
 
-### HTTP-5 — `robots.txt` governs discovered URLs and never the audited one
+#### Scenario: separate processes queue behind each other
+- **WHEN** several checkers, each its own process, pace themselves against one host
+- **THEN** each waits behind the one before it, so the machine's combined rate is the
+  configured rate and not a multiple of it
+- **AND** they queue in the state the run named, not in whichever directory each process
+  picked up for itself
 
-A URL the audit found — in a sitemap, in a link, in a crawl — is fetched only if robots
-allows it. The URL the operator handed in is fetched regardless, and a robots rule
-forbidding it is reported as a finding about the site rather than as a refusal to work.
+#### Scenario: one slow site does not pace an unrelated one
+- **WHEN** a request has just gone to one host and a request to a different host follows
+- **THEN** the second is not made to wait behind the first
+
+#### Scenario: the shared state is unusable
+- **WHEN** the pacing slot holds a timestamp from before a reboot, two concatenated
+  writes, junk, or cannot be written at all
+- **THEN** the process paces itself alone and the request goes out
+- **AND** nothing raises out of pacing into the thirty-six scripts that called it
+
+#### Scenario: the default rate is a number somebody chose
+- **WHEN** the default requests-per-second is changed
+- **THEN** something fails that names the value — not an assertion that compares the
+  constant with itself and moves with it
+
+### Requirement: HTTP-5 — `robots.txt` governs discovered URLs and never the audited one
+
+A URL the audit found — in a sitemap, in a link, in a crawl — SHALL be fetched only if
+robots allows it. The URL the operator handed in MUST be fetched regardless, and a robots
+rule forbidding it SHALL be reported as a finding about the site rather than as a refusal
+to work.
 
 **Why:** both halves fail silently if reversed. Applying robots to the audited URL turns
 "your robots.txt blocks this page" into a tool that produces nothing, and the operator
@@ -161,10 +278,37 @@ the default that produces the asymmetry is asserted only through the function's 
 is reversed. That an audited URL blocked by robots yields a `critical` finding rather than
 a refusal is pinned as a `FAIL` and not as a severity.
 
-### HTTP-6 — the crawl identifies itself by a token that can be blocked
+#### Scenario: a URL the audit found for itself
+- **WHEN** a sitemap, a link or a crawl yields a URL a robots rule disallows
+- **THEN** it is not fetched
+- **AND** the refusal is carried as our own restraint, not as the site failing — a
+  sitemap URL we politely declined is not an orphan page
 
-The audit sends a user agent naming itself, and the robots token is a bare word a site
-owner can write a rule against.
+#### Scenario: the URL the operator handed in
+- **WHEN** the audited URL is disallowed by the site's own `robots.txt`
+- **THEN** it is fetched anyway
+- **AND** the block is reported as the `critical` item about being blocked from crawling,
+  rather than as forty-odd items reporting that they could not look
+
+#### Scenario: the asymmetry reversed
+- **WHEN** robots is applied to the audited URL by default
+- **THEN** the audit collapses into undecided items with the one finding that mattered
+  buried inside them, and the operator cannot tell that outcome from a crash
+
+#### Scenario: a redirect off a permitted path
+- **WHEN** a discovered URL that robots allows redirects onto a path robots forbids
+- **THEN** the second hop is refused, so a site that redirects cannot make the rule
+  trivially avoidable
+
+#### Scenario: there is nothing readable to obey
+- **WHEN** `robots.txt` is absent, blank, unparseable, or the fetch for it raises
+- **THEN** the URL is allowed and the audit continues, because refusing to look at a site
+  whose operator asked for the audit is the worse answer
+
+### Requirement: HTTP-6 — the crawl identifies itself by a token that can be blocked
+
+The audit SHALL send a user agent naming itself, and the robots token MUST be a bare word
+a site owner can write a rule against.
 
 **Why:** politeness that cannot be declined is not politeness. A site owner's only lever is
 a rule in `robots.txt`, and it only works if the token is stable and matchable.
@@ -173,12 +317,28 @@ token beats the wildcard, and asserts the token is bare — no slash. Nothing as
 user agent actually goes on the wire: the header constant and the default header set are
 named by no test.
 
-### HTTP-7 — the cache answers questions, never invents them
+#### Scenario: a site owner writes a rule against us
+- **WHEN** `robots.txt` carries a group naming the token and a separate wildcard group
+- **THEN** the group naming the token decides, and the wildcard's paths do not apply to us
 
-A cached response is indistinguishable from the live one it replaced, down to its redirect
-chain. Failures, `POST`s, streamed bodies and oversized bodies are never stored. A cache
-hit is still subject to robots. Two requests that differ in method or in a header the
-server may vary on are two questions.
+#### Scenario: the token is not a User-Agent string
+- **WHEN** the full user agent is offered to the robots matcher instead of the bare token
+- **THEN** the matcher splits it at the first `/`, reads it as the browser name at the
+  front, and the site's rule for us is silently ignored while the wildcard applies
+- **AND** that is the failure the bare token exists to prevent, so the token carries no
+  slash
+
+#### Scenario: what actually goes on the wire
+- **WHEN** any request leaves the substrate, whatever headers its caller supplied
+- **THEN** it carries the shared user agent naming the tool, so the token a site owner
+  can block is the token it will see
+
+### Requirement: HTTP-7 — the cache answers questions, never invents them
+
+A cached response SHALL be indistinguishable from the live one it replaced, down to its
+redirect chain. Failures, `POST`s, streamed bodies and oversized bodies MUST NOT be stored.
+A cache hit MUST still be subject to robots. Two requests that differ in method or in a
+header the server may vary on SHALL be two questions.
 
 **Why:** a cache that merges two different questions produces a verdict about a document
 nobody fetched. Caching a failure would freeze a transient outage into the run. And a hit
@@ -192,11 +352,40 @@ values, are asserted to be separate entries; eight concurrent processes are asse
 produce one request; and `test_a_cache_hit_still_refuses_a_path_robots_forbids` pins the
 robots re-check.
 
-### HTTP-8 — the run says whether it used a cache
+#### Scenario: a restored response is the response that was fetched
+- **WHEN** a request is answered from the cache
+- **THEN** its status, reason, URL, headers, encoding, body and elapsed time are the live
+  response's own
+- **AND** its redirect chain is restored hop for hop, because the hop count and the
+  response time are both reported as findings
 
-An artifact records whether the response cache was on. With it off, two items may describe
-two states of the same document; with it on, a verdict may be about a response fetched
-earlier in the run.
+#### Scenario: a transient failure is not frozen into the run
+- **WHEN** a request is refused, times out, or is stopped by the guard
+- **THEN** nothing is stored, and the next caller asks again rather than inheriting one
+  outage as every item's outage
+
+#### Scenario: a cache hit does not launder a request robots forbids
+- **WHEN** an entry was warmed by a caller that does not consult robots — which is exactly
+  how the audit target is fetched — and a later caller asks with robots on
+- **THEN** the stored redirect chain is re-checked and the disallowed hop is refused
+
+#### Scenario: half a file on disk is not half a page
+- **WHEN** a stored entry is short of the length it says it has, because a write did not
+  finish
+- **THEN** it is a miss and the request goes out again, rather than a document with its
+  end missing being served as the page
+
+#### Scenario: two questions are not one
+- **WHEN** one URL is asked with `HEAD` and with `GET`, with two different `Accept` values,
+  or with redirects allowed and refused
+- **THEN** each is its own entry
+- **AND** the caller that asked to see the hop is not answered with the hop's destination
+
+### Requirement: HTTP-8 — the run says whether it used a cache
+
+An artifact SHALL record whether the response cache was on, and the surface a reader is
+handed SHALL say so too. With it off, two items may describe two states of the same
+document; with it on, a verdict may be about a response fetched earlier in the run.
 
 **Why:** every other thing that changes what a verdict is *about* — the parser, a private
 host, an overridden guard, a stale artifact — appears in the report's provenance. The cache
@@ -218,11 +407,27 @@ fixed, so this one is written to fail *at the moment the cache joins the list* a
 in its own failure message, that it should then be replaced by the positive assertion.
 Closing it is a release, not an edit here.
 
-### HTTP-9 — a failed fetch is classified into a closed vocabulary, and the classification travels
+#### Scenario: the artifact says the cache was on
+- **WHEN** a run that could fetch anything completes
+- **THEN** the payload records that the response cache was on
 
-Seven kinds, no others. Every failure carries both a message and a kind, and a fetch that
-succeeded carries neither. Downstream, the three kinds that mean "nothing is there" produce
-a broken link and the rest produce an unchecked one.
+#### Scenario: the artifact says it was off
+- **WHEN** the same run is given `--no-http-cache`
+- **THEN** the payload records that it was off, so a field hard-coded to on cannot pass
+  for a recording
+
+#### Scenario: the reader of the report is told too
+- **WHEN** a report is produced for a run that answered any item from the cache
+- **THEN** the provenance list names the cache, beside the parser, the private host, the
+  overridden guard, the thin entry page and the supplied artifacts
+- **AND** a reader can tell "this is the page" from "this was the page a few minutes ago"
+  without opening the JSON
+
+### Requirement: HTTP-9 — a failed fetch is classified into a closed vocabulary, and the classification travels
+
+Seven kinds, no others. Every failure SHALL carry both a message and a kind, and a fetch
+that succeeded MUST carry neither. Downstream, the three kinds that mean "nothing is there"
+SHALL produce a broken link and the rest an unchecked one.
 
 **Why:** the message is for a person and drifts; the kind is for the code and must not. A
 link reported as broken because the audit was blocked is a false accusation about somebody
@@ -233,11 +438,33 @@ the seven kinds in order and all seven exception mappings, and
 half-read: the failure direction is asserted seven times over, and nothing asserts that a
 *successful* fetch leaves both fields unset.
 
-### HTTP-10 — a cap is a stated condition, never a silent truncation
+#### Scenario: every failure carries a kind
+- **WHEN** a fetch fails
+- **THEN** it carries a kind that is one of the seven, decided by the exception's type
+  rather than by its wording
 
-A response larger than the ceiling, or larger than a caller's own limit, raises rather than
-returning a shortened body. A declared encoding is honoured; where nothing is declared the
-bytes are sniffed, and what is found past the sniff window is not read.
+#### Scenario: a resolver failure wrapped in a connection error
+- **WHEN** the transport reports a connection error whose cause is a name that does not
+  resolve
+- **THEN** the kind is `unresolved`, taken from the typed chain and not from the prose
+
+#### Scenario: our own restraint is not the site's defect
+- **WHEN** a link could not be checked because the guard stopped us or `robots.txt`
+  forbade it
+- **THEN** it is reported as unchecked
+- **AND** it is not counted as broken, which would be a false accusation about somebody
+  else's site
+
+#### Scenario: a fetch that worked claims nothing
+- **WHEN** a fetch succeeds
+- **THEN** both the message and the kind are absent, so no stale classification can
+  survive into a successful result
+
+### Requirement: HTTP-10 — a cap is a stated condition, never a silent truncation
+
+A response larger than the ceiling, or larger than a caller's own limit, SHALL raise rather
+than return a shortened body. A declared encoding MUST be honoured; where nothing is
+declared the bytes are sniffed, and what is found past the sniff window MUST NOT be read.
 
 **Why:** a truncated body is a document with its footer missing, and every checker that
 counts elements would answer confidently about a page that does not exist. The same is true
@@ -250,10 +477,38 @@ declaration past the sniff window that is deliberately *not* read. What is unrea
 default ceiling itself, which no test exercises, and the redirect budget, which no test
 exhausts.
 
-### HTTP-11 — TLS verification is never relaxed
+#### Scenario: a body over the ceiling
+- **WHEN** a response grows past the caller's limit while it is being read
+- **THEN** the read stops and raises, and no shortened body is returned, decoded or stored
 
-Certificate verification is on for every request the substrate makes, and no caller can
-turn it off.
+#### Scenario: a caller that wants less than what is already stored
+- **WHEN** a complete stored body is larger than a later caller's own cap
+- **THEN** the request goes out again and fails exactly as it would have without a cache,
+  rather than the stored body being trimmed to fit
+
+#### Scenario: the server names the encoding
+- **WHEN** `Content-Type` carries a charset, with or without spaces around the `=`
+- **THEN** it decides, even where the document declares something else — a disagreement is
+  a site defect for an item to report, not something to paper over here
+
+#### Scenario: the server names none
+- **WHEN** a markup or text response arrives with no charset and the document declares one
+  in a BOM, an XML declaration or a `<meta>`
+- **THEN** that declaration decides, rather than the old HTTP default that would render
+  every heading and word count as mojibake
+- **AND** a declaration that is commented out, names a codec that does not exist, or sits
+  past the sniff window does not decide, because a guess that rewrites a page's text is
+  what this rule refuses
+
+#### Scenario: the redirect budget runs out
+- **WHEN** a chain is longer than the configured number of hops
+- **THEN** the call raises rather than following one more, or handing back the last hop as
+  though it were the destination
+
+### Requirement: HTTP-11 — TLS verification is never relaxed
+
+Certificate verification MUST be on for every request the substrate makes, and no caller
+SHALL be able to turn it off.
 
 **Why:** an audit that reports on a site's security while accepting any certificate is
 making a claim it did not check. The failure is silent by construction — everything works
@@ -273,11 +528,39 @@ attribute assignment, so a checker calling `requests` directly is caught by stru
 rather than by spelling, and a docstring quoting the phrase is not. Probed by adding such a
 call to a checker: it fails naming the file and line.
 
-### HTTP-12 — no verdict may depend on which HTML parser ran
+#### Scenario: a caller asks for no verification
+- **WHEN** a caller passes verification off
+- **THEN** the request still goes out with it on, whatever the caller asked for
+
+#### Scenario: a caller supplies its own bundle
+- **WHEN** a caller passes a path where the decision would be taken instead of a boolean
+- **THEN** it is overruled too, because the question is not the caller's to decide
+
+#### Scenario: nobody mentions it
+- **WHEN** no caller says anything about verification
+- **THEN** it is on
+- **AND** weakening the unconditional assignment into one that merely supplies a default
+  is a failure rather than a tidy-up
+
+#### Scenario: a script that goes around the substrate
+- **WHEN** any script turns verification off directly — as a keyword on a request or as an
+  attribute on a session
+- **THEN** a census over the tree refuses it by structure, naming the file and the line
+- **AND** a docstring quoting the phrase is not mistaken for one
+
+#### Scenario: a script turns it off below the request layer
+- **WHEN** a script builds an SSL context that does not check the hostname, or sets the
+  verify mode to none, or asks for an unverified context outright
+- **THEN** the census refuses that too, because `verify=` is one spelling of the decision
+  and not the decision
+- **AND** the one file allowed an unverified handshake is allowed it only because its
+  verdict comes from a verifying one first
+
+### Requirement: HTTP-12 — no verdict may depend on which HTML parser ran
 
 Two parsers are available and they disagree about malformed markup. No field any registry
-rule reads may differ between them, the choice is made in one place, and the run records
-which parser produced its verdicts.
+rule reads MAY differ between them, the choice SHALL be made in one place, and the run
+SHALL record which parser produced its verdicts.
 
 **Why:** the guarantee cannot come from the libraries — they genuinely differ, and one of
 the differences is pinned in the suite as a known divergence. It can only come from a test
@@ -289,6 +572,28 @@ censuses — one asserting the parser name appears in no other file, one asserti
 `BeautifulSoup(` call names the shared choice. The recording is unread: the field is written
 into the artifact and no test opens it, the report's parser caveat has no test, and the test
 named for the recording asserts only that two functions return the same string.
+
+#### Scenario: the parsers disagree and no verdict moves
+- **WHEN** a document shape the two parsers genuinely read differently is parsed with each
+- **THEN** every field a registry rule reads is equal between them
+- **AND** the divergences that remain are ones no rule reads
+
+#### Scenario: a script that decides for itself
+- **WHEN** a script picks its parser from what happens to be imported already, or names a
+  parser without going through the shared choice
+- **THEN** a census over the tree refuses it, because two entry points inside one audit
+  could otherwise read one page two ways
+
+#### Scenario: a typo in the override
+- **WHEN** the parser override names something that is not a parser
+- **THEN** the shared choice falls back to the preferred one rather than quietly changing
+  what the run measures
+
+#### Scenario: the run says which parser produced its verdicts
+- **WHEN** two runs of one site disagree about a structural field
+- **THEN** the parser each used can be read out of its own artifact
+- **AND** a report produced by the fallback parser says so on its face, which is what makes
+  the disagreement diagnosable
 
 ## 4. Invariants
 
@@ -351,7 +656,7 @@ question `--allow-private` already answers yes to.
 
 Observation, not specification. Measured at commit `fcff201`.
 
-### A.1 — the artifact records whether a cache was used, and nothing anywhere reads it
+#### A.1 — the artifact records whether a cache was used, and nothing anywhere reads it
 
 `http_cache` is written into every results payload. Searching the whole test suite for the
 string returns nothing. The report's provenance warnings — the surface whose entire job is
@@ -363,7 +668,7 @@ The field is therefore a claim nobody makes and nobody checks. It is the third i
 the shape this suite keeps finding: a value recorded beside the thing it describes, faithful
 at the moment it was written, compared with nothing afterwards.
 
-### A.2 — eleven constants decide behaviour and none is pinned at its value
+#### A.2 — eleven constants decide behaviour and none is pinned at its value
 
 | constant | value | what a test asserts |
 |---|---|---|
@@ -385,7 +690,7 @@ environment value — and is a reader of the fallback, not of the number: both s
 together. And `ROBOTS_CACHE_TTL`'s only assertion lives in the ledger of known issues,
 which is a record of decisions rather than a gate on behaviour.
 
-### A.3 — six tests are named for more than they assert
+#### A.3 — six tests are named for more than they assert
 
 Found while censusing the substrate's readers, and listed because a reader census assembled
 from test *names* would credit every one of them:
@@ -403,7 +708,7 @@ None of them is a bad test. Each asserts something true and worth asserting. The
 in the census, not in the suite — which is exactly why `Reader:` lines in this document name
 what a body asserts rather than what a test is called.
 
-### A.4 — the guarantee with the strongest wording has the weakest reader
+#### A.4 — the guarantee with the strongest wording has the weakest reader
 
 HTTP-11 — verification is never relaxed — is implemented as an unconditional overwrite of
 whatever the caller passed, which is the strongest form the code can take. It has no test at
@@ -413,6 +718,40 @@ name appears in only one file, another asserting every parse names the shared ch
 
 The two censuses that exist were written after a defect. The one that does not exist guards
 the property whose failure is silent and total.
+
+#### A.5 — the substrate makes one request that does not pass its own guard
+
+Found on 5 September 2026 while writing HTTP-1's scenarios, and verified by reading the
+chain end to end.
+
+`robots_allows(url)` calls `robots_policy`, which calls `_robots_text_once`, which calls
+`_fetch_robots(origin)`:
+
+    response = requests.get(  # not safe_get: that would recurse into this
+        urljoin(origin, "/robots.txt"), ...
+
+The comment is honest about why — routing robots through `safe_request` would recurse,
+since `safe_request` consults robots — and the fetch is paced and cached. What it is not
+is guarded. No `_validated_url`, no address check, no pinned adapter. So HTTP-1's first
+clause, *every request passes the guard first*, is false for a request the substrate makes
+against every origin it touches; and its second clause is worse off than that, because
+`_fetch_robots` resolves the host again on its own. A name that answers the guard with a
+public address and the robots fetch with a private one reaches the private one — which is
+the validate-then-connect gap HTTP-1 exists to close, and which
+`test_dns_rebinding_connects_only_to_the_answer_the_guard_validated` pins for the audit's
+own fetches and not for this one.
+
+`_robots_permits_entry` widens the surface rather than creating it: on a cache hit it calls
+`robots_allows(hop)` for every stored redirect hop, so one cached entry can trigger an
+unguarded fetch per origin in the chain.
+
+The recursion the comment avoids is real, so the fix is not "call `safe_get`". It is to
+validate and pin the address without consulting robots — the guard and the politeness
+check are separable, and only one of them recurses.
+
+This is why HTTP-1 moves from `enforced` to `partial` in Appendix B. The reader is good and
+covers the path it was written for; the requirement says *every* request, and one request
+is outside it.
 
 ## Appendix B — how much of this document is enforced
 
@@ -436,14 +775,14 @@ the error this method leaves open, and the halves are where to look first.
 
 | | requirements |
 |---|---|
-| **enforced** | HTTP-1, HTTP-7, HTTP-11 |
-| **partial** | HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-8, HTTP-9, HTTP-10, HTTP-12 |
+| **enforced** | HTTP-7, HTTP-11 |
+| **partial** | HTTP-1, HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-8, HTTP-9, HTTP-10, HTTP-12 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-H2 and INV-H3 enforced; INV-H1 and INV-H4 partial.
 
-**Three enforced, nine partial, nothing unread, of twelve.**
+**Two enforced, ten partial, nothing unread, of twelve.**
 
 The first two enforced are the cache and the pinned connection, and they have in common
 something worth noticing: both were built *after* a specific failure was understood, and

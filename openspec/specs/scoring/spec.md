@@ -1,5 +1,15 @@
 # Scoring — the headline number and what it is allowed to mean
 
+## Purpose
+
+How graded items become the one number a client repeats, and what that number is allowed
+to mean. Three normative tables — severity weight, verdict credit, effort cost — plus the
+partition of the registry that keeps the number honest about what it covers.
+
+The tables are `inherited`: nobody in this project chose the values. That is why almost
+every requirement here is about protecting a number somebody else picked, and why a
+change to one of them is a release event rather than an edit.
+
 **Capability:** how graded items become a score, a weight share, five buckets and a fix
 order (C7, C8 of the capability inventory).
 
@@ -76,12 +86,12 @@ from that.
 
 ---
 
-## 3. Requirements
+## Requirements
 
-### SCR-1 — weight is carried per check, never per item
+### Requirement: SCR-1 — weight is carried per check, never per item
 
-Where several registry items ask one question of one script with one assertion, exactly
-one of them carries the weight. The others report their own status and contribute
+Where several registry items ask one question of one script with one assertion,
+exactly one of them SHALL carry the weight. The others report their own status and contribute
 nothing to either half of the score or to a category score.
 
 **Why:** otherwise one defect pulls the headline twice, and where the twins disagree on
@@ -95,9 +105,26 @@ and assertion without a recorded ruling. The category half is read by nothing an
 violated today: category sums iterate every scored row, twins included. A requirement
 whose own appendix records a live violation of half its sentence is not enforced.
 
-### SCR-2 — all three tables are normative, and changing one is a release event
+#### Scenario: one defect, two registry obligations
+- **WHEN** two items resolve to the same script, arguments and assertion
+- **THEN** one carries the weight and the other reports its status and contributes
+  nothing to either half of the score
 
-The values in §2 are part of the audit's contract. Changing any of them:
+#### Scenario: the twins disagree on severity
+- **WHEN** the two items are recorded at different severities
+- **THEN** the weight is the ruled survivor's, not whichever item a reader looked at
+  first
+
+#### Scenario: a category score is asked for
+- **WHEN** the same fold is applied to a category rather than to the headline
+- **THEN** twins are folded there too
+- **AND** a category sum that iterates every scored row violates this requirement, which
+  is what it does today
+
+### Requirement: SCR-2 — all three tables are normative, and changing one is a release event
+
+The values in §2 are part of the audit's contract, and a change to any of them SHALL
+be treated as a change of instrument:
 
 * must be stated in the release that does it, in those words;
 * invalidates comparison with every archived run scored or ordered under the previous
@@ -115,10 +142,24 @@ verdict credits. Nothing pins the `critical`, `high` or `low` severity weights, 
 reader enforces any of the release, comparability or warning obligations. This smaller finding remains the largest
 enforcement gap in this document.
 
-### SCR-3 — the score is a weighted fraction of what was decided
+#### Scenario: a weight is edited
+- **WHEN** any value in any of the three tables changes
+- **THEN** the release that does it says so in those words
 
-`seo_score` = 100 × Σ(weight × credit) ÷ Σ(weight), over decided items excluding twins.
-When nothing was decided, the score is **absent**, not zero.
+#### Scenario: a trend spans the change
+- **WHEN** a run is compared against an archived run scored under the previous table
+- **THEN** the comparison refuses, or the report warns
+- **AND** it does not present the difference as movement in the site
+
+#### Scenario: the change is made quietly
+- **WHEN** a table value is edited with no declaration and no warning
+- **THEN** every score before and after is compared as though it meant the same thing,
+  which is the harm this requirement exists to prevent
+
+### Requirement: SCR-3 — the score is a weighted fraction of what was decided
+
+`seo_score` SHALL be 100 × Σ(weight × credit) ÷ Σ(weight), over decided items
+excluding twins. When nothing was decided, the score MUST be **absent**, not zero.
 
 **Why:** zero is a verdict about a site; absence is a statement about the audit. A site
 that could not be read must not be reported as scoring zero.
@@ -127,10 +168,25 @@ unreachable-site CI step asserts that no score line is printed for an unreachabl
 No reader covers a reachable run with nothing decided; both renderers and the console
 currently print `None/100` for that case.
 
-### SCR-4 — the score may never appear without its weight share
+#### Scenario: a site with a mix of verdicts
+- **WHEN** items are decided `PASS`, `WARN` and `FAIL`
+- **THEN** each contributes its severity weight times its verdict credit, over the sum
+  of the weights of the decided items
+
+#### Scenario: a site that could not be read
+- **WHEN** nothing was decided
+- **THEN** the score is absent
+- **AND** it is not zero, which would be a verdict about the site rather than a
+  statement about the audit
+
+#### Scenario: a reachable site with nothing decided
+- **WHEN** the site answered but no item reached a quality verdict
+- **THEN** the score is still absent, and no surface renders it as a number
+
+### Requirement: SCR-4 — the score may never appear without its weight share
 
 `weight_pct` — the weight the score was computed over, as a percentage of the weight of
-all applicable items — travels with the score on every surface: console, report,
+all applicable items — SHALL travel with the score on every surface: console, report,
 artifact, and any sentence an operator or agent writes.
 
 **Why:** 69 over 55% of the registry's weight and 69 over 95% are different claims, and
@@ -152,10 +208,24 @@ that moves it, renames it or translates it is untouched.
 Until 5 September 2026 this read `none`, and correctly: both renderers printed the two
 together, which is the behaviour under audit rather than a reader of it.
 
-### SCR-5 — `N/A` leaves both numerator and denominator
+#### Scenario: the number appears anywhere
+- **WHEN** the score is shown on the console, in the report, in the artifact, or quoted
+  in a sentence
+- **THEN** the share of the weight it was computed over is shown with it
 
-An item that does not apply — to this site, this mode, or this profile — is absent from
-the score and from `weight_applicable`.
+#### Scenario: the same number over two different reaches
+- **WHEN** one run scores 69 over 55% of the weight and another 69 over 95%
+- **THEN** the two are different claims, and a reader can tell them apart
+
+#### Scenario: a surface stops reading the share
+- **WHEN** a renderer prints a fixed value, or derives the share from something other
+  than the run
+- **THEN** the requirement is violated even though a percentage still appears
+
+### Requirement: SCR-5 — `N/A` leaves both numerator and denominator
+
+An item that does not apply — to this site, this mode, or this profile — SHALL be
+absent from the score and from `weight_applicable`.
 
 **Why:** otherwise narrowing scope would make an audit look thinner rather than
 narrower, and the incentive would run the wrong way. This is VRD-7 applied to the number
@@ -163,11 +233,20 @@ that replaced coverage.
 **Reader:** partial. Unit tests pin `N/A` out of the score and compare reach with and
 without `N/A`, but no assertion directly pins the returned `weight_applicable` value.
 
-### SCR-6 — narrowing scope remains a registry partition
+#### Scenario: an item that does not apply
+- **WHEN** an item is `N/A`
+- **THEN** it is in neither the numerator nor the denominator
 
-Any mechanism that takes an item out of a run — category selection, profile exclusion,
-mode capability or applicability — must leave the item in the registry and classify it
-as `N/A`. Removing rows from the run's item list is forbidden: the five-bucket partition
+#### Scenario: narrowing does not look like thinning
+- **WHEN** a profile or a mode takes items out of scope
+- **THEN** the weight share does not fall on that account, because the excluded items
+  left the denominator too
+
+### Requirement: SCR-6 — narrowing scope remains a registry partition
+
+Any mechanism that takes an item out of a run — category selection, profile
+exclusion, mode capability or applicability — MUST leave the item in the registry and
+classify it as `N/A`. Removing rows from the run's item list is forbidden: the five-bucket partition
 must sum to the registry, not merely to the selected rows. Narrowing by site type also
 requires the advance or on-sight consent specified by VRD-11.
 
@@ -182,9 +261,20 @@ excluded by a profile is a scoping decision a reader must be able to see.
 profile from excluding a `critical` item. They do not enforce the full-registry
 partition across every narrowing mechanism, and category selection violates it today.
 
-### SCR-7 — the partition names whose action moves each item
+#### Scenario: one category is selected
+- **WHEN** a run is narrowed to a single category
+- **THEN** every other item appears as `N/A`
+- **AND** the five buckets still sum to the whole registry, not to the selected rows
 
-Every item lands in exactly one of five buckets, and the buckets sum to the registry:
+#### Scenario: rows are dropped instead
+- **WHEN** a narrowing mechanism removes items from the run's list
+- **THEN** the partition sums to the selection, the share is computed over a slice, and
+  the score of that slice is reported as the score of the site
+
+### Requirement: SCR-7 — the partition names whose action moves each item
+
+Every item SHALL land in exactly one of five buckets, and the buckets MUST sum to the
+registry:
 
 | bucket | statuses | whose move |
 |---|---|---|
@@ -208,21 +298,34 @@ graded rows and pins the mapping for all eight statuses. Nothing asserts the sum
 the registry's real item count on a narrowed live run, and an id-set check would still
 pass if a row appeared twice.
 
-### SCR-8 — `waiting_on_you` keeps its halves visible
+#### Scenario: the buckets add up
+- **WHEN** the partition is computed for any run
+- **THEN** the five bucket counts sum to the registry's item count
+
+#### Scenario: a status appears in two buckets
+- **WHEN** any status is counted under more than one bucket
+- **THEN** the partition is wrong, whatever the totals happen to say
+
+### Requirement: SCR-8 — `waiting_on_you` keeps its halves visible
 
 The bucket is one question — what is left at the audit boundary — and its two halves,
-an unanswered model queue and a missing named input, are reported separately beneath
-it.
+an unanswered model queue and a missing named input, SHALL be reported separately
+beneath it.
 
 **Why:** they share a bucket but require different next steps and may belong to different
 actors.
 **Reader:** partial. Tests pin the two stored subcounts, but no reader requires every
 report surface to present both halves separately beneath the bucket.
 
-### SCR-9 — category scores use the headline's arithmetic
+#### Scenario: work waiting on two different people
+- **WHEN** a run has both `LLM_PENDING` items and `NEEDS_INPUT` items
+- **THEN** the bucket total is shown, and the two halves are shown beneath it
+- **AND** a reader can tell a judgement nobody has made from a file nobody supplied
 
-Each category score uses the severity-weighted numerator and denominator of SCR-3 and
-folds twins by SCR-1. It rounds by SCR-12 and is absent when that category has nothing
+### Requirement: SCR-9 — category scores use the headline's arithmetic
+
+Each category score SHALL use the severity-weighted numerator and denominator of
+SCR-3 and MUST fold twins by SCR-1. It rounds by SCR-12 and is absent when that category has nothing
 decided. Each score travels with an indication of how severe the worst unresolved
 `FAIL` or `WARN` item in the category is.
 
@@ -232,11 +335,23 @@ alone can hide one unresolved critical item.
 **Reader:** **none.** Nothing asserts on `by_category`; the current computation counts
 twins that the headline folds.
 
-### SCR-10 — the score says how much of it was measured
+#### Scenario: a category containing a twin pair
+- **WHEN** a category holds two items that share one measurement
+- **THEN** the shared measurement is weighed once, exactly as in the headline
 
-Every run reports how many decided items were `measured`, `claimed` by a person, or
-answered by a `model`, and the report must show this breakdown whenever anything was not
-measured.
+#### Scenario: a category with nothing decided
+- **WHEN** no item in a category reached a quality verdict
+- **THEN** the category score is absent rather than zero
+
+#### Scenario: the bar hides a critical failure
+- **WHEN** a category scores well but holds an unresolved `FAIL` at a high severity
+- **THEN** the severity of the worst unresolved item travels with the score
+
+### Requirement: SCR-10 — the score says how much of it was measured
+
+Every run SHALL report how many decided items were `measured`, `claimed` by a person,
+or answered by a `model`, and the report MUST show this breakdown whenever anything was
+not measured.
 
 **Why:** a score built on ticks is a different object from a score built on
 measurements, and the difference must not require reading the item list to discover.
@@ -244,9 +359,17 @@ This is the second axis from VRD-2.1, surfaced.
 **Reader:** partial. Claimed provenance and both renderers are tested, but model
 disclosure is not; the `provenance_warnings` tests read different caveats.
 
-### SCR-11 — fix priority is severity per unit of effort
+#### Scenario: a score built partly on judgement
+- **WHEN** any decided item was claimed by a person or answered by a model
+- **THEN** the breakdown is shown, so the number is not read as wholly measured
 
-Each fix has priority `severity weight ÷ effort cost`, highest first.
+#### Scenario: a wholly measured run
+- **WHEN** every decided item was measured
+- **THEN** the breakdown may be omitted, because there is nothing to distinguish
+
+### Requirement: SCR-11 — fix priority is severity per unit of effort
+
+Each fix SHALL have priority `severity weight ÷ effort cost`, highest first.
 
 **Why:** ordering by severity alone puts expensive work above cheap work of nearly equal
 value, and the list exists to be worked top-down.
@@ -254,10 +377,18 @@ value, and the list exists to be worked top-down.
 but no reader pins the division or every effort cost. The sensitivity tool's order test
 uses synthetic rows and does not establish equivalence on real artifacts.
 
-### SCR-12 — all score-like fractions share one rounding and absence rule
+#### Scenario: cheap work of nearly equal value
+- **WHEN** two items share a severity and differ in effort
+- **THEN** the cheaper one is ordered first
 
-The headline score, weight share and category scores are integers rounded to the nearest
-integer, with exact halves rounded to the even integer. Whenever the denominator for
+#### Scenario: a critical item is never buried
+- **WHEN** a critical item is expensive and a low item is cheap
+- **THEN** the critical item is not ordered below the low one
+
+### Requirement: SCR-12 — all score-like fractions share one rounding and absence rule
+
+The headline score, weight share and category scores SHALL be integers rounded to the
+nearest integer, with exact halves rounded to the even integer. Whenever the denominator for
 one of those values is zero, that value is absent, never zero.
 
 **Why:** precision and the empty-set result are output semantics, not renderer choices.
@@ -267,9 +398,17 @@ and zero must remain a verdict rather than a synonym for “nothing to divide by
 headline for an empty decided set. No reader pins half-to-even behavior, and the current
 weight share returns zero when applicable weight is zero.
 
-### SCR-13 — the fix list has one membership and deterministic order
+#### Scenario: an exact half
+- **WHEN** a score-like fraction lands exactly on .5
+- **THEN** it rounds to the even integer, the same way on every surface
 
-The fix list contains `FAIL`, `WARN` and `MANUAL` items. Twins are folded out so one
+#### Scenario: an empty denominator
+- **WHEN** the denominator of any score-like value is zero
+- **THEN** that value is absent, never zero
+
+### Requirement: SCR-13 — the fix list has one membership and deterministic order
+
+The fix list SHALL contain `FAIL`, `WARN` and `MANUAL` items, and no others. Twins are folded out so one
 piece of work appears once. Rows are ordered by SCR-11 priority, then by severity weight,
 then by item id; the first two keys descend and item id ascends. Registry order and the
 order in which result rows arrive are not tie-breaks. Two runs over the same results
@@ -281,10 +420,23 @@ unstated tie-break makes changes in input order look like changes in priority.
 exercise parts of fix-list filtering and priority. The Markdown and HTML surfaces omit
 `MANUAL` and fall back to registry order after priority and severity.
 
-### SCR-14 — a change to any normative table must be detectable without reading the diff
+#### Scenario: the same results ordered twice
+- **WHEN** two runs are given the same result rows in a different arrival order
+- **THEN** the fix list is identical, because registry order and arrival order are not
+  tie-breaks
 
-All three tables in §2 must be under a gate that fails when a value changes without the
-SCR-2 release declaration, and the failure must name the table and its old and new
+#### Scenario: two items of equal priority
+- **WHEN** two rows share a priority
+- **THEN** severity weight decides, and then item id ascending
+
+#### Scenario: one piece of work listed twice
+- **WHEN** a twin pair both qualify for the list
+- **THEN** it appears once
+
+### Requirement: SCR-14 — a change to any normative table must be detectable without reading the diff
+
+All three tables in §2 MUST be under a gate that fails when a value changes without
+the SCR-2 release declaration, and the failure MUST name the table and its old and new
 value. The gate covers verdict credit as well as severity weight and effort cost.
 
 **Why:** SCR-2 states the obligation and nothing enforces it. A requirement whose
@@ -292,6 +444,17 @@ violation is invisible is the failure mode this whole suite exists to prevent, a
 it sits on the number the client repeats and the order they act on.
 **Reader:** **none.** This remedy is not implemented. It belongs to the release that
 closes G1.
+
+#### Scenario: a table value moves
+- **WHEN** any of the three tables is edited
+- **THEN** a gate fails, naming the table, the old value and the new one
+- **AND** the failure is what tells a reviewer a release declaration is owed, instead of
+  the change resting on somebody noticing a diff
+
+#### Scenario: verdict credit is edited
+- **WHEN** the credit for `WARN` changes
+- **THEN** the gate fails too, even though the credit is written as inline literals
+  rather than as a named table
 
 ## 4. Invariants
 
@@ -359,7 +522,7 @@ somebody doing the work or somebody planning it.
 
 Observation, not specification. Measured at commit `625faa4`, registry `b0abf2819da0`.
 
-### A.1 — the table readers are narrow and the change obligations are unread
+#### A.1 — the table readers are narrow and the change obligations are unread
 
 `SEVERITY_WEIGHT['medium'] = 3` is pinned indirectly by two tests that assert a concrete
 total of 6 for sets of medium items; mutating it to 4 fails them. The priority-relation
@@ -371,7 +534,7 @@ warns that a baseline used a different table.
 `tools/audit_score_sensitivity.py` returns non-zero only when no supplied run has a
 decided item. A maximal spread is not a failure, so the tool measures without gating.
 
-### A.2 — the sensitivity witness does not reproduce the shipped arithmetic
+#### A.2 — the sensitivity witness does not reproduce the shipped arithmetic
 
 The tool does not fold `scores_with` twins. On the three available 217-item artifacts,
 its score and the audit's shipped folded score were respectively 55.3 and 56.7,
@@ -380,7 +543,7 @@ therefore do not measure the current audit arithmetic, whose true table sensitiv
 unmeasured. The tests stay green because they use synthetic rows carrying no
 `scores_with`.
 
-### A.3 — scope narrowing removes or reclassifies rows today
+#### A.3 — scope narrowing removes or reclassifies rows today
 
 The `--only` category selection filters the item list before planning, so excluded rows
 never become `N/A`. On a real artifact the full run scored 57 over 217 rows while a
@@ -390,14 +553,14 @@ The profile route also changes the arithmetic. Reclassifying one real run under 
 shipped `local` exclusions moved its score from 57 to 58. In a two-row probe, changing a
 `high FAIL` to `N/A` moved the score from 14 to 100.
 
-### A.4 — reachable runs can render an absent score as a number
+#### A.4 — reachable runs can render an absent score as a number
 
 `score()` correctly returns an absent score when nothing was decided. Both report
 renderers and the console branch on reachability instead of score presence, so a
 reachable run with only a `NO_DATA` row prints `None/100`. The cited tests cover only the
 unreachable subtype.
 
-### A.5 — category arithmetic counts twins and its field name misleads
+#### A.5 — category arithmetic counts twins and its field name misleads
 
 Category numerator and denominator iterate over all scored rows even though the
 headline folds twins. A probe with a `critical PASS` primary in `security`, its
@@ -408,14 +571,14 @@ failure in that category, for a score of 0.
 The current `worst_open` field carries a severity, not a status. The value is useful,
 but the name does not say what it contains.
 
-### A.6 — the two fix surfaces disagree
+#### A.6 — the two fix surfaces disagree
 
 The machine fix export includes `FAIL`, `WARN` and `MANUAL`, and breaks ties by priority,
 severity and item id. Markdown and HTML include only `FAIL` and `WARN`, and after
 priority and severity fall back to registry order. Both fold twins, but they do not
 produce the same membership or deterministic tie-break.
 
-### A.7 — the code's own count of twins is wrong
+#### A.7 — the code's own count of twins is wrong
 
 A comment immediately after `score()`'s docstring states “Eight duplicate groups in
 this registry carry ten `scores_with` twins.” Measured: **9 twins across 7 primaries** —
@@ -426,7 +589,7 @@ This is the same defect class as the registry's own `source` string and the oper
 protocol's item counts: a claim about the tree, written beside the code it describes,
 with nothing reading it.
 
-### A.8 — SCR-14 is unimplemented
+#### A.8 — SCR-14 is unimplemented
 
 There is no change-control gate on any of the three tables. This is a disagreement, not
 future work, because SCR-2 states obligations the tree does not meet today.

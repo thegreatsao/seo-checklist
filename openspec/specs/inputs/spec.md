@@ -1,5 +1,15 @@
 # Inputs — what an operator may hand the audit, and what the audit owes them back
 
+## Purpose
+
+Everything the run is given rather than measures — artifacts produced by other tools,
+credentials and keys, the Search Console property, and the bundled public suffix list the
+property is derived from — C27–C30 of the capability inventory. None of it can be re-taken
+by this run, so this capability decides what the audit may believe about somebody else's
+claim, and what it must not write back out again. The two halves are mirror images: on the
+way in, whether a file is about this page and how old it is; on the way out, that no key
+material reaches an artifact an operator mails to a client.
+
 **Capability:** everything the run is given rather than measures — artifacts produced by
 other tools, credentials and keys, the Search Console property, and the bundled public
 suffix list the property is derived from (C27–C30 of the capability inventory).
@@ -52,12 +62,12 @@ Credentials are separate: a Search Console service-account key, an IndexNow key,
 PageSpeed key, a Safe Browsing key. Two of those are *paths* to key material and two are
 key material.
 
-## 3. Requirements
+## Requirements
 
-### INP-1 — an artifact about another page is refused, never averaged in
+### Requirement: INP-1 — an artifact about another page is refused, never averaged in
 
 An artifact names, or implies, the page it describes. Where that page is not the page being
-audited, the artifact is refused and the items that would have read it report
+audited, the artifact MUST be refused and the items that would have read it SHALL report
 `NEEDS_INPUT`, naming both URLs. Noise in a URL — scheme, `www.`, a trailing slash — is not
 a different page; a different path is.
 
@@ -72,10 +82,33 @@ refusal end to end, asserting the status and that the evidence names the other o
 `test_a_url_is_found_whether_or_not_the_exporter_nested_it` pins the subject extraction
 against two export shapes.
 
-### INP-2 — an artifact with no stated subject is used and recorded
+#### Scenario: a trace of somebody else's page
+- **WHEN** a supplied artifact names a subject URL on another origin than the audited page
+- **THEN** every item that would have read it reports `NEEDS_INPUT`
+- **AND** the reason names the other origin, and never says the input is missing — which
+  would send the operator off to produce a file they have already produced
 
-A file that does not say which page it describes is not refused. It is used, and the fact
-that it made no claim is recorded.
+#### Scenario: a URL's noise is not a second page
+- **WHEN** the artifact's subject differs from the audited URL only by scheme, a `www.`
+  prefix or a trailing slash
+- **THEN** the artifact is used, because nobody measures `https://example.com` and means
+  something other than `https://example.com/`
+
+#### Scenario: a different path is a different page
+- **WHEN** the subject differs in host, in path, or in query — `/about` against `/`,
+  `?v=2` against nothing, `staging.` against the bare host
+- **THEN** the artifact is refused
+
+#### Scenario: the subject is found whichever shape the exporter used
+- **WHEN** an export carries its URL nested inside the payload rather than at the top level
+- **THEN** the subject is read from there and compared
+- **AND** it is not mistaken for a file that stated no subject at all, which would be
+  admitted under INP-2 instead of refused here
+
+### Requirement: INP-2 — an artifact with no stated subject is used and recorded
+
+A file that does not say which page it describes MUST NOT be refused. It SHALL be used, and
+the fact that it made no claim SHALL be recorded.
 
 **Why:** most exporters do not write the URL, and refusing every such file would make the
 feature unusable. The honest position is to accept the operator's implicit claim and to
@@ -85,10 +118,27 @@ checked.
 subject-reader cannot parse does not end the run. That the absence is *recorded* — and
 therefore visible to whoever reads the artifact later — has no test.
 
-### INP-3 — an artifact is as old as it is, and the run says so
+#### Scenario: an export that names no page
+- **WHEN** a supplied artifact carries no URL of its own
+- **THEN** it is used rather than refused, and the items that read it are decided from it
+- **AND** the run records that the file made no claim, rather than recording a claim that
+  was checked and matched
 
-The age of every supplied artifact is computed and recorded. A run may be given a maximum
-age, and an artifact older than it is refused with its age named.
+#### Scenario: a file the subject-reader cannot parse
+- **WHEN** the file is not JSON, or is a list rather than an object, or is not there at all
+- **THEN** the subject check reports no subject and the run continues
+- **AND** the script that consumes the file reports its own error, naming the offending
+  field, rather than being pre-empted by a generic refusal here
+
+#### Scenario: a surprising verdict is traceable to the file nobody checked
+- **WHEN** an item was decided from an artifact whose subject was never checked
+- **THEN** a reader of the record afterwards can see that it was never checked, rather than
+  seeing a verdict indistinguishable from one measured on the audited page
+
+### Requirement: INP-3 — an artifact is as old as it is, and the run says so
+
+The age of every supplied artifact SHALL be computed and recorded. A run may be given a
+maximum age, and an artifact older than it MUST be refused with its age named.
 
 **Why:** a Core Web Vitals export from March describes a site that has been deployed a
 hundred times since. Nothing about the file says it is stale, and the verdict it produces
@@ -99,11 +149,32 @@ behaviour is that an artifact of any age is accepted. Neither the age computatio
 limit is named by any test function: an artifact-age check that returned a constant zero
 would pass the suite.
 
-### INP-4 — an artifact answers for the page it describes and no other
+#### Scenario: every supplied artifact carries its age
+- **WHEN** a run is given an artifact of any kind and no maximum age
+- **THEN** the record states how old that file is
+- **AND** an age of zero means the file was written today, never that nothing looked
 
-Artifacts are applied to the page they claim and are never spread across a sample. An item
-decided from an artifact keeps the primary page's verdict rather than being aggregated over
-sampled pages.
+#### Scenario: a file exported in March, read in September
+- **WHEN** the run was given a maximum age and the artifact is older than it
+- **THEN** the artifact is refused and the items that would have read it report
+  `NEEDS_INPUT`
+- **AND** the reason names the artifact's age and the limit, so the operator can see which
+  of the two to change
+
+#### Scenario: a refused artifact decided nothing
+- **WHEN** an artifact was refused for its age
+- **THEN** no surface describes it as having supplied a measurement to this run
+
+#### Scenario: an age nothing can determine
+- **WHEN** the artifact's age cannot be read
+- **THEN** the run records the age as unknown rather than as zero — "we cannot tell how old
+  this is" must not read as "written today"
+
+### Requirement: INP-4 — an artifact answers for the page it describes and no other
+
+Artifacts SHALL be applied to the page they claim and MUST NOT be spread across a sample.
+An item decided from an artifact keeps the primary page's verdict rather than being
+aggregated over sampled pages.
 
 **Why:** one measurement of one page is not a claim about four others. Aggregating it would
 manufacture a site-wide verdict out of a single file.
@@ -112,10 +183,29 @@ sampled run asserts that the artifact-backed items carry no per-page count while
 items do, and a second test pins which items read an artifact by comparing the registry
 against the runner's own source line.
 
-### INP-5 — a lab measurement is never reported as field data
+#### Scenario: one measured page does not become a verdict about four others
+- **WHEN** a sampled run is given an artifact measured at one URL
+- **THEN** the items decided from it carry no per-page count, while the other page-level
+  items do
+- **AND** the aggregate never reports "4 of 4 pages" about pages nothing opened, which is
+  what re-reading the same file once per sampled URL produces
+
+#### Scenario: a new artifact reader is covered the day it is added
+- **WHEN** an item's argv names an artifact placeholder
+- **THEN** it is kept out of the per-page sample whatever it requires — being page-level
+  and offline is a coincidence of the current registry, not the property that protects it
+
+#### Scenario: a site-level item that reads an artifact
+- **WHEN** the item is not page-level
+- **THEN** it runs once, against the audited URL
+- **AND** whether the artifact is about that URL is still INP-1's question, not a reason to
+  spread the file across anything
+
+### Requirement: INP-5 — a lab measurement is never reported as field data
 
 Where a number was produced by a synthetic run rather than observed from real users, the
-report says so, and no item whose title asks about field data is decided from a lab number.
+report SHALL say so, and an item whose title asks about field data MUST NOT be decided from
+a lab number.
 
 **Why:** the two answer different questions and a client acts differently on each. The
 distinction is invisible in the number itself.
@@ -124,11 +214,32 @@ distinction is invisible in the number itself.
 SP-112's title names Core Web Vitals *in Search Console* and its rule reads field data from
 the PageSpeed API — the identical rule to SP-108.
 
-### INP-6 — credential discovery is an ordered contract
+#### Scenario: no real-user sample exists for this page
+- **WHEN** the field source has no sample for the audited URL and only a synthetic
+  measurement is available
+- **THEN** the items whose titles ask about field data report no verdict
+- **AND** a fast synthetic result is not reported as real users passing, nor a slow one as
+  real users failing
 
-Credentials are looked for in a stated order, first hit wins, and the order is part of the
-contract rather than an implementation detail. The shell environment always outranks a file
-on disk.
+#### Scenario: a synthetic number is printed anyway
+- **WHEN** a synthetic figure is shown at all, because it is the only speed signal a
+  low-traffic page has
+- **THEN** the surface names it as a lab measurement and keeps it outside the score
+
+#### Scenario: an artifact that does not say how it was produced
+- **WHEN** an operator's supplied measurement carries no statement of its provenance
+- **THEN** the run records the provenance as unstated rather than assuming either one
+
+#### Scenario: a field title over a lab rule
+- **WHEN** an item's title asks about field data and the rule it carries reads a synthetic
+  number
+- **THEN** this requirement is violated, whatever verdict the item happens to report
+
+### Requirement: INP-6 — credential discovery is an ordered contract
+
+Credentials SHALL be looked for in a stated order, first hit wins, and the order is part of
+the contract rather than an implementation detail. The shell environment MUST always
+outrank a file on disk.
 
 **Why:** an operator auditing a client's site from that client's directory must not have
 their own credentials silently replaced by a `.env` the client shipped. "First hit wins" is
@@ -147,11 +258,33 @@ Probed twice, on 5 September 2026, with both reorderings this line said would pa
 suite: letting a `.env` overwrite an exported key, and putting the environment ahead of the
 flag. Each reddens.
 
-### INP-7 — key material never reaches a written artifact; paths may
+#### Scenario: a client's `.env` in the directory the audit is run from
+- **WHEN** the operator has exported a key and the working directory holds a `.env` naming
+  the same key
+- **THEN** the exported value is the one the run uses
+- **AND** the run does not quietly authenticate as the client it is reporting on
 
-Every secret value is removed from everything the run writes, including the evidence file
-and the run log. A *path* to a credential is not a secret and stays readable, because a
-reader needs to know which credential was used.
+#### Scenario: outranking is not ignoring
+- **WHEN** a `.env` names a key the shell left unset
+- **THEN** the file supplies it, because the order exists to resolve collisions and not to
+  make files useless
+
+#### Scenario: the directory the operator chose is searched first
+- **WHEN** more than one `.env` could apply
+- **THEN** the working directory is read before the shared defaults, and the shared
+  defaults still exist — an order over one location is not an order
+
+#### Scenario: a credential named three ways at once
+- **WHEN** a key path is given on the flag, in the environment, and on disk
+- **THEN** the flag wins, then the environment, then the known defaults
+- **AND** a named path that does not exist is skipped rather than returned, so a missing
+  credential becomes a status the operator can act on instead of a crash inside a checker
+
+### Requirement: INP-7 — key material never reaches a written artifact; paths may
+
+Every secret value MUST be removed from everything the run writes, including the evidence
+file and the run log. A *path* to a credential is not a secret and SHALL stay readable,
+because a reader needs to know which credential was used.
 
 **Why:** the run log is built from each script's argv, so a key passed as an argument lands
 in it verbatim, and the artifact is a file operators send to clients. Redaction over the
@@ -167,11 +300,34 @@ arrives from the environment rather than from a flag. What is unread is the *mem
 the secret set: the two constants naming which keys are secret are named by no test, so a
 key added to the run and forgotten here would be written out in full.
 
-### INP-8 — the Search Console property is derived, overridable, and not a URL
+#### Scenario: a key passed as an argument
+- **WHEN** a secret was given on the command line, so a script's argv carries it into the
+  run log
+- **THEN** the value appears nowhere in the written results or the evidence file
 
-The default property is the domain property for the site's registrable domain. An operator
-may override it. A URL-prefix spelling is not the property and requesting one is an error
-the report explains rather than a permission problem.
+#### Scenario: a key that never touched a flag
+- **WHEN** a secret arrives only through the environment and a script echoes it into an
+  error message
+- **THEN** it is removed from the written artifacts too, because redaction covers the whole
+  payload rather than the run log alone — the routes out cannot be enumerated in advance
+
+#### Scenario: the path stays readable
+- **WHEN** the run authenticated with a credential named by a path
+- **THEN** that path survives into the record, because a reader who cannot see which
+  credential answered cannot judge the answer
+
+#### Scenario: a secret nobody added to the list
+- **WHEN** a new key-valued input reaches the run and is not added to the set of values
+  treated as secret
+- **THEN** this requirement is violated and the key is written out in full, even though
+  every test of the redaction mechanism still passes
+
+### Requirement: INP-8 — the Search Console property is derived, overridable, and not a URL
+
+The default property SHALL be the domain property for the site's registrable domain. An
+operator may override it. A URL-prefix spelling is not the property, and requesting one
+MUST be explained as the wrong form of property rather than reported as a permission
+problem.
 
 **Why:** this costs a round every time somebody meets it: the API answers a domain property
 and refuses the URL, and the refusal reads as missing access. Deriving the right form by
@@ -182,10 +338,33 @@ reaches the plan. The fallback list has no test, and nothing asserts the four di
 reasons a Search Console item may have no verdict, which is the table the report is
 supposed to explain.
 
-### INP-9 — Search Console opportunities are reported and never scored
+#### Scenario: the property is the domain, not the host
+- **WHEN** the audited host carries `www.` or another subdomain
+- **THEN** the derived property is the registrable domain rather than the host as written
 
-Queries and pages Search Console suggests are carried into the report and printed outside
-the score.
+#### Scenario: a site on a platform domain
+- **WHEN** the host sits under a suffix the hosting platform owns rather than the site's
+  owner
+- **THEN** the whole host is the registrable domain
+- **AND** reducing it to the platform's own domain builds a property nobody owns, which
+  answers nothing and reads as a site with no search traffic
+
+#### Scenario: a URL where a property was expected
+- **WHEN** the operator supplies a URL-prefix spelling as the property
+- **THEN** the run explains that the property must be the domain form
+- **AND** it does not present the refusal as missing access, which is the round this
+  requirement exists to stop
+
+#### Scenario: there is no property to ask about
+- **WHEN** the host is an address, or is reachable only from the machine running the audit
+- **THEN** the run says which of those it is
+- **AND** the Search Console items report that reason rather than a missing credential —
+  four distinct reasons, four distinct sentences
+
+### Requirement: INP-9 — Search Console opportunities are reported and never scored
+
+Queries and pages Search Console suggests SHALL be carried into the report and printed
+outside the score; they MUST NOT be scored.
 
 **Why:** they are not verdicts about the site. Scoring them would make the number move with
 somebody else's index rather than with the site, and a client's score would change while
@@ -203,11 +382,28 @@ that an absent list prints nothing rather than an empty heading.
 `test_a_run_without_search_console_carries_an_empty_list_not_a_missing_key` cover the
 carrying.
 
-### INP-10 — the public suffix list is bundled, dated, and announces its own decay
+#### Scenario: a good result is not presented as a failure
+- **WHEN** Search Console reports a query the site already ranks well for
+- **THEN** it appears in the report as work worth doing
+- **AND** it appears in no item row, no partition line and no fix list, because a query
+  ranked fourth graded as a `high` failure tells someone to repair their best page
 
-The list the property is derived from ships with the tool, so a run is reproducible
-offline. Its snapshot date is readable. Past a stated age the run says the list is old, and
-it says so only when the list actually decided something.
+#### Scenario: the score cannot move with somebody else's index
+- **WHEN** a run carries opportunities
+- **THEN** the item partition still sums to the number of items, and no scored row came
+  from an opportunity
+- **AND** a client's number does not change while they changed nothing
+
+#### Scenario: a run with no Search Console at all
+- **WHEN** nothing was collected from Search Console
+- **THEN** the run carries an empty list rather than a missing key
+- **AND** the report prints nothing rather than an empty heading
+
+### Requirement: INP-10 — the public suffix list is bundled, dated, and announces its own decay
+
+The list the property is derived from SHALL ship with the tool, so a run is reproducible
+offline. Its snapshot date MUST be readable. Past a stated age the run SHALL say the list
+is old, and it MUST say so only when the list actually decided something.
 
 **Why:** fetching the list at run time makes an audit depend on somebody else's uptime and
 makes two runs of the same site differ for reasons that are not about the site. A bundled
@@ -219,6 +415,27 @@ snapshot declares its date, that the date is read from the header, and that a sn
 without one reports an unknown age. The age threshold itself is named by no test, and the
 "only when it decided something" clause — the half that keeps the warning meaningful — has
 no reader.
+
+#### Scenario: the list is read from disk, never fetched
+- **WHEN** a property is derived on a machine with no route to the outside
+- **THEN** the bundled snapshot decides it
+- **AND** two runs of the same site do not differ because somebody else's service was down
+
+#### Scenario: a snapshot that does not say when it was taken
+- **WHEN** the bundled list carries no date, or one that cannot be parsed
+- **THEN** the age is reported as unknown, never as zero — "we cannot tell" must not read
+  as "fresh", which is the reading that keeps a forgotten snapshot silent
+
+#### Scenario: a snapshot past the stated age
+- **WHEN** the list is older than the age this document requires to be visible, and the
+  list is what decided the property
+- **THEN** the run says the snapshot is old and how old, wherever the reader of that run
+  can see it
+
+#### Scenario: a warning about a list that decided nothing
+- **WHEN** the operator supplied the property, so the bundled list was not consulted for it
+- **THEN** no staleness warning is printed — a warning on runs it did not affect is how a
+  warning stops being read
 
 ## 4. Invariants
 
@@ -271,7 +488,7 @@ What would settle it: whether any current item's title actually asks for field d
 
 Observation, not specification. Measured at commit `5c768de`.
 
-### A.1 — the freshness limit is off by default and read by nothing
+#### A.1 — the freshness limit is off by default and read by nothing
 
 `--max-artifact-age` defaults to `0`, which the code treats as no limit. So an artifact
 exported in March is accepted in September without comment, and every item it decides is
@@ -285,7 +502,7 @@ This is the gap the capability inventory recorded as G10, and measuring it adds 
 to the record: the *check* is unread, not merely the default. Turning the default on would
 not make the behaviour tested.
 
-### A.2 — the credential discovery order is prose in two files and an assertion in none
+#### A.2 — the credential discovery order is prose in two files and an assertion in none
 
 The environment loader documents four sources in a fixed order and states that the real
 shell environment always wins. The credential finder documents its own four-step order.
@@ -297,7 +514,7 @@ operator audits from wherever the client's files are. A reordering that put the 
 the environment would change which credential a run authenticates with, produce a complete
 and plausible report about the client's own Search Console property, and redden nothing.
 
-### A.3 — the secret mechanism is well read and its membership is not
+#### A.3 — the secret mechanism is well read and its membership is not
 
 Redaction is covered from five directions, including the one secret that arrives through
 the environment rather than a flag, and it is applied to the whole payload rather than to
@@ -310,13 +527,48 @@ A key added to the run and not added to those tuples is written into the evidenc
 full, and the suite stays green. The mechanism is guarded; the list of what to apply it to
 is not.
 
-### A.4 — four Search Console behaviours are stated and unread
+#### A.4 — four Search Console behaviours are stated and unread
 
 The fallback property list, the four-reason table for a `gsc` item having no verdict, that
 opportunities are printed, and that opportunities stay out of the score — none is named by
 any test function. The last is the one worth separating: it is the rule that keeps a
 client's score from moving when Google's index moves, and it is the kind of rule that is
 obeyed until somebody sums a list that happens to include it.
+
+#### A.5 — the run records the age of two supplied artifacts of four
+
+Found on 5 September 2026 while writing INP-3's scenarios, and verified by reading
+`skills/seo-checklist/scripts/checklist_runner.py`.
+
+`ARTIFACT_CTX_KEYS` is `PAGE_ARTIFACT_KEYS + ("links_csv", "server_log")` — four file
+inputs, all four listed in §2 as inputs an operator supplies. The loop that records an
+artifact's subject, its age and whether it describes the audited URL iterates
+`PAGE_ARTIFACT_KEYS` alone:
+
+    for key in PAGE_ARTIFACT_KEYS:
+        ...
+        artifacts[key] = {"path": ..., "describes": ..., "age_days": age}
+
+So a supplied link export or server log has no recorded age, no recorded subject, and no
+entry in the run's record of artifacts at all — and `--max-artifact-age` cannot reject
+one however old it is. That is INP-3 violated for half the inputs it governs rather than
+merely unread, and INV-I2 violated the same way.
+
+The two that are recorded are the two a *page* measurement comes from, which is why the
+constant is named as it is. The requirement is about supplied inputs, not about page
+inputs, and the two sets were allowed to drift apart because nothing reads either.
+
+#### A.6 — an artifact refused for age is still reported as having supplied measurements
+
+`provenance_warnings` builds the set it describes to the reader as every artifact whose
+`matches_audited_url` is not `False`. An artifact rejected for being too old has
+`matches_audited_url: True` — its URL did match; its age is what disqualified it — so it
+stays in that set. The report then tells the reader that some verdicts come from
+measurements supplied with the run, and states the age of the oldest, about a file that
+decided nothing.
+
+Latent today only because the freshness limit is off by default (A.1). The release that
+turns the limit on turns this on with it, and the two must be fixed together.
 
 ## Appendix B — how much of this document is enforced
 
