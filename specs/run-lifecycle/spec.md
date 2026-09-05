@@ -142,12 +142,30 @@ mode excludes, and the run makes zero requests.
 client's production host, a system under embargo, a machine with no route. A mode that
 quietly makes one API call because a key happened to be present breaks a promise the
 operator relied on, and nothing in the report would show it.
-**Reader:** **none**, and one test's name suggests otherwise.
+**Reader:** enforced. `test_a_key_on_disk_does_not_re_enable_search_console_in_archive
+_mode` places a real key file and requires `resolve_gsc` to return nothing under
+`archive` while returning the same key under `live` — so the gate is read in both
+directions rather than by an implementation that always refuses.
+`test_the_operator_is_told_the_key_was_ignored` covers the announcement, because silently
+dropping a key leaves an operator believing Search Console ran.
+`test_archive_plans_nothing_that_could_reach_the_network` sweeps the real registry, not a
+fixture, and requires the set of planned items asking for anything but `offline` to be
+empty; `test_the_credentials_do_not_change_what_archive_plans` holds the requirement's own
+words — *whatever credentials are present* — by planning twice and comparing.
+
+Probed twice: removing the capability gate in `resolve_gsc` reddens two, and letting
+`fetch` items through the mode gate reddens the registry sweep.
+
+The sweep carries a vacuity guard, and it earned it on the first run: with an empty context
+`build_plan` plans *nothing* under `archive`, because every offline item wants a template
+argument, so the assertion would have swept an empty set and passed. The context now
+supplies what an archive run actually has in hand.
+
+Until 5 September 2026 this read `none`, with a warning attached that is worth keeping:
 `test_archive_mode_claims_nothing_about_a_network_it_never_touched` is a sound test of
-something else: it asserts `allow_private` is recorded, that the flag is not echoed to
-stdout, and that provenance warnings are empty. It places no credential and asserts no
-absence of requests. Its docstring is honest about this; its name is not, and a census
-taken from names would credit it with the guarantee.
+something else — `allow_private` recorded, the flag not echoed, provenance warnings empty.
+It places no credential and asserts no absence of requests. Its docstring was honest; its
+name was not, and a census taken from names would have credited it with the guarantee.
 
 ### RUN-4 — a plan entry is one script with one argument list, and identical invocations fold
 
@@ -668,14 +686,14 @@ requests, even though the suite does not).
 
 | | requirements |
 |---|---|
-| **enforced** | RUN-1, RUN-4, RUN-9, RUN-10, RUN-11, RUN-12, RUN-16, RUN-20 |
+| **enforced** | RUN-1, RUN-3, RUN-4, RUN-9, RUN-10, RUN-11, RUN-12, RUN-16, RUN-20 |
 | **partial** | RUN-2, RUN-5, RUN-6, RUN-7, RUN-8, RUN-13, RUN-14, RUN-15, RUN-17, RUN-18, RUN-19 |
-| **none** | RUN-3 |
+| **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-L1 enforced; INV-L2, INV-L3 and INV-L4 partial.
 
-**Eight enforced, eleven partial, one unread, of twenty.**
+**Nine enforced, eleven partial, nothing unread, of twenty.**
 
 The shape is different from the documents before it. `verdicts/` and `registry/` are unread
 where they make *claims about meaning*; this document is unread where it makes claims about

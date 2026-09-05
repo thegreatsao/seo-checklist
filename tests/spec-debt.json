@@ -130,16 +130,14 @@
     },
     "run-lifecycle": {
       "counts": {
-        "enforced": 8,
-        "none": 1,
+        "enforced": 9,
+        "none": 0,
         "opposed": 0,
         "partial": 11
       },
       "opposed": [],
       "requirements": 20,
-      "unread": [
-        "RUN-3"
-      ]
+      "unread": []
     },
     "scoring": {
       "counts": {
@@ -170,8 +168,8 @@
     }
   },
   "totals": {
-    "enforced": 47,
-    "none": 22,
+    "enforced": 48,
+    "none": 21,
     "opposed": 2,
     "partial": 78,
     "requirements": 149

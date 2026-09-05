@@ -7,6 +7,7 @@ of those collapses into a plausible-looking number if it goes wrong.
 """
 import argparse
 import builtins
+import contextlib
 import io
 import json
 import os
@@ -2297,6 +2298,82 @@ class OpportunitiesAreCarriedAndNeverScored(unittest.TestCase):
         self.assertIn("cinnamon buns", printed)
         self.assertEqual(report.opportunity_section(dict(data, gsc_opportunities=[])),
                          [], "an absent list must print nothing, not an empty heading")
+
+
+class ArchiveModeTouchesNothing(unittest.TestCase):
+    """`specs/run-lifecycle/` RUN-3. Archive mode is what an operator uses when they
+    must not touch the site — a client's production host, a system under embargo, a
+    machine with no route. A mode that makes one API call because a key happened to be
+    on disk breaks a promise they relied on, and nothing in the report would show it.
+
+    This requirement read `none` with a warning attached:
+    `test_archive_mode_claims_nothing_about_a_network_it_never_touched` is a sound test
+    of something else — it places no credential and asserts no absence of requests. Its
+    docstring was honest; its name was not, and a census taken from names would have
+    credited it with the guarantee. The tests below are named for what they assert.
+    """
+
+    # What an archive run actually has in hand: a local copy and the operator's
+    # optional artifacts. Without these every offline item is NEEDS_INPUT for want of a
+    # template argument, and the sweep below would pass over an empty set — which is
+    # what the vacuity guard caught on the first attempt.
+    CTX = {"url": "https://example.com/", "html": "/tmp/page.html",
+           "rendered_json": "/tmp/rendered.json", "links_csv": "/tmp/links.csv",
+           "cwv_json": "/tmp/cwv.json"}
+
+    def key_on_disk(self):
+        work = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, work, True)
+        path = os.path.join(work, "sa.json")
+        with open(path, "w", encoding="utf-8") as stream:
+            stream.write("{}")
+        return path
+
+    def test_a_key_on_disk_does_not_re_enable_search_console_in_archive_mode(self):
+        path = self.key_on_disk()
+        args = argparse.Namespace(gsc_credentials=path, quiet=True)
+        self.assertEqual(runner.resolve_gsc(args, {"offline"}, "archive"), "")
+        self.assertEqual(runner.resolve_gsc(args, {"offline", "fetch", "api"}, "live"),
+                         path, "the same key must still work where the mode allows it")
+
+    def test_the_operator_is_told_the_key_was_ignored(self):
+        """Silently dropping it would leave an operator believing Search Console ran."""
+        args = argparse.Namespace(gsc_credentials=self.key_on_disk(), quiet=False)
+        buffer = io.StringIO()
+        with contextlib.redirect_stderr(buffer):
+            runner.resolve_gsc(args, {"offline"}, "archive")
+        self.assertIn("no network calls", buffer.getvalue())
+
+    def test_archive_plans_nothing_that_could_reach_the_network(self):
+        """Over the real registry rather than a fixture, because the guarantee is about
+        every item there is. Anything a planned script could do offline is fine; what
+        must be empty is the set of planned invocations whose item asked for the
+        network."""
+        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
+                  encoding="utf-8") as stream:
+            items = json.load(stream)["items"]
+        plan, skipped = build_plan(items, self.CTX, {"offline"}, "archive",
+                                   has_gsc=True, has_safe_browsing=True)
+        by_id = {i["id"]: i for i in items}
+        planned = {i for ids in plan.values() for i in ids}
+        networked = {i for i in planned
+                     if (by_id[i].get("check") or {}).get("requires", "fetch")
+                     != "offline"}
+        self.assertEqual(sorted(networked), [],
+                         "archive mode planned an item that asked for the network")
+        self.assertTrue(planned, "nothing was planned at all; this proves nothing")
+
+    def test_the_credentials_do_not_change_what_archive_plans(self):
+        """The requirement's own words: *whatever credentials are present*."""
+        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
+                  encoding="utf-8") as stream:
+            items = json.load(stream)["items"]
+        with_keys, skipped_with = build_plan(items, self.CTX, {"offline"}, "archive",
+                                             has_gsc=True, has_safe_browsing=True)
+        without, skipped_without = build_plan(items, self.CTX, {"offline"}, "archive",
+                                              has_gsc=False, has_safe_browsing=False)
+        self.assertEqual(sorted(with_keys), sorted(without))
+        self.assertEqual(skipped_with, skipped_without)
 
 
 class NetworkOptIns(unittest.TestCase):
