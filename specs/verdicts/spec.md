@@ -23,9 +23,10 @@ and every comparison silently passes.
 This is not hypothetical here. The manifest of expected verdicts uses a word the audit
 never emits, so none of those declarations was compared with anything at any point from
 `v0.41.0`, the first release carrying the oracle, through `v0.91.0`: fifty-five
-releases over about thirteen days and sixteen hours. The manifest grew over that
-window — from 42 declarations, 8 using the ninth word, to 250 declarations, 27 using
-it — and today's twelve contradictions did not all exist at the start (Appendix A.2).
+releases over about thirteen days and sixteen hours. How many declarations that is, what
+they say and what the audit answers instead are
+[`specs/declarations/`](../declarations/spec.md) A.1; the window and how it grew are
+Appendix A.2 below.
 
 The vocabulary is therefore specified before the registry, before the runner and before
 the oracle, because all three are consumers of it.
@@ -309,7 +310,8 @@ the `v0.41.0` to `v0.91.0` window.
 vocabulary and report surfaces are tested against all eight statuses, but the fixture
 oracle explicitly permits and skips the ninth word. The design of the replacement — how
 a declarations manifest represents absence of expectation — belongs to
-`specs/declarations/` and is owed by whichever release removes it.
+[`specs/declarations/`](../declarations/spec.md) and is settled there by DEC-2; the
+withdrawal itself is owed by whichever release removes the word.
 
 ## 3.1 Composition and transition requirements
 
@@ -389,14 +391,24 @@ membership, zero additional score effect and unchanged weight coverage.
 
 ## 5. What this document does not decide
 
+This list is also the routing table for Appendix A: where a violation of a requirement
+here has a mechanism, the mechanism is described in the document named below and cited
+from the appendix rather than repeated in it.
+
 * which items exist, what each measures, whether a title matches its measurement, which
   subjects may legitimately not exist, and how applicability is declared for checked
-  and sourceless items — `specs/registry/`;
+  and sourceless items — [`specs/registry/`](../registry/spec.md), REG-6 and REG-9;
 * how expected verdicts are declared, compared, and how absence of expectation is
-  represented — `specs/declarations/`. **VRD-12 cannot be fully implemented until that
-  document exists**, and this is a dependency rather than a deferral;
-* the thresholds separating `WARN` from `FAIL` for any item;
-* the weights by which quality verdicts produce a score.
+  represented — [`specs/declarations/`](../declarations/spec.md), which also owns what
+  the census can and cannot see. VRD-12 was blocked on that document; it now exists, and
+  DEC-2 is the answer — "no expectation" is the absence of a declaration, not a ninth
+  word;
+* what a run does when an operator does not answer, and how a profile is chosen —
+  [`specs/run-lifecycle/`](../run-lifecycle/spec.md), RUN-14;
+* the thresholds separating `WARN` from `FAIL` for any item, and what a threshold must
+  rest on — [`specs/evidence/`](../evidence/spec.md), EVD-6;
+* the weights by which quality verdicts produce a score —
+  [`specs/scoring/`](../scoring/spec.md).
 
 ## 6. Open questions
 
@@ -405,16 +417,28 @@ membership, zero additional score effect and unchanged weight coverage.
   only in the evidence. It remains open whether the status set is too coarse or whether
   evidence should carry that load. A status-design decision that either refines the
   vocabulary or makes the routing duty of evidence explicit would settle it.
-* **Can applicability be expressed for an item with no `check` block?** This is open
-  because `applies_when` currently lives inside `item["check"]`, while a sourceless item
-  such as LO-199 may still need an applicability boundary. The registry document must
-  define a schema location and its reader before the question is settled.
+A second question that stood here — where an applicability condition lives for an item
+with no `check` block, so that a sourceless item such as LO-199 can have a boundary at
+all — was carried over to [`specs/registry/`](../registry/spec.md) §6 when that document
+was written, and is asked there. It is a schema question, not a vocabulary one; this
+document only requires that whatever answer is chosen produce `N/A` and not a quality
+verdict.
 
 ## Appendix A — measured disagreements, 25 August 2026
 
 Observation, not specification. Measured on `v0.91.0`. The origin columns in A.1 cover
 the two HTTP fixture origins; TLS observations are discussed outside that table rather
 than presented as additional origin columns.
+
+This document was written first, when it was the only one, and its appendix accordingly
+described the mechanism behind each violation as well as the violation itself. Eleven
+other documents now exist and own those mechanisms. What stays here is the disagreement
+with a requirement of *this* document; the anatomy and the counts are cited, never
+restated, because a count stated in two places is a count that will disagree with itself.
+That is not a worry, it is the measurement in
+[`specs/declarations/`](../declarations/spec.md) A.6: four counts drifted in the two
+files whose own subject is measurement, and [`specs/registry/`](../registry/spec.md)
+REG-12 records the same shape three more times.
 
 ### A.1 — items contradicting these requirements
 
@@ -428,9 +452,13 @@ Observed values in the table are for the `good` and `broken` HTTP origins only.
 | MB-095, MB-098 | image weight and dimensions | — | — | VRD-8 | verdict from structured fields |
 | GO-138, GO-143 | invalid URLs, organisation schema | — | — | VRD-8 | verdict from structured fields |
 
-The first three items ask for quality of an entity neither fixture tree contains — no
-paginated series, no collection page, no facet URL — and none of them declares an
-applicability condition, which is why they answer success instead of `N/A`.
+The first three items ask for quality of an entity neither fixture tree contains, and
+none declares an applicability condition, which is why they answer success instead of
+`N/A`. Why an item without such a condition falls through to success is
+[`specs/registry/`](../registry/spec.md) REG-9, which also holds the list of items owing
+one; that the same absent subject leaves by a second exit, `NO_DATA`, on eleven further
+items is [`specs/declarations/`](../declarations/spec.md) A.1. Both are that debt seen
+from inside this vocabulary: one condition, three words, none of them `N/A`.
 
 The last four decide their verdict by matching regexes against prose `issues` messages,
 including `(?i)404|redirect|noindex` and `(?i)WebSite`.
@@ -444,9 +472,9 @@ Three other shipped paths violate these requirements:
 | `gsc` grading without credentials | the grader assigns `NO_DATA` with evidence instructing the operator to set credentials, while the planner classifies missing GSC credentials as `NEEDS_INPUT` elsewhere in the same run | VRD-5; VRD-10 evidence/status mismatch | use `NEEDS_INPUT` with evidence that describes the missing input |
 
 The manual answer path already refuses an empty rationale, so the enforceable VRD-10
-rule exists next door to the LLM violation. The existing EOF test stays green only
-because its detected profile is `default`; it does not exercise a detected non-default
-profile.
+rule exists next door to the LLM violation. The three silent exits, the four tests that
+cover them and the probe that established which branch each takes are
+[`specs/run-lifecycle/`](../run-lifecycle/spec.md) A.5.
 
 The GSC contradiction is split across two sites in
 `skills/seo-checklist/scripts/checklist_runner.py`: `build_plan` assigns
@@ -460,23 +488,28 @@ missing input while its status says an attempted measurement returned no data.
 `PASS` and `WARN`, and an earlier draft of this document called that a VRD-4 violation
 for want of a search-engine index inventory. That was wrong: the item's `inventory_json`
 is produced by the run's own crawl, not supplied by an operator, so VRD-4 does not reach
-it. What the item actually shows is a mismatch between its title — reconciling against a
-search engine's index — and its measurement, which reconciles the sitemap against this
-audit's own crawl. That is a registry defect, and it belongs to `specs/registry/`.
+it. What the item actually shows is a title that names one measurement and a rule that
+performs another — a registry defect, held by
+[`specs/registry/`](../registry/spec.md) REG-6.
 
 **Also not in this table.** AR-150 and CI-014 answer `PASS` on `broken_tls`, and that is
 correct under VRD-3: their rules forbid redirect chains and loops, and the origin has
-none. What their declarations recorded is that the shared TLS entry gives the
-chain-detection code nothing to exercise — a thin corpus, not a wrong verdict.
+none. What their declarations recorded is a limit of the harness rather than a wrong
+verdict, and a limit of the instrument belongs beside the instrument's output —
+[`specs/declarations/`](../declarations/spec.md) DEC-13.
 
-### A.2 — the violation of VRD-12
+### A.2 — the violation of VRD-12, and how long it has been running
 
 The expected-verdict manifest declares `INDETERMINATE`, which no audit code emits. Its
-reader skips such declarations instead of comparing them. No comparison read any of
-them, however many existed at the time. At `v0.41.0` the manifest carried 42
-declarations, 8 using the ninth word; at `v0.48.0`, 246 and 28; at `v0.84.0`, 250 and
-27. Today's 27 comprise 12 contradictions — 9 `PASS`, 2 `WARN`, 1 `FAIL` — plus 13
-`NO_DATA` and 2 `NEEDS_INPUT`.
+reader skips such declarations instead of comparing them. What the ninth word is hiding
+today — how many declarations carry it, what each of them says, and which status the
+audit answers instead — is [`specs/declarations/`](../declarations/spec.md) A.1, and is
+not repeated here. What this section owns is the *duration*, because that is what makes a
+closed vocabulary worth specifying before anything else.
+
+No comparison read any of them, however many existed at the time. At `v0.41.0` the
+manifest carried 42 declarations, 8 using the ninth word; at `v0.48.0`, 246 and 28; at
+`v0.84.0`, 250 and 27.
 
 Only four of today's twelve contradictions date from `v0.41.0`. AR-146 on both HTTP
 origins and AR-150 and CI-014 on `broken_tls` begin at `v0.42.0`; AR-154 and AR-163 on
@@ -486,18 +519,20 @@ of unread declarations changed within it.
 
 ### A.3 — the census entry these findings re-read
 
-AR-146, AR-150, AR-154, AR-163, CI-014 and GO-137 are six of the 25 items the census
-records as *answered somewhere, never FAIL*. Under this document the six split three
-ways: AR-146, AR-154 and AR-163 are rules handed no subject that answered success;
+AR-146, AR-150, AR-154, AR-163, CI-014 and GO-137 all sit in the census class
+*answered somewhere, never FAIL* — a count kept by `tests/census.json` and reported
+against clause 1 of `ROADMAP.md`, which is where its current value lives. Under this
+document those six split three ways: AR-146, AR-154 and AR-163 are rules handed no subject that answered success;
 AR-150 and CI-014 are correct verdicts over a thin corpus; GO-137 measures something
 other than its title. One census row, three meanings — and only a document like this
 one separates them.
 
 Note what that implies about the census as an instrument. Three of the seventeen items
-owing an applicability declaration surface in it; the other fourteen do not, because the
-fixture corpus never puts them in a position to answer differently. The census reports
-what the corpus provoked, not what the registry is capable of getting wrong — so its
-25 is a floor on this class of defect, never a measure of it.
+owing an applicability declaration surface in that class; the other fourteen do not,
+because the fixture corpus never puts them in a position to answer differently. The count
+is therefore a floor on this class of defect and never a measure of it — the general form
+of that, and the requirement that an instrument publish its own limits, is
+[`specs/declarations/`](../declarations/spec.md) DEC-13.
 
 ## Appendix B — how much of this document is enforced
 

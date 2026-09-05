@@ -394,5 +394,53 @@ class ADocumentNamesThingsThatExist(unittest.TestCase):
                                     f"root nor the skill directory")
 
 
+class ACitationPointsAtSomething(unittest.TestCase):
+    """These twelve documents route rather than repeat, and a route can go stale.
+
+    The rule the suite settled on is that a fact has one owner: the document that owns a
+    mechanism describes it, and the other eleven cite it. That makes cross-document
+    citations load-bearing — and invisible when wrong. A link to a renamed directory, or
+    a reference to `DEC-13` after somebody renumbers `specs/declarations/`, reads exactly
+    like a working citation and silently sends the reader nowhere.
+
+    Nothing else here holds it: `test_no_requirement_prefix_is_shared_by_two_documents`
+    keeps two documents from claiming one prefix, but neither it nor anything else checks
+    that a cited id was ever defined. The prefix set is derived from the headings, so a
+    thirteenth document with a new prefix is covered the moment it is written.
+    """
+
+    def setUp(self):
+        self.defined = set()
+        for _, lines, _ in DOCS:
+            self.defined |= set(requirements(lines))
+            for line in lines:
+                found = re.match(r"\* \*\*(INV-[A-Z]*\d+)\*\*", line.strip())
+                if found:
+                    self.defined.add(found.group(1))
+        self.prefixes = sorted({i.split("-")[0] for i in self.defined})
+
+    def test_every_requirement_it_cites_is_defined(self):
+        """Registry item ids share the shape and not the prefixes, so this is exact:
+        `AR-154` is an item, `REG-9` is a requirement, and only the second is claimed."""
+        self.assertIn("VRD", self.prefixes, "no prefixes derived; this test is vacuous")
+        pattern = re.compile(r"\b((?:%s)-[A-Z]*\d+)\b"
+                             % "|".join(re.escape(p) for p in self.prefixes))
+        for name, lines, _ in DOCS:
+            for cited in sorted(set(pattern.findall("\n".join(lines)))):
+                with self.subTest(document=name, cited=cited):
+                    self.assertIn(cited, self.defined,
+                                  f"{name} cites {cited}, which no document defines")
+
+    def test_every_document_it_links_to_exists(self):
+        for name, _, path in DOCS:
+            here = os.path.dirname(path)
+            body = "\n".join(read(path))
+            for target in sorted(set(re.findall(r"\]\((\.\.?/[^)#]+)\)", body))):
+                with self.subTest(document=name, link=target):
+                    self.assertTrue(
+                        os.path.exists(os.path.normpath(os.path.join(here, target))),
+                        f"{name} links to {target}, which does not exist")
+
+
 if __name__ == "__main__":
     unittest.main()
