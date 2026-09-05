@@ -431,6 +431,29 @@ class ACitationPointsAtSomething(unittest.TestCase):
                     self.assertIn(cited, self.defined,
                                   f"{name} cites {cited}, which no document defines")
 
+    def test_a_document_counting_this_module_counts_it_right(self):
+        """`governance/` GOV-9 says how many properties this module holds, and said
+        fourteen when there were seventeen — a literal beside the thing it counts,
+        reproduced faithfully by CI and compared with nothing, which is the shape
+        `registry/` REG-12 forbids and `declarations/` A.6 measured four more times.
+
+        The number is worth keeping, so it gets a reader instead of a deletion. Counted
+        from this file's own test methods, this test included.
+        """
+        with open(os.path.abspath(__file__), encoding="utf-8") as stream:
+            held = len(re.findall(r"^\s*def (test_\w+)", stream.read(), re.M))
+        claimed = {}
+        for name, lines, _ in DOCS:
+            for word in re.findall(r"holds (\w+) properties", "\n".join(lines)):
+                claimed[name] = word
+        self.assertTrue(claimed, "no document counts this module; this test is vacuous")
+        for name, word in sorted(claimed.items()):
+            with self.subTest(document=name):
+                self.assertIn(word.lower(), NUMBER, f"{name} spells the count {word!r}")
+                self.assertEqual(NUMBER[word.lower()], held,
+                                 f"{name} says this module holds {word} properties; "
+                                 f"it holds {held}")
+
     def test_every_document_it_links_to_exists(self):
         for name, _, path in DOCS:
             here = os.path.dirname(path)

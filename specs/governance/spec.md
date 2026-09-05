@@ -181,12 +181,16 @@ The documents in `specs/` are checked: every requirement carries an argument and
 reader, the census tabulates them without flattering, every test and tool they name exists,
 and no identifier means two things.
 
-**Why:** the documents' whole value is that their census is honest. It has been wrong five
-times in eleven documents, always in the same direction, and always by the same mechanism —
-a `Reader:` line that qualifies its verdict, summarised in the table as though it did not.
-**Reader:** enforced. `tests/test_specs.py` holds fourteen properties across every document,
-discovers documents rather than listing them, and has caught the qualified-claim defect
-three times during this suite's writing plus one cross-document identifier collision.
+**Why:** the documents' whole value is that their census is honest. It has been wrong seven
+times across the twelve documents, always in the same direction, and always by the same
+mechanism — a `Reader:` line that qualifies its verdict, summarised in the table as though
+it did not.
+**Reader:** enforced. `tests/test_specs.py` holds twenty properties across every document,
+discovers documents rather than listing them, and caught four of those seven — REG-3, DEC-7
+and DEC-10 were found by hand before it existed — plus one cross-document identifier
+collision and the count in this very sentence, which read `fourteen` while the module held
+nineteen. A literal beside the thing it counts is REG-12's shape in prose; this one is now
+read rather than trusted.
 
 ### GOV-10 — calibration says which constant it backs, and checks offline in both directions
 
@@ -356,5 +360,5 @@ is build an instrument after a defect and wire it in: the ledger, the threshold 
 request ceiling, the registry audits, the byte-comparison on the generated registry. What it
 does not do is come back and ask whether the instrument is still pointed at anything —
 which is how four calibration checks came to exist and never run, and how six counts came to
-describe a tree that had moved. The eleven documents before this one are, collectively, the
-first time anybody asked.
+describe a tree that had moved. The other eleven documents are, collectively, the first
+time anybody asked.
