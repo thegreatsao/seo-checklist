@@ -4,6 +4,9 @@ The merge is the one place where a text file can overwrite a machine verdict, so
 its boundary is worth pinning down. Prioritisation is the one place where a
 ranking claims to know what to do first.
 """
+import argparse
+import contextlib
+import io
 import json
 import os
 import sys
@@ -12,6 +15,8 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 sys.path.insert(0, os.path.join(SKILL, "scripts"))
+
+import checklist_runner as runner  # noqa: E402
 
 from checklist_report import (  # noqa: E402
     FAIL, FIX_STATUSES, LLM_PENDING, MANUAL, NA, NEEDS_INPUT, NO_DATA, PASS,
@@ -948,6 +953,78 @@ class ATranslationIsBoundToTheEnglishItTranslates(unittest.TestCase):
                   encoding="utf-8") as f:
             ids = {i["id"] for i in json.load(f)["items"]}
         self.assertEqual(sorted(ids - stamped), [])
+
+
+class TheScoreNeverTravelsWithoutItsShare(unittest.TestCase):
+    """`specs/scoring/` SCR-4 and `specs/reporting/` REP-1, which are one rule.
+
+    69 over 55% of the registry's weight and 69 over 95% are different claims, and the
+    number alone does not say which. Every surface printed both and no test would have
+    failed if one stopped: current conduct is not enforcement, which is the distinction
+    the whole suite's `Reader:` lines exist to keep.
+
+    `specs/reporting/` §6 asked whether the console can be asserted without pinning its
+    layout, since terminal output changes for good reasons constantly. It can, by never
+    looking at where the number goes: render each surface twice with a different share
+    and require the two to differ. A surface that stopped printing the share stops
+    reacting to it, which reddens; a surface that moves it, renames it, or translates it
+    does not. The score is checked the same way, because a surface showing neither would
+    satisfy the first half vacuously.
+    """
+
+    def payload(self, **override):
+        rows = [item("A", PASS, severity="high"), item("B", FAIL, severity="high"),
+                item("C", NO_DATA, severity="low")]
+        data = results(*rows)
+        data["scores"] = runner.score(rows)
+        data["scores"].update(override)
+        data.update(url="https://example.com/", requested_url="", mode="page",
+                    gsc_credentials_found=False, script_failures={})
+        return data
+
+    def console(self, data):
+        args = argparse.Namespace(allow_private=False, diff=False, evidence_json="",
+                                  json_out="out.json")
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            runner.print_report(data, args, "", "", "")
+        return buffer.getvalue()
+
+    def surfaces(self, data):
+        """Every surface the requirement names, and the console is the one that had no
+        test of any kind — `specs/reporting/` A.1 lists `print_report` at zero."""
+        return {"markdown": render_markdown(data),
+                "html": render_html(data),
+                "console": self.console(data)}
+
+    def moved(self, field):
+        base = self.payload()
+        other = self.payload(**{field: base["scores"][field] + 7})
+        return self.surfaces(base), self.surfaces(other)
+
+    def test_every_surface_reacts_to_the_share(self):
+        base, other = self.moved("weight_pct")
+        for name in base:
+            with self.subTest(surface=name):
+                self.assertTrue(
+                    base[name] != other[name],
+                    f"the {name} surface does not read weight_pct, so it can show a "
+                    f"score with the denominator torn off")
+
+    def test_every_surface_reacts_to_the_score(self):
+        """Otherwise the test above passes on a surface that shows no score at all."""
+        base, other = self.moved("seo_score")
+        for name in base:
+            with self.subTest(surface=name):
+                self.assertTrue(base[name] != other[name],
+                                f"the {name} surface does not read seo_score")
+
+    def test_the_artifact_carries_both(self):
+        """The fourth surface SCR-4 names. A reader of the JSON is in the same position
+        as a reader of the report and has nothing else to consult."""
+        scores = self.payload()["scores"]
+        self.assertIsNotNone(scores["seo_score"])
+        self.assertIsNotNone(scores["weight_pct"])
 
 
 if __name__ == "__main__":

@@ -70,9 +70,13 @@ computed over is shown with it. Nothing may print one and omit the other.
 An audit of a site where two thirds of the checks could not run reports a high score for
 the third that could, and the reader has no way to see the difference from an audit that
 answered everything.
-**Reader:** **none**, and it is `specs/scoring/` SCR-4's finding restated here because
-this is the layer that would violate it. Both renderers do print the share beside the
-score; no test would fail if either stopped.
+**Reader:** enforced, by the same three tests that hold
+[`specs/scoring/`](../scoring/spec.md) SCR-4 — this is one rule and this is the layer that
+would violate it. Each surface is rendered twice with a different share and required to
+change, so nothing depends on where the number is placed, and each of the three renderers
+was probed separately. That includes the console summary, which until 5 September 2026 had
+no test of any kind (A.1) and is the surface §6 asked whether it was possible to hold at
+all.
 
 ### REP-2 — a page that was not read produces no score line at all
 
@@ -361,14 +365,14 @@ summary that bound is unusually tight, because there is no plausible way to exer
 
 | | requirements |
 |---|---|
-| **enforced** | REP-2, REP-7 |
+| **enforced** | REP-1, REP-2, REP-7 |
 | **partial** | REP-3, REP-4, REP-5, REP-6, REP-8, REP-9, REP-10, REP-11, REP-12, REP-13 |
-| **none** | REP-1 |
+| **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-P2 and INV-P3 enforced; INV-P1 partial; INV-P4 unread.
 
-**Two enforced, ten partial, one unread, of thirteen.**
+**Three enforced, ten partial, nothing unread, of thirteen.**
 
 Ten partial is the highest count in the suite and it is not a coincidence of writing. Nine
 of the ten have the same shape: the *computation* is read and the *display* is not.
@@ -384,8 +388,17 @@ a mechanism with readers, a membership without — is now the fourth instance ac
 documents, after the lens vocabulary, the secret set and the severity words.
 
 The nine are one gap nine times, and it has a name in this suite already: behaviour is not
-a reader of behaviour. Both renderers print the weight share beside the score, and REP-1 is
-`none` because printing it is not the same as being required to. The distance between this
-layer's tests and this layer's obligations is exactly the distance between "the function
-returns the right value" and "the reader is not misled" — and the second is what the client
-pays for.
+a reader of behaviour. REP-1 was the tenth instance and the clearest — both renderers
+printed the weight share beside the score, and printing it is not the same as being
+required to. The distance between this layer's tests and this layer's obligations is
+exactly the distance between "the function returns the right value" and "the reader is not
+misled", and the second is what the client pays for.
+
+REP-1 was closed on 5 September 2026, and how is worth more than that it was. The reason
+this layer's displays go unread is that asserting on rendered text means pinning rendered
+text, which is brittle for good reasons and gets abandoned. The way round it is to assert
+nothing about the text at all: change the value upstream, render twice, and require the two
+to differ. That reads "this surface shows this number" without knowing a single thing about
+how. It cost three tests, it caught all three renderers under separate probes, and it took
+the console summary from no test of any kind to a held one. The nine remaining `partial`
+rows are the same shape as the one just closed, and now have a method that fits them.

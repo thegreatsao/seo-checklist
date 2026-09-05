@@ -122,16 +122,14 @@
     },
     "reporting": {
       "counts": {
-        "enforced": 2,
-        "none": 1,
+        "enforced": 3,
+        "none": 0,
         "opposed": 0,
         "partial": 10
       },
       "opposed": [],
       "requirements": 13,
-      "unread": [
-        "REP-1"
-      ]
+      "unread": []
     },
     "run-lifecycle": {
       "counts": {
@@ -151,8 +149,8 @@
     },
     "scoring": {
       "counts": {
-        "enforced": 0,
-        "none": 3,
+        "enforced": 1,
+        "none": 2,
         "opposed": 0,
         "partial": 11
       },
@@ -160,7 +158,6 @@
       "requirements": 14,
       "unread": [
         "SCR-14",
-        "SCR-4",
         "SCR-9"
       ]
     },
@@ -179,8 +176,8 @@
     }
   },
   "totals": {
-    "enforced": 39,
-    "none": 30,
+    "enforced": 41,
+    "none": 28,
     "opposed": 2,
     "partial": 78,
     "requirements": 149

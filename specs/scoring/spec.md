@@ -136,10 +136,21 @@ artifact, and any sentence an operator or agent writes.
 **Why:** 69 over 55% of the registry's weight and 69 over 95% are different claims, and
 the number alone does not say which one is being made. A score without its share is a
 fraction with the denominator torn off.
-**Reader:** none. Both renderers do print the two together, but that is the behaviour
-under audit, not a reader of it: no assertion fails if either renderer or the console
-drops the share. Current conduct is not enforcement, and the distinction is exactly what
-this document's Reader lines exist to keep.
+**Reader:** enforced. `test_every_surface_reacts_to_the_share` renders markdown, HTML and
+the runner's console summary twice with a different `weight_pct` and requires each output
+to change; `test_every_surface_reacts_to_the_score` does the same for the score, so a
+surface that showed neither could not satisfy the first vacuously; and
+`test_the_artifact_carries_both` covers the fourth surface. Probed on 5 September 2026 by
+taking the share out of each of the three renderers in turn: each reddens its own surface
+and only its own.
+
+The method answers the question `specs/reporting/` §6 asked — whether the console can be
+held without pinning terminal output that changes for good reasons. Nothing here looks at
+*where* the number goes. A surface that stops printing the share stops reacting to it; one
+that moves it, renames it or translates it is untouched.
+
+Until 5 September 2026 this read `none`, and correctly: both renderers printed the two
+together, which is the behaviour under audit rather than a reader of it.
 
 ### SCR-5 — `N/A` leaves both numerator and denominator
 
@@ -424,23 +435,31 @@ future work, because SCR-2 states obligations the tree does not meet today.
 
 | | requirements |
 |---|---|
-| **enforced** | — none |
+| **enforced** | SCR-4 |
 | **partial** | SCR-1, SCR-2, SCR-3, SCR-5, SCR-6, SCR-7, SCR-8, SCR-10, SCR-11, SCR-12, SCR-13 |
-| **none** | SCR-4, SCR-9, SCR-14 |
+| **none** | SCR-9, SCR-14 |
 
 Invariants: all four partial — INV-S4 is read for the single-twin case by a reversed-row
 test and unread for the rest.
 
-**Nothing fully enforced, eleven partial, three unread, of fourteen.**
+**One enforced, eleven partial, two unread, of fourteen.**
 
 Two earlier drafts of this appendix were both wrong, in the same direction. The first
 published four enforced, on readers assembled by reading the document. The second
 published one, having dropped three. Neither survived an audit that ran the tests and
 mutated the values they import: `SCR-1` is read for the headline and unread for the
-category half its own sentence covers, and `SCR-4`'s two renderers print the share
+category half its own sentence covers, and `SCR-4`'s two renderers printed the share
 without any assertion requiring them to. Rendering is the behaviour under audit, not a
 reader of it — and a census assembled from the document rather than from the tests will
 keep making that substitution.
+
+**The one enforced row is that finding, closed rather than restated.** SCR-4 got its
+reader on 5 September 2026, and the thing that had made it look untestable — that holding
+a console surface means pinning terminal output — turned out to be avoidable: render
+twice with a different share and require the output to change, and the assertion never
+learns where the number is. Nothing about that method is specific to this requirement, and
+it is the obvious tool for the display half of the nine `partial` rows whose computation is
+read and whose rendering is not.
 
 The largest gap is not that a table value is unread. It is that the release,
 comparability and warning obligations for changing the scoring instrument have no reader
