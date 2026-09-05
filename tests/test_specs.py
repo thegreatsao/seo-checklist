@@ -444,7 +444,11 @@ class ACitationPointsAtSomething(unittest.TestCase):
             held = len(re.findall(r"^\s*def (test_\w+)", stream.read(), re.M))
         claimed = {}
         for name, lines, _ in DOCS:
-            for word in re.findall(r"holds (\w+) properties", "\n".join(lines)):
+            # Anchored on the module's own path: the first version matched "holds
+            # seven properties" in `run-lifecycle/`, which counts a test class rather
+            # than this file, and reported the document as wrong when it was right.
+            for word in re.findall(r"`tests/test_specs\.py` holds (\w+) properties",
+                                   "\n".join(lines)):
                 claimed[name] = word
         self.assertTrue(claimed, "no document counts this module; this test is vacuous")
         for name, word in sorted(claimed.items()):

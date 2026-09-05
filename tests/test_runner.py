@@ -5,6 +5,7 @@ built on absent data. These tests exist mostly to pin down the difference
 between "failed", "could not be decided" and "out of scope", because every one
 of those collapses into a plausible-looking number if it goes wrong.
 """
+import argparse
 import builtins
 import io
 import json
@@ -19,7 +20,8 @@ import unittest
 from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
+SKILL = os.path.join(ROOT, "skills", "seo-checklist")
+SCRIPTS = os.path.join(SKILL, "scripts")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -1957,6 +1959,97 @@ class SafeBrowsingBoundary(unittest.TestCase):
                                    "live", has_safe_browsing=True)
         self.assertEqual(skipped, {})
         self.assertEqual(len(plan), 1)
+
+
+class TheModeTableIsTheContract(unittest.TestCase):
+    """`specs/run-lifecycle/` RUN-1. The mode decides how much of the registry can
+    answer at all, so it decides the denominator every score is a fraction of.
+
+    `MODE_CAPS`, `MODE_HELP` and `resolve_mode` were named by no test — a grep over
+    `tests/` returned zero for all three. The only enumeration of capabilities anywhere
+    in the suite was `VALID_REQUIRES` in `test_registry.py`, a hand-kept copy of the
+    vocabulary rather than a reader of the table: it would still have passed if `page`
+    mode had silently gained `crawl`.
+
+    The table below is written from §2.1 of that document and not imported, which is the
+    whole point — the requirement says a change to a set is a change to the document
+    first, and this is what makes that true rather than hoped for.
+    """
+
+    # `specs/run-lifecycle/` §2.1, transcribed.
+    TABLE = {
+        "live": {"offline", "fetch", "crawl", "api"},
+        "page": {"offline", "fetch", "api"},
+        "archive": {"offline"},
+    }
+    # Named in §2.1 as `api` capabilities gated a second time by whether a credential
+    # exists, and therefore deliberately in no mode's set.
+    TWICE_GATED = {"gsc", "safe_browsing"}
+
+    def test_the_three_modes_carry_exactly_these_capabilities(self):
+        self.assertEqual(runner.MODE_CAPS, self.TABLE)
+
+    def test_every_mode_is_offered_to_an_operator(self):
+        """A mode the table has and the help does not is unreachable; the reverse is a
+        promise the runner cannot keep."""
+        self.assertEqual(set(runner.MODE_HELP), set(self.TABLE))
+
+    def test_resolve_mode_hands_back_the_table_row(self):
+        for mode, caps in self.TABLE.items():
+            with self.subTest(mode=mode):
+                got = runner.resolve_mode(
+                    argparse.Namespace(mode=mode, archive=""))
+                self.assertEqual(got, (mode, caps))
+
+    def test_the_default_is_live_and_archive_files_choose_archive(self):
+        self.assertEqual(
+            runner.resolve_mode(argparse.Namespace(mode="", archive=""))[0], "live")
+        self.assertEqual(
+            runner.resolve_mode(argparse.Namespace(mode="", archive="/tmp/x"))[0],
+            "archive")
+
+    def test_a_run_cannot_edit_the_table_it_was_handed(self):
+        """`resolve_mode` returns a set; if it were the table's own, one run narrowing
+        its capabilities would narrow every later run in the process."""
+        _, caps = runner.resolve_mode(argparse.Namespace(mode="live", archive=""))
+        caps.discard("crawl")
+        self.assertEqual(runner.MODE_CAPS["live"], self.TABLE["live"])
+
+    def test_an_item_runs_exactly_when_its_requirement_is_in_the_mode(self):
+        """The behavioural half. One item per capability per mode, planned or skipped,
+        with no case left to inference."""
+        for mode, caps in self.TABLE.items():
+            for need in sorted(set().union(*self.TABLE.values())):
+                with self.subTest(mode=mode, requires=need):
+                    item = [{"id": "X-001", "severity": "high", "source": "script",
+                             "check": {"script": "s.py", "requires": need,
+                                       "assert": {"path": "a", "op": "eq", "value": 1}}}]
+                    plan, skipped = build_plan(item, {}, set(caps), mode,
+                                               has_gsc=True, has_safe_browsing=True)
+                    if need in caps:
+                        self.assertEqual(skipped, {})
+                        self.assertEqual(len(plan), 1)
+                    else:
+                        self.assertEqual(skipped["X-001"][0], NA)
+                        self.assertIn(need, skipped["X-001"][1])
+                        self.assertEqual(len(plan), 0)
+
+    def test_the_registry_asks_only_for_capabilities_this_document_accounts_for(self):
+        """The weaker of the two candidate readers `specs/run-lifecycle/` §6 weighed,
+        and the one it argued for: a capability no mode carries is legitimate — `gsc`
+        and `safe_browsing` are exactly that — so the rule is that every `requires` is
+        either in some mode or is one of the twice-gated pair, and nothing else."""
+        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
+                  encoding="utf-8") as stream:
+            registry = json.load(stream)
+        asked = {(i.get("check") or {}).get("requires")
+                 for i in registry["items"] if i.get("check")}
+        asked.discard(None)
+        accounted = set().union(*self.TABLE.values()) | self.TWICE_GATED
+        self.assertEqual(sorted(asked - accounted), [])
+        self.assertTrue(self.TWICE_GATED <= asked,
+                        "the twice-gated capabilities are named by no item, so the "
+                        "second gate is describing nothing")
 
 
 class NetworkOptIns(unittest.TestCase):

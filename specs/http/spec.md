@@ -247,10 +247,20 @@ turn it off.
 **Why:** an audit that reports on a site's security while accepting any certificate is
 making a claim it did not check. The failure is silent by construction — everything works
 better with verification off.
-**Reader:** **none.** The guarantee is a single unconditional assignment that overwrites
-whatever a caller passed, which is the right implementation and has no test. There is no
-census forbidding `verify=False` in the fifty-eight checkers either, though the suite runs
-exactly that shape of census for the HTML parser.
+**Reader:** enforced, in the two halves this line used to say were both missing.
+`test_a_caller_asking_for_no_verification_is_overruled` and
+`test_verification_is_on_when_nobody_mentions_it` capture what the adapter actually
+received and require `True` whatever the caller asked for;
+`test_a_caller_supplying_a_bundle_path_is_also_overruled` covers the other way a caller can
+try to decide the question. Probed by weakening the unconditional assignment to a
+`setdefault`, which reddens two of them.
+
+`test_no_script_turns_verification_off_behind_the_substrate` is the census this line asked
+for — the shape `tests/test_parser.py` already ran for the HTML parser and nothing ran for
+TLS. It walks the AST of every script and refuses `verify=False` as a keyword or an
+attribute assignment, so a checker calling `requests` directly is caught by structure
+rather than by spelling, and a docstring quoting the phrase is not. Probed by adding such a
+call to a checker: it fails naming the file and line.
 
 ### HTTP-12 — no verdict may depend on which HTML parser ran
 
@@ -403,7 +413,8 @@ direction.
 **Probed:** HTTP-1 — replacing the pinned adapter with a plain one fails six of the nine
 guard tests. HTTP-7 — making a cache hit skip the robots re-check fails one test, which is
 the clause the Reader line singles out. HTTP-11 — turning the unconditional `verify = True`
-into a `setdefault`, so a caller may relax it, leaves 319 tests green. HTTP-8 — the string
+into a `setdefault`, so a caller may relax it, left 319 tests green when this was written
+and reddens two of its four readers now. HTTP-8 — the string
 `http_cache` appears nowhere under `tests/`.
 
 **Derived, not probed:** the eight `partial` rows. Each names which half it believes is
@@ -413,21 +424,28 @@ the error this method leaves open, and the halves are where to look first.
 
 | | requirements |
 |---|---|
-| **enforced** | HTTP-1, HTTP-7 |
+| **enforced** | HTTP-1, HTTP-7, HTTP-11 |
 | **partial** | HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-9, HTTP-10, HTTP-12 |
-| **none** | HTTP-8, HTTP-11 |
+| **none** | HTTP-8 |
 | **opposed** | — none |
 
 Invariants: INV-H2 and INV-H3 enforced; INV-H1 and INV-H4 partial.
 
-**Two enforced, eight partial, two unread, of twelve.**
+**Three enforced, eight partial, one unread, of twelve.**
 
-The enforced two are the cache and the pinned connection, and they have something in common
-worth noticing: both were built *after* a specific failure was understood, and both were
-written with their tests. The unread two — that the run says whether it cached, and that TLS
-verification is never relaxed — are the two whose violation produces no visible symptom at
-all. A run that quietly reused a stale response and a run that quietly accepted a bad
+The first two enforced are the cache and the pinned connection, and they have in common
+something worth noticing: both were built *after* a specific failure was understood, and
+both were written with their tests. The two unread ones — that the run says whether it
+cached, and that TLS verification is never relaxed — were the two whose violation produces
+no visible symptom at all. A run that quietly reused a stale response and a run that quietly accepted a bad
 certificate both produce a clean, complete, confident report.
+
+HTTP-11 was closed on 5 September 2026, and what it needed was named in its own Reader
+line: this suite already ran a census of exactly that shape for the HTML parser and had
+never run one for TLS. Writing it took the AST walk `tests/test_parser.py` already uses.
+The lesson is not that the census was hard — it is that a requirement can sit at `none` for
+want of a technique the repository is already fluent in, and nothing notices until
+something reads the requirements one at a time and asks what each would need.
 
 That is the pattern across this substrate rather than a coincidence of effort. Nine of the
 twelve requirements here are about something *not* happening — no unvalidated connection, no

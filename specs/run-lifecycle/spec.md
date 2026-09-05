@@ -92,11 +92,26 @@ set, is a change to this document first.
 denominator every score is a fraction of. Two audits of the same site in different modes
 are not comparable, and the report can only say so if the table it is comparing against is
 fixed.
-**Reader:** **none.** `MODE_CAPS`, `MODE_HELP` and `resolve_mode` are named by no test —
-greps over `tests/` return zero for all three. The only enumeration of capabilities in the
-suite is `VALID_REQUIRES` in `tests/test_registry.py`, which is a hand-kept copy of the
-vocabulary and not a reader of the table: it would still pass if `page` mode silently
-gained `crawl`.
+**Reader:** enforced. `TheModeTableIsTheContract` holds seven properties over the three
+symbols: `test_the_three_modes_carry_exactly_these_capabilities` pins §2.1's table,
+transcribed into the test rather than imported, so a change to a set fails until this
+document is changed too; `test_every_mode_is_offered_to_an_operator` ties `MODE_HELP` to
+it; `test_resolve_mode_hands_back_the_table_row` and
+`test_the_default_is_live_and_archive_files_choose_archive` cover the resolution;
+`test_a_run_cannot_edit_the_table_it_was_handed` pins that the returned set is a copy; and
+`test_an_item_runs_exactly_when_its_requirement_is_in_the_mode` covers the behavioural
+half over every mode × capability pair, planned or skipped, with no case left to inference.
+
+Probed on 5 September 2026 with the mutation this line used to name as invisible — `page`
+mode silently gaining `crawl`. Two of the seven redden, and `tests/test_registry.py` stays
+green, which is exactly what the old reading predicted of it.
+
+`test_the_registry_asks_only_for_capabilities_this_document_accounts_for` settles §6's
+question about `VALID_REQUIRES` in the direction §6 argued for: a capability no mode
+carries is legitimate — `gsc` and `safe_browsing` are that by design — so the rule is that
+every `requires` in the registry is either in some mode's set or is one of the twice-gated
+pair. It also asserts the pair is actually asked for by some item, since a second gate over
+nothing is a rule describing nothing.
 
 ### RUN-2 — an unsatisfiable requirement is `N/A`; an absent credential is `NEEDS_INPUT`
 
@@ -640,14 +655,14 @@ requests, even though the suite does not).
 
 | | requirements |
 |---|---|
-| **enforced** | RUN-9, RUN-10, RUN-11, RUN-12, RUN-16 |
+| **enforced** | RUN-1, RUN-9, RUN-10, RUN-11, RUN-12, RUN-16 |
 | **partial** | RUN-2, RUN-5, RUN-6, RUN-7, RUN-8, RUN-13, RUN-14, RUN-15, RUN-17, RUN-18, RUN-19 |
-| **none** | RUN-1, RUN-3, RUN-4, RUN-20 |
+| **none** | RUN-3, RUN-4, RUN-20 |
 | **opposed** | — none |
 
 Invariants: INV-L1 enforced; INV-L2, INV-L3 and INV-L4 partial.
 
-**Five enforced, eleven partial, four unread, of twenty.**
+**Six enforced, eleven partial, three unread, of twenty.**
 
 The shape is different from the documents before it. `verdicts/` and `registry/` are unread
 where they make *claims about meaning*; this document is unread where it makes claims about

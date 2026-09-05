@@ -225,5 +225,72 @@ class PinnedTransport(unittest.TestCase):
         self.assertEqual(adapter.pool.conn_kw["server_hostname"], "tls.example")
 
 
+class CertificateVerificationCannotBeTurnedOff(unittest.TestCase):
+    """`specs/http/` HTTP-11. An audit that reports on a site's security while
+    accepting any certificate is making a claim it did not check, and the failure is
+    silent by construction: everything works better with verification off.
+
+    The guarantee was one unconditional assignment with no test. Two halves are needed
+    and the second is the one the requirement's own Reader line asked for — the suite
+    runs exactly this shape of census for the HTML parser (`tests/test_parser.py`) and
+    ran none for TLS, so a checker reaching past the substrate was unopposed.
+    """
+
+    def sent(self, **caller):
+        """The kwargs the adapter actually received, whatever the caller asked for."""
+        seen = {}
+
+        def send(adapter, request, **kwargs):
+            seen.update(kwargs)
+            return response_for(request)
+
+        with mock.patch.object(sh.socket, "getaddrinfo",
+                               side_effect=lambda h, p, *a, **k: answer(PUBLIC_A, p)), \
+                mock.patch.object(sh._PinnedAdapter, "send", new=send):
+            sh.safe_get("https://tls.example/", **caller)
+        return seen
+
+    def test_a_caller_asking_for_no_verification_is_overruled(self):
+        self.assertIs(self.sent(verify=False)["verify"], True)
+
+    def test_verification_is_on_when_nobody_mentions_it(self):
+        self.assertIs(self.sent()["verify"], True)
+
+    def test_a_caller_supplying_a_bundle_path_is_also_overruled(self):
+        """`verify="/some/ca.pem"` is not laxer than the default, but it is a second
+        way for a caller to decide the question, and HTTP-11 says no caller decides
+        it. Recorded here so a later relaxation is a deliberate edit to this test."""
+        self.assertIs(self.sent(verify="/nonexistent/ca.pem")["verify"], True)
+
+    def test_no_script_turns_verification_off_behind_the_substrate(self):
+        """The census. A checker that calls `requests` directly bypasses every
+        guarantee here, and this is the one that would be invisible in a report: the
+        page fetches, the audit passes, and nothing was verified.
+
+        Structural rather than textual, so `verify = False` spelled any way is caught,
+        and a docstring quoting the phrase is not.
+        """
+        import ast
+
+        def is_off(node):
+            return isinstance(node, ast.Constant) and node.value in (False, 0)
+
+        offenders = []
+        for path in sorted(SCRIPTS.rglob("*.py")):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    for word in node.keywords:
+                        if word.arg == "verify" and is_off(word.value):
+                            offenders.append(f"{path.name}:{node.lineno}")
+                elif isinstance(node, ast.Assign) and is_off(node.value):
+                    for target in node.targets:
+                        if getattr(target, "attr", "") == "verify":
+                            offenders.append(f"{path.name}:{node.lineno}")
+        self.assertEqual(offenders, [],
+                         "these disable certificate verification; every request goes "
+                         "through lib/safe_http, which sets verify=True and means it")
+
+
 if __name__ == "__main__":
     unittest.main()
