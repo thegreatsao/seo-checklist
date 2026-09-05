@@ -1,0 +1,66 @@
+schema: spec-driven
+
+context: |
+  A deterministic SEO audit. A registry of 217 checklist items, 58 checker scripts,
+  and a runner that grades every item into one of exactly eight statuses. Python,
+  stdlib-first, offline tests against fixture sites served on loopback.
+
+  The normative specification is twelve documents under `specs/<capability>/spec.md`
+  — 149 requirements. Read `specs/verdicts/spec.md` first: it owns the status
+  vocabulary every other document inherits. `local/sdd/COVERAGE-MAP.md` says which
+  capability each document owns.
+
+  Three conventions matter more than anything else here, because the whole suite
+  exists to hold them:
+
+  1. **Every requirement names its reader.** A `**Reader:**` line says what goes red
+     when the requirement is violated, classified `enforced` / `partial` / `none` /
+     `opposed`. `none` means the requirement is an intention, and it is counted as
+     one rather than quietly presented as coverage. `opposed` means satisfying the
+     requirement breaks an existing test — rarer and worse than unread.
+  2. **A classification is measured, not reasoned.** Break the thing, run the named
+     tests, record what reddened. A census assembled by reading the document instead
+     of running the tests has been wrong seven times in this repository, always in
+     the flattering direction.
+  3. **A summary may never be kinder than its own evidence line.** A `Reader:` line
+     reading "enforced for four of the five" is `partial` in the table, never
+     `enforced`. `tests/test_specs.py` holds twenty properties over the documents,
+     including this one; `tools/spec_debt.py --check tests/spec-debt.json` gates the
+     totals in CI.
+
+  Counts are derived, never written as literals beside the thing they count. That
+  defect has been measured eight times here — in the registry's own `source` string,
+  in the census tooling's docstrings, in `SKILL.md`'s five queue counts, and once in
+  a document's claim about how many properties its own reader holds.
+
+rules:
+  spec:
+    - Every `### Requirement:` carries a `**Why:**` line giving the argument, and a
+      `**Reader:**` line naming what reddens when it is violated. A requirement with
+      no reader says `**Reader:** none.` and is counted as unread.
+    - Scenarios are the cases the rule covers, not illustrations. Prefer the case
+      where the requirement is violated over the case where it holds — the recurring
+      defect in this repository is a test that constructs the one situation in which
+      the defect cannot appear.
+    - Never state a count as a literal if it can be derived from the registry, the
+      tests or the tree.
+  proposal:
+    - Say which of the twelve capabilities the change belongs to, and whether it
+      moves any requirement between `enforced`, `partial`, `none` and `opposed`.
+    - A change that closes an unread requirement states the mutation its new reader
+      reddens on.
+
+operations:
+  apply:
+    guidance:
+      - Run the full suite before claiming a change works; it takes about 285
+        seconds and serves fixtures over loopback.
+      - Re-record `tests/spec-debt.json` with `tools/spec_debt.py --out` whenever a
+        requirement changes class, and say in the commit why it moved.
+      - Probe every new reader by mutation. A reader that has never gone red is an
+        unverified claim, not coverage.
+  archive:
+    guidance:
+      - Appendix A of each document records measured disagreements with the tree and
+        Appendix B is the census of its Reader lines. Both must survive a delta; if a
+        merge drops them, stop and say so rather than re-deriving them.
