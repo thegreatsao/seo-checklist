@@ -1,5 +1,16 @@
 # Reporting — what the audit shows, and what it may not let a reader believe
 
+## Purpose
+
+Every surface a person actually reads — the console summary, the markdown and HTML
+reports, the judgement queues, the evidence artifact — and the rules about what those
+surfaces may let a reader believe.
+
+This is the only layer a client sees, so it is the only layer where a true number can
+still mislead. Most of what follows is not about computing anything: it is about refusing
+to show a figure without the thing that makes it interpretable, and about never letting a
+claim look better sourced than it is.
+
 **Capability:** every surface the audit produces — the console summary, the Markdown and
 HTML reports, the fix list, the model-judgement queue, the merges that fold answers back
 in, the evidence artifact, and the language the whole of it is written in (C31–C35 and C37
@@ -59,12 +70,12 @@ Answers come back from two of those — the queue, and a manual pass — and are
 the results. The merges are where a claim becomes a verdict, and §3's hardest rules are
 about them.
 
-## 3. Requirements
+## Requirements
 
-### REP-1 — the score never appears without the share of the registry it covers
+### Requirement: REP-1 — the score never appears without the share of the registry it covers
 
 Wherever the headline number is shown, the proportion of the registry's weight it was
-computed over is shown with it. Nothing may print one and omit the other.
+computed over SHALL be shown with it. Nothing MAY print one and omit the other.
 
 **Why:** the number is meaningless without its denominator and looks complete without it.
 An audit of a site where two thirds of the checks could not run reports a high score for
@@ -78,10 +89,20 @@ was probed separately. That includes the console summary, which until 5 Septembe
 no test of any kind (A.1) and is the surface §6 asked whether it was possible to hold at
 all.
 
-### REP-2 — a page that was not read produces no score line at all
+#### Scenario: any surface that shows the score
+- **WHEN** the score appears on the console, in the markdown report, in the HTML report
+  or in the artifact
+- **THEN** the share of the weight it covers appears with it
 
-Where the entry page was unreachable or refused by the guard, the report shows no score.
-The absence, and its reason, is the output.
+#### Scenario: a surface stops reading the share
+- **WHEN** a renderer prints a constant, or a value derived from something other than
+  this run
+- **THEN** the requirement is violated even though a percentage is still on the page
+
+### Requirement: REP-2 — a page that was not read produces no score line at all
+
+Where the entry page was unreachable or refused by the guard, the report SHALL show no
+score. The absence, and its reason, MUST be the output.
 
 **Why:** a score computed over the handful of items that do not need the site is a number
 about almost nothing, printed where a real one goes.
@@ -89,11 +110,21 @@ about almost nothing, printed where a real one goes.
 and a live run against a challenge page pins it end to end, asserting that the entry is
 recorded unreachable and that nothing was scored.
 
-### REP-3 — provenance appears wherever the score does
+#### Scenario: the site could not be read
+- **WHEN** the entry page was unreachable or the guard refused it
+- **THEN** no score line is printed on any surface, and the reason the page could not
+  be read is what the report shows instead
 
-Whatever makes a run less than a full measurement — a private host, an overridden guard, a
-thin entry page, a non-default parser, an artifact that was refused — is stated on every
-surface that shows the score.
+#### Scenario: a number stands in for the absence
+- **WHEN** a surface renders the missing score as `None/100` or as zero
+- **THEN** a reader is shown a verdict about the site where the truth is a statement
+  about the audit
+
+### Requirement: REP-3 — provenance appears wherever the score does
+
+Whatever makes a run less than a full measurement — a private host, an overridden
+guard, a thin entry page, a non-default parser, an artifact that was refused — SHALL be
+stated on every surface that shows the score.
 
 **Why:** these are the facts that change what the number is *about*, and a reader who sees
 the number without them has been told something untrue by omission.
@@ -104,11 +135,23 @@ it does not apply, so the surface cannot become noise. What is missing is a *mem
 than a mechanism: `openspec/specs/http/` HTTP-8 records that whether the response cache was used
 appears in no warning and in no test.
 
-### REP-4 — a claimed verdict is never shown as a measurement
+#### Scenario: a run that scored an interstitial
+- **WHEN** the page guard was overridden and the entry page was a bot challenge
+- **THEN** every surface showing the score says so, so a clean-looking deliverable
+  cannot be handed on without the caveat
 
-An answer a person asserted and an answer a script measured are both verdicts and are not
-the same kind of thing. Every merged answer records who decided it, and the report shows
-that.
+#### Scenario: a new way of being less than a measurement
+- **WHEN** something is added that changes what the verdicts describe — a response
+  served from cache, say
+- **THEN** it joins the provenance list
+- **AND** a mechanism with ten readers whose *membership* has none is how the last one
+  came to be missing
+
+### Requirement: REP-4 — a claimed verdict is never shown as a measurement
+
+An answer a person asserted and an answer a script measured are both verdicts and are
+not the same kind of thing. Every merged answer SHALL record who decided it, and the
+report MUST show that.
 
 **Why:** the audit's authority rests on the reader being able to tell which claims were
 checked. A `PASS` a person typed, rendered identically to a `PASS` a checker computed,
@@ -117,10 +160,19 @@ spends credibility the tool has not earned.
 merges. That the *report* displays it — that a reader of the Markdown or the HTML can tell
 a claimed verdict from a measured one — has no test.
 
-### REP-5 — a person must show evidence; a model is asked and not required
+#### Scenario: a person's answer in the report
+- **WHEN** an item was decided by a typed claim rather than a measurement
+- **THEN** the report shows that it was claimed, beside the verdict
 
-A manual answer without a stated reason is refused, by id, and the refusal is printed. A
-model's answer without a rationale is accepted and recorded as having none.
+#### Scenario: the stamp exists and no surface prints it
+- **WHEN** the payload records who decided an item and no rendered surface says so
+- **THEN** the requirement is unmet, because it is about what a reader is shown
+
+### Requirement: REP-5 — a person must show evidence; a model is asked and not required
+
+A manual answer without a stated reason SHALL be refused, by id, and the refusal
+printed. A model's answer without a rationale MAY be accepted, and MUST be recorded as
+having none.
 
 **Why:** this asymmetry looks backwards and is deliberate. The manual pass is where an
 operator can quietly convert an inconvenient `FAIL` into a `PASS`, and requiring a written
@@ -133,11 +185,22 @@ refusal, and the one an operator can abuse — has **one**. `openspec/specs/verd
 consequence as a live VRD-10 violation: a model verdict passes without a rationale while a
 human's identical answer is rejected, and only the second is stated as a rule.
 
-### REP-6 — no merge may overwrite a verdict a script produced
+#### Scenario: a person answers without saying why
+- **WHEN** a manual answer carries no reason
+- **THEN** it is refused, the id is named, and the refusal is printed rather than
+  swallowed
 
-A merge only ever fills a status that was waiting for it. A model's answer may replace
-`LLM_PENDING` and nothing else; a person's may replace `MANUAL` and nothing else. Every
-answer that is ignored says why.
+#### Scenario: a model answers without saying why
+- **WHEN** a model answer carries no rationale
+- **THEN** it is accepted and recorded as having none
+- **AND** the asymmetry is deliberate: a person can quietly overwrite a `FAIL`, and this
+  is the door that stops them
+
+### Requirement: REP-6 — no merge may overwrite a verdict a script produced
+
+A merge SHALL only fill a status that was waiting for it. A model's answer MAY replace
+`LLM_PENDING` and nothing else; a person's MAY replace `MANUAL` and nothing else. Every
+answer that is ignored MUST say why.
 
 **Why:** without this, an answer file is a way to overwrite the audit. The whole value of a
 script verdict is that nobody typed it.
@@ -145,11 +208,20 @@ script verdict is that nobody typed it.
 best-read part of this document — and the ignored-answer path is asserted for the manual
 merge. That every ignored answer *prints* a reason is asserted for one merge of the three.
 
-### REP-7 — the reviewer may lower confidence and may not change the answer
+#### Scenario: an answer aimed at a measured verdict
+- **WHEN** either merge targets an item a script decided
+- **THEN** the measured verdict stands and the answer is reported as ignored, with the
+  reason
 
-A second reading of a model's answer either corroborates it or contests it. Corroboration
-records agreement. Contesting returns the item to undecided — it does not substitute the
-reviewer's verdict.
+#### Scenario: an answer aimed at the other queue
+- **WHEN** a person answers an `LLM_PENDING` item, or a model a `MANUAL` one
+- **THEN** it is refused
+
+### Requirement: REP-7 — the reviewer may lower confidence and may not change the answer
+
+A second reading of a model's answer SHALL either corroborate it or contest it.
+Corroboration records agreement. Contesting MUST return the item to undecided, and MUST
+NOT substitute the reviewer's verdict.
 
 **Why:** a reviewer who can answer is a second judge, and two judges disagreeing needs a
 third. A reviewer who can only withdraw confidence turns disagreement into "nobody knows",
@@ -158,10 +230,19 @@ which is true and is the only thing that is.
 corroboration, disagreement returning the item to `NO_DATA`, and the decider stamp being
 dropped when it does.
 
-### REP-8 — contesting an answer lowers coverage, and that is intended
+#### Scenario: the reviewer disagrees
+- **WHEN** a second reading contests the answer
+- **THEN** the item returns to undecided, and the reviewer's own verdict is not put in
+  its place
 
-An item returned to undecided leaves the scored set. The audit's coverage falls, and the
-report says so rather than preserving the number.
+#### Scenario: the reviewer agrees
+- **WHEN** a second reading corroborates the answer
+- **THEN** the agreement is recorded and the verdict stands
+
+### Requirement: REP-8 — contesting an answer lowers coverage, and that is intended
+
+An item returned to undecided SHALL leave the scored set. The audit's coverage falls,
+and the report MUST say so rather than preserve the number.
 
 **Why:** the alternative is an audit whose score cannot go down when its confidence does,
 which is the same defect as scoring an unanswerable item.
@@ -169,11 +250,16 @@ which is the same defect as scoring an unanswerable item.
 that exclude an undecided item are enforced in `openspec/specs/scoring/`. That the *coverage line*
 moves — that a reader sees the audit got smaller — is not asserted anywhere.
 
-### REP-9 — the fix list is ordered by severity per unit of effort
+#### Scenario: a contested answer costs reach
+- **WHEN** an item is returned to undecided by a review
+- **THEN** it leaves the scored set and the weight share falls
+- **AND** the report shows the lower reach rather than holding the earlier number
 
-The list whoever does the work reads is ordered by what each fix returns for what it costs,
-not by severity alone. A cheap high-severity fix outranks an expensive one of the same
-severity.
+### Requirement: REP-9 — the fix list is ordered by severity per unit of effort
+
+The list whoever does the work reads SHALL be ordered by what each fix returns for
+what it costs, not by severity alone. A cheap high-severity fix MUST outrank an expensive
+one of the same severity.
 
 **Why:** an ordering by severity alone puts the whole quarter's work above the afternoon's,
 and the afternoon's is what gets done. This is the one place the audit tells somebody what
@@ -183,10 +269,18 @@ pinning that a cheap item outranks an equally severe expensive one — which rea
 *relation*. `openspec/specs/scoring/` records that no test pins the effort costs themselves, so the
 relation holds and the numbers producing it are free to move.
 
-### REP-10 — a duplicate question appears once
+#### Scenario: two fixes of equal severity
+- **WHEN** one is cheap and one is expensive
+- **THEN** the cheap one is listed first
 
-Where the registry asks one question under two source numbers, the report folds them and
-shows the ruled survivor.
+#### Scenario: a critical fix that is expensive
+- **WHEN** a critical item costs more than a trivial low one
+- **THEN** it is still not buried beneath it
+
+### Requirement: REP-10 — a duplicate question appears once
+
+Where the registry asks one question under two source numbers, the report SHALL fold
+them and show the ruled survivor.
 
 **Why:** a client reading the same finding twice concludes the audit is padded, and they are
 right. The registry's own rule on which twin carries the weight is `openspec/specs/registry/` REG-11;
@@ -195,11 +289,20 @@ this is the display half.
 recorded elsewhere in this suite as counting twins the headline folds, so the fold is read
 for one surface and not for all of them.
 
-### REP-11 — every model-judged item belongs to exactly one lens, and each queue names its own items
+#### Scenario: one finding, two source numbers
+- **WHEN** a twin pair would both appear in a report surface
+- **THEN** the survivor is shown once
 
-The judgement queue is split by lens for throughput. Every item appears in exactly one
-lens's file, and the machine-readable skeleton in each file contains exactly the ids of
-that file.
+#### Scenario: a surface that does not fold
+- **WHEN** a count elsewhere in the report tallies both halves of a pair
+- **THEN** the fold is read for one surface and not for all of them, which is what makes
+  this requirement `partial` rather than met
+
+### Requirement: REP-11 — every model-judged item belongs to exactly one lens, and each queue names its own items
+
+The judgement queue is split by lens for throughput. Every item SHALL appear in
+exactly one lens's file, and the machine-readable skeleton in each file MUST contain
+exactly the ids of that file.
 
 **Why:** an item in two lenses is judged twice and merged twice; an item in none is never
 judged and waits forever. A skeleton naming ids that are not in its file was the shipped
@@ -209,11 +312,24 @@ that a per-lens queue's example names that file's real ids rather than two fixed
 That every model item has exactly one lens is read on the registry side by
 `openspec/specs/registry/` and not here; the lens-to-agent routing table is named by no test.
 
-### REP-12 — the evidence artifact is a different document from the run log
+#### Scenario: an item in two lenses
+- **WHEN** one item appears in more than one lens's queue
+- **THEN** it is judged twice and merged twice
 
-The opt-in artifact records what each script returned. Internal keys are stripped, page
-runs are kept separate from site runs rather than flattened, and the page section exists
-exactly when sampling occurred.
+#### Scenario: an item in none
+- **WHEN** an item is model-judged and appears in no lens file
+- **THEN** it waits forever, and nothing says so
+
+#### Scenario: a skeleton naming ids the file does not contain
+- **WHEN** the machine-readable block lists ids that are not in its own file
+- **THEN** whoever answers the queue answers about items they were not shown — the
+  shipped defect that produced this rule
+
+### Requirement: REP-12 — the evidence artifact is a different document from the run log
+
+The opt-in artifact SHALL record what each script returned. Internal keys MUST be
+stripped, page runs MUST be kept separate from site runs rather than flattened, and the
+page section MUST exist exactly when sampling occurred.
 
 **Why:** this is the file somebody opens when they are arguing with a verdict. Flattening
 sampled runs into site runs would make it impossible to tell which page produced which
@@ -223,11 +339,20 @@ it is separately enforced by `openspec/specs/inputs/` INP-7. That the internal `
 stripped is asserted; that page runs are never flattened is asserted through the shape and
 not as a rule.
 
-### REP-13 — a half-translated report says which layers are English
+#### Scenario: somebody argues with a verdict
+- **WHEN** a reader opens the artifact to see what a script actually returned
+- **THEN** page runs and site runs are distinguishable, so they can tell which page
+  produced which number
 
-Item titles and recommended fixes stay in English unless a translation overrides them.
-Where a report is partly translated, it says so, and the count of what remains untranslated
-is derived rather than maintained by hand.
+#### Scenario: internal keys
+- **WHEN** the artifact is written
+- **THEN** keys the run used for its own bookkeeping are stripped
+
+### Requirement: REP-13 — a half-translated report says which layers are English
+
+Item titles and recommended fixes SHALL stay in English unless a translation
+overrides them. Where a report is partly translated, it MUST say so, and the count of what
+remains untranslated MUST be derived rather than maintained by hand.
 
 **Why:** a report that is 90% in the reader's language reads as complete, and the English
 that remains reads as an oversight rather than a design decision. A hand-maintained count
@@ -237,6 +362,15 @@ the build when a translation drifts from its English source — that half is wel
 derivation of what is missing is read by one test, and `local/sdd/inventory/GAPS.md` records
 that the derivation itself is a regex over the module's own source that a reformatted call
 would silently drop out of.
+
+#### Scenario: a report mostly in the reader's language
+- **WHEN** the strings are translated and the item titles are not
+- **THEN** the report says which layers remain in English
+
+#### Scenario: the count of what is missing
+- **WHEN** that count is shown
+- **THEN** it is derived from the translation files rather than maintained by hand, so
+  it cannot be right today and wrong in two releases
 
 ## 4. Invariants
 
@@ -288,7 +422,7 @@ Observation, not specification. Measured at commit `cfa4e8d`, by parsing all 1 2
 functions in the suite and asking, for each reporting symbol, how many function bodies name
 it.
 
-### A.1 — six report sections and four display constants have no test
+#### A.1 — six report sections and four display constants have no test
 
 | symbol | test functions naming it |
 |---|---:|
@@ -314,7 +448,7 @@ The four display constants are a smaller version of the same shape as
 `openspec/specs/http/` A.2: numbers that decide what a reader sees — how many broken URLs are
 listed, how much of an error is quoted, where the bars change colour — pinned by nothing.
 
-### A.2 — the merge a person can abuse is the least tested of the three
+#### A.2 — the merge a person can abuse is the least tested of the three
 
 | merge | test functions |
 |---|---:|
@@ -330,7 +464,7 @@ This is the asymmetry the capability inventory recorded as G18, and measuring it
 the point: the ordering is exactly inverted from the risk. The reviewer, who cannot change
 an answer, has seven readers. The person, who can, has one.
 
-### A.3 — the rationale rule runs the other way from the evidence rule
+#### A.3 — the rationale rule runs the other way from the evidence rule
 
 Reading the two merges side by side:
 
