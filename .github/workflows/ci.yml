@@ -410,6 +410,20 @@ jobs:
       - name: The suite still owes what it says it owes
         run: python skills/seo-checklist/tools/spec_debt.py --check tests/spec-debt.json
 
+      # The documents are OpenSpec specs as well as ours: `## Purpose`, `## Requirements`,
+      # and every requirement carrying at least one `#### Scenario:`. `tests/test_specs.py`
+      # holds the half that is ours — that a census may not flatter its own Reader lines —
+      # and this holds the half that belongs to the format. Strict, because the only thing
+      # strict adds is RFC 2119 wording in the obligation sentence and all twelve have it.
+      #
+      # Wired on the day the twelfth document converted, rather than left for later:
+      # GOV-10 is about the other outcome, four calibration checks that existed, passed,
+      # and gated nothing until somebody went looking.
+      - name: The specification is a specification
+        run: |
+          npm install -g @fission-ai/openspec@1.12.0
+          openspec validate --all --strict
+
       # The `measured` bases, re-read against the constants they justify. Each check is
       # offline and takes about a second, and all four existed with no CI step for as
       # long as they have existed — so a calibrated constant could move and only a hand
