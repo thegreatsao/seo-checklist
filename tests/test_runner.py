@@ -2383,6 +2383,102 @@ class ArchiveModeTouchesNothing(unittest.TestCase):
         self.assertEqual(skipped_with, skipped_without)
 
 
+class TheNormativeTablesAreReadFromTheDocument(unittest.TestCase):
+    """`specs/scoring/` SCR-14. The three tables in that document's §2 decide every
+    score, every category score and half the fix ordering, and their provenance is
+    `inherited` — nobody in this project chose the numbers. SCR-2 says a change to one
+    is a release with a declaration; nothing enforced it, and no test pinned a value.
+
+    The tables are parsed out of `specs/scoring/spec.md` rather than transcribed here,
+    which is what makes that document normative in fact rather than in claim: change a
+    weight in the code and this reddens, change it in the document and this reddens, and
+    the only green path is changing both — which is where a human notices the release
+    obligation.
+
+    Verdict credit is not a named constant; it is written twice as inline literals, in
+    the headline sum and again in the per-category sum. Both are read behaviourally, so
+    the reader sees both copies without depending on how they are spelled.
+    """
+
+    SPEC = os.path.join(ROOT, "specs", "scoring", "spec.md")
+
+    @classmethod
+    def tables(cls):
+        """§2's three tables, as {heading: {row: number}}."""
+        with open(cls.SPEC, encoding="utf-8") as stream:
+            lines = stream.read().splitlines()
+        out, current = {}, None
+        for line in lines:
+            head = re.match(r"^### 2\.\d+ (.+)$", line)
+            if head:
+                current = head.group(1).strip().lower()
+                out[current] = {}
+                continue
+            if line.startswith("## ") and not line.startswith("### "):
+                current = None
+            row = re.match(r"^\| `?([A-Za-z/_]+)`? \| ([0-9.]+) \|", line)
+            if current and row:
+                out[current][row.group(1)] = float(row.group(2))
+        return out
+
+    def setUp(self):
+        self.table = self.tables()
+        self.assertEqual(sorted(self.table),
+                         ["effort cost", "severity weight", "verdict credit"],
+                         "specs/scoring/ §2 no longer has the three tables this reads")
+
+    def row(self, severity="high", status=PASS, effort="low"):
+        return {"id": "X-001", "title": "X", "category": "content",
+                "category_label": "Content", "severity": severity, "effort": effort,
+                "status": status, "evidence": "", "fix": ""}
+
+    def test_the_severity_weights_are_the_ones_the_document_states(self):
+        """One item of a severity makes the applicable weight that severity's weight."""
+        for severity, weight in self.table["severity weight"].items():
+            with self.subTest(severity=severity):
+                scored = runner.score([self.row(severity=severity)])
+                self.assertEqual(scored["weight_applicable"], weight)
+
+    def test_the_verdict_credit_is_the_one_the_document_states(self):
+        """Through the headline, so the first of the two inline copies is read."""
+        for status, credit in self.table["verdict credit"].items():
+            with self.subTest(status=status):
+                scored = runner.score([self.row(status=status)])
+                self.assertEqual(scored["seo_score"], round(100 * credit))
+
+    def test_the_category_score_uses_the_same_credit(self):
+        """The second copy. It is a separate literal in the source and would not move
+        with the first."""
+        for status, credit in self.table["verdict credit"].items():
+            with self.subTest(status=status):
+                scored = runner.score([self.row(status=status)])
+                self.assertEqual(scored["by_category"]["content"]["score"],
+                                 round(100 * credit))
+
+    def test_the_effort_costs_are_the_ones_the_document_states(self):
+        self.assertEqual({k: float(v) for k, v in report.EFFORT_COST.items()},
+                         self.table["effort cost"])
+
+    def test_the_item_counts_beside_each_table_still_describe_the_registry(self):
+        """Those columns are counts written as literals next to the thing they count —
+        `specs/registry/` REG-12's shape in prose, and the drift this suite has now
+        measured eight times."""
+        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
+                  encoding="utf-8") as stream:
+            items = json.load(stream)["items"]
+        with open(self.SPEC, encoding="utf-8") as stream:
+            text = stream.read()
+        for field, heading in (("severity", "2.1"), ("effort", "2.3")):
+            counted = {}
+            for item in items:
+                counted[item[field]] = counted.get(item[field], 0) + 1
+            for name, number in counted.items():
+                with self.subTest(field=field, value=name):
+                    self.assertRegex(
+                        text, r"\| %s \| \d+ \| %d \|" % (re.escape(name), number),
+                        f"§{heading} does not say there are {number} {name} items")
+
+
 class NetworkOptIns(unittest.TestCase):
     def test_return_tags_are_verified_in_both_network_modes(self):
         for mode in ("live", "page"):
