@@ -1,5 +1,15 @@
 # Registry — what an item is, and what it is allowed to claim
 
+## Purpose
+
+The fixed list of checklist items — what an item is, how the list is generated, where
+its titles come from, the language its rules are written in, and the two declarations
+that change what a verdict means. It is the denominator every other document in this
+suite quantifies over, and the one artifact here that is *generated*, which makes it
+cheap to keep honest and easy to lie about in the same breath. This document fixes what
+an item is and what it may claim about itself, so that a number computed from the
+registry is a number about a known population.
+
 **Capability:** the fixed list of checklist items, how it is generated, where its titles
 come from, the language its rules are written in, and the two declarations that change
 what a verdict means (C1–C5 of the capability inventory).
@@ -66,12 +76,12 @@ An item is a question asked of a site, with an id that never changes meaning.
 72 items carry no `check` and therefore no `requires`: they are the manual, model-judged
 and Search-Console items.
 
-## 3. Requirements
+## Requirements
 
-### REG-1 — the registry is the denominator, and it is versioned by content
+### Requirement: REG-1 — the registry is the denominator, and it is versioned by content
 
-The registry is a fixed list with a stated count and a `registry_version` derived from
-the items themselves. Every artifact computed from it carries that version.
+The registry SHALL be a fixed list with a stated count and a `registry_version` derived
+from the items themselves. Every artifact computed from it MUST carry that version.
 
 **Why:** two numbers about a site are comparable only if they were computed over the
 same population. A version a hand can set while the content moves is the failure this
@@ -84,20 +94,56 @@ record. But the *if and only if* is held by the generator and its byte-compariso
 the version alone, and every reader named here stays green — only `--check` objects. A
 requirement whose substance is enforced by a different requirement's reader is partial.
 
-### REG-2 — the registry is generated, never edited
+#### Scenario: an item changes and the version does not
+- **WHEN** a title, a severity or an assertion in the artifact differs from what the
+  generator would write, and `registry_version` is left as it was
+- **THEN** the requirement is violated, because the version no longer identifies the
+  population two numbers were computed over
+- **AND** every reader this requirement names stays green, which is why it is filed
+  below its own substance
 
-`checklist.json` is a build artifact. An item exists because the generator declares it.
-Editing the artifact directly is forbidden, and CI compares the committed file with a
-fresh generation byte for byte.
+#### Scenario: the stated count and the list disagree
+- **WHEN** `item_count` names a number other than the number of items
+- **THEN** the registry misdescribes itself, and every fraction taken against the
+  stated count is over a denominator that does not exist
+
+#### Scenario: an artifact says which registry produced it
+- **WHEN** a run writes its payload, its Markdown report or its HTML report
+- **THEN** each names the `registry_version` it was graded against
+- **AND** an artifact carrying no version cannot be compared with any other, because
+  nothing says whether the two measured the same population
+
+### Requirement: REG-2 — the registry is generated, never edited
+
+`checklist.json` SHALL be a build artifact. An item exists because the generator
+declares it. The artifact MUST NOT be edited directly, and CI compares the committed
+file with a fresh generation byte for byte.
 
 **Why:** a hand edit that survives one release becomes the source of truth for the next
 reader and diverges from the code that is supposed to produce it.
 **Reader:** enforced. `test_registry_matches_its_generator` plus the `--check` step on
 both Linux and Windows.
 
-### REG-3 — every field is drawn from a closed vocabulary
+#### Scenario: an item is added by hand
+- **WHEN** a row is written into the artifact that the generator does not produce
+- **THEN** the committed file differs from a fresh generation and the build fails
+- **AND** the item does not exist, whatever the artifact says
 
-The values in §2.1 are exhaustive. A new value is a change to this document first.
+#### Scenario: a field is edited in place
+- **WHEN** a severity or a title is changed in the artifact and the generator is left
+  alone
+- **THEN** the byte comparison fails, because a real change would also have moved
+  `registry_version`
+
+#### Scenario: the generator moves and the artifact does not
+- **WHEN** the generator is edited and the committed artifact is left stale
+- **THEN** the same comparison fails, in the other direction, and the artifact is not
+  the registry until it is regenerated
+
+### Requirement: REG-3 — every field is drawn from a closed vocabulary
+
+The values in §2.1 SHALL be exhaustive: every `source`, `severity`, `effort`, `lens` and
+`requires` MUST be one of them. A new value is a change to this document first.
 
 **Why:** every consumer switches on these fields. An unknown `source` or `requires`
 silently falls through to a default, and the item is then decided by whichever branch
@@ -114,23 +160,57 @@ read from the registry, so an item declaring a fifth lens builds, ships and scor
 vocabulary of five unheld is what puts this requirement in `partial` rather than
 `enforced`, by the rule this document applies to REG-1.
 
-### REG-4 — ids are stable, unique, and never re-used
+#### Scenario: a value outside a vocabulary the tests read
+- **WHEN** an item declares a `severity`, `source`, `effort` or `requires` the table in
+  §2.1 does not list
+- **THEN** the registry is invalid and the build fails
 
-An id names one question for the life of the registry. A retired item's id is not
-reassigned. Ids are prefixed, and **a prefix belongs to exactly one category** — though
-a category may hold more than one prefix, as `content` holds `CN` and `CONT`, and
-`technical` holds `TE` and `TECH`.
+#### Scenario: a lens nobody enumerated
+- **WHEN** a model-judged item declares a `lens` the table does not list
+- **THEN** the requirement is violated
+- **AND** nothing objects: the field is only required to be non-empty, so the item
+  builds, ships and scores while belonging to no agent's slice
+
+#### Scenario: an unknown value reaches a consumer
+- **WHEN** a consumer switches on one of these fields and meets a value it does not
+  enumerate
+- **THEN** the item is decided by whichever default branch catches it, which is the
+  harm closing the vocabulary exists to prevent
+
+### Requirement: REG-4 — ids are stable, unique, and never re-used
+
+An id names one question for the life of the registry. A retired item's id MUST NOT be
+reassigned, and two items MUST NOT share one. Ids are prefixed, and **a prefix SHALL
+belong to exactly one category** — though a category may hold more than one prefix, as
+`content` holds `CN` and `CONT`, and `technical` holds `TE` and `TECH`.
 
 **Why:** ids travel outside this repository — into declarations, ledgers, archived runs,
 and client reports. A re-used id makes every historical reference silently wrong.
 **Reader:** partial. `test_ids_unique` pins uniqueness within a build. Nothing compares
 ids against previous releases, so a retirement-and-reuse across versions would pass.
 
-### REG-5 — a borrowed title says so, and a departure says why
+#### Scenario: an id is retired and issued to a different question
+- **WHEN** an item is removed in one release and its id is given to a new question in a
+  later one
+- **THEN** the requirement is violated, and every archived run, declaration and client
+  report naming that id becomes silently wrong
+- **AND** nothing in the tree objects: uniqueness is checked within one build, and no
+  gate compares this build's ids against any earlier release's
 
-Titles taken from the published source checklist keep their reference number. An item
-with no such origin carries a null reference. A title that departs from its source
-carries a written reason, and a departure that is not a departure is an error rather
+#### Scenario: two items share an id in one build
+- **WHEN** two rows carry the same id
+- **THEN** the build fails
+
+#### Scenario: a prefix appears in two categories
+- **WHEN** an item is added under an existing prefix and filed in a different category
+- **THEN** the requirement is violated, whether or not that category already holds
+  another prefix
+
+### Requirement: REG-5 — a borrowed title says so, and a departure says why
+
+Titles taken from the published source checklist SHALL keep their reference number. An
+item with no such origin carries a null reference. A title that departs from its source
+MUST carry a written reason, and a departure that is not a departure is an error rather
 than a no-op.
 
 **Why:** the registry is partly somebody else's work, and the licence and the
@@ -140,11 +220,29 @@ suggests a change nobody made.
 `test_every_override_is_explained_shipped_and_differs_from_its_source`, and
 `test_the_builder_refuses_all_invalid_override_shapes`, plus the generator's own refusal.
 
-### REG-6 — an item must measure what its title claims
+#### Scenario: an override that repeats its source title
+- **WHEN** an override declares a title identical to the source checklist's
+- **THEN** the build refuses it, because a departure that departs from nothing records
+  a change nobody made
 
-The rule attached to an item decides the question the title asks. Where the title names
-a subject the rule cannot reach, the item is defective — the title must change, or the
-rule must, or the item must declare what it actually settles.
+#### Scenario: an override with no reason
+- **WHEN** an override carries a title and a blank or absent reason
+- **THEN** the build refuses it
+
+#### Scenario: an override on an item that borrowed nothing
+- **WHEN** an override names an item whose reference is null
+- **THEN** the build refuses it: there is no source title to depart from
+
+#### Scenario: the reason on record explains a title nobody reads
+- **WHEN** the override file names a title the shipped artifact does not carry
+- **THEN** the requirement is violated, because the traceability points at a departure
+  that never reached the registry
+
+### Requirement: REG-6 — an item must measure what its title claims
+
+The rule attached to an item SHALL decide the question the title asks. Where the title
+names a subject the rule cannot reach, the item is defective — the title must change, or
+the rule must, or the item must declare what it actually settles.
 
 **Why:** the title is what the operator reads, what the report prints and what a client
 argues with. An item measuring something adjacent gives a true answer to a question
@@ -156,17 +254,41 @@ wording to its comparison. The audit reads the assertion's shape, not the meanin
 subject: GO-137 passes it while reconciling against the audit's own crawl rather than the
 search-engine index its title names.
 
-### REG-7 — the assertion language is closed, and every operator in it is specified
+#### Scenario: the rule answers an adjacent question
+- **WHEN** a title promises a reconciliation against a search engine's index and the
+  rule counts orphan pages in the audit's own crawl
+- **THEN** the item is defective, and its verdict is a true answer to a question nobody
+  asked
 
-A rule is a path, **exactly one** operator, and optionally a field and a `missing_is`.
+#### Scenario: the rule answers a weaker question than the title asks
+- **WHEN** a title states a property of the page and the rule asserts only that at
+  least one element on the page has it
+- **THEN** the item is defective: a page carrying one conforming element among many
+  non-conforming ones passes an item that promised the page
+
+#### Scenario: the rule answers half the title
+- **WHEN** a title names two subjects joined by "and" and the rule measures one of them
+- **THEN** the item is defective
+- **AND** recording the shortfall inside a field a gate reads for another purpose is
+  not the declaration this requirement asks for
+
+#### Scenario: the word heuristic is satisfied and the item still misdescribes itself
+- **WHEN** the title and the rule share their words while naming different subjects
+- **THEN** the CI audit passes and the defect stands, because that audit reads the
+  assertion's shape rather than the meaning of the subject
+
+### Requirement: REG-7 — the assertion language is closed, and every operator in it is specified
+
+A rule SHALL be a path, **exactly one** operator, and optionally a field and a
+`missing_is`.
 `assert`, `warn` and `applies_when` are all rules in this sense: one vocabulary, one
 evaluator, one test policing which operators may be named. A count of operator usage
 that reads only `assert` undercounts the language, and Appendix A.4 made that mistake.
-Two operators in one rule are an error, not a conjunction: the evaluator applies the
-first branch that matches and the second is silently discarded, so the rule means
-whichever the implementation happens to check first. Operators are enumerated in this
-document. An operator the language implements but no item uses is either specified here
-or removed from the language.
+A rule MUST NOT carry two operators: they are an error, not a conjunction, because the
+evaluator applies the first branch that matches and the second is silently discarded, so
+the rule means whichever the implementation happens to check first. Operators are
+enumerated in this document. An operator the language implements but no item uses is
+either specified here or removed from the language.
 
 **Why:** the first item written against an unused operator inherits whatever semantics
 were never defended. Two of the four unused ones are already surprising: one inspects
@@ -178,10 +300,36 @@ operators passes both and is then decided by branch order. No item does this tod
 is why nothing has caught it. Nothing forbids the language from carrying an operator no
 item uses and no document describes.
 
-### REG-8 — absence of data is not a verdict
+#### Scenario: a rule naming two operators
+- **WHEN** one rule carries two operators, such as `eq` beside `gte`
+- **THEN** the requirement is violated
+- **AND** the evaluator takes whichever branch it reaches first and discards the other
+  in silence, so the rule means what the implementation's branch order says
+- **AND** nothing objects: one test requires at least one operator and another forbids
+  naming one the evaluator lacks, and neither forbids two
 
-A rule that finds no value at its path is undecided. It may be declared otherwise —
-`missing_is: pass | fail` — only where the absence of the field is itself the answer.
+#### Scenario: a rule naming an operator the evaluator does not implement
+- **WHEN** a rule names a key no branch of the evaluator reads
+- **THEN** the rule decides nothing and the item is undecided on every site it is ever
+  run against
+
+#### Scenario: an operator no item uses and no section describes
+- **WHEN** the evaluator implements an operator that appears in no rule and in no part
+  of this document
+- **THEN** the requirement is violated: it is specified here or removed from the
+  language, and the first item written against it must not inherit semantics nobody
+  defended
+
+#### Scenario: the language is counted over `assert` alone
+- **WHEN** operator usage is counted without reading `warn` and `applies_when`
+- **THEN** the count describes a smaller language than the evaluator implements, and an
+  operator in live use reads as unused and removable
+
+### Requirement: REG-8 — absence of data is not a verdict
+
+A rule that finds no value at its path SHALL be undecided. It MUST NOT be read as a
+verdict unless the item declares otherwise — `missing_is: pass | fail` — and that
+declaration is permitted only where the absence of the field is itself the answer.
 
 **Why:** a parser that never emits a key must not be read as the site being clean. This
 is the field-level half of VRD-3, and the declaration is what separates "the site has no
@@ -190,15 +338,30 @@ such thing" from "the checker did not look".
 the evaluator's tri-state is well covered in the runner tests. Nothing audits whether a
 given `missing_is` is *justified* for its item.
 
-### REG-9 — an item judging an optional entity declares its applicability
+#### Scenario: the checker never emitted the key
+- **WHEN** a rule resolves its path to nothing and the item declares no `missing_is`
+- **THEN** the item is undecided, and the parser's silence is not read as the site
+  being clean
+
+#### Scenario: absence declared a pass without warrant
+- **WHEN** an item declares `missing_is: pass` for a field whose absence means the
+  checker did not look rather than that the site is clean
+- **THEN** the requirement is violated, and nothing in the tree says so: the
+  declaration's presence is read, its justification is not
+
+#### Scenario: a rule that only names a path
+- **WHEN** a rule carries a path and no operator
+- **THEN** it can decide nothing at all, and the build refuses it
+
+### Requirement: REG-9 — an item judging an optional entity declares its applicability
 
 > **This requirement's reader is aimed against it.** See the Reader line: satisfying
 > REG-9 makes an existing test fail. It is counted separately in Appendix B for that
 > reason — an unread requirement is merely unprotected, while this one is opposed.
 
 Where an item judges the quality of something a site may legitimately not have, the item
-declares the condition under which it applies. Absent that declaration, the item reports
-success on a site that has none of the thing, which VRD-2 forbids.
+SHALL declare the condition under which it applies. Absent that declaration, the item
+reports success on a site that has none of the thing, which VRD-2 forbids.
 
 **Why:** this is the largest measured defect class in the registry — seventeen items owe
 such a declaration and two carry one.
@@ -210,10 +373,36 @@ shape for one that guards a rule: the release closing this debt must turn it fro
 membership list into a rule about what a declaration may say. Nothing identifies an item
 that owes one, which is why the seventeen are visible only through a hand sweep.
 
-### REG-10 — a rule that cannot fail is proved, not asserted
+#### Scenario: an item owing a declaration and carrying none
+- **WHEN** an item's rule passes by finding none of the thing it forbids, and the
+  entity whose quality it judges may legitimately be absent from a site
+- **THEN** the item declares the condition under which it applies
+- **AND** without that declaration it awards a quality verdict to a site that has none
+  of the thing, which is the defect this requirement names
 
-An item whose rule can never produce `FAIL` must say so and name the mechanism, and the
-claim must be provable from the checker's source. A proved-but-undeclared rule, a
+#### Scenario: the declaration is added and the suite reddens
+- **WHEN** an applicability condition is added to an item that owes one
+- **THEN** the requirement is better satisfied than it was
+- **AND** an existing test fails, because it pins the declaration set to a fixed
+  membership rather than to a rule about what a declaration may say — which makes the
+  test wrong and the addition right
+
+#### Scenario: the item owing a declaration has no `check`
+- **WHEN** an item judging an optional entity is answered by a person or a model and
+  therefore carries no rule
+- **THEN** it still owes the declaration
+- **AND** the only mechanism sits inside the rule, so the debt cannot be paid: that is
+  a schema gap, not a licence to omit it
+
+#### Scenario: a new item quietly joins the debt
+- **WHEN** an item judging an optional entity is added with no condition
+- **THEN** the registry accepts it and every gate stays green, because nothing
+  identifies which items owe one
+
+### Requirement: REG-10 — a rule that cannot fail is proved, not asserted
+
+An item whose rule can never produce `FAIL` MUST say so and name the mechanism, and the
+claim MUST be provable from the checker's source. A proved-but-undeclared rule, a
 declared-but-unprovable one, and a declaration naming the wrong mechanism are all errors.
 
 **Why:** an unfailable rule scores a pass on every site forever. Making the claim
@@ -221,11 +410,34 @@ explicit turns an invisible defect into a recorded decision.
 **Reader:** enforced. `tools/audit_reachability.py` in CI checks all three directions,
 and `tests/test_reachability.py` covers the mechanism vocabulary.
 
-### REG-11 — two items sharing one check are ruled on, not left to chance
+#### Scenario: a field written only when it would pass
+- **WHEN** a checker writes the field a rule asserts only when that field already holds
+  a value the rule accepts
+- **THEN** the rule reports a pass or nothing at all, never a failure
+- **AND** the item must declare that and name the mechanism, or the build fails
 
-Where two items resolve to the same script, arguments and assertion, the registry records
-a human ruling: which one carries the weight and why. The survivor is never the weaker of
-the two.
+#### Scenario: a declaration that outlived its reason
+- **WHEN** a checker changes so that a declared rule can fail again
+- **THEN** the declaration is an error and the build fails, rather than sitting inert
+  while every entry in it still looks true
+
+#### Scenario: the right conclusion under the wrong mechanism
+- **WHEN** a rule still cannot fail, but for a reason other than the one declared
+- **THEN** it is an error, because the recorded reason is what the next editor checks
+  the code against
+
+#### Scenario: a failing severity the registry's own arguments never reach
+- **WHEN** a checker grades a finding at a failing severity inside a branch the
+  registry's invocation of that checker does not enter
+- **THEN** the rule still cannot fail, and the requirement is violated
+- **AND** the proof tool falls silent, because it reads the literal in the source
+  rather than whether the line is reachable from the arguments the registry passes
+
+### Requirement: REG-11 — two items sharing one check are ruled on, not left to chance
+
+Where two items resolve to the same script, arguments and assertion, the registry SHALL
+record a human ruling: which one carries the weight and why. The survivor MUST NOT be
+the weaker of the two.
 
 **Why:** an unruled duplicate doubles a single defect's pull on the headline and makes
 the weight depend on which item a reader looks at.
@@ -234,11 +446,34 @@ the weight depend on which item a reader looks at.
 `test_the_item_that_carries_the_weight_carries_it`,
 `test_the_survivor_is_never_the_weaker_of_the_two`, and `audit_item_semantics.py` in CI.
 
-### REG-12 — the registry may not state anything about itself that nothing checks
+#### Scenario: a new item silently duplicates an existing check
+- **WHEN** two items name the same script, the same arguments and the same assertion,
+  and neither defers to the other
+- **THEN** the build fails and names the pair, because one defect would otherwise pull
+  twice on the headline
 
-Fields describing the registry's own composition, provenance or size are derived from
-the items, never written as literals in the generator. A literal is reproduced faithfully
-by the staleness check and compared with nothing.
+#### Scenario: the weight is left with the weaker of the two
+- **WHEN** the item carrying the weight is the lower-severity member of the pair
+- **THEN** the requirement is violated: the registry's own weighting of one defect
+  would depend on which id was typed first
+
+#### Scenario: a twin pointing at a twin
+- **WHEN** a deferring item names a primary that itself defers
+- **THEN** nothing in the group carries weight, the score says nothing about it, and
+  the build fails
+
+#### Scenario: the ruling records which and not why
+- **WHEN** the registry carries the pointer and the reason for it lives only in the
+  generator's comments
+- **THEN** the ruling is incomplete: this requirement asks the registry to record which
+  one carries the weight *and why*, and a reason that does not reach the artifact
+  cannot be read by anyone working from it
+
+### Requirement: REG-12 — the registry may not state anything about itself that nothing checks
+
+Fields describing the registry's own composition, provenance or size SHALL be derived
+from the items, and MUST NOT be written as literals in the generator. A literal is
+reproduced faithfully by the staleness check and compared with nothing.
 
 **Why:** the staleness mechanism cannot see a lie that lives in the generator. This is
 how `source` came to claim a composition that has been wrong for releases while CI stayed
@@ -246,10 +481,29 @@ green, and it is the same shape as three other drifted counts in this tree.
 **Reader:** **none.** No test reads `source`. This requirement is the remedy for
 Appendix A.1 and is not implemented.
 
-### REG-13 — effort and severity are claims about the item, not about a run
+#### Scenario: a composition claim written as a literal
+- **WHEN** a field describing the registry's own composition is a constant in the
+  generator rather than a value computed from the items
+- **THEN** the requirement is violated
+- **AND** it is violated today: the registry's `source` field states a composition, the
+  staleness check reproduces it byte for byte, and no test reads it
+
+#### Scenario: the literal and the items disagree
+- **WHEN** the items say one thing about their own provenance and the literal beside
+  them says another
+- **THEN** every gate stays green, because the only comparison in force is between the
+  generator and its own output — which is why this is forbidden rather than audited
+
+#### Scenario: a size claim that can be recomputed
+- **WHEN** the stated item count is computed from the list at generation time
+- **THEN** the requirement is satisfied for that field, because a later reader can
+  recompute it and find the disagreement
+
+### Requirement: REG-13 — effort and severity are claims about the item, not about a run
 
 `severity` states how much the question matters; `effort` states what answering the
-finding costs the site owner. Neither may vary by run, mode, profile or verdict.
+finding costs the site owner. Neither is a property of a run: both values MUST NOT
+change with the mode, the profile, the reach, or the verdict the item receives.
 
 **Why:** both feed the score and the fix order, and a value that moves with the run makes
 two audits of the same site incomparable for reasons that have nothing to do with the
@@ -259,6 +513,23 @@ site.
 `test_effort_survives_grading` pins that grading does not alter it. Nothing forbids a
 profile from carrying a severity override, which is currently possible only because no
 profile does it.
+
+#### Scenario: a profile carries a severity of its own
+- **WHEN** a profile declares a severity or an effort for an item it does not exclude
+- **THEN** the requirement is violated
+- **AND** nothing refuses it: a profile is validated for the keys it uses, not closed
+  against the ones it must not carry
+
+#### Scenario: the graded row loses the field
+- **WHEN** a row is built from a registry item for the report
+- **THEN** it carries that item's own `effort` and `severity`
+- **AND** a row that drops one of them makes the fix list rank on the other alone while
+  still claiming to weigh the two against each other
+
+#### Scenario: two audits of one site under two profiles
+- **WHEN** the same item is graded twice, in two modes or under two profiles
+- **THEN** its severity and effort are identical in both, so the two runs differ only
+  by what was measured
 
 ## 4. Invariants
 
@@ -313,7 +584,7 @@ A.4 was re-measured on 29 August 2026 at commit `2a5b549` over the same registry
 and corrected; the rest stands as first measured, and the distributions in §2.1 were
 re-derived from the artifact on the same day and agree.
 
-### A.1 — the registry misstates its own composition
+#### A.1 — the registry misstates its own composition
 
 `source` reads *"Plerdy SEO Checklist (200) + 15 beyond-Plerdy checks"*. Measured: **17**
 items carry a null `plerdy_ref`. The operator protocol says 17; the titles file's own
@@ -321,7 +592,7 @@ note says 14. Three numbers for one fact, and the one inside the registry is a l
 the generator, so the staleness check reproduces it and CI stays green. This is REG-12's
 violation and the reason that requirement exists.
 
-### A.2 — seventeen items owe an applicability declaration; two carry one
+#### A.2 — seventeen items owe an applicability declaration; two carry one
 
 CI-016, CN-034, CN-035, CN-054, MS-032, BL-081, MB-098, MB-103, MB-108, AR-146, AR-154,
 AR-163, GO-143, TE-172, TE-174, MD-185, MD-186. The declared two are MB-102 and MD-190.
@@ -330,7 +601,7 @@ A further item, CN-036, cannot be classified either way: its assertion counts el
 carrying inline colour syntax rather than contrast violations, so zero does not
 distinguish "no violation" from "no text". That is a REG-6 defect, not a REG-9 one.
 
-### A.3 — nine items measure something other than their title
+#### A.3 — nine items measure something other than their title
 
 A sample of twenty items, read rule against title, found nine mismatches. They are not
 one defect: three kinds sit here, and only the first is a wrong answer.
@@ -370,7 +641,7 @@ gate reads for a different purpose entirely — and nothing reads it as the admi
 measure what their titles ask. Their problem is applicability (REG-9), not aboutness, and
 conflating the two would have sent the repair to the wrong place.
 
-### A.4 — four operators are implemented and unused
+#### A.4 — four operators are implemented and unused
 
 `ne`, `between`, `contains`, `matches`. No item uses any of them. `contains`
 inspects only the first matched text and `matches` stringifies its value before matching

@@ -5857,17 +5857,25 @@ class EveryCheckerHasSomethingThatJudgesIt(unittest.TestCase):
     @staticmethod
     def settled_items():
         """Items the oracle predicts with a word the audit can emit. `INDETERMINATE` is
-        skipped by the comparison, so it judges nothing — `openspec/specs/declarations/` DEC-2."""
+        skipped by the comparison, so it judges nothing — `openspec/specs/declarations/`
+        DEC-2.
+
+        The first version of this walked `manifest.values()`, whose members are
+        `schema_version`, `registry_version`, `declared_from` and `fixtures`. Only the
+        last is a dict, so the inner loop iterated origin *labels* and this returned
+        `{'good', 'broken', 'good_tls', 'broken_tls'}` — four names and not one item id.
+        The oracle arm of the coverage union was therefore dead from the day it was
+        written, and the guard below is what stops that happening quietly again.
+        """
         path = os.path.join(ROOT, "tests", "fixtures", "expectations.json")
         with open(path, encoding="utf-8") as stream:
             manifest = json.load(stream)
         settled = set()
-        for value in manifest.values():
-            if not isinstance(value, dict):
-                continue
-            for item_id, entry in value.items():
+        for origin in manifest["fixtures"].values():
+            for item_id, entry in origin.items():
                 if isinstance(entry, dict) and entry.get("expect") != "INDETERMINATE":
                     settled.add(item_id)
+        assert settled, "no settled declarations found; the manifest shape moved"
         return settled
 
     def coverage(self):

@@ -1,5 +1,16 @@
 # Run lifecycle — what a run may attempt, what it must refuse, and what it owes when it refuses
 
+## Purpose
+
+Everything between an operator typing a URL and a graded item existing — the modes that
+decide how much of the registry can answer, the plan, the execution and its failure
+kinds, the gates that end a run, and the profiles, sampling and shared crawl that narrow
+or widen it. This layer assigns every `N/A`, every `NEEDS_INPUT` and almost every
+`NO_DATA` in a report, so most of a run is settled here before a checker runs at all.
+Its failures are quiet in a particular way: a wrongly refused item prints a row that
+looks exactly like a legitimate one, and the score then describes a smaller or different
+site than the one that was audited.
+
 **Capability:** everything between an operator typing a URL and a graded item existing —
 modes and capability gating, plan construction, execution and failure classification, the
 entry gate, the wrong-page guard, redirect adoption, profiles and detection, sampling and
@@ -80,13 +91,13 @@ of them is the same problem: a timeout is retryable, a crash is a defect in a ch
 missing script is a defect in the registry, `bad_output` is a contract violation, and a
 signal is the operating system, not the script.
 
-## 3. Requirements
+## Requirements
 
-### RUN-1 — a mode is a set of capabilities, and the table is the contract
+### Requirement: RUN-1 — a mode is a set of capabilities, and the table is the contract
 
-The three modes and their capability sets are normative. An item runs when its `requires`
-is in the running mode's set, and does not when it is not. A new mode, or a change to a
-set, is a change to this document first.
+The three modes and their capability sets in §2.1 are normative. An item SHALL run when
+its `requires` is in the running mode's set, and MUST NOT run when it is not. A new mode,
+or a change to a set, is a change to this document first.
 
 **Why:** the mode decides how much of the registry can answer at all, so it decides the
 denominator every score is a fraction of. Two audits of the same site in different modes
@@ -113,12 +124,36 @@ every `requires` in the registry is either in some mode's set or is one of the t
 pair. It also asserts the pair is actually asked for by some item, since a second gate over
 nothing is a rule describing nothing.
 
-### RUN-2 — an unsatisfiable requirement is `N/A`; an absent credential is `NEEDS_INPUT`
+#### Scenario: a mode is widened without the table being widened
+- **WHEN** `page` mode gains `crawl` in the code and §2.1 still lists three
+  capabilities for it
+- **THEN** the contract is broken, whatever the run then produces
+- **AND** the table is what a comparison of two audits is checked against, so a set
+  that moves silently makes every such comparison meaningless
 
-Two different refusals, and they must not be spelled alike. An item whose `requires` the
-mode does not carry is **out of scope**: `N/A`, naming the mode. An item whose capability
-the mode carries but whose credential is absent is **unanswered**: `NEEDS_INPUT`, naming
-the flag or environment variable that would supply it.
+#### Scenario: an item asks for a capability the mode does not carry
+- **WHEN** an item's `requires` is outside the running mode's set
+- **THEN** no invocation is planned for it, in every mode × capability pair rather
+  than in the one pair a fixture happens to exercise
+
+#### Scenario: the table a run was handed is edited by the run
+- **WHEN** a run mutates the capability set `resolve_mode` returned
+- **THEN** the next reader of the table sees something this document never wrote,
+  so the set handed out is a copy
+
+#### Scenario: a capability no mode carries
+- **WHEN** the registry names `gsc` or `safe_browsing`, which are in no mode's set
+- **THEN** that is legitimate rather than a gap in the table, because both are gated
+  a second time on their credential (RUN-2)
+- **AND** a twice-gated capability that no item asks for would be a rule describing
+  nothing
+
+### Requirement: RUN-2 — an unsatisfiable requirement is `N/A`; an absent credential is `NEEDS_INPUT`
+
+Two different refusals, and they MUST NOT be spelled alike. An item whose `requires` the
+mode does not carry is **out of scope**: it SHALL report `N/A`, naming the mode. An item
+whose capability the mode carries but whose credential is absent is **unanswered**: it
+SHALL report `NEEDS_INPUT`, naming the flag or environment variable that would supply it.
 
 **Why:** the two name different people. Out of scope is the operator's own choice of mode
 and needs no action; a missing credential is an action somebody can take, and the report
@@ -133,10 +168,27 @@ which is `partial`. `test_missing_credentials_is_undecided_not_out_of_scope`,
 test: nothing feeds an ordinary capability into a mode that lacks it and asserts the
 `N/A`.
 
-### RUN-3 — archive mode makes no network call, whatever credentials are present
+#### Scenario: an ordinary capability the mode lacks
+- **WHEN** an item requiring `crawl` is planned under `page` mode, which carries
+  `offline`, `fetch` and `api`
+- **THEN** it is `N/A`, and the reason names the mode
+- **AND** it is not `NEEDS_INPUT`, because no flag supplies a crawl the mode forbids
 
-`archive` carries only `offline`. A credential on disk does not re-enable a capability the
-mode excludes, and the run makes zero requests.
+#### Scenario: the mode could have asked and had no credential
+- **WHEN** a Search Console item is planned under `live` with no credentials on disk
+- **THEN** it is `NEEDS_INPUT`, naming `GSC_CREDENTIALS_PATH`
+- **AND** it is not `N/A`, which would drop it out of the coverage denominator and
+  raise coverage exactly where the audit is thinnest
+
+#### Scenario: the mode makes no network calls at all
+- **WHEN** the same item is planned under `archive`
+- **THEN** it is `N/A` naming the mode, because supplying the credential would change
+  nothing
+
+### Requirement: RUN-3 — archive mode makes no network call, whatever credentials are present
+
+`archive` carries only `offline`. A credential on disk MUST NOT re-enable a capability the
+mode excludes, and the run SHALL make zero requests.
 
 **Why:** archive mode is what an operator uses when they must not touch the site — a
 client's production host, a system under embargo, a machine with no route. A mode that
@@ -167,10 +219,33 @@ something else — `allow_private` recorded, the flag not echoed, provenance war
 It places no credential and asserts no absence of requests. Its docstring was honest; its
 name was not, and a census taken from names would have credited it with the guarantee.
 
-### RUN-4 — a plan entry is one script with one argument list, and identical invocations fold
+#### Scenario: a credential is on disk and the mode excludes it
+- **WHEN** a Search Console key file exists and the mode is `archive`
+- **THEN** the run resolves no credential from it
+- **AND** the same file under `live` resolves to that key, so the gate is read in
+  both directions rather than by an implementation that always refuses
 
-Two items that resolve to the same script with the same arguments produce one execution.
-The fold is by the invocation, never by the item.
+#### Scenario: the plan is asked the same question twice
+- **WHEN** an archive run is planned once with every credential present and once with
+  none
+- **THEN** the two plans are identical, which is what *whatever credentials are
+  present* means
+
+#### Scenario: nothing archive plans could reach the network
+- **WHEN** the whole registry is planned under `archive`, with the context an archive
+  run actually holds
+- **THEN** no planned item asks for anything but `offline`
+- **AND** the plan is non-empty, or the sweep passed over nothing and proved nothing
+
+#### Scenario: the ignored key is not ignored silently
+- **WHEN** a key is dropped because the mode excludes its capability
+- **THEN** the operator is told, because silence leaves them believing Search Console
+  ran
+
+### Requirement: RUN-4 — a plan entry is one script with one argument list, and identical invocations fold
+
+Two items that resolve to the same script with the same arguments SHALL produce one
+execution. The fold MUST be by the invocation, never by the item.
 
 **Why:** the registry deliberately asks some questions twice under different source
 numbers, and REG-11 rules on which twin carries the weight. Running the script twice
@@ -184,12 +259,27 @@ would satisfy it while silently dropping an argument; and
 the sharing is by what is run rather than by adjacency. Probed by keying the plan on the
 script alone: two of the three redden.
 
-### RUN-5 — a missing input names its flag; a refused input says why it was refused
+#### Scenario: one question asked twice by the registry
+- **WHEN** two items resolve to the same script with the same argument list
+- **THEN** one plan entry carries both ids, and the script runs once
 
-An item whose template names an input the run does not have is `NEEDS_INPUT`, and the
-evidence names the flag that would supply it. An input that was supplied and *rejected* —
-stale, or describing a different site — carries the reason for the rejection instead, and
-the two sentences must not be interchangeable.
+#### Scenario: the same script with different arguments
+- **WHEN** two items resolve to one script with different argument lists
+- **THEN** they are two plan entries
+- **AND** a fold keyed on the script alone would satisfy the case above while
+  silently dropping one of the two argument lists
+
+#### Scenario: the fold follows what is run, not what is adjacent
+- **WHEN** three items resolve across two distinct invocations
+- **THEN** the sharing follows the invocation, so which items sit next to each other
+  in the registry cannot change the plan
+
+### Requirement: RUN-5 — a missing input names its flag; a refused input says why it was refused
+
+An item whose template names an input the run does not have SHALL be `NEEDS_INPUT`, and
+the evidence MUST name the flag that would supply it. An input that was supplied and
+*rejected* — stale, or describing a different site — SHALL carry the reason for the
+rejection instead, and the two sentences MUST NOT be interchangeable.
 
 **Why:** "you did not give me this" and "what you gave me was not about this site" send
 the operator to different actions, and the second is the one people get wrong twice.
@@ -203,11 +293,29 @@ flag-naming half is read through one of the six entries in the supply table: onl
 Console, link exports and server logs appear in the suite only as fixture input, never as
 an assertion about what the plan does with them.
 
-### RUN-6 — every argument a run adds is visible where the verdict is read
+#### Scenario: the input was never supplied
+- **WHEN** an item's template names a context key the run does not hold
+- **THEN** it is `NEEDS_INPUT` and the reason names the flag that would supply it
+- **AND** a reason that says only "missing input" sends the operator to guess which
+  of the six supply-table entries it means
+
+#### Scenario: the input was supplied and refused
+- **WHEN** an artifact is handed to the run and rejected as stale or as describing a
+  different site
+- **THEN** the reason is the rejection, and does not contain the words "missing input"
+- **AND** the same item with an empty context says "missing input", so the two
+  sentences are distinguishable rather than merely both present
+
+#### Scenario: the four keys nobody asserts
+- **WHEN** the Search Console, link-export or server-log template keys are absent
+- **THEN** each names its own flag, on the same terms as `--keyword`, rather than
+  appearing in the suite only as fixture input
+
+### Requirement: RUN-6 — every argument a run adds is visible where the verdict is read
 
 A run appends three kinds of argument a reader of the registry cannot predict: registry
-args, opt-in flags, and a profile's `script_args`. All three land in the recorded
-invocation, and a threshold a profile moved is visible beside the verdict it moved.
+args, opt-in flags, and a profile's `script_args`. All three SHALL land in the recorded
+invocation, and a threshold a profile moved MUST be visible beside the verdict it moved.
 
 **Why:** a profile that changes a threshold changes what `PASS` means. A report that shows
 the verdict and not the threshold is unfalsifiable from the outside — the number is right
@@ -219,10 +327,29 @@ answering script's own summary. Nothing asserts that the run's recorded `profile
 reach the artifact, and nothing threads opt-in flags through the plan at all — they are
 tested where they are generated and not where they are used.
 
-### RUN-7 — a failed script is `NO_DATA` with a kind, and the kinds are counted apart
+#### Scenario: a profile moves a threshold
+- **WHEN** a profile's `script_args` change the bound an item is judged against
+- **THEN** the moved threshold is in the recorded invocation
+- **AND** it is echoed in the answering script's own summary, beside the verdict it
+  moved
 
-Five failure kinds, all `NO_DATA`, none interchangeable. The kind is recorded per item and
-the counts are reported per kind.
+#### Scenario: the verdict is shown and the threshold is not
+- **WHEN** a report carries the verdict a moved threshold produced and not the
+  threshold
+- **THEN** the number is unfalsifiable from the outside: it is right for a rule the
+  reader cannot see
+
+#### Scenario: an opt-in flag the run adds
+- **WHEN** a run attaches `--verify-returns` or `--verify-bots` to the one script it
+  belongs to
+- **THEN** the flag is in that script's recorded invocation, not only in the function
+  that generated it
+
+### Requirement: RUN-7 — a failed script is `NO_DATA` with a kind, and the kinds are counted apart
+
+Five failure kinds, all of which SHALL be graded `NO_DATA`, and none of which is
+interchangeable with another. The kind MUST be recorded per item and the counts reported
+per kind.
 
 **Why:** the status says the audit could not answer, which is what the score needs. The
 kind says whose problem it is, which is what the next release needs. A run where eleven
@@ -237,11 +364,33 @@ statuses. Only `timeout` is followed through to a verdict:
 routing one of them to `PASS` would redden nothing. The per-kind tally has no reader at
 all.
 
-### RUN-8 — nothing runs against an entry the audit could not read, and the absence of a score is the output
+#### Scenario: a checker crashes
+- **WHEN** a planned script exits non-zero
+- **THEN** every item that depended on it is `NO_DATA` carrying the kind `crash`
+- **AND** it is not `PASS` or `WARN`, which a change routing the kind past the
+  grading branch would produce
 
-When the entry page cannot be read, every item that needs the live site is `NO_DATA` and
-no script is executed against it. The run still produces a report; that report has no
-score, and says why.
+#### Scenario: the four kinds that are labelled and never graded
+- **WHEN** a run produces `crash`, `missing`, `bad_output` or `signal`
+- **THEN** each ends as `NO_DATA`, on the same terms as `timeout`
+- **AND** asserting that a kind carries its label says nothing about the status it
+  becomes
+
+#### Scenario: the operating system killed the child
+- **WHEN** a script is killed by a signal rather than failing
+- **THEN** the kind is `signal` and not `crash`, because nothing in the script ran
+  wrong and opening it will show nothing
+
+#### Scenario: two runs with the same score and different work
+- **WHEN** one run has eleven timeouts and another eleven crashes
+- **THEN** the scores are identical and the per-kind tally is what separates them
+- **AND** a tally asserted only to be empty is a statement about the fixtures
+
+### Requirement: RUN-8 — nothing runs against an entry the audit could not read, and the absence of a score is the output
+
+When the entry page cannot be read, every item that needs the live site SHALL be `NO_DATA`
+and no script SHALL be executed against it. The run still produces a report; that report
+MUST carry no score, and MUST say why.
 
 **Why:** a score computed from the handful of items that do not need the site is a number
 about almost nothing, printed in the same place as a real one. Refusing to print it is the
@@ -254,11 +403,35 @@ still answers, and that the gated items never reach the plan;
 unit and the live path. What is unread is the "nothing runs" half as opposed to "nothing
 is planned": no test asserts that execution was skipped, only that the plan was empty.
 
-### RUN-9 — a wrong page is decided by conjunction, never by one signal
+#### Scenario: the entry page cannot be read
+- **WHEN** the entry fetch fails
+- **THEN** every item requiring `fetch`, `crawl` or `api` is `NO_DATA` carrying the
+  reason
+- **AND** it is `NO_DATA` rather than `N/A`, because the items apply and the audit
+  simply could not answer them
 
-An interstitial is a page carrying a challenge fingerprint **and** under the visible-word
-threshold. Either alone is not enough: a long page quoting a vendor's name is an article
-about bot protection, and a short page with no fingerprint is a short page.
+#### Scenario: nothing planned is not the same as nothing run
+- **WHEN** the gated items are absent from the plan
+- **THEN** no script is executed against the unreadable entry either
+- **AND** an assertion that the plan is empty does not establish this
+
+#### Scenario: a score over the items that did not need the site
+- **WHEN** only items needing no live site could be decided
+- **THEN** no score is printed, and the report says why
+- **AND** printing one puts a number about almost nothing in the same place as a real
+  one
+
+#### Scenario: the page loaded and is the wrong page
+- **WHEN** the entry is an interstitial or an error page rather than unreachable
+- **THEN** the offline checks are gated too, because the file exists and reads
+  perfectly and nothing else stops them grading the wrong document
+
+### Requirement: RUN-9 — a wrong page is decided by conjunction, never by one signal
+
+An interstitial SHALL be a page carrying a challenge fingerprint **and** under the
+visible-word threshold. Either signal alone MUST NOT end a run: a long page quoting a
+vendor's name is an article about bot protection, and a short page with no fingerprint is
+a short page.
 
 **Why:** this rule guards the whole audit — a page wrongly called an interstitial ends the
 run. Both single-signal versions were tried and both were wrong in production: the
@@ -270,10 +443,34 @@ not a challenge), `test_a_content_page_with_the_marker_in_its_markup_survives` (
 marker in markup, not a challenge) and
 `test_script_bulk_does_not_make_a_challenge_look_content_rich` (short, marker, challenge).
 
-### RUN-10 — a soft 404 is decided by title equality, never by containment
+#### Scenario: an article about bot protection
+- **WHEN** a page carries a vendor's challenge string and enough visible prose to be
+  content
+- **THEN** it is not an interstitial and the run continues
+- **AND** the fingerprint alone would refuse every page whose subject is bot
+  protection, and every ordinary page whose host has turned a JS detection on
 
-A title *segment* equal to a not-found phrase is a soft 404. A title that merely contains
-one is not.
+#### Scenario: a thin page with no fingerprint
+- **WHEN** a page is under the visible-word threshold and carries no challenge
+  fingerprint
+- **THEN** it is a short page, not an interstitial, and the registry's own thin-content
+  items are what judge it
+
+#### Scenario: a challenge page that is mostly JavaScript
+- **WHEN** a challenge page carries a script body long enough to push a naive word
+  count over the threshold
+- **THEN** the count is taken over visible text only, and the page is refused
+- **AND** counting script bodies would carry every interstitial past the threshold
+
+#### Scenario: the threshold moves without a reader
+- **WHEN** the word threshold and the thin-entry threshold are changed together, so
+  the inequality between them still holds
+- **THEN** the rule that ends runs has changed and nothing says so
+
+### Requirement: RUN-10 — a soft 404 is decided by title equality, never by containment
+
+A title *segment* equal to a not-found phrase SHALL be a soft 404. A title that merely
+contains one MUST NOT be.
 
 **Why:** containment refuses every article whose subject is error pages, and the
 containment version shipped. The rule is narrow on purpose and the narrowness is the
@@ -283,10 +480,27 @@ containing the phrases as substrings and requires all four to pass, and
 `test_soft_404_does_not_depend_on_page_size` pins that a matching title decides regardless
 of length.
 
-### RUN-11 — the guard records its verdict whether or not it acted
+#### Scenario: an article whose title contains a not-found phrase
+- **WHEN** a title such as *How to fix 404 errors on your site* or *Room 404 | Hotel
+  Beispiel* contains a phrase as a substring
+- **THEN** it is not a soft 404 and the audit runs
+- **AND** containment would refuse every article whose subject is error pages, which
+  is the version that shipped
 
-The guard's finding is recorded on every run, including when it is overridden. An
-overridden guard makes the run's provenance say so wherever the score is shown.
+#### Scenario: a title segment that is the phrase
+- **WHEN** a title segment, split on the site's own separator, equals a not-found
+  phrase
+- **THEN** the page is a soft 404
+
+#### Scenario: a templated error page carrying the whole site
+- **WHEN** a soft 404 serves the site's nav and footer and is not small
+- **THEN** the title still decides it, because word count is not a signal for this
+  rule
+
+### Requirement: RUN-11 — the guard records its verdict whether or not it acted
+
+The guard's finding SHALL be recorded on every run, including when it is overridden. An
+overridden guard MUST make the run's provenance say so wherever the score is shown.
 
 **Why:** a score computed over an interstitial is not wrong so much as about a different
 page, and the only defence is that the report says which page. An override that erases the
@@ -297,11 +511,27 @@ live run into the output, `test_a_scored_interstitial_says_so` pins it into both
 and `test_an_enforced_guard_is_not_a_caveat` pins the converse — a guard that acted is not
 also a warning.
 
-### RUN-12 — a cross-host redirect moves the audit; a same-host hop does not
+#### Scenario: the guard is overridden
+- **WHEN** a run passes `--no-page-guard` over a page the guard found suspicious
+- **THEN** the finding is recorded rather than erased, and the run's provenance says
+  so wherever the score is shown
+- **AND** an override that erases the suspicion makes a run over an interstitial
+  indistinguishable afterwards from a run over the site
 
-When the entry redirects to another host, that host is the audited site: the URL sample
-and the derived Search Console property follow it. A redirect within the same host leaves
-the requested URL as the subject, so the hop is still reported as a finding.
+#### Scenario: the guard acted
+- **WHEN** the guard ends the run
+- **THEN** it is reported as a refusal, and not also as a caveat attached to a score
+  that does not exist
+
+#### Scenario: a scored interstitial reaches both surfaces
+- **WHEN** an overridden guard's run is rendered
+- **THEN** every renderer that shows the score shows that the page was suspected
+
+### Requirement: RUN-12 — a cross-host redirect moves the audit; a same-host hop does not
+
+When the entry redirects to another host, that host SHALL be the audited site: the URL
+sample and the derived Search Console property follow it. A redirect within the same host
+MUST leave the requested URL as the subject, so the hop is still reported as a finding.
 
 **Why:** auditing `example.com` and reporting about `www.example.net` under the first
 name is a wrong report, not a wrong verdict. But adopting every same-host hop would hide
@@ -312,10 +542,27 @@ the rule; `test_the_search_console_property_follows_the_destination` pins the de
 property; and `test_the_sample_follows_the_destination_host` pins the sample, through a
 live redirect.
 
-### RUN-13 — a profile narrows scope to `N/A` naming the profile, never to silence
+#### Scenario: the entry redirects to another host
+- **WHEN** the requested URL lands on a different netloc
+- **THEN** the destination is the audited site: the sample and the derived Search
+  Console property both follow it
+- **AND** keeping the requested URL collapses the sample to the single entry page and
+  derives a property the service account has no access to, both of which fail quietly
 
-An item a profile excludes is reported, as `N/A`, with the profile's own words for why.
-It is never simply absent, and the reason is never a generic phrase.
+#### Scenario: `www` is another host
+- **WHEN** the redirect only adds or drops `www`
+- **THEN** it is a different netloc and the audit moves
+
+#### Scenario: a hop within the same host
+- **WHEN** the redirect stays on the requested host
+- **THEN** the requested URL remains the subject
+- **AND** the redirect checker is still handed the address that redirects, so the hop
+  is reported rather than absorbed
+
+### Requirement: RUN-13 — a profile narrows scope to `N/A` naming the profile, never to silence
+
+An item a profile excludes SHALL be reported, as `N/A`, with the profile's own words for
+why. It MUST NOT be simply absent, and the reason MUST NOT be a generic phrase.
 
 **Why:** a partition that drops rows stops summing to the registry, and the score becomes
 a fraction of a sample nobody chose. Naming the profile is what lets a reader tell "this
@@ -327,10 +574,27 @@ construction that names the profile beside the `N/A` has no test — the one tes
 asserts an excluded item never reaches the plan supplies its own hand-written reason
 rather than one produced by the profile.
 
-### RUN-14 — every non-answer resolves to the widest scope
+#### Scenario: a profile drops an item from the report
+- **WHEN** an item a profile excludes is absent rather than reported
+- **THEN** the partition stops summing to the registry, and the score becomes a
+  fraction of a sample nobody chose
 
-Silence, an unreadable answer, no terminal, end of input, an interrupt: all of them mean
-the full registry. A narrower scope is only ever chosen deliberately.
+#### Scenario: an excluded item is reported
+- **WHEN** a profile excludes an item by category, by script or by id
+- **THEN** the item is `N/A`, and the reason is the profile's own sentence, naming the
+  profile
+- **AND** a generic phrase such as "excluded by profile" is the one exclusion a reader
+  cannot reconstruct, on the surface where narrowing scope has to justify itself
+
+#### Scenario: a profile that excludes a critical item
+- **WHEN** a profile's exclusion list would drop an item the registry marks critical
+- **THEN** the profile is wrong, because no site type makes a critical item
+  unanswerable
+
+### Requirement: RUN-14 — every non-answer resolves to the widest scope
+
+Silence, an unreadable answer, no terminal, end of input, an interrupt: all of them SHALL
+resolve to the full registry. A narrower scope MUST be chosen deliberately or not at all.
 
 **Why:** the failure modes of a prompt are all silence, and silence must not be able to
 shrink the audit. The dangerous direction is the quiet one — a narrowed scope produces a
@@ -352,11 +616,39 @@ that `--profile auto` is the only way detection may narrow without asking. Appen
 records the measurement, and `openspec/specs/verdicts/` already recorded the same defect from the
 other side as VRD-11.
 
-### RUN-15 — detection suggests, and never decides
+#### Scenario: end of input, with a profile detected
+- **WHEN** detection suggests `local` and the operator's input ends at the prompt
+- **THEN** the run audits under `default`, the full registry
+- **AND** it does not audit under `local`, which reports a higher score over fewer
+  items with nobody having chosen that
 
-A profile detected from the page is a suggestion. It narrows the audit only where the
-operator has asked for that in advance, thin evidence resolves to the widest scope, and
-the signals behind a suggestion are shown rather than only its conclusion.
+#### Scenario: an interrupt, with a profile detected
+- **WHEN** detection suggests `local` and the operator interrupts the prompt
+- **THEN** the run audits under `default`
+
+#### Scenario: three unrecognised answers, with a profile detected
+- **WHEN** detection suggests `local` and the prompt exhausts its three attempts on
+  replies that name no profile
+- **THEN** the run audits under `default`
+
+#### Scenario: the prompt is exercised where the defect cannot appear
+- **WHEN** the prompt is called with no detection, so the suggestion is already
+  `default`
+- **THEN** both branches answer `default` and every silent exit looks correct
+- **AND** a case built this way reads nothing: the requirement is only read where
+  detection found something and the exit still widens
+
+#### Scenario: the operator narrows deliberately
+- **WHEN** a profile is named explicitly, or `--profile auto` accepts the detector's
+  suggestion
+- **THEN** the narrower scope is chosen, because passing the flag is the decision
+
+### Requirement: RUN-15 — detection suggests, and never decides
+
+A profile detected from the page SHALL be a suggestion. It MUST narrow the audit only
+where the operator has asked for that in advance, thin evidence SHALL resolve to the
+widest scope, and the signals behind a suggestion SHALL be shown rather than only its
+conclusion.
 
 **Why:** a heuristic that silently narrows scope is RUN-14's failure with a better excuse.
 Showing the signals is what makes the suggestion arguable; a bare answer is a verdict
@@ -369,12 +661,33 @@ and may not be adopted. The "shown, not just answered" half is unread — the si
 read inside one unit test and nothing asserts they reach the operator — and the claim that
 detection reads structure rather than wording has no test in either direction.
 
-### RUN-16 — a sampled verdict is the worst page's, and the count is part of the evidence
+#### Scenario: the evidence is thin
+- **WHEN** detection finds nothing conclusive
+- **THEN** the resolution is `default`, and the operator is told the evidence was too
+  thin to narrow anything
 
-Where an item is decided over several pages, the reported verdict is the worst of them and
-the evidence states how many pages were checked, how many decided, and how many carry the
-reported verdict. Site-wide items are not aggregated, and items decided from an operator's
-artifact keep the primary page's verdict.
+#### Scenario: a suggestion adopted without being asked for
+- **WHEN** detection names a profile and neither an explicit flag nor `--profile auto`
+  was given
+- **THEN** the audit runs under the full registry
+- **AND** a heuristic that narrows here is RUN-14's failure with a better excuse
+
+#### Scenario: no terminal to ask at
+- **WHEN** a run has no terminal and detection found a profile
+- **THEN** the run proceeds under `default` and prints what detection suggested, so
+  the operator can accept it deliberately on the next run
+
+#### Scenario: the conclusion is shown and the signals are not
+- **WHEN** the operator is given a detected profile without the signals behind it
+- **THEN** the suggestion cannot be argued with, which makes it a verdict wearing a
+  suggestion's clothes
+
+### Requirement: RUN-16 — a sampled verdict is the worst page's, and the count is part of the evidence
+
+Where an item is decided over several pages, the reported verdict SHALL be the worst of
+them and the evidence MUST state how many pages were checked, how many decided, and how
+many carry the reported verdict. Site-wide items MUST NOT be aggregated, and items decided
+from an operator's artifact SHALL keep the primary page's verdict.
 
 **Why:** the worst page is the honest summary of a site, and a count is what stops it being
 read as a claim about every page. Without the count, one bad page out of eight and eight
@@ -387,12 +700,34 @@ count; `test_one_measured_page_does_not_become_a_verdict_about_four_others` pins
 artifact rule end to end; and `test_the_measure_follows_the_worst_page` pins that the
 reported measurement belongs to the page that produced the verdict.
 
-### RUN-17 — the sample is spread, stable, and made of pages
+#### Scenario: one bad page out of eight
+- **WHEN** a page-level item fails on one of eight sampled pages
+- **THEN** the reported verdict is the failure, and the evidence states that one page
+  of eight carries it
+- **AND** without the count, one bad page and eight bad pages print the same sentence
 
-A sample of N covers the site rather than its first corner, is the same on two runs over an
-unchanged site, and contains pages: assets are dropped by extension, non-page content types
-are dropped by their type, and URLs robots disallows are dropped with a count the operator
-can see.
+#### Scenario: the measurement and the verdict come from different pages
+- **WHEN** the aggregated row keeps the entry page's numbers and the worst page's
+  status
+- **THEN** the report can print a passing measurement directly under a failing
+  verdict, which is worse than printing the raw assertion
+
+#### Scenario: pages that could not be decided
+- **WHEN** some sampled pages produced no verdict
+- **THEN** they do not become one, and the count says how many were checked, how many
+  decided, and how many carry the reported verdict
+
+#### Scenario: one artifact and four other pages
+- **WHEN** an item is decided from an operator's artifact about the primary page
+- **THEN** it keeps the primary page's verdict, and site-wide items are not aggregated
+  at all
+
+### Requirement: RUN-17 — the sample is spread, stable, and made of pages
+
+A sample of N SHALL cover the site rather than its first corner, MUST be the same on two
+runs over an unchanged site, and MUST contain pages: assets are dropped by extension,
+non-page content types are dropped by their type, and URLs robots disallows are dropped
+with a count the operator can see.
 
 **Why:** a sample of the first N URLs measures a sitemap's ordering. Stability is what
 makes two audits comparable at all. And a sample silently reduced by robots or by content
@@ -405,11 +740,34 @@ through a live sixty-page site. The three drop rules are not: the extension filt
 tested through `test_assets_are_not_pages`, and the content-type rejection, the
 robots-disallowed count and the message a single-URL run prints have no reader at all.
 
-### RUN-18 — the shared crawl is an input, never a job, and its failure is `NO_DATA`
+#### Scenario: the sample is taken from the top
+- **WHEN** the first N URLs of a sitemap are sampled
+- **THEN** the sample measures the sitemap's ordering rather than the site
+- **AND** the picks must span the list, both ends included, so no sample size leaves
+  the tail of a large sitemap unreachable
 
-The site is crawled once, before the plan, and its inventory is handed to items as an
-input. No registry item may name the crawl as its script. When the crawl fails, every item
-that would have read the inventory is `NO_DATA` carrying the crawl's own reason.
+#### Scenario: two runs over an unchanged site
+- **WHEN** the same sitemap is sampled twice
+- **THEN** the same pages are picked, because two audits that sample differently are
+  not comparable
+
+#### Scenario: robots disallows some of the picks
+- **WHEN** URLs the sample chose are disallowed by the site's own robots.txt
+- **THEN** they are dropped and the count of drops is printed
+- **AND** a sample silently reduced is a smaller audit reported as a full one
+
+#### Scenario: something that is not a page
+- **WHEN** a candidate is an asset by extension, or answers with a non-page content
+  type
+- **THEN** it is not sampled, and the extension filter alone does not settle the
+  second case
+
+### Requirement: RUN-18 — the shared crawl is an input, never a job, and its failure is `NO_DATA`
+
+The site SHALL be crawled once, before the plan, and its inventory handed to items as an
+input. The crawl MUST NOT be named as any registry item's script. When the crawl fails,
+every item that would have read the inventory SHALL be `NO_DATA` carrying the crawl's own
+reason.
 
 **Why:** the crawl is the most expensive thing a run does and several items need it; making
 it a job would either run it many times or make one item's failure another's. And the
@@ -424,11 +782,31 @@ which is how Appendix A.1's defect survived: the run reports `NEEDS_INPUT`, whil
 code's own comment, the message it prints and the capability inventory all say `NO_DATA`.
 Running the crawl twice reddens nothing.
 
-### RUN-19 — a clean answer over a truncated input is withheld
+#### Scenario: the crawl fails
+- **WHEN** the shared crawl returns an error
+- **THEN** every item that would have read the inventory is `NO_DATA`, carrying the
+  crawl's own reason
+- **AND** it is not `NEEDS_INPUT`: there is no flag that supplies an inventory the run
+  produces itself, so that status asks the operator for something only the tool can
+  give
+
+#### Scenario: the crawl as a registry item
+- **WHEN** a registry item names the crawl as its script
+- **THEN** the crawl either runs once per item that wants it or makes one item's
+  failure another's
+- **AND** a reader that only knows the crawl is absent from a list of expected scripts
+  stops holding the moment somebody adds it to that list
+
+#### Scenario: two items read the inventory
+- **WHEN** several site-wide items need the crawl's inventory
+- **THEN** the site is crawled once, before the plan, and the inventory is handed to
+  each as an input
+
+### Requirement: RUN-19 — a clean answer over a truncated input is withheld
 
 Where a checker's input was capped — a crawl that stopped at its page limit, a listing that
-was cut — an answer that would pass *by absence* is downgraded to `NO_DATA`, and a failure
-found in the part that was read still fails, named as a floor.
+was cut — an answer that would pass *by absence* SHALL be downgraded to `NO_DATA`, and a
+failure found in the part that was read MUST still fail, named as a floor.
 
 **Why:** "no violations found" over half a site is not a finding about the site. But a
 violation found in half a site is still a violation, so the downgrade must be asymmetric or
@@ -443,7 +821,29 @@ themselves. Every one of those injects the flag by hand. No test starts from a c
 truncated and follows the flag through to a verdict, so the propagation the requirement
 names — from the crawl to the rule — is unread.
 
-### RUN-20 — when two refusals apply to one item, the order is stated
+#### Scenario: nothing found in the half that was read
+- **WHEN** a rule that passes by absence answers over an input the checker says was
+  capped
+- **THEN** the answer is withheld as `NO_DATA`, because the cap that stopped the
+  reading is the cap that would have stopped the finding
+
+#### Scenario: a defect found in the part that was read
+- **WHEN** the same capped input yields a violation
+- **THEN** the verdict stands, and the count beside it is named as a floor rather than
+  a total
+- **AND** a symmetric downgrade would lose a true finding to a cap
+
+#### Scenario: the truncation comes from the crawl rather than from a fixture
+- **WHEN** a crawl stops at its page limit and a site-wide item then passes by absence
+- **THEN** the withholding still happens, because the requirement is about the
+  propagation and not only about the flag
+- **AND** a case that sets the flag by hand reads the rule and never the path to it
+
+#### Scenario: an answer that passes by presence
+- **WHEN** a rule that requires something finds it, over a capped input
+- **THEN** it is not downgraded: the cap cannot have hidden what was found
+
+### Requirement: RUN-20 — when two refusals apply to one item, the order is stated
 
 An item can be refused twice over: excluded by a profile *and* gated by an unreadable
 entry; out of scope for the mode *and* missing its input; carrying an artifact that was
@@ -451,11 +851,11 @@ rejected *and* a template key that is absent. Exactly one of those reasons reach
 report, and which one is a decision this document makes rather than an accident of the
 order the code happens to check them in.
 
-The order is: **scope before capability, capability before input.** An item a profile
+The order SHALL be: **scope before capability, capability before input.** An item a profile
 excluded is `N/A` even if its input is also missing, because it was never going to be
 asked. An item the mode cannot carry is `N/A` even if a credential is also absent, because
-supplying the credential would not help. Only an item that is in scope and answerable
-reports `NEEDS_INPUT`.
+supplying the credential would not help. Only an item that is in scope and answerable MAY
+report `NEEDS_INPUT`.
 
 **Why:** the status names who can act, and the wrong one sends a reader to work that
 changes nothing. Today the precedence exists — it is whatever sequence of `if` statements
@@ -473,6 +873,27 @@ Probed by making the profile skip stop short-circuiting, so scope is applied las
 of first: an excluded item comes back `NEEDS_INPUT`, and a profile exclusion is relabelled
 "needs 'crawl'; not available in archive mode". That is the silent reclassification the
 requirement was written about, and it now costs two red tests.
+
+#### Scenario: excluded by a profile and gated by the mode
+- **WHEN** a profile excludes an item whose capability the mode also does not carry
+- **THEN** the reported reason is the profile's, because both answer `N/A` and the
+  reason is the only discriminator
+- **AND** relabelling a profile exclusion as a mode gap tells the operator to change
+  something that was never going to be asked
+
+#### Scenario: excluded by a profile and missing its input
+- **WHEN** a profile excludes an item whose template key is also absent
+- **THEN** it is `N/A` with the profile's reason, not `NEEDS_INPUT`
+
+#### Scenario: out of scope for the mode and missing a credential
+- **WHEN** the mode cannot carry an item's capability and its credential is absent too
+- **THEN** it is `N/A`, because supplying the credential would not help
+
+#### Scenario: in scope and answerable
+- **WHEN** an item is neither excluded nor gated, and one input is missing
+- **THEN** it is the only case that reports `NEEDS_INPUT`
+- **AND** without this case, an implementation answering `N/A` to everything satisfies
+  the other three
 
 ## 4. Invariants
 
@@ -514,7 +935,10 @@ requirement was written about, and it now costs two red tests.
 ## 6. Open questions
 
 **Should the mode table be derived from the registry, or the registry checked against the
-table?** RUN-1 has no reader, and the two candidate readers are different documents'
+table?** *Settled 5 September 2026 in the direction this question argued for — RUN-1's
+reader takes the weaker of the two options and says why. Kept because the reasoning is
+what justifies the choice.* RUN-1 had no reader, and the two candidate readers are
+different documents'
 work: a test that `MODE_CAPS`'s union equals the `requires` vocabulary would tie this
 document to `openspec/specs/registry/` §2.1, while a test that every `requires` value appears in
 some mode would allow a capability no mode carries. What would settle it: whether a
@@ -560,7 +984,7 @@ absence-based item is therefore `NO_DATA` forever, is undecided.
 
 Observation, not specification. Measured at commit `9f8bb6c`, registry `b0abf2819da0`.
 
-### A.1 — a failed crawl reports the wrong status, and three places say so
+#### A.1 — a failed crawl reports the wrong status, and three places say so
 
 When `site_crawl.py` returns an error, the runner sets a rejection reason for
 `{inventory_json}`, and `build_plan`'s rejection branch assigns
@@ -593,7 +1017,7 @@ absent" and sends its reader to supply one. There is no flag that supplies an in
 the run produces it. So the report asks the operator for something only the tool can give,
 which is exactly the confusion VRD-5 exists to prevent.
 
-### A.2 — the interstitial threshold is pinned only against another threshold
+#### A.2 — the interstitial threshold is pinned only against another threshold
 
 `CHALLENGE_MAX_WORDS` is 120 and `THIN_ENTRY_WORDS` is 40. One test asserts the second is
 less than the first. No test asserts either value. Every other test that exercises the
@@ -605,7 +1029,7 @@ The rule this constant decides is RUN-9's conjunction, which ends runs. A thresh
 can move without a reader is the shape `openspec/specs/scoring/` calls G1 for the severity weights,
 one layer down.
 
-### A.3 — the guard's fingerprint sets are large and thinly exercised
+#### A.3 — the guard's fingerprint sets are large and thinly exercised
 
 | set | entries | entries with a fixture |
 |---|---:|---:|
@@ -624,7 +1048,7 @@ has eleven. That is the REG-12 shape again — a count written beside the thing 
 read by nobody — and it is the second inventory number this document found wrong while
 being written.
 
-### A.4 — four of the five failure kinds are never graded
+#### A.4 — four of the five failure kinds are never graded
 
 `FAILURE_LABEL` names `timeout`, `crash`, `missing`, `bad_output` and `signal`. Each is
 asserted to *carry its label*. Only `timeout` is asserted to *become `NO_DATA`*. A change
@@ -633,7 +1057,7 @@ routing `crash` to `PASS` — or to `WARN` — would pass the suite.
 The per-kind tally RUN-7 requires has no reader in either form: the one assertion on the
 failure dictionary asserts that it is empty, which is a statement about the fixtures.
 
-### A.5 — the profile prompt narrows the audit on every silent exit
+#### A.5 — the profile prompt narrows the audit on every silent exit
 
 `choose_profile` ends its prompt loop three ways that are not answers — end of input, an
 interrupt, and three unrecognised replies — and all three `return suggested`. `suggested`
@@ -661,7 +1085,7 @@ This document credited it as `enforced` until an audit ran the probe, which is t
 error the suite has now made four times: a classification taken from tests that pass
 rather than from a mutation that should fail.
 
-### A.6 — the survey that produced this appendix
+#### A.6 — the survey that produced this appendix
 
 Appendices A.1 through A.4 came from a reader census over C9–C18 that named, for each
 behaviour the inventory says a spec must state, the tests that assert it and the greps that
@@ -673,7 +1097,8 @@ through, the constants by importing them and counting, the failure kinds by read
 assertions.
 
 The other thirty-six are recorded where a debt of that shape belongs, in the reader lines
-of §3: every `partial` and every `none` in Appendix B names which half is unheld.
+of the requirements section: every `partial` and every `none` in Appendix B names which
+half is unheld.
 
 ## Appendix B — how much of this document is enforced
 
@@ -712,5 +1137,6 @@ counting was built to watch a total and never pointed at a rule.
 That is also why the unread requirements are the ones with the quietest failures. An audit
 that made a network call in archive mode, ran a script twice, or reported the wrong one of
 two applicable refusals produces a report indistinguishable from a correct one — same
-items, same statuses, same score. The five enforced requirements are all ones whose
-violation changes a verdict somebody reads.
+items, same statuses, same score. The enforced requirements are, with few exceptions,
+the ones whose violation changes a verdict somebody reads — and where that stopped being
+true is where the readers were written this week rather than earned by a defect.

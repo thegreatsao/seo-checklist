@@ -1,5 +1,19 @@
 # Declarations — what a served tree is expected to answer, and what a recording may claim
 
+## Purpose
+
+The two instruments that measure this repository's own checks against trees it serves
+itself: a manifest of expected verdicts, written in advance of any run, and a census of
+what every item actually answered on every tree there is — C40 and C41 of the capability
+inventory.
+
+A prediction and a recording look identical in a file and are worth opposite things. The
+manifest is the only artifact here that can be *wrong about the code*, which is the only
+kind of artifact that can catch the code being wrong; the census cannot be wrong and can
+only be stale, and its value is the range of answers it collects. This document exists to
+stop the two being confused, because every way of confusing them spends the manifest and
+none of them costs the census anything.
+
 **Capability:** the two instruments that measure this repository's own checks against
 trees it serves itself — the fixture corpus with its manifest of expected verdicts, and
 the verdict census over every tree there is (C40, C41 of the capability inventory).
@@ -90,13 +104,14 @@ list of sites.
 
 The corpus carries no declarations on purpose, and DEC-14 says why.
 
-## 3. Requirements
+## Requirements
 
-### DEC-1 — a declaration is written before the run, and never from a recording of one
+### Requirement: DEC-1 — a declaration is written before the run, and never from a recording of one
 
-The prediction precedes the measurement. This binds every source of the answer, not only
-the audit: a census row, a printed tally, a triage note and a previous session's transcript
-are all recordings, and a declaration written from any of them predicts nothing.
+The prediction SHALL precede the measurement, and a declaration MUST NOT be written from
+a recording of one. This binds every source of the answer, not only the audit: a census
+row, a printed tally, a triage note and a previous session's transcript are all
+recordings, and a declaration written from any of them predicts nothing.
 
 Where a session has already seen an item's answer on an origin, that session does not
 declare it. It leaves the item undeclared and says so, and a later session that has not
@@ -128,12 +143,38 @@ and it is the honest limit here rather than a defect to fix: no test can read a 
 protects this requirement is that people record when they withheld a declaration and why,
 which the id ledger already does in prose. See Appendix A.7, which spends some of it.
 
-### DEC-2 — "no expectation" is the absence of a declaration, not a word in the status field
+#### Scenario: the answer was seen before the prediction was written
+- **WHEN** a session has already read what an item answers on an origin — from a run,
+  from `tests/census.json`, from a printed tally, from a triage note, or from an earlier
+  session's transcript
+- **THEN** that session leaves the item undeclared on that origin and records that it
+  withheld it and why
+- **AND** it does not declare the item, whatever argument it could now construct
 
-An item nobody is prepared to predict on an origin carries **no declaration** for that
-origin. It is not declared with a word meaning "cannot tell". The status field holds a
-prediction about the site; "no prediction exists" is a fact about the manifest, and the
-two must not share a field.
+#### Scenario: a declaration copied from a recording
+- **WHEN** a declaration's `expect` is taken from what the audit answered rather than
+  from the item's title and the fixture's construction
+- **THEN** the declaration violates this requirement, whatever value it holds
+- **AND** the file cannot show the difference, which is why the obligation binds the
+  session that wrote it rather than the artifact
+
+#### Scenario: a blind session is arranged
+- **WHEN** a fresh executor is handed the fixture tree and the item titles, and the run
+  results, the census record and this document's Appendix A are withheld
+- **THEN** its declarations satisfy this requirement, and the batch records the list of
+  what it was given
+
+#### Scenario: nobody blind is available
+- **WHEN** every session that could declare an item has already seen that item's answer
+- **THEN** the item stays undeclared
+- **AND** the shortage is a scheduling problem, never a reason to declare it anyway
+
+### Requirement: DEC-2 — "no expectation" is the absence of a declaration, not a word in the status field
+
+An item nobody is prepared to predict on an origin SHALL carry **no declaration** for
+that origin, and MUST NOT be declared with a word meaning "cannot tell". The status field
+holds a prediction about the site; "no prediction exists" is a fact about the manifest,
+and the two must not share a field.
 
 **Why:** this is VRD-12's field-level half, and it has already cost fifty-five releases.
 A word that only one layer knows cannot be compared with anything, so the comparison that
@@ -160,11 +201,36 @@ narrow — it bites on `GEO-007`'s two declarations for certain, and on `MB-105`
 `TECH-001` if their honest value turns out to be `NO_DATA` — and a reader that permits the
 violation and forbids even one form of the repair is opposed rather than merely unread.
 
-### DEC-3 — the declaration vocabulary is the audit's vocabulary, entire and unextended
+#### Scenario: a prediction nobody is prepared to make
+- **WHEN** no session that qualifies under DEC-1 will predict an item's status on an
+  origin
+- **THEN** the manifest carries no entry at all for that item on that origin
+- **AND** the withholding and its reason are recorded where the declared set is
+  maintained
 
-The set a declaration may draw from is the eight statuses of `openspec/specs/verdicts/`, and
-exactly those. Not a subset chosen because the fixtures happen not to produce the rest,
-and not a superset.
+#### Scenario: the status field is asked to say that nothing is expected
+- **WHEN** a declaration's `expect` holds a word that means "cannot tell" rather than a
+  status about the served tree
+- **THEN** the manifest is in violation, even where every test over it passes
+
+#### Scenario: the honest status is one the vocabulary already has
+- **WHEN** an item's declared reason is that the check reads an operator input the audit
+  does not pass, which is what `NEEDS_INPUT` means and what the run answers
+- **THEN** the declaration says `NEEDS_INPUT`
+- **AND** a reader that permits "cannot tell" and rejects `NEEDS_INPUT` opposes this
+  requirement rather than failing to read it
+
+#### Scenario: the entry that predicts nothing is counted as coverage
+- **WHEN** an entry carrying no prediction is counted in the number quoted for how much
+  of the registry is pinned
+- **THEN** that number overstates what is pinned by exactly the size of the set nobody
+  is comparing
+
+### Requirement: DEC-3 — the declaration vocabulary is the audit's vocabulary, entire and unextended
+
+The set a declaration may draw from SHALL be the eight statuses of
+`openspec/specs/verdicts/`, and exactly those. It MUST NOT be a subset chosen because the
+fixtures happen not to produce the rest, and MUST NOT be a superset.
 
 **Why:** a subset silently forbids honest predictions — the manifest cannot say "the
 checker will not be able to answer here", which is a genuine and checkable claim about a
@@ -176,11 +242,27 @@ subset of it. It omits `NO_DATA`, `NEEDS_INPUT`, `MANUAL` and `LLM_PENDING`, and
 `INDETERMINATE`. Nothing derives `ALLOWED` from the status vocabulary, so the two can
 drift apart in either direction with the suite green — and have.
 
-### DEC-4 — a declaration carries a reason, and the reason argues from the fixture
+#### Scenario: a status the audit can emit is refused to a declaration
+- **WHEN** a declaration states one of the eight statuses that the permitted set omits
+- **THEN** the declaration is legal, and the reader that rejects it is wrong
+- **AND** the manifest is thereby forbidden an honest prediction it is in a position to
+  make
 
-`why` states the construction that produces the expectation: what the tree contains, what
-the item's title asks of it, and why the one implies the other. It is not a restatement of
-the status and not a note about the run.
+#### Scenario: a word the audit never emits
+- **WHEN** a declaration states anything outside the eight
+- **THEN** it is rejected, whether the word is a typing slip or an invention meaning
+  "no prediction"
+
+#### Scenario: the two vocabularies drift apart
+- **WHEN** a status is added to or removed from `openspec/specs/verdicts/`
+- **THEN** the set a declaration may draw from moves with it
+- **AND** a permitted set written as its own literal does not move, and nothing says so
+
+### Requirement: DEC-4 — a declaration carries a reason, and the reason argues from the fixture
+
+`why` SHALL state the construction that produces the expectation: what the tree contains,
+what the item's title asks of it, and why the one implies the other. It MUST NOT be a
+restatement of the status, and MUST NOT be a note about the run.
 
 **Why:** the reason is what a triage reads when the declaration and the run disagree.
 "expected PASS because it passes" leaves the reader with two claims and no argument, and
@@ -190,11 +272,29 @@ the natural resolution of a disagreement without an argument is to edit the decl
 could mechanically; what a reader *could* check — that it names something in the fixture
 tree — nothing does.
 
-### DEC-5 — a declaration records what it was reasoned from, so a moved title makes it visibly unre-read
+#### Scenario: a reason that restates the status
+- **WHEN** `why` says "expected PASS because it passes"
+- **THEN** the declaration does not satisfy this requirement
+- **AND** a check that `why` is a non-empty string accepts it, so the requirement is
+  violated with the suite green
 
-A declaration derived from an item's title stores that title. When the title moves, the
-declaration is mechanically identifiable as one whose basis has changed and which has not
-been re-read since.
+#### Scenario: a reason argued from the run rather than the tree
+- **WHEN** `why` names what the audit answered, or what a previous run reported, rather
+  than what the fixture contains
+- **THEN** it is not a reason under this requirement
+- **AND** it is evidence that the declaration also violates DEC-1
+
+#### Scenario: a triage has something to weigh
+- **WHEN** a declaration and a run disagree and somebody has to decide which is wrong
+- **THEN** `why` names what the tree contains and what the item's title asks of it, so
+  the triage reads an argument rather than two bare claims
+- **AND** the cheap resolution — editing the declaration — is not the only one available
+
+### Requirement: DEC-5 — a declaration records what it was reasoned from, so a moved title makes it visibly unre-read
+
+A declaration derived from an item's title SHALL store that title. When the title moves,
+the declaration MUST be mechanically identifiable as one whose basis has changed and which
+has not been re-read since.
 
 The basis is not only the title. A declaration is made against the pages the run will
 actually visit, which is a *sample* — `--sample 3` today — so the sample is part of what
@@ -213,12 +313,32 @@ trusting the stamp. The instrument that got bitten was fixed; the one that has n
 bitten yet still carries the defect.
 **Reader:** **none.** A declaration carries `expect` and `why` and nothing else.
 
-### DEC-6 — the declared set is derived from what the harness can reach, not listed by hand
+#### Scenario: a title is rewritten under its predictions
+- **WHEN** an item's title changes in the registry and the declarations reasoned from it
+  are not re-read
+- **THEN** each of those declarations is mechanically identifiable as one whose basis has
+  moved
+- **AND** no gate reports the manifest as current until they are re-read
 
-Which items are expected to carry a declaration follows from the run's own capability
+#### Scenario: the sample moves under its predictions
+- **WHEN** the pages `--sample 3` picks on an origin are not the pages a declaration was
+  written against
+- **THEN** the declaration is being compared against a different site, and is
+  identifiable as unre-read
+- **AND** recording the sampled pages in a comment beside the harness does not make them
+  part of what the declaration stores
+
+#### Scenario: nothing is stored to compare against
+- **WHEN** a declaration carries only `expect` and `why`
+- **THEN** a moved title is undetectable from the manifest, and the obligation to re-read
+  falls on a person remembering a release ritual
+
+### Requirement: DEC-6 — the declared set is derived from what the harness can reach, not listed by hand
+
+Which items are expected to carry a declaration SHALL follow from the run's own capability
 gating: an item the offline harness can answer is an item somebody owes a prediction for.
-The obligation is computed; only the *withholding* of a particular declaration is written
-down, with its reason.
+The obligation MUST be computed; only the *withholding* of a particular declaration is
+written down, with its reason.
 
 **Why:** a hand-kept list of ids cannot say what is missing from it. Add a new
 `requires: fetch` item to the registry and the manifest simply does not mention it — no
@@ -230,10 +350,36 @@ catches a declaration added or dropped without a deliberate edit, which is real 
 keeping. It cannot catch the set being wrong: the two literals happen to equal the
 offline-reachable script set exactly today (Appendix A.3), and nothing says they must.
 
-### DEC-7 — every declaration is compared on every run, and a difference stops the suite
+#### Scenario: a reachable item is added and nobody notices it is owed
+- **WHEN** an item the offline harness can answer is added to the registry and no
+  declaration is written for it
+- **THEN** the item is reported as owing one
+- **AND** the coverage number does not quietly become a smaller fraction of a larger
+  registry
 
-No declaration is exempt from comparison. A declaration the comparison declines to make is
-worse than none, because it is counted as coverage.
+#### Scenario: reachability moves without the manifest moving
+- **WHEN** an existing item's `requires` changes so that the offline harness can now
+  answer it, or can no longer answer it
+- **THEN** the set of items owing a declaration changes with it, derived from the
+  registry rather than from a list kept beside it
+
+#### Scenario: the set is kept as a literal
+- **WHEN** the expected id set is written out by hand where the comparison reads it
+- **THEN** adding an item to the manifest and to the literal in one edit passes every
+  check
+- **AND** the reader that should have objected is the same literal the edit had to touch
+
+#### Scenario: a declaration is withheld on purpose
+- **WHEN** a reachable item deliberately carries no declaration, because no blind session
+  was available for it
+- **THEN** the withholding is written down with its reason
+- **AND** it is distinguishable from an item nobody noticed was owed
+
+### Requirement: DEC-7 — every declaration is compared on every run, and a difference stops the suite
+
+No declaration SHALL be exempt from comparison, and any difference between a declaration
+and the run MUST stop the suite. A declaration the comparison declines to make is worse
+than none, because it is counted as coverage.
 
 **Why:** the manifest's number is quoted as a measure of how much of the registry is
 pinned. A declaration that is carried, counted and skipped inflates that number by exactly
@@ -248,11 +394,27 @@ with nothing. A reader that holds the comparison for 223 of 250 declarations and
 manifest exempt the rest holds part of the substance, not all of it. Removing the
 exemption is DEC-2's repair, not a second one.
 
-### DEC-8 — a mismatch is a triage input, and neither side moves without a recorded reason
+#### Scenario: the comparison declines to make a comparison
+- **WHEN** a declaration carries a value the comparison skips rather than compares
+- **THEN** this requirement is violated
+- **AND** the declaration is worse than no declaration, because the coverage number
+  counts it while nothing checks it
 
-When a declaration and a run disagree, somebody decides which is wrong. Both outcomes are
-legitimate: the checker may be defective, or the prediction may be. Neither the manifest
-nor the fixture nor the checker is edited to make the suite green without the decision
+#### Scenario: a declaration disagrees with the run
+- **WHEN** a declared `PASS` meets an answered `FAIL` on one origin
+- **THEN** the suite fails, naming the origin, the item, both statuses and the
+  declaration's reason
+
+#### Scenario: the skipped declarations are printed instead of compared
+- **WHEN** the run prints a column counting the declarations the comparison skipped
+- **THEN** the requirement is still violated: visibility in a tally is not comparison,
+  and a printed count is what made the exemption survive fifty-five releases
+
+### Requirement: DEC-8 — a mismatch is a triage input, and neither side moves without a recorded reason
+
+When a declaration and a run disagree, somebody SHALL decide which is wrong. Both outcomes
+are legitimate: the checker may be defective, or the prediction may be. The manifest, the
+fixture and the checker MUST NOT be edited to make the suite green without the decision
 being written down.
 
 **Why:** the cheapest way to make this test pass is always to edit the declaration, and
@@ -264,10 +426,30 @@ nothing surfaces it at the time. Fixture pages are under the same rule and the s
 absence — the release ritual states that a page is not edited to pass a check, and that
 proving a verdict did not move is a separate act.
 
-### DEC-9 — a record names the registry it was taken against
+#### Scenario: the declaration is edited to match the run
+- **WHEN** a failing comparison is resolved by rewriting `expect` to whatever the audit
+  answered
+- **THEN** the requirement is violated unless the decision that the prediction was wrong
+  is recorded with its argument
+- **AND** the diff is indistinguishable from any other declaration, which is why the rule
+  binds the record and not the diff
 
-Both artifacts state a `registry_version`, and both are read as describing that registry
-and no other.
+#### Scenario: the fixture is edited to match the checker
+- **WHEN** a fixture page is changed so that a check stops failing
+- **THEN** that is the same violation from the other side
+- **AND** proving that no declared verdict moved is a separate act, not an inference from
+  a green suite
+
+#### Scenario: the checker is the side that is wrong
+- **WHEN** triage decides the code is defective rather than the prediction
+- **THEN** the declaration stands, the checker is repaired, and the decision is written
+  down
+- **AND** this outcome is as legitimate as the other; only the unrecorded edit is not
+
+### Requirement: DEC-9 — a record names the registry it was taken against
+
+Both artifacts SHALL state a `registry_version`, and each MUST be read as describing that
+registry and no other.
 
 **Why:** a manifest or a census taken against an older contract describes a checklist that
 no longer exists, and nothing inside the file shows it.
@@ -279,12 +461,30 @@ The census closed that hole from the other side by re-reading its copied fields 
 the manifest copies nothing, so for it the stamp is still the whole check. This is the
 same shape as REG-1: a version a hand can set while the content stays put.
 
-### DEC-10 — the census asks every item on every tree, and an unrun item is not an unanswered one
+#### Scenario: the registry moves under a record
+- **WHEN** the registry changes and a record taken against the previous one is not
+  re-taken
+- **THEN** the record describes a checklist that no longer exists, and it says so
+- **AND** nothing inside the file shows it if the stamp alone is read
 
-Every registry item is asked on every served tree, and the record distinguishes "this item
-was not run here" from "this item declined to answer here". A row may not disagree with
-itself: its summary of answers is derived from its answers, every answer is one of the
-eight statuses, and no item is described twice.
+#### Scenario: the stamp is moved onto older content
+- **WHEN** the recorded `registry_version` is edited to match the registry while the
+  content stays as it was taken
+- **THEN** the record claims a registry it was not taken against, which is a violation
+- **AND** comparing the stored string with the registry's cannot see it, because the one
+  field the check reads is the one field the edit set
+
+#### Scenario: an artifact whose only tie to the registry is the stamp
+- **WHEN** an artifact states a `registry_version` and copies nothing else from the
+  registry
+- **THEN** the stamp is the whole check, and a hand that sets it satisfies every gate
+
+### Requirement: DEC-10 — the census asks every item on every tree, and an unrun item is not an unanswered one
+
+Every registry item SHALL be asked on every served tree, and the record MUST distinguish
+"this item was not run here" from "this item declined to answer here". A row MUST NOT
+disagree with itself: its summary of answers is derived from its answers, every answer is
+one of the eight statuses, and no item is described twice.
 
 **Why:** the census's entire output is the range of answers an item gave. An item silently
 absent from one tree shrinks its range, and a shrunken range is exactly the signal the
@@ -311,10 +511,35 @@ To be plain, because a reader of this line took it for a description: the three 
 means here. They are not deferred, and they are not observations. Each is one assertion in
 `test_census.py` and none needs a run.
 
-### DEC-11 — what a record copies from elsewhere is re-read, never trusted
+#### Scenario: an item is silently absent from one tree
+- **WHEN** the census records no answer for an item on a tree that was served
+- **THEN** the record is invalid, and says the item was not run rather than leaving the
+  tree out of the row
+- **AND** the shrunken range would otherwise read as a finding about the registry when it
+  is a failure of the instrument
+
+#### Scenario: a row summarises itself wrongly
+- **WHEN** a row's `answers` record the not-run sentinel for one tree and its `distinct`
+  omits that value
+- **THEN** the row disagrees with itself and the record is invalid
+- **AND** forbidding the sentinel in `distinct` alone does not see this, because the
+  answer it was derived from is never read
+
+#### Scenario: an answer outside the vocabulary
+- **WHEN** a row's `answers` carry a value that is not one of the eight statuses
+- **THEN** the row is invalid, whether the value is a sentinel, a typing slip, or a word
+  a later layer invented
+
+#### Scenario: one item described twice
+- **WHEN** the record carries two entries under one item id
+- **THEN** it is invalid
+- **AND** a JSON load that keeps the last of the two makes the duplicate disappear before
+  any check can see it, so the check has to be over the file rather than over the load
+
+### Requirement: DEC-11 — what a record copies from elsewhere is re-read, never trusted
 
 Where a record copies a field it does not own — a title, a severity, a script name — the
-copy is compared with the source, in both directions, by something that runs.
+copy SHALL be compared with the source, in both directions, by something that runs.
 
 **Why:** the copy is what makes an archived record legible, so it stays. What must not
 stay is the assumption that it is current. Measured: `census.json` shipped `GO-143` under
@@ -325,10 +550,29 @@ by hand, and the one field the suite read was the one field an edit could set.
 all four copied fields for every item and fails in both directions — recorded and no
 longer in the registry, in the registry and never recorded.
 
-### DEC-12 — a recording is reproducible, and a stale one fails a gate
+#### Scenario: a copied title goes stale
+- **WHEN** an item's title changes in the registry and the record keeps the title it was
+  taken under
+- **THEN** the comparison fails and names the item
+- **AND** it fails whether or not the record's `registry_version` was updated
 
-Re-taking the census on an unchanged tree produces the same record. A record that differs
-from a fresh one fails, in CI, on its own job.
+#### Scenario: a row for an item the registry no longer carries
+- **WHEN** an item is removed from the registry and its row stays in the record
+- **THEN** the comparison fails
+
+#### Scenario: an item the record never saw
+- **WHEN** an item exists in the registry and the record carries no row for it
+- **THEN** the comparison fails
+
+#### Scenario: the stamp is trusted instead of the content
+- **WHEN** only the recorded `registry_version` is compared with the registry's
+- **THEN** a record whose content was taken under an earlier registry and re-stamped by
+  hand passes, which is the failure this requirement was written from
+
+### Requirement: DEC-12 — a recording is reproducible, and a stale one fails a gate
+
+Re-taking the census on an unchanged tree SHALL produce the same record. A record that
+differs from a fresh one MUST fail, in CI, on its own job.
 
 **Why:** a measurement nobody can reproduce is an anecdote. This is also the only thing
 standing between the record and a hand edit, since every value in it is plausible.
@@ -336,11 +580,31 @@ standing between the record and a hand edit, since every value in it is plausibl
 one and exits 1 on any difference; the `census` job in CI runs exactly that. The
 manifest has no equivalent and needs none — it is a prediction, not a recording.
 
-### DEC-13 — a range is a question, and the instrument's limits are recorded beside its output
+#### Scenario: the record has drifted from the tree
+- **WHEN** a fresh census differs from the stored record in any field
+- **THEN** the gate exits non-zero and names the record
+- **AND** the difference is not waved through for being small, since every value in the
+  file is plausible and no other check stands between it and a hand
 
-An item that gave one answer everywhere is a question for a person, not a finding. What
-the mechanism cannot express is written down where the output is read, so the next reader
-does not mistake a limit of the harness for a property of the registry.
+#### Scenario: a value written in by hand
+- **WHEN** a plausible answer is edited into the record without a run behind it
+- **THEN** the fresh recording disagrees and the gate catches it
+- **AND** this is the only thing that does, which is why the gate exists at all
+
+#### Scenario: nothing has changed
+- **WHEN** the census is re-taken over the same registry and the same trees
+- **THEN** the two records are equal, field for field
+
+#### Scenario: the same rule asked of the manifest
+- **WHEN** reproducibility is demanded of the manifest
+- **THEN** it does not apply: a prediction re-derived from a run is exactly what DEC-1
+  forbids, and the manifest is checked by the disagreement it was written to produce
+
+### Requirement: DEC-13 — a range is a question, and the instrument's limits are recorded beside its output
+
+An item that gave one answer everywhere SHALL be read as a question for a person, not as a
+finding. What the mechanism cannot express MUST be written down where the output is read,
+so the next reader does not mistake a limit of the harness for a property of the registry.
 
 **Why:** the census's three headline counts are all inflated by the corpus being small,
 and two named limits inflate them further: a static file server answers 200, 404 and a
@@ -353,10 +617,29 @@ four items, both in prose. Nothing connects the four ids to the census output, s
 sentence and the list drift apart silently — and the list is a hand-kept set of ids, which
 DEC-6 objects to on the manifest for the same reason.
 
-### DEC-14 — a corpus tree carries no declarations, and that is what lets it grow
+#### Scenario: an item that answered the same on every tree
+- **WHEN** the census reports an item whose range is a single answer
+- **THEN** the output presents it as a question for a person
+- **AND** it is not reported as a defect in the registry, because a rule that cannot
+  answer otherwise and a question every site answers alike look identical from here
 
-Trees added for coverage carry no predictions. Adding a page to a declared fixture moves
-declared verdicts and costs a review; adding a corpus tree costs a re-recording.
+#### Scenario: a limit of the server read as a property of the registry
+- **WHEN** an item can only fail on a 5xx, a redirect chain, a redirect loop, or a status
+  that varies by user agent, none of which a static file server can produce
+- **THEN** the census output itself records that no tree here can exercise that item
+- **AND** the reader does not have to find that sentence in a README beside the trees to
+  know it
+
+#### Scenario: the list of unexercisable items drifts from the output
+- **WHEN** an item joins or leaves the set the harness cannot exercise
+- **THEN** what is written beside the output moves with it
+- **AND** a hand-kept list of ids in prose does not, which is the same defect DEC-6
+  objects to on the manifest
+
+### Requirement: DEC-14 — a corpus tree carries no declarations, and that is what lets it grow
+
+Trees added for coverage SHALL carry no predictions. Adding a page to a declared fixture
+moves declared verdicts and costs a review; adding a corpus tree costs a re-recording.
 
 **Why:** the two instruments have different marginal costs and that is the point of having
 both. Declaring the corpus would make the cheap instrument as expensive as the dear one,
@@ -365,6 +648,28 @@ and the coverage the corpus exists to buy would stop being bought.
 set equals the four fixture labels, so a corpus tree cannot acquire a declaration without
 a deliberate edit. As in DEC-6 the reader is a literal: it pins today's four rather than
 the rule that a declared origin is a fixture origin.
+
+#### Scenario: a corpus tree acquires a declaration
+- **WHEN** a prediction is written for a tree that exists to buy coverage
+- **THEN** the manifest is in violation
+- **AND** that tree stops being cheap to grow, which is the coverage the corpus exists to
+  buy
+
+#### Scenario: a page is added to a declared fixture
+- **WHEN** a page is added to one of the four declared fixture origins
+- **THEN** declared verdicts may move, and the change costs a review of every declaration
+  the new page can reach
+
+#### Scenario: a page is added to the corpus
+- **WHEN** a page is added to a corpus tree
+- **THEN** the change costs a re-recording of the census and nothing else
+
+#### Scenario: the rule is pinned as today's list of origins
+- **WHEN** the declared origin set is asserted equal to the four fixture labels that
+  exist today
+- **THEN** a corpus tree cannot acquire a declaration by accident
+- **AND** the rule that a declared origin is a fixture origin is still held by nothing, so
+  a fifth fixture origin and a first declared corpus tree fail the same way
 
 ## 4. Invariants
 
@@ -448,7 +753,7 @@ wrong in a way a declaration would have caught.
 Observation, not specification. Measured at commit `413210f`, registry `b0abf2819da0`,
 manifest `schema_version` 1, `tests/census.json` in step with a fresh census.
 
-### A.1 — twenty-seven declarations of two hundred and fifty are compared with nothing
+#### A.1 — twenty-seven declarations of two hundred and fifty are compared with nothing
 
 `INDETERMINATE` appears in 27 declarations: 11 on `good`, 14 on `broken`, 2 on
 `broken_tls`. `comparison()` counts them into a column of their own and `continue`s. They
@@ -544,7 +849,7 @@ of a thing the fixture cannot contain. The declaration's `INDETERMINATE` was rea
 that, and DEC-13 is where it belongs — a limit of the mechanism, stated once, beside the
 output — rather than in a status field on 27 predictions.
 
-### A.2 — the permitted vocabulary is neither the audit's nor a subset of it
+#### A.2 — the permitted vocabulary is neither the audit's nor a subset of it
 
 `ALLOWED = {"PASS", "WARN", "FAIL", "N/A", "INDETERMINATE"}`. Against the eight statuses
 of `openspec/specs/verdicts/`: four are missing — `NO_DATA`, `NEEDS_INPUT`, `MANUAL`,
@@ -557,7 +862,7 @@ model-judged item is declared, because none is reachable by the offline harness.
 defect that `ALLOWED` is a literal rather than a derivation, so nothing says which of the
 five omissions are principled.
 
-### A.3 — the declared set is exactly right, and is maintained by hand
+#### A.3 — the declared set is exactly right, and is maintained by hand
 
 The union of declared ids is 123. The registry holds 145 script items, of which 22 require
 `gsc`, `api` or `safe_browsing` and cannot be answered offline. 145 − 22 = 123, and the two
@@ -578,7 +883,7 @@ have at least one declaration that is ever compared. The headline number of this
 overstates its own coverage by ten items, and it is the number quoted when anyone asks how
 much of the registry is pinned.
 
-### A.4 — the manifest keeps no record of what it was reasoned from
+#### A.4 — the manifest keeps no record of what it was reasoned from
 
 `declared_from` names the item title and the fixture construction. A declaration stores
 `expect` and `why`. Neither the title nor any fixture identity is stored, so a title
@@ -590,7 +895,7 @@ The census stores the title and, since the finding recorded in `test_census.py`,
 it. Two instruments, one disease, one cure applied. The cure was applied to the one that
 had already produced a wrong file.
 
-### A.5 — the audit invocation exists twice
+#### A.5 — the audit invocation exists twice
 
 `test_fixture_oracle.audit` and `verdict_census.run_audit` each spell out
 `--allow-private --sample 3 --max-rps 0 --no-history --no-prompt --quiet --timeout 120
@@ -599,7 +904,7 @@ nothing compares them. The census's docstring asserts the equality as a fact —
 numbers here and the numbers there come from the same path" — and it is a fact about two
 copies of a literal.
 
-### A.6 — the prose around both instruments states counts that have drifted
+#### A.6 — the prose around both instruments states counts that have drifted
 
 Neither instrument's own documentation has been re-read since the registry grew:
 
@@ -617,7 +922,7 @@ recorded here rather than fixed in passing because the fix belongs with whicheve
 closes DEC-6 — the same derivation that computes who owes a declaration computes both
 numbers.
 
-### A.7 — this appendix spent the blindness it describes
+#### A.7 — this appendix spent the blindness it describes
 
 A.1's table is per item and per origin. Writing it required reading what the audit answers
 for all 27, so no session that has read this document can honestly write a blind
