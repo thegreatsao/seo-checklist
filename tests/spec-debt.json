@@ -1,0 +1,191 @@
+{
+  "documents": {
+    "declarations": {
+      "counts": {
+        "enforced": 2,
+        "none": 4,
+        "opposed": 1,
+        "partial": 7
+      },
+      "opposed": [
+        "DEC-2"
+      ],
+      "requirements": 14,
+      "unread": [
+        "DEC-1",
+        "DEC-13",
+        "DEC-5",
+        "DEC-8"
+      ]
+    },
+    "evidence": {
+      "counts": {
+        "enforced": 3,
+        "none": 2,
+        "opposed": 0,
+        "partial": 5
+      },
+      "opposed": [],
+      "requirements": 10,
+      "unread": [
+        "EVD-4",
+        "EVD-7"
+      ]
+    },
+    "governance": {
+      "counts": {
+        "enforced": 5,
+        "none": 2,
+        "opposed": 0,
+        "partial": 3
+      },
+      "opposed": [],
+      "requirements": 10,
+      "unread": [
+        "GOV-2",
+        "GOV-3"
+      ]
+    },
+    "history": {
+      "counts": {
+        "enforced": 3,
+        "none": 2,
+        "opposed": 0,
+        "partial": 3
+      },
+      "opposed": [],
+      "requirements": 8,
+      "unread": [
+        "HST-1",
+        "HST-8"
+      ]
+    },
+    "http": {
+      "counts": {
+        "enforced": 2,
+        "none": 2,
+        "opposed": 0,
+        "partial": 8
+      },
+      "opposed": [],
+      "requirements": 12,
+      "unread": [
+        "HTTP-11",
+        "HTTP-8"
+      ]
+    },
+    "inputs": {
+      "counts": {
+        "enforced": 2,
+        "none": 4,
+        "opposed": 0,
+        "partial": 4
+      },
+      "opposed": [],
+      "requirements": 10,
+      "unread": [
+        "INP-3",
+        "INP-5",
+        "INP-6",
+        "INP-9"
+      ]
+    },
+    "operator-protocol": {
+      "counts": {
+        "enforced": 0,
+        "none": 6,
+        "opposed": 0,
+        "partial": 2
+      },
+      "opposed": [],
+      "requirements": 8,
+      "unread": [
+        "OPR-1",
+        "OPR-2",
+        "OPR-3",
+        "OPR-5",
+        "OPR-6",
+        "OPR-8"
+      ]
+    },
+    "registry": {
+      "counts": {
+        "enforced": 4,
+        "none": 1,
+        "opposed": 1,
+        "partial": 7
+      },
+      "opposed": [
+        "REG-9"
+      ],
+      "requirements": 13,
+      "unread": [
+        "REG-12"
+      ]
+    },
+    "reporting": {
+      "counts": {
+        "enforced": 2,
+        "none": 1,
+        "opposed": 0,
+        "partial": 10
+      },
+      "opposed": [],
+      "requirements": 13,
+      "unread": [
+        "REP-1"
+      ]
+    },
+    "run-lifecycle": {
+      "counts": {
+        "enforced": 5,
+        "none": 4,
+        "opposed": 0,
+        "partial": 11
+      },
+      "opposed": [],
+      "requirements": 20,
+      "unread": [
+        "RUN-1",
+        "RUN-20",
+        "RUN-3",
+        "RUN-4"
+      ]
+    },
+    "scoring": {
+      "counts": {
+        "enforced": 0,
+        "none": 3,
+        "opposed": 0,
+        "partial": 11
+      },
+      "opposed": [],
+      "requirements": 14,
+      "unread": [
+        "SCR-14",
+        "SCR-4",
+        "SCR-9"
+      ]
+    },
+    "verdicts": {
+      "counts": {
+        "enforced": 9,
+        "none": 1,
+        "opposed": 0,
+        "partial": 7
+      },
+      "opposed": [],
+      "requirements": 17,
+      "unread": [
+        "VRD-8"
+      ]
+    }
+  },
+  "totals": {
+    "enforced": 37,
+    "none": 32,
+    "opposed": 2,
+    "partial": 78,
+    "requirements": 149
+  }
+}

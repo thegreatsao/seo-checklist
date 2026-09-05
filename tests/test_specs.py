@@ -22,8 +22,10 @@ allowed. Adding a fifth document should not require editing this file.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
+import sys
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -306,6 +308,49 @@ class AnIdentifierMeansOneThingInTheSuite(unittest.TestCase):
         shared = {i: sorted(d) for i, d in defined.items() if len(d) > 1}
         self.assertEqual(shared, {}, "one invariant id, two documents")
         self.assertGreater(len(defined), 20, "no invariants found; this test is vacuous")
+
+
+class TheSuiteKnowsItsOwnDebt(unittest.TestCase):
+    """The twelve censuses, summed, and the sum recorded.
+
+    Each document tabulates its own requirements and this module checks that each
+    tabulation is honest about itself. Nothing added them up, so the suite's debt was
+    twelve numbers in twelve files — which the coverage map called a feeling rather
+    than a number, and which is the last of its "done means" criteria.
+
+    `tools/spec_debt.py` reads the documents rather than a ledger beside them, so
+    there is nothing here a hand can set while the documents move. This asserts the
+    recorded roll-up still describes them: a requirement that changes class is a
+    difference somebody re-records deliberately.
+    """
+
+    def setUp(self):
+        sys.path.insert(0, os.path.join(SKILL, "tools"))
+        import spec_debt
+        self.tool = spec_debt
+        with open(os.path.join(TESTS, "spec-debt.json"), encoding="utf-8") as stream:
+            self.recorded = json.load(stream)
+
+    def test_the_recorded_roll_up_still_describes_the_documents(self):
+        fresh = json.loads(json.dumps(self.tool.record(), sort_keys=True))
+        self.assertEqual(
+            self.recorded, fresh,
+            "the suite's debt moved; re-record with "
+            "tools/spec_debt.py --out tests/spec-debt.json and say why in the commit")
+
+    def test_it_counts_every_document(self):
+        """A roll-up that silently skipped one would understate the debt, which is the
+        direction that flatters."""
+        self.assertEqual(sorted(self.recorded["documents"]),
+                         sorted(name for name, _, _ in DOCS))
+
+    def test_the_totals_are_the_sum_of_the_rows(self):
+        for label in CLASSES + ("requirements",):
+            with self.subTest(column=label):
+                rows = sum((d["counts"][label] if label in CLASSES
+                            else d["requirements"])
+                           for d in self.recorded["documents"].values())
+                self.assertEqual(self.recorded["totals"][label], rows)
 
 
 class ADocumentNamesThingsThatExist(unittest.TestCase):

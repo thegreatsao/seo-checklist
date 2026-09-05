@@ -402,6 +402,14 @@ jobs:
       - name: Every threshold says what it rests on
         run: python skills/seo-checklist/tools/audit_thresholds.py --check
 
+      # The twelve normative documents, summed. Each tabulates its own requirements and
+      # tests/test_specs.py checks each tabulation is honest about itself; nothing added
+      # them up, so the debt was twelve numbers in twelve files. The record moves only
+      # when somebody re-records it, which is the point: a requirement changing class is
+      # a decision, not a side effect.
+      - name: The suite still owes what it says it owes
+        run: python skills/seo-checklist/tools/spec_debt.py --check tests/spec-debt.json
+
       # The `measured` bases, re-read against the constants they justify. Each check is
       # offline and takes about a second, and all four existed with no CI step for as
       # long as they have existed — so a calibrated constant could move and only a hand
