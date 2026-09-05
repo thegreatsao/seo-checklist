@@ -271,6 +271,43 @@ class AppendixBDescribesThisDocument(unittest.TestCase):
                                   f"no {label!r} row; an empty column is still a row")
 
 
+class AnIdentifierMeansOneThingInTheSuite(unittest.TestCase):
+    """Ids travel between documents, so a prefix may belong to only one.
+
+    `specs/history/` was drafted with `INV-H1`…`INV-H4` while `specs/http/` already had
+    them, which makes every cross-document reference to `INV-H2` ambiguous — and these
+    documents cite each other constantly. Caught by hand on the ninth document, which is
+    eight documents later than a `grep` would have caught it.
+    """
+
+    def prefixes(self, pattern):
+        seen = {}
+        for name, lines, _ in DOCS:
+            for found in re.findall(pattern, "\n".join(lines)):
+                seen.setdefault(found, set()).add(name)
+        return seen
+
+    def test_no_requirement_prefix_is_shared_by_two_documents(self):
+        owners = {}
+        for name, lines, _ in DOCS:
+            for item in requirements(lines):
+                owners.setdefault(item.split("-")[0], set()).add(name)
+        shared = {p: sorted(d) for p, d in owners.items() if len(d) > 1}
+        self.assertEqual(shared, {}, "one requirement prefix, two documents")
+
+    def test_no_invariant_id_is_defined_by_two_documents(self):
+        """An invariant is defined where it is bulleted, and cited anywhere."""
+        defined = {}
+        for name, lines, _ in DOCS:
+            for line in lines:
+                found = re.match(r"\* \*\*(INV-[A-Z]+\d+)\*\*", line.strip())
+                if found:
+                    defined.setdefault(found.group(1), set()).add(name)
+        shared = {i: sorted(d) for i, d in defined.items() if len(d) > 1}
+        self.assertEqual(shared, {}, "one invariant id, two documents")
+        self.assertGreater(len(defined), 20, "no invariants found; this test is vacuous")
+
+
 class ADocumentNamesThingsThatExist(unittest.TestCase):
     """A document that names a deleted test keeps claiming a reader it has lost.
 
