@@ -1,4 +1,4 @@
-"""The normative documents in `specs/`, read the way they ask code to be read.
+"""The normative documents in `openspec/specs/`, read the way they ask code to be read.
 
 Each document states a requirement, argues it under `Why:`, and names under `Reader:`
 what reddens when it is violated. Appendix B then tabulates those classifications, and
@@ -16,9 +16,14 @@ requirement `none` passes. It holds the cheaper property that kept failing: **a 
 must not contradict itself**, and the summary must not be kinder than the evidence line
 it summarises.
 
-The rules are derived from the corpus rather than imposed on it. Where all four documents
+The rules are derived from the corpus rather than imposed on it. Where the documents
 already agree on a shape, that shape is asserted; where they differ, the difference is
-allowed. Adding a fifth document should not require editing this file.
+allowed. Adding a thirteenth document should not require editing this file.
+
+All twelve are now in OpenSpec's grammar, so each requirement also carries the cases it
+covers. That is what `TheMigrationIntoOpenSpecGrammarIsCheckable` holds, and the reason
+it matters is in this module's own history: every vacuous reader this suite has found was
+a missing case rather than a missing test.
 """
 from __future__ import annotations
 
@@ -48,9 +53,10 @@ SUMMARY_WORD = {"enforced": "enforced", "partial": "partial", "none": "unread",
                 "opposed": "opposed"}
 
 # `### Requirement: HST-1 — title` is the OpenSpec grammar; `### HST-1 — title` is what
-# these documents used before the migration. Both are read while the twelve are being
-# converted one at a time, and `test_every_document_is_in_the_openspec_grammar` below
-# says how many are still on the old one, so the second form cannot be forgotten.
+# these documents used before the migration. All twelve are converted, and the old form
+# is still read so that a document restored from before the move is parsed rather than
+# silently dropped from the census — `test_a_document_is_in_one_grammar_or_the_other
+# _never_half` is what refuses to let it stay that way.
 REQUIREMENT = re.compile(r"^### (?:Requirement: )?([A-Z]{2,4})-(\d+) — (.+)$")
 READER = re.compile(r"^\*\*Reader:\*\*\s+(.*)$")
 WHY = re.compile(r"^\*\*Why:\*\*")
@@ -413,8 +419,8 @@ class TheMigrationIntoOpenSpecGrammarIsCheckable(unittest.TestCase):
     scenario list would have named.
     """
 
-    #: Raised deliberately as documents convert. It may not fall.
-    CONVERTED_AT_LEAST = 1
+    #: All twelve, as of 6 September 2026. It may not fall.
+    CONVERTED_AT_LEAST = 12
 
     @staticmethod
     def converted(lines):

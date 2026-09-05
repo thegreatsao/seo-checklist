@@ -1,5 +1,16 @@
 # Governance — what this repository does to keep itself honest, and what it declines to claim
 
+## Purpose
+
+The machinery that watches the other eleven capabilities — the basis every deciding
+constant carries, the recorded ledgers of defects and inert findings, the audits that walk
+the registry, the CI matrix, and the reader over these documents themselves.
+
+Everything here is an instrument rather than a behaviour, which is what makes this layer's
+failures distinctive: an instrument that has stopped pointing at anything still runs, still
+passes, and still reads as coverage. Four calibration checks existed, passed and gated
+nothing until this document went looking.
+
 **Capability:** the machinery that watches the tool rather than the site — basis lines on
 constants, the calibration reports behind some of them, the recorded ledgers of known
 defects and inert findings, the static registry audits, the CI gates, and how the whole
@@ -15,7 +26,7 @@ intention, and is counted as one.
 
 **Inherited, not restated:** the two instruments that measure the audit against served
 trees belong to [`openspec/specs/declarations/`](../declarations/spec.md); what the documents in
-`specs/` must contain, and the reader that holds them, are described in this document and
+`openspec/specs/` must contain, and the reader that holds them, are described in this document and
 implemented by `tests/test_specs.py`.
 
 ---
@@ -57,13 +68,13 @@ the thing it describes, or it has a reader that says what belongs in it.**
 | four registry audits | rules that cannot fire, unreachable verdicts, titles | yes |
 | score-sensitivity report | how much of the score one weight decides | reports only |
 | CI matrix | everything above, three Pythons and Windows | — |
-| `tests/test_specs.py` | the documents in `specs/` | yes |
+| `tests/test_specs.py` | the documents in `openspec/specs/` | yes |
 
-## 3. Requirements
+## Requirements
 
-### GOV-1 — every number a verdict depends on says what it rests on
+### Requirement: GOV-1 — every number a verdict depends on says what it rests on
 
-A constant that can change a verdict carries a basis: `standard` (somebody else's published
+A constant that can change a verdict SHALL carry a basis: `standard` (somebody else's published
 rule), `measured` (from data recorded in this repository), `convention` (this tree's choice,
 stated), or `inherited` (it arrived with the code and nobody here has defended it). A number
 that decides only what is printed is marked as such and is not counted among them.
@@ -76,10 +87,23 @@ verdict-deciding number names no basis. It counts 146 such numbers today — 11 
 11 `measured`, 47 `convention`, **77 `inherited`**, 0 without a basis — plus 13 that decide
 only presentation.
 
-### GOV-2 — `inherited` is an admission, not a justification
+#### Scenario: a constant that can change a verdict
+- **WHEN** a number in a checker or the runner separates one verdict from another
+- **THEN** its source states which of the four bases it has
+
+#### Scenario: a number with no basis
+- **WHEN** such a constant carries no stated basis
+- **THEN** the gate fails, naming it
+
+#### Scenario: a number that decides nothing
+- **WHEN** a constant affects formatting, ordering of equals, or a message
+- **THEN** no basis is owed, because the requirement is about verdicts and not about
+  every integer in the tree
+
+### Requirement: GOV-2 — `inherited` is an admission, not a justification
 
 `inherited` licenses no conclusion about whether a number is right. It is the recorded
-absence of a decision, and it may be cited only as that.
+absence of a decision, and it MUST NOT be cited as anything else.
 
 **Why:** the gate passes with 77 of 146 undefended, which is fine as an accounting and
 dangerous as a standard. The category exists so the debt is countable, and it stops working
@@ -88,9 +112,26 @@ the moment it reads as a fourth kind of justification.
 them and no reader treats `inherited` differently from `standard`. Nothing prevents the
 count rising, either — which is the form a reader for this would most usefully take.
 
-### GOV-3 — a set that decides behaviour is derived, or it has a reader
+#### Scenario: an undefended number is cited as justification
+- **WHEN** someone argues a threshold is right because it is what the code has always
+  used
+- **THEN** the argument is empty: `inherited` records the absence of a decision, and an
+  absence justifies nothing
 
-Where a list, tuple or mapping decides what the tool does — which words are severities,
+#### Scenario: the count of undefended numbers rises
+- **WHEN** a new constant is added with `inherited` as its basis
+- **THEN** that is a deliberate act and is visible as one, rather than absorbed into a
+  total nobody watches
+
+#### Scenario: a basis is upgraded
+- **WHEN** somebody measures or argues a number that was `inherited`
+- **THEN** its basis changes with the argument, and the change is the record of the
+  decision
+
+### Requirement: GOV-3 — a set that decides behaviour is derived, or it has a reader
+
+Where a list, tuple or mapping decides what the tool does, it SHALL be derived from
+what it describes or read by something. This covers which words are severities,
 which keys are secrets, which documents belong in a manifest, which items owe a declaration
 — it is computed from the thing it describes, or a reader states what belongs in it. A
 hand-kept list guarded only by the mechanism that consumes it is neither.
@@ -103,10 +144,26 @@ this suite's writing — the notebook's spec manifest, and this document's own r
 discovering documents by glob rather than by name — and neither conversion was required by
 anything. The remaining four are recorded in their own documents.
 
-### GOV-4 — a ledger records a decision; it never excuses a defect
+#### Scenario: a list decides what the tool does
+- **WHEN** a list, tuple or mapping determines behaviour — which words are severities,
+  which keys are secrets, which documents belong in a manifest
+- **THEN** it is derived from what it describes, or something reads it
 
-The known-issues ledger holds defects somebody decided to keep, each with a claim in one
-sentence and either a probe that measures it or a written reason there is none. A probe
+#### Scenario: a mechanism guarded and its membership not
+- **WHEN** the code that acts on the list is well tested and the list itself is not
+- **THEN** the requirement is violated, and this is the shape found in six of the twelve
+  layers — the mechanism gets a reader; the list it runs over does not
+
+#### Scenario: the list cannot say what is missing from it
+- **WHEN** an entry is forgotten
+- **THEN** nothing fires, because the reader that would have noticed is the same line
+  that was forgotten — which is why derivation is preferred to a reader over a list
+
+### Requirement: GOV-4 — a ledger records a decision; it never excuses a defect
+
+The known-issues ledger holds defects somebody decided to keep. Each entry SHALL carry
+a claim in one sentence and either a probe that measures it or a written reason there is
+none. A probe
 that disagrees with its record means somebody decides whether the tree moved or the entry is
 now wrong, and re-records. It never means "make the probe pass".
 
@@ -119,10 +176,26 @@ the comparison complains when a recorded value moves, that it complains when an 
 unclassified, **and** that it is quiet on the record as recorded — the last two being the
 pair that distinguishes a working check from one that always fires or never does.
 
-### GOV-5 — a ledger does not judge whether a finding is good advice
+#### Scenario: a defect somebody decided to keep
+- **WHEN** an entry is added to the known-issues ledger
+- **THEN** it carries a claim in one sentence and either a probe that measures it or a
+  written reason there is none
 
-The inert-findings record says which findings no registry rule can act on. It does not say
-whether those findings should be acted on, and its existence is not an argument for moving a
+#### Scenario: the tree moves under an entry
+- **WHEN** a probe's measurement changes
+- **THEN** the check fails, and somebody decides whether the entry is now wrong or the
+  tree is
+
+#### Scenario: an entry edited to match the code
+- **WHEN** a recorded measurement is changed to agree with new behaviour, with no
+  decision recorded
+- **THEN** the ledger has become a list of things nobody will fix, which is what this
+  requirement forbids
+
+### Requirement: GOV-5 — a ledger does not judge whether a finding is good advice
+
+The inert-findings record says which findings no registry rule can act on. It MUST NOT
+be read as saying whether those findings should be acted on, and its existence is not an argument for moving a
 verdict.
 
 **Why:** the code cannot tell deliberate advice from a claim an item must keep. A tool that
@@ -133,9 +206,18 @@ rule at length. That the rule is *followed* — that no verdict moved because so
 listed here — is not the kind of thing a test can hold, and the document says so rather than
 pretending otherwise.
 
-### GOV-6 — a static audit proves one thing and disclaims the rest
+#### Scenario: a finding no rule can act on
+- **WHEN** a checker reports something no registry rule reads
+- **THEN** the inert-findings record says so
 
-Each registry audit states what it establishes and what it does not. None of them argues
+#### Scenario: the record used as an argument
+- **WHEN** somebody cites the record as grounds for adding a rule, or for not adding one
+- **THEN** the citation is out of bounds: the record says what is unread, not what is
+  worth reading
+
+### Requirement: GOV-6 — a static audit proves one thing and disclaims the rest
+
+Each registry audit SHALL state what it establishes and what it does not. None of them argues
 that a threshold is *right*; they establish that a rule can fire, that a verdict is
 reachable or declared unreachable, that an item asserts what its title says, and that every
 number carries a basis.
@@ -149,10 +231,19 @@ enforced. What they disclaim is stated in their docstrings and in no test — an
 tool, the score-sensitivity report, runs in CI and only prints, which is the disclaimer made
 executable and also the reason nobody notices its output.
 
-### GOV-7 — every gate in the matrix runs offline
+#### Scenario: an audit states its own limits
+- **WHEN** a registry audit passes
+- **THEN** its output says what that establishes and what it does not
 
-The whole CI matrix runs without reaching the internet: the live path is served from a
-fixture inside the job.
+#### Scenario: an audit read as proof of correctness
+- **WHEN** a green audit is taken to mean a threshold is right
+- **THEN** the claim exceeds the instrument: these audits establish that a rule can fire
+  and that a verdict is reachable, never that a number is well chosen
+
+### Requirement: GOV-7 — every gate in the matrix runs offline
+
+The whole CI matrix SHALL run without reaching the internet: the live path is served
+from a fixture inside the job.
 
 **Why:** a gate that depends on somebody else's uptime fails for reasons that are not about
 the change, and a suite that fails for reasons that are not about the change gets ignored or
@@ -162,10 +253,20 @@ script goes through the guard, and the guard refuses everything but loopback unl
 allowance is set. Nothing asserts that a CI job makes no outbound request, and the guard's
 own per-run allowance is unread on the child-process side (`openspec/specs/http/` HTTP-2).
 
-### GOV-8 — a request-count ceiling is raised deliberately or not at all
+#### Scenario: the matrix runs with no network
+- **WHEN** any job in CI runs
+- **THEN** it completes without reaching the internet, the live path served from a
+  fixture inside the job
 
-CI asserts an upper bound on how many requests one audit of the fixture site makes. The
-number is a decision and is changed by argument, not by observation.
+#### Scenario: a gate that needs the outside world
+- **WHEN** a check would depend on a third-party service being up
+- **THEN** it does not belong in the matrix, because a gate that fails for somebody
+  else's outage teaches people to ignore it
+
+### Requirement: GOV-8 — a request-count ceiling is raised deliberately or not at all
+
+CI SHALL assert an upper bound on how many requests one audit of the fixture site
+makes. The number is a decision and MUST be changed by argument, not by observation.
 
 **Why:** the fan-out is the audit's rudeness, and it grows silently — one more checker, one
 more page in the sample. A ceiling that follows the measurement is a record of what
@@ -175,10 +276,20 @@ ceiling, with a comment in the workflow recording the history — 97, then 201, 
 the same command as the shared crawl and then the response cache landed — and the
 instruction to raise it deliberately or not at all.
 
-### GOV-9 — the normative documents are read by something
+#### Scenario: an audit gets more expensive
+- **WHEN** one audit of the fixture site makes more requests than the ceiling
+- **THEN** CI fails
 
-The documents in `specs/` are checked: every requirement carries an argument and a named
-reader, the census tabulates them without flattering, every test and tool they name exists,
+#### Scenario: the ceiling is raised
+- **WHEN** the number is changed
+- **THEN** it is changed by argument
+- **AND** raising it to whatever the run happened to make is the move this requirement
+  exists to prevent
+
+### Requirement: GOV-9 — the normative documents are read by something
+
+The documents in `openspec/specs/` SHALL be checked: every requirement carries an
+argument and a named reader, the census tabulates them without flattering, every test and tool they name exists,
 and no identifier means two things.
 
 **Why:** the documents' whole value is that their census is honest. It has been wrong seven
@@ -192,10 +303,24 @@ collision and the count in this very sentence, which read `fourteen` while the m
 nineteen. A literal beside the thing it counts is REG-12's shape in prose; this one is now
 read rather than trusted.
 
-### GOV-10 — calibration says which constant it backs, and checks offline in both directions
+#### Scenario: a requirement with no argument or no reader
+- **WHEN** a document states a requirement without a `Why:` or without a `Reader:`
+- **THEN** the reader over these documents fails
 
-A calibration report names the live constants it justifies, and its check re-reads the
-committed report against those constants, failing if either side moved.
+#### Scenario: a census kinder than its evidence
+- **WHEN** a `Reader:` line qualifies its classification and the table repeats the bare
+  word
+- **THEN** it fails, because that is the defect this suite makes most often
+
+#### Scenario: a document naming a test that no longer exists
+- **WHEN** a `Reader:` line cites a test function or a tool path that has been renamed
+  or deleted
+- **THEN** it fails, rather than continuing to count as coverage
+
+### Requirement: GOV-10 — calibration says which constant it backs, and checks offline in both directions
+
+A calibration report SHALL name the live constants it justifies, and its check MUST
+re-read the committed report against those constants, failing if either side moved.
 
 **Why:** a calibration nobody re-reads is a measurement from a date, and the constant it
 justified has moved twice since. Checking in both directions is what makes it a gate rather
@@ -205,6 +330,20 @@ than a document.
 calibration at all. The mechanism had been built and never connected. All four were run
 while writing this requirement, all four passed in about a second each, and a CI step now
 runs them (Appendix A.1).
+
+#### Scenario: a calibration report and its constant
+- **WHEN** a report justifies a live constant
+- **THEN** it names that constant, and its check compares the two offline
+
+#### Scenario: either side moves
+- **WHEN** the constant changes, or the committed report changes
+- **THEN** the check fails — both directions, because a report that quietly follows the
+  code justifies nothing
+
+#### Scenario: a check that exists and gates nothing
+- **WHEN** a calibration check is written and not wired into the matrix
+- **THEN** it passes forever without being run, which is the state all four were in
+  until this document looked
 
 ## 4. Invariants
 
@@ -259,7 +398,7 @@ whether anyone would act on the number, or whether it would become a metric to m
 
 Observation, not specification. Measured at commit `9010dbc`.
 
-### A.1 — four calibration checks exist and none of them gates anything
+#### A.1 — four calibration checks exist and none of them gates anything
 
 `tools/calibration/` holds four committed reports — CSS minification, font weight, Search
 Console sample floors, SERP length — and each has an offline `--check` that compares the
@@ -285,7 +424,7 @@ Four passes, four exit zeros, under five seconds together. They now run in CI, i
 `test` job beside the threshold audit. The finding is not that a constant had drifted — none
 had — but that nothing would have said so.
 
-### A.2 — the inventory's own basis counts are wrong
+#### A.2 — the inventory's own basis counts are wrong
 
 The capability inventory records the distribution as *"inherited 77, convention 47,
 standard 14, presentation 14, measured 13"*. The tool reports:
@@ -307,7 +446,7 @@ docstring, the shapes reference's account of itself, and the guard's marker coun
 have the same form: a number written beside the thing it counts, reproduced faithfully, read
 by nobody. GOV-3 is the general rule; this is the sixth instance of its absence.
 
-### A.3 — the ledger is the best-guarded instrument in the repository
+#### A.3 — the ledger is the best-guarded instrument in the repository
 
 Recorded because the suite's findings are otherwise uniformly negative, and this one is not.
 

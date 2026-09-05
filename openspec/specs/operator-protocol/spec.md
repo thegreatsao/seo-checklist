@@ -1,5 +1,18 @@
 # Operator protocol — what the tool guarantees, and what it can only ask of whoever drives it
 
+## Purpose
+
+What the agent driving this tool owes the person reading its output — the half of
+`SKILL.md` that is an obligation on the operator rather than on the code.
+
+This is the only capability in the suite whose reader is a person, and that is why six of
+its eight requirements are unread rather than badly read. A test can watch a merge refuse
+an answer; nothing can watch an operator quote a score without its share, or assemble an
+answer from memory when the tool for it was absent. The requirements are written anyway,
+because an obligation nobody wrote down is one nobody can be held to — and because the two
+that *are* mechanisable, the marking and the counts, turned out to be the two that were
+wrong.
+
 **Capability:** the instructions to the agent or person running an audit, and the bundled
 playbooks and judgement agents they invoke (C46, C47 of the capability inventory).
 
@@ -62,13 +75,13 @@ list it runs over is not.
 Six of the eight rows have no mechanical enforcement in their right-hand column, which is
 the honest shape of this capability rather than a defect in it.
 
-## 3. Requirements
+## Requirements
 
-### OPR-1 — the protocol says which obligations are the tool's and which are the operator's
+### Requirement: OPR-1 — the protocol says which obligations are the tool's and which are the operator's
 
-Every instruction in the operator protocol is marked as one of two things: a behaviour the
-tool guarantees, or a behaviour the operator must supply. A reader must be able to tell,
-per line, which it is.
+Every instruction in the operator protocol SHALL be marked as one of two things: a
+behaviour the tool guarantees, or a behaviour the operator must supply. A reader MUST be
+able to tell, per line, which it is.
 
 **Why:** an operator who believes the tool guarantees something it merely recommends will
 stop checking. The failure is silent, delayed, and lands on a client — and the tool cannot
@@ -77,10 +90,23 @@ detect it, because from inside the run everything happened correctly.
 no test reads it for this or anything else. Three test functions mention the file at all,
 and all three are about the registry's relationship to it rather than its content.
 
-### OPR-2 — the score is never quoted without the share it covers
+#### Scenario: an instruction the tool guarantees
+- **WHEN** the protocol states something the code does on its own
+- **THEN** it is marked as such, and an operator does not spend effort ensuring it
 
-Wherever the operator states the score — in a summary, a message, a client email — the
-proportion of the registry it was computed over goes with it.
+#### Scenario: an instruction the operator must supply
+- **WHEN** the protocol states something only a person can do
+- **THEN** it is marked as such, and its absence is a gap in the audit rather than a bug
+
+#### Scenario: one undifferentiated voice
+- **WHEN** the document is written in a single register with no marking
+- **THEN** a reader cannot tell a guarantee from an obligation, and will assume the
+  reading that costs them least — which is the state the protocol is in today
+
+### Requirement: OPR-2 — the score is never quoted without the share it covers
+
+Wherever the operator states the score — in a summary, a message, a client email —
+the proportion of the registry it was computed over SHALL go with it.
 
 **Why:** this is `openspec/specs/reporting/` REP-1 restated for the human link in the chain, and it
 is the one place the number escapes the tool's control entirely. "96" travels; "96, over
@@ -89,10 +115,20 @@ is the one place the number escapes the tool's control entirely. "96" travels; "
 operator writes. The renderers print the pair, which is REP-1's `none` for a different
 reason; here nothing is even in a position to check.
 
-### OPR-3 — a claimed verdict is reported as claimed
+#### Scenario: the number leaves the tool
+- **WHEN** an operator or an agent quotes the score anywhere outside the report
+- **THEN** the share it covers is quoted with it
 
-Where the operator summarises results, an answer a model produced and an answer a person
-asserted are described as such, not folded into "the audit found".
+#### Scenario: a summary that rounds the caveat away
+- **WHEN** a message says "the audit scored 69" and stops
+- **THEN** the obligation is unmet, even though the tool's own surfaces were correct —
+  which is why this requirement exists here rather than in `openspec/specs/reporting/`
+
+### Requirement: OPR-3 — a claimed verdict is reported as claimed
+
+Where the operator summarises results, an answer a model produced and an answer a
+person asserted SHALL be described as such, and MUST NOT be folded into "the audit
+found".
 
 **Why:** the audit's authority rests on the reader being able to tell measurement from
 judgement. The payload records who decided each item precisely so this is possible; a
@@ -100,10 +136,19 @@ summary that drops it spends the distinction the tool went to trouble to preserv
 **Reader:** **none.** The `decided_by` stamp exists and is asserted in the payload
 (`openspec/specs/reporting/` REP-4); nothing reads what the operator does with it.
 
-### OPR-4 — the model-judgement queue is run, or the audit says it was not
+#### Scenario: a summary of mixed provenance
+- **WHEN** some items were measured, some judged by a model and some claimed by a person
+- **THEN** the summary says which is which
 
-Items awaiting model judgement are judged, or the operator reports the audit as incomplete
-with the count outstanding.
+#### Scenario: everything becomes "the audit found"
+- **WHEN** a claimed verdict is reported in the same voice as a measurement
+- **THEN** the reader is given more confidence than the evidence supports, and the
+  payload's own `decided_by` stamp was there to prevent exactly that
+
+### Requirement: OPR-4 — the model-judgement queue is run, or the audit says it was not
+
+Items awaiting model judgement SHALL be judged, or the operator MUST report the audit
+as incomplete with the count outstanding.
 
 **Why:** an unanswered queue caps the audit — those items are `LLM_PENDING`, out of the
 scored set, and the score is a fraction of what remains. Reporting that number as the
@@ -112,10 +157,20 @@ result of a completed audit overstates coverage by exactly the size of the queue
 waiting list and the renderers show them, so the *information* is present in every
 artifact. Whether the operator acts on it is unread, and unreadable.
 
-### OPR-5 — a playbook never moves a status
+#### Scenario: the queue is run
+- **WHEN** the model-judgement queue is answered and merged
+- **THEN** the audit is complete in that respect
 
-The bundled playbooks tell an operator how to gather something. They do not decide items,
-and following one is not evidence.
+#### Scenario: the queue is skipped
+- **WHEN** it is not run
+- **THEN** the audit is reported as incomplete, with the number still outstanding
+- **AND** a report that omits both the judgements and the fact of their absence reads as
+  a finished audit
+
+### Requirement: OPR-5 — a playbook never moves a status
+
+The bundled playbooks tell an operator how to gather something. They MUST NOT decide
+items, and following one is not evidence.
 
 **Why:** a playbook is a procedure, and a procedure that could set a verdict would be a
 checker written in prose and run by hand — with no evidence trail, no reproducibility and
@@ -124,11 +179,21 @@ no way for anybody to disagree with it.
 it. In practice it holds because a playbook has no mechanism to write a status; the rule
 exists for the operator, who does.
 
-### OPR-6 — no answer is fabricated when the tool for it is absent
+#### Scenario: a playbook followed
+- **WHEN** an operator works through a playbook
+- **THEN** whatever they gathered may become evidence; the fact of having followed it
+  may not
 
-Where an item requires a capability the operator does not have — a search tool, a browser,
-a credential — the item is `N/A` with the absence as its evidence. An answer assembled from
-memory is refused.
+#### Scenario: a playbook cited as the answer
+- **WHEN** an item is moved off its pending status because the procedure was performed
+- **THEN** the requirement is violated: a procedure is a way of looking, not a thing
+  seen
+
+### Requirement: OPR-6 — no answer is fabricated when the tool for it is absent
+
+Where an item requires a capability the operator does not have — a search tool, a
+browser, a credential — the item SHALL be `N/A` with the absence as its evidence. An
+answer assembled from memory MUST be refused.
 
 **Why:** the competitor-research playbook states this better than a specification can: a
 competitor list assembled from memory "is fabrication with a confident tone, and it is
@@ -138,10 +203,21 @@ from a researched answer, and it is the failure mode an agent operator is most p
 did, and nothing could. This is the single most consequential unenforceable rule in the
 suite, and writing it down is the only available remedy.
 
-### OPR-7 — a manual answer carries its evidence
+#### Scenario: the tool for the question is absent
+- **WHEN** an item needs a search, a browser or a credential the operator does not have
+- **THEN** the item is `N/A` and the evidence says which capability was missing
 
-An operator answering a `MANUAL` item supplies what they looked at. An answer without one
-is refused.
+#### Scenario: an answer from memory
+- **WHEN** an operator answers from what they already believe about the site or its
+  competitors
+- **THEN** the answer is refused
+- **AND** it is indistinguishable from a real one once merged, which is why the rule has
+  to bind before the answer is written rather than after
+
+### Requirement: OPR-7 — a manual answer carries its evidence
+
+An operator answering a `MANUAL` item SHALL supply what they looked at. An answer
+without one MUST be refused.
 
 **Why:** this is the one operator obligation the tool *can* enforce, and it does. It is
 listed here rather than only in `openspec/specs/reporting/` because from the operator's side it is
@@ -152,11 +228,20 @@ implemented and not merely asked for. But that merge is the least-tested of the 
 a single test function covering the one path in this whole capability that a person can
 abuse, and nothing asserts that the refusal is visible to the operator who caused it.
 
-### OPR-8 — the protocol's counts come from the registry
+#### Scenario: an answer with its evidence
+- **WHEN** a person answers a `MANUAL` item and states what they examined
+- **THEN** the answer is accepted and the evidence travels with the verdict
 
-Where the protocol states how many items a queue produces, how many a person must answer,
-or how a lens splits, those numbers are derived from the registry rather than written into
-the prose.
+#### Scenario: an answer without
+- **WHEN** the reason is empty or whitespace
+- **THEN** the merge refuses it by id and prints the refusal, rather than accepting a
+  verdict nobody can check
+
+### Requirement: OPR-8 — the protocol's counts come from the registry
+
+Where the protocol states how many items a queue produces, how many a person must
+answer, or how a lens splits, those numbers SHALL be derived from the registry and MUST
+NOT be written into the prose.
 
 **Why:** the protocol is what an agent reads before running anything, and a wrong count
 there sets a wrong expectation for the whole run — an operator told to expect 33 model
@@ -164,6 +249,16 @@ verdicts who receives 38 will assume something went wrong, or worse, will not no
 **Reader:** **none**, and five counts are wrong today (Appendix A.1), the largest by eight.
 No gate compares prose to the registry, which is the same absence
 `openspec/specs/governance/` GOV-3 states in general.
+
+#### Scenario: the registry grows
+- **WHEN** items are added or their source changes
+- **THEN** every count the protocol states moves with the registry
+
+#### Scenario: a count typed into a sentence
+- **WHEN** a number is written into the prose beside the thing it counts
+- **THEN** it is wrong within a release and nothing says so
+- **AND** the operator plans their work from it, which is what makes this worse here
+  than in a comment
 
 ## 4. Invariants
 
@@ -215,7 +310,7 @@ settle it: whether anyone other than an agent has run this tool.
 
 Observation, not specification. Measured at commit `9408a4c`, registry `b0abf2819da0`.
 
-### A.1 — five counts in the prose disagree with the registry, by up to eight
+#### A.1 — five counts in the prose disagree with the registry, by up to eight
 
 | where | states | registry |
 |---|---|---|
@@ -235,7 +330,7 @@ corpus README, two in the census docstring, the shapes reference's account of it
 guard's marker count and the inventory's basis distribution. Every one has the same form,
 and `openspec/specs/governance/` GOV-3 is the general rule they all violate.
 
-### A.2 — the protocol has three mentions in the suite and none of them reads it
+#### A.2 — the protocol has three mentions in the suite and none of them reads it
 
 `SKILL.md` is named in three test functions, all in the registry tests, and all about
 whether the registry and the protocol agree on structural facts rather than about the
@@ -244,7 +339,7 @@ to a reader that is not a test runner — and worth recording because it means e
 requirement in §3 that is *about the document* rather than about the tool is unread by
 construction, not by omission.
 
-### A.3 — the strongest rule in this capability is a sentence in a playbook
+#### A.3 — the strongest rule in this capability is a sentence in a playbook
 
 The competitor-research playbook says:
 
