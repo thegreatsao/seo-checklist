@@ -5,8 +5,8 @@ context: |
   and a runner that grades every item into one of exactly eight statuses. Python,
   stdlib-first, offline tests against fixture sites served on loopback.
 
-  The normative specification is twelve documents under `specs/<capability>/spec.md`
-  — 149 requirements. Read `specs/verdicts/spec.md` first: it owns the status
+  The normative specification is twelve documents under `openspec/specs/<capability>/spec.md`
+  — 149 requirements. Read `openspec/specs/verdicts/spec.md` first: it owns the status
   vocabulary every other document inherits. `local/sdd/COVERAGE-MAP.md` says which
   capability each document owns.
 

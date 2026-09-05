@@ -1390,7 +1390,7 @@ class Direction(unittest.TestCase):
     supply the classification as fixture data and assert that a change *labelled*
     `improved` renders as one — which reads the renderer, not the rule. A classifier
     returning `regressed` for every `PASS → NO_DATA` passed the whole suite.
-    `specs/history/` HST-1.
+    `openspec/specs/history/` HST-1.
 
     The expectation below is written from the requirement rather than read from the
     implementation: three quality verdicts on one scale, everything else off it. The
@@ -1963,7 +1963,7 @@ class SafeBrowsingBoundary(unittest.TestCase):
 
 
 class TheModeTableIsTheContract(unittest.TestCase):
-    """`specs/run-lifecycle/` RUN-1. The mode decides how much of the registry can
+    """`openspec/specs/run-lifecycle/` RUN-1. The mode decides how much of the registry can
     answer at all, so it decides the denominator every score is a fraction of.
 
     `MODE_CAPS`, `MODE_HELP` and `resolve_mode` were named by no test — a grep over
@@ -1977,7 +1977,7 @@ class TheModeTableIsTheContract(unittest.TestCase):
     first, and this is what makes that true rather than hoped for.
     """
 
-    # `specs/run-lifecycle/` §2.1, transcribed.
+    # `openspec/specs/run-lifecycle/` §2.1, transcribed.
     TABLE = {
         "live": {"offline", "fetch", "crawl", "api"},
         "page": {"offline", "fetch", "api"},
@@ -2036,7 +2036,7 @@ class TheModeTableIsTheContract(unittest.TestCase):
                         self.assertEqual(len(plan), 0)
 
     def test_the_registry_asks_only_for_capabilities_this_document_accounts_for(self):
-        """The weaker of the two candidate readers `specs/run-lifecycle/` §6 weighed,
+        """The weaker of the two candidate readers `openspec/specs/run-lifecycle/` §6 weighed,
         and the one it argued for: a capability no mode carries is legitimate — `gsc`
         and `safe_browsing` are exactly that — so the rule is that every `requires` is
         either in some mode or is one of the twice-gated pair, and nothing else."""
@@ -2054,7 +2054,7 @@ class TheModeTableIsTheContract(unittest.TestCase):
 
 
 class OneInvocationIsOneExecution(unittest.TestCase):
-    """`specs/run-lifecycle/` RUN-4. The registry asks some questions twice under
+    """`openspec/specs/run-lifecycle/` RUN-4. The registry asks some questions twice under
     different source numbers on purpose, and REG-11 rules on which twin carries the
     weight. Running the script twice doubles the cost of every audit and creates the
     possibility of two answers to one question, which the report has no way to show.
@@ -2095,7 +2095,7 @@ class OneInvocationIsOneExecution(unittest.TestCase):
 
 
 class TwoRefusalsHaveAStatedOrder(unittest.TestCase):
-    """`specs/run-lifecycle/` RUN-20: scope before capability, capability before input.
+    """`openspec/specs/run-lifecycle/` RUN-20: scope before capability, capability before input.
 
     An item can be refused twice over, exactly one reason reaches the report, and the
     status names who can act — so the wrong one sends a reader to work that changes
@@ -2146,7 +2146,7 @@ class TwoRefusalsHaveAStatedOrder(unittest.TestCase):
 
 
 class CredentialDiscoveryIsAnOrderedContract(unittest.TestCase):
-    """`specs/inputs/` INP-6. The order was stated in prose in two places and asserted
+    """`openspec/specs/inputs/` INP-6. The order was stated in prose in two places and asserted
     by nothing; neither function was named in any test. A reordering that put a
     repository `.env` above the process environment would have passed the suite and
     changed which key a run uses.
@@ -2249,7 +2249,7 @@ class CredentialDiscoveryIsAnOrderedContract(unittest.TestCase):
 
 
 class OpportunitiesAreCarriedAndNeverScored(unittest.TestCase):
-    """`specs/inputs/` INP-9. Search Console's opportunities are work a person can do
+    """`openspec/specs/inputs/` INP-9. Search Console's opportunities are work a person can do
     and are not verdicts about the site. Scoring them would make a client's number move
     with somebody else's index while they changed nothing — which is what `GO-134` did
     for four releases, reporting "position 4.0, within striking distance" as a `high`
@@ -2294,7 +2294,7 @@ class OpportunitiesAreCarriedAndNeverScored(unittest.TestCase):
 
     def test_the_opportunities_are_printed_where_the_score_is_not(self):
         """The other half of the requirement — "reported" — and `opportunity_section`
-        was one of the six report sections `specs/reporting/` A.1 records at zero test
+        was one of the six report sections `openspec/specs/reporting/` A.1 records at zero test
         functions."""
         data = {"url": "https://example.com/", "mode": "live", "profile": "default",
                 "registry_version": "test", "runs": {},
@@ -2308,7 +2308,7 @@ class OpportunitiesAreCarriedAndNeverScored(unittest.TestCase):
 
 
 class ArchiveModeTouchesNothing(unittest.TestCase):
-    """`specs/run-lifecycle/` RUN-3. Archive mode is what an operator uses when they
+    """`openspec/specs/run-lifecycle/` RUN-3. Archive mode is what an operator uses when they
     must not touch the site — a client's production host, a system under embargo, a
     machine with no route. A mode that makes one API call because a key happened to be
     on disk breaks a promise they relied on, and nothing in the report would show it.

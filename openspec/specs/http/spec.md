@@ -13,8 +13,8 @@ Appendix B is the census of those lines. A requirement whose reader is `none` is
 intention, and is counted as one.
 
 **Inherited, not restated:** the eight statuses belong to
-[`specs/verdicts/`](../verdicts/spec.md); when a run may reach the network at all, and what
-a gated item reports, belong to [`specs/run-lifecycle/`](../run-lifecycle/spec.md). This
+[`openspec/specs/verdicts/`](../verdicts/spec.md); when a run may reach the network at all, and what
+a gated item reports, belong to [`openspec/specs/run-lifecycle/`](../run-lifecycle/spec.md). This
 document says what happens once a request is permitted, and what the audit owes the site it
 is asking.
 
@@ -312,10 +312,10 @@ named for the recording asserts only that two functions return the same string.
 ## 5. What this document does not decide
 
 * when a run may reach the network at all, and what a gated item reports —
-  `specs/run-lifecycle/`;
-* what each checker does with the document it is given — `specs/evidence/`;
-* how an operator-supplied artifact is validated — `specs/inputs/`;
-* which provenance warnings the report shows and how — `specs/reporting/`, which owns the
+  `openspec/specs/run-lifecycle/`;
+* what each checker does with the document it is given — `openspec/specs/evidence/`;
+* how an operator-supplied artifact is validated — `openspec/specs/inputs/`;
+* which provenance warnings the report shows and how — `openspec/specs/reporting/`, which owns the
   surface HTTP-8 says the cache belongs in;
 * what the numbers should be. This document requires the rate, the caps and the timeouts to
   be stated and read; `DEFAULT_MAX_RPS = 4.0`, `DEFAULT_TIMEOUT = 15` and the rest are

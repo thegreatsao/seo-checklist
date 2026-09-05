@@ -9,8 +9,8 @@ deletes went out against a dead session and (almost certainly) failed too, so no
 was lost; with a cookie still good for writes and not for reads, the tool would have
 emptied the notebook it exists to protect.
 
-This is the repo's own rule, broken by one of its tools: REG-8 in `specs/registry/`
-and NO_DATA in `specs/verdicts/` both say that absence of data is not a verdict. The
+This is the repo's own rule, broken by one of its tools: REG-8 in `openspec/specs/registry/`
+and NO_DATA in `openspec/specs/verdicts/` both say that absence of data is not a verdict. The
 value read from a source that could not be fetched is now `Unread`, distinct from the
 `None` that means "read, and carries no stamp", and the two lead to different places:
 `UNREAD` fails `check` and is skipped by `sync`.
@@ -195,14 +195,14 @@ class SyncDoesNotRemedyAFailureToLook(unittest.TestCase):
 class TheSpecsAreDerivedRatherThanListed(unittest.TestCase):
     """A hand-kept list cannot say what is missing from it.
 
-    Three specs were three literals in this tool. The fourth, `specs/declarations/`,
+    Three specs were three literals in this tool. The fourth, `openspec/specs/declarations/`,
     would have reached the notebook only once somebody remembered to add a line — and
     the reader that would have noticed the omission was the same line. That is the
-    defect `specs/declarations/` itself specifies as DEC-6, in the manifest it is about.
+    defect `openspec/specs/declarations/` itself specifies as DEC-6, in the manifest it is about.
     """
 
     def test_every_spec_in_the_tree_is_in_the_manifest(self):
-        on_disk = {p.parent.name for p in (REPO / "specs").glob("*/spec.md")}
+        on_disk = {p.parent.name for p in (REPO / "openspec" / "specs").glob("*/spec.md")}
         self.assertTrue(on_disk, "no specs found; this test would pass on nothing")
         listed = {t[len("Spec - "):] for t, _, _ in N.manifest(REPO)
                   if t.startswith("Spec - ")}
@@ -212,8 +212,8 @@ class TheSpecsAreDerivedRatherThanListed(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             repo = Path(td)
             for name in ("registry", "brand-new"):
-                (repo / "specs" / name).mkdir(parents=True)
-                (repo / "specs" / name / "spec.md").write_text("x", encoding="utf-8")
+                (repo / "openspec" / "specs" / name).mkdir(parents=True)
+                (repo / "openspec" / "specs" / name / "spec.md").write_text("x", encoding="utf-8")
             titles = [t for t, _, _ in N.manifest(repo) if t.startswith("Spec - ")]
         self.assertEqual(titles, ["Spec - brand-new", "Spec - registry"])
 

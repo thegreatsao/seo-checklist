@@ -12,9 +12,9 @@ Appendix B is the census of those lines. A requirement whose reader is `none` is
 intention, and is counted as one.
 
 **Inherited, not restated:** the statuses belong to
-[`specs/verdicts/`](../verdicts/spec.md); the score two runs are compared on belongs to
-[`specs/scoring/`](../scoring/spec.md); what a report may show belongs to
-[`specs/reporting/`](../reporting/spec.md), which owns the trend section this document
+[`openspec/specs/verdicts/`](../verdicts/spec.md); the score two runs are compared on belongs to
+[`openspec/specs/scoring/`](../scoring/spec.md); what a report may show belongs to
+[`openspec/specs/reporting/`](../reporting/spec.md), which owns the trend section this document
 supplies. This document says what a comparison *means*.
 
 ---
@@ -196,10 +196,10 @@ document is about has never run end to end in CI on any platform.
 
 ## 5. What this document does not decide
 
-* how the score being compared is computed — `specs/scoring/`;
+* how the score being compared is computed — `openspec/specs/scoring/`;
 * how the trend is displayed, or the wording of the section —
-  `specs/reporting/`, which owns the surface;
-* what a status means — `specs/verdicts/`;
+  `openspec/specs/reporting/`, which owns the surface;
+* what a status means — `openspec/specs/verdicts/`;
 * how long history should be kept, or how large the series should be. This document
   requires the series to exclude the current run and be ordered by time; twelve is
   calibration.
@@ -212,7 +212,7 @@ reads. But the score does fall, because an item that cannot be answered leaves t
 set — so the number goes down while the comparison says nothing got worse. Both are correct
 and together they read as a contradiction. What would settle it: whether the trend section
 should state the coverage change beside the score change, which is
-`specs/reporting/` REP-8's territory and unread there too.
+`openspec/specs/reporting/` REP-8's territory and unread there too.
 
 **What is the identity of a run?** HST-3 requires the baseline to be named, and today a run
 is identified by its timestamp and the domain directory it sits in. Two audits of the same
@@ -296,7 +296,7 @@ Invariants: INV-HS2 enforced; INV-HS3 partial; INV-HS1 and INV-HS4 unread.
 
 The enforced requirements were all about *files*: exclude this one, skip that broken one,
 count the run of them. The unread ones were about *meaning*: what a change is, and whether
-the record exists when nobody asked to see it. That is the same line `specs/inputs/` found
+the record exists when nobody asked to see it. That is the same line `openspec/specs/inputs/` found
 between files and policies, and this document was the smallest and clearest instance of it
 — eight requirements, one function at the centre, and the function was the unread one.
 

@@ -956,14 +956,14 @@ class ATranslationIsBoundToTheEnglishItTranslates(unittest.TestCase):
 
 
 class TheScoreNeverTravelsWithoutItsShare(unittest.TestCase):
-    """`specs/scoring/` SCR-4 and `specs/reporting/` REP-1, which are one rule.
+    """`openspec/specs/scoring/` SCR-4 and `openspec/specs/reporting/` REP-1, which are one rule.
 
     69 over 55% of the registry's weight and 69 over 95% are different claims, and the
     number alone does not say which. Every surface printed both and no test would have
     failed if one stopped: current conduct is not enforcement, which is the distinction
     the whole suite's `Reader:` lines exist to keep.
 
-    `specs/reporting/` §6 asked whether the console can be asserted without pinning its
+    `openspec/specs/reporting/` §6 asked whether the console can be asserted without pinning its
     layout, since terminal output changes for good reasons constantly. It can, by never
     looking at where the number goes: render each surface twice with a different share
     and require the two to differ. A surface that stopped printing the share stops
@@ -992,7 +992,7 @@ class TheScoreNeverTravelsWithoutItsShare(unittest.TestCase):
 
     def surfaces(self, data):
         """Every surface the requirement names, and the console is the one that had no
-        test of any kind — `specs/reporting/` A.1 lists `print_report` at zero."""
+        test of any kind — `openspec/specs/reporting/` A.1 lists `print_report` at zero."""
         return {"markdown": render_markdown(data),
                 "html": render_html(data),
                 "console": self.console(data)}

@@ -56,7 +56,7 @@ FIXED = [
     ("LLM reviewer agents - 5 lenses", "agents", AGENT_DIR),
 ]
 
-SPECS = Path("specs")
+SPECS = Path("openspec") / "specs"
 
 
 def manifest(repo: Path) -> list:
@@ -64,11 +64,11 @@ def manifest(repo: Path) -> list:
 
     The three specs used to be three literals here, and the fourth — `declarations`,
     merged the same day this changed — was invisible to the gate until somebody
-    remembered to add a line. That is the defect `specs/declarations/` calls DEC-6 in
+    remembered to add a line. That is the defect `openspec/specs/declarations/` calls DEC-6 in
     the manifest it specifies: a hand-kept list cannot say what is missing from it, and
     the reader that would notice is the same list that would have to be edited.
 
-    A spec is `specs/<name>/spec.md` and its title is `Spec - <name>`, which is what the
+    A spec is `openspec/specs/<name>/spec.md`, its title is `Spec - <name>`, which is what the
     three were called, so the notebook's existing sources keep their identity.
     """
     specs = [(f"Spec - {p.parent.name}", "file", p.relative_to(repo))

@@ -777,7 +777,7 @@ class NothingIsDecidedWithoutEvidence(unittest.TestCase):
 
 
 class TheRunSaysWhetherItUsedACache(unittest.TestCase):
-    """`specs/http/` HTTP-8. With the cache off two items may describe two states of the
+    """`openspec/specs/http/` HTTP-8. With the cache off two items may describe two states of the
     same document; with it on, a verdict may be about a response fetched earlier in the
     run. Either way the artifact has to say which, because it is the difference between
     "this is the page" and "this was the page a few minutes ago".
@@ -811,13 +811,13 @@ class TheRunSaysWhetherItUsedACache(unittest.TestCase):
         self.assertNotIn("cache", printed,
                          "the cache now reaches provenance — good; replace this test "
                          "with one asserting it appears, and close HTTP-8 in "
-                         "specs/http/")
+                         "openspec/specs/http/")
 
 
 class TheRecordDoesNotDependOnHowItWasInvoked(unittest.TestCase):
     """`--diff` decides whether the comparison is *printed*, never whether it exists.
 
-    `specs/history/` HST-8. The artifact is what a later run and a later reader work
+    `openspec/specs/history/` HST-8. The artifact is what a later run and a later reader work
     from, so a comparison that appears only when somebody passed a flag makes the
     record depend on how the tool was invoked that day. Nothing asserted this, and the
     flag was named by no test function.
@@ -834,7 +834,7 @@ class TheRecordDoesNotDependOnHowItWasInvoked(unittest.TestCase):
     the audit. Every other invocation of the runner in this suite and in CI passes
     `--no-history`, which is exactly why nobody had met it. The skip goes when the
     release deciding how a ported host is filed lands; until then HST-8 is read on three
-    of the five CI jobs and unread on the other two, which is what `specs/history/` now
+    of the five CI jobs and unread on the other two, which is what `openspec/specs/history/` now
     says.
     """
 

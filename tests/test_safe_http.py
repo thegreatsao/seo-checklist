@@ -226,7 +226,7 @@ class PinnedTransport(unittest.TestCase):
 
 
 class CertificateVerificationCannotBeTurnedOff(unittest.TestCase):
-    """`specs/http/` HTTP-11. An audit that reports on a site's security while
+    """`openspec/specs/http/` HTTP-11. An audit that reports on a site's security while
     accepting any certificate is making a claim it did not check, and the failure is
     silent by construction: everything works better with verification off.
 

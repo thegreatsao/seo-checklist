@@ -2031,11 +2031,11 @@ name. A column called `url` would be read as "fix this page".
   and would fail the same way. On Linux and macOS the colon is legal and everything
   works, which is why this is a Windows-only loss.
 
-  Found on 5 September 2026 while writing the reader for `specs/history/` HST-8, which
+  Found on 5 September 2026 while writing the reader for `openspec/specs/history/` HST-8, which
   needs two real runs against one host and therefore cannot pass `--no-history`. That is
   the whole reason it went eighteen releases unseen: **every invocation of the runner in
   the test suite and in CI passes `--no-history`** — all six in `ci.yml` — so the history
-  subsystem, which is what `specs/history/` is about, has never run end to end in CI on
+  subsystem, which is what `openspec/specs/history/` is about, has never run end to end in CI on
   any platform. The one shape in which the defect appears is the one nothing constructs.
 
   Not fixed here because the fix is a decision rather than a line. Sanitising the netloc

@@ -14,7 +14,7 @@ Appendix B is the census of those lines. A requirement whose reader is `none` is
 intention, and is counted as one.
 
 **Inherited, not restated:** the two instruments that measure the audit against served
-trees belong to [`specs/declarations/`](../declarations/spec.md); what the documents in
+trees belong to [`openspec/specs/declarations/`](../declarations/spec.md); what the documents in
 `specs/` must contain, and the reader that holds them, are described in this document and
 implemented by `tests/test_specs.py`.
 
@@ -142,7 +142,7 @@ number carries a basis.
 
 **Why:** four green audits read as "the registry is correct" unless each says what it
 checked. The gap between "this rule can produce FAIL" and "this rule produces FAIL on the
-right sites" is the whole of `specs/declarations/`, and a reader who conflates them stops
+right sites" is the whole of `openspec/specs/declarations/`, and a reader who conflates them stops
 looking.
 **Reader:** partial. All four run in CI and fail the build, so what they *do* check is
 enforced. What they disclaim is stated in their docstrings and in no test — and the fifth
@@ -160,7 +160,7 @@ re-run until green. That is how a real failure gets merged.
 **Reader:** partial. The offline property is achieved by construction — every network-capable
 script goes through the guard, and the guard refuses everything but loopback unless the
 allowance is set. Nothing asserts that a CI job makes no outbound request, and the guard's
-own per-run allowance is unread on the child-process side (`specs/http/` HTTP-2).
+own per-run allowance is unread on the child-process side (`openspec/specs/http/` HTTP-2).
 
 ### GOV-8 — a request-count ceiling is raised deliberately or not at all
 
@@ -227,7 +227,7 @@ runs them (Appendix A.1).
 * what any threshold should be — GOV-1 requires a basis, not a value;
 * whether a known issue should be fixed. The ledger records the decision; the roadmap
   argues it;
-* what the fixture oracle and the census measure — `specs/declarations/`;
+* what the fixture oracle and the census measure — `openspec/specs/declarations/`;
 * how a release is cut, versioned and tagged. That is the operator's procedure and lives
   with the packaging, not with the gates;
 * which capability each document owns — `local/sdd/COVERAGE-MAP.md`, which is a working

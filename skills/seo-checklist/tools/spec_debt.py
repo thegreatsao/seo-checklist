@@ -35,7 +35,7 @@ import sys
 
 # tools/ -> skills/seo-checklist/ -> skills/ -> repo root
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-SPECS = os.path.join(ROOT, "specs")
+SPECS = os.path.join(ROOT, "openspec", "specs")
 
 CLASSES = ("enforced", "partial", "none", "opposed")
 REQUIREMENT = re.compile(r"^### ([A-Z]{2,4}-\d+) — (.+)$")

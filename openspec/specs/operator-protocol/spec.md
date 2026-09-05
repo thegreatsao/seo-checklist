@@ -12,9 +12,9 @@ Appendix B is the census of those lines. A requirement whose reader is `none` is
 intention, and is counted as one.
 
 **Inherited, not restated:** what the report must show belongs to
-[`specs/reporting/`](../reporting/spec.md); what a status means belongs to
-[`specs/verdicts/`](../verdicts/spec.md); how a run is scoped and gated belongs to
-[`specs/run-lifecycle/`](../run-lifecycle/spec.md). This document says what the *operator*
+[`openspec/specs/reporting/`](../reporting/spec.md); what a status means belongs to
+[`openspec/specs/verdicts/`](../verdicts/spec.md); how a run is scoped and gated belongs to
+[`openspec/specs/run-lifecycle/`](../run-lifecycle/spec.md). This document says what the *operator*
 owes, which is the one thing the tool cannot enforce.
 
 ---
@@ -82,7 +82,7 @@ and all three are about the registry's relationship to it rather than its conten
 Wherever the operator states the score — in a summary, a message, a client email — the
 proportion of the registry it was computed over goes with it.
 
-**Why:** this is `specs/reporting/` REP-1 restated for the human link in the chain, and it
+**Why:** this is `openspec/specs/reporting/` REP-1 restated for the human link in the chain, and it
 is the one place the number escapes the tool's control entirely. "96" travels; "96, over
 60% of the registry" does not travel as well and is the true one.
 **Reader:** **none**, and unenforceable by construction — the tool cannot see what the
@@ -98,7 +98,7 @@ asserted are described as such, not folded into "the audit found".
 judgement. The payload records who decided each item precisely so this is possible; a
 summary that drops it spends the distinction the tool went to trouble to preserve.
 **Reader:** **none.** The `decided_by` stamp exists and is asserted in the payload
-(`specs/reporting/` REP-4); nothing reads what the operator does with it.
+(`openspec/specs/reporting/` REP-4); nothing reads what the operator does with it.
 
 ### OPR-4 — the model-judgement queue is run, or the audit says it was not
 
@@ -144,10 +144,10 @@ An operator answering a `MANUAL` item supplies what they looked at. An answer wi
 is refused.
 
 **Why:** this is the one operator obligation the tool *can* enforce, and it does. It is
-listed here rather than only in `specs/reporting/` because from the operator's side it is
+listed here rather than only in `openspec/specs/reporting/` because from the operator's side it is
 the difference between recording a judgement and asserting one.
 **Reader:** partial. The merge does refuse an answer with no stated reason and reports the
-refusal by id — the behaviour `specs/reporting/` REP-5 specifies — so the rule is
+refusal by id — the behaviour `openspec/specs/reporting/` REP-5 specifies — so the rule is
 implemented and not merely asked for. But that merge is the least-tested of the three, with
 a single test function covering the one path in this whole capability that a person can
 abuse, and nothing asserts that the refusal is visible to the operator who caused it.
@@ -163,7 +163,7 @@ there sets a wrong expectation for the whole run — an operator told to expect 
 verdicts who receives 38 will assume something went wrong, or worse, will not notice.
 **Reader:** **none**, and five counts are wrong today (Appendix A.1), the largest by eight.
 No gate compares prose to the registry, which is the same absence
-`specs/governance/` GOV-3 states in general.
+`openspec/specs/governance/` GOV-3 states in general.
 
 ## 4. Invariants
 
@@ -181,9 +181,9 @@ No gate compares prose to the registry, which is the same absence
 
 ## 5. What this document does not decide
 
-* what the report shows — `specs/reporting/`;
-* what a status means or who each names — `specs/verdicts/`;
-* how the model-judgement queue is split or routed — `specs/reporting/` REP-11;
+* what the report shows — `openspec/specs/reporting/`;
+* what a status means or who each names — `openspec/specs/verdicts/`;
+* how the model-judgement queue is split or routed — `openspec/specs/reporting/` REP-11;
 * how an agent should be evaluated or improved. The protocol is a contract, not a
   training document;
 * whether an agent is the right operator at all. That is a product decision, and the
@@ -233,7 +233,7 @@ No gate compares prose to the registry. This is the seventh count in this tree f
 stating something the tree does not, after the registry's own `source` string, two in the
 corpus README, two in the census docstring, the shapes reference's account of itself, the
 guard's marker count and the inventory's basis distribution. Every one has the same form,
-and `specs/governance/` GOV-3 is the general rule they all violate.
+and `openspec/specs/governance/` GOV-3 is the general rule they all violate.
 
 ### A.2 — the protocol has three mentions in the suite and none of them reads it
 
@@ -275,7 +275,7 @@ Invariants: INV-O3 and INV-O4 enforced; INV-O2 partial; INV-O1 unread.
 
 **Nothing fully enforced, two partial, six unread, of eight.**
 
-Nothing enforced is the worst census in the suite, matched only by `specs/scoring/`, and it
+Nothing enforced is the worst census in the suite, matched only by `openspec/specs/scoring/`, and it
 is the only one that is not an indictment. Six of these eight requirements are obligations
 on a person or an agent, and no test can hold them — OPR-2 cannot be enforced because the
 tool cannot see what the operator writes; OPR-6 cannot be enforced because fabrication is

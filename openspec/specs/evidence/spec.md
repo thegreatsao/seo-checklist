@@ -13,11 +13,11 @@ Appendix B is the census of those lines. A requirement whose reader is `none` is
 intention, and is counted as one.
 
 **Inherited, not restated:** the statuses belong to
-[`specs/verdicts/`](../verdicts/spec.md); the assertion language that reads these outputs
-belongs to [`specs/registry/`](../registry/spec.md); how a checker is invoked, timed out
+[`openspec/specs/verdicts/`](../verdicts/spec.md); the assertion language that reads these outputs
+belongs to [`openspec/specs/registry/`](../registry/spec.md); how a checker is invoked, timed out
 and classified when it fails belongs to
-[`specs/run-lifecycle/`](../run-lifecycle/spec.md); how it is permitted to reach the
-network belongs to [`specs/http/`](../http/spec.md). This document says what the process
+[`openspec/specs/run-lifecycle/`](../run-lifecycle/spec.md); how it is permitted to reach the
+network belongs to [`openspec/specs/http/`](../http/spec.md). This document says what the process
 must *return* and what may be believed of it.
 
 ---
@@ -143,7 +143,7 @@ A checker that read a capped input says so. The claim travels: a rule that would
 absence* over a truncated input is downgraded rather than believed.
 
 **Why:** "no violations found" over half a site is not a finding about the site. This is
-the field-level half of the rule `specs/run-lifecycle/` RUN-19 states.
+the field-level half of the rule `openspec/specs/run-lifecycle/` RUN-19 states.
 **Reader:** enforced, and the reader is unusually good. A sweep over every registry item
 whose rule passes by absence asserts that a truncated input downgrades it; the asymmetry
 is pinned in both directions — a defect found in the part that *was* read still fails, and
@@ -151,7 +151,7 @@ a failing count is named as a floor; and the set of checkers able to set the fla
 derived from the scripts themselves rather than listed, so a checker that gained the
 ability and did not use it would be caught. The one unread half — that the flag propagates
 from a real truncated crawl rather than being injected by a test — is not this
-requirement's: `specs/run-lifecycle/` RUN-19 states it and records it as unread there.
+requirement's: `openspec/specs/run-lifecycle/` RUN-19 states it and records it as unread there.
 
 ### EVD-6 — every number a verdict depends on names what it rests on
 
@@ -251,7 +251,7 @@ Nothing asserts that unverified counts are labelled as unverified where they are
   warning.
 * **INV-E3** — `error_kind` is `None` exactly when `error` is `None`, in every checker that
   exposes a fetch result. *Reader: partial* — the failure direction is asserted seven times
-  over in `specs/http/`'s vocabulary test; the success direction is asserted nowhere, and
+  over in `openspec/specs/http/`'s vocabulary test; the success direction is asserted nowhere, and
   this invariant is stated in the catalogue's own prose.
 * **INV-E4** — a checker's severity words are drawn from the four, after normalisation.
   *Reader: partial* — `audit_assertions.py` fails a rule asking for a severity its script
@@ -264,10 +264,10 @@ Nothing asserts that unverified counts are labelled as unverified where they are
   document requires the line to name its basis (EVD-6); it does not adjudicate the number,
   and `audit_thresholds.py` counting 77 `inherited` is the measure of how much of that is
   undecided;
-* whether an item measures what its title claims — `specs/registry/` REG-6;
-* how a checker's output becomes a status — `specs/registry/` and `specs/verdicts/`;
-* what a declaration about a checker's answer may claim — `specs/declarations/`;
-* how the checkers are permitted to reach the network — `specs/http/`.
+* whether an item measures what its title claims — `openspec/specs/registry/` REG-6;
+* how a checker's output becomes a status — `openspec/specs/registry/` and `openspec/specs/verdicts/`;
+* what a declaration about a checker's answer may claim — `openspec/specs/declarations/`;
+* how the checkers are permitted to reach the network — `openspec/specs/http/`.
 
 ## 6. Open questions
 
@@ -356,14 +356,14 @@ does say they run; it does not say anything about whether they run correctly.
 
 **Judged:** 31 of the 33 registry items behind those 20 checkers carry a *settled*
 declaration in the fixture oracle. That is what stands behind this layer — not the unit
-suite but the instrument `specs/declarations/` specifies, one hand-written prediction at a
+suite but the instrument `openspec/specs/declarations/` specifies, one hand-written prediction at a
 time.
 
 This is where the original concluded "which leaves exactly one checker with neither", and
 named `collection_page_checker.py` / `AR-154`. It does not.
 
 `AR-154` is genuinely one of the twenty-seven declarations
-[`specs/declarations/`](../declarations/spec.md) A.1 found compared with nothing — one of
+[`openspec/specs/declarations/`](../declarations/spec.md) A.1 found compared with nothing — one of
 the seventeen whose written reason is "the fixture has no subject for this item", because
 the fixture is a five-page bakery with no category page. And its checker is genuinely named
 by no test. Both halves were true.

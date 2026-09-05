@@ -14,8 +14,8 @@ Appendix B is the census of those lines. A requirement whose reader is `none` is
 intention, and is counted as one.
 
 **Inherited, not restated:** the eight statuses and when each is required belong to
-[`specs/verdicts/`](../verdicts/spec.md); how weight and the fix order are computed
-belong to [`specs/scoring/`](../scoring/spec.md). This document says what an item *is*,
+[`openspec/specs/verdicts/`](../verdicts/spec.md); how weight and the fix order are computed
+belong to [`openspec/specs/scoring/`](../scoring/spec.md). This document says what an item *is*,
 never what a run does with it.
 
 ---
@@ -281,10 +281,10 @@ profile does it.
 
 ## 5. What this document does not decide
 
-* what each of the 58 checkers emits and what its thresholds rest on — `specs/evidence/`;
-* how a run turns `requires` into capability gating — `specs/run-lifecycle/`;
+* what each of the 58 checkers emits and what its thresholds rest on — `openspec/specs/evidence/`;
+* how a run turns `requires` into capability gating — `openspec/specs/run-lifecycle/`;
 * how declarations of expected verdicts are written against the registry —
-  `specs/declarations/`;
+  `openspec/specs/declarations/`;
 * which severity or effort a *particular* item deserves. This document requires the
   fields to be stable and closed; it does not adjudicate their values, and no calibration
   exists that would.

@@ -12,7 +12,7 @@ Appendix B is the census of those lines. A requirement whose reader is `none` is
 intention, and is counted as one.
 
 **Inherited, not restated:** which statuses exist, and that only `PASS`, `WARN` and
-`FAIL` may carry weight, belong to [`specs/verdicts/`](../verdicts/spec.md) (VRD-6,
+`FAIL` may carry weight, belong to [`openspec/specs/verdicts/`](../verdicts/spec.md) (VRD-6,
 VRD-7). This document says what is done with them and must not redefine them.
 
 ---
@@ -144,7 +144,7 @@ surface that showed neither could not satisfy the first vacuously; and
 taking the share out of each of the three renderers in turn: each reddens its own surface
 and only its own.
 
-The method answers the question `specs/reporting/` §6 asked — whether the console can be
+The method answers the question `openspec/specs/reporting/` §6 asked — whether the console can be
 held without pinning terminal output that changes for good reasons. Nothing here looks at
 *where* the number goes. A surface that stops printing the share stops reacting to it; one
 that moves it, renames it or translates it is untouched.
@@ -311,7 +311,7 @@ closes G1.
 
 ## 5. What this document does not decide
 
-* which statuses exist and which may carry weight — `specs/verdicts/`;
+* which statuses exist and which may carry weight — `openspec/specs/verdicts/`;
 * which severity or effort a given item carries, and which items are twins — the
   registry contract;
 * visual presentation. The scoring semantics required by SCR-3, SCR-4, SCR-8 and SCR-10

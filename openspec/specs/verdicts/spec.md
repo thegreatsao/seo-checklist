@@ -25,7 +25,7 @@ never emits, so none of those declarations was compared with anything at any poi
 `v0.41.0`, the first release carrying the oracle, through `v0.91.0`: fifty-five
 releases over about thirteen days and sixteen hours. How many declarations that is, what
 they say and what the audit answers instead are
-[`specs/declarations/`](../declarations/spec.md) A.1; the window and how it grew are
+[`openspec/specs/declarations/`](../declarations/spec.md) A.1; the window and how it grew are
 Appendix A.2 below.
 
 The vocabulary is therefore specified before the registry, before the runner and before
@@ -310,7 +310,7 @@ the `v0.41.0` to `v0.91.0` window.
 vocabulary and report surfaces are tested against all eight statuses, but the fixture
 oracle explicitly permits and skips the ninth word. The design of the replacement — how
 a declarations manifest represents absence of expectation — belongs to
-[`specs/declarations/`](../declarations/spec.md) and is settled there by DEC-2; the
+[`openspec/specs/declarations/`](../declarations/spec.md) and is settled there by DEC-2; the
 withdrawal itself is owed by whichever release removes the word.
 
 ## 3.1 Composition and transition requirements
@@ -397,18 +397,18 @@ from the appendix rather than repeated in it.
 
 * which items exist, what each measures, whether a title matches its measurement, which
   subjects may legitimately not exist, and how applicability is declared for checked
-  and sourceless items — [`specs/registry/`](../registry/spec.md), REG-6 and REG-9;
+  and sourceless items — [`openspec/specs/registry/`](../registry/spec.md), REG-6 and REG-9;
 * how expected verdicts are declared, compared, and how absence of expectation is
-  represented — [`specs/declarations/`](../declarations/spec.md), which also owns what
+  represented — [`openspec/specs/declarations/`](../declarations/spec.md), which also owns what
   the census can and cannot see. VRD-12 was blocked on that document; it now exists, and
   DEC-2 is the answer — "no expectation" is the absence of a declaration, not a ninth
   word;
 * what a run does when an operator does not answer, and how a profile is chosen —
-  [`specs/run-lifecycle/`](../run-lifecycle/spec.md), RUN-14;
+  [`openspec/specs/run-lifecycle/`](../run-lifecycle/spec.md), RUN-14;
 * the thresholds separating `WARN` from `FAIL` for any item, and what a threshold must
-  rest on — [`specs/evidence/`](../evidence/spec.md), EVD-6;
+  rest on — [`openspec/specs/evidence/`](../evidence/spec.md), EVD-6;
 * the weights by which quality verdicts produce a score —
-  [`specs/scoring/`](../scoring/spec.md).
+  [`openspec/specs/scoring/`](../scoring/spec.md).
 
 ## 6. Open questions
 
@@ -419,7 +419,7 @@ from the appendix rather than repeated in it.
   vocabulary or makes the routing duty of evidence explicit would settle it.
 A second question that stood here — where an applicability condition lives for an item
 with no `check` block, so that a sourceless item such as LO-199 can have a boundary at
-all — was carried over to [`specs/registry/`](../registry/spec.md) §6 when that document
+all — was carried over to [`openspec/specs/registry/`](../registry/spec.md) §6 when that document
 was written, and is asked there. It is a schema question, not a vocabulary one; this
 document only requires that whatever answer is chosen produce `N/A` and not a quality
 verdict.
@@ -436,8 +436,8 @@ other documents now exist and own those mechanisms. What stays here is the disag
 with a requirement of *this* document; the anatomy and the counts are cited, never
 restated, because a count stated in two places is a count that will disagree with itself.
 That is not a worry, it is the measurement in
-[`specs/declarations/`](../declarations/spec.md) A.6: four counts drifted in the two
-files whose own subject is measurement, and [`specs/registry/`](../registry/spec.md)
+[`openspec/specs/declarations/`](../declarations/spec.md) A.6: four counts drifted in the two
+files whose own subject is measurement, and [`openspec/specs/registry/`](../registry/spec.md)
 REG-12 records the same shape three more times.
 
 ### A.1 — items contradicting these requirements
@@ -455,9 +455,9 @@ Observed values in the table are for the `good` and `broken` HTTP origins only.
 The first three items ask for quality of an entity neither fixture tree contains, and
 none declares an applicability condition, which is why they answer success instead of
 `N/A`. Why an item without such a condition falls through to success is
-[`specs/registry/`](../registry/spec.md) REG-9, which also holds the list of items owing
+[`openspec/specs/registry/`](../registry/spec.md) REG-9, which also holds the list of items owing
 one; that the same absent subject leaves by a second exit, `NO_DATA`, on eleven further
-items is [`specs/declarations/`](../declarations/spec.md) A.1. Both are that debt seen
+items is [`openspec/specs/declarations/`](../declarations/spec.md) A.1. Both are that debt seen
 from inside this vocabulary: one condition, three words, none of them `N/A`.
 
 The last four decide their verdict by matching regexes against prose `issues` messages,
@@ -474,7 +474,7 @@ Three other shipped paths violate these requirements:
 The manual answer path already refuses an empty rationale, so the enforceable VRD-10
 rule exists next door to the LLM violation. The three silent exits, the four tests that
 cover them and the probe that established which branch each takes are
-[`specs/run-lifecycle/`](../run-lifecycle/spec.md) A.5.
+[`openspec/specs/run-lifecycle/`](../run-lifecycle/spec.md) A.5.
 
 The GSC contradiction is split across two sites in
 `skills/seo-checklist/scripts/checklist_runner.py`: `build_plan` assigns
@@ -490,20 +490,20 @@ for want of a search-engine index inventory. That was wrong: the item's `invento
 is produced by the run's own crawl, not supplied by an operator, so VRD-4 does not reach
 it. What the item actually shows is a title that names one measurement and a rule that
 performs another — a registry defect, held by
-[`specs/registry/`](../registry/spec.md) REG-6.
+[`openspec/specs/registry/`](../registry/spec.md) REG-6.
 
 **Also not in this table.** AR-150 and CI-014 answer `PASS` on `broken_tls`, and that is
 correct under VRD-3: their rules forbid redirect chains and loops, and the origin has
 none. What their declarations recorded is a limit of the harness rather than a wrong
 verdict, and a limit of the instrument belongs beside the instrument's output —
-[`specs/declarations/`](../declarations/spec.md) DEC-13.
+[`openspec/specs/declarations/`](../declarations/spec.md) DEC-13.
 
 ### A.2 — the violation of VRD-12, and how long it has been running
 
 The expected-verdict manifest declares `INDETERMINATE`, which no audit code emits. Its
 reader skips such declarations instead of comparing them. What the ninth word is hiding
 today — how many declarations carry it, what each of them says, and which status the
-audit answers instead — is [`specs/declarations/`](../declarations/spec.md) A.1, and is
+audit answers instead — is [`openspec/specs/declarations/`](../declarations/spec.md) A.1, and is
 not repeated here. What this section owns is the *duration*, because that is what makes a
 closed vocabulary worth specifying before anything else.
 
@@ -532,7 +532,7 @@ owing an applicability declaration surface in that class; the other fourteen do 
 because the fixture corpus never puts them in a position to answer differently. The count
 is therefore a floor on this class of defect and never a measure of it — the general form
 of that, and the requirement that an instrument publish its own limits, is
-[`specs/declarations/`](../declarations/spec.md) DEC-13.
+[`openspec/specs/declarations/`](../declarations/spec.md) DEC-13.
 
 ## Appendix B — how much of this document is enforced
 

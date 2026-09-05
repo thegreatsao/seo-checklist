@@ -29,7 +29,7 @@ import sys
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SPECS = os.path.join(ROOT, "specs")
+SPECS = os.path.join(ROOT, "openspec", "specs")
 TESTS = os.path.dirname(os.path.abspath(__file__))
 SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 
@@ -276,7 +276,7 @@ class AppendixBDescribesThisDocument(unittest.TestCase):
 class AnIdentifierMeansOneThingInTheSuite(unittest.TestCase):
     """Ids travel between documents, so a prefix may belong to only one.
 
-    `specs/history/` was drafted with `INV-H1`…`INV-H4` while `specs/http/` already had
+    `openspec/specs/history/` was drafted with `INV-H1`…`INV-H4` while `openspec/specs/http/` already had
     them, which makes every cross-document reference to `INV-H2` ambiguous — and these
     documents cite each other constantly. Caught by hand on the ninth document, which is
     eight documents later than a `grep` would have caught it.
@@ -400,7 +400,7 @@ class ACitationPointsAtSomething(unittest.TestCase):
     The rule the suite settled on is that a fact has one owner: the document that owns a
     mechanism describes it, and the other eleven cite it. That makes cross-document
     citations load-bearing — and invisible when wrong. A link to a renamed directory, or
-    a reference to `DEC-13` after somebody renumbers `specs/declarations/`, reads exactly
+    a reference to `DEC-13` after somebody renumbers `openspec/specs/declarations/`, reads exactly
     like a working citation and silently sends the reader nowhere.
 
     Nothing else here holds it: `test_no_requirement_prefix_is_shared_by_two_documents`

@@ -5764,7 +5764,7 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
 
 
 class EveryCheckerHasSomethingThatJudgesIt(unittest.TestCase):
-    """`specs/evidence/` EVD-7. Running is not the same as being right: a checker with
+    """`openspec/specs/evidence/` EVD-7. Running is not the same as being right: a checker with
     no test and no settled declaration produces a verdict on every audit and nothing
     anywhere says the verdict is correct.
 
@@ -5857,7 +5857,7 @@ class EveryCheckerHasSomethingThatJudgesIt(unittest.TestCase):
     @staticmethod
     def settled_items():
         """Items the oracle predicts with a word the audit can emit. `INDETERMINATE` is
-        skipped by the comparison, so it judges nothing — `specs/declarations/` DEC-2."""
+        skipped by the comparison, so it judges nothing — `openspec/specs/declarations/` DEC-2."""
         path = os.path.join(ROOT, "tests", "fixtures", "expectations.json")
         with open(path, encoding="utf-8") as stream:
             manifest = json.load(stream)
@@ -5899,7 +5899,7 @@ class EveryCheckerHasSomethingThatJudgesIt(unittest.TestCase):
         self.assertTrue(
             key_only & through_a_key,
             "no checker depends on resolving RUNS keys any more; re-read Appendix A.2 "
-            "of specs/evidence/ before simplifying this reader")
+            "of openspec/specs/evidence/ before simplifying this reader")
 
 if __name__ == "__main__":
     unittest.main()

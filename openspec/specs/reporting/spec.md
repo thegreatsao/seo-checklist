@@ -14,10 +14,10 @@ Appendix B is the census of those lines. A requirement whose reader is `none` is
 intention, and is counted as one.
 
 **Inherited, not restated:** the statuses belong to
-[`specs/verdicts/`](../verdicts/spec.md); the score, the weight share, the partition and
-the fix ordering belong to [`specs/scoring/`](../scoring/spec.md); what a verdict was
-computed from belongs to [`specs/evidence/`](../evidence/spec.md) and
-[`specs/inputs/`](../inputs/spec.md). This document says what may be *shown*, and it may
+[`openspec/specs/verdicts/`](../verdicts/spec.md); the score, the weight share, the partition and
+the fix ordering belong to [`openspec/specs/scoring/`](../scoring/spec.md); what a verdict was
+computed from belongs to [`openspec/specs/evidence/`](../evidence/spec.md) and
+[`openspec/specs/inputs/`](../inputs/spec.md). This document says what may be *shown*, and it may
 not restate a number's definition in order to display it differently.
 
 ---
@@ -71,7 +71,7 @@ An audit of a site where two thirds of the checks could not run reports a high s
 the third that could, and the reader has no way to see the difference from an audit that
 answered everything.
 **Reader:** enforced, by the same three tests that hold
-[`specs/scoring/`](../scoring/spec.md) SCR-4 — this is one rule and this is the layer that
+[`openspec/specs/scoring/`](../scoring/spec.md) SCR-4 — this is one rule and this is the layer that
 would violate it. Each surface is rendered twice with a different share and required to
 change, so nothing depends on where the number is placed, and each of the three renderers
 was probed separately. That includes the console summary, which until 5 September 2026 had
@@ -101,7 +101,7 @@ the number without them has been told something untrue by omission.
 Ten test functions cover
 `provenance_warnings`, pinning each caveat's presence and — importantly — its absence when
 it does not apply, so the surface cannot become noise. What is missing is a *member* rather
-than a mechanism: `specs/http/` HTTP-8 records that whether the response cache was used
+than a mechanism: `openspec/specs/http/` HTTP-8 records that whether the response cache was used
 appears in no warning and in no test.
 
 ### REP-4 — a claimed verdict is never shown as a measurement
@@ -129,7 +129,7 @@ and refusing an answer for a missing rationale would silently drop items rather 
 recording a weak one.
 **Reader:** partial, and the halves are unevenly read. `apply_llm_review` has seven test
 functions and `merge_llm_answers` four; `merge_manual_answers` — the half that carries the
-refusal, and the one an operator can abuse — has **one**. `specs/verdicts/` records the
+refusal, and the one an operator can abuse — has **one**. `openspec/specs/verdicts/` records the
 consequence as a live VRD-10 violation: a model verdict passes without a rationale while a
 human's identical answer is rejected, and only the second is stated as a rule.
 
@@ -166,7 +166,7 @@ report says so rather than preserving the number.
 **Why:** the alternative is an audit whose score cannot go down when its confidence does,
 which is the same defect as scoring an unanswerable item.
 **Reader:** partial. The status change is enforced by REP-7's tests, and the scoring rules
-that exclude an undecided item are enforced in `specs/scoring/`. That the *coverage line*
+that exclude an undecided item are enforced in `openspec/specs/scoring/`. That the *coverage line*
 moves — that a reader sees the audit got smaller — is not asserted anywhere.
 
 ### REP-9 — the fix list is ordered by severity per unit of effort
@@ -180,7 +180,7 @@ and the afternoon's is what gets done. This is the one place the audit tells som
 to do first, so the order is the product.
 **Reader:** partial. Five test functions cover the priority computation, including one
 pinning that a cheap item outranks an equally severe expensive one — which reads the
-*relation*. `specs/scoring/` records that no test pins the effort costs themselves, so the
+*relation*. `openspec/specs/scoring/` records that no test pins the effort costs themselves, so the
 relation holds and the numbers producing it are free to move.
 
 ### REP-10 — a duplicate question appears once
@@ -189,7 +189,7 @@ Where the registry asks one question under two source numbers, the report folds 
 shows the ruled survivor.
 
 **Why:** a client reading the same finding twice concludes the audit is padded, and they are
-right. The registry's own rule on which twin carries the weight is `specs/registry/` REG-11;
+right. The registry's own rule on which twin carries the weight is `openspec/specs/registry/` REG-11;
 this is the display half.
 **Reader:** partial. Five test functions cover the folding. The category-level counts are
 recorded elsewhere in this suite as counting twins the headline folds, so the fold is read
@@ -207,7 +207,7 @@ defect that produced this rule.
 **Reader:** partial. Four test functions cover the queue rendering, including one pinning
 that a per-lens queue's example names that file's real ids rather than two fixed ones.
 That every model item has exactly one lens is read on the registry side by
-`specs/registry/` and not here; the lens-to-agent routing table is named by no test.
+`openspec/specs/registry/` and not here; the lens-to-agent routing table is named by no test.
 
 ### REP-12 — the evidence artifact is a different document from the run log
 
@@ -219,7 +219,7 @@ exactly when sampling occurred.
 sampled runs into site runs would make it impossible to tell which page produced which
 number, which is the question it exists to answer.
 **Reader:** partial. Five test functions cover the artifact's shape, and redaction reaching
-it is separately enforced by `specs/inputs/` INP-7. That the internal `__`-prefixed keys are
+it is separately enforced by `openspec/specs/inputs/` INP-7. That the internal `__`-prefixed keys are
 stripped is asserted; that page runs are never flattened is asserted through the shape and
 not as a rule.
 
@@ -253,11 +253,11 @@ would silently drop out of.
 
 ## 5. What this document does not decide
 
-* how the score, the weight share and the partition are computed — `specs/scoring/`;
-* what a status means — `specs/verdicts/`;
-* what an item's title says or whether it is right — `specs/registry/`;
+* how the score, the weight share and the partition are computed — `openspec/specs/scoring/`;
+* what a status means — `openspec/specs/verdicts/`;
+* what an item's title says or whether it is right — `openspec/specs/registry/`;
 * what the operator protocol obliges the *agent* driving the tool to do with a report —
-  `specs/operator-protocol/`;
+  `openspec/specs/operator-protocol/`;
 * which language the tool should ship. This document requires a partial translation to
   declare itself; which translations exist is a product decision.
 
@@ -272,7 +272,7 @@ whether those two can be asserted against the printed text without pinning its l
 
 **Is "who decided it" a status, a field or a rendering?** REP-4 requires the report to show
 it, and today it is a field the merges stamp and the renderers may or may not surface.
-Making it part of the status vocabulary was rejected in `specs/verdicts/` — a status
+Making it part of the status vocabulary was rejected in `openspec/specs/verdicts/` — a status
 describes the site, not the audit — which leaves it as a field somebody must remember to
 render. What would settle it: whether any surface currently omits it, which nothing checks.
 
@@ -311,7 +311,7 @@ output most operators read, and it is the surface REP-1 and REP-2 are about. Not
 asserts anything about it.
 
 The four display constants are a smaller version of the same shape as
-`specs/http/` A.2: numbers that decide what a reader sees — how many broken URLs are
+`openspec/specs/http/` A.2: numbers that decide what a reader sees — how many broken URLs are
 listed, how much of an error is quoted, where the bars change colour — pinned by nothing.
 
 ### A.2 — the merge a person can abuse is the least tested of the three
@@ -340,7 +340,7 @@ Reading the two merges side by side:
   `no rationale given`, which is then shown as the item's evidence.
 
 REP-5 states this asymmetry as intended and gives the argument for it. It is recorded here
-because `specs/verdicts/` reaches the opposite conclusion from the same code — it lists
+because `openspec/specs/verdicts/` reaches the opposite conclusion from the same code — it lists
 "the LLM answer merge" among VRD-10's live violations, on the ground that a model verdict
 passing without justification while a human's is rejected is a difference the status
 vocabulary does not license.
@@ -358,7 +358,7 @@ measurement.
 **Probed:** none by mutation. The executor running mutation probes for this suite ran out
 of credits partway through, so every row below was derived by parsing the 1 280 test
 functions and reading the bodies that name each symbol. The limit is the one
-`specs/evidence/` A.4 states: a test can exercise something without naming it, so `none`
+`openspec/specs/evidence/` A.4 states: a test can exercise something without naming it, so `none`
 means "named by nothing" — a lower bound on coverage, not an upper one. For the console
 summary that bound is unusually tight, because there is no plausible way to exercise
 `print_report` without naming it.

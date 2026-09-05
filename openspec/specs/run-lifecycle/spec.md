@@ -14,9 +14,9 @@ Appendix B is the census of those lines. A requirement whose reader is `none` is
 intention, and is counted as one.
 
 **Inherited, not restated:** the eight statuses and what each means belong to
-[`specs/verdicts/`](../verdicts/spec.md); what an item is and what `requires` may say
-belong to [`specs/registry/`](../registry/spec.md); how a graded item becomes a number
-belongs to [`specs/scoring/`](../scoring/spec.md). This document says what a run *does*,
+[`openspec/specs/verdicts/`](../verdicts/spec.md); what an item is and what `requires` may say
+belong to [`openspec/specs/registry/`](../registry/spec.md); how a graded item becomes a number
+belongs to [`openspec/specs/scoring/`](../scoring/spec.md). This document says what a run *does*,
 and it may not redefine a status to make a refusal cheaper.
 
 ---
@@ -349,7 +349,7 @@ indistinguishable. `test_falls_back_to_the_widest_scope_not_the_narrowest`,
 silent about the case where the requirement can be broken. What *is* enforced is the
 explicit flag (`test_explicit_flag_is_never_second_guessed`), the non-interactive path, and
 that `--profile auto` is the only way detection may narrow without asking. Appendix A.5
-records the measurement, and `specs/verdicts/` already recorded the same defect from the
+records the measurement, and `openspec/specs/verdicts/` already recorded the same defect from the
 other side as VRD-11.
 
 ### RUN-15 — detection suggests, and never decides
@@ -501,12 +501,12 @@ requirement was written about, and it now costs two red tests.
 
 ## 5. What this document does not decide
 
-* what each checker emits and what its thresholds rest on — `specs/evidence/`;
-* how the fetched bytes are obtained, cached and paced — `specs/http/`;
+* what each checker emits and what its thresholds rest on — `openspec/specs/evidence/`;
+* how the fetched bytes are obtained, cached and paced — `openspec/specs/http/`;
 * what an operator-supplied artifact must contain and how stale it may be —
-  `specs/inputs/`;
-* how a graded run becomes a score, a partition and a fix order — `specs/scoring/`;
-* what the report shows and in what order — `specs/reporting/`;
+  `openspec/specs/inputs/`;
+* how a graded run becomes a score, a partition and a fix order — `openspec/specs/scoring/`;
+* what the report shows and in what order — `openspec/specs/reporting/`;
 * whether `DEFAULT_MAX_PAGES = 100` and `DEFAULT_DEPTH = 3` are the right numbers. This
   document requires the cap to be visible in the verdicts it changes (RUN-19); what the cap
   should be is a decision about the price of a run.
@@ -516,7 +516,7 @@ requirement was written about, and it now costs two red tests.
 **Should the mode table be derived from the registry, or the registry checked against the
 table?** RUN-1 has no reader, and the two candidate readers are different documents'
 work: a test that `MODE_CAPS`'s union equals the `requires` vocabulary would tie this
-document to `specs/registry/` §2.1, while a test that every `requires` value appears in
+document to `openspec/specs/registry/` §2.1, while a test that every `requires` value appears in
 some mode would allow a capability no mode carries. What would settle it: whether a
 capability that no mode can satisfy is ever legitimate — `gsc` and `safe_browsing` are
 exactly that today, gated a second time, which suggests the answer is yes and the test
@@ -575,14 +575,14 @@ Three statements in the tree say it is `NO_DATA`:
 | the message printed to the operator | "the site-wide checks report NO_DATA" |
 | `local/sdd/inventory/CAPABILITIES.md`, C18 | "Failure → every site-wide item `NO_DATA`" |
 
-This is a VRD-5 violation, and it is the mirror of the one `specs/verdicts/` already
+This is a VRD-5 violation, and it is the mirror of the one `openspec/specs/verdicts/` already
 records. That document's Appendix A names VRD-5 broken in one direction — missing Search
 Console credentials, which are genuinely `NEEDS_INPUT`, reported as `NO_DATA`. This is the
 other direction: a crawl that ran and failed, which is genuinely `NO_DATA`, reported as
 `NEEDS_INPUT`. The two statuses are swapped in the two places a run decides them.
 
 An earlier draft added that each error was invisible from the other document. That is not
-true and worth correcting rather than deleting: `specs/verdicts/` states the general
+true and worth correcting rather than deleting: `openspec/specs/verdicts/` states the general
 boundary that both violate, so this defect was in scope for it and was simply not found.
 What the two cases show is narrower and still worth having — a rule stated once in the
 document that owns a vocabulary is not a sweep of the places that vocabulary is used, and
@@ -602,7 +602,7 @@ could disagree, and moving both constants together — preserving the inequality
 nothing at all.
 
 The rule this constant decides is RUN-9's conjunction, which ends runs. A threshold that
-can move without a reader is the shape `specs/scoring/` calls G1 for the severity weights,
+can move without a reader is the shape `openspec/specs/scoring/` calls G1 for the severity weights,
 one layer down.
 
 ### A.3 — the guard's fingerprint sets are large and thinly exercised
@@ -656,7 +656,7 @@ construct the only case in which the defect cannot appear. Measured by calling t
 function directly with a detection dict, after a first probe that proved nothing because
 it ran without a terminal and never reached the prompt at all.
 
-`specs/verdicts/` Appendix A already lists this among the shipped violations of VRD-11.
+`openspec/specs/verdicts/` Appendix A already lists this among the shipped violations of VRD-11.
 This document credited it as `enforced` until an audit ran the probe, which is the same
 error the suite has now made four times: a classification taken from tests that pass
 rather than from a mutation that should fail.

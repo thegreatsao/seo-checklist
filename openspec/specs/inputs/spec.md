@@ -13,9 +13,9 @@ Appendix B is the census of those lines. A requirement whose reader is `none` is
 intention, and is counted as one.
 
 **Inherited, not restated:** the statuses belong to
-[`specs/verdicts/`](../verdicts/spec.md); how a missing input becomes a plan decision
-belongs to [`specs/run-lifecycle/`](../run-lifecycle/spec.md) RUN-5; what a checker does
-with an input it was given belongs to [`specs/evidence/`](../evidence/spec.md).
+[`openspec/specs/verdicts/`](../verdicts/spec.md); how a missing input becomes a plan decision
+belongs to [`openspec/specs/run-lifecycle/`](../run-lifecycle/spec.md) RUN-5; what a checker does
+with an input it was given belongs to [`openspec/specs/evidence/`](../evidence/spec.md).
 
 ---
 
@@ -120,7 +120,7 @@ report says so, and no item whose title asks about field data is decided from a 
 **Why:** the two answer different questions and a client acts differently on each. The
 distinction is invisible in the number itself.
 **Reader:** **none.** Nothing in the suite distinguishes the two provenances, and
-`specs/registry/` records the one item where the confusion has already been measured:
+`openspec/specs/registry/` records the one item where the confusion has already been measured:
 SP-112's title names Core Web Vitals *in Search Console* and its rule reads field data from
 the PageSpeed API — the identical rule to SP-108.
 
@@ -197,7 +197,7 @@ leaked into a row would break that sum — and this had to be written over the p
 rather than by comparing two scoring calls, because `score` takes items and handing it the
 same items twice proves nothing. `test_the_opportunities_are_printed_where_the_score_is_not`
 holds the "reported" half through `opportunity_section`, one of the six report sections
-[`specs/reporting/`](../reporting/spec.md) A.1 records at zero test functions, and asserts
+[`openspec/specs/reporting/`](../reporting/spec.md) A.1 records at zero test functions, and asserts
 that an absent list prints nothing rather than an empty heading.
 `test_the_opportunities_are_lifted_out_of_the_payload` and
 `test_a_run_without_search_console_carries_an_empty_list_not_a_missing_key` cover the
@@ -236,11 +236,11 @@ no reader.
 
 ## 5. What this document does not decide
 
-* what a checker does with an artifact once it is accepted — `specs/evidence/`;
+* what a checker does with an artifact once it is accepted — `openspec/specs/evidence/`;
 * how a missing or refused input becomes a plan decision and a status —
-  `specs/run-lifecycle/` RUN-5;
-* what the report shows about provenance and where — `specs/reporting/`;
-* whether an item's title matches the data it reads — `specs/registry/` REG-6, which owns
+  `openspec/specs/run-lifecycle/` RUN-5;
+* what the report shows about provenance and where — `openspec/specs/reporting/`;
+* whether an item's title matches the data it reads — `openspec/specs/registry/` REG-6, which owns
   the SP-112 finding INP-5 points at;
 * how often the bundled list should be refreshed. This document requires the age to be
   visible; the number is calibration.
@@ -265,7 +265,7 @@ credentials from any file it did not own before the run started.
 nothing implements the distinction, because the artifacts do not carry it. Adding it means
 either trusting an exporter's own label or inferring it from which tool produced the file.
 What would settle it: whether any current item's title actually asks for field data —
-`specs/registry/` says one does, and its rule reads the lab path.
+`openspec/specs/registry/` says one does, and its rule reads the lab path.
 
 ## Appendix A — measured disagreements, 4 September 2026
 
@@ -324,7 +324,7 @@ obeyed until somebody sums a list that happens to include it.
 probes ran out of credits partway through this suite of documents. The rows below were
 derived by parsing all 1 280 test functions and asking, per symbol, which bodies name it,
 then reading those bodies. That is the method Appendix A.1 to A.4 rest on, and its limit is
-the one `specs/evidence/` A.4 states: a test can exercise something without naming it, so
+the one `openspec/specs/evidence/` A.4 states: a test can exercise something without naming it, so
 `none` here means "named by nothing", which is a lower bound on coverage.
 
 | | requirements |

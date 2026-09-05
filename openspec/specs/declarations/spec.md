@@ -13,8 +13,8 @@ Appendix B is the census of those lines. A requirement whose reader is `none` is
 intention, and is counted as one.
 
 **Inherited, not restated:** the eight statuses, what each means and who each names,
-belong to [`specs/verdicts/`](../verdicts/spec.md); what an item is and what its rule may
-claim belong to [`specs/registry/`](../registry/spec.md). This document says what may be
+belong to [`openspec/specs/verdicts/`](../verdicts/spec.md); what an item is and what its rule may
+claim belong to [`openspec/specs/registry/`](../registry/spec.md). This document says what may be
 *asserted in advance* about a served tree and what may be *recorded* about one, and it
 must not redefine a status to make either easier.
 
@@ -162,7 +162,7 @@ violation and forbids even one form of the repair is opposed rather than merely 
 
 ### DEC-3 — the declaration vocabulary is the audit's vocabulary, entire and unextended
 
-The set a declaration may draw from is the eight statuses of `specs/verdicts/`, and
+The set a declaration may draw from is the eight statuses of `openspec/specs/verdicts/`, and
 exactly those. Not a subset chosen because the fixtures happen not to produce the rest,
 and not a superset.
 
@@ -394,13 +394,13 @@ the rule that a declared origin is a fixture origin.
 
 ## 5. What this document does not decide
 
-* what each status means and who it names — `specs/verdicts/`;
+* what each status means and who it names — `openspec/specs/verdicts/`;
 * what an item is, what its rule may claim, and how applicability is declared —
-  `specs/registry/`;
+  `openspec/specs/registry/`;
 * how a run turns `requires` into capability gating, which is what makes 22 items
-  undeclarable here — `specs/run-lifecycle/`;
+  undeclarable here — `openspec/specs/run-lifecycle/`;
 * the ledgers of known issues and inert findings, which are records of decisions rather
-  than of measurements — `specs/governance/`;
+  than of measurements — `openspec/specs/governance/`;
 * whether any *particular* declaration is right. This document says how a prediction is
   written, compared and withdrawn; it does not adjudicate one.
 
@@ -422,8 +422,8 @@ mechanism — an `applies_when` condition, which exactly two items carry.
 
 This document cannot settle it alone, and should not want to. Whether changing what
 seventeen checkers emit is a defect repair or a vocabulary decision belongs to
-[`specs/verdicts/`](../verdicts/spec.md); which items owe an applicability condition
-belongs to [`specs/registry/`](../registry/spec.md) REG-9, whose hand sweep found the
+[`openspec/specs/verdicts/`](../verdicts/spec.md); which items owe an applicability condition
+belongs to [`openspec/specs/registry/`](../registry/spec.md) REG-9, whose hand sweep found the
 three `PASS`-side items and none of the five behind the eleven `NO_DATA` ones.
 What this document contributes is the observation that both symptoms are one condition,
 which no sweep from the registry side would have produced. What would settle it: reading
@@ -479,7 +479,7 @@ state one and the same condition, in their own words:
 | `LO-200` on `broken` | "has no subject in this fixture" | `NO_DATA` |
 
 Seventeen declarations say *the fixture has no subject for this item*. That sentence is the
-definition of `N/A` in [`specs/verdicts/`](../verdicts/spec.md): "the item has no subject
+definition of `N/A` in [`openspec/specs/verdicts/`](../verdicts/spec.md): "the item has no subject
 on this site". The audit answers that one condition **`PASS` or `WARN` six times,
 `NO_DATA` eleven times, and `N/A` not once.**
 
@@ -547,7 +547,7 @@ output — rather than in a status field on 27 predictions.
 ### A.2 — the permitted vocabulary is neither the audit's nor a subset of it
 
 `ALLOWED = {"PASS", "WARN", "FAIL", "N/A", "INDETERMINATE"}`. Against the eight statuses
-of `specs/verdicts/`: four are missing — `NO_DATA`, `NEEDS_INPUT`, `MANUAL`,
+of `openspec/specs/verdicts/`: four are missing — `NO_DATA`, `NEEDS_INPUT`, `MANUAL`,
 `LLM_PENDING` — and one is invented. Two of the four missing are precisely the words
 fifteen of the twenty-seven need, so **the repair that DEC-2 and DEC-3 require fails a
 test that passes today**. That is what puts DEC-2 in `opposed` rather than `none`.
@@ -623,7 +623,7 @@ A.1's table is per item and per origin. Writing it required reading what the aud
 for all 27, so no session that has read this document can honestly write a blind
 declaration for those items on those origins.
 
-`specs/verdicts/` A.2 already published the aggregate — 9 `PASS`, 2 `WARN`, 1 `FAIL`, 13
+`openspec/specs/verdicts/` A.2 already published the aggregate — 9 `PASS`, 2 `WARN`, 1 `FAIL`, 13
 `NO_DATA`, 2 `NEEDS_INPUT` — so the count was spent before today; the mapping was not, and
 now is. It was spent deliberately: the twelve contradictions cannot be triaged without
 knowing which items they are, and a document that named the disease without naming the
