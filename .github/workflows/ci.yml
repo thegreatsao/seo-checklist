@@ -402,6 +402,17 @@ jobs:
       - name: Every threshold says what it rests on
         run: python skills/seo-checklist/tools/audit_thresholds.py --check
 
+      # The `measured` bases, re-read against the constants they justify. Each check is
+      # offline and takes about a second, and all four existed with no CI step for as
+      # long as they have existed — so a calibrated constant could move and only a hand
+      # run would have noticed. Found while writing specs/governance/, by looking for
+      # what each instrument is still pointed at rather than whether it exists.
+      - name: Every calibrated constant still matches the report behind it
+        run: |
+          for t in css_minification font_weight gsc_sample_floors serp_length; do
+            python skills/seo-checklist/tools/calibrate_$t.py --check
+          done
+
       - name: How much of the score is the weight table
         run: |
           python skills/seo-checklist/tools/audit_score_sensitivity.py live.json
