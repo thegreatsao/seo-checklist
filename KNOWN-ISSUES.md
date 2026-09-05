@@ -2022,6 +2022,29 @@ name. A column called `url` would be read as "fix this page".
   what this tree answers.
   <!-- ki: a-census-copied-a-title-no-item-has -->
 
+- **Open — a URL with a port loses the whole audit on Windows.** `history_path` files a
+  run under `os.getcwd()/.seo-runs/<netloc>`, and the netloc is used verbatim. For
+  `http://localhost:3000/` that directory name is `localhost:3000`, and Windows rejects
+  a colon in a path component, so `os.makedirs` raises `NotADirectoryError` — **after
+  the audit has finished**. The run is complete, the verdicts are computed, and the
+  process dies writing them down. `previous_run` and `run_series` build the same path
+  and would fail the same way. On Linux and macOS the colon is legal and everything
+  works, which is why this is a Windows-only loss.
+
+  Found on 5 September 2026 while writing the reader for `specs/history/` HST-8, which
+  needs two real runs against one host and therefore cannot pass `--no-history`. That is
+  the whole reason it went eighteen releases unseen: **every invocation of the runner in
+  the test suite and in CI passes `--no-history`** — all six in `ci.yml` — so the history
+  subsystem, which is what `specs/history/` is about, has never run end to end in CI on
+  any platform. The one shape in which the defect appears is the one nothing constructs.
+
+  Not fixed here because the fix is a decision rather than a line. Sanitising the netloc
+  moves where a ported host's history lives, orphaning any `.seo-runs/<host>:<port>/`
+  directory already written on Linux, and IPv6 netlocs (`[::1]:8080`) need an answer of
+  their own. The release that takes it owes a migration or a stated decision not to
+  migrate.
+  <!-- ki: a-run-under-a-ported-host-cannot-be-filed-on-windows -->
+
 ---
 
 ## Fixed in 0.9.0

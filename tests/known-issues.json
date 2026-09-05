@@ -111,6 +111,28 @@
       "probe": "a_placeholder_in_structured_data_almost_never_decides",
       "state": "open"
     },
+    "a-run-under-a-ported-host-cannot-be-filed-on-windows": {
+      "claim": "`history_path` files a run under `os.getcwd()/.seo-runs/<netloc>` with the netloc used verbatim, so a URL carrying a port produces a directory name containing a colon. Windows rejects that component and `os.makedirs` raises after the audit has already finished, losing the run; Linux and macOS accept it. `previous_run` and `run_series` build the same path. Unseen for eighteen releases because every runner invocation in the suite and in all six in ci.yml passes `--no-history`.",
+      "measured": {
+        "callers_building_the_same_path": [
+          "history_path",
+          "previous_run",
+          "run_series"
+        ],
+        "characters_windows_forbids_in_a_path_component": [
+          ":"
+        ],
+        "directory_a_run_is_filed_in": "example.com",
+        "netlocs_a_port_produces": [
+          "localhost:3000",
+          "127.0.0.1:8000",
+          "[::1]:8080"
+        ],
+        "the_netloc_is_used_verbatim": true
+      },
+      "probe": "a_run_under_a_ported_host_cannot_be_filed_on_windows",
+      "state": "open"
+    },
     "a-truncated-crawl-decides-the-whole-site": {
       "claim": "Twenty items — eleven of them `high` — asserted a clean verdict over an input their own script had capped; the runner now withholds the PASS and leaves the FAIL alone, across all six ways this registry spells `none of these`.",
       "measured": {
@@ -918,7 +940,7 @@
       "state": "open"
     }
   },
-  "entry_count": 50,
-  "probed_entry_count": 33,
+  "entry_count": 51,
+  "probed_entry_count": 34,
   "unprobed_entry_count": 17
 }

@@ -67,11 +67,21 @@ regression. A change where either side is not a quality verdict — `PASS` to `N
 `PASS → NO_DATA` reported as a regression tells a client their site broke when a service
 was down. `NO_DATA → PASS` reported as an improvement takes credit for a fix nobody made,
 and the client learns that the number moves on its own.
-**Reader:** **none.** The classifier is called by no test function. The renderer tests that
-appear to cover it supply the classification themselves as fixture data — they assert that
-a change *labelled* `improved` renders as an improvement, which reads the renderer and not
-the rule. A classifier that returned `regressed` for every `PASS → NO_DATA` would pass the
-entire suite.
+**Reader:** enforced. `test_every_pair_of_statuses_is_classified_by_the_rule` sweeps all
+sixty-four ordered pairs of the eight statuses, taking the vocabulary from the report's own
+`STATUS_ORDER` so a ninth is swept the day it is added, and judging each against a scale
+written from this requirement rather than imported from the code. Widening `VERDICT_RANK`
+by one entry — putting `NO_DATA` on the quality scale, which is how this breaks — reddens
+it six ways, including the two harms named above; `test_losing_the_measurement_is_not_the
+_site_getting_worse` and `test_regaining_the_measurement_is_not_a_fix` name them separately
+so a failure says which. `test_the_caller_never_asks_about_an_unchanged_status` pins the
+`diff_runs` guard that keeps `direction(PASS, PASS)` — which answers `regressed` —
+unreachable.
+
+Until 5 September 2026 this read `none`, and correctly: the classifier was called by no
+test function, and the renderer tests that appeared to cover it supplied the classification
+as fixture data — asserting that a change *labelled* `improved` renders as an improvement,
+which reads the renderer and not the rule.
 
 ### HST-2 — a comparison across a changed registry says so
 
@@ -150,8 +160,20 @@ The payload carries the comparison whether or not the operator asked to see it.
 **Why:** the artifact is what a later run and a later reader work from. A comparison that
 exists only when a flag was passed makes the record depend on how somebody invoked the tool
 that day.
-**Reader:** **none.** Nothing asserts that the payload carries the comparison when the flag
-is absent, and the flag itself is named by no test function.
+**Reader:** enforced. `test_the_payload_carries_the_comparison_though_nobody_asked_to_see_it`
+audits one served fixture twice without `--diff`, and asserts that the first run records no
+comparison, that the second records one naming the first run's `started_at`, and that
+nothing about it was printed. Making the comparison conditional on the flag reddens it.
+
+It is skipped on Windows, which is a defect in the tree rather than a weakness in the
+requirement, and writing this test is what found it: `history_path` files a run under
+`os.getcwd()/.seo-runs/<netloc>` with the netloc used verbatim, so a fixture served on
+`127.0.0.1:<port>` produces a directory name containing a colon, and Windows raises
+`NotADirectoryError` **after the audit has finished** — losing the whole run. Recorded as
+`a-run-under-a-ported-host-cannot-be-filed-on-windows`, with a probe. The reason it went
+unseen is the reason this requirement went unread: **every invocation of the runner in this
+suite and in CI passes `--no-history`**, all six in `ci.yml`, so the history subsystem this
+document is about has never run end to end in CI on any platform.
 
 ## 4. Invariants
 
@@ -248,31 +270,47 @@ single function with a three-line body.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** none by mutation; the executor that had been running mutation probes for this
-suite ran out of credits. Every row was derived by parsing the 1 280 test functions and
-reading the bodies that name each symbol, then reading the implementation. For HST-1 the
-derivation is unusually safe: `direction()` cannot be exercised without being called, and
-nothing calls it.
+**Probed:** HST-1 by mutation, 5 September 2026 — `NO_DATA` added to `VERDICT_RANK`, which
+reddens the sweep six ways. The other rows were derived by parsing the test functions and
+reading the bodies that name each symbol, then reading the implementation; the executor
+that had been running mutation probes for this suite ran out of credits before it reached
+them.
 
 | | requirements |
 |---|---|
-| **enforced** | HST-4, HST-5, HST-7 |
+| **enforced** | HST-1, HST-4, HST-5, HST-7, HST-8 |
 | **partial** | HST-2, HST-3, HST-6 |
-| **none** | HST-1, HST-8 |
+| **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-HS2 enforced; INV-HS3 partial; INV-HS1 and INV-HS4 unread.
 
-**Three enforced, three partial, two unread, of eight.**
+**Five enforced, three partial, nothing unread, of eight.**
 
-The three enforced requirements are all about *files*: exclude this one, skip that broken
-one, count the run of them. The two unread ones are about *meaning*: what a change is, and
-whether the record exists when nobody asked to see it. That is the same line
-`specs/inputs/` found between files and policies, and this document is the smallest and
-clearest instance of it — eight requirements, one function at the centre, and the function
-is the unread one.
+The enforced requirements were all about *files*: exclude this one, skip that broken one,
+count the run of them. The unread ones were about *meaning*: what a change is, and whether
+the record exists when nobody asked to see it. That is the same line `specs/inputs/` found
+between files and policies, and this document was the smallest and clearest instance of it
+— eight requirements, one function at the centre, and the function was the unread one.
 
-It is also the cheapest gap in the suite to close. `direction()` takes two strings and
-returns one of three; the test that would hold HST-1 is a table of pairs. That it does not
-exist after fifty-five releases is the most direct evidence available that this suite's
-coverage follows what is easy to reach from a fixture rather than what a wrong answer costs.
+It was also the cheapest gap in the suite, and it was closed on 5 September 2026 by the
+test this appendix described: `direction()` takes two strings and returns one of three, so
+the reader is a table of pairs — sixty-four of them, since the vocabulary is eight statuses
+wide and the interesting cases are exactly the ones a smaller table would omit. That it did
+not exist for fifty-five releases stands as the most direct evidence available that this
+suite's coverage followed what was easy to reach from a fixture rather than what a wrong
+answer costs.
+
+HST-8 went the same day and cost more than it looked. Reading it needs two real runs
+against one host, which is the one thing nothing in this repository had ever done: all six
+runner invocations in `ci.yml` pass `--no-history`, so the subsystem this document
+specifies had never executed end to end under any gate. The first attempt to run it did not
+fail an assertion — it crashed, in `history_path`, on a directory named after a netloc with
+a port in it, which Windows will not create. Eighteen releases of a defect that destroys a
+finished audit, standing behind a flag every test passed.
+
+That is the same shape as HST-1 seen from the other side. HST-1 was unread because the
+function was never called; HST-8 was unread because the *path* was never taken. Both look
+identical from a green suite, and both were found by asking what a requirement would need
+in order to be read at all — which is the question a census of readers answers and a count
+of tests does not.

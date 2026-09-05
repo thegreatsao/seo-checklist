@@ -48,17 +48,14 @@
     },
     "history": {
       "counts": {
-        "enforced": 3,
-        "none": 2,
+        "enforced": 5,
+        "none": 0,
         "opposed": 0,
         "partial": 3
       },
       "opposed": [],
       "requirements": 8,
-      "unread": [
-        "HST-1",
-        "HST-8"
-      ]
+      "unread": []
     },
     "http": {
       "counts": {
@@ -182,8 +179,8 @@
     }
   },
   "totals": {
-    "enforced": 37,
-    "none": 32,
+    "enforced": 39,
+    "none": 30,
     "opposed": 2,
     "partial": 78,
     "requirements": 149

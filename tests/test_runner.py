@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import harness  # noqa: E402
 import checklist_runner as runner  # noqa: E402
+import checklist_report as report  # noqa: E402
 
 from checklist_runner import (  # noqa: E402
     ANCHOR_RE, FAIL, FAILURE_LABEL, GSC_UNAVAILABLE, LLM_PENDING, MANUAL, NA,
@@ -1377,6 +1378,73 @@ class Diff(unittest.TestCase):
         cur = self.run_of({"A": NA}, mode="archive")
         _, note = diff_runs(prev, cur)
         self.assertIn("mode", note)
+
+
+class Direction(unittest.TestCase):
+    """`direction` decides whether a client is told their site got worse.
+
+    It was called by no test function. The tests that looked like they covered it
+    supply the classification as fixture data and assert that a change *labelled*
+    `improved` renders as one — which reads the renderer, not the rule. A classifier
+    returning `regressed` for every `PASS → NO_DATA` passed the whole suite.
+    `specs/history/` HST-1.
+
+    The expectation below is written from the requirement rather than read from the
+    implementation: three quality verdicts on one scale, everything else off it. The
+    function consults `VERDICT_RANK`; this consults its own table, so widening that
+    constant — adding `NO_DATA` to the scale is the obvious way to break this — is a
+    disagreement rather than a matching edit on both sides.
+    """
+
+    # The document's scale, worst to best, restated here on purpose. Not imported.
+    QUALITY = (FAIL, WARN, PASS)
+
+    def expected(self, was, now):
+        if was not in self.QUALITY or now not in self.QUALITY:
+            return "evidence"
+        return ("improved" if self.QUALITY.index(now) > self.QUALITY.index(was)
+                else "regressed")
+
+    def test_every_pair_of_statuses_is_classified_by_the_rule(self):
+        """All eight statuses against all eight, taken from the report's own tuple so
+        a ninth would be swept the day it is added."""
+        self.assertEqual(len(report.STATUS_ORDER), 8)
+        for was in report.STATUS_ORDER:
+            for now in report.STATUS_ORDER:
+                if was == now:
+                    continue
+                with self.subTest(was=was, now=now):
+                    self.assertEqual(runner.direction(was, now),
+                                     self.expected(was, now))
+
+    def test_losing_the_measurement_is_not_the_site_getting_worse(self):
+        """The expensive direction, named separately so a failure says which harm."""
+        for lost in (NO_DATA, NEEDS_INPUT, MANUAL, LLM_PENDING, NA):
+            with self.subTest(status=lost):
+                self.assertEqual(runner.direction(PASS, lost), "evidence",
+                                 "a client would be told their site broke when the "
+                                 "measurement did")
+
+    def test_regaining_the_measurement_is_not_a_fix(self):
+        for lost in (NO_DATA, NEEDS_INPUT, MANUAL, LLM_PENDING, NA):
+            with self.subTest(status=lost):
+                self.assertEqual(runner.direction(lost, PASS), "evidence",
+                                 "the report would take credit for a fix nobody made")
+
+    def test_the_caller_never_asks_about_an_unchanged_status(self):
+        """`direction(PASS, PASS)` answers `regressed`, which is nonsense; it is
+        unreachable only because `diff_runs` compares first. That guard is the reason
+        the nonsense costs nothing, so it is pinned rather than assumed."""
+        seen = []
+        prev = {"items": [{"id": "A", "title": "A", "status": PASS},
+                          {"id": "B", "title": "B", "status": WARN}]}
+        cur = {"items": [{"id": "A", "title": "A", "status": PASS},
+                         {"id": "B", "title": "B", "status": FAIL}]}
+        real = runner.direction
+        with mock.patch.object(runner, "direction",
+                               lambda w, n: seen.append((w, n)) or real(w, n)):
+            diff_runs(prev, cur)
+        self.assertEqual(seen, [(WARN, FAIL)])
 
 
 class Profiles(unittest.TestCase):

@@ -24,7 +24,9 @@ in test_evidence.py, and this file asserts that the reason is the honest one.
 """
 import json
 import os
+import shutil
 import sys
+import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -772,6 +774,77 @@ class NothingIsDecidedWithoutEvidence(unittest.TestCase):
         for label in ("good", "broken"):
             self.assertEqual({i["id"] for i in RESULTS[label]["items"]}, expected,
                              f"{label} did not report on every registry item")
+
+
+class TheRecordDoesNotDependOnHowItWasInvoked(unittest.TestCase):
+    """`--diff` decides whether the comparison is *printed*, never whether it exists.
+
+    `specs/history/` HST-8. The artifact is what a later run and a later reader work
+    from, so a comparison that appears only when somebody passed a flag makes the
+    record depend on how the tool was invoked that day. Nothing asserted this, and the
+    flag was named by no test function.
+
+    Two runs are needed, and history is written under `os.getcwd()`, so this moves the
+    process's own directory rather than the child's: `harness.spawn` passes no `cwd` on
+    purpose — giving one makes CPython fork, which segfaults on macOS — and the child
+    inherits ours. `--only speed` keeps each pass to seconds.
+
+    **Skipped on Windows, and the skip is the finding.** Writing this is what found
+    `a-run-under-a-ported-host-cannot-be-filed-on-windows`: the fixture is served on
+    `127.0.0.1:<port>`, `history_path` files a run under that netloc verbatim, and
+    Windows rejects a colon in a path component — so the runner dies *after* finishing
+    the audit. Every other invocation of the runner in this suite and in CI passes
+    `--no-history`, which is exactly why nobody had met it. The skip goes when the
+    release deciding how a ported host is filed lands; until then HST-8 is read on three
+    of the five CI jobs and unread on the other two, which is what `specs/history/` now
+    says.
+    """
+
+    @unittest.skipIf(os.name == "nt",
+                     "history_path cannot make a directory named "
+                     "'127.0.0.1:<port>' on Windows — known issue "
+                     "a-run-under-a-ported-host-cannot-be-filed-on-windows")
+    def test_the_payload_carries_the_comparison_though_nobody_asked_to_see_it(self):
+        return self.check()
+
+    def audit_into(self, out_name):
+        out = os.path.join(SITE.dir, out_name)
+        proc = spawn(
+            [sys.executable, os.path.join(SCRIPTS, "checklist_runner.py"), SITE.good,
+             "--allow-private", "--max-rps", "0", "--no-prompt", "--quiet",
+             "--only", "speed", "--timeout", "120", "--json", out],
+            timeout=600)
+        if proc.returncode != 0:
+            raise AssertionError(f"{out_name} exited {proc.returncode}\n"
+                                 f"{proc.stdout[-2000:]}\n{proc.stderr[-2000:]}")
+        with open(out, encoding="utf-8") as f:
+            payload = json.load(f)
+        return payload, proc.stdout
+
+    def check(self):
+        home = os.getcwd()
+        self.addCleanup(os.chdir, home)
+        work = tempfile.mkdtemp(prefix="seo-history-")
+        self.addCleanup(shutil.rmtree, work, True)
+        os.chdir(work)
+
+        first, _ = self.audit_into("history-first.json")
+        self.assertIsNone(first["diff"], "nothing to compare the first run against")
+        self.assertIsNone(first["compared_with"])
+
+        second, stdout = self.audit_into("history-second.json")
+        self.assertIsNotNone(second["diff"],
+                             "the second run did not record a comparison; a reader of "
+                             "the artifact cannot tell whether the last round of fixes "
+                             "worked")
+        self.assertIsNotNone(second["compared_with"])
+        self.assertEqual(second["compared_with"]["started_at"], first["started_at"],
+                         "the comparison does not name the run it was made against")
+
+        # The other half of the requirement: the flag was not passed, so nothing about
+        # the comparison was printed — and the record carries it anyway.
+        self.assertNotIn("Changed since previous run", stdout)
+        self.assertNotIn("Diff:", stdout)
 
 
 if __name__ == "__main__":
