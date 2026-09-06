@@ -86,9 +86,21 @@ able to tell, per line, which it is.
 **Why:** an operator who believes the tool guarantees something it merely recommends will
 stop checking. The failure is silent, delayed, and lands on a client — and the tool cannot
 detect it, because from inside the run everything happened correctly.
-**Reader:** **none.** The protocol is 743 lines of prose in one voice with no marking, and
-no test reads it for this or anything else. Three test functions mention the file at all,
-and all three are about the registry's relationship to it rather than its content.
+**Reader:** partial. `SKILL.md` opens with a contract table — one row per `##` section,
+two columns, in document order — and `tests/test_protocol_contract.py` holds it against
+the document: every section has a row, every row names a section that exists, the order
+matches, no row is empty on both sides, and the obligation column is not written in the
+third person about the tool, which is the specific way the two voices collapsed before.
+
+**Partial for two reasons, both worth naming.** Whether a row is *true* is a reading, and
+no test can perform it. And the marking is per section rather than per line: a reader who
+lands in the middle of a section learns which kinds of sentence it contains, not which
+kind the line in front of them is. Marking every instruction inline was the other design
+and it turns on deciding mechanically what an instruction is — the closed list of
+imperative verbs that would take is exactly the hand-kept list
+`openspec/specs/governance/` GOV-3 objects to. That choice belongs to whoever owns the
+document's voice; it is an open question below rather than a gap this suite may close on
+its own.
 
 #### Scenario: an instruction the tool guarantees
 - **WHEN** the protocol states something the code does on its own
@@ -101,7 +113,14 @@ and all three are about the registry's relationship to it rather than its conten
 #### Scenario: one undifferentiated voice
 - **WHEN** the document is written in a single register with no marking
 - **THEN** a reader cannot tell a guarantee from an obligation, and will assume the
-  reading that costs them least — which is the state the protocol is in today
+  reading that costs them least
+
+#### Scenario: the marking is coarser than a line
+- **WHEN** a section states both a guarantee and an obligation and is marked as a whole
+- **THEN** a reader knows which kinds of sentence the section contains and not which
+  kind any given line is
+- **AND** that is less than this requirement asks for, and the document says which of
+  the two it currently provides
 
 ### Requirement: OPR-2 — the score is never quoted without the share it covers
 
@@ -304,6 +323,15 @@ GOV-3's general absence, and it stands.
 
 ## 6. Open questions
 
+**Should every instruction be marked inline, rather than by section?** The contract
+table added in 0.93.5 marks each `##` section with what it guarantees and what it asks
+of the operator, which is what a test can hold. Per-line marking is what the requirement
+literally asks for, and reaching it means either a visible marker on every instruction —
+which changes how the whole document reads — or a rule that decides mechanically what an
+instruction is, whose closed list of imperative verbs is the hand-kept list GOV-3
+objects to. What would settle it: whether the document's readers are agents, for whom a
+marker per line costs nothing to read, or people, for whom it costs a great deal.
+
 **Should the protocol be split into two files?** OPR-1 requires the distinction to be
 visible and does not require two documents. Two files — what the tool guarantees, what the
 operator must supply — would make the distinction structural and unforgettable, and would
@@ -401,13 +429,13 @@ mechanical surface to probe.
 | | requirements |
 |---|---|
 | **enforced** | OPR-8 |
-| **partial** | OPR-4, OPR-7 |
-| **none** | OPR-1, OPR-2, OPR-3, OPR-5, OPR-6 |
+| **partial** | OPR-1, OPR-4, OPR-7 |
+| **none** | OPR-2, OPR-3, OPR-5, OPR-6 |
 | **opposed** | — none |
 
 Invariants: INV-O3 and INV-O4 enforced; INV-O2 partial; INV-O1 unread.
 
-**One enforced, two partial, five unread, of eight.**
+**One enforced, three partial, four unread, of eight.**
 
 This was the only census in the suite with nothing enforced at all, and it was the one
 that was not an indictment. Five of these eight requirements are obligations on a person
@@ -420,13 +448,19 @@ The two `partial` rows are the two where the tool does something and stops short
 the sharpest: the one operator obligation the tool *can* enforce, guarding the one path a
 person can abuse, and it has a single test function behind it.
 
-Two of the six were different, and they were the ones to act on. OPR-8's counts could be
-derived — "a gate comparing the protocol's numbers to the registry is a morning's work
-and would have caught all five drifts" is what this appendix said, and it was a morning's
-work, and it caught fourteen. OPR-1 is the other: its marking is a property of a
-document, which `tests/test_specs.py` already demonstrates is testable, since this
-suite's other eleven documents are read by a machine for exactly that kind of structural
-obligation.
+Two of the six were different, and they were the ones to act on. Both are done.
+
+OPR-8's counts could be derived — "a gate comparing the protocol's numbers to the
+registry is a morning's work and would have caught all five drifts" is what this appendix
+said, and it was a morning's work, and it caught fourteen. OPR-1's marking is a property
+of a document, which `tests/test_specs.py` already demonstrated is testable, and it is
+marked now — by section, which is as far as a test can reach without deciding what an
+instruction is.
+
+What is left is the boundary rather than the debt, and it has not moved: OPR-2, OPR-3,
+OPR-5 and OPR-6 are obligations on a person or an agent. OPR-6 cannot be enforced because
+fabrication is indistinguishable from work from the inside, and that is a fact about
+audits rather than about this suite's effort.
 
 The rest are a boundary rather than a debt. Every specification eventually reaches the point
 where the next reader is a person, and this document is where this one does. What it can do

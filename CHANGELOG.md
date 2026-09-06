@@ -10,6 +10,53 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.93.5 — the protocol says which sentences are the tool's and which are yours
+
+Registry version: unchanged at `e9154e92f4dd`. No run produces a different number. What
+changes is the first thing an operator reads.
+
+**What was wrong.** `SKILL.md` was 743 lines in one voice. "The runner fetches the entry
+page before settling the profile" and "ask the user which profile to use before the first
+run" are different kinds of sentence — one happens whether or not anybody remembers it,
+the other only if somebody does — and nothing in the document said which was which.
+`openspec/specs/operator-protocol/` OPR-1 exists because that failure is silent, delayed,
+and lands on a client: an operator who reads the second as the first stops checking, and
+from inside the run everything happened correctly.
+
+**What it has now.** A contract table at the top: one row per `##` section, in document
+order, with what the tool guarantees and what the operator must supply. `—` where a
+section makes no claim of that kind, and two sections legitimately have it — nothing is
+asked of the operator when the site cannot be read, or when the deliverables are written.
+Writing the twenty-two rows was most of the work, and it is the part a test cannot do.
+
+**What holds it.** `tests/test_protocol_contract.py`: every section has a row, every row
+names a section that exists, the order matches the document, no row is empty on both
+sides, every cell either says something or says `—`, and the obligation column is not
+written in the third person about the tool — which is the specific way the two voices
+collapsed before the table existed. Probed by deleting one row: two tests redden and name
+the section.
+
+**Partial, and the label is doing work.** Whether a row is *true* is a reading and no
+test performs it. And the marking is per section, where the requirement asks per line: a
+reader who lands mid-section learns which kinds of sentence it contains, not which kind
+the line in front of them is. Marking every instruction inline was the other design; it
+turns on deciding mechanically what an instruction is, and the closed list of imperative
+verbs that takes is exactly the hand-kept list GOV-3 objects to. That is a decision about
+the document's voice, so it is an open question in the specification rather than
+something this release settled quietly.
+
+**One count corrected on the way past.** The Search Console section said "Seven items are
+answered from live GSC data" and named seven. There are eight: `CI-002`, *Confirm Google
+Has Indexed the Audited URL*, runs on the same URL Inspection API and was in neither the
+number nor the list. It joins the ledger in `tests/test_protocol_counts.py`, which now
+derives that population too.
+
+`openspec/specs/operator-protocol/` reaches one enforced and three partial of eight. Its
+four unread rows are all obligations on a person or an agent — OPR-6 cannot be enforced
+because fabrication is indistinguishable from work from the inside — and that is a
+boundary rather than a debt. The suite total is 55 enforced of 149, with **seven**
+unread.
+
 ## 0.93.4 — 166 sets decide what this tool does, and sixteen of them are read
 
 Registry version: unchanged at `e9154e92f4dd`. No run produces a different number. What

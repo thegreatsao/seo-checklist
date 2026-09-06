@@ -94,6 +94,11 @@ def population() -> dict:
         # REG-12 now forbids a literal outright.
         "borrowed": sum(1 for item in ITEMS if item.get("plerdy_ref") is not None),
         "added": sum(1 for item in ITEMS if item.get("plerdy_ref") is None),
+        # Items answered from live Search Console, which is `requires: gsc` and not
+        # `source: gsc` — the second is the three the API has no endpoint for. The
+        # protocol said seven and named seven, leaving CI-002 out of both.
+        "gsc_answered": sum(1 for item in ITEMS
+                            if (item.get("check") or {}).get("requires") == "gsc"),
         "llm": BY_SOURCE["llm"],
         "manual": BY_SOURCE["manual"],
         "twins": len(TWINS),
@@ -143,6 +148,9 @@ LEDGER = [
     (os.path.join(SKILL_DIR, "SKILL.md"),
      r"refused with its id: ([a-z]+(?:-[a-z]+)?) ticks would move", "manual",
      "the same number, arguing why a tick needs a reason"),
+    (os.path.join(SKILL_DIR, "SKILL.md"),
+     r"^([A-Z][a-z]+) items are answered from live GSC data", "gsc_answered",
+     "how many items Search Console credentials actually buy"),
     (os.path.join(SKILL_DIR, "SKILL.md"),
      r"deliberate: (\d+) category agents would", "categories",
      "why the queue splits by lens and not by category"),

@@ -20,6 +20,48 @@ judgement, or a human.
 The registry is the point. Coverage is a contract, not whatever the model
 remembered to run.
 
+## What this tool guarantees, and what you must supply
+
+Every section below is one of two kinds of sentence, and until 0.93.5 they were written
+in one voice: a behaviour the tool performs whether or not anybody remembers it, and a
+behaviour only the operator can supply. An operator who reads the second as the first
+stops checking, and the tool cannot detect that — from inside the run, everything
+happened correctly.
+
+One row per section, in the order they appear. `—` means the section makes no claim of
+that kind. A row is not a summary of its section; it is the contract, and the section is
+the reasoning behind it.
+
+| Section | The tool guarantees | You must |
+|---|---|---|
+| Run it | every item in the registry gets a status from one command, and nothing is silently skipped | choose the mode and the inputs; a flag you do not pass is scope you did not audit |
+| Site profiles | an excluded item reports `N/A` naming the profile; no profile may exclude a `critical` item; an unknown name is an error, never a fallback; a run with no terminal uses `default` and prints what detection would have suggested | ask which profile before the first run of a session unless the request already says, and name the one you chose |
+| Auditing several pages | picks are spread arithmetically and are the same on the next run; non-pages are dropped with the reason; the worst verdict wins and the evidence carries the count | say how many pages were looked at — "5 of 214 pages", never "the site" |
+| The report | four layers in one file, and every measurement is phrased as a sentence in `measure` | do not paste an item's `evidence` at the reader; ask which language they need before rendering |
+| The second reading | the reviewer cannot change a verdict, only withdraw confidence, and cannot touch a script or Search Console answer | dispatch `seo-llm-adversary` before the report goes to anyone |
+| Measuring the rendered page | without the artifact those seven items report `NO_DATA`; a desktop render drops the four mobile keys rather than answering them | resize to 375×812, run the snippet, save it with a `source` line, pass `--rendered-json`, and say in `source` what you changed |
+| Core Web Vitals from a local trace | an artifact describing a different page is refused, naming both URLs; a `--sample` run does not spread these files across sampled pages | trace the page you are auditing, record mode and viewport in `source`, and never report a lab number as field data or merge it with SP-108 or SP-113 |
+| Incoming links | BL-084, BL-086 and BL-087 are answered from the export | export Search Console → Links yourself; the API does not offer it |
+| Run modes | anything a mode cannot satisfy is `N/A` and leaves both metrics alone; Search Console without a key is `NO_DATA`, which is a different claim | choose the mode that matches what you actually have |
+| A host that is not on the public internet | every request passes an SSRF guard; link-local stays blocked even under `--allow-private`; the flag is recorded on stderr, in the summary, in the JSON and above the report | pass `--allow-private` only for a host you are entitled to audit, and report the result as a staging audit rather than as an audit of the site |
+| Which HTML parser read the page | `html_parser` is recorded in every result, and a test asserts the two parsers agree on every field the checklist reads | do not report a verdict as sensitive to which parser is installed |
+| When the site cannot be read | no script is run, no score is reported, and every live check is `NO_DATA` with the reason | — |
+| Answering the items no script can | neither door can touch a verdict a script reached, and a `PASS` with no reason is refused with its id | give every answer a reason somebody can argue with |
+| Statuses | absence of a field is `NO_DATA`, never `PASS`, unless the rule says `missing_is: pass` | read `NEEDS_INPUT` as your own to-do list — it names the flag it wanted |
+| Politeness, and what it does not cover | 4 requests/second/host shared across processes, `robots.txt` honoured for discovered URLs, `Crawl-delay` obeyed, one crawl and one fetch per URL | answer a site owner about load with the real numbers, and read `KNOWN-ISSUES.md` before defending one |
+| Secrets | values taken from `INDEXNOW_KEY` and `PAGESPEED_API_KEY` are replaced with `<redacted>` throughout the payload | pass every other secret as a credential *path*, because the run log is built from argv and takes an argument verbatim |
+| The score, and how much of the registry it speaks for | the score, its weight share and a partition whose buckets add up to the registry | never quote the score without its weight share, and say what is waiting on the reader |
+| Search Console | credentials are discovered in a stated order; the default property comes from a bundled Public Suffix List and the run says so when it falls back to a guess; `archive` ignores a key that is present | grant the service account access on the property, and pass `--gsc-property` for a URL-prefix property or when the run says its default is a guess |
+| Mandatory: answer the LLM queue | the queue files carry a skeleton of their own item ids, and the merge overwrites only `LLM_PENDING` | read the page rather than the queue file, and answer `N/A` rather than inventing a `PASS` |
+| Bundled playbooks | they ship inside the plugin and depend on nothing else being installed | remember that reading a playbook moves no status; doing the work does |
+| Deliverables | every result carries the `registry_version` it came from, and `--diff` warns across versions, profiles and modes | — |
+| Extending the registry | the build refuses an LLM item with no lens, and `--check` fails on a stale `checklist.json` | edit `tools/build_checklist.py`, never `checklist.json`, and write assert rules only against observed script output |
+
+`tests/test_protocol_contract.py` holds this table against the document: every section has
+a row, every row names a section, and no row is empty on both sides. What it cannot hold
+is whether a row is *true* — that is a reading, and `openspec/specs/operator-protocol/`
+OPR-1 records it as the half still unread.
+
 ## Run it
 
 ```bash
@@ -625,10 +667,10 @@ python3 <SKILL_DIR>/scripts/checklist_runner.py https://example.com/page \
     --gsc-property sc-domain:example.com
 ```
 
-Seven items are answered from live GSC data: MS-023 and KW-071 (cannibalization),
+Eight items are answered from live GSC data: MS-023 and KW-071 (cannibalization),
 KW-070 and GO-139 (branded-query ownership), GO-134 (reported opportunities), and
-CI-010 and GO-135 through the URL Inspection API — Google's chosen canonical and
-the page's indexing state. CI-010 is the one worth the setup: a page can declare
+CI-002, CI-010 and GO-135 through the URL Inspection API — whether Google has the page
+at all, Google's chosen canonical, and the page's indexing state. CI-010 is the one worth the setup: a page can declare
 `rel=canonical` to itself and still have Google pick another URL, and nothing in
 the page reveals the disagreement.
 

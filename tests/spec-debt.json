@@ -76,14 +76,13 @@
     "operator-protocol": {
       "counts": {
         "enforced": 1,
-        "none": 5,
+        "none": 4,
         "opposed": 0,
-        "partial": 2
+        "partial": 3
       },
       "opposed": [],
       "requirements": 8,
       "unread": [
-        "OPR-1",
         "OPR-2",
         "OPR-3",
         "OPR-5",
@@ -150,9 +149,9 @@
   },
   "totals": {
     "enforced": 55,
-    "none": 8,
+    "none": 7,
     "opposed": 2,
-    "partial": 84,
+    "partial": 85,
     "requirements": 149
   }
 }
