@@ -5,7 +5,7 @@
     "items": 200,
     "categories": 15,
     "titles": "Keys 1-200 are Plerdy's checklist titles in Plerdy's order. That order is load-bearing: plerdy_ref in checklist.json is this number, so an item can always be traced back to the numbered line it came from. Renumbering this file silently rewrites those references.",
-    "not_here": "The 14 items added by this plugin (GEO/AI search, llms.txt, AI-crawler policy, IndexNow, schema guards, lab Core Web Vitals) are not in the source and carry plerdy_ref: null. Their titles live in tools/build_checklist.py.",
+    "not_here": "The 17 items added by this plugin (GEO/AI search, llms.txt, AI-crawler policy, IndexNow, schema guards, lab Core Web Vitals, mobile layout) are not in the source and carry plerdy_ref: null. Their titles live in tools/build_checklist.py.",
     "keys": "Non-numeric keys are metadata and are skipped by load_titles() in tools/build_checklist.py.",
     "licence": "See CREDITS.md."
   },

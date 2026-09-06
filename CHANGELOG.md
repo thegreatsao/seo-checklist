@@ -10,6 +10,45 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.93.1 — the registry stops stating a composition nothing could check
+
+Registry version: unchanged at `e9154e92f4dd`. The stamp is a hash of the items and no
+item moves; what changes is a field describing them, and the four prose statements of
+the same fact.
+
+**What was wrong.** `checklist.json` carried
+`"source": "Plerdy SEO Checklist (200) + 15 beyond-Plerdy checks"`. Seventeen items
+carry a null `plerdy_ref`. The number had been wrong for releases with CI green
+throughout, and it could not have been otherwise: `build_checklist.py --check` rebuilds
+the payload and compares it with the file, so a literal in the generator is reproduced
+byte for byte and compared with nothing at all. The same fact was stated in three other
+files, in two further values — `plerdy-titles.json` and `CREDITS.md` said 14, `SKILL.md`
+and `README.md` said 17.
+
+**The repair is the shape, not the value.** `openspec/specs/registry/` REG-12 forbids a
+self-describing field from being written as a constant, and `source` is now computed
+from the items. `tests/test_registry.py::TheRegistryStatesNothingAboutItselfItCannotProve`
+holds both halves: it recomputes every self-describing field — the item count, both
+numbers inside `source`, the category set with its prefixes, and the version stamp as a
+fresh hash — and it parses the generator's `payload` literal and refuses a string
+constant carrying a digit. `version` is exempt and named as exempt: a schema number is a
+fact about the file format, not about the items. The other three statements joined the
+count ledger in `tests/test_protocol_counts.py`, which already derived this kind of
+claim for the queue sizes.
+
+**Found while writing the reader, and left alone deliberately.** Four ids carry a prefix
+their category does not declare: `TECH-001` to `TECH-003` sit in `technical`, which
+declares `TE`, and `CONT-001` in `content`, which declares `CN`. All four are added
+items — an added item chooses its own id, where a borrowed one has its id generated from
+the declared prefix and cannot drift. Renaming them would move the contract that every
+archived run, the census, the defect ledger and the playbooks name, to tidy a label used
+only as a section heading in the notebook export. The four are enumerated in the reader,
+so a fifth cannot appear unnoticed.
+
+`openspec/specs/registry/` goes to five enforced of thirteen with nothing unread; its
+`opposed` row — REG-9, whose reader fires when the requirement is met — stands. The
+suite total moves 52 → 53 of 149.
+
 ## 0.93.0 — the last four verdicts read from prose now read from counts
 
 Registry version: **`e9154e92f4dd`**, from `b0abf2819da0`. Four rules change, one item

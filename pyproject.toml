@@ -3,7 +3,7 @@
 # which Python versions the code actually runs on, and how the linter is configured.
 [project]
 name = "seo-checklist"
-version = "0.93.0"
+version = "0.93.1"
 description = "Deterministic SEO audit against a fixed 215-item registry"
 license = "MIT"
 # Measured, not guessed. `duplicate_content.py`, `link_profile.py` and

@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.93.0 — see [CHANGELOG.md](CHANGELOG.md). The last four verdicts decided by
+Version 0.93.1 — see [CHANGELOG.md](CHANGELOG.md). The last four verdicts decided by
 matching words in a message now read counted fields, and three of them move: GO-138's
 `404` matched a 404 and not a 500, so a sitemap of URLs returning 503 passed; MB-095
 counted a message its script only emits when told to fetch images, which the registry
@@ -12,7 +12,10 @@ never told it to do, so every live run passed a page whose weights were never me
 Before that, `0.92.0` made the category bars fold twins the way the headline has since
 0.22 — six of the nine pairs cross categories, so 36% of `media`'s weight belongs to a
 carrier elsewhere — and `0.92.1` corrected fourteen counts stated in prose, none of which
-matched the registry, and put a gate behind each one.
+matched the registry, and put a gate behind each one — `0.93.1` did the same for the
+one inside `checklist.json` itself, which said the plugin adds 15 checks where it adds
+17, and which no gate could see because a constant in the generator is reproduced by the
+staleness check and compared with nothing.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

@@ -88,6 +88,12 @@ def population() -> dict:
     return {
         "items": len(ITEMS),
         "categories": len({item["category"] for item in ITEMS}),
+        # The Plerdy split. Four files stated it in three different values before
+        # 0.93.1 — 200+17, 200+14 and 200+15 — and the wrong one was inside
+        # `checklist.json`'s own `source` field, where `openspec/specs/registry/`
+        # REG-12 now forbids a literal outright.
+        "borrowed": sum(1 for item in ITEMS if item.get("plerdy_ref") is not None),
+        "added": sum(1 for item in ITEMS if item.get("plerdy_ref") is None),
         "llm": BY_SOURCE["llm"],
         "manual": BY_SOURCE["manual"],
         "twins": len(TWINS),
@@ -107,6 +113,24 @@ LEDGER = [
     (os.path.join(SKILL_DIR, "SKILL.md"),
      r"holds \*\*(\d+) items\*\*", "items",
      "the size of the registry, in the paragraph that introduces it"),
+    (os.path.join(SKILL_DIR, "SKILL.md"),
+     r"the Plerdy (\d+)-point\n?checklist", "borrowed",
+     "the borrowed half of the registry, where it is introduced"),
+    (os.path.join(SKILL_DIR, "SKILL.md"),
+     r"checklist plus (\d+) checks it does not cover", "added",
+     "the half this plugin adds, in the same sentence"),
+    (os.path.join(SKILL_DIR, "resources", "config", "plerdy-titles.json"),
+     r"The (\d+) items added by this plugin", "added",
+     "the titles file's own note about what it does not hold"),
+    (os.path.join(ROOT, "CREDITS.md"),
+     r"The (\d+) additional items", "added",
+     "the attribution, which is the sentence saying whose work the rest is"),
+    (os.path.join(ROOT, "README.md"),
+     r"\[Plerdy (\d+)-point checklist\]", "borrowed",
+     "the borrowed half, in the README's account of the contract"),
+    (os.path.join(ROOT, "README.md"),
+     r"plus (\d+)\nchecks it does not cover", "added",
+     "the added half, in the same sentence"),
     (os.path.join(SKILL_DIR, "SKILL.md"),
      r"The LLM queue produces (\d+) verdicts", "llm",
      "what the operator is told to expect back from the model"),

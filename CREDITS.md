@@ -8,9 +8,9 @@ what, from where, and under which licence.
 ## Checklist
 
 The 200-point checklist the registry is built on is
-[Plerdy's](https://www.plerdy.com/seo-checklist/). The 14 additional items (GEO/AI
-search, `llms.txt`, AI-crawler policy, IndexNow, schema guards, and Core Web
-Vitals from a local browser trace) are new here.
+[Plerdy's](https://www.plerdy.com/seo-checklist/). The 17 additional items (GEO/AI
+search, `llms.txt`, AI-crawler policy, IndexNow, schema guards, Core Web Vitals from a
+local browser trace, and two mobile-layout checks) are new here.
 
 ## Evidence scripts
 

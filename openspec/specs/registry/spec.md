@@ -478,15 +478,23 @@ reproduced faithfully by the staleness check and compared with nothing.
 **Why:** the staleness mechanism cannot see a lie that lives in the generator. This is
 how `source` came to claim a composition that has been wrong for releases while CI stayed
 green, and it is the same shape as three other drifted counts in this tree.
-**Reader:** **none.** No test reads `source`. This requirement is the remedy for
-Appendix A.1 and is not implemented.
+**Reader:** enforced.
+`tests/test_registry.py::TheRegistryStatesNothingAboutItselfItCannotProve` does both
+halves. It recomputes every self-describing field from the items — the item count, both
+numbers inside `source`, the category set with its prefixes, and the version stamp as a
+fresh hash — which catches a wrong value; and it parses the generator's `payload`
+literal and refuses a string constant carrying a digit, which catches the shape that
+made the wrong value invisible. The second is the requirement: a value that is right
+today and read by nothing is the state this document is about. `version` is exempt and
+named as exempt, because a schema number is a fact about the file format rather than
+about the items.
 
 #### Scenario: a composition claim written as a literal
 - **WHEN** a field describing the registry's own composition is a constant in the
   generator rather than a value computed from the items
 - **THEN** the requirement is violated
-- **AND** it is violated today: the registry's `source` field states a composition, the
-  staleness check reproduces it byte for byte, and no test reads it
+- **AND** the staleness check cannot see it, because the only comparison in force is
+  between the generator and its own output
 
 #### Scenario: the literal and the items disagree
 - **WHEN** the items say one thing about their own provenance and the literal beside
@@ -584,13 +592,26 @@ A.4 was re-measured on 29 August 2026 at commit `2a5b549` over the same registry
 and corrected; the rest stands as first measured, and the distributions in §2.1 were
 re-derived from the artifact on the same day and agree.
 
-#### A.1 — the registry misstates its own composition
+#### A.1 — the registry misstated its own composition
 
-`source` reads *"Plerdy SEO Checklist (200) + 15 beyond-Plerdy checks"*. Measured: **17**
-items carry a null `plerdy_ref`. The operator protocol says 17; the titles file's own
-note says 14. Three numbers for one fact, and the one inside the registry is a literal in
-the generator, so the staleness check reproduces it and CI stays green. This is REG-12's
-violation and the reason that requirement exists.
+Closed in 0.93.1. `source` read *"Plerdy SEO Checklist (200) + 15 beyond-Plerdy
+checks"*. Measured: **17** items carry a null `plerdy_ref`. The operator protocol said
+17; the titles file's own note said 14; `CREDITS.md` said 14. Four statements of one
+fact in three values, and the one inside the registry was a literal in the generator, so
+the staleness check reproduced it and CI stayed green.
+
+`source` is now computed from the items. The other three are held by
+`tests/test_protocol_counts.py`, which derives the split and reads it out of each
+sentence — the same ledger that holds the queue sizes, extended rather than duplicated.
+
+Found while writing the reader, and left as it is: four ids carry a prefix their
+category does not declare — `TECH-001` through `TECH-003` in `technical`, which declares
+`TE`, and `CONT-001` in `content`, which declares `CN`. All four are added items, which
+choose their own id; a borrowed item's id is generated from the declared prefix and
+cannot drift. Renaming them would move the contract every archived run, the census, the
+defect ledger and the playbooks name, to tidy a label used only as a section heading in
+the notebook export. The four are enumerated in the reader instead, so a fifth cannot
+appear unnoticed.
 
 #### A.2 — seventeen items owe an applicability declaration; two carry one
 
@@ -658,14 +679,14 @@ next count is taken over all three.
 
 | | requirements |
 |---|---|
-| **enforced** | REG-2, REG-5, REG-10, REG-11 |
+| **enforced** | REG-2, REG-5, REG-10, REG-11, REG-12 |
 | **partial** | REG-1, REG-3, REG-4, REG-6, REG-7, REG-8, REG-13 |
-| **none** | REG-12 |
+| **none** | — none |
 | **opposed** | REG-9 |
 
 Invariants: INV-R2 enforced; INV-R1, INV-R3 and INV-R4 partial.
 
-**Four enforced, seven partial, one unread, one opposed, of thirteen.**
+**Five enforced, seven partial, none unread, one opposed, of thirteen.**
 
 `opposed` is a fourth category this document introduces, and it earns its place: REG-9's
 reader does not merely fail to protect the requirement, it fires when the requirement is

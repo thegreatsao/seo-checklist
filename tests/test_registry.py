@@ -949,6 +949,159 @@ class ATestFileRunsEverythingItDefines(unittest.TestCase):
                                    "move the __main__ block to the end")
 
 
+class TheRegistryStatesNothingAboutItselfItCannotProve(unittest.TestCase):
+    """`openspec/specs/registry/` REG-12. A field describing the registry's own
+    composition, provenance or size is computed from the items — never written into the
+    generator as a constant.
+
+    The staleness gate cannot see a lie that lives in the generator. `--check` rebuilds
+    the payload and compares it with the file, so a literal is reproduced byte for byte
+    and compared with nothing at all. That is how `source` came to read
+    "Plerdy SEO Checklist (200) + 15 beyond-Plerdy checks" through release after
+    release while 17 items carried a null `plerdy_ref`, with CI green the whole time —
+    and while two other files in this tree stated the same fact as 14 and as 17.
+
+    So this class does two things. It recomputes every self-describing field from the
+    items, which catches a wrong value; and it walks the generator's payload literal
+    and refuses a constant, which catches the *shape* that made the wrong value
+    invisible. The second is the requirement: a value that happens to be right today
+    and is checked by nothing is the state this document is about.
+    """
+
+    SELF_DESCRIBING = ("registry_version", "item_count", "source", "categories")
+
+    @classmethod
+    def payload_literal(cls):
+        """The `payload = {...}` dict in `build_checklist.py`, as syntax.
+
+        Read rather than executed: the question is what the generator *writes down*,
+        and running it would answer the other question — what the value happens to be
+        on this checkout.
+        """
+        with open(os.path.join(TOOLS, "build_checklist.py"), encoding="utf-8") as f:
+            tree = ast.parse(f.read())
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Assign)
+                    and any(getattr(t, "id", None) == "payload" for t in node.targets)
+                    and isinstance(node.value, ast.Dict)):
+                return {k.value: v for k, v in zip(node.value.keys, node.value.values, strict=True)
+                        if isinstance(k, ast.Constant)}
+        return {}
+
+    def test_the_generator_still_has_a_payload_this_can_read(self):
+        """Every assertion below is about keys of that dict. If the dict moves or is
+        renamed, they all pass over nothing."""
+        payload = self.payload_literal()
+        self.assertTrue(payload, "no `payload = {...}` literal in build_checklist.py")
+        missing = [k for k in self.SELF_DESCRIBING if k not in payload]
+        self.assertEqual(missing, [], "the generator no longer writes these keys")
+        self.assertIn("items", payload)
+
+    def test_no_self_describing_field_is_a_constant_in_the_generator(self):
+        """The requirement itself, and the reason it is about shape and not value.
+
+        A string constant carrying a digit is a claim about the registry that the
+        registry cannot contradict. `version` is exempt and is checked below: it is a
+        schema number, a fact about the file format rather than about the items.
+        """
+        payload = self.payload_literal()
+        for key in self.SELF_DESCRIBING:
+            with self.subTest(field=key):
+                value = payload[key]
+                literal = (isinstance(value, ast.Constant)
+                           and isinstance(value.value, str)
+                           and any(ch.isdigit() for ch in value.value))
+                self.assertFalse(
+                    literal,
+                    f"{key!r} is written as the constant "
+                    f"{getattr(value, 'value', None)!r}. Compute it from `items`: a "
+                    f"constant is reproduced by --check and compared with nothing")
+
+    def test_the_schema_version_is_the_one_field_allowed_to_be_a_constant(self):
+        """Named so the exemption is a decision rather than an omission. `version`
+        describes the file's shape, which the items cannot be asked about."""
+        value = self.payload_literal()["version"]
+        self.assertIsInstance(value, ast.Constant)
+        self.assertEqual(value.value, DATA["version"])
+
+    def test_the_size_it_states_is_the_size_it_has(self):
+        self.assertEqual(DATA["item_count"], len(ITEMS))
+
+    def test_the_composition_it_states_is_the_composition_it_has(self):
+        """`source` is prose with two numbers in it, and both are claims about the
+        items. Read out of the sentence rather than compared to a rebuilt sentence, so
+        a reworded `source` still has to be true."""
+        stated = [int(n) for n in re.findall(r"\d+", DATA["source"])]
+        borrowed = sum(1 for item in ITEMS if item.get("plerdy_ref") is not None)
+        added = sum(1 for item in ITEMS if item.get("plerdy_ref") is None)
+        self.assertEqual(
+            stated, [borrowed, added],
+            f"`source` reads {DATA['source']!r}; the items say {borrowed} carry a "
+            f"`plerdy_ref` and {added} do not")
+        self.assertEqual(borrowed + added, len(ITEMS))
+
+    def test_the_categories_it_declares_are_the_categories_it_uses(self):
+        """A declared category with no items is a claim about scope that no item
+        supports, and an item in an undeclared category has no label to be rendered
+        under."""
+        declared = [c["key"] for c in DATA["categories"]]
+        self.assertEqual(len(declared), len(set(declared)), "a category is declared twice")
+        self.assertEqual(sorted(declared), sorted({item["category"] for item in ITEMS}))
+        for entry in DATA["categories"]:
+            with self.subTest(category=entry["key"]):
+                here = [item for item in ITEMS if item["category"] == entry["key"]]
+                borrowed = {item["id"].split("-")[0] for item in here
+                            if item["plerdy_ref"] is not None}
+                self.assertLessEqual(
+                    borrowed, {entry["prefix"]},
+                    "a borrowed item carries a prefix its category does not declare; "
+                    "its id is generated from that prefix, so this cannot happen by "
+                    "accident")
+                # `geo_ai` has no borrowed items at all, so the check above passes
+                # over an empty set there. This is the half that keeps a declared
+                # prefix from naming nothing.
+                self.assertIn(entry["prefix"],
+                              {item["id"].split("-")[0] for item in here},
+                              "no item in this category carries the prefix it "
+                              "declares")
+
+    def test_the_only_ids_outside_their_declared_prefix_are_the_added_ones(self):
+        """`prefix` is true of the borrowed block and not of the whole category.
+
+        Ids in the Plerdy range are generated as `{prefix}-{ref:03d}`, so they cannot
+        drift. The items added here choose their own id, and four of them chose a
+        prefix their category does not declare: `TECH-001` through `TECH-003` sit in
+        `technical`, which declares `TE`, and `CONT-001` sits in `content`, which
+        declares `CN`.
+
+        Not renamed. An id is the contract — archived runs, the census, the defect
+        ledger and the playbooks all name these — and a rename to tidy a label would
+        cost more than the label is worth. Enumerated instead, so a fifth cannot
+        appear unnoticed and so the reader of `prefix` knows what it does not cover.
+        """
+        declared = {c["key"]: c["prefix"] for c in DATA["categories"]}
+        strays = sorted(item["id"] for item in ITEMS
+                        if item["id"].split("-")[0] != declared[item["category"]])
+        self.assertEqual(strays, ["CONT-001", "TECH-001", "TECH-002", "TECH-003"])
+        for item_id in strays:
+            with self.subTest(item=item_id):
+                item = next(i for i in ITEMS if i["id"] == item_id)
+                self.assertIsNone(item["plerdy_ref"],
+                                  "a borrowed item cannot have a stray prefix: its id "
+                                  "is generated from the declared one")
+
+    def test_the_version_stamp_is_the_hash_of_the_items_it_ships_with(self):
+        """`registry_version` is what a stored result names to say which contract it
+        was measured against. Recomputed here from the items on disk, so a hand-edited
+        `checklist.json` — the one edit `--check` would catch only if somebody ran it —
+        cannot keep a stamp that belongs to a different item set."""
+        import hashlib
+        expected = hashlib.sha256(
+            json.dumps(ITEMS, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        ).hexdigest()[:12]
+        self.assertEqual(DATA["registry_version"], expected)
+
+
 class AVerdictComesFromAFieldAndNeverFromASentence(unittest.TestCase):
     """`openspec/specs/verdicts/` VRD-8. A status is read from a named field of a
     checker's structured result, never from words in a message written for a person.

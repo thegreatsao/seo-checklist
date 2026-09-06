@@ -1626,7 +1626,16 @@ def main() -> int:
         "version": 1,
         "registry_version": registry_version,
         "item_count": len(items),
-        "source": "Plerdy SEO Checklist (200) + 15 beyond-Plerdy checks",
+        # Derived, not written. This field said "(200) + 15" for releases while the
+        # tree held 200 + 17, and no gate could see it: `--check` compares the
+        # generator against its own output, so a literal is reproduced faithfully and
+        # compared with nothing. `openspec/specs/registry/` REG-12 forbids the shape
+        # rather than auditing the value, and
+        # `tests/test_registry.py::TheRegistryStatesNothingAboutItselfItCannotProve`
+        # fails if this line ever becomes a constant again.
+        "source": "Plerdy SEO Checklist (%d) + %d beyond-Plerdy checks" % (
+            sum(1 for i in items if i.get("plerdy_ref") is not None),
+            sum(1 for i in items if i.get("plerdy_ref") is None)),
         "categories": [{"key": k, "prefix": p, "label": label}
                        for k, p, label, _ in CATEGORIES]
                       + [{"key": "geo_ai", "prefix": "GEO", "label": "GEO / AI Search"}],

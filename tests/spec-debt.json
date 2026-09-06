@@ -96,8 +96,8 @@
     },
     "registry": {
       "counts": {
-        "enforced": 4,
-        "none": 1,
+        "enforced": 5,
+        "none": 0,
         "opposed": 1,
         "partial": 7
       },
@@ -105,9 +105,7 @@
         "REG-9"
       ],
       "requirements": 13,
-      "unread": [
-        "REG-12"
-      ]
+      "unread": []
     },
     "reporting": {
       "counts": {
@@ -155,8 +153,8 @@
     }
   },
   "totals": {
-    "enforced": 52,
-    "none": 12,
+    "enforced": 53,
+    "none": 11,
     "opposed": 2,
     "partial": 83,
     "requirements": 149
