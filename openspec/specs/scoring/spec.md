@@ -302,7 +302,7 @@ registry:
 |---|---|---|
 | `decided` | `PASS`, `WARN`, `FAIL` | nobody — this is the answer |
 | `waiting_on_you` | `LLM_PENDING` | the operator, by running the judgement |
-| `waiting_on_you` | `NEEDS_INPUT` | whoever controls the named missing input, if anyone |
+| `waiting_on_you` | `NEEDS_INPUT` | whoever controls the named missing input |
 | `needs_a_person` | `MANUAL` | a person, by looking |
 | `undecided` | `NO_DATA` | whoever maintains the tool or the service |
 | `not_applicable` | `N/A` | nobody — out of scope |
@@ -310,6 +310,13 @@ registry:
 The buckets are derived from statuses alone, never from prose in the evidence. The
 `NEEDS_INPUT` row does not settle the inherited open question of whether the status
 itself should name an actor.
+
+That row read "whoever controls the named missing input, **if anyone**" until 0.95.0, and
+the hedge was load-bearing: two absences nobody controls — a failed shared crawl, and an
+offline item whose HTML never existed because the entry page could not be read — were
+landing in this bucket, so the column had rows whose actor did not exist. They are
+`NO_DATA` now, by `openspec/specs/run-lifecycle/` RUN-18, and the hedge is gone with them.
+The bucket is a work list again, which is what SCR-7 says it is for.
 
 **Why:** percentages name nobody. A partition that says who has to act is a work list;
 one that reports coverage is a number to argue about. Deriving it from statuses is what

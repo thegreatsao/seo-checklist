@@ -1041,6 +1041,12 @@ def measure_contradicts_verdict(item: dict) -> bool:
 # `inventory_json` are produced by the run itself, so their absence is a failure
 # already reported with its own reason and a suggestion here would be advice to do
 # something impossible.
+# The one sentence for the one absence. Two boundaries decide a run's Search Console
+# items — `build_plan` for the ones with a script, `grade` for the ones without — and
+# they used to answer with different statuses and different words. Naming it here is
+# what makes a future divergence a change to this line rather than a silent drift.
+GSC_CREDENTIALS_ABSENT = "no Search Console credentials — set GSC_CREDENTIALS_PATH"
+
 HOW_TO_SUPPLY = {
     "cwv_json": "pass --cwv-json with a browser performance trace "
                 "(see cwv_metrics.py for the shape)",
@@ -1053,6 +1059,15 @@ HOW_TO_SUPPLY = {
                   "more of it (see server_log_audit.py)",
     "gsc_credentials": "pass --gsc-credentials, or set GSC_CREDENTIALS_PATH, for a "
                        "service account that can read the property",
+    # Both added at 0.95.0, by deriving this table's keys from the registry's own
+    # templates instead of listing them. Each had been reporting the bare
+    # `missing input 'indexnow_key'` since it was added — the exact sentence the
+    # note above calls accurate and nearly useless — and, once the status follows
+    # this table, each would have started claiming an operator could not supply it.
+    "gsc_property": "pass --gsc-property with the Search Console property, e.g. "
+                    "sc-domain:example.com, when it cannot be derived from the URL",
+    "indexnow_key": "set INDEXNOW_KEY to the key file's key, the one served at "
+                    "/<key>.txt",
 }
 
 
@@ -1077,9 +1092,16 @@ def build_plan(items: list[dict], ctx: dict, caps: set[str], mode: str,
     in the way. It is the operator's to-do list and prints as one.
 
     `rejected` maps a ctx key to why the input we were handed cannot be used.
-    "Not supplied" and "supplied and refused" are both NEEDS_INPUT and are not the
-    same sentence: the first tells the operator to produce the file, the second
-    tells them the file they produced is about something else."""
+    "Not supplied" and "supplied and refused" are not the same sentence: the first
+    tells the operator to produce the file, the second tells them the file they
+    produced is about something else.
+
+    Which status either absence becomes is decided by `HOW_TO_SUPPLY`, not by the
+    branch it arrived through. That table is this tree's record of which ctx keys
+    an operator can actually fill, and a key outside it — `html`, `inventory_json`
+    — is produced by the run itself. Calling those NEEDS_INPUT asks a reader for
+    something only the tool can give, which is the confusion VRD-5 exists to
+    prevent; they are NO_DATA, an attempt that was made and failed."""
     plan: dict[tuple, list[str]] = {}
     skipped: dict[str, tuple[str, str]] = dict(preskip or {})
     for it in items:
@@ -1100,8 +1122,7 @@ def build_plan(items: list[dict], ctx: dict, caps: set[str], mode: str,
                 skipped[it["id"]] = (NA, f"Search Console needs network access; "
                                          f"{mode} mode makes none")
             elif not has_gsc:
-                skipped[it["id"]] = (NEEDS_INPUT, "no Search Console credentials — "
-                                                  "set GSC_CREDENTIALS_PATH")
+                skipped[it["id"]] = (NEEDS_INPUT, GSC_CREDENTIALS_ABSENT)
             if it["id"] in skipped:
                 continue
         elif need == "safe_browsing":
@@ -1118,14 +1139,15 @@ def build_plan(items: list[dict], ctx: dict, caps: set[str], mode: str,
             skipped[it["id"]] = (NA, f"needs '{need}'; not available in {mode} mode")
             continue
         args = []
-        no_input = ""
+        no_input = no_input_key = ""
         for a in (chk.get("args") or []):
             if isinstance(a, str) and a.startswith("{") and a.endswith("}"):
                 key = a[1:-1]
                 if key in (rejected or {}):
-                    no_input = rejected[key]
+                    no_input, no_input_key = rejected[key], key
                     break
                 if key not in ctx:
+                    no_input_key = key
                     hint = HOW_TO_SUPPLY.get(key, "")
                     no_input = f"missing input '{key}'" + (f" — {hint}" if hint else "")
                     break
@@ -1133,7 +1155,8 @@ def build_plan(items: list[dict], ctx: dict, caps: set[str], mode: str,
             else:
                 args.append(a)
         if no_input:
-            skipped[it["id"]] = (NEEDS_INPUT, no_input)
+            skipped[it["id"]] = (
+                NEEDS_INPUT if no_input_key in HOW_TO_SUPPLY else NO_DATA, no_input)
             continue
         # Per-run flags, appended to the one script each belongs to. Deliberately not
         # registry args: the registry says what an item needs in order to be decided,
@@ -1361,10 +1384,18 @@ def grade(items: list[dict], plan: dict, results: dict, skipped: dict,
             # about *who* has to act, not a better number.
             if it["id"] in GSC_UNAVAILABLE:
                 row.update(status=MANUAL, evidence=GSC_UNAVAILABLE[it["id"]])
+            elif has_gsc:
+                row.update(status=NO_DATA, evidence="needs Search Console")
             else:
-                row.update(status=NO_DATA,
-                           evidence="needs Search Console" if has_gsc else
-                                    "no GSC credentials — set GSC_CREDENTIALS_PATH")
+                # NEEDS_INPUT, and the same sentence `build_plan` uses for the same
+                # absence. This branch said NO_DATA while telling the reader which
+                # variable to set — a status meaning "the audit tried and failed"
+                # carrying the evidence of a missing argument — and the planner
+                # called the identical missing credential NEEDS_INPUT a few hundred
+                # lines away. One run, one absence, two statuses: VRD-5 forbids
+                # exactly that, and the evidence beside it was already the other
+                # one's.
+                row.update(status=NEEDS_INPUT, evidence=GSC_CREDENTIALS_ABSENT)
         elif it["id"] in skipped:
             st, why = skipped[it["id"]]
             row.update(status=st, evidence=why)

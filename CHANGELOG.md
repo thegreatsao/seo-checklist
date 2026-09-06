@@ -10,6 +10,72 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.95.0 — one absence, answered two ways, in two different places
+
+Registry version: unchanged at `e9154e92f4dd`. Items move between `NEEDS_INPUT` and
+`NO_DATA` on real runs, which changes what a report says about who has to act, so this is
+a minor.
+
+**`NEEDS_INPUT` means *waiting on you*, and two paths were using it for things nobody can
+supply.** 0.16.0 split the status out of `NO_DATA` for exactly that reason — one report
+section that is a list of things to do. Since then two absences had been landing in it
+that no operator can act on: a shared crawl that ran and failed, and an offline item whose
+HTML never existed because the entry page answered 503. Both told a reader to supply an
+input the run produces for itself. `openspec/specs/run-lifecycle/` A.1 had recorded the
+first, along with the three places in the tree — the comment above the branch, the message
+printed to the operator, C18 of the capability inventory — that already said `NO_DATA`.
+
+**The fix is not the one that entry implies.** Routing the crawl's rejection to `NO_DATA`
+is a list of one key, and a list of one key reads nothing about the second. The status now
+follows `HOW_TO_SUPPLY`, the table that already recorded which context keys an operator
+can fill — its own comment names `html` and `inventory_json` as the two a run makes
+itself. Deriving the rule from that table cost nothing and read three more things.
+
+**The offline items under a dead entry.** A test pinned `NEEDS_INPUT` there with a
+docstring from 0.16.0 arguing for it. Its evidence half still holds and is unchanged: the
+reason still says `missing input 'html'`. Its status half does not, and the reason it does
+not is the sharper finding — one unreadable entry page was producing two statuses in one
+run, `NO_DATA` for every fetch, crawl and api item and `NEEDS_INPUT` for the offline ones.
+That is `openspec/specs/verdicts/` VRD-5's third scenario verbatim, in a run where nobody
+had asked about Search Console at all, and it was invisible because each side had a test
+and neither test could see the other.
+
+**Two keys the supply table never held.** `indexnow_key` and `gsc_property` are named by
+registry templates and set by one environment variable and one flag. Neither had an entry,
+so each printed the bare `missing input '...'` that the table's own comment calls accurate
+and nearly useless — and, once the status follows the table, each would have started
+telling an operator they could not supply it. Found by comparing the table against the
+registry's templates rather than by reading it, and that comparison is now the test.
+
+**The same swap, from the other side.** `openspec/specs/verdicts/` had carried a row in
+its shipped-violations table for eleven releases: a `source: gsc` item graded `NO_DATA`
+while carrying the sentence of a missing input, with the planner calling the identical
+absence `NEEDS_INPUT` a few hundred lines away. Same question — who can act on this —
+answered twice by one run. Both boundaries now read one named sentence, and the test
+compares the two rather than each of them, because a contradiction between two layers is
+not visible from inside either one.
+
+**Also closed: the crawl's two other clauses.** "Never a job" had a reader built for
+something else — naming `site_crawl.py` as an item's script reddened the registry
+generator, because the crawl is absent from the scripts that reader expects, which would
+stop holding the moment somebody added it to that list. "Once, before the plan" is a claim
+about what did not happen, and nothing counts requests here; what is held instead is the
+shape that makes twice impossible — one call site, ahead of every `build_plan` call, of
+which a run makes two.
+
+**And the third status boundary, which had the same hole.** RUN-2 splits `N/A` from
+`NEEDS_INPUT`: an item whose capability the mode does not carry is out of scope, an item
+whose credential is absent is unanswered. Both branches were pinned for the two
+capabilities that have credentials, and the general sentence behind them — an item
+requiring `crawl` under `page` mode — had no test at all. It is swept over every mode
+against every capability outside its set now, because a capability added to one mode's set
+and not another's is how this starts answering differently for a mode nobody thought
+about.
+
+`openspec/specs/run-lifecycle/` goes from nine enforced of twenty to twelve, and
+`openspec/specs/verdicts/` from ten of seventeen to eleven. Tree debt: 85 enforced, 56
+partial, 6 unread, 2 opposed, of 149.
+
 ## 0.94.7 — two verdicts came from a synthetic load and the report did not say so
 
 Registry version: unchanged at `e9154e92f4dd`. A report gains a sentence and an artifact a

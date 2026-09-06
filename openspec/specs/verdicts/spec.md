@@ -269,8 +269,21 @@ belongs in evidence and does not change the status.
 **Why:** the two sentences identify different boundaries. A missing argument says the
 check never had what it needed to start; `NO_DATA` says it started and no verdict came
 back. The evidence, not a second status vocabulary, says who can act on the cause.
-**Reader:** partial. Unreachable measurements, execution failures and missing
-credentials are each pinned to the right status by tests; the general rule is not read.
+**Reader:** enforced. Unreachable measurements, execution failures and missing
+credentials are each pinned to the right status. The general rule is read at 0.95.0 by
+`TheStatusNamesWhoCanAct`, which derives the split from `HOW_TO_SUPPLY` — the tree's record
+of which inputs an operator can actually hand a run — rather than from the branch an
+absence arrived through, so a key nobody has added yet is decided by the same rule.
+
+The third scenario has two readers, one per direction, and both were written because the
+run was violating it. `test_the_dead_entry_gives_every_item_one_status` asserts that one
+unreadable entry leaves offline and fetch items under the *same* status, where the offline
+ones used to say `NEEDS_INPUT` while every other gated item said `NO_DATA`.
+`test_one_missing_credential_gets_one_status_from_both_boundaries` asserts that the planner
+and the grader answer an absent Search Console credential with the same status and the same
+sentence, which is the row this document's own table carried for eleven releases. Asserting
+each side alone is what let both pairs drift: a contradiction between two layers is not
+visible from inside either one.
 
 #### Scenario: the attempt was made and produced nothing
 - **WHEN** a service is unreachable, a script crashes, or a result carries no decidable
@@ -759,26 +772,36 @@ The checker that fed MB-098 was wrong in the same direction and was corrected wi
 it reported a missing `sizes` for any `srcset`, where only width descriptors need one.
 An `srcset` in `x` descriptors is correct markup and was being reported as a defect.
 
-Three other shipped paths violate these requirements:
+Two other shipped paths violate these requirements. A third — `gsc` grading without
+credentials — was fixed at 0.95.0 and its row is gone; what it was, and why it took a
+document about the run lifecycle finding the same swap from the other side to close it, is
+[`openspec/specs/run-lifecycle/`](../run-lifecycle/spec.md) A.7. The remedy is the one this
+table named: `NEEDS_INPUT`, with the sentence the planner already used, now written once so
+the two boundaries cannot answer differently again.
 
 | path | observed behaviour | breaks | should be |
 |---|---|---|---|
 | LLM answer merge | an empty rationale becomes a scored quality verdict with `LLM: no rationale given` | VRD-10 | refuse the answer until it says what was decided |
 | interactive `choose_profile` | EOF, `KeyboardInterrupt`, and three invalid answers return the detected profile | VRD-11 | run the full registry because silence is not consent |
-| `gsc` grading without credentials | the grader assigns `NO_DATA` with evidence instructing the operator to set credentials, while the planner classifies missing GSC credentials as `NEEDS_INPUT` elsewhere in the same run | VRD-5; VRD-10 evidence/status mismatch | use `NEEDS_INPUT` with evidence that describes the missing input |
 
 The manual answer path already refuses an empty rationale, so the enforceable VRD-10
 rule exists next door to the LLM violation. The three silent exits, the four tests that
 cover them and the probe that established which branch each takes are
 [`openspec/specs/run-lifecycle/`](../run-lifecycle/spec.md) A.5.
 
-The GSC contradiction is split across two sites in
-`skills/seo-checklist/scripts/checklist_runner.py`: `build_plan` assigns
-`NEEDS_INPUT` to planned checks requiring GSC at lines 1021–1027, while `grade` assigns
-`NO_DATA` and the credential instruction to `source: gsc` items at lines 1242–1260 unless
-they are listed in `GSC_UNAVAILABLE`. The two boundaries therefore classify the same
-missing credential differently within one run, and the grader's instruction describes a
-missing input while its status says an attempted measurement returned no data.
+The GSC contradiction was split across two sites in
+`skills/seo-checklist/scripts/checklist_runner.py`: `build_plan` assigned `NEEDS_INPUT` to
+planned checks requiring GSC, while `grade` assigned `NO_DATA` and the credential
+instruction to `source: gsc` items unless they were listed in `GSC_UNAVAILABLE`. The two
+boundaries classified the same missing credential differently within one run, and the
+grader's instruction described a missing input while its status said an attempted
+measurement returned no data.
+
+Both now read one named sentence, `GSC_CREDENTIALS_ABSENT`, and
+`test_one_missing_credential_gets_one_status_from_both_boundaries` compares the two
+boundaries rather than each of them. Naming the string is half of it and the weaker half:
+the earlier line references in this paragraph had already gone stale, which is the same
+failure one layer up — a record of where a thing lives, kept by hand, beside the thing.
 
 **Not in this table, and why.** GO-137 *Reconcile Indexed Pages vs. Sitemaps* answers
 `PASS` and `WARN`, and an earlier draft of this document called that a VRD-4 violation
@@ -837,24 +860,32 @@ VRD-11.
 
 | | requirements |
 |---|---|
-| **enforced** | VRD-4, VRD-6, VRD-7, VRD-8, VRD-9, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
-| **partial** | VRD-1, VRD-2, VRD-3, VRD-5, VRD-10, VRD-11, VRD-12 |
+| **enforced** | VRD-4, VRD-5, VRD-6, VRD-7, VRD-8, VRD-9, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
+| **partial** | VRD-1, VRD-2, VRD-3, VRD-10, VRD-11, VRD-12 |
 | **none** | — none |
 
 Invariants: INV-1, INV-2, INV-3 and INV-4 partial; INV-2 is violated.
 
-**Ten enforced, seven partial, none unread.** Six requirements are violated by shipped
+**Eleven enforced, six partial, none unread.** Five requirements are violated by shipped
 behaviour or declarations while nothing reddens: VRD-2 and VRD-3 by the seventeen missing
-applicability declarations; VRD-5 by the grader classifying missing GSC credentials as
-`NO_DATA`; VRD-10 by the LLM answer merge and the GSC status/evidence mismatch; VRD-11
-by the profile prompt's silent exits; and VRD-12 by the manifest. VRD-8 left that list
+applicability declarations; VRD-10 by the LLM answer merge; VRD-11 by the profile prompt's
+silent exits; and VRD-12 by the manifest.
+
+VRD-5 left that list at 0.95.0, by repairing the tree in both directions rather than by
+recording either. The grader now answers an absent credential with the planner's status and
+the planner's sentence, which also closes VRD-10's half of that row; and the general rule —
+which of the two statuses an absence becomes — is read for the first time, derived from the
+table of inputs an operator can supply. That derivation is what found the second violation,
+in a place neither this document nor its appendix had looked: one unreadable entry page was
+leaving offline items `NEEDS_INPUT` and every other gated item `NO_DATA`, the third
+scenario again, in a run where nobody had asked about Search Console at all. VRD-8 left that list
 in 0.93.0, and it is the one entry here closed by repairing the tree rather than by
 writing a test: the four rules now read counted fields, and the sweep that holds them
 would redden on a revert. The totals are recomputed from the readers named above: E1 leaves VRD-3
 partial because declaration completeness is unread, E2's two-status gap is closed in 0.94.2 — evidence is now required on all
-eight, derived from `STATUS_ORDER` — and VRD-10 stays partial for the two shipped
-violations rather than for coverage; and E3 confirms that VRD-5's general rule is only
-partially read.
+eight, derived from `STATUS_ORDER` — and VRD-10 stays partial for the LLM answer merge
+rather than for coverage. E3 said VRD-5's general rule was only partially read, and stayed
+true for six releases after it was written; it is the entry that moved.
 
 An earlier draft of this appendix published `5 none / 3 partial / 4 enforced` and was
 wrong in both directions: it claimed no reader for VRD-2 through VRD-5, which the

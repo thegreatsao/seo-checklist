@@ -2005,18 +2005,39 @@ class UnreachableSite(unittest.TestCase):
         so when the fetch failed and there is no HTML to hand them, they drop out
         on the missing input instead.
 
-        NEEDS_INPUT and not NO_DATA even here, and the reason is worth stating: the
-        status says an input was absent, not that the operator can conjure it. The
-        run already reports the unreachable entry page in its own words, loudly and
-        first; an item saying "no HTML" underneath it is a consequence, not a second
-        diagnosis. Reporting the two differently would need a status per cause, and
-        the causes are already in the reasons."""
+        NO_DATA, and this reverses a clause written here at 0.16.0 rather than
+        deleting it. That clause said NEEDS_INPUT was right even here, because the
+        status names an absent input and the run already reports the unreachable
+        entry loudly and first. The evidence half of that still holds and is
+        unchanged: the reason under this item still says `missing input 'html'`, so
+        nothing became a second diagnosis. What does not hold is the status. 0.16.0
+        split NEEDS_INPUT out of NO_DATA precisely so one section could mean
+        *waiting on you*, and an item that lost its HTML because the site answered
+        503 is not the operator's unfinished business — there is no flag that hands
+        a run the page it could not fetch. It also made one absence carry two
+        statuses in a single run: the fetch, crawl and api items gated by the same
+        dead entry are NO_DATA, and only these were not. VRD-5's third scenario
+        names that pair as the violation, whichever of the two is right."""
         item = [{"id": "O", "check": {"requires": "offline", "script": "parse_html.py",
                                       "args": ["{html}", "--url", "{url}"]}}]
         _, skipped = build_plan(item, {"url": "https://e.com"}, {"offline"}, "live",
                                 unreachable_skips(item, "HTTP 503"), False)
-        self.assertEqual(skipped["O"][0], NEEDS_INPUT)
+        self.assertEqual(skipped["O"][0], NO_DATA)
         self.assertIn("html", skipped["O"][1])
+
+    def test_the_dead_entry_gives_every_item_one_status(self):
+        """The pair VRD-5's third scenario forbids, pinned as a pair. An offline item
+        and a fetch item stopped by the same unreachable entry must not leave the
+        plan under different statuses; asserting each alone is what let them drift
+        for eleven releases."""
+        items = [{"id": "O", "check": {"requires": "offline", "script": "parse_html.py",
+                                       "args": ["{html}"]}},
+                 {"id": "F", "check": {"requires": "fetch", "script": "s.py",
+                                       "args": ["{url}"]}}]
+        _, skipped = build_plan(items, {"url": "https://e.com"}, {"offline", "fetch"},
+                                "live", unreachable_skips(items, "HTTP 503"), False)
+        self.assertEqual(skipped["O"][0], skipped["F"][0], skipped)
+        self.assertEqual(skipped["O"][0], NO_DATA)
 
 
 class SearchConsoleBoundary(unittest.TestCase):
@@ -2083,6 +2104,201 @@ class SearchConsoleBoundary(unittest.TestCase):
                  "category_label": "C", "title": "t", "severity": "low",
                  "plerdy_ref": 0, "fix": ""}]
         self.assertEqual(grade(item, {}, {}, {}, True)[0]["status"], NO_DATA)
+
+    def test_one_missing_credential_gets_one_status_from_both_boundaries(self):
+        """`openspec/specs/verdicts/` VRD-5's third scenario, read as a pair.
+
+        A run decides Search Console items at two boundaries: `build_plan` for the
+        ones that have a script, `grade` for the ones that do not. Until 0.95.0 the
+        planner called an absent credential NEEDS_INPUT and the grader called the
+        same absence NO_DATA — while printing the variable to set, which is a
+        missing input's sentence under a status that means the audit tried and
+        failed. Each side had a test; neither test could see the other, which is
+        how a contradiction inside one run survived eleven releases in the shipped
+        violations table of a document that forbids it.
+
+        Asserting them equal is the whole point: a future change that moves one
+        side reddens here even if it keeps that side internally consistent."""
+        _, skipped = build_plan(self.ITEM, {}, {"offline", "fetch", "crawl", "api"},
+                                "live", None, False)
+        item = [{"id": "GO-999", "source": "gsc", "category": "c",
+                 "category_label": "C", "title": "t", "severity": "low",
+                 "plerdy_ref": 0, "fix": ""}]
+        graded = grade(item, {}, {}, {}, False)[0]
+        self.assertEqual(skipped["G"][0], graded["status"], (skipped, graded))
+        self.assertEqual(graded["status"], NEEDS_INPUT)
+        self.assertEqual(skipped["G"][1], graded["evidence"])
+        self.assertEqual(graded["evidence"], runner.GSC_CREDENTIALS_ABSENT)
+
+
+class TheStatusNamesWhoCanAct(unittest.TestCase):
+    """`openspec/specs/run-lifecycle/` RUN-18 and `openspec/specs/verdicts/` VRD-5.
+
+    NEEDS_INPUT is the operator's to-do list — 0.16.0 split it out of NO_DATA for
+    exactly that, so one report section could mean *waiting on you*. Which of the
+    two an absent ctx key becomes therefore has to follow whether the operator can
+    fill it, and the tree already records that: `HOW_TO_SUPPLY` holds a flag for
+    every key somebody can hand a run, and its comment names `html` and
+    `inventory_json` as the two produced by the run itself.
+
+    Deriving the status from that table rather than from the branch the absence
+    arrived through is what makes this hold for a key nobody has added yet. A hand
+    list of one key would pass every assertion below and read nothing about the
+    next one."""
+
+    ITEM = [{"id": "S", "check": {"requires": "crawl", "script": "s.py",
+                                  "args": ["{inventory_json}"]}}]
+
+    def _skip(self, ctx=None, rejected=None):
+        _, skipped = build_plan(self.ITEM, dict(ctx or {}),
+                                {"offline", "fetch", "crawl", "api"}, "live",
+                                None, False, rejected)
+        return skipped["S"]
+
+    def test_a_failed_crawl_is_no_data_and_not_a_request_for_input(self):
+        """A.1 of that document, and three statements in the tree said so before
+        any test did: the comment above the branch, the message printed to the
+        operator, and C18 of the capability inventory. All three said NO_DATA while
+        the run reported NEEDS_INPUT, which asks a reader to supply an inventory
+        only the tool can produce."""
+        status, why = self._skip(rejected={"inventory_json": "the shared crawl "
+                                                            "read nothing: timeout"})
+        self.assertEqual(status, NO_DATA)
+        self.assertIn("the shared crawl read nothing", why)
+
+    def test_an_inventory_that_was_never_produced_is_no_data_too(self):
+        """The other way in. A crawl that never ran leaves the key absent rather
+        than rejected, and the two branches must not answer differently: the
+        operator's options are identical in both."""
+        status, why = self._skip()
+        self.assertEqual(status, NO_DATA)
+        self.assertIn("inventory_json", why)
+
+    def test_a_stale_artifact_stays_the_operators_to_do(self):
+        """The asymmetry is the requirement. A file the operator supplied and the
+        run refused *is* theirs to fix, so the same rejection channel must still
+        produce NEEDS_INPUT for it — a blanket NO_DATA would empty the to-do list
+        of the four things actually on it."""
+        item = [{"id": "L", "check": {"requires": "offline", "script": "s.py",
+                                      "args": ["{links_csv}"]}}]
+        _, skipped = build_plan(item, {}, {"offline"}, "live", None, False,
+                                {"links_csv": "the link export at x.csv was last "
+                                              "written 90 day(s) ago"})
+        self.assertEqual(skipped["L"][0], NEEDS_INPUT)
+        self.assertIn("90 day(s) ago", skipped["L"][1])
+
+    def test_every_key_an_operator_can_fill_names_its_flag_and_asks_for_it(self):
+        """The composition, not the mechanism. Every key in the table has to reach
+        NEEDS_INPUT carrying its own instruction; asserting one of them — `--keyword`
+        was the only one asserted before 0.95.0 — says nothing about the rest, and
+        the ones for Search Console, link exports and server logs appeared in the
+        suite only as fixture input. Iterating the table rather than naming its
+        entries is what keeps this true of the two added the same day."""
+        for key, hint in runner.HOW_TO_SUPPLY.items():
+            with self.subTest(key=key):
+                item = [{"id": "X", "check": {"requires": "offline",
+                                              "script": "s.py", "args": ["{%s}" % key]}}]
+                _, skipped = build_plan(item, {}, {"offline"}, "live", None, False)
+                self.assertEqual(skipped["X"][0], NEEDS_INPUT, key)
+                self.assertIn(key, skipped["X"][1])
+                self.assertIn(hint, skipped["X"][1])
+
+    def test_the_two_keys_a_run_makes_itself_are_the_ones_outside_the_table(self):
+        """A pin on the absence, derived from the registry rather than listed.
+
+        `html` and `inventory_json` are the keys a run produces, and the comment
+        above `HOW_TO_SUPPLY` says so. Everything else a template names is somebody
+        else's to hand over, so it needs an entry — and this is what found that two
+        of them had none. `indexnow_key` and `gsc_property` had been reporting the
+        bare `missing input '...'` that the table exists to replace, and, once the
+        status follows the table, would have told an operator they could not supply
+        a key they set with one environment variable and one flag.
+
+        Written as a set comparison on purpose: the failure message names the key
+        that drifted, which a per-key loop over a hand list cannot do because the
+        hand list is the thing that goes stale."""
+        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
+                  encoding="utf-8") as f:
+            data = json.load(f)
+        produced = set()
+        for it in data["items"]:
+            for a in ((it.get("check") or {}).get("args") or []):
+                if isinstance(a, str) and a.startswith("{") and a.endswith("}"):
+                    key = a[1:-1]
+                    if key not in runner.HOW_TO_SUPPLY and key not in ("url",):
+                        produced.add(key)
+        self.assertEqual(produced, {"html", "inventory_json"})
+
+    def test_an_ordinary_capability_the_mode_lacks_is_not_a_request_for_input(self):
+        """RUN-2's general sentence, which had no reader.
+
+        Both branches were pinned for the two capabilities that have credentials —
+        `gsc` and `safe_browsing` — and nothing fed an ordinary capability into a
+        mode that lacks it. That is the case where the two statuses are easiest to
+        confuse, because the item is neither out of the operator's reach nor within
+        it: no flag supplies a crawl the mode forbids, so `NEEDS_INPUT` would invent
+        work, and the mode is the operator's own choice, so `N/A` is the truth.
+
+        Swept over the modes rather than written for `page`, because a capability
+        added to one mode's set and not another's is exactly how this would start
+        answering differently for a mode nobody thought about."""
+        for mode, caps in runner.MODE_CAPS.items():
+            for need in ("crawl", "fetch", "api"):
+                if need in caps:
+                    continue
+                with self.subTest(mode=mode, need=need):
+                    item = [{"id": "C", "check": {"requires": need, "script": "s.py"}}]
+                    _, skipped = build_plan(item, {}, set(caps), mode, None, True,
+                                            has_safe_browsing=True)
+                    self.assertEqual(skipped["C"][0], NA)
+                    self.assertIn(mode, skipped["C"][1])
+                    self.assertIn(need, skipped["C"][1])
+
+    def test_the_crawl_is_an_input_and_not_a_job(self):
+        """RUN-18's other clause, given a reader of its own.
+
+        It had one already, by accident: naming `site_crawl.py` as an item's script
+        reddens the registry generator and the census snapshot, because the crawl is
+        not among the scripts those readers expect. That is a reader built for
+        something else, and it stops holding the moment somebody adds the crawl to
+        the list it consults. This asserts the thing the requirement says, so a list
+        that grew cannot make it quiet."""
+        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
+                  encoding="utf-8") as f:
+            data = json.load(f)
+        named = {(it.get("check") or {}).get("script") for it in data["items"]}
+        self.assertNotIn("site_crawl.py", named,
+                         "the crawl is an input; as a job it runs once per item that "
+                         "wants it, or makes one item's failure another's")
+
+    def test_the_crawl_runs_once_and_before_the_plan(self):
+        """"Crawled once, before the plan" is a claim about *what did not happen*,
+        and the suite counts nothing here — running the crawl twice reddens nothing.
+        What can be held is the shape that makes twice impossible: exactly one call
+        site in the runner, and it ahead of every call to `build_plan` — the run
+        builds two, the second per sampled page inside a loop, and the crawl sits
+        outside both. A second crawl call appearing anywhere reddens this even if
+        each is correct in isolation, which is the case a request counter over a
+        fixture would not separate: it would report a number, and a number in a
+        green build is a number nobody reads."""
+        import ast
+        with open(os.path.join(SCRIPTS, "checklist_runner.py"), encoding="utf-8") as f:
+            tree = ast.parse(f.read())
+        crawls, plans = [], []
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            fn = node.func
+            name = fn.id if isinstance(fn, ast.Name) else getattr(fn, "attr", "")
+            if name == "run_script" and node.args and isinstance(node.args[0], ast.Constant)                     and node.args[0].value == "site_crawl.py":
+                crawls.append(node.lineno)
+            if name == "build_plan":
+                plans.append(node.lineno)
+        self.assertEqual(len(crawls), 1, f"site_crawl.py is run at {crawls}")
+        self.assertTrue(plans, "build_plan is not called at all")
+        self.assertLess(crawls[0], min(plans),
+                        f"the inventory has to exist before any plan reads it; "
+                        f"crawl at {crawls[0]}, plans at {sorted(plans)}")
 
 
 class SafeBrowsingBoundary(unittest.TestCase):

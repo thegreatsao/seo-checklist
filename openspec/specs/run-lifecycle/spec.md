@@ -159,14 +159,19 @@ SHALL report `NEEDS_INPUT`, naming the flag or environment variable that would s
 and needs no action; a missing credential is an action somebody can take, and the report
 is where they find out which. Collapsing them either hides work that could be done or
 invents work that cannot.
-**Reader:** enforced for the two capabilities that have credentials, unread for the rest —
-which is `partial`. `test_missing_credentials_is_undecided_not_out_of_scope`,
+**Reader:** enforced. `test_missing_credentials_is_undecided_not_out_of_scope`,
 `test_a_mode_without_network_puts_it_out_of_scope`,
 `test_missing_key_in_a_network_mode_needs_input` and
 `test_archive_mode_makes_the_api_check_not_applicable` pin both branches for `gsc` and
-`safe_browsing`. The general sentence — an item requiring `crawl` in `page` mode — has no
-test: nothing feeds an ordinary capability into a mode that lacks it and asserts the
-`N/A`.
+`safe_browsing`, and `test_one_missing_credential_gets_one_status_from_both_boundaries`
+holds the second branch against the grader as well as the planner.
+
+The general sentence had no reader until 0.95.0: nothing fed an ordinary capability into a
+mode that lacks it. `test_an_ordinary_capability_the_mode_lacks_is_not_a_request_for_input`
+sweeps every mode against every capability outside its set rather than writing the one case
+the sentence names, because a capability added to one mode's set and not another's is how
+this would start answering differently for a mode nobody thought about. Probed by routing
+the branch to `NEEDS_INPUT` and by taking the mode out of the reason.
 
 #### Scenario: an ordinary capability the mode lacks
 - **WHEN** an item requiring `crawl` is planned under `page` mode, which carries
@@ -283,15 +288,18 @@ rejection instead, and the two sentences MUST NOT be interchangeable.
 
 **Why:** "you did not give me this" and "what you gave me was not about this site" send
 the operator to different actions, and the second is the one people get wrong twice.
-**Reader:** partial. `test_a_refused_input_says_something_other_than_missing` pins the
+**Reader:** enforced. `test_a_refused_input_says_something_other_than_missing` pins the
 distinction directly — a refused artifact's reason contains its rejection and not the
 words "missing input", and the same item with an empty context says "missing input"; and
-`test_an_artifact_from_the_other_site_is_refused_with_the_reason` pins it end to end. The
-flag-naming half is read through one of the six entries in the supply table: only
-`--keyword` is asserted, by
-`test_no_keyword_input_stops_the_item_at_the_plan`. The four template keys for Search
-Console, link exports and server logs appear in the suite only as fixture input, never as
-an assertion about what the plan does with them.
+`test_an_artifact_from_the_other_site_is_refused_with_the_reason` pins it end to end.
+`test_every_key_an_operator_can_fill_names_its_flag_and_asks_for_it` holds the flag-naming
+half over the whole supply table rather than the one entry `--keyword` used to stand for,
+and asserts the instruction itself reaches the reason, not merely that a reason exists.
+
+The composition of that table is held separately, and had to be: sweeping the entries
+proves nothing about a key that has no entry. Deriving the set from the registry's own
+templates is what showed two — `indexnow_key` and `gsc_property` — reporting the bare
+`missing input '...'` this requirement exists to forbid.
 
 #### Scenario: the input was never supplied
 - **WHEN** an item's template names a context key the run does not hold
@@ -773,14 +781,26 @@ reason.
 it a job would either run it many times or make one item's failure another's. And the
 status matters: a crawl that failed is the tool's problem, not the operator's — there is no
 flag that supplies an inventory, because the run produces it.
-**Reader:** partial, and the half that is held is held by accident. Making a registry item
-name `site_crawl.py` reddens the registry generator and the census snapshot — not because
-anything forbids it, but because the crawl is not among the scripts those readers expect,
-so the "never a job" clause has a reader that was built for something else and would stop
-holding the moment the crawl were added to a list. Nothing asserts the failure status,
-which is how Appendix A.1's defect survived: the run reports `NEEDS_INPUT`, while the
-code's own comment, the message it prints and the capability inventory all say `NO_DATA`.
-Running the crawl twice reddens nothing.
+**Reader:** enforced. `TheStatusNamesWhoCanAct` holds all three clauses.
+
+The failure status is held in both of its forms — a crawl that ran and was rejected, and an
+inventory that was never produced — with the asymmetry beside them, so a blanket `NO_DATA`
+that emptied the operator's to-do list reddens too. The status is derived from
+`HOW_TO_SUPPLY` rather than from a list naming the crawl, and
+`test_the_two_keys_a_run_makes_itself_are_the_ones_outside_the_table` derives that table's
+own composition from the registry's templates, which is what a hand list cannot do; writing
+it found two suppliable keys the table had never held.
+
+"Never a job" had only an accidental reader until 0.95.0 — naming `site_crawl.py` as an
+item's script reddened the registry generator and the census snapshot, because the crawl is
+absent from the scripts those readers expect, which would stop holding the moment somebody
+added it to that list. `test_the_crawl_is_an_input_and_not_a_job` asserts the clause itself.
+
+"Once, before the plan" is a claim about what did not happen, and the suite counts no
+requests here. `test_the_crawl_runs_once_and_before_the_plan` holds the shape that makes
+twice impossible instead: one call site in the runner, ahead of every `build_plan` call —
+the run builds two plans, the second per sampled page. Probed by inserting a second crawl
+and by building a plan ahead of it.
 
 #### Scenario: the crawl fails
 - **WHEN** the shared crawl returns an error
@@ -986,6 +1006,9 @@ Observation, not specification. Measured at commit `9f8bb6c`, registry `b0abf281
 
 #### A.1 — a failed crawl reports the wrong status, and three places say so
 
+**Fixed at 0.95.0**, in both directions at once — see A.7. The measurement is kept because
+the shape it names is the point, and because the fix was not the one this entry implies.
+
 When `site_crawl.py` returns an error, the runner sets a rejection reason for
 `{inventory_json}`, and `build_plan`'s rejection branch assigns
 `skipped[item] = (NEEDS_INPUT, reason)`. Every site-wide item therefore ends the run as
@@ -1085,6 +1108,41 @@ This document credited it as `enforced` until an audit ran the probe, which is t
 error the suite has now made four times: a classification taken from tests that pass
 rather than from a mutation that should fail.
 
+#### A.7 — what fixing A.1 turned out to be, 6 September 2026
+
+A.1 reads as a one-line fix: route the crawl's rejection to `NO_DATA`. Doing that would
+have been a list of one key, and a list of one key reads nothing about the second.
+
+The status now follows `HOW_TO_SUPPLY`, the table that already recorded which ctx keys an
+operator can fill — its own comment names `html` and `inventory_json` as the two a run
+produces for itself. Deriving the rule from that table rather than from the branch an
+absence arrived through cost nothing and read three more things:
+
+* **an offline item under a dead entry.** `test_offline_checks_fall_out_on_their_missing_input`
+  pinned `NEEDS_INPUT` there, with a docstring from 0.16.0 arguing for it. The argument's
+  evidence half still holds and is unchanged; its status half does not. 0.16.0 split
+  `NEEDS_INPUT` out of `NO_DATA` so one section could mean *waiting on you*, and an item
+  that lost its HTML to a 503 is nobody's unfinished business. It also meant one dead entry
+  produced two statuses in one run — the fetch items `NO_DATA`, the offline ones
+  `NEEDS_INPUT` — which is VRD-5's third scenario verbatim, unnoticed because each side had
+  a test and neither could see the other. `test_the_dead_entry_gives_every_item_one_status`
+  now asserts the pair;
+* **two keys the supply table never held.** `indexnow_key` and `gsc_property` are named by
+  registry templates and set by one environment variable and one flag. Neither had an
+  entry, so each printed the bare `missing input '...'` that the table's own comment calls
+  accurate and nearly useless — and, once the status follows the table, each would have
+  begun telling an operator they could not supply it. Found by comparing the table against
+  the registry's templates, not by reading it;
+* **the other direction of the same swap.** `openspec/specs/verdicts/` A.1 recorded a
+  `source: gsc` item graded `NO_DATA` while carrying the sentence of a missing input, and
+  the planner calling the identical absence `NEEDS_INPUT` a few hundred lines away. That is
+  this defect mirrored, and it was in the same release for the same reason: both are the
+  question *who can act on this*, answered twice by one run.
+
+The general lesson is the one A.1 already half-states. A status is a claim about the reader,
+so the rule that assigns it belongs beside the record of what readers can do — and where
+that record is a set, the set's composition needs a reader of its own.
+
 #### A.6 — the survey that produced this appendix
 
 Appendices A.1 through A.4 came from a reader census over C9–C18 that named, for each
@@ -1111,14 +1169,23 @@ requests, even though the suite does not).
 
 | | requirements |
 |---|---|
-| **enforced** | RUN-1, RUN-3, RUN-4, RUN-9, RUN-10, RUN-11, RUN-12, RUN-16, RUN-20 |
-| **partial** | RUN-2, RUN-5, RUN-6, RUN-7, RUN-8, RUN-13, RUN-14, RUN-15, RUN-17, RUN-18, RUN-19 |
+| **enforced** | RUN-1, RUN-2, RUN-3, RUN-4, RUN-5, RUN-9, RUN-10, RUN-11, RUN-12, RUN-16, RUN-18, RUN-20 |
+| **partial** | RUN-6, RUN-7, RUN-8, RUN-13, RUN-14, RUN-15, RUN-17, RUN-19 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-L1 enforced; INV-L2, INV-L3 and INV-L4 partial.
 
-**Nine enforced, eleven partial, nothing unread, of twenty.**
+**Twelve enforced, eight partial, nothing unread, of twenty.**
+
+RUN-2, RUN-5 and RUN-18 moved at 0.95.0. Both were held for one key and read nothing about the
+rest of a set; both were closed by deriving the set instead of listing it, and both found a
+second defect while being closed. RUN-2 was the same shape one layer along and cost one
+sweep: its two credential capabilities were read and the general sentence behind them was
+not. A.7 records what that cost and what it caught. RUN-18
+keeps a clause with only an accidental reader, which is why its line says enforced *for the
+status* rather than plainly — the qualification `openspec/specs/reporting/`'s convention
+requires whenever the word is not the whole truth.
 
 The shape is different from the documents before it. `verdicts/` and `registry/` are unread
 where they make *claims about meaning*; this document is unread where it makes claims about

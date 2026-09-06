@@ -4,8 +4,14 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.94.7 — see [CHANGELOG.md](CHANGELOG.md). A Core Web Vitals rating taken from a
-synthetic load rather than from real visitors now says so in the report, which matters for
+Version 0.95.0 — see [CHANGELOG.md](CHANGELOG.md). `NEEDS_INPUT` means *waiting on you*,
+and two paths were using it for absences nobody can supply — a shared crawl that ran and
+failed, and an offline item whose HTML never existed because the entry page answered 503.
+Which of the two statuses an absence becomes now follows the table of inputs an operator
+can actually hand a run, and that derivation found a contradiction inside a single run
+that had been in a spec's shipped-violations table for eleven releases. Before that,
+`0.94.7` made a Core Web Vitals rating taken from a
+synthetic load rather than from real visitors say so in the report, which matters for
 two items whose titles do not mention field data at all. Before that, `0.94.6` made an artifact that names no page
 recorded as having named none rather than as a checked match, and the search order for a
 Search Console key is fixed rather than incidental. Before that, `0.94.5` made a supplied server log or link export
