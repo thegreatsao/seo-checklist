@@ -442,8 +442,21 @@ value. The gate covers verdict credit as well as severity weight and effort cost
 **Why:** SCR-2 states the obligation and nothing enforces it. A requirement whose
 violation is invisible is the failure mode this whole suite exists to prevent, and here
 it sits on the number the client repeats and the order they act on.
-**Reader:** **none.** This remedy is not implemented. It belongs to the release that
-closes G1.
+**Reader:** partial, and the unread half is the half about people. The three tables are
+pinned by `TheNormativeTablesAreReadFromTheDocument`, which parses §2 out of this document
+rather than transcribing it, so the only green path is changing the code and the document
+together — and that is the moment a reviewer has to notice a release declaration is owed.
+Probed in all four directions on 6 September 2026: editing `SEVERITY_WEIGHT`, the inline
+verdict credit, or `EFFORT_COST` each reddens, and so does editing the table in §2 while
+the code stands still. Verdict credit is read behaviourally through both of the places it
+is written, since it is inline literals in two sums rather than a named constant, and
+`test_the_item_counts_beside_each_table_still_describe_the_registry` holds the counts
+printed beside the tables against the registry itself.
+
+What is not read is the rest of the sentence: the gate does not name the old and new value,
+and it cannot see whether the SCR-2 declaration was made. A change with no declaration
+fails the gate the same way a typo does, so the reviewer is stopped but not told which
+obligation they are under. That half needs the release identity SCR-2 is waiting on.
 
 #### Scenario: a table value moves
 - **WHEN** any of the three tables is edited
@@ -599,13 +612,13 @@ future work, because SCR-2 states obligations the tree does not meet today.
 | | requirements |
 |---|---|
 | **enforced** | SCR-4 |
-| **partial** | SCR-1, SCR-2, SCR-3, SCR-5, SCR-6, SCR-7, SCR-8, SCR-10, SCR-11, SCR-12, SCR-13 |
-| **none** | SCR-9, SCR-14 |
+| **partial** | SCR-1, SCR-2, SCR-3, SCR-5, SCR-6, SCR-7, SCR-8, SCR-10, SCR-11, SCR-12, SCR-13, SCR-14 |
+| **none** | SCR-9 |
 
 Invariants: all four partial — INV-S4 is read for the single-twin case by a reversed-row
 test and unread for the rest.
 
-**One enforced, eleven partial, two unread, of fourteen.**
+**One enforced, twelve partial, one unread, of fourteen.**
 
 Two earlier drafts of this appendix were both wrong, in the same direction. The first
 published four enforced, on readers assembled by reading the document. The second

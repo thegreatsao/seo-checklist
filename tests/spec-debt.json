@@ -139,14 +139,13 @@
     "scoring": {
       "counts": {
         "enforced": 1,
-        "none": 2,
+        "none": 1,
         "opposed": 0,
-        "partial": 11
+        "partial": 12
       },
       "opposed": [],
       "requirements": 14,
       "unread": [
-        "SCR-14",
         "SCR-9"
       ]
     },
@@ -166,9 +165,9 @@
   },
   "totals": {
     "enforced": 48,
-    "none": 19,
+    "none": 18,
     "opposed": 2,
-    "partial": 80,
+    "partial": 81,
     "requirements": 149
   }
 }

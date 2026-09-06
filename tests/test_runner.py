@@ -2400,7 +2400,7 @@ class TheNormativeTablesAreReadFromTheDocument(unittest.TestCase):
     the reader sees both copies without depending on how they are spelled.
     """
 
-    SPEC = os.path.join(ROOT, "specs", "scoring", "spec.md")
+    SPEC = os.path.join(ROOT, "openspec", "specs", "scoring", "spec.md")
 
     @classmethod
     def tables(cls):
