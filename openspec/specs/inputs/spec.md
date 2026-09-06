@@ -114,9 +114,20 @@ the fact that it made no claim SHALL be recorded.
 feature unusable. The honest position is to accept the operator's implicit claim and to
 record that it *was* implicit, so a surprising verdict can be traced back to a file nobody
 checked.
-**Reader:** partial. `test_an_unreadable_artifact_does_not_raise_here` pins that a file the
-subject-reader cannot parse does not end the run. That the absence is *recorded* — and
-therefore visible to whoever reads the artifact later — has no test.
+**Reader:** enforced. `test_an_unreadable_artifact_does_not_raise_here` pins that a file the
+subject-reader cannot parse does not end the run, and
+`tests/test_runner.py::AFileThatNamesNoPageIsUsedAndSaysSo` holds the recording — the half a
+reader depends on months later. Three states have to stay distinguishable in the artifact: a
+claim that matched, a claim that did not, and no claim at all. Only the third is silent about
+whether anyone checked, and recording it as a match would be the tool asserting something
+nobody verified.
+
+Held through a whole audit rather than through `artifact_subject`, because the function
+returning `None` and the run *recording* `None` are different claims and this requirement
+makes the second. A run supplying a file that does name the page is the floor under it:
+without that half, an implementation recording `None` for everything would pass. Probed
+6 September 2026 by recording an unnamed file as a match, which reddens with the sentence
+above.
 
 #### Scenario: an export that names no page
 - **WHEN** a supplied artifact carries no URL of its own
@@ -400,11 +411,25 @@ problem.
 **Why:** this costs a round every time somebody meets it: the API answers a domain property
 and refuses the URL, and the refusal reads as missing access. Deriving the right form by
 default is what stops the operator debugging their credentials.
-**Reader:** partial. The derivation is pinned by the public-suffix tests and by the
+**Reader:** enforced. The derivation is pinned by the public-suffix tests and by the
 redirect test that asserts the property follows a cross-host destination; the override
-reaches the plan. The fallback list has no test, and nothing asserts the four distinct
-reasons a Search Console item may have no verdict, which is the table the report is
-supposed to explain.
+reaches the plan. The two halves that were unread are held since 0.94.6 by
+`tests/test_runner.py::TheSearchConsolePropertyAndItsFourSilences`.
+
+The credential fallback list is read as an *order* rather than as a list of paths, because
+the order is the behaviour: a machine with a stale key in a default location and a fresh one
+in the environment must use the environment's, and the documented variable must outrank the
+legacy one kept only so one machine's setup keeps working. Probed 6 September 2026 by
+swapping those two, which reddens. A path that does not exist is asserted to be skipped
+rather than returned — returning it would turn a missing key into a crash inside a checker
+instead of `NO_DATA` here — and the shipped entries are asserted generic rather than
+naming an account, as a property of the strings so a third entry is covered.
+
+The four silences are asserted to be four different sentences. They look identical in a
+report — an item with no answer — and they send an operator to four different places:
+install an extra, fetch a key, fix the property, or accept that Google has no such endpoint.
+The last of those is additionally asserted never to be phrased as a credentials problem,
+which is the exact round-trip this requirement exists to prevent.
 
 #### Scenario: the property is the domain, not the host
 - **WHEN** the audited host carries `www.` or another subdomain
@@ -478,11 +503,24 @@ makes two runs of the same site differ for reasons that are not about the site. 
 list is the right trade and it goes stale, so the staleness has to be visible — but a
 warning printed on runs where no property was derived is noise, and noise is how a warning
 stops being read.
-**Reader:** partial. Four test functions pin the staleness computation: that the bundled
+**Reader:** partial, and since 0.94.6 the remaining half is a limit of this suite rather
+than an omission. Four test functions pin the staleness computation: that the bundled
 snapshot declares its date, that the date is read from the header, and that a snapshot
-without one reports an unknown age. The age threshold itself is named by no test, and the
-"only when it decided something" clause — the half that keeps the warning meaningful — has
-no reader.
+without one reports an unknown age. `TheStaleListThresholdIsANumberSomebodyChose` adds the
+threshold — a chosen number, per its own basis line, and one that could drift to a decade
+with every test still green, which is the shape HTTP-4's rate and HTTP-10's two caps were in
+before 0.94.1 — together with the floor under it: the shipped snapshot's date must still
+parse, since a number is only useful against a date that can be read.
+
+The "only when it decided something" clause has no reader and cannot get one here. The
+warning is printed on a run that derived a property *from the list*; every fixture in this
+suite is served on loopback, `127.0.0.1` is an address, an address has no registrable domain,
+so Search Console is skipped before the list is consulted. A test written against that
+fixture would pass because the branch was never reached, which is worse than no test — it
+was written, run, and deleted on 6 September 2026 for exactly that reason. What would settle
+it: a fixture reachable by name rather than by address. The guard tests fake that with
+`getaddrinfo` inside their own process; the runner is a subprocess, so it needs a mechanism
+this suite does not have.
 
 #### Scenario: the list is read from disk, never fetched
 - **WHEN** a property is derived on a machine with no route to the outside
@@ -640,7 +678,7 @@ turns the limit on turns this on with it, and the two must be fixed together.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** INP-3 and INP-7 by mutation on 6 September 2026 — adding an undeclared credential to the
+**Probed:** INP-2, INP-3, INP-7 and INP-8 by mutation on 6 September 2026 — adding an undeclared credential to the
 context reddens the membership reader by name. The rest were not: the executor that had been
 running mutation probes ran out of credits partway through this suite of documents. The rows below were
 derived by parsing all 1 280 test functions and asking, per symbol, which bodies name it,
@@ -650,14 +688,14 @@ the one `openspec/specs/evidence/` A.4 states: a test can exercise something wit
 
 | | requirements |
 |---|---|
-| **enforced** | INP-1, INP-3, INP-4, INP-6, INP-7, INP-9 |
-| **partial** | INP-2, INP-5, INP-8, INP-10 |
+| **enforced** | INP-1, INP-2, INP-3, INP-4, INP-6, INP-7, INP-8, INP-9 |
+| **partial** | INP-5, INP-10 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-I3 enforced; INV-I1 and INV-I2 partial; INV-I4 unread.
 
-**Six enforced, four partial, nothing unread, of ten.**
+**Eight enforced, two partial, nothing unread, of ten.**
 
 The split fell along one line, and it was not the line effort would predict. Both enforced
 requirements were about a *file* — is it about this page, is it applied to the right page.

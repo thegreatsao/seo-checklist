@@ -10,6 +10,45 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.94.6 — three readers in `specs/inputs/`, and one test written, run and deleted
+
+Registry version: unchanged at `e9154e92f4dd`. Nothing a run produces changes.
+
+**INP-2 — a file that names no page was used, and nothing checked that the run said so.**
+Most exporters do not write the URL, so refusing such a file would make the feature
+unusable; the honest position is to accept the operator's implicit claim and record that it
+*was* implicit. Three states have to stay distinguishable in the artifact — a claim that
+matched, a claim that did not, and no claim at all — and only the third is silent about
+whether anybody checked. Held through a whole audit, because the subject reader returning
+`None` and the run *recording* `None` are different claims and the requirement makes the
+second. Probed by recording an unnamed file as a match.
+
+**INP-8 — the credential search order, and four silences that must stay four sentences.**
+The fallback list is read as an *order* rather than as a list of paths, because the order is
+the behaviour: a machine with a stale key in a default location and a fresh one in the
+environment must use the environment's, and the documented variable must outrank the legacy
+name kept only so one machine's setup keeps working. Probed by swapping those two. The four
+reasons a Search Console item can end a run undecided look identical in a report and send an
+operator to four different places, so each is asserted to be its own sentence — and an API
+limit is asserted never to be phrased as a credentials problem, which is the round-trip this
+requirement exists to prevent.
+
+**INP-10 — the threshold is held, and the clause beside it is recorded as out of reach.**
+`PSL_STALE_DAYS` is a chosen number by its own basis line, and a chosen number nothing
+asserts can drift to a decade with every test green — the shape HTTP-4's rate and HTTP-10's
+two caps were in before 0.94.1. It is named now, with the floor under it: the shipped
+snapshot's date must still parse, or the age is unknown forever and the warning never fires.
+
+The other clause — warn only on a run that derived a property *from* the list — has no
+reader and cannot get one here. Every fixture is served on loopback; `127.0.0.1` is an
+address, an address has no registrable domain, so Search Console is skipped before the list
+is consulted. The test for it was written, run, and deleted the same afternoon: it passed
+because the branch was never reached, which is worse than no test. What would settle it is
+recorded in the document — a fixture reachable by name rather than by address.
+
+`openspec/specs/inputs/` goes from four enforced of ten to eight. Tree debt: 80 enforced,
+61 partial, 6 unread, 2 opposed, of 149.
+
 ## 0.94.5 — a stale server log could not be refused, because it had no age
 
 Registry version: unchanged at `e9154e92f4dd`. A run that supplies a link export or a

@@ -4598,5 +4598,215 @@ class AStaleArtifactIsRefusedByAWholeRun(unittest.TestCase):
         self.assertTrue(any("day(s) ago" in r for r in reasons),
                         "no item explains that its input was refused for being old")
 
+
+class AFileThatNamesNoPageIsUsedAndSaysSo(unittest.TestCase):
+    """`openspec/specs/inputs/` INP-2. Most exporters do not write the URL, so refusing
+    every file that names no page would make the feature unusable. The honest position is
+    to accept the operator's implicit claim and to record that it *was* implicit, so a
+    surprising verdict can be traced back to a file nobody checked.
+
+    Half of that was read: an unparseable file does not end the run. The recording — the
+    half a reader depends on months later — was not, and it is the difference between three
+    states that look alike in a report: the file said which page and it matched, the file
+    said which page and it did not, and the file said nothing at all. Only the third is
+    silent about whether anyone checked.
+
+    Held here through a whole audit rather than through `artifact_subject`, because the
+    function returning `None` and the artifact recording `None` are different claims, and
+    the second is the one INP-2 makes.
+    """
+
+    PAGE = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+            "<title>A page with an anonymous export beside it</title>"
+            "<meta name=\"description\" content=\"Enough of a page for the runner to reach "
+            "the end.\"></head><body><h1>A page</h1>"
+            "<p>Body copy with enough words in it that the thin-entry guard stays quiet, "
+            "because a guard firing here would stop the audit before the thing under test "
+            "ran at all.</p></body></html>")
+
+    @classmethod
+    def setUpClass(cls):
+        cls.work = tempfile.mkdtemp(prefix="seo-anon-")
+        silent = os.path.join(cls.work, "cwv-silent.json")
+        with open(silent, "w", encoding="utf-8") as fh:
+            json.dump({"source": "hand-written for a test", "lcp_ms": 900,
+                       "cls": 0.01, "inp_ms": 120}, fh)
+        cls.silent = silent
+        with harness.served({"/": cls.PAGE}) as site:
+            named = os.path.join(cls.work, "cwv-named.json")
+            with open(named, "w", encoding="utf-8") as fh:
+                json.dump({"source": "hand-written for a test", "url": site.url,
+                           "lcp_ms": 900, "cls": 0.01, "inp_ms": 120}, fh)
+            cls.anonymous = cls.audit(site.url, "--cwv-json", silent)
+            cls.named = cls.audit(site.url, "--cwv-json", named)
+
+    @classmethod
+    def audit(cls, url, *extra):
+        out = os.path.join(cls.work, "results-%d.json" % len(os.listdir(cls.work)))
+        proc = harness.spawn(
+            [sys.executable, os.path.join(SCRIPTS, "checklist_runner.py"), url,
+             "--allow-private", "--max-rps", "0", "--no-history", "--no-prompt",
+             "--quiet", "--timeout", "90", "--json", out, "--only", "speed", *extra],
+            timeout=600)
+        if proc.returncode != 0:
+            raise AssertionError("the audit exited %s\n%s\n%s"
+                                 % (proc.returncode, proc.stdout[-2000:],
+                                    proc.stderr[-2000:]))
+        with open(out, encoding="utf-8") as fh:
+            return json.load(fh)
+
+    def test_a_file_naming_no_page_is_used_rather_than_refused(self):
+        entry = self.anonymous["artifacts"]["cwv_json"]
+        self.assertEqual(entry["path"], self.silent)
+        self.assertNotIn("cwv_json", self.anonymous.get("rejected_artifacts") or {})
+        self.assertGreater(self.anonymous["scores"]["decided"], 0)
+
+    def test_the_run_records_that_the_file_made_no_claim(self):
+        """`None`, and not `True`. The three states have to stay distinguishable: a claim
+        that matched, a claim that did not, and no claim at all. Recording the third as a
+        match would be the tool asserting something nobody checked."""
+        entry = self.anonymous["artifacts"]["cwv_json"]
+        self.assertIsNone(entry["describes"],
+                          "the artifact was recorded as describing a page it never named")
+        self.assertIsNone(entry["matches_audited_url"],
+                          "a file that made no claim was recorded as a checked match")
+
+    def test_a_file_that_does_name_the_page_is_recorded_as_checked(self):
+        """The floor under the assertion above: without it, an implementation that
+        recorded `None` for everything would pass."""
+        entry = self.named["artifacts"]["cwv_json"]
+        self.assertIsNotNone(entry["describes"])
+        self.assertTrue(entry["matches_audited_url"])
+
+
+class TheSearchConsolePropertyAndItsFourSilences(unittest.TestCase):
+    """`openspec/specs/inputs/` INP-8, the two halves its Reader line called unread: the
+    credential fallback list, and the four distinct reasons a Search Console item can end a
+    run with no verdict.
+
+    The second matters more than it sounds. Those four look identical in a report — an item
+    with no answer — and they send an operator to four different places: install an extra,
+    fetch a key, fix the property, or accept that Google has no such endpoint. A report that
+    cannot tell them apart sends somebody to debug their credentials over a limit that is
+    Google's, which is the round-trip this requirement exists to prevent.
+
+    The fallback list is read here the way `openspec/specs/governance/` GOV-3 asks: not by
+    restating the two paths, but by asserting the *order* — the flag, then
+    `GSC_CREDENTIALS_PATH`, then `GV_SA_KEY`, then the bundled defaults — because the order
+    is the behaviour. A machine with a stale key in a default location and a fresh one in
+    the environment must use the environment's, and nothing said so.
+    """
+
+    def setUp(self):
+        self.saved = {name: os.environ.get(name)
+                      for name in ("GSC_CREDENTIALS_PATH", "GV_SA_KEY")}
+        for name in self.saved:
+            os.environ.pop(name, None)
+        self.dir = tempfile.mkdtemp(prefix="seo-gsc-")
+
+    def tearDown(self):
+        for name, value in self.saved.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+    def key_at(self, name):
+        path = os.path.join(self.dir, name)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write("{}")
+        return path
+
+    def test_the_flag_wins_over_the_environment(self):
+        flag, env = self.key_at("flag.json"), self.key_at("env.json")
+        os.environ["GSC_CREDENTIALS_PATH"] = env
+        self.assertEqual(runner.find_gsc_credentials(flag), flag)
+
+    def test_the_named_variable_wins_over_the_legacy_one(self):
+        """`GV_SA_KEY` is one machine's pre-existing name, kept so setup keeps working.
+        A run that has both must use the documented one, or the legacy name silently
+        outranks the one the docs tell people to set."""
+        named, legacy = self.key_at("named.json"), self.key_at("legacy.json")
+        os.environ["GSC_CREDENTIALS_PATH"] = named
+        os.environ["GV_SA_KEY"] = legacy
+        self.assertEqual(runner.find_gsc_credentials(""), named)
+
+    def test_a_path_that_does_not_exist_is_skipped_rather_than_returned(self):
+        """The fallbacks are candidates, not answers: returning a path nothing is at
+        would turn a missing key into a crash inside a checker instead of NO_DATA here."""
+        real = self.key_at("real.json")
+        os.environ["GSC_CREDENTIALS_PATH"] = os.path.join(self.dir, "absent.json")
+        os.environ["GV_SA_KEY"] = real
+        self.assertEqual(runner.find_gsc_credentials(""), real)
+
+    def test_nothing_anywhere_is_the_empty_string_and_not_an_exception(self):
+        self.assertEqual(runner.find_gsc_credentials(""), "")
+
+    def test_the_fallback_paths_are_generic_rather_than_one_account(self):
+        """The list ships with the tool, so a path naming somebody's account would send
+        every other machine looking for a file that cannot exist. Asserted as a property
+        of the strings rather than by listing them, so a third entry is covered."""
+        for path in runner.GSC_FALLBACKS:
+            with self.subTest(path=path):
+                self.assertTrue(path.startswith("~/"),
+                                "a fallback outside the home directory is machine-specific")
+                self.assertNotIn("@", path)
+
+    def test_the_four_silences_are_four_different_sentences(self):
+        """Each reason an item can have no Search Console verdict must be its own text.
+
+        `GSC_UNAVAILABLE` holds the ones Google has no endpoint for — those are `MANUAL`,
+        because no wiring will ever answer them — and the runner's own paths cover a
+        missing key, a property that cannot be derived, and a private host no property can
+        cover. If two of these shared a sentence, the operator sent to fix one would be
+        reading about another.
+        """
+        sentences = set(runner.GSC_UNAVAILABLE.values())
+        self.assertEqual(len(sentences), len(runner.GSC_UNAVAILABLE),
+                         "two items Google cannot answer share one explanation")
+        for text in sentences:
+            with self.subTest(text=text[:40]):
+                self.assertNotIn("credential", text.lower(),
+                                 "an API limit is explained as a credentials problem, "
+                                 "which is the round-trip INP-8 exists to prevent")
+
+
+class TheStaleListThresholdIsANumberSomebodyChose(unittest.TestCase):
+    """`openspec/specs/inputs/` INP-10's threshold, and a note on the clause beside it.
+
+    A bundled public suffix list is the right trade — fetching it at run time would make an
+    audit depend on somebody else's uptime — and it goes stale, so the staleness has to be
+    visible. The number that decides when is `PSL_STALE_DAYS`, and its own basis line says
+    it is chosen rather than derived: a year is long enough that the warning means the
+    snapshot was forgotten rather than merely not refreshed this week. A chosen number that
+    nothing asserts can drift to a decade with every test still green, which is the shape
+    HTTP-4's rate and HTTP-10's two caps were in before 0.94.1.
+
+    **The clause beside it stays unread, and this says why rather than pretending.** The
+    warning is printed only on a run that derived a property *from the list* — on a run
+    where the operator named the property, the list decided nothing and the same sentence
+    would send them to refresh a file that had no part in it. Holding that end to end needs
+    a run whose host has a registrable domain, and every fixture here is served on
+    loopback: `127.0.0.1` is an address, an address has no registrable domain, so Search
+    Console is skipped before the list is ever consulted. A test written against that
+    fixture passes because the branch was never reached, which is worse than no test.
+
+    What would settle it: a fixture reachable by name rather than by address. The guard
+    tests fake that with `getaddrinfo` inside their own process, and the runner is a
+    subprocess, so it needs a different mechanism than this suite has today.
+    """
+
+    def test_the_threshold_is_a_year(self):
+        self.assertEqual(runner.PSL_STALE_DAYS, 365)
+
+    def test_the_snapshot_the_tree_ships_is_dated_and_parseable(self):
+        """The floor under the threshold: a number to compare against is only useful if
+        the date it is compared to can be read. A snapshot whose header stopped parsing
+        would report an unknown age forever and never trip the warning."""
+        taken, age = runner.psl_staleness()
+        self.assertTrue(taken, "the bundled list declares no snapshot date")
+        self.assertGreaterEqual(age, 0, "the bundled snapshot's date cannot be read")
+
 if __name__ == "__main__":
     unittest.main()
