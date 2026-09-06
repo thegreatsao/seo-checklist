@@ -140,6 +140,7 @@ DEFAULT_MAX_RPS = 4.0
 # only kept per process tree.
 DEFAULT_RATE_LIMIT_DIR = os.path.join(tempfile.gettempdir(), "seo-checklist-rate")
 RATE_LIMIT_DIR_VAR = "SEO_RATE_LIMIT_DIR"
+CACHE_HIT_COUNTER = "http-cache-hits.count"
 # basis: convention — 30s. A server that says 'come back in an hour' is not worth
 #  waiting for inside an audit; past this the item reports NO_DATA with the reason,
 #  which is more useful than a run that appears to hang
@@ -213,6 +214,62 @@ def _unlock(fd) -> None:
         return
     os.lseek(fd, 0, os.SEEK_SET)
     msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+
+
+def _cache_hit_path() -> str:
+    return os.path.join(rate_limit_dir(), CACHE_HIT_COUNTER)
+
+
+def _cache_hit_tally(increment: int = 0) -> int:
+    """Read or advance the shared cache-hit tally without failing a request."""
+    fd = None
+    try:
+        path = _cache_hit_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+        if not _lock_exclusive(fd, blocking=True):
+            raise OSError("could not lock cache-hit counter")
+        try:
+            os.lseek(fd, 0, os.SEEK_SET)
+            raw = os.read(fd, 64).decode("ascii", "replace").strip()
+            try:
+                count = max(0, int(raw)) if raw else 0
+            except ValueError:
+                # A torn or foreign write must lose provenance, not stop every
+                # checker that was about to hand its caller a valid response.
+                count = 0
+            if increment:
+                count += increment
+                os.ftruncate(fd, 0)
+                os.lseek(fd, 0, os.SEEK_SET)
+                os.write(fd, str(count).encode("ascii"))
+            return count
+        finally:
+            _unlock(fd)
+    except Exception:  # noqa: BLE001
+        # Provenance accounting cannot turn a usable cached response into a failed
+        # check merely because the machine's shared state cannot be coordinated.
+        return 0
+    finally:
+        if fd is not None:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+
+
+def cache_hit_count() -> int:
+    """Return the machine-wide cache-hit tally, or zero if it cannot be read."""
+    return _cache_hit_tally()
+
+
+def cache_hit_baseline() -> int:
+    """Establish a run baseline without erasing another concurrent run's hits."""
+    return cache_hit_count()
+
+
+def _count_cache_hit() -> None:
+    _cache_hit_tally(1)
 
 
 def pace(host: str, rps: float | None = None) -> float:
@@ -1243,7 +1300,11 @@ def safe_request(
             if meta is not None:
                 if respect_robots:
                     _robots_permits_entry(meta)
-                return _response_from_entry(meta)
+                response = _response_from_entry(meta)
+                # Count only after every replay gate and reconstruction succeeded;
+                # a refused or malformed entry never reached a checker as an answer.
+                _count_cache_hit()
+                return response
 
         for _ in range(max_redirects + 1):
             response = _paced_request(requester, method, current, request_headers,

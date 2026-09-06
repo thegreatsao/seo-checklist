@@ -17,6 +17,8 @@ ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "skills/seo-checklist/scripts"
 sys.path.insert(0, str(SCRIPTS))
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from harness import spawn  # noqa: E402
 from lib import safe_http as sh  # noqa: E402
 
 
@@ -593,6 +595,145 @@ class ASuccessfulFetchCarriesNoFailure(unittest.TestCase):
                 result = self.fetched(status=status)
                 self.assertEqual(result.get("error") is None,
                                  result.get("error_kind") is None)
+
+
+class TheCacheTellsTheReaderItAnswered(unittest.TestCase):
+    """`openspec/specs/http/` HTTP-8. A run records whether the response cache was on, and
+    the surface a person is handed says so too.
+
+    The recording half was read from 0.93.x. The other half was a defect rather than a gap:
+    `provenance_warnings` covered the parser, the private host, the allowance, the guard,
+    the thin entry and the artifacts, and not the cache — so the one fact that separates
+    "this is the page" from "this was the page a few minutes ago" sat in the JSON and
+    reached nobody. `test_the_provenance_list_still_omits_the_cache` in `test_contract.py` pinned that
+    absence and was written to fail at the moment it was closed; it did, and
+    `test_the_reader_of_the_report_is_told_the_cache_answered` replaced it.
+
+    What the requirement asks for is narrower than "the cache was on", and the distinction
+    is the whole point: a warning printed on every cached run is one a reader learns to
+    skip. So the count is of responses actually *handed back* from disk, and these tests
+    hold that boundary from both sides — a hit counts, and an entry refused by either replay
+    gate does not, because a refused entry never answered anybody.
+
+    The tally lives in the shared state directory beside the pacing slots, because the
+    checkers are separate processes and a module global would report zero on every real run.
+    Each test gets its own directory: the counter is machine-wide by construction, and two
+    audits at once are a known imprecision recorded in the payload comment rather than a
+    thing to pretend away.
+    """
+
+    def setUp(self):
+        self.saved = {name: os.environ.get(name) for name in
+                      ("SEO_ALLOW_PRIVATE", "SEO_HTTP_CACHE", "SEO_MAX_RPS",
+                       "SEO_RATE_LIMIT_DIR")}
+        os.environ.pop("SEO_ALLOW_PRIVATE", None)
+        os.environ["SEO_MAX_RPS"] = "0"
+        self.state = tempfile.mkdtemp(prefix="seo-hits-")
+        self.cache = tempfile.mkdtemp(prefix="seo-cache-")
+        os.environ["SEO_RATE_LIMIT_DIR"] = self.state
+        os.environ["SEO_HTTP_CACHE"] = self.cache
+
+    def tearDown(self):
+        for name, value in self.saved.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+    def fetch(self, **kwargs):
+        """One `safe_get` against a public address, served from the adapter seam."""
+        def send(adapter, request, **rest):
+            return response_for(request, headers={"Cache-Control": "max-age=600"},
+                                body=b"<html><body>hello</body></html>")
+
+        with mock.patch.object(sh.socket, "getaddrinfo",
+                               side_effect=lambda *a, **k: answer(PUBLIC_A, 80)), \
+                mock.patch.object(sh._PinnedAdapter, "send", new=send), \
+                mock.patch.object(sh, "robots_allows", return_value=(True, 0.0)):
+            return sh.safe_get("http://public.example/page", **kwargs)
+
+    def test_a_response_served_from_disk_is_counted(self):
+        before = sh.cache_hit_count()
+        self.fetch()
+        self.assertEqual(sh.cache_hit_count(), before,
+                         "the first fetch was a miss and must not count")
+        self.fetch()
+        self.assertEqual(sh.cache_hit_count(), before + 1,
+                         "the second fetch was answered from disk and was not counted")
+
+    def test_an_entry_the_caller_will_not_accept_is_not_a_hit(self):
+        """`_cap_allows` refuses a stored body larger than a later caller's own limit, and
+        the request goes out again. Counting that as a hit would tell a reader the verdict
+        came from a cached response when it came from a fresh one."""
+        self.fetch()
+        before = sh.cache_hit_count()
+        # It refuses rather than trimming, and refuses exactly as an uncached run would
+        # have — HTTP-10's own scenario. What matters here is that the stored entry was
+        # not counted as an answer on the way past.
+        with self.assertRaises(sh.SafeHTTPError):
+            self.fetch(max_response_bytes=4)
+        self.assertEqual(sh.cache_hit_count(), before)
+
+    def test_an_entry_robots_no_longer_permits_is_not_a_hit(self):
+        """HTTP-7: a cache hit is re-checked against `robots.txt`, because the rules may
+        have changed since the response was stored. A refusal is our restraint, not an
+        answer, and provenance must not claim otherwise."""
+        self.fetch(respect_robots=True)
+        before = sh.cache_hit_count()
+        # `respect_robots` is off by default — HTTP-5's asymmetry, since the audited URL
+        # is one the operator handed us — so the case worth holding is the one a crawl
+        # takes, where it is on and the stored entry is re-checked on the way out.
+        with self.assertRaises(sh.RobotsDisallowed):
+            with mock.patch.object(sh.socket, "getaddrinfo",
+                                   side_effect=lambda *a, **k: answer(PUBLIC_A, 80)), \
+                    mock.patch.object(sh, "robots_allows", return_value=(False, 0.0)):
+                sh.safe_get("http://public.example/page", respect_robots=True)
+        self.assertEqual(sh.cache_hit_count(), before)
+
+    def test_the_tally_is_shared_rather_than_per_process(self):
+        """The reason it is a file at all. Every checker is its own process, so a count
+        kept in memory would be zero in the runner that writes the artifact."""
+        self.fetch()
+        self.fetch()
+        code = ("import sys; sys.path.insert(0, %r); "
+                "from lib.safe_http import cache_hit_count; print(cache_hit_count())"
+                % str(SCRIPTS))
+        proc = spawn([sys.executable, "-c", code], timeout=120)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(int(proc.stdout.strip()), sh.cache_hit_count())
+
+
+class TheReportNamesTheCacheOnlyWhenItAnswered(unittest.TestCase):
+    """The surface half of HTTP-8, held in both directions.
+
+    One direction is the defect this closed: a run whose verdicts came off disk said
+    nothing. The other is why the branch is conditional — the parser warning is silent for
+    `lxml` for the same reason, and a provenance list that warns about every run trains its
+    reader to stop reading it.
+    """
+
+    def warnings(self, **payload):
+        sys.path.insert(0, str(SCRIPTS))
+        from checklist_report import provenance_warnings
+        return provenance_warnings(dict({"html_parser": "lxml"}, **payload))
+
+    def cache_lines(self, **payload):
+        return [w for w in self.warnings(**payload) if "cache" in w.lower()]
+
+    def test_a_run_that_answered_from_the_cache_says_so_and_says_how_often(self):
+        lines = self.cache_lines(http_cache=True, http_cache_hits=3)
+        self.assertEqual(len(lines), 1, self.warnings(http_cache=True, http_cache_hits=3))
+        self.assertIn("3", lines[0])
+
+    def test_a_cached_run_that_answered_nothing_from_it_is_silent(self):
+        """`http_cache` true and no hits is the ordinary first audit of a site: the cache
+        was open and everything missed. Nothing about those verdicts is older than the run,
+        so there is nothing to warn about."""
+        self.assertEqual(self.cache_lines(http_cache=True, http_cache_hits=0), [])
+
+    def test_a_run_with_no_cache_field_at_all_is_silent(self):
+        """Artifacts written before the count existed, read by a later report."""
+        self.assertEqual(self.cache_lines(), [])
 
 if __name__ == "__main__":
     unittest.main()

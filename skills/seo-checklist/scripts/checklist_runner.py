@@ -2904,8 +2904,12 @@ def main() -> int:
     mode, caps = resolve_mode(a)
 
     http_cache = ""
+    http_cache_baseline = 0
     if caps & {"fetch", "crawl", "api"} and not a.no_http_cache:
         http_cache = open_http_cache()
+        if http_cache:
+            from lib.safe_http import cache_hit_baseline
+            http_cache_baseline = cache_hit_baseline()
 
     gsc_path = resolve_gsc(a, caps, mode)
 
@@ -3262,6 +3266,11 @@ def main() -> int:
         if per_page:
             graded = aggregate_pages(graded, per_page)
 
+    http_cache_hits = 0
+    if http_cache:
+        from lib.safe_http import cache_hit_count
+        http_cache_hits = max(0, cache_hit_count() - http_cache_baseline)
+
     payload = {
         "url": audit_url,
         "domain": domain,
@@ -3327,6 +3336,10 @@ def main() -> int:
         # items can describe two different documents — a reader comparing verdicts
         # that disagree needs to know which kind of run this was.
         "http_cache": bool(http_cache),
+        # Enabled is not used: this counts responses that really came from disk.
+        # The baseline excludes an earlier run without resetting a counter another
+        # audit on this machine may be updating at the same time.
+        "http_cache_hits": http_cache_hits,
         # Whether the host actually turned out to be one only we can reach. The
         # flag says what was permitted; this says what happened, and it is the one
         # that decides whether "no external service could measure this" is true.

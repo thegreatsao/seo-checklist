@@ -407,21 +407,34 @@ document; with it on, a verdict may be about a response fetched earlier in the r
 host, an overridden guard, a stale artifact — appears in the report's provenance. The cache
 belongs in that list for the same reason: it is the difference between "this is the page"
 and "this was the page a few minutes ago".
-**Reader:** partial, and the unread half is a defect rather than a gap in the tests.
-`test_a_normal_run_records_that_the_cache_was_on` and
+**Reader:** enforced, and the half that was missing was a defect rather than a gap in the
+tests. `test_a_normal_run_records_that_the_cache_was_on` and
 `test_turning_the_cache_off_is_recorded_too` hold the requirement's own sentence in both
 directions — a field hard-coded to `True` would satisfy the first alone — and
-`--no-http-cache`, which had no test at all, is now exercised end to end.
+`--no-http-cache` is exercised end to end.
 
-What is not held is what the **Why** argues for, because it does not exist:
-`provenance_warnings` covers the parser, the private host, the allowance, the guard, the
-thin entry and the artifacts, and **not the cache**. So the fact is recorded in the
-artifact and never reaches the reader the requirement was written for.
-`test_the_provenance_list_still_omits_the_cache` pins that absence rather than asserting a
-failure on purpose — a test pinned to a defect is a test that breaks when the defect is
-fixed, so this one is written to fail *at the moment the cache joins the list* and to say,
-in its own failure message, that it should then be replaced by the positive assertion.
-Closing it is a release, not an edit here.
+What the **Why** argued for did not exist until 0.94.1: `provenance_warnings` covered the
+parser, the private host, the allowance, the guard, the thin entry and the artifacts, and
+**not the cache**, so the fact was recorded in the artifact and reached nobody. Closing it
+needed a mechanism as well as a test, because the scenario is about a run that *answered
+from* the cache and nothing counted hits — only whether the cache was open. A warning on
+every cached run would be one a reader learns to skip, which is the same reason the parser
+warning is silent for `lxml`.
+
+The count is kept in the shared state directory beside the pacing slots, under the same
+lock discipline, because every checker is its own process and a tally in memory reports
+zero in the runner that writes the artifact. `TheCacheTellsTheReaderItAnswered` holds the
+boundary from both sides — a served entry counts, an entry refused by the cap or by the
+robots re-check does not, and a second process reads the same tally — and
+`TheReportNamesTheCacheOnlyWhenItAnswered` holds the surface in both directions. Probed by
+making the warning fire on `http_cache` instead of on the count, which reddens the silent
+case.
+
+The absence itself had been pinned rather than left to be rediscovered:
+`test_the_provenance_list_still_omits_the_cache` was written to fail *at the moment the
+cache joined the list* and to say in its own message that it should then be replaced. It
+did, on a full audit that answered 69 responses off disk, and
+`test_the_reader_of_the_report_is_told_the_cache_answered` is what replaced it.
 
 #### Scenario: the artifact says the cache was on
 - **WHEN** a run that could fetch anything completes
@@ -695,6 +708,12 @@ The field is therefore a claim nobody makes and nobody checks. It is the third i
 the shape this suite keeps finding: a value recorded beside the thing it describes, faithful
 at the moment it was written, compared with nothing afterwards.
 
+**Closed 6 September 2026.** Measured again at that date the search returns readers in three
+files, and the missing surface exists: a run that answered from the cache says so, with the
+count. What the closing needed that was not obvious from this measurement is that the cache
+had to learn to *count*, not merely to be on — the requirement is about answers off disk,
+and nothing distinguished those from an open cache that missed everything.
+
 #### A.2 — eleven constants decide behaviour and none is pinned at its value
 
 | constant | value | what a test asserts |
@@ -795,21 +814,21 @@ and reddens two of its four readers now. HTTP-8 — as of 5 September 2026 the r
 provenance omission is pinned as an absence; before that, the string
 `http_cache` appears nowhere under `tests/`.
 
-**Derived, not probed:** the six `partial` rows. Each names which half it believes is
+**Derived, not probed:** the five `partial` rows. Each names which half it believes is
 unread; that half was established by reading the asserting test's body and by greps for the
 absences, not by breaking the code. A `partial` that is really an `enforced` or a `none` is
 the error this method leaves open, and the halves are where to look first.
 
 | | requirements |
 |---|---|
-| **enforced** | HTTP-1, HTTP-6, HTTP-7, HTTP-9, HTTP-11, HTTP-12 |
-| **partial** | HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-8, HTTP-10 |
+| **enforced** | HTTP-1, HTTP-6, HTTP-7, HTTP-8, HTTP-9, HTTP-11, HTTP-12 |
+| **partial** | HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-10 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-H2 and INV-H3 enforced; INV-H1 and INV-H4 partial.
 
-**Six enforced, six partial, nothing unread, of twelve.**
+**Seven enforced, five partial, nothing unread, of twelve.**
 
 HTTP-1 moved on 6 September 2026, and the half that was missing turned out to be a hole
 rather than a gap in the tests: the `robots.txt` fetch skipped the guard entirely, so the

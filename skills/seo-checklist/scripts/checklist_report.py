@@ -749,6 +749,13 @@ def provenance_warnings(data: dict, L: "Lang | None" = None) -> list[str]:
                        "the checklist reads is identical between the two, but checks "
                        "that depend on document structure are not — a run with the "
                        "other parser can disagree about them.").format(parser=parser))
+    cache_hits = data.get("http_cache_hits") or 0
+    if cache_hits > 0:
+        out.append(L.t("w_http_cache",
+                       "The response cache supplied {count} response(s) during this "
+                       "run. Some verdicts therefore describe ‘this was the page a "
+                       "few minutes ago’ rather than ‘this is the page now’.").format(
+                           count=cache_hits))
     if data.get("entry_private"):
         # The stronger statement, and the only one that is a fact rather than a
         # permission: the host resolved to an address only the auditing machine can

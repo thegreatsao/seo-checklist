@@ -786,10 +786,13 @@ class TheRunSaysWhetherItUsedACache(unittest.TestCase):
     "this is the page" and "this was the page a few minutes ago".
 
     The field was written and read by nothing — the suite mentioned it zero times and
-    `--no-http-cache` had no test. What is held here is the recording. The other half of
-    the requirement's argument, that the cache belongs in the report's provenance list
-    beside the parser and the private host and the stale artifact, is **not implemented**
-    and is recorded as a defect in that document rather than papered over here.
+    `--no-http-cache` had no test. What is held here is the recording, and since 0.94.1 the
+    other half of the requirement's argument as well: that the cache belongs in the report's
+    provenance list beside the parser and the private host and the stale artifact.
+
+    That half was pinned here as an *absence* while it was missing, in a test written to
+    fail at the moment it was closed and to say so in its own message. It did, on a real
+    audit that answered 69 responses off disk, and the assertion below is what replaced it.
     """
 
     def test_a_normal_run_records_that_the_cache_was_on(self):
@@ -801,20 +804,32 @@ class TheRunSaysWhetherItUsedACache(unittest.TestCase):
         run = partial_audit("nocache", SITE.good, "--no-http-cache")
         self.assertIs(run["http_cache"], False)
 
-    def test_the_provenance_list_still_omits_the_cache(self):
-        """A failing-on-purpose assertion would be a test pinned to a defect, so this
-        pins the *absence* instead and says what closing it looks like: when the cache
-        joins the provenance warnings, this test fails and is replaced by one asserting
-        the warning appears. Until then it stops the omission being rediscovered."""
+    def test_the_reader_of_the_report_is_told_the_cache_answered(self):
+        """The end of the chain, on a real audit rather than a constructed payload: this
+        run fetched a live fixture site, answered part of it from disk, and the sentence a
+        person is handed says so and says how many.
+
+        Counted across processes, which is the half a unit test cannot reach — every
+        checker is its own process, so a tally kept in memory would be zero here.
+        """
         from checklist_report import provenance_warnings
         data = dict(RESULTS["good"], html_parser="lxml", entry_private=False,
                     allow_private=False, entry_guard="", entry_thin=False,
                     artifacts={})
-        printed = " ".join(provenance_warnings(data)).lower()
-        self.assertNotIn("cache", printed,
-                         "the cache now reaches provenance — good; replace this test "
-                         "with one asserting it appears, and close HTTP-8 in "
-                         "openspec/specs/http/")
+        self.assertGreater(data["http_cache_hits"], 0,
+                           "this audit answered nothing from the cache, so it cannot say "
+                           "whether the warning would appear")
+        printed = [w for w in provenance_warnings(data) if "cache" in w.lower()]
+        self.assertEqual(len(printed), 1, provenance_warnings(data))
+        self.assertIn(str(data["http_cache_hits"]), printed[0])
+
+    def test_a_run_without_the_cache_says_nothing_about_it(self):
+        """The conditional half. A warning on every run is one a reader learns to skip,
+        which is why the parser warning is silent for `lxml` too."""
+        from checklist_report import provenance_warnings
+        run = partial_audit("nocache-provenance", SITE.good, "--no-http-cache")
+        self.assertEqual(run["http_cache_hits"], 0)
+        self.assertEqual([w for w in provenance_warnings(run) if "cache" in w.lower()], [])
 
 
 class TheRecordDoesNotDependOnHowItWasInvoked(unittest.TestCase):
