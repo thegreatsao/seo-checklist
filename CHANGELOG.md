@@ -10,6 +10,49 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.93.8 — a rule names exactly one operator, and the check that said so was a substring search
+
+Registry version: unchanged at `e9154e92f4dd`. No rule changes; what changes is what the
+suite refuses.
+
+**Three sentences of `openspec/specs/registry/` REG-7, none of them held.**
+
+* **Exactly one operator.** Two are an error rather than a conjunction: `evaluate()`
+  applies the first branch it reaches and discards the second in silence, so the rule
+  means whichever the implementation happens to check first, and a refactor of branch
+  order changes a verdict. One test required *at least* one operator, another forbade
+  naming one the evaluator lacks, and neither forbade two.
+* **Only keys the language defines.** Nothing said so.
+* **An unused operator is specified or removed.** The appendix listing them was written
+  by hand and nothing compared it to the tree.
+
+**The check that was there was weaker than it read.** `assertIn(f'"{key}"', RUNNER_SRC)`
+searched the runner's source for the operator's name as a substring, and that file's prose
+contains `"eq"`. A rule naming an operator the evaluator does not implement — which reports
+`NO_DATA` forever — would have passed on a mention in a comment.
+
+**The vocabulary is derived now, from `evaluate()`'s own branches: nineteen operators
+across three code shapes.** A bare `if "truthy" in rule:`, a `for op, cmp in (("gte", …))`
+whose body tests `op in rule`, and `between` / `len_between` written out singly. The
+scan's first draft knew one of the three, found twelve, and reported that sixty-five rules
+named no operator at all — which is how the gap was noticed, and why
+`test_the_vocabulary_is_found_and_has_the_three_shapes_in_it` is a floor under every count
+that follows. An undercount here reads as an alarming finding rather than as a broken
+instrument.
+
+**The unused set had already moved and nobody had noticed.** `count_matching_lte` lost its
+last two users in `0.93.0`, when MB-095 and MB-098 stopped deciding from `issues` prose.
+Appendix A.4 still said four; there are five, and both sides are derived now — the unused
+set from the evaluator and the registry, the named set from that appendix's own bullets.
+The paragraph about `gt` stays in prose and out of the harvest: it records that an earlier
+count read `gt` as unused by looking at `assert` blocks alone, and removing it would have
+taken with it the only two applicability declarations in the registry.
+
+Probed by giving CI-004 a second operator: the test names the item, both operators and the
+branch-order consequence.
+
+`openspec/specs/registry/` reaches six enforced of thirteen. The suite total is 56 of 149.
+
 ## 0.93.7 — `inherited` gets a ratchet, and may no longer argue its own number
 
 Registry version: unchanged at `e9154e92f4dd`. Nothing a run produces changes.

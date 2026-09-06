@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.93.7 — see [CHANGELOG.md](CHANGELOG.md). The last four verdicts decided by
+Version 0.93.8 — see [CHANGELOG.md](CHANGELOG.md). The last four verdicts decided by
 matching words in a message now read counted fields, and three of them move: GO-138's
 `404` matched a 404 and not a 500, so a sitemap of URLs returning 503 passed; MB-095
 counted a message its script only emits when told to fetch images, which the registry
@@ -21,7 +21,9 @@ staleness check and compared with nothing. `0.93.4` counts the rest of them: 166
 and what the operator has to supply. `0.93.6` widens the count ledger past the protocol
 and corrects sixteen more numbers about this tree, ten of them in this file and in the
 scripts' own docstrings. `0.93.7` puts a ratchet under the 77 thresholds nobody here has
-defended, and forbids one of them to argue its own number.
+defended, and forbids one of them to argue its own number. `0.93.8` derives the assertion
+language's nineteen operators from the evaluator instead of searching its source for a
+substring, and refuses a rule that names two of them.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

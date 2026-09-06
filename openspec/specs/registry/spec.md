@@ -293,20 +293,33 @@ either specified here or removed from the language.
 **Why:** the first item written against an unused operator inherits whatever semantics
 were never defended. Two of the four unused ones are already surprising: one inspects
 only the first matched text, the other stringifies its value before matching.
-**Reader:** partial, and thinner than it looks. `test_a_rule_does_more_than_name_a_path`
-requires *at least* one operator and `test_assert_rules_use_operators_the_runner_implements`
-forbids naming one the runner lacks. Neither forbids **two**: a rule carrying two
-operators passes both and is then decided by branch order. No item does this today, which
-is why nothing has caught it. Nothing forbids the language from carrying an operator no
-item uses and no document describes.
+**Reader:** enforced.
+`tests/test_registry.py::AnAssertionLanguageWithOneOperatorPerRule` holds all three
+sentences. Every rule names exactly one operator — probed by giving CI-004 a second, which
+the test names along with the branch-order consequence. A rule carries no key the language
+does not define. And the operators no item uses are exactly the ones A.4 lists, with both
+sides derived: the unused set from the evaluator and the registry, the named set from that
+appendix's bullets.
+
+The vocabulary comes from `evaluate()`'s own branches — nineteen operators across three
+code shapes — rather than from a list here, because a list would be a second copy of a
+closed language and the copy that drifts is the one nothing runs. The scan's first draft
+knew one shape of the three, found twelve, and reported that sixty-five rules named no
+operator at all; `test_the_vocabulary_is_found_and_has_the_three_shapes_in_it` is the
+floor that stops an undercount reading as a finding.
+
+What it replaced was weaker than it read: `test_assert_rules_use_operators_the_runner_implements`
+searched the runner's source for `"eq"` as a substring, and that file's prose contains the
+word. A rule naming an operator the evaluator does not implement would have passed on a
+mention in a comment.
 
 #### Scenario: a rule naming two operators
 - **WHEN** one rule carries two operators, such as `eq` beside `gte`
 - **THEN** the requirement is violated
 - **AND** the evaluator takes whichever branch it reaches first and discards the other
   in silence, so the rule means what the implementation's branch order says
-- **AND** nothing objects: one test requires at least one operator and another forbids
-  naming one the evaluator lacks, and neither forbids two
+- **AND** the rule is refused, naming the operators it carries and the branch-order
+  consequence
 
 #### Scenario: a rule naming an operator the evaluator does not implement
 - **WHEN** a rule names a key no branch of the evaluator reads
@@ -662,31 +675,40 @@ gate reads for a different purpose entirely — and nothing reads it as the admi
 measure what their titles ask. Their problem is applicability (REG-9), not aboutness, and
 conflating the two would have sent the repair to the wrong place.
 
-#### A.4 — four operators are implemented and unused
+#### A.4 — five operators are implemented and unused
 
-`ne`, `between`, `contains`, `matches`. No item uses any of them. `contains`
-inspects only the first matched text and `matches` stringifies its value before matching
-— semantics no item has had to defend.
+The evaluator implements nineteen. These are named by no `assert`, `warn` or
+`applies_when` in the registry, and the list is read from these bullets by
+`tests/test_registry.py::AnAssertionLanguageWithOneOperatorPerRule`, so the appendix and
+the tree cannot drift past each other:
 
-`gt` reads as a fifth and is not one. MB-102 and MD-190 use it, in their `applies_when`
-conditions rather than in an `assert` — the same vocabulary, the same evaluator, the same
-test. Removing it as unused would take with it the only two applicability declarations in
-the registry, which is the thing REG-9 wants seventeen more of. The count was taken over
-`assert` blocks alone, which is why it read five; REG-7 now says what a rule is so the
-next count is taken over all three.
+- `ne`
+- `between`
+- `contains` — inspects only the first matched text, a semantics no item has defended
+- `matches` — stringifies its value before matching, likewise
+- `count_matching_lte` — left the used set in 0.93.0, when MB-095 and MB-098 stopped
+  deciding from `issues` prose. It was four here until then, and nothing noticed for
+  seven releases
+
+The word "gt" reads as a sixth and is not one. MB-102 and MD-190 use it, in their
+`applies_when` conditions rather than in an `assert` — the same vocabulary, the same
+evaluator, the same test. Removing it as unused would take with it the only two
+applicability declarations in the registry, which is the thing REG-9 wants seventeen more
+of. That count was taken over `assert` blocks alone, which is why an earlier draft read
+five; REG-7 now says what a rule is, so the count above is taken over all three.
 
 ## Appendix B — how much of this document is enforced
 
 | | requirements |
 |---|---|
-| **enforced** | REG-2, REG-5, REG-10, REG-11, REG-12 |
-| **partial** | REG-1, REG-3, REG-4, REG-6, REG-7, REG-8, REG-13 |
+| **enforced** | REG-2, REG-5, REG-7, REG-10, REG-11, REG-12 |
+| **partial** | REG-1, REG-3, REG-4, REG-6, REG-8, REG-13 |
 | **none** | — none |
 | **opposed** | REG-9 |
 
 Invariants: INV-R2 enforced; INV-R1, INV-R3 and INV-R4 partial.
 
-**Five enforced, seven partial, none unread, one opposed, of thirteen.**
+**Six enforced, six partial, none unread, one opposed, of thirteen.**
 
 `opposed` is a fourth category this document introduces, and it earns its place: REG-9's
 reader does not merely fail to protect the requirement, it fires when the requirement is

@@ -44,8 +44,6 @@ VALID_SOURCES = {"script", "llm", "manual", "gsc"}
 VALID_SEVERITY = {"critical", "high", "medium", "low"}
 VALID_EFFORT = {"low", "medium", "high"}
 VALID_REQUIRES = {"offline", "fetch", "crawl", "api", "gsc", "safe_browsing"}
-with open(os.path.join(SCRIPTS, "checklist_runner.py"), encoding="utf-8") as f:
-    RUNNER_SRC = f.read()
 
 
 class RegistryShape(unittest.TestCase):
@@ -82,14 +80,22 @@ class RegistryShape(unittest.TestCase):
     def test_assert_rules_use_operators_the_runner_implements(self):
         """Checked against the runner's source rather than a list kept here — a
         list in the test drifts, and an operator the runner never sees produces
-        a rule that silently reports NO_DATA forever."""
+        a rule that silently reports NO_DATA forever.
+
+        A substring search until 0.93.8, which is weaker than it reads: `"eq"`
+        appears in this file's own prose, so a rule naming an operator the evaluator
+        does not implement would pass on a mention in a comment. It now compares
+        against the vocabulary `AnAssertionLanguageWithOneOperatorPerRule` derives
+        from `evaluate()`'s branches.
+        """
+        vocabulary = operator_vocabulary()
         for i in ITEMS:
             chk = i.get("check") or {}
             for rule in (chk.get("assert"), chk.get("warn"), chk.get("applies_when")):
                 if not rule:
                     continue
-                for key in rule:
-                    self.assertIn(f'"{key}"', RUNNER_SRC,
+                for key in set(rule) - {"path", "field", "missing_is", "scope"}:
+                    self.assertIn(key, vocabulary,
                                   f"{i['id']} uses operator {key!r}, which "
                                   f"checklist_runner.py does not implement")
 
@@ -949,6 +955,101 @@ class ATestFileRunsEverythingItDefines(unittest.TestCase):
                                    "move the __main__ block to the end")
 
 
+class AnAssertionLanguageWithOneOperatorPerRule(unittest.TestCase):
+    """`openspec/specs/registry/` REG-7. A rule is a path, **exactly one** operator, and
+    optionally a field and a `missing_is`.
+
+    Two operators are an error rather than a conjunction: `evaluate()` applies the first
+    branch that matches and discards the second in silence, so the rule means whichever
+    the implementation happens to reach first. Nothing forbade it — one test required at
+    least one operator and another forbade naming one the evaluator lacks, and neither
+    forbade two. No item does it today, which is why nothing had caught it, and why the
+    day it happens the verdict changes with a refactor of branch order.
+
+    The vocabulary is derived from `evaluate()` rather than listed. The test that
+    replaced a substring search over the runner's source is the other half of this: `eq`
+    appears in that file's prose, so the old check passed on a mention in a comment.
+    """
+
+    def rules(self):
+        for item in ITEMS:
+            check = item.get("check") or {}
+            for where in ("assert", "warn", "applies_when"):
+                rule = check.get(where)
+                if rule:
+                    yield item["id"], where, rule
+
+    def test_the_vocabulary_is_found_and_has_the_three_shapes_in_it(self):
+        """A floor under every count below. The first draft of the scan knew one of the
+        three code shapes and found twelve of nineteen — and an undercount here reads as
+        "sixty-five rules name no operator", which is alarming and wrong, rather than as
+        a broken scan."""
+        vocabulary = operator_vocabulary()
+        self.assertGreaterEqual(len(vocabulary), 19)
+        for shape, operator in (("bare `if`", "truthy"),
+                                ("comparator loop", "gte"),
+                                ("length loop", "len_gte"),
+                                ("written out singly", "between")):
+            with self.subTest(shape=shape):
+                self.assertIn(operator, vocabulary)
+
+    def test_every_rule_names_exactly_one_operator(self):
+        """The requirement. Zero cannot decide anything; two mean whatever branch order
+        says."""
+        vocabulary = operator_vocabulary()
+        for item_id, where, rule in self.rules():
+            with self.subTest(item=item_id, rule=where):
+                named = sorted(set(rule) & vocabulary)
+                self.assertEqual(
+                    len(named), 1,
+                    f"{item_id}'s `{where}` names {named or 'no operator'}; a rule is a "
+                    f"path and exactly one operator, and the evaluator takes the first "
+                    f"branch it reaches")
+
+    def test_a_rule_carries_nothing_the_language_does_not_define(self):
+        """The rest of a rule's keys, held as a closed set for the same reason as the
+        operators: a key nobody implements is a rule that means less than it looks."""
+        allowed = operator_vocabulary() | {"path", "field", "missing_is", "scope"}
+        for item_id, where, rule in self.rules():
+            with self.subTest(item=item_id, rule=where):
+                self.assertEqual(sorted(set(rule) - allowed), [])
+
+    def test_the_operators_no_item_uses_are_the_ones_the_document_names(self):
+        """REG-7's last sentence: an operator the language implements and no item uses
+        is either specified in that document or removed from the language. Both sides
+        are derived — the unused set from the registry and the evaluator, the named set
+        from the document's own appendix — so neither can drift past the other.
+
+        The set moved in 0.93.0 without anybody noticing: `count_matching_lte` lost its
+        last two users when MB-095 and MB-098 stopped counting matches in prose, and the
+        appendix still said four.
+        """
+        vocabulary = operator_vocabulary()
+        used = set()
+        for _item_id, _where, rule in self.rules():
+            used |= set(rule) & vocabulary
+        unused = vocabulary - used
+
+        with open(os.path.join(ROOT, "openspec", "specs", "registry", "spec.md"),
+                  encoding="utf-8") as stream:
+            document = stream.read()
+        start = document.index("#### A.4 — ")
+        end = document.index("## Appendix B", start)
+        section = document[start:end]
+        # Only the bullets. The section also discusses `gt` in prose, to record that an
+        # earlier count read it as unused by looking at `assert` blocks alone — and a
+        # harvest over the whole section would take that word back in and undo the
+        # lesson the paragraph exists to keep.
+        named = {word for word in re.findall(r"^- `([a-z_]+)`", section, re.M)}
+        self.assertLessEqual(named, vocabulary,
+                             "the appendix bullets name something that is not an "
+                             "operator this evaluator implements")
+
+        self.assertEqual(sorted(named), sorted(unused),
+                         "the appendix and the tree disagree about which operators no "
+                         "item uses")
+
+
 class TheCatalogueDescribesThisTree(unittest.TestCase):
     """`openspec/specs/evidence/` EVD-4. The shapes catalogue's account of itself is
     computed from the tree, not written beside it.
@@ -1107,6 +1208,47 @@ class EveryToolGateRunsHereToo(unittest.TestCase):
                     proc.returncode, 0,
                     f"tools/{name} {' '.join(args)} exited {proc.returncode}\n"
                     f"{proc.stdout[-2000:]}\n{proc.stderr[-2000:]}")
+
+
+def operator_vocabulary() -> set[str]:
+    """Every operator `evaluate()` implements, read out of its branches.
+
+    Three code shapes carry them and a scan that knows one of the three undercounts:
+    a bare `if "truthy" in rule:`, a `for op, cmp in (("gte", ...), ...)` whose body
+    tests `op in rule`, and the pair `between` / `len_between` written out singly.
+    The first draft of this function found twelve of nineteen and reported that
+    sixty-five rules named no operator at all, which is how the gap was noticed.
+
+    Derived rather than listed because `openspec/specs/registry/` REG-7 makes the
+    language closed: a list here would be a second copy of the vocabulary, and the
+    copy that drifts is always the one nothing runs.
+    """
+    with open(os.path.join(SCRIPTS, "checklist_runner.py"), encoding="utf-8") as f:
+        tree = ast.parse(f.read())
+    evaluate = next(node for node in ast.walk(tree)
+                    if isinstance(node, ast.FunctionDef) and node.name == "evaluate")
+
+    def names_a_rule_key(test):
+        return (isinstance(test, ast.Compare) and len(test.ops) == 1
+                and isinstance(test.ops[0], ast.In)
+                and isinstance(test.left, ast.Constant)
+                and isinstance(test.left.value, str)
+                and isinstance(test.comparators[0], ast.Name)
+                and test.comparators[0].id == "rule")
+
+    found: set[str] = set()
+    for node in ast.walk(evaluate):
+        if isinstance(node, ast.If) and names_a_rule_key(node.test):
+            found.add(node.test.left.value)
+        if isinstance(node, ast.For):
+            body = "\n".join(ast.unparse(statement) for statement in node.body)
+            if "in rule" not in body:
+                continue
+            for element in getattr(node.iter, "elts", []):
+                first = getattr(element, "elts", [None])[0]
+                if isinstance(first, ast.Constant) and isinstance(first.value, str):
+                    found.add(first.value)
+    return found
 
 
 class TheRegistryStatesNothingAboutItselfItCannotProve(unittest.TestCase):
