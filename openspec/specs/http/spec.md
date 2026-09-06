@@ -148,14 +148,18 @@ reserved, multicast or unspecified addresses, and no flag may. The run SHALL say
 loopback. The addresses it must never reach are exactly the ones an SSRF attack wants —
 `169.254.169.254` is a cloud metadata service, not a staging box — so the allowance is a
 list, never a switch that means "anything not on the public internet".
-**Reader:** partial. The narrowness is enforced from both sides:
+**Reader:** enforced. The narrowness is enforced from both sides:
 `test_link_local_stays_blocked_with_the_allowance_on` and
 `test_reserved_multicast_and_unspecified_stay_blocked` pin the refusals *with the allowance
 on*, `test_the_allowance_permits_a_fixture_and_a_staging_box` pins the seven permitted
 networks, and `test_an_unrecognised_value_does_not_open_the_guard` pins that only four
-spellings of yes count. The announcement is pinned once. What is unread is the *per-run*
-half, which is the requirement's first clause: nothing asserts that the allowance reaches a
-child process. The suite's own docstring concedes the point and defers to CI.
+spellings of yes count. The announcement is pinned once. The *per-run* half — the
+requirement's first clause — was unread until 0.94.1, and the suite's own docstring
+conceded the point and deferred to CI. `ThePrivateEntryIsObservedAndCostsCoverage` audits a
+real loopback server and reads a verdict that exists only if a **child** was allowed to
+connect: the checkers are separate processes, so an allowance stopping at the runner would
+leave the entry reachable — the runner resolves it itself — and every child's fetch
+refused.
 
 #### Scenario: the allowance does not reach the metadata service
 - **WHEN** the allowance is on and the URL resolves to `169.254.169.254`, to another
@@ -198,11 +202,20 @@ against a host only reachable from here.
 **Why:** those items are not out of scope; they are unanswerable from where the audit
 stands, and the difference is the score's denominator. `N/A` would remove them and lift the
 score for a site nobody outside can see.
-**Reader:** partial. `test_a_private_host_leaves_the_external_apis_undecided` pins the
+**Reader:** enforced. `test_a_private_host_leaves_the_external_apis_undecided` pins the
 status and the reason for all three outside-world capabilities, and
-`test_a_private_run_is_named_on_every_surface` pins the report. Two halves are unread: that
-the coverage falls rather than the denominator shrinking has no test, and no test observes
-`entry_private` true from a real resolution — every test that uses it sets it by hand.
+`test_a_private_run_is_named_on_every_surface` pins the report. The two halves that were
+unread — every test set `entry_private` by hand, and nothing held the denominator — are read
+since 0.94.1 by `ThePrivateEntryIsObservedAndCostsCoverage`, against one real audit of a
+loopback server: the flag and the fact are asserted to be different fields, and the weight
+of the blocked items is required to still be inside `weight_applicable`.
+
+That last assertion is the one the requirement is built around, and it had to be written
+twice. The first version asserted only that coverage was under 100%, which stayed true when
+the status was mutated to `N/A` — other items are undecided for their own reasons, so the
+percentage alone cannot tell the two statuses apart. Probed 6 September 2026 by that
+mutation: it reddens 22 sub-tests of the status assertion, and the denominator falls from
+844 to 758, which is the flattering arithmetic stated as a number.
 
 #### Scenario: a host only this machine can reach
 - **WHEN** the audited host resolves to a private address
@@ -239,11 +252,19 @@ slow the audit down and MUST NOT stop it.
 one server. Per-process pacing would be no pacing at all, since the run is a process tree.
 And a pacing mechanism that can fail closed is a mechanism that will one day hang an audit
 on a lock file nobody can find.
-**Reader:** enforced for the mechanism, unread for the number — `partial`. Three real
+**Reader:** enforced. Three real
 subprocesses are asserted to space themselves; different hosts are asserted not to queue
 behind each other; a stale slot, a corrupt slot, junk contents and an unwritable directory
-are each asserted not to stop the run. The default rate itself is asserted only against its
-own constant, so `DEFAULT_MAX_RPS` could be 40 and the suite would stay green.
+are each asserted not to stop the run. The number was the gap until 0.94.1 — the one test
+that looked like a reader asserts `max_rps()` equals `DEFAULT_MAX_RPS` after an unparseable
+environment value, which reads the fallback, both sides moving together.
+`TheDefaultRateIsANumberSomebodyChose` names 4.0 where changing the source reddens it, and
+measures what the number means rather than restating it: the second request to one host
+waits a quarter of a second. Probed by setting the constant to 40, which reddens both.
+
+§5 keeps the *choice* of number outside this document, with whoever measures the cost of a
+run. That is about who may change it, and is not an argument against a gate: a calibration
+nobody can change by accident is what makes the choice somebody's rather than nobody's.
 
 #### Scenario: separate processes queue behind each other
 - **WHEN** several checkers, each its own process, pace themselves against one host
@@ -504,12 +525,16 @@ declared the bytes are sniffed, and what is found past the sniff window MUST NOT
 counts elements would answer confidently about a page that does not exist. The same is true
 of a mis-decoded one: a page read as ISO-8859-1 has different text, different word counts
 and different headings.
-**Reader:** partial. The cap raises rather than truncating, and a smaller cap is asserted to
+**Reader:** enforced. The cap raises rather than truncating, and a smaller cap is asserted to
 cost a real refetch. The encoding recovery is covered thoroughly — fourteen tests over
 header-versus-meta precedence, BOMs, XML declarations, commented-out metas, and a
-declaration past the sniff window that is deliberately *not* read. What is unread is the
-default ceiling itself, which no test exercises, and the redirect budget, which no test
-exhausts.
+declaration past the sniff window that is deliberately *not* read. Both defaults were unread
+until 0.94.1, because every test supplied its own limit: `TheCapsAreTheOnesTheSubstrateShips`
+names the ceiling and the budget, drives a body past the ceiling with no caller limit at
+all, and exhausts the budget hop by hop — asserting in each case that the refusal states the
+number it enforced, since a cap that refuses without saying what it was is the silent
+truncation one step removed. Probed by setting both constants tenfold, which reddens the two
+that name them.
 
 #### Scenario: a body over the ceiling
 - **WHEN** a response grows past the caller's limit while it is being read
@@ -814,21 +839,21 @@ and reddens two of its four readers now. HTTP-8 — as of 5 September 2026 the r
 provenance omission is pinned as an absence; before that, the string
 `http_cache` appears nowhere under `tests/`.
 
-**Derived, not probed:** the five `partial` rows. Each names which half it believes is
+**Derived, not probed:** the one remaining `partial` row. Each names which half it believes is
 unread; that half was established by reading the asserting test's body and by greps for the
 absences, not by breaking the code. A `partial` that is really an `enforced` or a `none` is
 the error this method leaves open, and the halves are where to look first.
 
 | | requirements |
 |---|---|
-| **enforced** | HTTP-1, HTTP-6, HTTP-7, HTTP-8, HTTP-9, HTTP-11, HTTP-12 |
-| **partial** | HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-10 |
+| **enforced** | HTTP-1, HTTP-2, HTTP-3, HTTP-4, HTTP-6, HTTP-7, HTTP-8, HTTP-9, HTTP-10, HTTP-11, HTTP-12 |
+| **partial** | HTTP-5 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-H2 and INV-H3 enforced; INV-H1 and INV-H4 partial.
 
-**Seven enforced, five partial, nothing unread, of twelve.**
+**Eleven enforced, one partial, nothing unread, of twelve.**
 
 HTTP-1 moved on 6 September 2026, and the half that was missing turned out to be a hole
 rather than a gap in the tests: the `robots.txt` fetch skipped the guard entirely, so the

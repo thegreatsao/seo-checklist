@@ -5,6 +5,7 @@ real URL preparation, redirect loop, cache and pool selection all remain in the 
 """
 from __future__ import annotations
 
+import json
 import os
 import socket
 import sys
@@ -18,7 +19,7 @@ SCRIPTS = ROOT / "skills/seo-checklist/scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from harness import spawn  # noqa: E402
+from harness import served, spawn  # noqa: E402
 from lib import safe_http as sh  # noqa: E402
 
 
@@ -734,6 +735,254 @@ class TheReportNamesTheCacheOnlyWhenItAnswered(unittest.TestCase):
     def test_a_run_with_no_cache_field_at_all_is_silent(self):
         """Artifacts written before the count existed, read by a later report."""
         self.assertEqual(self.cache_lines(), [])
+
+
+class TheDefaultRateIsANumberSomebodyChose(unittest.TestCase):
+    """`openspec/specs/http/` HTTP-4's last scenario, which asks for exactly this:
+
+        **WHEN** the default requests-per-second is changed
+        **THEN** something fails that names the value — not an assertion that compares the
+        constant with itself and moves with it
+
+    The mechanism was enforced from the start: three real subprocesses queue behind each
+    other, different hosts do not, and a stale, corrupt, junk or unwritable slot each fails
+    open. The number was not. The one test that looked like a reader asserts `max_rps()`
+    equals `DEFAULT_MAX_RPS` after an unparseable environment value, which reads the
+    fallback — both sides move together, so the constant could have become 40 and the suite
+    would have stayed green while this tool hit a stranger's server ten times harder.
+
+    Two assertions, deliberately. One names the value, because the requirement asks for a
+    failure that names it. The other measures the interval a second request actually waits,
+    because a named constant nothing consults is the shape this document keeps finding.
+
+    The document's §5 says the *choice* of number belongs with whoever measures the cost of
+    a run, not with this document. That is about who may change it. It is not an argument
+    against a gate: a calibration nobody can change by accident is what makes the choice
+    somebody's rather than nobody's.
+    """
+
+    def setUp(self):
+        self.saved = {name: os.environ.get(name) for name in
+                      ("SEO_MAX_RPS", "SEO_RATE_LIMIT_DIR")}
+        os.environ.pop("SEO_MAX_RPS", None)
+        self.state = tempfile.mkdtemp(prefix="seo-rate-")
+        os.environ["SEO_RATE_LIMIT_DIR"] = self.state
+
+    def tearDown(self):
+        for name, value in self.saved.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+    def test_the_default_is_four_requests_per_second(self):
+        """The value, written here and nowhere else in this file, so that changing it in
+        the source reddens this line rather than sliding through."""
+        self.assertEqual(sh.DEFAULT_MAX_RPS, 4.0)
+        self.assertEqual(sh.max_rps(), 4.0)
+
+    def test_a_second_request_to_one_host_waits_a_quarter_of_a_second(self):
+        """What the number means, measured rather than restated: 4 per second is a 250 ms
+        interval, and the wait `pace` reports is what a checker actually spends."""
+        self.assertEqual(sh.pace("paced.example"), 0.0, "the first request waits for nothing")
+        waited = sh.pace("paced.example")
+        self.assertGreater(waited, 0.2)
+        self.assertLessEqual(waited, 0.25)
+
+
+class TheCapsAreTheOnesTheSubstrateShips(unittest.TestCase):
+    """`openspec/specs/http/` HTTP-10: a cap is a stated condition, never a silent
+    truncation. The raising is enforced and the encoding recovery is covered fourteen ways.
+    What no test exercised was either default — the response ceiling or the redirect budget
+    — so both could have been removed and every assertion here would still have passed,
+    because every test supplies its own limit.
+
+    A truncated body is the failure these prevent, and it is invisible by construction: a
+    checker handed the first 5 MiB of a page finds no `</html>`, reports a structural
+    defect, and nothing anywhere says the document was cut.
+    """
+
+    def setUp(self):
+        self.saved = {name: os.environ.get(name) for name in
+                      ("SEO_HTTP_CACHE", "SEO_MAX_RPS")}
+        os.environ.pop("SEO_HTTP_CACHE", None)
+        os.environ["SEO_MAX_RPS"] = "0"
+
+    def tearDown(self):
+        for name, value in self.saved.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+    def test_the_default_ceiling_is_five_mebibytes(self):
+        self.assertEqual(sh.DEFAULT_MAX_RESPONSE_BYTES, 5 * 1024 * 1024)
+
+    def test_a_body_over_the_default_ceiling_raises_rather_than_arriving_short(self):
+        """No limit passed by the caller, so this is the ceiling a checker gets by
+        default. The assertion is that nothing comes back — a shortened body would be a
+        page this tool reports on as though it were the whole page."""
+        oversize = b"x" * (sh.DEFAULT_MAX_RESPONSE_BYTES + 1024)
+
+        def send(adapter, request, **kwargs):
+            return response_for(request, body=oversize)
+
+        with mock.patch.object(sh.socket, "getaddrinfo",
+                               side_effect=lambda *a, **k: answer(PUBLIC_A, 80)), \
+                mock.patch.object(sh._PinnedAdapter, "send", new=send):
+            with self.assertRaises(sh.SafeHTTPError) as caught:
+                sh.safe_get("http://big.example/page")
+        self.assertIn(str(sh.DEFAULT_MAX_RESPONSE_BYTES), str(caught.exception),
+                      "the refusal does not state the limit it enforced")
+
+    def test_the_default_redirect_budget_is_five(self):
+        self.assertEqual(sh.DEFAULT_MAX_REDIRECTS, 5)
+
+    def test_a_chain_longer_than_the_budget_is_refused(self):
+        """Hop by hop, each one validated. The budget exists so a redirect loop is a
+        refusal with a reason rather than a checker that never returns.
+
+        `TooManyRedirects` rather than `SafeHTTPError`: the budget is Requests' own
+        vocabulary and the substrate keeps it, so a caller that already handles a redirect
+        loop keeps handling it."""
+        hops = []
+
+        def send(adapter, request, **kwargs):
+            hops.append(request.url)
+            nxt = "http://hop.example/%d" % len(hops)
+            return response_for(request, status=302, headers={"Location": nxt})
+
+        with mock.patch.object(sh.socket, "getaddrinfo",
+                               side_effect=lambda *a, **k: answer(PUBLIC_A, 80)), \
+                mock.patch.object(sh._PinnedAdapter, "send", new=send):
+            with self.assertRaises(sh.requests.exceptions.TooManyRedirects) as caught:
+                sh.safe_get("http://hop.example/start")
+        self.assertIn(str(sh.DEFAULT_MAX_REDIRECTS), str(caught.exception),
+                      "the refusal does not state the budget it enforced")
+        self.assertEqual(len(hops), sh.DEFAULT_MAX_REDIRECTS + 1,
+                         "the budget did not stop the chain where it says it does")
+
+
+class ThePrivateEntryIsObservedAndCostsCoverage(unittest.TestCase):
+    """`openspec/specs/http/` HTTP-2's first clause and HTTP-3's two unread halves, held
+    against a real audit of a real loopback server rather than by hand-set fields.
+
+    Three things were unread. HTTP-2 says the allowance is *per-run*, and nothing asserted
+    it reaches a child process — the checkers are separate processes, so an allowance that
+    stopped at the runner would leave every fetch refused while the flag looked honoured;
+    the suite's own docstring conceded the point and deferred to CI. HTTP-3 says a private
+    entry costs coverage, and every test that used `entry_private` set it by hand, so
+    nothing observed it being decided by an actual resolution; and nothing asserted the
+    thing the requirement exists for — that those items stay in the denominator, so the
+    coverage *falls* rather than the denominator shrinking to match.
+
+    That last one is the whole argument. `N/A` would remove them and let a staging audit
+    report the same weight coverage as a live one, which is a score that flatters exactly
+    the run nobody outside can see.
+
+    One audit, read four ways. `--only crawling_indexing` keeps it to a few seconds, and the
+    site is served on loopback, which is a genuinely private address rather than a
+    simulation of one.
+    """
+
+    PAGE = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+            "<title>A page that satisfies the basics</title>"
+            "<meta name=\"description\" content=\"Enough of a page for the runner to reach "
+            "the end and write an artifact.\"></head><body><h1>A page</h1>"
+            "<p>Body copy with enough words in it that the thin-entry guard stays quiet, "
+            "because a guard firing here would stop the audit before the thing under test "
+            "ran at all.</p></body></html>")
+
+    @classmethod
+    def setUpClass(cls):
+        work = tempfile.mkdtemp(prefix="seo-private-")
+        out = os.path.join(work, "results.json")
+        with served({"/": cls.PAGE}) as site:
+            proc = spawn([sys.executable, str(SCRIPTS / "checklist_runner.py"), site.url,
+                          "--allow-private", "--max-rps", "0", "--no-history",
+                          "--no-prompt", "--quiet", "--timeout", "90", "--json", out],
+                         timeout=900)
+        if proc.returncode != 0:
+            raise AssertionError("the audit exited %s\n%s\n%s"
+                                 % (proc.returncode, proc.stdout[-3000:],
+                                    proc.stderr[-3000:]))
+        with open(out, encoding="utf-8") as fh:
+            # Not `cls.run`: `run` is `TestCase.run`, and shadowing it makes every test
+            # in the class die with "'dict' object is not callable" before it starts.
+            cls.audit = json.load(fh)
+
+    def test_the_run_found_out_by_resolving_rather_than_by_being_told(self):
+        """`--allow-private` says what is permitted. `entry_private` says what happened,
+        and it is the second that decides whether "no outside service could measure this"
+        is true of the report."""
+        self.assertTrue(self.audit["allow_private"])
+        self.assertTrue(self.audit["entry_private"],
+                        "the host resolved to loopback and the run did not record it as "
+                        "private, so the flag and the fact are the same field")
+
+    def test_the_allowance_reached_the_checkers_that_do_the_fetching(self):
+        """The per-run clause. Every checker is its own process; an allowance that stopped
+        at the runner would leave the entry reachable — the runner resolves it itself — and
+        every child's fetch refused. So this reads a verdict that only exists if a *child*
+        was allowed to connect."""
+        self.assertTrue(self.audit["entry_reachable"])
+        blocked = [i["id"] for i in self.audit["items"]
+                   if "could not validate resolved IP" in (i.get("evidence") or "")]
+        self.assertEqual(blocked, [],
+                         "a checker was refused the private address the run was allowed")
+        self.assertGreater(self.audit["scores"]["decided"], 0,
+                           "nothing was decided at all, so nothing here shows a child "
+                           "fetched anything")
+
+    def test_the_outside_world_items_are_undecided_rather_than_excluded(self):
+        """`NO_DATA`, never `N/A` — the difference between "nobody could answer this" and
+        "this was never the audit's job"."""
+        statuses = {i["id"]: i["status"] for i in self.audit["items"]}
+        outside = [i for i in self.audit["items"]
+                   if "only reachable from" in (i.get("evidence") or "")]
+        self.assertGreater(len(outside), 0,
+                           "no item reported being blocked by the private host, so this "
+                           "audit cannot say what happens to them")
+        for item in outside:
+            with self.subTest(item=item["id"]):
+                self.assertEqual(statuses[item["id"]], "NO_DATA")
+
+    def test_they_stay_in_the_denominator_so_the_coverage_falls(self):
+        """The scenario the requirement is built around. `weight_pct` is decided weight
+        over the registry's weight, so an item set aside as `NO_DATA` leaves the
+        denominator alone and the percentage drops; `N/A` would remove it from both and
+        leave the percentage where it was."""
+        scores = self.audit["scores"]
+        self.assertIsNotNone(scores["weight_pct"])
+        self.assertLess(scores["weight_pct"], 100,
+                        "a private audit reported full weight coverage, which is the "
+                        "flattering arithmetic HTTP-3 exists to prevent")
+
+        # The assertion that separates the two statuses, rather than merely observing
+        # that coverage is short. `weight_applicable` is the denominator, computed over
+        # everything that is not `N/A`, so an item set aside as `N/A` leaves it while a
+        # `NO_DATA` stays in it. Here the blocked items are named, their weight added up,
+        # and required to still be inside the denominator — which is false the moment the
+        # status changes, and invisible in `weight_pct` alone because other items are
+        # undecided for their own reasons.
+        from checklist_runner import SEVERITY_WEIGHT
+        blocked = [i for i in self.audit["items"]
+                   if "only reachable from" in (i.get("evidence") or "")
+                   and not i.get("scores_with")]
+        self.assertGreater(len(blocked), 0)
+        carried = sum(SEVERITY_WEIGHT[i["severity"]] for i in blocked)
+        self.assertGreater(carried, 0)
+        decided = [i for i in self.audit["items"]
+                   if i["status"] in ("PASS", "FAIL", "WARN") and not i.get("scores_with")]
+        self.assertEqual(
+            scores["weight_applicable"],
+            sum(SEVERITY_WEIGHT[i["severity"]] for i in decided) + carried
+            + sum(SEVERITY_WEIGHT[i["severity"]] for i in self.audit["items"]
+                  if i["status"] not in ("PASS", "FAIL", "WARN", "N/A")
+                  and "only reachable from" not in (i.get("evidence") or "")
+                  and not i.get("scores_with")),
+            "the weight of the items a private host blocked is not in the denominator, "
+            "so the coverage this run reports is the coverage of a smaller registry")
 
 if __name__ == "__main__":
     unittest.main()
