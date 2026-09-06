@@ -1000,19 +1000,24 @@ class TheRegistryStatesNothingAboutItselfItCannotProve(unittest.TestCase):
     def test_no_self_describing_field_is_a_constant_in_the_generator(self):
         """The requirement itself, and the reason it is about shape and not value.
 
-        A string constant carrying a digit is a claim about the registry that the
-        registry cannot contradict. `version` is exempt and is checked below: it is a
-        schema number, a fact about the file format rather than about the items.
+        Any constant, of any type. The first draft of this test looked for a string
+        containing a digit, which is the shape `source` had, and an independent reading
+        of it found the hole in one pass: `"item_count": 217` is an integer constant,
+        `isinstance(217, str)` is False, and it walks through — correct on the day it is
+        written, reproduced by `--check`, and compared with nothing until the day it
+        stops being correct. That is the requirement's own sentence, so the test now
+        refuses the category rather than the example.
+
+        `version` is exempt and is checked below: a schema number is a fact about the
+        file format rather than about the items, so nothing in the items could
+        contradict it.
         """
         payload = self.payload_literal()
         for key in self.SELF_DESCRIBING:
             with self.subTest(field=key):
                 value = payload[key]
-                literal = (isinstance(value, ast.Constant)
-                           and isinstance(value.value, str)
-                           and any(ch.isdigit() for ch in value.value))
-                self.assertFalse(
-                    literal,
+                self.assertNotIsInstance(
+                    value, ast.Constant,
                     f"{key!r} is written as the constant "
                     f"{getattr(value, 'value', None)!r}. Compute it from `items`: a "
                     f"constant is reproduced by --check and compared with nothing")

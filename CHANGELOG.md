@@ -32,7 +32,14 @@ holds both halves: it recomputes every self-describing field — the item count,
 numbers inside `source`, the category set with its prefixes, and the version stamp as a
 fresh hash — and it parses the generator's `payload` literal and refuses a string
 constant carrying a digit. `version` is exempt and named as exempt: a schema number is a
-fact about the file format, not about the items. The other three statements joined the
+fact about the file format, not about the items.
+
+The shape test refuses **any** constant, of any type. Its first draft looked for a
+string carrying a digit — the shape `source` had — and an independent reading found the
+hole in one pass: `"item_count": 217` is an integer constant, walks straight through a
+string check, and is correct on the day it is written, reproduced by `--check`, and
+compared with nothing until the day it stops being correct. The test now refuses the
+category rather than the example. The other three statements joined the
 count ledger in `tests/test_protocol_counts.py`, which already derived this kind of
 claim for the queue sizes.
 
