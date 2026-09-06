@@ -1027,5 +1027,97 @@ class TheScoreNeverTravelsWithoutItsShare(unittest.TestCase):
         self.assertIsNotNone(scores["weight_pct"])
 
 
+
+class TheProvenanceListIsTheOneThisDocumentNames(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-3, the half that was unread: the mechanism had ten
+    readers and its *membership* had none.
+
+    That distinction is not academic — it is how the last member came to be missing.
+    Whether a verdict came out of the response cache is exactly the kind of fact this list
+    exists for, it was recorded in the artifact from the start, and it appeared in no
+    warning and in no test until 0.94.1. Ten tests of a mechanism cannot notice something
+    that was never in it, because nothing anywhere enumerated what belonged.
+
+    So the list is enumerated in the document, and this reads the code against it: the
+    warning identifiers `provenance_warnings` emits, and the payload fields it consults,
+    both taken from its AST rather than by running it. Running it would only show the
+    branches a fixture happens to trigger; the question here is what the function *can*
+    say, which is a property of its source.
+
+    Both directions fail. A caveat added to the code and not to §REP-3 reddens, and a row
+    written in §REP-3 with no branch behind it reddens too — and the second is the one that
+    matters, since a document promising a caveat nobody emits is how a reader ends up
+    trusting a number that had something to say for itself.
+    """
+
+    SPEC = os.path.join(ROOT, "openspec", "specs", "reporting", "spec.md")
+    REPORT = os.path.join(SKILL, "scripts", "checklist_report.py")
+
+    # Part of the artifacts row rather than a row of its own: it appends the age of the
+    # oldest supplied file to that warning's own sentence, and never appears alone.
+    FRAGMENTS = {"w_artifacts_age"}
+
+    @classmethod
+    def documented(cls):
+        """The table under REP-3, as {warning: {fields}}."""
+        import re
+        with open(cls.SPEC, encoding="utf-8") as fh:
+            text = fh.read()
+        start = text.index("### Requirement: REP-3")
+        end = text.index("### Requirement: REP-4")
+        rows = {}
+        for line in text[start:end].splitlines():
+            match = re.match(r"^\| `(w_[a-z_]+)` \| ([^|]+) \|", line)
+            if match:
+                fields = {f.strip(" `") for f in match.group(2).split(",")}
+                rows[match.group(1)] = fields
+        return rows
+
+    @classmethod
+    def implemented(cls):
+        """What `provenance_warnings` emits and reads, from its own syntax."""
+        import ast
+        with open(cls.REPORT, encoding="utf-8") as fh:
+            tree = ast.parse(fh.read())
+        fn = next(n for n in ast.walk(tree)
+                  if isinstance(n, ast.FunctionDef) and n.name == "provenance_warnings")
+        warnings, fields = set(), set()
+        for node in ast.walk(fn):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                if (node.func.attr == "t" and node.args
+                        and isinstance(node.args[0], ast.Constant)):
+                    warnings.add(node.args[0].value)
+                if (node.func.attr == "get" and isinstance(node.func.value, ast.Name)
+                        and node.func.value.id == "data" and node.args
+                        and isinstance(node.args[0], ast.Constant)):
+                    fields.add(node.args[0].value)
+            if (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name)
+                    and node.value.id == "data" and isinstance(node.slice, ast.Constant)):
+                fields.add(node.slice.value)
+        return warnings - cls.FRAGMENTS, fields
+
+    def test_every_warning_the_code_can_emit_is_named_in_the_document(self):
+        emitted, _ = self.implemented()
+        self.assertEqual(emitted, set(self.documented()),
+                         "the provenance list and openspec/specs/reporting/ REP-3 disagree "
+                         "about which caveats exist. Whichever is right, the other is what "
+                         "a reader of this project is told")
+
+    def test_every_field_the_document_promises_is_actually_consulted(self):
+        """The direction that caught nothing for a year: a row in the table whose fields
+        the function never reads is a caveat that cannot fire."""
+        _, consulted = self.implemented()
+        promised = set().union(*self.documented().values())
+        self.assertEqual(promised - consulted, set(),
+                         "REP-3 names payload fields the provenance list never reads")
+
+    def test_the_cache_is_in_the_list(self):
+        """Named on its own because it is the member the requirement's own scenario uses
+        as its example, and because it was absent while ten tests of the mechanism passed.
+        `openspec/specs/http/` HTTP-8 is the other half of it."""
+        emitted, consulted = self.implemented()
+        self.assertIn("w_http_cache", emitted)
+        self.assertIn("http_cache_hits", consulted)
+
 if __name__ == "__main__":
     unittest.main()

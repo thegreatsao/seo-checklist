@@ -128,12 +128,32 @@ stated on every surface that shows the score.
 
 **Why:** these are the facts that change what the number is *about*, and a reader who sees
 the number without them has been told something untrue by omission.
-**Reader:** partial — the mechanism is enforced and its membership is not.
-Ten test functions cover
-`provenance_warnings`, pinning each caveat's presence and — importantly — its absence when
-it does not apply, so the surface cannot become noise. What is missing is a *member* rather
-than a mechanism: `openspec/specs/http/` HTTP-8 records that whether the response cache was used
-appears in no warning and in no test.
+The list is normative, and it is this:
+
+| warning | payload fields it reads | what it says the number is less than |
+|---|---|---|
+| `w_parser` | `html_parser` | the pages were read through the fallback substrate |
+| `w_http_cache` | `http_cache_hits` | some verdicts describe the page as it was earlier in the run |
+| `w_private_host` | `entry_private` | the host is reachable only from the auditing machine |
+| `w_private` | `allow_private`, `mode` | a private address could have been reached while crawling |
+| `w_guard` | `entry_guard`, `entry_guard_enforced` | the entry page looked like an interstitial and was scored anyway |
+| `w_thin` | `entry_thin`, `entry_visible_words`, `entry_reachable` | the entry page may be an empty shell |
+| `w_artifacts` | `artifacts` | some verdicts come from measurements supplied with the run |
+
+`w_artifacts_age` is a fragment of the last row rather than a row of its own.
+
+**Reader:** enforced since 6 September 2026, in the two halves this line used to say were
+one. Ten test functions cover `provenance_warnings`, pinning each caveat's presence and —
+importantly — its absence when it does not apply, so the surface cannot become noise. That
+is the mechanism.
+
+The *membership* is read by `tests/test_report.py::TheProvenanceListIsTheOneThisDocumentNames`,
+which walks the function's AST for the warning identifiers it emits and the payload fields
+it consults, and holds both against the table above. Adding a caveat without writing it
+here reddens, and so does writing one here without adding it — which is the direction that
+matters, because the way the last member came to be missing was that nothing anywhere
+enumerated them. `openspec/specs/http/` HTTP-8 was that member: the response cache appeared
+in no warning and in no test until 0.94.1.
 
 #### Scenario: a run that scored an interstitial
 - **WHEN** the page guard was overridden and the entry page was a bot challenge
@@ -264,10 +284,15 @@ one of the same severity.
 **Why:** an ordering by severity alone puts the whole quarter's work above the afternoon's,
 and the afternoon's is what gets done. This is the one place the audit tells somebody what
 to do first, so the order is the product.
-**Reader:** partial. Five test functions cover the priority computation, including one
-pinning that a cheap item outranks an equally severe expensive one — which reads the
-*relation*. `openspec/specs/scoring/` records that no test pins the effort costs themselves, so the
-relation holds and the numbers producing it are free to move.
+**Reader:** enforced since 6 September 2026, and it took a change in another document.
+Five test functions cover the priority computation, including one pinning that a cheap item
+outranks an equally severe expensive one — which reads the *relation*, and was all this row
+had. `openspec/specs/scoring/` used to record that no test pinned the effort costs
+themselves, so the relation held while the numbers producing it were free to move; SCR-14
+and SCR-2 closed that, and the costs are now held against §2 of that document and stamped
+as part of the scoring instrument. Probed by setting `EFFORT_COST['high']` to 1, which
+reddens three readers across the two documents: the table against the spec, the relation
+here, and the instrument's stamp.
 
 #### Scenario: two fixes of equal severity
 - **WHEN** one is cheap and one is expensive
@@ -489,9 +514,11 @@ measurement.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** none by mutation. The executor running mutation probes for this suite ran out
-of credits partway through, so every row below was derived by parsing the 1 280 test
-functions and reading the bodies that name each symbol. The limit is the one
+**Probed:** REP-3 and REP-9, by mutation, on 6 September 2026 — deleting the cache branch
+from `provenance_warnings` reddens the membership reader from both sides, and — setting `EFFORT_COST['high']` to 1
+reddens three readers across two documents. The rest were derived by parsing the 1 280 test
+functions and reading the bodies that name each symbol: the executor running mutation probes
+for this suite ran out of credits partway through. The limit is the one
 `openspec/specs/evidence/` A.4 states: a test can exercise something without naming it, so `none`
 means "named by nothing" — a lower bound on coverage, not an upper one. For the console
 summary that bound is unusually tight, because there is no plausible way to exercise
@@ -499,14 +526,20 @@ summary that bound is unusually tight, because there is no plausible way to exer
 
 | | requirements |
 |---|---|
-| **enforced** | REP-1, REP-2, REP-7 |
-| **partial** | REP-3, REP-4, REP-5, REP-6, REP-8, REP-9, REP-10, REP-11, REP-12, REP-13 |
+| **enforced** | REP-1, REP-2, REP-3, REP-7, REP-9 |
+| **partial** | REP-4, REP-5, REP-6, REP-8, REP-10, REP-11, REP-12, REP-13 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-P2 and INV-P3 enforced; INV-P1 partial; INV-P4 unread.
 
-**Three enforced, ten partial, nothing unread, of thirteen.**
+**Five enforced, eight partial, nothing unread, of thirteen.**
+
+REP-9 moved without a line of work in this document: its gap was a sentence about another
+one — the effort costs the ordering divides by were pinned by nothing — and closing SCR-2
+and SCR-14 in `openspec/specs/scoring/` closed it here. Worth recording because a census
+that only re-reads its own document cannot see a row move for that reason, and this one
+was found by grepping the other document's name after it changed.
 
 Ten partial is the highest count in the suite and it is not a coincidence of writing. Nine
 of the ten have the same shape: the *computation* is read and the *display* is not.
