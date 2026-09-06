@@ -921,5 +921,44 @@ class TheRecordDoesNotDependOnHowItWasInvoked(unittest.TestCase):
         self.assertNotIn("Diff:", stdout)
 
 
+
+class EveryStatusCarriesEvidenceIncludingTheTwoNobodyChecked(unittest.TestCase):
+    """`openspec/specs/verdicts/` VRD-10: no status is emitted without a sentence saying
+    what was decided, what was sought and not found, or which input was missing.
+
+    Evidence was checked for six of the eight. `NEEDS_INPUT` and `LLM_PENDING` were not —
+    and they are 55 of the 217 items on a real run, so the unchecked pair is a quarter of
+    the registry. Both carry evidence today; nothing required them to.
+
+    The status set is derived from `STATUS_ORDER` rather than listed here, and that is the
+    point rather than a convenience. The reason these two were missed is that the original
+    check named the statuses it covered, and a list cannot say what is absent from it —
+    the comment above `STATUS_ORDER` makes the same argument about the three places
+    statuses are rendered. A ninth status added to that tuple is covered here the day it
+    is added.
+    """
+
+    def test_every_status_the_report_can_render_is_covered_by_this_test(self):
+        """Guards the guard: if a status is emitted by a run and is not in `STATUS_ORDER`,
+        the loop below would skip it silently."""
+        from checklist_report import STATUS_ORDER
+        seen = {i["status"] for label in ("good", "broken")
+                for i in RESULTS[label]["items"]}
+        self.assertEqual(seen - set(STATUS_ORDER), set(),
+                         "a run produced a status no surface knows how to render")
+
+    def test_no_item_of_any_status_is_emitted_without_evidence(self):
+        from checklist_report import STATUS_ORDER
+        for status in STATUS_ORDER:
+            rows = [(label, i["id"]) for label in ("good", "broken")
+                    for i in RESULTS[label]["items"] if i["status"] == status]
+            with self.subTest(status=status, seen=len(rows)):
+                if not rows:
+                    self.skipTest("neither fixture run produced %s" % status)
+                empty = [f"{label} {item_id}" for label, item_id in rows
+                         if not (dict((i["id"], i) for i in RESULTS[label]["items"])
+                                 [item_id].get("evidence") or "").strip()]
+                self.assertEqual(empty, [], "%s items with no evidence" % status)
+
 if __name__ == "__main__":
     unittest.main()

@@ -1269,5 +1269,75 @@ class TheLensRoutingTableIsDerivedFromWhatItRoutes(unittest.TestCase):
             with self.subTest(lens=lens):
                 self.assertTrue(reads.strip())
 
+
+class TheHalfTranslatedReportKnowsWhichHalf(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-13's derivation, which was a regex over this module's
+    own source and is now an AST walk plus three named tables.
+
+    The regex matched `L.t(` followed by at most one newline, so every call formatted
+    differently was invisible to it. Measured on 6 September 2026: it found 99 of 138
+    literal keys. That is not a latent risk — five of the invisible ones (`broken`, `hops`,
+    `now`, `redirecting`, `was`) were genuinely absent from `ru.json`, so a Russian report
+    printed the broken-URL table's headers in English while the line whose whole job is to
+    say which layers are still English said nothing.
+
+    Replacing it with an AST walk exposed a second layer: six calls take their key from a
+    table rather than a literal, and six of those twelve keys — the diff section headings
+    and their notes — were missing from `ru.json` too. Eleven English strings in a Russian
+    report, and no surface said so.
+
+    Three assertions. The first two are the requirement. The third holds the limit the
+    remedy still has, because a limit named in a comment is a limit nobody reads.
+    """
+
+    REPORT = os.path.join(SKILL, "scripts", "checklist_report.py")
+
+    # Every `L.t()` whose key is computed rather than written: two in the Markdown diff
+    # headings, two in the HTML ones, two in the opportunity phrasing. `missing_strings`
+    # covers exactly these by walking DIRECTION_HEADING, DIRECTION_NOTE and
+    # OPPORTUNITY_PHRASE, so a seventh means a table it does not know about.
+    COMPUTED_CALLS = 6
+
+    def test_a_shipped_language_is_missing_nothing(self):
+        self.assertEqual(Lang("ru").missing_strings(), [])
+
+    def test_the_derivation_does_not_depend_on_how_a_call_is_formatted(self):
+        """What the regex could not do. Asserted through a key that is only reachable by
+        parsing — `w_thin`'s call spans lines — rather than by counting, so the assertion
+        survives keys being added and removed."""
+        source = open(self.REPORT, encoding="utf-8").read()
+        self.assertIn('L.t("w_thin",', source.replace("\n", " ").replace("  ", " "),
+                      "the multi-line call this test relies on has been reformatted")
+        empty = Lang("ru")
+        empty.data = {"strings": {}}
+        self.assertIn("w_thin", empty.missing_strings())
+
+    def test_every_computed_key_call_is_one_of_the_tables_that_are_walked(self):
+        """The remaining limit, read rather than commented.
+
+        `missing_strings` walks three tables by name. A fourth table-backed call added
+        later is invisible to it exactly as the reformatted calls were invisible to the
+        regex — the same failure, one level along. This counts the calls whose key is not
+        a literal; a seventh means a table nobody taught it about, and the failure says so.
+        """
+        import ast
+        with open(self.REPORT, encoding="utf-8") as fh:
+            tree = ast.parse(fh.read())
+        computed = [node for node in ast.walk(tree)
+                    if isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "t"
+                    and isinstance(node.func.value, ast.Name)
+                    and node.func.value.id == "L"
+                    and node.args
+                    and not isinstance(node.args[0], ast.Constant)]
+        self.assertEqual(
+            len(computed), self.COMPUTED_CALLS,
+            "there are %d L.t() calls with a computed key and missing_strings knows "
+            "about %d. If a new one reads from a fourth table, teach missing_strings "
+            "that table and raise this number; if it reads from somewhere else, it is "
+            "a string that can go untranslated with nothing to say so."
+            % (len(computed), self.COMPUTED_CALLS))
+
 if __name__ == "__main__":
     unittest.main()

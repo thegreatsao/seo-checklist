@@ -2,8 +2,8 @@
   "measured": "module-level upper-case names bound to a list, tuple, set or dict literal in scripts/ or tools/",
   "read_means": "a test imports the name from its module, which is an upper bound on the membership being asserted",
   "total": 167,
-  "read": 18,
-  "unread": 149,
+  "read": 20,
+  "unread": 147,
   "modules": {
     "ai_crawler_policy_matrix": {
       "read": [],
@@ -333,8 +333,16 @@
     "checklist_report": {
       "read": [
         {
+          "name": "STATUS_ORDER",
+          "entries": 8
+        },
+        {
           "name": "OPPORTUNITY_PHRASE",
           "entries": 3
+        },
+        {
+          "name": "LENS_AGENTS",
+          "entries": 4
         }
       ],
       "unread": [
@@ -344,10 +352,6 @@
         },
         {
           "name": "STATUS_ICON",
-          "entries": 8
-        },
-        {
-          "name": "STATUS_ORDER",
           "entries": 8
         },
         {
@@ -369,10 +373,6 @@
         {
           "name": "FIX_COLUMNS",
           "entries": 10
-        },
-        {
-          "name": "LENS_AGENTS",
-          "entries": 4
         }
       ]
     },

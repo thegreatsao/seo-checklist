@@ -142,8 +142,8 @@ The list is normative, and it is this:
 
 `w_artifacts_age` is a fragment of the last row rather than a row of its own.
 
-**Reader:** enforced since 6 September 2026, in the two halves this line used to say were
-one. Ten test functions cover `provenance_warnings`, pinning each caveat's presence and —
+**Reader:** enforced. `tests/test_report.py` holds it in two halves this line used to say
+were one. Ten test functions cover `provenance_warnings`, pinning each caveat's presence and —
 importantly — its absence when it does not apply, so the surface cannot become noise. That
 is the mechanism.
 
@@ -176,8 +176,8 @@ report MUST show that.
 **Why:** the audit's authority rests on the reader being able to tell which claims were
 checked. A `PASS` a person typed, rendered identically to a `PASS` a checker computed,
 spends credibility the tool has not earned.
-**Reader:** enforced since 0.94.2, and what was missing was the showing rather than the
-test. The stamp exists and three test functions assert it is set by the merges; measured on
+**Reader:** enforced. `tests/test_report.py::AClaimedVerdictIsNotShownAsAMeasurement` holds
+it. What had been missing was the showing rather than the test: The stamp exists and three test functions assert it is set by the merges; measured on
 6 September 2026, the report then printed one aggregate sentence — "Of the 2 decided items:
 1 answered by a person, on their word" — and rendered the rows identically, so a reader was
 told that one of the items was somebody's word and never which one.
@@ -294,7 +294,8 @@ one of the same severity.
 **Why:** an ordering by severity alone puts the whole quarter's work above the afternoon's,
 and the afternoon's is what gets done. This is the one place the audit tells somebody what
 to do first, so the order is the product.
-**Reader:** enforced since 6 September 2026, and it took a change in another document.
+**Reader:** enforced. `tests/test_report.py::Priority` and `openspec/specs/scoring/`
+hold it between them, and closing it took a change in that other document.
 Five test functions cover the priority computation, including one pinning that a cheap item
 outranks an equally severe expensive one — which reads the *relation*, and was all this row
 had. `openspec/specs/scoring/` used to record that no test pinned the effort costs
@@ -398,11 +399,27 @@ remains untranslated MUST be derived rather than maintained by hand.
 **Why:** a report that is 90% in the reader's language reads as complete, and the English
 that remains reads as an oversight rather than a design decision. A hand-maintained count
 is wrong within two releases, which is the reason the derivation exists.
-**Reader:** partial. Sixteen test functions exercise the language layer and a CI gate fails
-the build when a translation drifts from its English source — that half is well held. The
-derivation of what is missing is read by one test, and `local/sdd/inventory/GAPS.md` records
-that the derivation itself is a regex over the module's own source that a reformatted call
-would silently drop out of.
+**Reader:** enforced. `tests/test_report.py::TheHalfTranslatedReportKnowsWhichHalf` holds the
+derivation, and the gap it closed was a live defect in two layers.
+Sixteen test functions exercise the language layer and a CI gate fails the build when a
+translation drifts from its English source — that half was always well held. The derivation
+of what is *missing* was a regex over the module's own source matching `L.t(` followed by at
+most one newline: measured on 6 September 2026 it saw **99 of 138** literal keys, and five of
+the invisible ones were genuinely absent from `ru.json`, so a Russian report printed the
+broken-URL table's headers in English while the line whose job is to say which layers are
+English said nothing.
+
+Replacing the regex with an AST walk exposed the second layer: six calls take their key from
+a table rather than a literal, and six of those twelve keys — the diff section headings and
+their notes — were missing from `ru.json` too. Eleven English strings in a Russian report,
+none of them reported. Both layers are fixed and `Lang("ru").missing_strings()` is empty over
+150 asked-for keys.
+
+`TheHalfTranslatedReportKnowsWhichHalf` holds all three parts: a shipped language is missing
+nothing, the derivation survives a call being reformatted, and — the part that outlives this
+release — the number of `L.t()` calls with a computed key equals the number the three walked
+tables account for. A fourth table-backed call is the same failure one level along, and
+counting them is how a reader finds out.
 
 #### Scenario: a report mostly in the reader's language
 - **WHEN** the strings are translated and the item titles are not
@@ -530,7 +547,7 @@ measurement.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** REP-3, REP-4, REP-9 and REP-11, by mutation, on 6 September 2026 — deleting the cache branch
+**Probed:** REP-3, REP-4, REP-9, REP-11 and REP-13, by mutation, on 6 September 2026 — deleting the cache branch
 from `provenance_warnings` reddens the membership reader from both sides, and — setting `EFFORT_COST['high']` to 1
 reddens three readers across two documents. The rest were derived by parsing the 1 280 test
 functions and reading the bodies that name each symbol: the executor running mutation probes
@@ -542,14 +559,14 @@ summary that bound is unusually tight, because there is no plausible way to exer
 
 | | requirements |
 |---|---|
-| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-7, REP-9, REP-11 |
-| **partial** | REP-5, REP-6, REP-8, REP-10, REP-12, REP-13 |
+| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-7, REP-9, REP-11, REP-13 |
+| **partial** | REP-5, REP-6, REP-8, REP-10, REP-12 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-P2 and INV-P3 enforced; INV-P1 partial; INV-P4 unread.
 
-**Seven enforced, six partial, nothing unread, of thirteen.**
+**Eight enforced, five partial, nothing unread, of thirteen.**
 
 REP-9 moved without a line of work in this document: its gap was a sentence about another
 one — the effort costs the ordering divides by were pinned by nothing — and closing SCR-2

@@ -4,7 +4,10 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.94.1 — see [CHANGELOG.md](CHANGELOG.md). The `robots.txt` fetch — the first
+Version 0.94.2 — see [CHANGELOG.md](CHANGELOG.md). A verdict a person asserted no longer
+renders exactly like one a script measured, and the check for what is still untranslated
+can see all 150 report strings rather than 99 — eleven of them really were English in a
+Russian report, with nothing to say so. Before that, `0.94.1` made the `robots.txt` fetch — the first
 request this tool makes to any host — used to go out with no address validation, no
 pinning and unvalidated redirects, so it could reach a link-local address the audit
 refuses to fetch pages from. It goes through the guard now, and `openspec/specs/http/` is

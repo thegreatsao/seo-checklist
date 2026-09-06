@@ -420,8 +420,25 @@ sought and not found, or which input was missing. This includes `PASS`.
 **Why:** a bare status cannot be triaged, and a `PASS` with no evidence is
 indistinguishable from a `PASS` for lack of a subject — which is how the Appendix A.1
 violations went unnoticed.
-**Reader:** partial. Evidence is checked for `PASS`, `WARN`, `FAIL`, `N/A`, `NO_DATA` and
-`MANUAL`; it is not checked for `NEEDS_INPUT` or `LLM_PENDING`.
+**Reader:** partial, and what remains is shipped behaviour rather than a missing test.
+The coverage half is closed since 0.94.2:
+`tests/test_contract.py::EveryStatusCarriesEvidenceIncludingTheTwoNobodyChecked` runs the
+whole registry against both fixture sites and requires evidence on every status. The two
+that had gone unchecked — `NEEDS_INPUT` and `LLM_PENDING` — are 55 of the 217 items on a
+live run, so the unchecked pair was a quarter of the registry; both carried evidence
+already, and nothing required them to.
+
+What is still open is Appendix B's other charge: this requirement is violated by shipped
+behaviour in two places — the LLM answer merge, and the GSC status/evidence mismatch —
+which no test can close by asserting, because the tree does the wrong thing there today.
+Those are repairs, and until they are made this row stays `partial` however well the eight
+statuses are covered.
+
+The status set is derived from `STATUS_ORDER` rather than listed, which is the point and
+not a convenience: the previous check named the statuses it covered, and a list cannot say
+what is absent from it. A ninth status is covered here the day it joins that tuple, and a
+second assertion refuses a status a run emits that no surface can render. Probed by
+emptying the reason on the `NEEDS_INPUT` path, which reddens with ten named items.
 
 #### Scenario: a passing item says what it checked
 - **WHEN** an item reports `PASS`
@@ -834,8 +851,9 @@ by the profile prompt's silent exits; and VRD-12 by the manifest. VRD-8 left tha
 in 0.93.0, and it is the one entry here closed by repairing the tree rather than by
 writing a test: the four rules now read counted fields, and the sweep that holds them
 would redden on a revert. The totals are recomputed from the readers named above: E1 leaves VRD-3
-partial because declaration completeness is unread, E2 leaves VRD-10 partial because
-two statuses remain uncovered, and E3 confirms that VRD-5's general rule is only
+partial because declaration completeness is unread, E2's two-status gap is closed in 0.94.2 — evidence is now required on all
+eight, derived from `STATUS_ORDER` — and VRD-10 stays partial for the two shipped
+violations rather than for coverage; and E3 confirms that VRD-5's general rule is only
 partially read.
 
 An earlier draft of this appendix published `5 none / 3 partial / 4 enforced` and was

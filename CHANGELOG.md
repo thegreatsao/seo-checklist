@@ -10,6 +10,66 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.94.2 — eleven English strings in a Russian report, and nothing said so
+
+Registry version: unchanged at `e9154e92f4dd`. The item set does not move. What moves is
+what a report shows about where an answer came from, and which strings it can tell you are
+untranslated, so this is a minor.
+
+**A verdict somebody asserted rendered exactly like one a script measured.** Every item has
+carried `decided_by` for releases, three tests assert the merges set it, and the report
+printed one aggregate sentence — "Of the 2 decided items: 1 answered by a person, on their
+word" — and then rendered the rows identically. A reader was told that one of the items was
+somebody's word and never which one, which is the credibility REP-4 says the tool has not
+earned. Markdown, HTML and the console diff now mark it beside the verdict; `claimed` and
+`model-read` are marked *differently*, because a person must show evidence and a model is
+asked without being required — collapsing them would lose REP-5 — and `measured` stays
+silent, for the reason the parser caveat is silent for `lxml`.
+
+**The check for "what is still in English" could not see 39 of 138 strings.** It was a regex
+over the report module's own source matching `L.t(` followed by at most one newline, so
+every call formatted differently was invisible. Not a latent risk: five of the invisible
+keys were genuinely absent from `ru.json`, so a Russian report printed the broken-URL
+table's headers in English and the line whose whole job is to say which layers are English
+said nothing. Replacing the regex with an AST walk exposed a second layer — six calls read
+their key from a table, and six of those twelve keys, the diff section headings and their
+notes, were missing too. Eleven English strings in a Russian report. All eleven are
+translated, the derivation walks the AST plus the three tables, and 150 asked-for keys come
+back with nothing missing.
+
+**The provenance list gained a membership reader.** Its mechanism had ten tests and its
+membership had none, which is exactly how the response cache came to be absent from it in
+the first place: ten tests of a mechanism cannot notice something that was never in it. The
+list is now written in `openspec/specs/reporting/` REP-3 as a table, and a test walks
+`provenance_warnings`'s AST for the warnings it can emit and the payload fields it reads,
+holding both against that table in each direction.
+
+**Two hand-written sets got readers derived from what they describe.** The lens-to-agent
+routing table — a lens added to the registry with no row sends its queue to an agent named
+`""`, addressed to nobody, while every rendering test passes — is now keyed off the lenses
+the registry uses, with each agent checked against the file that must exist for the routing
+to mean anything. And evidence is required on all eight statuses rather than six: the two
+that had gone unchecked, `NEEDS_INPUT` and `LLM_PENDING`, are 55 of 217 items on a live run.
+The status set is derived from `STATUS_ORDER`, because the previous check named the statuses
+it covered and a list cannot say what is absent from it.
+
+`openspec/specs/reporting/` goes from three enforced of thirteen to eight. REP-9 moved
+without a line of work in that document — its gap was a sentence about `openspec/specs/scoring/`,
+closed by 0.94.0 — and it was found by grepping the other document's name after that document
+changed, which a census that only re-reads its own document cannot do.
+
+`openspec/specs/verdicts/` VRD-10 does **not** move. Its coverage half is closed, and the
+appendix charges it with two shipped violations — the LLM answer merge and the GSC
+status/evidence mismatch — which are repairs rather than assertions. A row whose remaining
+gap is behaviour cannot be closed by a test that agrees with the behaviour.
+
+Two more hand-written sets gained readers as a by-product, and both were the kind GOV-3
+counts: `LENS_AGENTS`, whose membership decides which model reads which slice of a page, and
+`STATUS_ORDER`, whose own comment argues that a new status must not reach two of three
+surfaces and miss the third. The census goes to 167 sets, 20 read, 147 unread.
+
+Tree debt: 72 enforced, 69 partial, 6 unread, 2 opposed, of 149.
+
 ## 0.94.1 — `specs/http/` is closed, and the robots fetch was the one request nothing guarded
 
 Registry version: unchanged at `e9154e92f4dd`. The item set does not move. What moves is a

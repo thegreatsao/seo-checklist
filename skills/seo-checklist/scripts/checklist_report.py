@@ -17,11 +17,11 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import ast
 import csv
 import html
 import json
 import os
-import re
 import sys
 
 PASS, FAIL, WARN = "PASS", "FAIL", "WARN"
@@ -210,14 +210,35 @@ class Lang:
     def missing_strings(self) -> list[str]:
         """Keys the report asks `t()` for that this language does not carry.
 
-        Read out of this module's own source, because the alternative is a
-        hand-kept list of 51 keys — and a hand-kept list of what a file should
-        contain is the thing that just turned out to be wrong.
+        Read from this module's own source because a hand-kept list drifts. The
+        old regex saw only 99 of 138 literal `L.t()` keys: call formatting hid
+        39 of them. Walking the AST finds every literal key without depending on
+        source layout; the explicit table walk handles the current computed keys.
         """
         if not self.data:
             return []
-        with open(os.path.abspath(__file__), encoding="utf-8") as f:
-            asked = set(re.findall(r'\bL\.t\(\n?\s*"([a-z_0-9]+)"', f.read()))
+        path = os.path.abspath(__file__)
+        with open(path, encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=path)
+        asked = {
+            node.args[0].value
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "L"
+            and node.func.attr == "t"
+            and node.args
+            and isinstance(node.args[0], ast.Constant)
+            and isinstance(node.args[0].value, str)
+        }
+        # The AST cannot follow values through tables. This inventory is intentionally
+        # limited to the three tables named here: a new table-backed call is visible as
+        # a non-literal `L.t()` argument in review/search and must add its source here.
+        for table in (DIRECTION_HEADING, DIRECTION_NOTE):
+            asked.update(key for key, _ in table.values())
+        for phrases in OPPORTUNITY_PHRASE.values():
+            asked.update(key for key, _ in phrases)
         return sorted(asked - set(self.data.get("strings", {})))
 
 

@@ -102,10 +102,10 @@
     },
     "reporting": {
       "counts": {
-        "enforced": 3,
+        "enforced": 8,
         "none": 0,
         "opposed": 0,
-        "partial": 10
+        "partial": 5
       },
       "opposed": [],
       "requirements": 13,
@@ -146,10 +146,10 @@
     }
   },
   "totals": {
-    "enforced": 67,
+    "enforced": 72,
     "none": 6,
     "opposed": 2,
-    "partial": 74,
+    "partial": 69,
     "requirements": 149
   }
 }
