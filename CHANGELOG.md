@@ -71,6 +71,13 @@ because what VRD-8 forbids is prose and not regular expressions.
 is the first entry in that document's list of live violations closed by repairing the
 tree rather than by writing a test. The suite total moves 51 → 52 of 149.
 
+The four new keys are in `resources/references/script-output-shapes.md`, which
+`tools/audit_assertions.py` reads to refuse a rule pointing at a path no script emits —
+the gate that caught them missing, on CI rather than here, because it is a workflow step
+and not a test. Their names and types come from a run against the fixture corpus, since
+the machine that added them cannot reach the live URL the rest of that file was probed
+against, and the file now says so.
+
 ## 0.92.1 — fourteen counts in the prose, none of them the registry's
 
 Registry version: unchanged at `b0abf2819da0`. No item moves, no assertion changes and

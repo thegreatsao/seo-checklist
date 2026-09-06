@@ -1,4 +1,4 @@
-<!-- Updated: 2026-08-16 -->
+<!-- Updated: 2026-09-06 -->
 # Script output shapes
 
 All 57 scripts the registry runs are documented here, plus `site_crawl.py`, which
@@ -11,6 +11,10 @@ Check the section before writing a rule.
 
 Machine-probed JSON structure of the evidence scripts, captured by running each one
 with `--json` against a live URL (https://www.plerdy.com/seo-checklist/, WordPress).
+Four keys added in 0.93.0 — `srcset_without_sizes_count`, `large_image_count`,
+`invalid_url_count` and `incomplete_nodes_by_type` — were read from a run against the
+fixture corpus instead, because the machine that added them cannot reach that URL. The
+key names and types are the run's; the notes beside them are not.
 The Search Console scripts were probed separately against a private property the key
 is verified on (`sc-domain:<client-domain>`), since they address a property rather than
 the audited URL. Which property is deliberately not written down: it belongs to a
@@ -920,6 +924,15 @@ Without one it audits one page's image markup and optional fetched bytes.
   responsive-image fact carries weight once. The count was wrong in the same direction.
 `modern_format_on_img_count` — int — the narrow count: `img` src only
 `srcset_on_img_count` — int — the narrow count: `img` attribute only
+`srcset_without_sizes_count` — int — absent when the page has no images; otherwise,
+  images offering width-described candidates with no `sizes` to choose between them.
+  MB-098 asserts `eq: 0`. Only `w` descriptors count: an `srcset` in `x` descriptors
+  needs no `sizes`, and until 0.93.0 both the count and the `issues[]` message said
+  otherwise, reporting correct markup as a defect
+`large_image_count` — int — **absent** when no transfer size was learned, which on a
+  page nobody fetched is every image. MB-095 asserts `lte: 5` and is invoked with
+  `--fetch-images` for exactly this reason: without it the key never appears and the
+  item is NO_DATA. Emitting 0 instead would report a light page from zero readings
 `picture_count` — int — images wrapped in a `<picture>` carrying a `<source>`
 `truncated` — bool — an image on this page answered nothing, so the counts above are
   over the images that did. `broken_image_count` is withheld outright when nothing
@@ -929,8 +942,9 @@ Without one it audits one page's image markup and optional fetched bytes.
   - item keys: severity, message, url
 `images[]` — array
   - item keys: src, format, width, height, loading, fetchpriority, srcset, sizes,
-    picture_source_count, picture_srcset, picture_modern_formats, responsive,
-    modern_format, likely_lcp_candidate, status, content_length, content_type
+    sizes_required_and_absent, picture_source_count, picture_srcset,
+    picture_modern_formats, responsive, modern_format, likely_lcp_candidate, status,
+    content_length, content_type
 `fetch_error` — NoneType
 
 Inventory mode:
@@ -1428,6 +1442,11 @@ to walk `rows[].decisions` directly; there is no aggregate to assert against.
 
 `schema_nodes` — int
 `checked_type` — NoneType
+`incomplete_nodes_by_type` — object — one entry per schema type present on the page,
+  counting the nodes of that type with a missing required or recommended property or a
+  placeholder value. A type with nothing wrong still gets a key, at zero, so an absent
+  key means the page declares no node of that type — which is what GO-143's
+  `missing_is: pass` answers on `incomplete_nodes_by_type.WebSite`
 `rows[]` — array
   - item keys: path, types, missing_required, missing_recommended, placeholder_properties
 `issues[]` — array
@@ -1563,6 +1582,12 @@ root. `--out PATH` writes the inventory to a file and prints the summary instead
 `summary.urls` — int
 `summary.indexes` — int
 `summary.issues` — int
+`invalid_url_count` — int — **absent** unless URLs were read, and absent again when any
+  probe failed and none of the ones that answered was invalid. A URL is invalid at a
+  status of 400 or above, on a redirect chain, or on a meta noindex. GO-138 asserts
+  `eq: 0`; before 0.93.0 it matched `(?i)404|redirect|noindex` against the messages,
+  and since the message reads "Sitemap URL returns HTTP {status}", a sitemap of URLs
+  answering 500 passed
 `issues[]` — array
   - item keys: severity, message, url, evidence
 
