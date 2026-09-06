@@ -1,4 +1,4 @@
-"""What the tool does is decided by 166 hand-written sets, and 16 of them are read.
+"""What the tool does is decided by 166 hand-written sets, and 17 of them are read.
 
 `openspec/specs/governance/` GOV-3: where a list, tuple or mapping decides behaviour, it
 is derived from what it describes or read by something. A hand-kept list guarded only by
@@ -12,10 +12,10 @@ the omission is the same line somebody would have had to edit to avoid it.**
 `tools/audit_derived_sets.py` counts them. This module holds the count and the direction:
 the record must describe the tree, and the unread column may not grow. That is `partial`
 and is labelled `partial` — a ratchet holds "no worse", not "every set is derived or
-read", and 150 unread is not a state any test here should be read as endorsing.
+read", and 149 unread is not a state any test here should be read as endorsing.
 
 **Why the number is the flattering one.** "Read" means a test imports the name from its
-module. Importing a name is not asserting what belongs in it, so 16 is a ceiling. A bare
+module. Importing a name is not asserting what belongs in it, so 17 is a ceiling. A bare
 word match over the test corpus would say 44, by crediting one module's constant with a
 test that mentions another module's `PAGE` or `CONFIG`; that measure was written first
 and discarded for exactly that reason.
@@ -36,7 +36,7 @@ import audit_derived_sets  # noqa: E402
 # The count on 6 September 2026, when this module was written. It is a ceiling, not a
 # target: every set moved out of it is one fewer place where a forgotten entry is
 # invisible. Lower it in the same commit that earns the lower number.
-UNREAD_AT_MOST = 150
+UNREAD_AT_MOST = 149
 
 
 class TheCensusDescribesThisTree(unittest.TestCase):

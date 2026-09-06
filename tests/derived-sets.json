@@ -2,8 +2,8 @@
   "measured": "module-level upper-case names bound to a list, tuple, set or dict literal in scripts/ or tools/",
   "read_means": "a test imports the name from its module, which is an upper bound on the membership being asserted",
   "total": 166,
-  "read": 16,
-  "unread": 150,
+  "read": 17,
+  "unread": 149,
   "modules": {
     "ai_crawler_policy_matrix": {
       "read": [],
@@ -146,12 +146,13 @@
       ]
     },
     "audit_thresholds": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "KINDS",
           "entries": 5
-        },
+        }
+      ],
+      "unread": [
         {
           "name": "VERDICT_KINDS",
           "entries": 4

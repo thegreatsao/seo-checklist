@@ -153,6 +153,12 @@ def _threshold_declarations() -> dict:
     return {
         "counted": len([t for t in named if t["kind"] != "presentation"]),
         "presentation": len([t for t in named if t["kind"] == "presentation"]),
+        # The split, not just the total. `tests/test_inherited_basis.py` ratchets
+        # `inherited` downward, and a ratchet alone is satisfied by relabelling a line
+        # `convention` without arguing it — which moves the debt rather than paying it.
+        # Recording all five makes that visible as the two numbers moving together.
+        "basis": {kind: len([t for t in named if t["kind"] == kind])
+                  for kind in sorted(audit_thresholds.KINDS)},
         # The names, not the count. The entry is about four particular constants, and
         # a count of 25 survives judging those four while four others arrive.
         "uncounted": sorted(row["name"] for row in audit_thresholds.scan_uncounted()),

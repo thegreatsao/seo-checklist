@@ -108,9 +108,27 @@ absence of a decision, and it MUST NOT be cited as anything else.
 **Why:** the gate passes with 77 of 146 undefended, which is fine as an accounting and
 dangerous as a standard. The category exists so the debt is countable, and it stops working
 the moment it reads as a fourth kind of justification.
-**Reader:** **none.** Nothing distinguishes the four kinds in any consumer: the gate counts
-them and no reader treats `inherited` differently from `standard`. Nothing prevents the
-count rising, either — which is the form a reader for this would most usefully take.
+**Reader:** partial. `tests/test_inherited_basis.py` holds the two halves a test can
+reach. The count may not rise — 77 of 146 today, ratcheted downward, which is the second
+scenario as an assertion. And no `inherited` line may argue its number: a declaration
+carrying a URL or a phrase like "the industry standard" has recorded an absence where
+there was a decision, which is the same error as the reverse and harder to notice because
+it reads as thoroughness.
+
+The full distribution over all five kinds is recorded in `tests/known-issues.json`,
+because a ratchet on one column alone is satisfied by relabelling an `inherited` line
+`convention` without arguing it — moving the debt rather than paying it. The two numbers
+then move together and the record shows it.
+
+**Partial, and it cannot be more.** The defence rule is a positive search: it finds what
+its pattern knows, and an empty result is not proof that nothing argues its number in
+words nobody thought of. A test that fires on a phrasing it has been shown to catch is
+what it is; `test_the_search_for_a_defence_would_find_one` is that demonstration. And the
+first scenario — an undefended number cited as justification in an argument with a client
+— happens outside this repository, where nothing here reaches.
+
+Still true, and the reason this is not `enforced`: no consumer distinguishes the kinds.
+The gate counts them and treats `inherited` exactly as it treats `standard`.
 
 #### Scenario: an undefended number is cited as justification
 - **WHEN** someone argues a threshold is right because it is what the code has always
@@ -520,13 +538,13 @@ rest were derived by reading the gates and their tests.
 | | requirements |
 |---|---|
 | **enforced** | GOV-1, GOV-4, GOV-8, GOV-9, GOV-10 |
-| **partial** | GOV-3, GOV-5, GOV-6, GOV-7 |
-| **none** | GOV-2 |
+| **partial** | GOV-2, GOV-3, GOV-5, GOV-6, GOV-7 |
+| **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-G2 and INV-G4 enforced; INV-G1 partial; INV-G3 unread.
 
-**Five enforced, four partial, one unread, of ten.**
+**Five enforced, five partial, none unread, of ten.**
 
 The two unread requirements are the two that ask the machinery to be *governed* rather than
 to govern. GOV-2 asks that an admission not become a justification; GOV-3 asks that lists be

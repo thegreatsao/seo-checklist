@@ -10,6 +10,54 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.93.7 — `inherited` gets a ratchet, and may no longer argue its own number
+
+Registry version: unchanged at `e9154e92f4dd`. Nothing a run produces changes.
+
+**What `inherited` is.** Every number a verdict depends on carries a `# basis:` line
+naming one of five kinds. `inherited` means the number came with the borrowed code and
+nobody here has defended it: 77 of 146 today. `openspec/specs/governance/` GOV-2 says it
+licenses no conclusion about whether the number is right — the category exists so the debt
+is countable, and it stops working the moment it reads as a fourth kind of justification.
+
+**Nothing watched it.** `tools/audit_thresholds.py --check` refuses a malformed
+declaration and does not care which kind a number carries. The gate counted them and
+treated `inherited` exactly as it treated `standard`, and nothing prevented the total
+rising.
+
+**Two halves now hold, in `tests/test_inherited_basis.py`:**
+
+* **the count may not rise** — ratcheted at 77, which is the requirement's second
+  scenario written as an assertion. Its third scenario, a basis being upgraded, lowers
+  the number, and the ceiling comes down in the commit that earns it;
+* **no `inherited` line may argue its number** — a declaration carrying a URL or a
+  phrase like "the industry standard" has recorded an absence where there was a
+  decision. That is the same error as the reverse and harder to notice, because it reads
+  as thoroughness. Probed by adding "the industry standard" to `broken_links.py`'s
+  200-link basis: the test names the file, the line and the constant.
+
+**A ratchet on one column is not enough, and the record says why.** Relabelling an
+`inherited` line `convention` without arguing it satisfies the ratchet and moves the debt
+rather than paying it. The full distribution over all five kinds now goes into
+`tests/known-issues.json`, so the two numbers move together and the record shows it.
+
+**Partial, and it cannot be more.** The defence rule is a positive search — it finds what
+its pattern knows, and an empty result is not proof that nothing argues its number in
+words nobody thought of. `test_the_search_for_a_defence_would_find_one` exists so the
+clean corpus is not read as a clean bill: a positive search that has never been shown to
+fire says nothing. And the requirement's first scenario, an undefended number cited as
+justification in an argument with a client, happens outside this repository, where
+nothing here reaches.
+
+Writing it moved the other governance census by one: `test_inherited_basis.py` imports
+`audit_thresholds.KINDS`, so 0.93.4's count of hand-written sets nothing reads falls from
+150 to 149. Recorded rather than tidied — that census measures this tree including its
+tests, and a reader that changes what it measures is one that is really reading.
+
+`openspec/specs/governance/` reaches five enforced and five partial of ten, with nothing
+unread. **Ten of the twelve documents now have no unread requirement**, and the suite's
+unread column falls to six — all six obligations on a person or an agent.
+
 ## 0.93.6 — the count ledger leaves the protocol, and finds sixteen more
 
 Registry version: unchanged at `e9154e92f4dd`. Nothing a run produces changes; sixteen
