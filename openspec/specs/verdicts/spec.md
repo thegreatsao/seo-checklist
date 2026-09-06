@@ -477,10 +477,18 @@ Absent both, the audit SHALL run the full registry. Silence is never consent.
 **Why:** dropping checks raises the score without anyone choosing that. The detection is
 structural evidence, but the scoping is a decision and belongs to a person — who may
 delegate it deliberately, which is what the first form is.
-**Reader:** partial. Tests pin explicit automatic delegation, confirmation on sight,
+**Reader:** enforced. Tests pin explicit automatic delegation, confirmation on sight,
 non-interactive fallback to the full registry, and the rule that no profile drops a
-critical item. They do not cover a detected non-default profile followed by EOF,
-interruption, or three invalid answers; Appendix A.1 records those violations.
+critical item. The case they did not cover — a detected non-default profile followed by
+EOF, an interrupt, or three invalid answers — is held from 0.95.1 by
+`test_the_silent_exits_widen_the_audit`, swept over every profile the file offers, with
+`test_the_silent_exits_are_not_the_prompt_being_broken` beneath it so a prompt that
+answered `default` unconditionally would not satisfy it.
+
+The four tests that had covered those exits all called the prompt with no detection, which
+makes the suggestion `default` and the two branches identical. That is the general shape:
+a test built where the requirement cannot be broken passes for a reason that has nothing to
+do with the rule. `openspec/specs/run-lifecycle/` A.5 records the measurement.
 
 #### Scenario: consent given in advance
 - **WHEN** the operator selects automatic scoping for the run
@@ -772,21 +780,29 @@ The checker that fed MB-098 was wrong in the same direction and was corrected wi
 it reported a missing `sizes` for any `srcset`, where only width descriptors need one.
 An `srcset` in `x` descriptors is correct markup and was being reported as a defect.
 
-Two other shipped paths violate these requirements. A third — `gsc` grading without
-credentials — was fixed at 0.95.0 and its row is gone; what it was, and why it took a
-document about the run lifecycle finding the same swap from the other side to close it, is
-[`openspec/specs/run-lifecycle/`](../run-lifecycle/spec.md) A.7. The remedy is the one this
-table named: `NEEDS_INPUT`, with the sentence the planner already used, now written once so
-the two boundaries cannot answer differently again.
+One shipped path still violates these requirements:
 
 | path | observed behaviour | breaks | should be |
 |---|---|---|---|
 | LLM answer merge | an empty rationale becomes a scored quality verdict with `LLM: no rationale given` | VRD-10 | refuse the answer until it says what was decided |
-| interactive `choose_profile` | EOF, `KeyboardInterrupt`, and three invalid answers return the detected profile | VRD-11 | run the full registry because silence is not consent |
 
 The manual answer path already refuses an empty rationale, so the enforceable VRD-10
-rule exists next door to the LLM violation. The three silent exits, the four tests that
-cover them and the probe that established which branch each takes are
+rule exists next door to the LLM violation.
+
+**Two rows left this table, and both were closed by repairing the tree.**
+
+`gsc` grading without credentials, at 0.95.0. What it was, and why it took a document about
+the run lifecycle finding the same swap from the other side to close it, is
+[`openspec/specs/run-lifecycle/`](../run-lifecycle/spec.md) A.7. The remedy is the one this
+table named: `NEEDS_INPUT`, with the sentence the planner already used, now written once so
+the two boundaries cannot answer differently again.
+
+The interactive `choose_profile` exits, at 0.95.1. All three resolve to the full registry
+and say so, naming the two flags that narrow deliberately. Pressing Enter still accepts the
+suggestion, and that is not the same thing: the prompt offers it in words, and accepting an
+offer you were shown is consent on sight — the second of the two forms this requirement
+allows. The three exits, the four tests that covered them without reading them, and the
+probe that established which branch each takes are
 [`openspec/specs/run-lifecycle/`](../run-lifecycle/spec.md) A.5.
 
 The GSC contradiction was split across two sites in
@@ -860,16 +876,21 @@ VRD-11.
 
 | | requirements |
 |---|---|
-| **enforced** | VRD-4, VRD-5, VRD-6, VRD-7, VRD-8, VRD-9, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
-| **partial** | VRD-1, VRD-2, VRD-3, VRD-10, VRD-11, VRD-12 |
+| **enforced** | VRD-4, VRD-5, VRD-6, VRD-7, VRD-8, VRD-9, VRD-11, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
+| **partial** | VRD-1, VRD-2, VRD-3, VRD-10, VRD-12 |
 | **none** | — none |
 
 Invariants: INV-1, INV-2, INV-3 and INV-4 partial; INV-2 is violated.
 
-**Eleven enforced, six partial, none unread.** Five requirements are violated by shipped
+**Twelve enforced, five partial, none unread.** Four requirements are violated by shipped
 behaviour or declarations while nothing reddens: VRD-2 and VRD-3 by the seventeen missing
-applicability declarations; VRD-10 by the LLM answer merge; VRD-11 by the profile prompt's
-silent exits; and VRD-12 by the manifest.
+applicability declarations; VRD-10 by the LLM answer merge; and VRD-12 by the manifest.
+
+VRD-11 left that list at 0.95.1, with the tree repaired rather than the record kept. Its
+four tests had all been written where the defect cannot appear — the prompt called with no
+detection, so the suggestion is already `default` and both branches answer alike — which is
+worth naming as a shape rather than as an accident: a test built where a requirement cannot
+be broken passes for a reason that has nothing to do with the rule, and reads as coverage.
 
 VRD-5 left that list at 0.95.0, by repairing the tree in both directions rather than by
 recording either. The grader now answers an absent credential with the planner's status and

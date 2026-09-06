@@ -4,7 +4,13 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.95.0 — see [CHANGELOG.md](CHANGELOG.md). `NEEDS_INPUT` means *waiting on you*,
+Version 0.95.1 — see [CHANGELOG.md](CHANGELOG.md). Three ways to end the profile question
+without answering it — end of input, an interrupt, three replies naming no profile — all
+returned the *detected* profile, so an operator who pressed Ctrl-C got an audit narrowed to
+a site type nobody chose. All three run the full registry now. Writing the test the same
+requirement asked for also showed the detector reading the words on the page: an article
+about leaving WooCommerce was detected as a storefront, at high confidence, from its own
+prose. Before that, `0.95.0` made `NEEDS_INPUT` mean *waiting on you*,
 and two paths were using it for absences nobody can supply — a shared crawl that ran and
 failed, and an offline item whose HTML never existed because the entry page answered 503.
 Which of the two statuses an absence becomes now follows the table of inputs an operator

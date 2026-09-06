@@ -575,12 +575,19 @@ why. It MUST NOT be simply absent, and the reason MUST NOT be a generic phrase.
 **Why:** a partition that drops rows stops summing to the registry, and the score becomes
 a fraction of a sample nobody chose. Naming the profile is what lets a reader tell "this
 does not apply to your kind of site" from "the tool did not look".
-**Reader:** partial. `test_an_excluded_item_carries_the_profiles_words_not_a_shrug` pins
+**Reader:** enforced. `test_an_excluded_item_carries_the_profiles_words_not_a_shrug` pins
 that the reason is the profile's own sentence rather than a shrug, and
-`test_no_profile_excludes_a_critical_item` pins the floor. The status half is unread: the
-construction that names the profile beside the `N/A` has no test — the one test that
-asserts an excluded item never reaches the plan supplies its own hand-written reason
-rather than one produced by the profile.
+`test_no_profile_excludes_a_critical_item` pins the floor.
+
+The status half was unread until 0.95.1: the construction that names the profile beside the
+`N/A` had no test, because the one test asserting an excluded item never reaches the plan
+supplies its own hand-written reason rather than one the profile produced.
+`test_an_excluded_item_is_reported_as_na_naming_the_profile` runs the shipped `local`
+profile over the real registry and holds the status, the profile's name and the sentence's
+substance for every item it excludes — over the registry rather than a fixture, because the
+three exclusion routes each build their own sentence and a fixture exercises only the one it
+was written for. `test_no_exclusion_is_a_shrug_in_any_shipped_profile` sweeps every profile
+in the file for the fallback phrase. Probed by making the id route return the shrug.
 
 #### Scenario: a profile drops an item from the report
 - **WHEN** an item a profile excludes is absent rather than reported
@@ -607,22 +614,29 @@ resolve to the full registry. A narrower scope MUST be chosen deliberately or no
 **Why:** the failure modes of a prompt are all silence, and silence must not be able to
 shrink the audit. The dangerous direction is the quiet one — a narrowed scope produces a
 higher score over fewer items and looks like good news.
-**Reader:** partial, **and the requirement is violated today.** The prompt's three silent
-exits — end of input, interrupt, and three unrecognised answers — all `return suggested`,
-which is the *detected* profile whenever detection found one. A run whose entry page looks
-like a local business, answered by an operator who presses Ctrl-C, audits under `local`
-and reports a higher score over fewer items, with nobody having chosen that.
+**Reader:** enforced, and the requirement was violated until 0.95.1. The prompt's three
+silent exits — end of input, interrupt, and three unrecognised answers — all `return
+suggested`, the *detected* profile whenever detection found one. A run whose entry page
+looked like a local business, answered by an operator who pressed Ctrl-C, audited under
+`local` and reported a higher score over fewer items with nobody having chosen that.
 
-The tests pass, and they pass for a reason worth naming: every one of them calls the
-prompt with no detection argument, so `suggested` is `"default"` and the two branches are
+Four tests covered those exits and none of them read this. Every one called the prompt with
+no detection argument, so `suggested` was `"default"` and the two branches were
 indistinguishable. `test_falls_back_to_the_widest_scope_not_the_narrowest`,
 `test_eof_is_treated_as_no_answer`, `test_without_a_terminal_it_does_not_ask` and
 `test_no_prompt_flag_skips_the_question` are all sound about the case they construct and
-silent about the case where the requirement can be broken. What *is* enforced is the
-explicit flag (`test_explicit_flag_is_never_second_guessed`), the non-interactive path, and
-that `--profile auto` is the only way detection may narrow without asking. Appendix A.5
-records the measurement, and `openspec/specs/verdicts/` already recorded the same defect from the
-other side as VRD-11.
+silent about the case where the requirement can be broken.
+
+`test_the_silent_exits_widen_the_audit` sweeps every non-default profile through all three
+exits. `test_the_silent_exits_are_not_the_prompt_being_broken` is the floor beside it: a
+`choose_profile` returning `"default"` unconditionally would satisfy the first test, so
+Enter and the profile's own name are pinned as still narrowing.
+`test_the_widening_says_the_suggestion_is_still_available` holds the sentence an operator
+gets instead — and its first draft asserted the bare profile name, which the menu printed
+above already contains, so the mutation that stopped the sentence naming the suggestion
+passed it. It asserts the instruction now. The explicit flag, the non-interactive path and
+`--profile auto` were enforced throughout. A.5 records the measurement, and
+`openspec/specs/verdicts/` recorded the same defect from the other side as VRD-11.
 
 #### Scenario: end of input, with a profile detected
 - **WHEN** detection suggests `local` and the operator's input ends at the prompt
@@ -661,13 +675,20 @@ conclusion.
 **Why:** a heuristic that silently narrows scope is RUN-14's failure with a better excuse.
 Showing the signals is what makes the suggestion arguable; a bare answer is a verdict
 wearing a suggestion's clothes.
-**Reader:** partial. `test_thin_evidence_never_narrows_anything` and
+**Reader:** enforced. `test_thin_evidence_never_narrows_anything` and
 `test_empty_input_is_an_error_not_a_guess` pin the resolution to `default`;
 `test_auto_accepts_detection_without_asking` and
 `test_detection_does_not_narrow_scope_without_a_terminal` pin the two ways a suggestion may
-and may not be adopted. The "shown, not just answered" half is unread — the signals are
-read inside one unit test and nothing asserts they reach the operator — and the claim that
-detection reads structure rather than wording has no test in either direction.
+and may not be adopted; and from 0.95.1
+`test_the_signals_reach_the_operator_and_not_only_the_conclusion` holds the "shown, not just
+answered" half, which had been read inside one unit test of `detect` and by nothing on the
+surface the operator sees.
+
+The claim that detection reads structure rather than wording had no test in either
+direction, and writing one found it false — A.8. Four tests hold it now: prose naming a
+platform fingerprints nothing, the same names in markup still do, an inline script still
+counts, and link paths, which were always read from `href` alone, still count. The last two
+are what stop the first from being a way to switch detection off.
 
 #### Scenario: the evidence is thin
 - **WHEN** detection finds nothing conclusive
@@ -1082,6 +1103,10 @@ failure dictionary asserts that it is empty, which is a statement about the fixt
 
 #### A.5 — the profile prompt narrows the audit on every silent exit
 
+**Fixed at 0.95.1.** The three exits resolve to `default` and say so, naming the two flags
+that narrow deliberately. The measurement is kept because the reason four tests missed it
+is the point.
+
 `choose_profile` ends its prompt loop three ways that are not answers — end of input, an
 interrupt, and three unrecognised replies — and all three `return suggested`. `suggested`
 is the detected profile whenever detection found one, so:
@@ -1143,6 +1168,37 @@ The general lesson is the one A.1 already half-states. A status is a claim about
 so the rule that assigns it belongs beside the record of what readers can do — and where
 that record is a set, the set's composition needs a reader of its own.
 
+#### A.8 — the detector's own claim about itself was false, 7 September 2026
+
+RUN-15 says the signals behind a suggestion must be shown, and `detect_profile.py`'s
+docstring makes a second claim beside it: signals are structural "because wording is the
+first thing that lies". Nothing read either. The first was merely unread. The second was
+wrong.
+
+`PLATFORM_SIGNALS` and `MARKUP_SIGNALS` were matched with `re.search(pattern, lower)` where
+`lower` was the whole document lowercased — prose included. Measured before the fix:
+
+| page | detected |
+|---|---|
+| an article titled *Why we left WooCommerce*, mentioning WooCommerce and Magento in running text, whose only link is `/about` | `ecommerce`, **high** confidence, signals `['WooCommerce', 'Magento']` |
+| a page whose visible text reads "our opening hours" and whose markup says nothing | `local` +3 |
+
+`PATH_SIGNALS` was never affected: it is matched against the joined `href` values, which is
+structure. The docstring's own example — "a plumber's site says *shop* in the nav" —
+described a case the code deliberately treats as a real signal, so that sentence was the
+one to correct rather than the behaviour.
+
+The patterns are matched against `structure()` now: every opening tag rebuilt from its name
+and attributes, plus the contents of `script` and `style`, because a theme announces itself
+in inline JS and code is not wording either. The harm was bounded — detection only
+suggests, and VRD-11 requires consent before it narrows — which is exactly why it survived:
+a wrong suggestion accepted by an operator pressing Enter produces a narrowed audit that
+looks like a decision somebody made.
+
+Worth naming beside `test_image_paths_do_not_fingerprint_magento`, which fixed a
+false-positive fingerprint by narrowing the *pattern*. This is the same class one level up:
+the patterns were right and the haystack was wrong.
+
 #### A.6 — the survey that produced this appendix
 
 Appendices A.1 through A.4 came from a reader census over C9–C18 that named, for each
@@ -1169,14 +1225,20 @@ requests, even though the suite does not).
 
 | | requirements |
 |---|---|
-| **enforced** | RUN-1, RUN-2, RUN-3, RUN-4, RUN-5, RUN-9, RUN-10, RUN-11, RUN-12, RUN-16, RUN-18, RUN-20 |
-| **partial** | RUN-6, RUN-7, RUN-8, RUN-13, RUN-14, RUN-15, RUN-17, RUN-19 |
+| **enforced** | RUN-1, RUN-2, RUN-3, RUN-4, RUN-5, RUN-9, RUN-10, RUN-11, RUN-12, RUN-13, RUN-14, RUN-15, RUN-16, RUN-18, RUN-20 |
+| **partial** | RUN-6, RUN-7, RUN-8, RUN-17, RUN-19 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-L1 enforced; INV-L2, INV-L3 and INV-L4 partial.
 
-**Twelve enforced, eight partial, nothing unread, of twenty.**
+**Fifteen enforced, five partial, nothing unread, of twenty.**
+
+RUN-13, RUN-14 and RUN-15 moved at 0.95.1 — the whole profile layer in one release,
+because they are one subject: a profile is a decision, and an operator has to be able to
+see what it rests on and what it cost. Two of the three were violated in the shipped tree,
+and the second violation was found by writing the test the third one asked for. A.5 and A.8
+record both.
 
 RUN-2, RUN-5 and RUN-18 moved at 0.95.0. Both were held for one key and read nothing about the
 rest of a set; both were closed by deriving the set instead of listing it, and both found a

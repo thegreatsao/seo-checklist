@@ -10,6 +10,72 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.95.1 — three ways to end a prompt without answering, and all of them narrowed the audit
+
+Registry version: unchanged at `e9154e92f4dd`. A run can report a different profile than it
+did yesterday, and a profile decides which items apply, so this is a minor.
+
+**Silence was consent.** `choose_profile` ends its prompt loop three ways that are not
+answers — end of input, an interrupt, and three replies naming no profile — and all three
+returned `suggested`, which is the *detected* profile whenever detection found one. An
+operator auditing a page that looks like a local business, who pressed Ctrl-C at the
+question, got an audit under `local`: fewer items, a higher score, and a profile named in
+the report that nobody chose. That is the quiet direction, which is the one that matters —
+a narrowed audit looks like good news.
+
+`openspec/specs/verdicts/` had carried this in its shipped-violations table since the
+document was written, and `openspec/specs/run-lifecycle/` A.5 records the measurement,
+including that the classification had been `enforced` until somebody ran the probe.
+
+**Why four tests covered it and none of them read it.** Every one called the prompt with no
+detection argument. That makes `suggested` equal `"default"`, so both branches answer
+`default` and the two are indistinguishable. The tests were sound about the case they
+constructed and silent about the only case where the requirement can be broken. The new
+class sweeps every non-default profile through all three exits, and carries a floor beside
+it — Enter, and the profile's own name, must still narrow — so a `choose_profile` that
+returned `"default"` unconditionally would not satisfy it.
+
+**Pressing Enter still accepts the suggestion, and that is not the same thing.** The prompt
+prints "Enter for local" in words; accepting an offer you were shown is a decision, on the
+same footing as `--profile auto`. The three exits are not offers. An operator who ends the
+prompt is now told the full registry ran and which two flags would have narrowed it
+deliberately, because widening silently would trade one invisible decision for another.
+
+**RUN-13 and RUN-15 came with it, because the three are one subject.** A profile is a
+decision, and an operator has to be able to see what it rests on and what it cost.
+
+* **the exclusion's status.** `test_an_excluded_item_carries_the_profiles_words_not_a_shrug`
+  read the reason and `test_excluded_items_never_reach_the_plan` read the plan, and the
+  second supplied its own hand-written reason — so the construction that turns an exclusion
+  into an `N/A` naming the profile was read by nothing. It runs over the shipped `local`
+  profile and the real registry now, because the three exclusion routes each build their
+  own sentence and a fixture exercises only the one it was written for. A second sweep
+  refuses the fallback phrase "excluded by profile" in every profile in the file;
+* **the signals reach the operator.** They were read inside one unit test of `detect` and
+  by nothing on the surface the person confirming them sees. A suggestion whose evidence is
+  not shown is a verdict wearing a suggestion's clothes.
+
+**And the detector's claim about itself was false.** `detect_profile.py` says its signals
+are structural "because wording is the first thing that lies". Nothing read that, and the
+platform and markup fingerprints were matched against the whole lowercased document — prose
+included. Measured: an article titled *Why we left WooCommerce*, mentioning WooCommerce and
+Magento in running text, with `/about` as its only link, was detected as `ecommerce` at
+**high** confidence. A page whose visible text said "our opening hours" scored `local` with
+no markup saying so.
+
+They are matched against the page's structure now — every opening tag rebuilt from its name
+and attributes, plus the contents of `script` and `style`, because a theme announces itself
+in inline JS and code is not wording either. Link paths were always read from `href` alone
+and are unaffected: a nav that links to `/cart` is a cart whatever the page calls it, so the
+docstring's plumber example was the sentence to correct rather than the behaviour. Held in
+all four directions, because a test that only refuses prose is a way to switch detection
+off.
+
+`openspec/specs/run-lifecycle/` goes from twelve enforced of twenty to fifteen, and
+`openspec/specs/verdicts/` from eleven of seventeen to twelve. Tree debt: 89 enforced, 52
+partial, 6 unread, 2 opposed, of 149.
+
+
 ## 0.95.0 — one absence, answered two ways, in two different places
 
 Registry version: unchanged at `e9154e92f4dd`. Items move between `NEEDS_INPUT` and

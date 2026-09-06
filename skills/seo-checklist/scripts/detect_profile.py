@@ -7,10 +7,19 @@ evidence that produced it, and the caller is expected to confirm. Picking a
 narrower profile on a guess would drop checks and raise the score without anyone
 choosing that — which is exactly the failure the registry exists to prevent.
 
-Signals are structural (schema.org types, platform fingerprints, cart and
-pricing markup) rather than textual, because wording is the first thing that
-lies: a plumber's site says "shop" in the nav and an online store says "about
-our family business" on the homepage.
+Signals are structural — schema.org types, platform fingerprints, cart and
+pricing markup, link paths — and never the visible words on the page, because
+wording is the first thing that lies: an article about leaving WooCommerce is
+not a shop, and a store's homepage talks about the family business.
+
+That claim was false until 0.95.1 and nothing read it. Platform and markup
+fingerprints were matched against the whole lowercased document, so the article
+above scored `ecommerce` at high confidence from its own prose, and a page whose
+visible text said "opening hours" scored `local` with no markup saying so. They
+are matched against `structure()` now — opening tags with their attributes, plus
+the contents of `script` and `style`, which are code rather than wording. Link
+paths were always read from `href` attributes and are unaffected: a nav that
+links to `/cart` is a cart, whatever the page calls it.
 
 Usage:
     python detect_profile.py https://example.com --json
@@ -174,6 +183,27 @@ def _schema_types(soup) -> list[str]:
     return out
 
 
+def structure(soup) -> str:
+    """The page's markup and code, with its prose left out.
+
+    Every opening tag rebuilt from its own name and attributes, plus the contents
+    of `script` and `style`. A fingerprint is a claim the *author* made in markup —
+    a stylesheet path, a class name, an `itemprop` — and matching one against
+    visible text finds every page that merely mentions the platform. Script and
+    style bodies are in because a Shopify theme announces itself in inline JS, and
+    code is not wording either.
+    """
+    parts = []
+    for tag in soup.find_all(True):
+        attrs = "".join(
+            f' {key}="{" ".join(value) if isinstance(value, list) else value}"'
+            for key, value in tag.attrs.items())
+        parts.append(f"<{tag.name}{attrs}>")
+        if tag.name in ("script", "style"):
+            parts.append(tag.string or "")
+    return "".join(parts).lower()
+
+
 def detect(html: str, url: str = "") -> dict:
     result = {
         "url": url,
@@ -189,7 +219,8 @@ def detect(html: str, url: str = "") -> dict:
         return result
 
     soup = BeautifulSoup(html, html_parser())
-    lower = html.lower()
+    # Markup and code, never the prose: see `structure`.
+    lower = structure(soup)
 
     def hit(profile, weight, why):
         if why not in result["signals"][profile]:

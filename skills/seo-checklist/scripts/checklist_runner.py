@@ -2125,12 +2125,27 @@ def choose_profile(explicit: str, interactive: bool, detected: dict | None = Non
         default_label = "Enter for default"
     print(file=sys.stderr)
 
+    # Pressing Enter is an answer: the line above offered `default_label` in words,
+    # and accepting an offer you were shown is a decision. Ending the prompt is not.
+    # Until 0.95.1 all three of the ways a prompt ends without an answer - end of
+    # input, an interrupt, and three replies naming no profile - returned
+    # `suggested`, so an operator who pressed Ctrl-C on a page that looked like a
+    # local business audited under `local`: fewer items, a higher score, and a
+    # profile nobody chose. The quiet direction, which is the one that matters.
+    def widen(how: str) -> str:
+        print(f"  profile: default ({how}); the full registry."
+              + (f" Detection suggested {suggested} - pass --profile {suggested}, "
+                 f"or --profile auto, to narrow deliberately."
+                 if suggested != "default" else ""), file=sys.stderr)
+        return "default"
+
     for _ in range(3):
         try:
             raw = input(f"Profile [number, name, or {default_label}]: ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print(f"\n  profile: {suggested}", file=sys.stderr)
-            return suggested
+        except EOFError:
+            return widen("end of input")
+        except KeyboardInterrupt:
+            return widen("interrupted")
         if not raw:
             return suggested
         if raw.isdigit() and 1 <= int(raw) <= len(names):
@@ -2138,8 +2153,7 @@ def choose_profile(explicit: str, interactive: bool, detected: dict | None = Non
         if raw in profiles:
             return raw
         print(f"  {raw!r} is not one of: {', '.join(names)}", file=sys.stderr)
-    print(f"  profile: {suggested}", file=sys.stderr)
-    return suggested
+    return widen("no answer in three tries")
 
 
 def profile_excludes(items: list[dict], profile: dict) -> dict[str, str]:

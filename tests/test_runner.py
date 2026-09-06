@@ -1617,6 +1617,54 @@ class Profiles(unittest.TestCase):
                                             "exclude_items": []})
         self.assertEqual(set(out), {"EC-001"})
 
+    def test_an_excluded_item_is_reported_as_na_naming_the_profile(self):
+        """`openspec/specs/run-lifecycle/` RUN-13's status half.
+
+        `test_an_excluded_item_carries_the_profiles_words_not_a_shrug` reads the
+        reason and `test_excluded_items_never_reach_the_plan` reads the plan, and
+        the second supplies its own hand-written reason - so the construction that
+        turns an exclusion into an `N/A` naming the profile was read by nothing.
+        A partition that drops rows stops summing to the registry and the score
+        becomes a fraction of a sample nobody chose; naming the profile is what
+        lets a reader tell "this does not apply to your kind of site" from "the
+        tool did not look".
+
+        Run over the shipped `local` profile and the real registry, because the
+        three exclusion routes - by id, by category, by script - each build their
+        own sentence, and a fixture profile would only exercise the one it was
+        written for."""
+        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
+                  encoding="utf-8") as f:
+            items = json.load(f)["items"]
+        profile = runner.load_profile("local")
+        excluded = runner.profile_excludes(items, profile)
+        self.assertTrue(excluded, "the local profile excludes nothing to read")
+        preskip = {i: (NA, f"{why} (local)") for i, why in excluded.items()}
+        _, skipped = build_plan(items, {"url": "https://e.com", "html": "x"},
+                                {"offline", "fetch", "crawl", "api"}, "live", preskip)
+        for item_id in excluded:
+            with self.subTest(item=item_id):
+                status, why = skipped[item_id]
+                self.assertEqual(status, NA)
+                self.assertIn("local", why)
+                self.assertNotEqual(why, "excluded by profile (local)")
+                self.assertGreater(len(why), 40, why)
+
+    def test_no_exclusion_is_a_shrug_in_any_shipped_profile(self):
+        """The floor, swept over every profile in the shipped file rather than the
+        one this test was written against. An item excluded by id falls back to
+        "excluded by profile" when nobody wrote a reason, and that is the one
+        exclusion a reader cannot reconstruct."""
+        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
+                  encoding="utf-8") as f:
+            items = json.load(f)["items"]
+        for name in runner.all_profiles():
+            reasons = runner.profile_excludes(items, runner.load_profile(name))
+            for item_id, why in reasons.items():
+                with self.subTest(profile=name, item=item_id):
+                    self.assertNotEqual(why, "excluded by profile",
+                                        f"{name} drops {item_id} without saying why")
+
     def test_excluded_items_never_reach_the_plan(self):
         preskip = {"CN-001": (NA, "profile")}
         items = [{"id": "CN-001", "source": "script",
@@ -1725,6 +1773,55 @@ class Detection(unittest.TestCase):
         d = detect(self.page('<img src="/assets/image/hero.png">'))
         self.assertNotIn("Magento", d["signals"]["ecommerce"])
 
+    def test_prose_that_names_a_platform_does_not_fingerprint_it(self):
+        """This module's own docstring says the signals are structural "because
+        wording is the first thing that lies", and until 0.95.1 that was false and
+        nothing read it. Platform and markup fingerprints were matched against the
+        whole lowercased document, prose included.
+
+        Measured before the fix: an article titled "Why we left WooCommerce", whose
+        body mentions WooCommerce and Magento in running text and whose only link is
+        `/about`, was detected as `ecommerce` at **high** confidence. An operator
+        pressing Enter at the prompt would have audited a blog under a storefront
+        profile."""
+        article = self.page(
+            head="<title>Why we left WooCommerce</title>",
+            body="<p>We migrated off WooCommerce last spring. The checkout was slow "
+                 "and Magento looked worse. Our opening hours did not change.</p>"
+                 "<a href='/about'>about</a>")
+        d = detect(article)
+        self.assertEqual(d["profile"], "default", d["signals"])
+        self.assertEqual(d["signals"]["ecommerce"], [])
+        self.assertEqual(d["signals"]["local"], [])
+
+    def test_the_same_words_in_markup_still_fingerprint(self):
+        """The other direction, and the one that makes the test above more than a
+        way to switch detection off. A stylesheet served from WooCommerce's plugin
+        directory, a price class and an `itemprop` are claims the author made in
+        markup, and each must still count."""
+        store = self.page(
+            head='<link rel="stylesheet" href="/wp-content/plugins/woocommerce/a.css">',
+            body='<div class="product-price">9</div>'
+                 '<span itemprop="openingHours">Mon-Fri</span>')
+        d = detect(store)
+        self.assertIn("WooCommerce", d["signals"]["ecommerce"])
+        self.assertIn("price markup", d["signals"]["ecommerce"])
+        self.assertIn("opening hours", d["signals"]["local"])
+
+    def test_a_platform_that_announces_itself_in_inline_script_still_counts(self):
+        """Script and style bodies are inside the structure this reads, because a
+        theme announces itself in inline JS and code is not wording either."""
+        d = detect(self.page(body='<script>var Shopify={cdnHost:"cdn.shopify.com"};'
+                                  '</script>'))
+        self.assertIn("Shopify", d["signals"]["ecommerce"])
+
+    def test_link_paths_are_structure_and_are_still_read(self):
+        """Unaffected, and worth pinning so a later tightening does not take them
+        with it: a nav that links to `/cart` is a cart whatever the page calls it,
+        and `PATH_SIGNALS` was always matched against `href` values alone."""
+        d = detect(self.page(body="<a href='/cart'>x</a><a href='/products/y'>y</a>"))
+        self.assertIn("cart or checkout link", d["signals"]["ecommerce"])
+
     def test_a_close_second_is_reported_as_low_confidence(self):
         d = detect(self.page(
             head='<link href="/pricing"><a href="/signup">x</a>',
@@ -1766,6 +1863,85 @@ class DetectedProfilePrompt(unittest.TestCase):
         sys.stdin, builtins.input = self._Tty(), explode
         try:
             self.assertEqual(choose_profile("auto", True, d), "saas")
+        finally:
+            sys.stdin, builtins.input = stdin, real_input
+
+    def test_the_silent_exits_widen_the_audit(self):
+        """`openspec/specs/run-lifecycle/` RUN-14 and `openspec/specs/verdicts/`
+        VRD-11, read where the requirement can actually be broken.
+
+        Four tests already covered these three exits, and all four called the prompt
+        with no detection - which makes `suggested` equal `"default"`, so both
+        branches answer `default` and the defect cannot appear. They were sound
+        about the case they constructed and silent about the only case that matters:
+        detection found something, the operator did not answer, and until 0.95.1 the
+        audit narrowed to the detected profile with nobody having chosen that.
+
+        Swept over every non-default profile rather than written for `local`,
+        because the branch is one `return` and a test naming one profile reads the
+        same line as a test naming all of them - but the failure message then says
+        which suggestion leaked, which is what a reader needs."""
+        for name in (p for p in runner.all_profiles() if p != "default"):
+            d = {"profile": name, "confidence": "high", "signals": {name: ["x"]}}
+            with self.subTest(profile=name):
+                self.assertEqual(self._exit_by(EOFError, d), "default")
+                self.assertEqual(self._exit_by(KeyboardInterrupt, d), "default")
+                self.assertEqual(self.ask("nonsense", d), "default")
+
+    def test_the_silent_exits_are_not_the_prompt_being_broken(self):
+        """The floor under the test above. A `choose_profile` that answered
+        `default` unconditionally would satisfy every assertion there, so this pins
+        the two answers that must still narrow: Enter, which the prompt offered in
+        words, and the profile's own name."""
+        d = {"profile": "local", "confidence": "high", "signals": {"local": ["x"]}}
+        self.assertEqual(self.ask("", d), "local")
+        self.assertEqual(self.ask("local", d), "local")
+
+    def test_the_widening_says_the_suggestion_is_still_available(self):
+        """An operator who interrupted the prompt gets the full registry, which is
+        right, and would otherwise have no way to know the detector had an answer.
+        Telling them names the two flags that make narrowing a decision."""
+        d = {"profile": "saas", "confidence": "high", "signals": {"saas": ["x"]}}
+        said = self._said(lambda: self._exit_by(EOFError, d))
+        # The menu printed above already contains the word `saas`, so asserting the
+        # bare name reads the listing rather than this sentence - the first version
+        # of this test did, and the mutation that stopped the sentence naming the
+        # suggestion passed it. Assert the instruction instead.
+        self.assertIn("pass --profile saas", said)
+        self.assertIn("--profile auto", said)
+        self.assertIn("end of input", said)
+
+    def test_the_signals_reach_the_operator_and_not_only_the_conclusion(self):
+        """RUN-15's unread half. A suggestion whose evidence is not shown cannot be
+        argued with, which makes it a verdict wearing a suggestion's clothes. The
+        signals were read inside one unit test of `detect` and nothing asserted they
+        reach the person being asked to confirm them."""
+        d = {"profile": "local", "confidence": "high",
+             "signals": {"local": ["LocalBusiness schema", "opening hours"]}}
+        said = self._said(lambda: self.ask("", d))
+        self.assertIn("LocalBusiness schema", said)
+        self.assertIn("opening hours", said)
+        self.assertIn("high", said)
+
+    def _said(self, call):
+        stream = io.StringIO()
+        real = sys.stderr
+        sys.stderr = stream
+        try:
+            call()
+        finally:
+            sys.stderr = real
+        return stream.getvalue()
+
+    def _exit_by(self, exc, detected):
+        stdin, real_input = sys.stdin, builtins.input
+
+        def raises(prompt=""):
+            raise exc
+
+        sys.stdin, builtins.input = self._Tty(), raises
+        try:
+            return choose_profile("", True, detected)
         finally:
             sys.stdin, builtins.input = stdin, real_input
 
