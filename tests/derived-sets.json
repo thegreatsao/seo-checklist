@@ -2,8 +2,8 @@
   "measured": "module-level upper-case names bound to a list, tuple, set or dict literal in scripts/ or tools/",
   "read_means": "a test imports the name from its module, which is an upper bound on the membership being asserted",
   "total": 167,
-  "read": 20,
-  "unread": 147,
+  "read": 23,
+  "unread": 144,
   "modules": {
     "ai_crawler_policy_matrix": {
       "read": [],
@@ -389,6 +389,18 @@
         {
           "name": "EFFORT_COST",
           "entries": 3
+        },
+        {
+          "name": "SECRET_CTX_KEYS",
+          "entries": 2
+        },
+        {
+          "name": "SAFE_BROWSING_ENV_KEYS",
+          "entries": 2
+        },
+        {
+          "name": "PAGE_SUBJECT_ARTIFACT_KEYS",
+          "entries": 2
         }
       ],
       "unread": [
@@ -441,14 +453,6 @@
           "entries": 2
         },
         {
-          "name": "SECRET_CTX_KEYS",
-          "entries": 2
-        },
-        {
-          "name": "SAFE_BROWSING_ENV_KEYS",
-          "entries": 2
-        },
-        {
           "name": "NEEDS_A_LIVE_SITE",
           "entries": 3
         },
@@ -478,10 +482,6 @@
         },
         {
           "name": "PAGE_LEVEL",
-          "entries": 2
-        },
-        {
-          "name": "PAGE_ARTIFACT_KEYS",
           "entries": 2
         },
         {

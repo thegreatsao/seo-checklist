@@ -671,12 +671,27 @@ class ArtifactsMustDescribeTheAuditedPage(unittest.TestCase):
     """
 
     def test_both_audits_recorded_what_they_were_handed(self):
+        """Every artifact the run was given, not only the two that describe a page.
+
+        `server_log` joined this record in 0.94.5, when INP-3's "every supplied artifact"
+        stopped meaning two of the four: until then a link export or a server log had no
+        recorded age and `--max-artifact-age` could not refuse one however old it was.
+        """
+        from checklist_runner import PAGE_SUBJECT_ARTIFACT_KEYS
         for label in ("good", "broken"):
             recorded = RESULTS[label]["artifacts"] or {}
-            self.assertEqual(sorted(recorded), ["cwv_json", "rendered_json"], label)
+            self.assertEqual(sorted(recorded),
+                             ["cwv_json", "rendered_json", "server_log"], label)
             for key, entry in recorded.items():
-                self.assertTrue(entry["matches_audited_url"],
-                                f"{label} {key}: {entry}")
+                self.assertIsNotNone(entry["age_days"],
+                                     f"{label} {key} has no age, so no limit can refuse it")
+                if key in PAGE_SUBJECT_ARTIFACT_KEYS:
+                    self.assertTrue(entry["matches_audited_url"],
+                                    f"{label} {key}: {entry}")
+                else:
+                    # Not unknown — inapplicable. A server log describes the site, and
+                    # asking it which page it is about has no answer to be wrong about.
+                    self.assertNotIn("matches_audited_url", entry, f"{label} {key}")
 
     def test_the_fixture_artifacts_keep_admitting_they_were_written_by_hand(self):
         """`source` is the only thing standing between a fixture and a fabrication.
@@ -686,8 +701,14 @@ class ArtifactsMustDescribeTheAuditedPage(unittest.TestCase):
         the report all read it from — so if this string ever quietly becomes
         "chrome-devtools MCP trace", the fixture has started lying about itself.
         """
+        from checklist_runner import PAGE_SUBJECT_ARTIFACT_KEYS
         for label in ("good", "broken"):
-            for entry in (RESULTS[label]["artifacts"] or {}).values():
+            for key, entry in (RESULTS[label]["artifacts"] or {}).items():
+                # The page artifacts are JSON and carry `source`. A server log is a log:
+                # it has no place to admit anything, which is why the record for it holds
+                # an age and nothing else.
+                if key not in PAGE_SUBJECT_ARTIFACT_KEYS:
+                    continue
                 with open(entry["path"], encoding="utf-8") as f:
                     self.assertIn("hand-written", json.load(f)["source"],
                                   f"{label}: {entry['path']}")

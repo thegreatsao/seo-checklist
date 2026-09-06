@@ -10,6 +10,51 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.94.5 — a stale server log could not be refused, because it had no age
+
+Registry version: unchanged at `e9154e92f4dd`. A run that supplies a link export or a
+server log now records its age and can refuse it, so this is a minor.
+
+**Two of the four supplied inputs were datable.** `openspec/specs/inputs/` INP-3 says the age
+of *every* supplied artifact is computed and recorded, and that one older than
+`--max-artifact-age` is refused with its age named. The loop recorded the two that describe
+a page. A link export or a server log therefore had no recorded age at all, and the limit
+could not reject one however old it was — a crawl-budget analysis from March was
+indistinguishable from yesterday's, and it feeds site-level verdicts.
+
+The widening had a distinction to keep. A page export is checked against the audited URL; a
+server log describes the site, so `matches_audited_url` is not *unknown* for it but
+inapplicable, and recording `None` would file it beside a page export whose file forgot to
+say which page it was. Site-level records carry a path and an age and claim nothing else.
+
+**The refusal itself was read by nothing.** It lives inside `main` with no seam a unit test
+can reach, so it is held now by a run: one fixture site, one file backdated 200 days with
+`os.utime`, audited twice — with `--max-artifact-age 30` and without. The age is recorded
+either way, the unlimited run still decides items from the stale file, the limited run
+decides fewer, the refusal names the input and the age, and the items that read it say why
+rather than going quiet. The unlimited run is the floor under the rest: without it, an
+implementation that refused every artifact would look like a working limit.
+
+**The secret set had no reader, and the cost of that one is a credential.** INP-7's
+redaction mechanism had five tests and its membership had none, so a key added to the run
+and forgotten in `SECRET_CTX_KEYS` would be written out in full — into
+`checklist-results.json` and `.seo-runs/`, the files operators send to clients. Every context
+value the runner fills from an environment variable whose name looks like key material must
+now be declared secret, with the pairs read out of the runner's own syntax so a sixth is
+covered the day it is written. Probed by adding a `MOZ_API_KEY` pair and not declaring it:
+the failure names the key and says where it would have gone.
+
+Two pins written as *absences* did their job in this release: one reddened the day the
+artifact sets were reconciled and said what to replace it with, and the replacement is not a
+wider list but the property that makes the list irrelevant — every input an operator may
+supply is a file on disk, so every one can be dated, and the recording loop walks that same
+set. `PAGE_ARTIFACT_KEYS` is gone rather than kept as an alias: after the widening the name
+would have meant "every artifact, including the two that are not about a page", which is the
+same defect this tree spent the day closing, with an apology attached.
+
+The hand-written set census: 167 sets, 23 read, 144 unread. `openspec/specs/inputs/` is six
+enforced of ten. Tree debt: 78 enforced, 63 partial, 6 unread, 2 opposed, of 149.
+
 ## 0.94.4 — `specs/reporting/` is twelve of thirteen, and the last one is a decision
 
 Registry version: unchanged at `e9154e92f4dd`. Nothing a run produces changes: this release

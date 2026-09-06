@@ -4,7 +4,9 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.94.4 — see [CHANGELOG.md](CHANGELOG.md). Every merge that can ignore an answer
+Version 0.94.5 — see [CHANGELOG.md](CHANGELOG.md). A supplied server log or link export
+now carries its age and can be refused for being stale; until now only the two artifacts
+that describe a single page could be. Before that, `0.94.4` made every merge that can ignore an answer
 file now says which answer it ignored, the report shows the coverage falling when a verdict
 is contested, and the evidence artifact keeps a sampled page's run apart from the site's
 even when the two collide. Before that, `0.94.3` made a category bar say how many of its

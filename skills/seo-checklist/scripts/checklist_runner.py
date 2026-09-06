@@ -2280,14 +2280,13 @@ def is_page_level(item: dict) -> bool:
 # rendered-page measurement, a Search Console export, a server log. None can be
 # re-taken by this run, which is what separates them from every other check.
 #
-# Two of them describe one URL at one moment, and those are the ones the guard below
-# checks the subject of. `server_log` describes a whole site over weeks and has no
-# subject to check — asking whether it "describes the audited page" is not a
-# question about it. Both kinds are listed here because `reads_artifact` is used for
-# something else: keeping an item that reads a supplied file out of the per-page
-# sample, where it would be run once per page against the same file.
-PAGE_ARTIFACT_KEYS = ("cwv_json", "rendered_json")
-ARTIFACT_CTX_KEYS = PAGE_ARTIFACT_KEYS + ("links_csv", "server_log")
+# Two describe one URL at one moment, and those are the ones whose subject the
+# guard checks. Link exports and server logs describe a whole site and have no
+# subject to check — asking whether either "describes the audited page" is not a
+# question about them. All four remain artifact inputs so an item that reads one
+# stays out of the per-page sample, where it would reuse the same file per page.
+PAGE_SUBJECT_ARTIFACT_KEYS = ("cwv_json", "rendered_json")
+ARTIFACT_CTX_KEYS = PAGE_SUBJECT_ARTIFACT_KEYS + ("links_csv", "server_log")
 
 
 def ctx_keys_of(item: dict) -> set[str]:
@@ -3116,32 +3115,48 @@ def main() -> int:
         if os.environ.get(env):
             ctx[k] = os.environ[env]
 
-    # An artifact is the one input nothing in this run can verify by re-measuring,
-    # so the only check available is whether it says which page it describes. A
-    # trace of a different page decides seven items — two of them `high` — from
-    # numbers nobody took here, which is the exact failure this tool exists to
-    # refuse. Rejected means NO_DATA with the reason, not a quiet pass.
+    # An artifact is the one input nothing in this run can verify by re-measuring.
+    # Page artifacts can be checked against the audited URL; every artifact can at
+    # least be dated. A stale site-level file can decide several site verdicts from
+    # an obsolete crawl or traffic window, so the age limit must leave those items
+    # NEEDS_INPUT instead of quietly grading the current site from old evidence.
     artifacts, rejected = {}, {}
-    for key in PAGE_ARTIFACT_KEYS:
+    for key in ARTIFACT_CTX_KEYS:
         if key not in ctx:
             continue
-        claimed = artifact_subject(ctx[key])
-        matches = None if not claimed else same_page(claimed, audit_url)
-        age = artifact_age_days(ctx[key])
-        artifacts[key] = {"path": ctx[key], "describes": claimed,
-                          "matches_audited_url": matches, "age_days": age}
+        path = ctx[key]
+        age = artifact_age_days(path)
+        artifact = {"path": path, "age_days": age}
+        matches = None
+        if key in PAGE_SUBJECT_ARTIFACT_KEYS:
+            claimed = artifact_subject(path)
+            matches = None if not claimed else same_page(claimed, audit_url)
+            artifact.update(describes=claimed, matches_audited_url=matches)
+        # Site-level records deliberately omit subject and match: those fields are
+        # not unknown, they are inapplicable. The report's `is not False` filter
+        # still carries these records into its supplied-evidence warning.
+        artifacts[key] = artifact
         if a.max_artifact_age and age is not None and age > a.max_artifact_age:
-            rejected[key] = (f"the artifact was last written {age} day(s) ago, over "
-                             f"the {a.max_artifact_age}-day limit this run was given "
-                             f"— re-measure the page")
-            print(f"  --{key.replace('_', '-')} ignored: written {age} day(s) ago",
-                  file=sys.stderr)
-        elif matches is False:
+            if key in PAGE_SUBJECT_ARTIFACT_KEYS:
+                rejected[key] = (
+                    f"the artifact was last written {age} day(s) ago, over the "
+                    f"{a.max_artifact_age}-day limit this run was given — "
+                    f"re-measure the page")
+            else:
+                kind = {"links_csv": "link export",
+                        "server_log": "server log"}[key]
+                rejected[key] = (
+                    f"the {kind} at {path} was last written {age} day(s) ago, over "
+                    f"the {a.max_artifact_age}-day limit this run was given — "
+                    f"supply a current file")
+            print(f"  --{key.replace('_', '-')} ignored: {path} was written "
+                  f"{age} day(s) ago", file=sys.stderr)
+        elif key in PAGE_SUBJECT_ARTIFACT_KEYS and matches is False:
             rejected[key] = (f"the artifact describes {claimed}, not {audit_url} — "
                              f"re-measure the page being audited")
             print(f"  --{key.replace('_', '-')} ignored: it describes {claimed}, "
                   f"not {audit_url}", file=sys.stderr)
-        elif matches is None:
+        elif key in PAGE_SUBJECT_ARTIFACT_KEYS and matches is None:
             # Allowed, because a file with no `url` predates this check and is
             # more likely careless than wrong. Recorded, because a reader of the
             # report is then the only one who can judge it.

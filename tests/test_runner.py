@@ -2639,10 +2639,10 @@ class AnArtifactIsAsOldAsItIs(unittest.TestCase):
     returned a constant zero passed the whole suite, which is the first thing pinned
     below.
 
-    The requirement says *every* supplied artifact. Two of the four are recorded, and
-    that half is a defect in the tree rather than a gap here — `openspec/specs/inputs/`
-    A.5. It is pinned as an absence, so it reddens on the day the sets are reconciled
-    and says what to put in its place.
+    The requirement says *every* supplied artifact, and until 0.94.5 two of the four were
+    recorded — a defect in the tree rather than a gap here, `openspec/specs/inputs/` A.5.
+    It was pinned as an absence so it would redden on the day the sets were reconciled and
+    say what to put in its place. It did, and this is what replaced it.
     """
 
     def aged(self, days):
@@ -2674,26 +2674,33 @@ class AnArtifactIsAsOldAsItIs(unittest.TestCase):
         the comparison against a limit would read as fresh forever."""
         self.assertEqual(runner.artifact_age_days(self.aged(-5)), 0)
 
-    def test_the_recorded_set_is_still_narrower_than_the_supplied_set(self):
-        """The half INP-3 asks for and the tree does not do.
+    def test_every_supplied_artifact_is_datable(self):
+        """What the absence pin asked to be replaced by: not a wider list, but the
+        property that makes the list irrelevant.
 
-        `ARTIFACT_CTX_KEYS` is the inputs an operator may supply; the loop that records
-        subject, age and match iterates `PAGE_ARTIFACT_KEYS`, which is two of them. A
-        supplied link export or server log therefore has no recorded age at all, and the
-        limit cannot reject one however old it is.
-
-        Pinned as an absence, not asserted as a failure: this goes red the day somebody
-        widens the loop, and says what to replace it with.
+        Every input an operator may supply is a file on disk, so every one of them *can*
+        be dated — and the loop that records them now walks that same set. Both halves are
+        asserted, because a loop widened over a set that has itself narrowed would look
+        identical from inside either one.
         """
-        recorded = set(runner.PAGE_ARTIFACT_KEYS)
         supplied = set(runner.ARTIFACT_CTX_KEYS)
-        self.assertTrue(
-            recorded < supplied,
-            "every supplied artifact is recorded now — good; replace this with an "
-            "assertion that each of ARTIFACT_CTX_KEYS gets an age, and close INP-3 in "
-            "openspec/specs/inputs/")
-        self.assertEqual(sorted(supplied - recorded), ["links_csv", "server_log"],
-                         "the unrecorded set moved; A.5 of that document names these two")
+        self.assertEqual(supplied,
+                         {"cwv_json", "rendered_json", "links_csv", "server_log"},
+                         "the set of supplied artifacts moved; whatever joined it needs "
+                         "an age too, or a limit cannot refuse it")
+        for key in sorted(supplied):
+            with self.subTest(key=key):
+                self.assertIsNotNone(runner.artifact_age_days(self.aged(3)),
+                                     "%s names a kind of file that cannot be dated" % key)
+
+    def test_a_site_level_artifact_is_dated_without_being_asked_which_page_it_is(self):
+        """The distinction the widening had to preserve. A link export and a server log
+        describe the site, so `matches_audited_url` is not unknown for them — it is
+        inapplicable, and recording `None` would put them in the same bucket as a page
+        export whose file forgot to say which page it was."""
+        self.assertEqual(sorted(set(runner.ARTIFACT_CTX_KEYS)
+                                - set(runner.PAGE_SUBJECT_ARTIFACT_KEYS)),
+                         ["links_csv", "server_log"])
 
 
 class NetworkOptIns(unittest.TestCase):
@@ -4504,6 +4511,92 @@ class TheSecretSetIsDerivedFromWhatTheRunActuallyCarries(unittest.TestCase):
             with self.subTest(env=env):
                 self.assertIn(env, corpus,
                               "%s is redacted and read by nothing in scripts/" % env)
+
+
+class AStaleArtifactIsRefusedByAWholeRun(unittest.TestCase):
+    """`openspec/specs/inputs/` INP-3's second clause, which lives inside `main` and has no
+    seam a unit test can reach: an artifact older than `--max-artifact-age` is refused, with
+    its age named.
+
+    Everything around it was held — the age computation four ways, and since 0.94.5 the fact
+    that every supplied artifact gets one — while the refusal itself, the thing the limit
+    exists to do, was read by nothing. So this runs the audit twice against one fixture site
+    with one backdated file, once with the limit and once without, and reads the difference.
+
+    Backdating with `os.utime` rather than waiting: the age comes from the filesystem, which
+    is the same thing a file written in March is.
+    """
+
+    PAGE = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+            "<title>A page with a stale export beside it</title>"
+            "<meta name=\"description\" content=\"Enough of a page for the runner to reach "
+            "the end.\"></head><body><h1>A page</h1>"
+            "<p>Body copy with enough words in it that the thin-entry guard stays quiet, "
+            "because a guard firing here would stop the audit before the thing under test "
+            "ran at all.</p></body></html>")
+
+    @classmethod
+    def audit(cls, url, work, *extra):
+        out = os.path.join(work, "results-%d.json" % len(os.listdir(work)))
+        proc = harness.spawn(
+            [sys.executable, os.path.join(SCRIPTS, "checklist_runner.py"), url,
+             "--allow-private", "--max-rps", "0", "--no-history", "--no-prompt",
+             "--quiet", "--timeout", "90", "--json", out, "--only", "speed", *extra],
+            timeout=600)
+        if proc.returncode != 0:
+            raise AssertionError("the audit exited %s\n%s\n%s"
+                                 % (proc.returncode, proc.stdout[-2000:],
+                                    proc.stderr[-2000:]))
+        with open(out, encoding="utf-8") as fh:
+            payload = json.load(fh)
+        payload["_stderr"] = proc.stderr
+        return payload
+
+    @classmethod
+    def setUpClass(cls):
+        cls.work = tempfile.mkdtemp(prefix="seo-stale-")
+        cwv = os.path.join(cls.work, "cwv.json")
+        with open(cwv, "w", encoding="utf-8") as fh:
+            json.dump({"source": "hand-written for a test", "lcp_ms": 900,
+                       "cls": 0.01, "inp_ms": 120}, fh)
+        old = time.time() - 200 * 86400
+        os.utime(cwv, (old, old))
+        with harness.served({"/": cls.PAGE}) as site:
+            cls.without = cls.audit(site.url, cls.work, "--cwv-json", cwv)
+            cls.with_limit = cls.audit(site.url, cls.work, "--cwv-json", cwv,
+                                       "--max-artifact-age", "30")
+
+    def test_the_age_is_recorded_either_way(self):
+        """The limit decides what is done about the age, never whether it is known."""
+        for label, payload in (("no limit", self.without), ("limit", self.with_limit)):
+            with self.subTest(run=label):
+                self.assertGreaterEqual(
+                    payload["artifacts"]["cwv_json"]["age_days"], 199)
+
+    def test_without_a_limit_a_two_hundred_day_old_export_still_decides_items(self):
+        """The floor under the test below. Without it, an implementation that refused
+        every artifact would look like a working limit."""
+        self.assertNotIn("cwv", str(self.without.get("rejected_artifacts") or ""))
+        self.assertGreater(self.without["scores"]["decided"], 0)
+
+    def test_the_limit_refuses_it_and_names_the_age(self):
+        decided_before = self.without["scores"]["decided"]
+        decided_after = self.with_limit["scores"]["decided"]
+        self.assertLess(decided_after, decided_before,
+                        "the stale export still decided as much as a fresh one, so the "
+                        "limit refused nothing")
+        printed = self.with_limit["_stderr"]
+        self.assertIn("cwv-json", printed, "the refusal does not name the input")
+        self.assertRegex(printed, r"\b(19[0-9]|2[0-9][0-9]) day",
+                         "the refusal does not name the age it refused for")
+
+    def test_the_items_that_read_it_say_why_rather_than_going_quiet(self):
+        """A refused artifact must cost coverage out loud: the items it fed report an
+        undecided status carrying the reason, not a quiet pass on some other evidence."""
+        reasons = [i.get("evidence") or "" for i in self.with_limit["items"]
+                   if i["status"] in ("NO_DATA", "NEEDS_INPUT")]
+        self.assertTrue(any("day(s) ago" in r for r in reasons),
+                        "no item explains that its input was refused for being old")
 
 if __name__ == "__main__":
     unittest.main()

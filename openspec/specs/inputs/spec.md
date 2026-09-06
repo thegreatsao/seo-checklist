@@ -143,7 +143,7 @@ maximum age, and an artifact older than it MUST be refused with its age named.
 **Why:** a Core Web Vitals export from March describes a site that has been deployed a
 hundred times since. Nothing about the file says it is stale, and the verdict it produces
 is indistinguishable from a fresh one.
-**Reader:** partial. `AnArtifactIsAsOldAsItIs` holds the computation in four ways: the age
+**Reader:** enforced. `AnArtifactIsAsOldAsItIs` holds the computation in four ways: the age
 is read from the filesystem and counted in whole days, a file written yesterday is a day
 old rather than zero, an unreadable file has *no* age rather than a fresh one — `None` and
 `0` mean opposite things and only one of them flatters — and an age is never negative, so a
@@ -151,14 +151,33 @@ clock that moved cannot make a file fresh forever. Probed on 6 September 2026 by
 a constant zero, by turning the unreadable case into zero, and by dropping the clamp. Each
 reddens; the constant-zero mutation is the one this line used to say would pass the suite.
 
-Two halves remain unread, and they are different in kind.
-`test_the_recorded_set_is_still_narrower_than_the_supplied_set` pins the first as an
-absence: the loop records `PAGE_ARTIFACT_KEYS` where the requirement says *every* supplied
-artifact, so a link export or a server log has no age at all and no limit can reject one —
-A.5, a defect in the tree rather than a gap in the tests, and the pin reddens when it is
-fixed. The second is the refusal itself, which is computed inside `main` and has no seam a
-unit test can reach; holding it needs a run with `--max-artifact-age` against a backdated
-file, which is a test worth writing and is not written.
+Both halves that were unread are closed in 0.94.5, and they were different in kind.
+
+The first was a defect in the tree rather than a gap in the tests — A.5. The loop recorded
+two of the four inputs an operator may supply, so a link export or a server log had no age
+at all and no limit could reject one however old it was. It was pinned as an *absence*,
+written to redden the day the sets were reconciled and to say what to put in its place; it
+did, and what replaced it is not a wider list but the property that makes the list
+irrelevant: every input an operator may supply is a file on disk, so every one can be dated,
+and the loop that records them walks that same set. Both halves are asserted, because a loop
+widened over a set that has itself narrowed looks identical from inside either one.
+
+The widening had a distinction to preserve. A link export and a server log describe the
+site, so `matches_audited_url` is not *unknown* for them — it is inapplicable, and recording
+`None` would file them beside a page export whose file forgot to say which page it was. They
+carry a path and an age and claim nothing else.
+
+The second half was the refusal itself, computed inside `main` with no seam a unit test can
+reach. `AStaleArtifactIsRefusedByAWholeRun` runs the audit twice against one fixture site
+with one file backdated 200 days by `os.utime` — once with `--max-artifact-age 30` and once
+without — and reads the difference: the age is recorded either way, the unlimited run still
+decides items from it, the limited run decides fewer, the refusal names the input and the
+age, and the items that read it say why rather than going quiet. The unlimited run is the
+floor under the rest: without it an implementation that refused every artifact would look
+like a working limit. Probed by disabling the comparison, which reddens two.
+
+The old text of this line said such a test was worth writing and not written. It is the
+paragraph above.
 
 The default still makes all of this matter: `--max-artifact-age` is `0`, meaning no limit,
 so the shipped behaviour is that an artifact of any age is accepted. §6 asks whether that
@@ -621,7 +640,7 @@ turns the limit on turns this on with it, and the two must be fixed together.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** INP-7 by mutation on 6 September 2026 — adding an undeclared credential to the
+**Probed:** INP-3 and INP-7 by mutation on 6 September 2026 — adding an undeclared credential to the
 context reddens the membership reader by name. The rest were not: the executor that had been
 running mutation probes ran out of credits partway through this suite of documents. The rows below were
 derived by parsing all 1 280 test functions and asking, per symbol, which bodies name it,
@@ -631,14 +650,14 @@ the one `openspec/specs/evidence/` A.4 states: a test can exercise something wit
 
 | | requirements |
 |---|---|
-| **enforced** | INP-1, INP-4, INP-6, INP-7, INP-9 |
-| **partial** | INP-2, INP-3, INP-5, INP-8, INP-10 |
+| **enforced** | INP-1, INP-3, INP-4, INP-6, INP-7, INP-9 |
+| **partial** | INP-2, INP-5, INP-8, INP-10 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-I3 enforced; INV-I1 and INV-I2 partial; INV-I4 unread.
 
-**Five enforced, five partial, nothing unread, of ten.**
+**Six enforced, four partial, nothing unread, of ten.**
 
 The split fell along one line, and it was not the line effort would predict. Both enforced
 requirements were about a *file* — is it about this page, is it applied to the right page.
