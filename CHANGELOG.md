@@ -10,6 +10,56 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.92.0 — the category bars fold twins, as the headline always did
+
+Registry version: unchanged at `b0abf2819da0`. No item moves and no assertion changes.
+The numbers beside the headline do: every category bar over a category holding a twin is
+a different figure than it was yesterday.
+
+**What was wrong.** `scores_with` marks two registry entries as one question — one
+script, one set of arguments, one assertion — and since 0.22 the headline has weighed
+such a check once. The category sums never learned. They iterated every scored row, so a
+single defect was weighed once in the number at the top of the report and twice in the
+bar underneath it, and the report **orders its bars by that figure**: the fold decided
+what a reader was pointed at first.
+
+**Why it is not a rounding difference.** Six of the nine pairs in this registry cross
+categories, so the fold does not merely shrink a bar — it moves weight out of one bar and
+leaves it in another. Measured over the registry, the weight that leaves a bar when its
+twins are decided:
+
+| category | own weight | weight that belongs to a carrier elsewhere |
+|---|---|---|
+| `media` | 25 | 9 (36%) |
+| `geo_ai` | 28 | 9 (32%) |
+| `speed` | 53 | 16 (30%) |
+| `security` | 49 | 10 (20%) |
+| `technical` | 80 | 10 (13%) |
+| `mobile` | 58 | 1 (2%) |
+
+**One corner is a verdict change, not an arithmetic one.** A category whose only decided
+item is a twin has no weight of its own left after the fold. It used to print `0` or
+`100` — a verdict on a category that was never measured there — and now prints nothing,
+which is the sentence SCR-3 already made about the headline: zero is a claim about the
+site, absence is a claim about the audit. `openspec/specs/scoring/` gained a scenario
+saying so, because the old requirement text said "absent when that category has nothing
+decided" and this case has something decided and nothing to divide by.
+
+`worst_open` is deliberately **not** folded. It counts unresolved items rather than
+weighing them, and a category that has just lost an item's weight to a carrier in another
+category is precisely the one whose reader still needs telling that something in it is
+open.
+
+**How it was found and what now holds it.** By writing the specification, not by running
+the tool: `openspec/specs/scoring/` SCR-9 was the one requirement in that document with
+no reader at all, and SCR-1 was `partial` because its own sentence covers a category half
+that nothing asserted. `tests/test_runner.py::TheCategoryBarIsTheHeadlinesArithmetic`
+now holds both. Its central test is not a table of expected numbers: it compares each bar
+against `score()`'s own headline run over the rows that bar speaks for, so the fraction,
+the fold and the rounding cannot part company between the two computations without the
+failure naming the category where they did. Scoring goes from one enforced requirement of
+fourteen to three, and from one unread to none; the suite total moves 48 → 50 of 149.
+
 ## 0.91.0 — two caps stop answering for what they did not read
 
 Registry version: unchanged at `b0abf2819da0`. No item moves and no assertion changes.

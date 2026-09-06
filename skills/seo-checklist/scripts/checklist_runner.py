@@ -1419,15 +1419,29 @@ def score(graded: list[dict]) -> dict:
     # showed 25 where its weighted score was 42 — and the report orders its bars by
     # this number, so the unweighted version could point a reader at five failing
     # `low` items while a failing `critical` sat further down the page.
+    #
+    # Over `weighed`, not `scored`, for the same reason and one level down: until
+    # 0.92.0 these sums iterated every scored row, so a twin was folded out of the
+    # headline and left in the bar underneath it. Six of the nine pairs here cross
+    # categories, so the shared measurement is weighed in the carrier's category and
+    # in no other — SCR-1 says the twin "contributes nothing to either half of the
+    # score or to a category score". A category whose only decided item is a twin has
+    # no weight of its own left and its score is absent, which is the same sentence
+    # SCR-3 makes about the headline: zero is a verdict, absence is not.
+    #
+    # `worst_open` below stays over every scored row on purpose. It counts unresolved
+    # items rather than weighing them, and a category that has just lost an item's
+    # weight to its carrier is precisely the one whose reader still needs telling
+    # that something in it is open.
     for key, c in by_cat.items():
         cs = c["counts"]
         dec = cs.get(PASS, 0) + cs.get(FAIL, 0) + cs.get(WARN, 0)
         c["decided"] = dec
         earned_c = sum(SEVERITY_WEIGHT[g["severity"]] * (1.0 if g["status"] == PASS else
                                                          0.5 if g["status"] == WARN else 0.0)
-                       for g in scored if g["category"] == key)
+                       for g in weighed if g["category"] == key)
         total_c = sum(SEVERITY_WEIGHT[g["severity"]]
-                      for g in scored if g["category"] == key)
+                      for g in weighed if g["category"] == key)
         c["score"] = round(100 * earned_c / total_c) if total_c else None
         # What the bar cannot show: a single failing critical in an otherwise clean
         # category still scores well, so the count travels with the score.

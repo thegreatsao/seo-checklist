@@ -4,14 +4,13 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.91.0 — see [CHANGELOG.md](CHANGELOG.md). Twenty-three scripts that cap their
-own input had never been read against the rule 0.88.0 wrote: a verdict passing *by
-absence* is withheld when the script says its input was cut. Twenty-one cut downstream of
-the number an item reads, or cut nothing. Two cut above it — `faceted_nav_audit.py` at
-300 page-derived URLs, live under `AR-163`, and `cache_compression_checker.py` at 25
-assets, on a path the registry never takes. Both report `truncated` now, so a page read
-in part answers `NO_DATA` instead of a clean `PASS`, and both numbers moved out of
-default arguments into constants the threshold inventory can see.
+Version 0.92.0 — see [CHANGELOG.md](CHANGELOG.md). The category bars beside the headline
+score now fold twins the way the headline has since 0.22: where two registry items ask
+one question of one script, the check is weighed once. They used to weigh it twice, and
+because six of the nine pairs here cross categories, the fold moves weight out of one bar
+rather than only shrinking it — 36% of `media`'s weight belongs to a carrier elsewhere. A
+category left with nothing of its own to divide by now prints no score at all instead of
+a zero that read as a verdict on it.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

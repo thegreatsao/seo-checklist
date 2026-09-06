@@ -98,12 +98,14 @@ nothing to either half of the score or to a category score.
 severity the weight of a single defect depends on which item a reader happens to look
 at. Both conditions exist in the registry today: 9 twins across 7 primaries, of which
 MB-102/MD-190 and SP-112/SP-108 disagree on severity.
-**Reader:** partial, and the label cannot be stronger while Appendix A stands. The
-headline half is read — `tests/test_runner.py` asserts a twin pair scores once, and
-`tools/audit_item_semantics.py` in CI refuses any two items sharing script, arguments
-and assertion without a recorded ruling. The category half is read by nothing and is
-violated today: category sums iterate every scored row, twins included. A requirement
-whose own appendix records a live violation of half its sentence is not enforced.
+**Reader:** enforced. The headline half is read by
+`tests/test_runner.py::Scoring::test_a_twin_reports_its_status_and_does_not_score_twice`,
+and `tools/audit_item_semantics.py` in CI refuses any two items sharing script,
+arguments and assertion without a recorded ruling. The category half is read by
+`tests/test_runner.py::TheCategoryBarIsTheHeadlinesArithmetic`, whose
+`test_the_twin_is_weighed_in_the_carriers_category_and_nowhere_else` fails on the
+computation this tree shipped until 0.92.0 — six of the nine pairs cross categories, so
+the fold moves weight between bars rather than only within one.
 
 #### Scenario: one defect, two registry obligations
 - **WHEN** two items resolve to the same script, arguments and assertion
@@ -118,8 +120,8 @@ whose own appendix records a live violation of half its sentence is not enforced
 #### Scenario: a category score is asked for
 - **WHEN** the same fold is applied to a category rather than to the headline
 - **THEN** twins are folded there too
-- **AND** a category sum that iterates every scored row violates this requirement, which
-  is what it does today
+- **AND** the fold applies to that bar's numerator and denominator, not only to the
+  headline's
 
 ### Requirement: SCR-2 — all three tables are normative, and changing one is a release event
 
@@ -325,15 +327,21 @@ report surface to present both halves separately beneath the bucket.
 ### Requirement: SCR-9 — category scores use the headline's arithmetic
 
 Each category score SHALL use the severity-weighted numerator and denominator of
-SCR-3 and MUST fold twins by SCR-1. It rounds by SCR-12 and is absent when that category has nothing
-decided. Each score travels with an indication of how severe the worst unresolved
-`FAIL` or `WARN` item in the category is.
+SCR-3 and MUST fold twins by SCR-1. It rounds by SCR-12 and MUST be absent whenever that
+category has no weight of its own to divide by — because nothing in it was decided, or
+because everything decided in it defers its weight to a carrier elsewhere. Each score
+travels with an indication of how severe the worst unresolved `FAIL` or `WARN` item in
+the category is, folded or not.
 
 **Why:** category scores sit beside the headline and are read against it. A second scale
 or a second treatment of twins can point the reader at the wrong work, and a high score
 alone can hide one unresolved critical item.
-**Reader:** **none.** Nothing asserts on `by_category`; the current computation counts
-twins that the headline folds.
+**Reader:** enforced. `tests/test_runner.py::TheCategoryBarIsTheHeadlinesArithmetic`
+holds it. `test_every_bar_is_the_headline_over_the_rows_that_bar_speaks_for` is the
+sentence itself: each bar is compared against `score()`'s own headline, run over the
+rows that bar speaks for, so the fraction, the fold and the rounding cannot part company
+between the two computations without the failure naming the category it happened in.
+Each scenario has a case of its own besides.
 
 #### Scenario: a category containing a twin pair
 - **WHEN** a category holds two items that share one measurement
@@ -342,6 +350,13 @@ twins that the headline folds.
 #### Scenario: a category with nothing decided
 - **WHEN** no item in a category reached a quality verdict
 - **THEN** the category score is absent rather than zero
+
+#### Scenario: a category whose decided items all defer their weight
+- **WHEN** every decided item in a category is a twin whose carrier sits in another
+  category
+- **THEN** the category score is absent, because the fold left it nothing to divide by
+- **AND** it is not zero, which would read as a verdict on that category rather than on
+  the one holding the weight
 
 #### Scenario: the bar hides a critical failure
 - **WHEN** a category scores well but holds an unresolved `FAIL` at a high severity
@@ -573,16 +588,19 @@ renderers and the console branch on reachability instead of score presence, so a
 reachable run with only a `NO_DATA` row prints `None/100`. The cited tests cover only the
 unreachable subtype.
 
-#### A.5 — category arithmetic counts twins and its field name misleads
+#### A.5 — the field that carries the worst unresolved severity is named for a status
 
-Category numerator and denominator iterate over all scored rows even though the
-headline folds twins. A probe with a `critical PASS` primary in `security`, its
-`critical PASS` twin in `technical`, and a `low FAIL` in `technical` produced a headline
-weight of 11 and a technical category score of 91. Folding by SCR-1 leaves only the low
-failure in that category, for a score of 0.
+`worst_open` carries a severity — `critical`, `high`, `medium`, `low` — and its name
+reads as though it carried a status. The value is the one SCR-9 asks for; only the name
+is wrong, and renaming it changes an output contract, so it is an open question above
+rather than a defect to fix here.
 
-The current `worst_open` field carries a severity, not a status. The value is useful,
-but the name does not say what it contains.
+The arithmetic half of this entry is closed. Category numerator and denominator
+iterated every scored row while the headline folded twins: a probe with a
+`critical PASS` primary in `security`, its `critical PASS` twin in `technical`, and a
+`low FAIL` in `technical` gave a headline weight of 11 and a technical bar of 91 where
+the fold leaves 0. Fixed in 0.92.0 and read by
+`tests/test_runner.py::TheCategoryBarIsTheHeadlinesArithmetic`.
 
 #### A.6 — the two fix surfaces disagree
 
@@ -611,26 +629,31 @@ future work, because SCR-2 states obligations the tree does not meet today.
 
 | | requirements |
 |---|---|
-| **enforced** | SCR-4 |
-| **partial** | SCR-1, SCR-2, SCR-3, SCR-5, SCR-6, SCR-7, SCR-8, SCR-10, SCR-11, SCR-12, SCR-13, SCR-14 |
-| **none** | SCR-9 |
+| **enforced** | SCR-1, SCR-4, SCR-9 |
+| **partial** | SCR-2, SCR-3, SCR-5, SCR-6, SCR-7, SCR-8, SCR-10, SCR-11, SCR-12, SCR-13, SCR-14 |
+| **none** | — none |
 
 Invariants: all four partial — INV-S4 is read for the single-twin case by a reversed-row
 test and unread for the rest.
 
-**One enforced, twelve partial, one unread, of fourteen.**
+**Three enforced, eleven partial, none unread, of fourteen.**
 
 Two earlier drafts of this appendix were both wrong, in the same direction. The first
 published four enforced, on readers assembled by reading the document. The second
 published one, having dropped three. Neither survived an audit that ran the tests and
-mutated the values they import: `SCR-1` is read for the headline and unread for the
+mutated the values they import: `SCR-1` was read for the headline and unread for the
 category half its own sentence covers, and `SCR-4`'s two renderers printed the share
 without any assertion requiring them to. Rendering is the behaviour under audit, not a
 reader of it — and a census assembled from the document rather than from the tests will
 keep making that substitution.
 
-**The one enforced row is that finding, closed rather than restated.** SCR-4 got its
-reader on 5 September 2026, and the thing that had made it look untestable — that holding
+**Two of the three enforced rows are that finding, closed rather than restated.**
+SCR-9 and the category half of SCR-1 were one defect: the bars weighed twins the
+headline folds, and no test read `by_category` at all. Both closed on 6 September 2026
+by one class, and the fix moved live numbers — six of the nine pairs cross categories,
+so weight left one bar for another rather than only shrinking.
+
+SCR-4 got its reader on 5 September 2026, and the thing that had made it look untestable — that holding
 a console surface means pinning terminal output — turned out to be avoidable: render
 twice with a different share and require the output to change, and the assertion never
 learns where the number is. Nothing about that method is specific to this requirement, and

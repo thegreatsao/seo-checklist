@@ -1347,6 +1347,153 @@ class Scoring(unittest.TestCase):
             self.assertLess(s["weight_pct"], 100)
 
 
+class TheCategoryBarIsTheHeadlinesArithmetic(unittest.TestCase):
+    """`openspec/specs/scoring/` SCR-9, and the second half of SCR-1.
+
+    The category bars sit beside the headline and are read against it, so they have to
+    be one computation over a slice: the same severity weights, the same fold of twins,
+    the same absence when there is nothing to divide by. Until this class existed the
+    category sums iterated every scored row. One measurement filed under two source
+    numbers was therefore weighed twice in the bars and once in the number above them,
+    and the report orders its bars by that figure — so the defect chose what a reader
+    was pointed at first.
+
+    Twins are folded the way SCR-1 states it: the twin "contributes nothing to either
+    half of the score or to a category score". A shared measurement is weighed in the
+    carrier's category and in no other. That is not a rounding difference here — six of
+    the nine pairs in this registry cross categories, `MB-102` (`mobile`, `low`)
+    deferring to `MD-190` (`media`, `medium`) among them.
+
+    `worst_open` is deliberately not folded: it is a count of unresolved items, not a
+    weight, and a category that has lost an item's weight to its carrier is exactly the
+    one whose reader needs telling that something in it is still open.
+    """
+
+    def row(self, ident, category, severity, status, scores_with=""):
+        row = {"id": ident, "category": category, "category_label": category.title(),
+               "severity": severity, "status": status, "effort": "low"}
+        if scores_with:
+            row["scores_with"] = scores_with
+        return row
+
+    def test_a_shared_measurement_is_weighed_once_in_its_category(self):
+        """One category, so the bar and the headline are the same fraction and any
+        difference between them is the fold."""
+        rows = [self.row("A-1", "media", "high", PASS),
+                self.row("A-2", "media", "high", FAIL),
+                self.row("A-3", "media", "high", FAIL, scores_with="A-2")]
+        result = score(rows)
+        self.assertEqual(result["by_category"]["media"]["score"], 50,
+                         "the twin was weighed, so one defect cost the bar twice")
+        self.assertEqual(result["by_category"]["media"]["score"], result["seo_score"],
+                         "the bar and the headline computed the same rows differently")
+
+    def test_the_twin_is_weighed_in_the_carriers_category_and_nowhere_else(self):
+        """The cross-category case, which is most of them.
+
+        `mobile` holds a failing item whose weight belongs to `media`. Weighing it here
+        as well would put one defect in two bars — the headline fold, undone one level
+        down."""
+        rows = [self.row("M-1", "media", "medium", FAIL),
+                self.row("B-1", "mobile", "low", FAIL, scores_with="M-1"),
+                self.row("B-2", "mobile", "low", PASS)]
+        cats = score(rows)["by_category"]
+        self.assertEqual(cats["mobile"]["score"], 100,
+                         "the twin scored in its own category as well as its carrier's")
+        self.assertEqual(cats["media"]["score"], 0)
+        self.assertEqual(cats["mobile"]["counts"][FAIL], 1,
+                         "the twin stopped reporting its own status")
+        self.assertEqual(cats["mobile"]["worst_open"], "low",
+                         "a category with an open item said it had none")
+
+    def test_a_category_holding_only_a_twin_scores_nothing_rather_than_zero(self):
+        """Zero is a verdict about a category; absence is a statement about the audit —
+        SCR-3's sentence, one level down.
+
+        `mobile` here holds one item, decided, failing, and carrying no weight because
+        the weight is `media`'s. A bar reading 0 would say the category failed; it did
+        not, it has nothing of its own to divide by."""
+        rows = [self.row("M-1", "media", "medium", FAIL),
+                self.row("B-1", "mobile", "low", FAIL, scores_with="M-1")]
+        cats = score(rows)["by_category"]
+        self.assertIsNone(cats["mobile"]["score"],
+                          "a category with no weight of its own was reported as failing")
+        self.assertEqual(cats["mobile"]["decided"], 1,
+                         "it is still decided, still counted and still printed")
+
+    def test_a_category_with_nothing_decided_has_no_score(self):
+        rows = [self.row("A-1", "media", "high", NO_DATA),
+                self.row("A-2", "media", "high", NA),
+                self.row("A-3", "media", "high", LLM_PENDING)]
+        cat = score(rows)["by_category"]["media"]
+        self.assertIsNone(cat["score"])
+        self.assertEqual(cat["decided"], 0)
+
+    def test_the_worst_unresolved_item_travels_with_the_score(self):
+        """A bar can only say how much of the weight was earned, and 87 is a good
+        number. It is also what four clean criticals and one failing high look like."""
+        rows = [self.row(f"A-{n}", "media", "critical", PASS) for n in range(4)]
+        rows.append(self.row("A-9", "media", "high", FAIL))
+        cat = score(rows)["by_category"]["media"]
+        self.assertEqual(cat["score"], 87)
+        self.assertEqual(cat["worst_open"], "high")
+
+    def test_the_worst_unresolved_is_the_worst_one_and_a_warn_counts(self):
+        rows = [self.row("A-1", "media", "low", FAIL),
+                self.row("A-2", "media", "critical", WARN)]
+        self.assertEqual(score(rows)["by_category"]["media"]["worst_open"], "critical")
+        clean = [self.row("A-1", "media", "critical", PASS)]
+        self.assertIsNone(score(clean)["by_category"]["media"]["worst_open"])
+
+    def mixed(self):
+        """Four categories, four severities, both kinds of twin.
+
+        Written out rather than generated, because the point of the sweep below is to
+        compare two computations of the same rows and a generator would tempt me to
+        share the definition of a row's weight between them."""
+        return [self.row("A-1", "media", "critical", PASS),
+                self.row("A-2", "media", "high", FAIL),
+                self.row("A-3", "media", "high", FAIL, scores_with="A-2"),
+                self.row("A-4", "media", "medium", WARN),
+                self.row("A-5", "media", "low", NO_DATA),
+                self.row("B-1", "mobile", "low", FAIL, scores_with="A-2"),
+                self.row("B-2", "mobile", "medium", PASS),
+                self.row("B-3", "mobile", "critical", NA),
+                self.row("C-1", "speed", "critical", WARN),
+                self.row("C-2", "speed", "high", PASS),
+                self.row("D-1", "geo_ai", "medium", NEEDS_INPUT)]
+
+    def test_every_bar_is_the_headline_over_the_rows_that_bar_speaks_for(self):
+        """The invariant the four cases above are instances of.
+
+        Each bar is compared against `score()`'s own headline, run over the same rows
+        that bar speaks for: the category's rows minus the ones whose weight is filed
+        elsewhere. Nothing here restates the arithmetic — if the fraction, the rounding
+        or the absence rule ever parts company between the two computations, this says
+        which category it happened in."""
+        rows = self.mixed()
+        carried = [r for r in rows if not r.get("scores_with")]
+        cats = score(rows)["by_category"]
+        self.assertEqual(sorted(cats), ["geo_ai", "media", "mobile", "speed"])
+        for key in cats:
+            with self.subTest(category=key):
+                slice_ = [r for r in carried if r["category"] == key]
+                self.assertEqual(cats[key]["score"], score(slice_)["seo_score"])
+
+    def test_no_carried_weight_falls_outside_the_bars(self):
+        """A bar cannot publish its own denominator, so this checks the weaker thing
+        that is still checkable: the categories the bars are named for cover every row
+        the headline weighed. A row whose category never became a bar is weight the
+        reader is told about once, in the headline, and cannot find in the breakdown."""
+        rows = self.mixed()
+        result = score(rows)
+        carried = [r for r in rows if not r.get("scores_with")]
+        per_category = sum(
+            score([r for r in carried if r["category"] == key])["weight_decided"]
+            for key in result["by_category"])
+        self.assertEqual(per_category, result["weight_decided"])
+
+
 class Diff(unittest.TestCase):
     def run_of(self, statuses, **extra):
         payload = {"items": [{"id": i, "title": i, "status": s}

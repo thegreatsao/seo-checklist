@@ -134,16 +134,14 @@
     },
     "scoring": {
       "counts": {
-        "enforced": 1,
-        "none": 1,
+        "enforced": 3,
+        "none": 0,
         "opposed": 0,
-        "partial": 12
+        "partial": 11
       },
       "opposed": [],
       "requirements": 14,
-      "unread": [
-        "SCR-9"
-      ]
+      "unread": []
     },
     "verdicts": {
       "counts": {
@@ -160,10 +158,10 @@
     }
   },
   "totals": {
-    "enforced": 48,
-    "none": 15,
+    "enforced": 50,
+    "none": 14,
     "opposed": 2,
-    "partial": 84,
+    "partial": 83,
     "requirements": 149
   }
 }
