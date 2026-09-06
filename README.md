@@ -4,7 +4,12 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.94.0 — see [CHANGELOG.md](CHANGELOG.md). The score now names the instrument
+Version 0.94.1 — see [CHANGELOG.md](CHANGELOG.md). The `robots.txt` fetch — the first
+request this tool makes to any host — used to go out with no address validation, no
+pinning and unvalidated redirects, so it could reach a link-local address the audit
+refuses to fetch pages from. It goes through the guard now, and `openspec/specs/http/` is
+the first document here with every requirement held by something that fails when it is
+violated. Before that, `0.94.0` made the score name the instrument
 that produced it. Severity weight, verdict credit and effort cost are one stamped
 instrument, every run artifact records the stamp it was scored under, and a comparison
 against a run scored under another one says the difference is not movement in the site

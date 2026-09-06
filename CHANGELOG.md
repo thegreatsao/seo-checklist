@@ -10,6 +10,71 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.94.1 — `specs/http/` is closed, and the robots fetch was the one request nothing guarded
+
+Registry version: unchanged at `e9154e92f4dd`. The item set does not move. What moves is a
+request that used to leave unguarded, a count in the artifact, and a sentence in the report,
+so this is a minor.
+
+**The first request the audit makes to any host was the one nothing protected.**
+`_fetch_robots` called `requests.get` directly: no address validation, so a host resolving
+to loopback or to `169.254.169.254` was contacted even though the audit refuses to fetch
+that same host's pages; no pinning, so the answer a guard would have validated was discarded
+and the name resolved again by the transport — the rebinding shape page fetches were pinned
+against in 0.58.0; and `allow_redirects=True`, so a public `robots.txt` answering 302 to the
+metadata service reached it. The comment above it named a real constraint — `safe_get`
+consults `robots.txt`, so fetching `robots.txt` through it recurses — and that argues
+against reusing `safe_get`, not for skipping the guard, which is a mechanism one level
+below. `_validated_url` and `_PinnedAdapter` are both callable without touching robots, and
+that is what it does now. A redirect is read as "no rules" rather than followed.
+
+**A run says how many verdicts came off disk, and the report says so too.** The artifact
+recorded whether the cache was *on*; the requirement is about a run that *answered from* it,
+and nothing counted hits. A warning on every cached run is one a reader learns to skip —
+the same reason the parser caveat is silent for `lxml`. Hits are tallied in the shared state
+directory beside the pacing slots, under the same lock discipline, because every checker is
+its own process and a tally in memory reports zero in the runner that writes the artifact.
+`http_cache_hits` joins `http_cache` in the payload, and a run that answered from disk now
+says so, with the number.
+
+**Three constants stopped being unfalsifiable.** `DEFAULT_MAX_RPS` had a test that looked
+like a reader — it asserts `max_rps()` equals the constant after a bad environment value,
+which reads the fallback, both sides moving together — so the rate could have become 40 and
+this tool would have hit a stranger's server ten times harder with CI green. The response
+ceiling and the redirect budget were unread for a different reason: every test supplied its
+own limit. All three are now named where changing the source reddens the line, and each
+refusal must state the number it enforced, since a cap that refuses without saying what it
+was is a silent truncation one step removed.
+
+**`specs/http/` goes from two enforced of twelve to twelve of twelve** — the first document
+in this tree with nothing `partial` and nothing unread. The ten rows that moved fall into
+three shapes, and only one of them was a hole in the code:
+
+* a **number nobody named** — the rate and the two caps;
+* a **fact recorded and never carried** to the person reading the report — the cache, and
+  the parser, whose test was *named* for the recording and asserted that two functions
+  return the same string;
+* an **asymmetry read off a signature** rather than off its outcome — robots, and the
+  private allowance, whose per-run clause was conceded in the suite's own docstring and
+  deferred to CI.
+
+Every row was probed by mutation before it moved, which is the method Appendix B
+distinguishes from a guess — the guessing direction had been wrong four times. Two probes
+produced numbers worth keeping: mutating the private-host status from `NO_DATA` to `N/A`
+drops the score's denominator from 844 to 758, which is the flattering arithmetic HTTP-3
+exists to prevent; and reversing the robots default turns HTTP-5's third scenario into a
+measurement — 0 decided items against 15 undecided, with the entry page unreachable, which
+is the collapse the requirement says an operator cannot tell from a crash.
+
+Two smaller things fell out of the work. `test_specs`'s rule that a document may only name
+tests that exist caught this document naming one the same release had deleted — the rule
+reads removals as well as additions. And a first attempt at the cache count wrapped every
+evidence script in `runpy` with a redirected stdout so each child could append its tally to
+its own JSON; that changes how all sixty checkers execute for one line of provenance, and
+was rejected in favour of the file the pacing already uses.
+
+The tree's specification debt is 67 enforced, 74 partial, 6 unread, 2 opposed, of 149.
+
 ## 0.94.0 — SCR-2: the score names the instrument that produced it
 
 Registry version: unchanged at `e9154e92f4dd`. The item set does not move. What moves is
