@@ -164,6 +164,7 @@
           "GO-137",
           "GO-138",
           "KW-071",
+          "MB-098",
           "MD-185",
           "MD-187",
           "MS-022",
@@ -406,12 +407,11 @@
       "why": "Kept deliberately as the entry the diagnosis replaced. Probing it would probe the entry above."
     },
     "go-138-was-never-a-flake": {
-      "claim": "GO-138's rule matches a named field rather than the whole serialised issue, which is what made an ephemeral port read as a 404.",
+      "claim": "GO-138's rule no longer matches a pattern at all: 0.93.0 moved it to `invalid_url_count`, so neither the port of a test origin nor a URL containing `404` can reach it. The `field` narrowing this entry is about was the 0.19.1 repair and is now moot for this item.",
       "measured": {
         "assert": {
-          "field": "message",
-          "none_matching": "(?i)404|redirect|noindex",
-          "path": "issues"
+          "eq": 0,
+          "path": "invalid_url_count"
         }
       },
       "probe": "go_138_matches_a_field",
@@ -657,6 +657,7 @@
           "AR-163",
           "CI-014",
           "KW-071",
+          "MB-098",
           "MD-185",
           "MS-023",
           "TE-170",

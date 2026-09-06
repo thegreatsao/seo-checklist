@@ -1375,6 +1375,13 @@ name. A column called `url` would be read as "fix this page".
   turned on the rules. The entry below is what it replaced; it is kept because the
   useful part is the shape: printing the payload cost four lines and settled in one
   firing what three rounds of reasoning got wrong.
+
+  **0.93.0 removed the pattern rather than narrowing it.** `field` made the match
+  stop reading URLs; it left the verdict being read out of a sentence, which is what
+  `openspec/specs/verdicts/` VRD-8 forbids and what let `404` mean a 404 and not a
+  500. GO-138 now reads `invalid_url_count`, so neither an ephemeral port nor a
+  `/blog/404-errors-explained` can reach it, and neither can any rewording of the
+  message. GO-143 went the same way in the same release.
   <!-- ki: go-138-was-never-a-flake -->
 
 - **One test is not deterministic, in a suite whose whole premise is that it is.**
@@ -1382,6 +1389,9 @@ name. A column called `url` would be read as "fix this page".
   and passed on a re-run of the same commit; 15 local runs of the full suite and of
   that module alone produced 0 failures. It asserts that a sitemap check run *without*
   `--fetch-urls` cannot report a 404, a redirect or a noindex, and it saw one.
+  (0.93.0 renamed it `test_a_run_that_fetched_nothing_says_so_instead_of_passing`
+  and it no longer counts matches in prose, so there is nothing left to be flaky
+  about — the run now answers `NO_DATA` where it used to answer `PASS`.)
   Reading `sitemap_checker.py` settles what it cannot be: all three of those issues
   are emitted inside the `if fetch_urls` branch, and that run does not pass the flag.
   The parallel runner was the obvious suspect and is not — `run()` returns its key

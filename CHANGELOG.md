@@ -10,6 +10,67 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.93.0 — the last four verdicts read from prose now read from counts
+
+Registry version: **`e9154e92f4dd`**, from `b0abf2819da0`. Four rules change, one item
+changes invocation, and three of the four move live verdicts.
+
+`openspec/specs/verdicts/` VRD-8 says a status is decided by reading named fields of a
+checker's structured result, never by matching words in a message written for a person.
+Wording is the first thing that drifts, and these operators fail in the direction that
+hides it: `none_matching` **passes** when nothing matches, so a pattern aimed at a phrase
+a checker no longer emits passes every site in silence. Fifteen assertions were moved off
+patterns when `value_map` arrived. These are the last four.
+
+**What each one was actually asking.**
+
+* **GO-138** — *Remove invalid URLs from sitemaps* — matched `(?i)404|redirect|noindex`
+  against issue messages. The message for a bad status reads "Sitemap URL returns HTTP
+  {status}", so `404` matched a 404 and **nothing else**: a sitemap whose URLs answered
+  500 or 503 passed the item outright. It now reads `invalid_url_count` — status at or
+  above 400, a redirect chain, or meta noindex, counted over the URLs actually read. The
+  count is absent when nothing was fetched, so a run without `--fetch-urls` answers
+  `NO_DATA` where it used to answer `PASS`.
+* **MB-095** — *Reduce mobile page weight* — counted messages matching
+  `(?i)large|oversize|weight`. The only message that can match is emitted from a branch
+  that runs under `--fetch-images`, and the registry did not pass it. **Every live run of
+  this item passed a page whose image weights were never measured.** It now reads
+  `large_image_count` and moved onto MD-185's invocation, which already fetches — no
+  extra process launch and no extra request, because the runner groups by (script, args).
+* **MB-098** — *Serve properly sized images* — counted `(?i)size|dimension`, which caught
+  "Large image transfer size" and "Responsive image has srcset but no sizes" together.
+  Their union was nobody's measurement; it is what a pattern happened to match, and a
+  structured rule cannot reproduce an accident. It reads `srcset_without_sizes_count`,
+  the half the title names, at `eq 0` rather than the old ten — ten counted over images
+  would need eleven bad ones before the page said anything. The weight half is MB-095's
+  question and is asked there, once.
+* **GO-143** — *Give the WebSite node a name and a url* — matched `(?i)WebSite` against
+  messages, so `/website-design` in a reported URL was one message away from failing it.
+  It reads `incomplete_nodes_by_type.WebSite`, a map with one entry per schema type
+  present; an absent key means the page has no such node, which `missing_is: pass`
+  answers exactly as the pattern did by matching nothing. This is the one of the four
+  whose verdicts do not move.
+
+**A checker was wrong in the same direction and was corrected with it.**
+`image_weight_audit.py` reported a missing `sizes` for any `srcset`. Only width
+descriptors need one: `srcset="a.png 1x, a@2x.png 2x"` names candidates by device pixel
+ratio, the browser already knows its own, and `sizes` is ignored. Correct markup was
+being reported as a defect, in the message and now in the count.
+
+**What holds it.** `tests/test_registry.py::AVerdictComesFromAFieldAndNeverFromASentence`
+sweeps every rule and fails on a pattern aimed at the `issues` list or at a `message`
+field. The set of pattern operators is read out of `evaluate()` — the branches that reach
+`re.compile` — so an operator added to the evaluator is in scope the day it is added;
+`count_matching_lte` was outside the assertion audit's census even in principle, which is
+how MB-095 and MB-098 survived four releases of being looked at. Two of its tests exist
+so the sweep cannot pass for the wrong reason: one fails if there are no pattern
+operators left to find, and one pins CI-004 — `noindex` against `meta_robots` — as legal,
+because what VRD-8 forbids is prose and not regular expressions.
+
+`openspec/specs/verdicts/` goes to ten enforced of seventeen with nothing unread, and it
+is the first entry in that document's list of live violations closed by repairing the
+tree rather than by writing a test. The suite total moves 51 → 52 of 149.
+
 ## 0.92.1 — fourteen counts in the prose, none of them the registry's
 
 Registry version: unchanged at `b0abf2819da0`. No item moves, no assertion changes and

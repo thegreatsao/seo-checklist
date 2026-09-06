@@ -1224,27 +1224,46 @@ class Sitemap(unittest.TestCase):
         never-passing."""
         self.assertEqual(verdict("GO-138", out("sitemap_urls")), PASS)
 
-    def test_go_138_needs_the_urls_fetched_to_find_anything(self):
-        """It could only ever pass without `--fetch-urls`, which the registry did not
-        pass until 0.6.0: 404/redirect/noindex issues are produced by fetching the
-        listed URLs, so a run that never fetched them had nothing to match.
+    def test_a_run_that_fetched_nothing_says_so_instead_of_passing(self):
+        """A run without `--fetch-urls` collects no status for any listed URL, so it
+        has nothing to say about whether they are valid. Until 0.93.0 it said they
+        were: the rule matched `404|redirect|noindex` against issue messages, every
+        such message lives inside the `if fetch_urls` branch, and a pattern that
+        matches nothing **passes**. An audit that never looked reported a clean
+        sitemap, which is the failure mode `openspec/specs/verdicts/` VRD-8 forbids
+        patterns for.
 
-        The first assertion below failed once on CI, on 3.10, and passed on a re-run
-        of the same commit — 0 failures in 15 local runs of the full suite and of this
-        module alone. Reading the script settles what it *cannot* be: every issue
-        whose text can match `404|redirect|noindex` is inside the `if fetch_urls`
-        branch, and this run does not pass the flag. So the payload is the whole
-        question, and guessing at it twice has already cost more than printing it
-        once. The message carries the issues verbatim rather than a boolean, because
-        a diagnostic that names the wrong cause is worse than no diagnostic — which
-        is the standing lesson of 0.15.0."""
+        `invalid_url_count` is absent when nothing was read, and an absent path is
+        `NO_DATA` — the audit now says it did not look.
+
+        (The old first assertion failed once on CI, on 3.10, and passed on a re-run
+        of the same commit, with 0 failures in 15 local runs. It was reading a count
+        of matches against prose; there is no longer a count to be flaky about.)"""
         self.assertIn("--fetch-urls", ITEMS["GO-138"]["check"]["args"])
         unfetched = out("sitemap_bad")
-        self.assertEqual(verdict("GO-138", unfetched), PASS,
-                         "without fetching, the dead URLs are invisible; the issues "
-                         "this run actually produced were "
-                         + json.dumps(unfetched.get("issues"), ensure_ascii=False))
+        self.assertNotIn("invalid_url_count", unfetched,
+                         "a run that fetched nothing published a count of invalid "
+                         "URLs; the payload was "
+                         + json.dumps(unfetched.get("urls"), ensure_ascii=False)[:400])
+        self.assertEqual(verdict("GO-138", unfetched), NO_DATA)
         self.assertEqual(verdict("GO-138", out("sitemap_urls_bad")), FAIL)
+
+    def test_a_status_that_is_not_404_is_still_an_invalid_url(self):
+        """What the pattern could not ask. The message it matched is "Sitemap URL
+        returns HTTP {status}", so `404` matched a 404 and nothing else: a sitemap of
+        URLs answering 500 or 503 passed this item outright. The count is over
+        `status >= 400`, so it does not care which number it was."""
+        bad = out("sitemap_urls_bad")
+        statuses = sorted({row["checks"].get("status") for row in bad["urls"]
+                           if row["checks"].get("status")})
+        self.assertTrue(statuses, "no URL in this fixture was read; the sweep is "
+                                  "vacuous")
+        self.assertEqual(bad["invalid_url_count"],
+                         sum(1 for row in bad["urls"]
+                             if (row["checks"].get("status") or 0) >= 400
+                             or row["checks"].get("redirects")
+                             or "noindex" in (row["checks"].get("meta_robots")
+                                              or "").lower()))
 
 
 class Redirects(unittest.TestCase):
@@ -5625,7 +5644,10 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
                 and i["check"]["script"] in reporters]
 
     def test_the_set_it_covers_is_the_one_recorded(self):
-        """Twenty-two items — eleven `high`, ten `medium`, one `low`. The number is
+        """Twenty-three items — eleven `high`, eleven `medium`, one `low`. MB-098
+        joined in 0.93.0, when its rule stopped counting matches in prose and became
+        `srcset_without_sizes_count: eq 0` — a clean verdict spelled as a zero, which
+        is what this set is. The number is
         pinned because the ledger entry this closes said twelve and the command
         recorded beside it printed eleven, and neither counted the thing the entry
         was about. Twelve is right for that entry's own subject: the items handed
@@ -5638,8 +5660,9 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
         ids = sorted(i["id"] for i in self._covered())
         self.assertEqual(ids, [
             "AR-149", "AR-162", "AR-163", "BL-081", "BL-083", "CI-008", "CI-014", "CI-018",
-            "CN-039", "CN-041", "GO-136", "GO-137", "GO-138", "KW-071", "MD-185",
-            "MD-187", "MS-022", "MS-023", "MS-029", "TE-168", "TE-170", "TE-174",
+            "CN-039", "CN-041", "GO-136", "GO-137", "GO-138", "KW-071", "MB-098",
+            "MD-185", "MD-187", "MS-022", "MS-023", "MS-029", "TE-168", "TE-170",
+            "TE-174",
         ], "the covered set moved; say which definition gives the new one")
 
     def test_every_way_this_registry_spells_nothing_is_covered(self):

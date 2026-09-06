@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "b0abf2819da0",
+  "registry_version": "e9154e92f4dd",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 15 beyond-Plerdy checks",
   "categories": [
@@ -1898,15 +1898,13 @@
       "check": {
         "script": "image_weight_audit.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--fetch-images"
         ],
         "requires": "fetch",
         "assert": {
-          "path": "issues",
-          "count_matching_lte": [
-            "(?i)large|oversize|weight",
-            5
-          ]
+          "path": "large_image_count",
+          "lte": 5
         }
       },
       "effort": "medium",
@@ -1971,11 +1969,8 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "issues",
-          "count_matching_lte": [
-            "(?i)size|dimension",
-            10
-          ]
+          "path": "srcset_without_sizes_count",
+          "eq": 0
         }
       },
       "effort": "medium",
@@ -2888,9 +2883,8 @@
         ],
         "requires": "crawl",
         "assert": {
-          "path": "issues",
-          "field": "message",
-          "none_matching": "(?i)404|redirect|noindex"
+          "path": "invalid_url_count",
+          "eq": 0
         }
       },
       "effort": "low",
@@ -2968,9 +2962,9 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "issues",
-          "field": "message",
-          "none_matching": "(?i)WebSite"
+          "path": "incomplete_nodes_by_type.WebSite",
+          "eq": 0,
+          "missing_is": "pass"
         }
       },
       "effort": "low",

@@ -144,21 +144,19 @@
     },
     "verdicts": {
       "counts": {
-        "enforced": 9,
-        "none": 1,
+        "enforced": 10,
+        "none": 0,
         "opposed": 0,
         "partial": 7
       },
       "opposed": [],
       "requirements": 17,
-      "unread": [
-        "VRD-8"
-      ]
+      "unread": []
     }
   },
   "totals": {
-    "enforced": 51,
-    "none": 13,
+    "enforced": 52,
+    "none": 12,
     "opposed": 2,
     "partial": 83,
     "requirements": 149

@@ -67,10 +67,14 @@ CATEGORIES = [
 #   value_map: {value: pass|fail}      enumerate the script's own vocabulary for
 #                                      a field; an unlisted value is NO_DATA.
 #                                      Optional "field" projects a list of dicts.
-# Prefer a counted field or value_map over a pattern. `none_matching` passes when
-# nothing matches, so a pattern aimed at wording a script does not emit passes
-# every site in silence — fifteen assertions here were doing exactly that. Run
-# tools/audit_assertions.py after touching one; a test runs it too.
+# A pattern may not decide a verdict from a human-readable message at all —
+# `openspec/specs/verdicts/` VRD-8, held by
+# `tests/test_registry.py::AVerdictComesFromAFieldAndNeverFromASentence`. Wording is
+# the first thing that drifts, and `none_matching` passes when nothing matches, so a
+# pattern aimed at wording a script no longer emits passes every site in silence:
+# fifteen assertions here were in that state and four survived to 0.93.0. Use a
+# counted field or `value_map`. Run tools/audit_assertions.py after touching one; a
+# test runs it too.
 # `path` uses dots; `[]` is not needed — lists are handled by len_*/none_*.
 # Optional "warn" block uses the same vocabulary; it is evaluated only when
 # the main assert fails, turning FAIL into WARN.
@@ -732,8 +736,20 @@ item(93, "critical", S, "parse_html.py", HTMLARG,
 item(94, "high", S, "rendered_audit.py", RENDERED,
      {"path": "mobile_overlays_covering_content", "eq": 0},
      "Remove intrusive interstitials on mobile")
-item(95, "medium", S, "image_weight_audit.py", PAGE,
-     {"path": "issues", "count_matching_lte": ["(?i)large|oversize|weight", 5]},
+item(95, "medium", S, "image_weight_audit.py", ["{url}", "--fetch-images"],
+     # `large_image_count` is the same measurement the pattern was reaching for —
+     # images whose transfer size exceeds LARGE_IMAGE_BYTES — taken from the count
+     # instead of from the sentence announcing it. The key is absent when no
+     # transfer size was learned, so a page nobody fetched is NO_DATA rather than
+     # light.
+     #
+     # Which is why this item moved onto `--fetch-images`, MD-185's invocation. On
+     # `PAGE` no image is ever requested, `content_length` is None on every row, and
+     # the item was NO_DATA on every live run — a question about transfer weight
+     # asked of a run that transferred nothing. It costs no extra launch and no extra
+     # request: MD-185 already fetches these images, and the runner groups by
+     # (script, args). The old pattern hid this by answering PASS instead.
+     {"path": "large_image_count", "lte": 5},
      "Reduce mobile page weight")
 item(96, "medium", S, "image_weight_audit.py", PAGE,
      {"path": "responsive_count", "gte": 1},
@@ -742,7 +758,27 @@ item(97, "medium", S, "image_weight_audit.py", PAGE,
      {"path": "modern_format_count", "gte": 1},
      "Move to WebP/AVIF and compress images")
 item(98, "medium", S, "image_weight_audit.py", PAGE,
-     {"path": "issues", "count_matching_lte": ["(?i)size|dimension", 10]},
+     # `(?i)size|dimension` over issue messages caught two unrelated findings —
+     # "Large image transfer size" and "Responsive image has srcset but no sizes" —
+     # and their union was nobody's measurement. It is what a pattern happened to
+     # match, and a structured rule cannot reproduce an accident.
+     #
+     # The half kept is the one this item is titled for. `sizes` is what tells the
+     # browser which `srcset` candidate to take; without it the browser guesses from
+     # its own default and a phone can be served the desktop file. The other half is
+     # MB-095's question and is still asked there, once.
+     #
+     # `eq: 0`, not the old rule's `lte: 10`. That ten counted matching *issue
+     # messages*; carried over to a count of images it would need eleven of them
+     # offering width-described candidates with no `sizes` before the page said
+     # anything, which is a rule that cannot fire on any real page. One such image
+     # is a defect.
+     #
+     # The corpus still cannot express it. An `<img srcset>` added to the broken tree
+     # makes `responsive_count` 1 there, which hands MB-096 and MD-189 a pass on both
+     # fixtures — two items losing their discriminating power to give one item its.
+     # So this stays in `SAME_ON_BOTH`, now for a reason that is true.
+     {"path": "srcset_without_sizes_count", "eq": 0},
      "Serve properly sized images")
 item(99, "medium", G, fix="Review mobile signals in Google Search Console")
 item(100, "medium", S, "mobile_render_checker.py", PAGE,
@@ -940,8 +976,12 @@ item(138, "medium", S, "sitemap_checker.py",
      # writing ("Never a substring: `404` appears in the title of every article ever
      # written about broken links") and the keyword items learned it in 0.5.0; the
      # rules were never audited for it.
-     {"path": "issues", "field": "message",
-      "none_matching": "(?i)404|redirect|noindex"},
+     # Replaced by the count in 0.93.0, and the pattern was narrower than every
+     # reading of it: the message is "Sitemap URL returns HTTP {status}", so `404`
+     # matched a 404 and nothing else. A sitemap whose URLs returned 500 or 503
+     # passed this item outright. `invalid_url_count` is status >= 400, a redirect
+     # chain, or meta noindex, over the URLs actually read.
+     {"path": "invalid_url_count", "eq": 0},
      "Remove invalid URLs from sitemaps")
 item(139, "low", S, "gsc_cannibalization.py", GSCARG,
      {"path": "branded.ranks_first", "truthy": True},
@@ -970,8 +1010,11 @@ item(143, "low", S, "schema_required_props.py", PAGE,
      # line below the repair. What left with it is recorded rather than dropped —
      # placeholder text in structured data is a warning, and `MS-032` reaches it only
      # above three warnings. See KNOWN-ISSUES, "placeholder text in structured data".
-     {"path": "issues", "field": "message",
-      "none_matching": "(?i)WebSite"},
+     # 0.93.0 moved the same question off the message and onto the count. The map
+     # carries one entry per schema type present, so an absent key means the page has
+     # no `WebSite` node at all — which is what `missing_is: pass` preserves, exactly
+     # as the pattern did by matching nothing.
+     {"path": "incomplete_nodes_by_type.WebSite", "eq": 0, "missing_is": "pass"},
      "Give the WebSite node a name and a url; Google reads both for the site name "
      "shown in results")
 # 32 is one direct answer (20) plus one definition (12) — the two strongest of the four

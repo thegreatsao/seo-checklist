@@ -259,8 +259,11 @@ SAME_ON_BOTH = {
               "at least one image",
     "MB-095": "image_weight_audit reports oversize by weight, and neither fixture "
               "ships an image big enough to trip it without bloating the repository",
-    "MB-098": "the dimension warning needs a real intrinsic size to compare against; "
-              "both fixture images are 64px placeholders",
+    "MB-098": "0.93.0 moved this to `srcset_without_sizes_count`, which a fixture "
+              "could express — but only by putting an `<img srcset>` in the broken "
+              "tree, and that makes `responsive_count` 1 there, which hands MB-096 "
+              "and MD-189 a pass on both. Two items would lose their discriminating "
+              "power to give this one its",
     "CN-054": "both fixtures expose native image sources, so both are crawlable; "
               "the data-src-only failure direction is covered in test_evidence_scripts",
 

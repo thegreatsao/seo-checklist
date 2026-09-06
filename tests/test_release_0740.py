@@ -352,6 +352,11 @@ class PageModeCompatibility(unittest.TestCase):
                 "picture_srcset": False, "picture_modern_formats": [],
                 "likely_lcp_candidate": False, "status": None,
                 "content_length": None, "content_type": None,
+                # Added in 0.93.0, when MB-098 stopped deciding from issue prose.
+                # False here for the reason the field exists: this `<img>` declares
+                # no `srcset`, so no `sizes` is owed. An `srcset` in `x` descriptors
+                # would also be False — only width descriptors need one.
+                "sizes_required_and_absent": False,
                 "responsive": False, "modern_format": False,
             }],
             # Added in 0.88.0. The page path had two halves of one rule and was
@@ -364,6 +369,11 @@ class PageModeCompatibility(unittest.TestCase):
             "fetch_error": None,
             "modern_format_count": 0,
             "responsive_count": 0,
+            # 0.93.0. Emitted whenever the page has images, because it is read from
+            # markup and needs no network — unlike `large_image_count`, which is
+            # absent here and above, since `known_image_bytes` is None and a page
+            # nobody fetched must not report a clean weight.
+            "srcset_without_sizes_count": 0,
         })
 
 

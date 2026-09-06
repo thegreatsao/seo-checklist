@@ -234,10 +234,27 @@ def validate_schema_required_props(documents: list[Any], schema_type: str | None
                 "placeholder_properties": placeholders,
             }
         )
+    # One entry per schema type present on the page, counting the nodes of that
+    # type this checker found something to say about. A type with nothing wrong
+    # still gets a key, at zero: the difference between "the WebSite node is
+    # complete" and "there is no WebSite node" is a verdict an item may want to
+    # draw, and an absent key is the only way to say the second.
+    #
+    # This exists so an item can ask about one type without matching that type's
+    # name against a human-readable message. `GO-143` did, with `(?i)WebSite`, and
+    # a pattern aimed at wording is a verdict that passes in silence the day the
+    # wording changes.
+    incomplete: dict[str, int] = {}
+    for row in rows:
+        wrong = bool(row["missing_required"] or row["missing_recommended"]
+                     or row["placeholder_properties"])
+        for type_name in row["types"]:
+            incomplete[type_name] = incomplete.get(type_name, 0) + int(wrong)
     return {
         "schema_nodes": len(nodes),
         "invalid_blocks": len(invalid_blocks or []),
         "checked_type": schema_type,
+        "incomplete_nodes_by_type": incomplete,
         "rows": rows,
         "issues": issues,
         "summary": {

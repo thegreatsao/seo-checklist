@@ -41,6 +41,22 @@ MODERN_MIME = {f"image/{fmt}" for fmt in MODERN_FORMATS}
 #  find it. A number nothing can name is a number nobody can argue with
 LARGE_IMAGE_BYTES = 250_000
 
+
+def _needs_sizes(srcset: str | None) -> bool:
+    """Does this `srcset` require a `sizes` attribute to be answerable?
+
+    Only width descriptors do. `srcset="a.png 1x, a@2x.png 2x"` names candidates by
+    device pixel ratio, the browser already knows its own, and `sizes` is ignored —
+    so demanding one there reports a defect on correct markup. With `w` descriptors
+    the browser has no way to know how wide the image will be laid out, defaults to
+    `100vw`, and a phone can be handed the desktop file.
+    """
+    if not srcset:
+        return False
+    return any(part.strip().endswith("w")
+               and part.strip().rsplit(" ", 1)[-1][:-1].isdigit()
+               for part in srcset.split(",") if " " in part.strip())
+
 # A crawl can contain one query-stringed tracking pixel per page. The site-wide
 # audit bounds distinct image requests just as broken_links.py bounds link requests,
 # and reports the part it did not check.
@@ -150,6 +166,14 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
             "fetchpriority": img.get("fetchpriority"),
             "srcset": bool(img.get("srcset")),
             "sizes": bool(img.get("sizes")),
+            # Width descriptors anywhere the browser may choose from — the `<img>`
+            # itself or any `<source>` above it — with no `sizes` on the element
+            # carrying them. See `_needs_sizes`: an `x`-descriptor srcset without
+            # `sizes` is correct markup and used to be reported as a defect.
+            "sizes_required_and_absent": (
+                (_needs_sizes(img.get("srcset")) and not img.get("sizes"))
+                or any(_needs_sizes(s.get("srcset")) and not s.get("sizes")
+                       for s in sources)),
             # Kept apart from `srcset` and `format` rather than folded into them.
             # "This img declares a srcset" and "a sibling source does" are different
             # facts about the markup, and a reader handed a fix list needs to know
@@ -188,7 +212,7 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
             issues.append({"severity": "info", "message": "Consider AVIF/WebP for raster image", "url": src, "evidence": ext})
         if not row["responsive"]:
             issues.append({"severity": "info", "message": "Image has no srcset", "url": src})
-        if row["srcset"] and not row["sizes"]:
+        if row["sizes_required_and_absent"]:
             issues.append({"severity": "info", "message": "Responsive image has srcset but no sizes", "url": src})
         if row["content_length"] and row["content_length"] > LARGE_IMAGE_BYTES:
             issues.append({"severity": "warning", "message": "Large image transfer size", "url": src, "evidence": f"{row['content_length']} bytes"})
@@ -239,6 +263,21 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
         out["modern_format_count"] = sum(1 for row in images
                                           if row["modern_format"])
         out["responsive_count"] = sum(1 for row in images if row["responsive"])
+        # An image offering width-described candidates without a `sizes` attribute
+        # gives the browser no rule for choosing between them, so it assumes the
+        # image is as wide as the viewport — which is how a page with responsive
+        # markup still ships the desktop file to a phone. Derivable from markup
+        # alone, so it is emitted whenever there are images at all.
+        out["srcset_without_sizes_count"] = sum(
+            1 for row in images if row["sizes_required_and_absent"])
+    # Emitted only when transfer sizes were actually learned. A page nobody fetched
+    # has `content_length: None` on every row, and counting those as "not large"
+    # would report a clean weight for a page nothing was measured on — the same
+    # asymmetry `broken_image_count` argues below.
+    if out["known_image_bytes"] is not None:
+        out["large_image_count"] = sum(
+            1 for row in images
+            if (row["content_length"] or 0) > LARGE_IMAGE_BYTES)
     # Present only when usable evidence exists. Emitting 0 — or None, which an
     # equality assertion reads as a failure rather than as silence — would turn "we
     # did not look" into a verdict either way. An absent key is NO_DATA by design.

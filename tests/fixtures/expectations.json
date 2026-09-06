@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "b0abf2819da0",
+  "registry_version": "e9154e92f4dd",
   "declared_from": "item title plus fixture construction; never from a run",
   "fixtures": {
     "good": {
@@ -46,7 +46,7 @@
       },
       "GO-138": {
         "expect": "PASS",
-        "why": "the title says 'Invalid URLs'; the listed private URL exists and returns 200, while a robots Disallow conflict does not make the URL invalid"
+        "why": "re-read for 0.93.0, which replaced `(?i)404|redirect|noindex` over issue messages with `invalid_url_count`. Every URL the sitemap lists is fetched, answers 200, redirects nowhere and carries no meta noindex; a robots Disallow conflict is not an invalid URL and never was"
       },
       "LO-200": {
         "expect": "PASS",
@@ -358,11 +358,11 @@
       },
       "MB-095": {
         "expect": "PASS",
-        "why": "the tree's only raster image is a 64-pixel loaf mark, so nothing here is heavy enough to be reported as weight"
+        "why": "re-read for 0.93.0, which moved this off a pattern over issue messages and onto `large_image_count` — and onto `--fetch-images`, so the transfer sizes are learned rather than assumed. The tree's only raster image is a 64-pixel loaf mark, far under the 250,000-byte line, so the count is zero"
       },
       "MB-098": {
         "expect": "PASS",
-        "why": "the one image is served at the size it is displayed at, and the two other sampled pages request no images at all"
+        "why": "re-read for 0.93.0, which replaced the pattern with `srcset_without_sizes_count: eq 0`. The one responsive image declares its candidates on a <source> that also carries `sizes`, and the <img> fallback declares no srcset at all, so nothing here owes a `sizes` it lacks"
       },
       "MB-100": {
         "expect": "PASS",
@@ -418,7 +418,7 @@
       },
       "GO-143": {
         "expect": "PASS",
-        "why": "re-read for 0.89.0, which retitled the item and removed the false SearchAction this declaration used to point at. The entry page carries a WebSite node with a name and a url — the two properties Google's site-name documentation requires and the two the title now names — and the other sampled pages declare no WebSite node that could be reported against it. Declared from the title and the fixture: the markup was read in tests/fixtures/good/index.html, not from a run"
+        "why": "re-read for 0.93.0, which replaced `(?i)WebSite` over issue messages with `incomplete_nodes_by_type.WebSite`. The entry page carries a WebSite node with a name and a url — the two properties Google's site-name documentation requires and the two the title names — so the node is complete and its count is zero. Declared from the title and the fixture: the markup was read in tests/fixtures/good/index.html, not from a run"
       },
       "GO-144": {
         "expect": "PASS",
@@ -520,7 +520,7 @@
       },
       "GO-138": {
         "expect": "FAIL",
-        "why": "the sitemap contains an off-host URL, missing URLs, and an invalid lastmod date"
+        "why": "re-read for 0.93.0. The sitemap lists URLs that are not there, so the fetch of each returns a status at or above 400 and the count is non-zero. Under the old pattern this passed on any status but 404, because the message it matched reads 'Sitemap URL returns HTTP {status}'"
       },
       "LO-200": {
         "expect": "INDETERMINATE",
@@ -832,11 +832,11 @@
       },
       "MB-095": {
         "expect": "PASS",
-        "why": "the tree references one heavy image, /assets/huge.png, from several img elements on one page, which is at most a couple of weight issues against a rule that tolerates five. A page built to be slow passes this"
+        "why": "re-read for 0.93.0. `large_image_count` counts images over 250,000 bytes; the tree's heavy image, /assets/huge.png, is 54,606 bytes and is kept small on purpose, so a page built to be slow still reports zero. This is the same reason the item sits in test_contract.py SAME_ON_BOTH"
       },
       "MB-098": {
         "expect": "PASS",
-        "why": "the undeclared-dimension image and the heavy one together raise far fewer than the ten size issues this rule tolerates"
+        "why": "re-read for 0.93.0. The tree declares no `srcset` anywhere, so no element offers width-described candidates and the count is zero. A fixture could express the failure only by adding an <img srcset>, which would make `responsive_count` 1 here and hand MB-096 and MD-189 a pass on both trees"
       },
       "MB-100": {
         "expect": "FAIL",
@@ -892,7 +892,7 @@
       },
       "GO-143": {
         "expect": "PASS",
-        "why": "re-read for 0.89.0, unchanged. The broken tree declares no WebSite node anywhere, and schema_required_props reports only on types that are present, so there is no message for the pattern to match. The item cannot fail on absence, only on a node present and incomplete (test_contract.py SAME_ON_BOTH). The retitling does not reach this side: a tree with nothing to grade grades the same under either title"
+        "why": "re-read for 0.93.0. The tree declares no WebSite node anywhere, so the map has no `WebSite` key and `missing_is: pass` answers — which is what the pattern did by matching nothing, said out loud this time. The item still cannot fail on absence, only on a node present and incomplete (test_contract.py SAME_ON_BOTH)"
       },
       "GO-144": {
         "expect": "FAIL",

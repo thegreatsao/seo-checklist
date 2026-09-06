@@ -176,6 +176,29 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
             f"tried {len(result['sitemaps_checked'])} location(s): "
             + ", ".join(e["url"] for e in result["sitemaps_checked"][:5])))
     result["summary"]["issues"] = len(result["issues"])
+    # The structured form of "is there an invalid URL in the sitemap". Present only
+    # when URLs were actually probed: without `--fetch-urls` no `status` is
+    # collected, and a count of zero over URLs nobody requested says the sitemap is
+    # clean when nothing about it was read.
+    #
+    # This replaced a regex over issue messages, `(?i)404|redirect|noindex`, which
+    # asked a narrower question than anyone intended — the message for a bad status
+    # is "Sitemap URL returns HTTP {status}", so `404` matched a 404 and nothing
+    # else. A sitemap of URLs returning 500 or 503 passed the item outright.
+    # The clean answer is withheld whenever a probe failed, and the failing answer
+    # always stands: a count of zero taken over the URLs that happened to answer is
+    # not a statement about the sitemap, while a URL found returning 500 is a defect
+    # no unreachable neighbour undoes. `image_weight_audit.py` argues the same
+    # asymmetry at greater length for `broken_image_count`.
+    read = [row for row in result["urls"] if row["checks"].get("status") is not None]
+    unread = [row for row in result["urls"]
+              if row["checks"].get("status") is None and row["checks"].get("error")]
+    invalid = sum(1 for row in read
+                  if row["checks"]["status"] >= 400
+                  or row["checks"].get("redirects")
+                  or "noindex" in (row["checks"].get("meta_robots") or "").lower())
+    if invalid or (read and not unread):
+        result["invalid_url_count"] = invalid
     return result
 
 

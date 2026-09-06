@@ -351,11 +351,20 @@ It MUST NOT be decided by matching words in a human-readable message.
 **Why:** wording is the first thing that drifts. A pattern aimed at a phrase a checker
 no longer emits matches nothing — and a rule that passes when nothing matches passes
 every site in silence.
-**Reader:** none effective, and the requirement is violated today by four registry rules
-(Appendix A.1). The assertion audit asks whether a pattern can still match something; it
-does not ask whether a verdict should have come from a pattern at all. It also does not
-census `count_matching_lte`, so MB-095 and MB-098 are outside what it inspects even in
-principle. The audit therefore stays green on all four violations.
+**Reader:** enforced.
+`tests/test_registry.py::AVerdictComesFromAFieldAndNeverFromASentence` sweeps every
+rule in the registry and fails on any pattern aimed at the `issues` list or at a
+`message` field. The set of pattern operators is read out of `evaluate()` — the branches
+that reach `re.compile` — rather than listed in the test, so an operator added to the
+evaluator is in scope the day it is added; `count_matching_lte` was outside the
+assertion audit's census even in principle, which is how MB-095 and MB-098 survived
+four releases of being looked at.
+
+Two of its tests exist to stop the sweep passing for the wrong reason: one fails if the
+evaluator has no pattern operators left to find, and one pins CI-004, which matches
+`noindex` against `meta_robots` and is legal — a machine token in a vocabulary the
+machine defines is a field, and a test that could not tell that from prose would be
+satisfied by deleting every regex in the tree.
 
 #### Scenario: a rule reads a field
 - **WHEN** an item's assertion names a key of the checker's structured output
@@ -365,6 +374,12 @@ principle. The audit therefore stays green on all four violations.
 - **WHEN** an item's assertion matches a pattern against prose intended for a human,
   such as an `issues` message
 - **THEN** the requirement is violated, whatever the pattern currently matches
+
+#### Scenario: a pattern over a value written for a machine
+- **WHEN** an assertion matches a pattern against a field whose vocabulary the emitting
+  machine defines, such as `meta_robots`
+- **THEN** the requirement is satisfied, because what it forbids is prose and not
+  regular expressions
 
 #### Scenario: the checker rewords its message
 - **WHEN** a checker changes the wording of a message a rule was matching
@@ -688,8 +703,8 @@ Observed values in the table are for the `good` and `broken` HTTP origins only.
 | AR-146 | Check Pagination | `PASS` | `PASS` | VRD-2, VRD-3 | `N/A` |
 | AR-154 | Optimize E-commerce Category Pages | `PASS` | `WARN` | VRD-2, VRD-3 | `N/A` |
 | AR-163 | Control Faceted Navigation | `PASS` | `PASS` | VRD-2, VRD-3 | `N/A` |
-| MB-095, MB-098 | image weight and dimensions | — | — | VRD-8 | verdict from structured fields |
-| GO-138, GO-143 | invalid URLs, organisation schema | — | — | VRD-8 | verdict from structured fields |
+| MB-095, MB-098 | image weight and dimensions | — | — | VRD-8 | *closed in 0.93.0* |
+| GO-138, GO-143 | invalid URLs, organisation schema | — | — | VRD-8 | *closed in 0.93.0* |
 
 The first three items ask for quality of an entity neither fixture tree contains, and
 none declares an applicability condition, which is why they answer success instead of
@@ -699,8 +714,33 @@ one; that the same absent subject leaves by a second exit, `NO_DATA`, on eleven 
 items is [`openspec/specs/declarations/`](../declarations/spec.md) A.1. Both are that debt seen
 from inside this vocabulary: one condition, three words, none of them `N/A`.
 
-The last four decide their verdict by matching regexes against prose `issues` messages,
-including `(?i)404|redirect|noindex` and `(?i)WebSite`.
+The last four decided their verdict by matching regexes against prose `issues`
+messages, including `(?i)404|redirect|noindex` and `(?i)WebSite`. All four read counted
+fields as of 0.93.0, and the repair moved live verdicts in three of them:
+
+* **GO-138** matched `404` against the message "Sitemap URL returns HTTP {status}", so
+  it asked about one status code and passed a sitemap of URLs returning 500 or 503. It
+  now reads `invalid_url_count` — status at or above 400, a redirect chain, or meta
+  noindex — over the URLs actually read, and is absent when the run fetched nothing, so
+  an audit that never looked answers `NO_DATA` instead of `PASS`.
+* **MB-095** counted messages matching `(?i)large|oversize|weight`, none of which the
+  script emits without `--fetch-images`, which the registry did not pass. Every live run
+  of this item passed on a page whose image weights were never measured. It reads
+  `large_image_count` and moved onto MD-185's existing invocation, which already
+  fetches — no extra launch and no extra request.
+* **MB-098** counted `(?i)size|dimension`, which caught "Large image transfer size" and
+  "Responsive image has srcset but no sizes" together. Their union was nobody's
+  measurement; it is what a pattern happened to match. It reads
+  `srcset_without_sizes_count`, the half its title names, and at `eq 0` rather than the
+  old rule's ten — a ten counted over images would need eleven bad ones before the page
+  said anything. The other half is MB-095's question and is still asked there, once.
+* **GO-143** reads `incomplete_nodes_by_type.WebSite`, with `missing_is: pass` standing
+  in for what the pattern did by matching nothing. This one did not move: the count
+  reproduces the old answer on both fixtures.
+
+The checker that fed MB-098 was wrong in the same direction and was corrected with it:
+it reported a missing `sizes` for any `srcset`, where only width descriptors need one.
+An `srcset` in `x` descriptors is correct markup and was being reported as a defect.
 
 Three other shipped paths violate these requirements:
 
@@ -780,18 +820,20 @@ VRD-11.
 
 | | requirements |
 |---|---|
-| **enforced** | VRD-4, VRD-6, VRD-7, VRD-9, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
+| **enforced** | VRD-4, VRD-6, VRD-7, VRD-8, VRD-9, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
 | **partial** | VRD-1, VRD-2, VRD-3, VRD-5, VRD-10, VRD-11, VRD-12 |
-| **none** | VRD-8 |
+| **none** | — none |
 
 Invariants: INV-1, INV-2, INV-3 and INV-4 partial; INV-2 is violated.
 
-**Nine enforced, seven partial, one unread.** Seven requirements are violated by shipped
+**Ten enforced, seven partial, none unread.** Six requirements are violated by shipped
 behaviour or declarations while nothing reddens: VRD-2 and VRD-3 by the seventeen missing
 applicability declarations; VRD-5 by the grader classifying missing GSC credentials as
-`NO_DATA`; VRD-8 by four registry rules; VRD-10 by the LLM answer merge and the GSC
-status/evidence mismatch; VRD-11 by the profile prompt's silent exits; and VRD-12 by the
-manifest. The totals are recomputed from the readers named above: E1 leaves VRD-3
+`NO_DATA`; VRD-10 by the LLM answer merge and the GSC status/evidence mismatch; VRD-11
+by the profile prompt's silent exits; and VRD-12 by the manifest. VRD-8 left that list
+in 0.93.0, and it is the one entry here closed by repairing the tree rather than by
+writing a test: the four rules now read counted fields, and the sweep that holds them
+would redden on a revert. The totals are recomputed from the readers named above: E1 leaves VRD-3
 partial because declaration completeness is unread, E2 leaves VRD-10 partial because
 two statuses remain uncovered, and E3 confirms that VRD-5's general rule is only
 partially read.

@@ -949,6 +949,116 @@ class ATestFileRunsEverythingItDefines(unittest.TestCase):
                                    "move the __main__ block to the end")
 
 
+class AVerdictComesFromAFieldAndNeverFromASentence(unittest.TestCase):
+    """`openspec/specs/verdicts/` VRD-8. A status is read from a named field of a
+    checker's structured result, never from words in a message written for a person.
+
+    Wording is the first thing that drifts, and the pattern operators fail in the
+    direction that hides it: `none_matching` **passes** when nothing matches, so a
+    pattern aimed at a phrase a checker no longer emits passes every site in silence.
+    Fifteen assertions in this registry were in that state when `value_map` was added;
+    four survived to 0.93.0, and one of those four was narrower than anyone reading it
+    believed — GO-138 matched `404` against "Sitemap URL returns HTTP {status}", so a
+    sitemap of URLs returning 500 passed the item outright.
+
+    The operator set is read out of the evaluator rather than listed here. A new
+    pattern operator added to `checklist_runner.py` is in scope for this test the day
+    it is added, which is the difference between a rule and a note about a rule.
+    """
+
+    PROSE = ("issues", "message")
+
+    @classmethod
+    def pattern_operators(cls):
+        """Every assert operator whose branch in `evaluate()` compiles a regex.
+
+        Derived by walking the function's `if "<op>" in rule:` branches and asking
+        which of them reach `re.compile`. Listing them here instead would make this
+        test a description of the evaluator as it stood the day it was written.
+        """
+        with open(os.path.join(SCRIPTS, "checklist_runner.py"), encoding="utf-8") as f:
+            tree = ast.parse(f.read())
+        found = set()
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.FunctionDef) and node.name == "evaluate"):
+                continue
+            for branch in ast.walk(node):
+                if not isinstance(branch, ast.If):
+                    continue
+                test = branch.test
+                if not (isinstance(test, ast.Compare)
+                        and isinstance(test.ops[0], ast.In)
+                        and isinstance(test.left, ast.Constant)
+                        and isinstance(test.left.value, str)):
+                    continue
+                body = "\n".join(ast.unparse(stmt) for stmt in branch.body)
+                if "re.compile" in body:
+                    found.add(test.left.value)
+        return found
+
+    def test_the_evaluator_still_has_operators_that_match_patterns(self):
+        """Without this the sweep below passes on an empty set, which is what it
+        would do the day somebody renames `none_matching` and this module keeps
+        reporting that no rule matches prose."""
+        operators = self.pattern_operators()
+        self.assertTrue(operators, "no pattern operator found in evaluate(); either "
+                                   "they are gone — delete this class — or the scan "
+                                   "stopped seeing them")
+        self.assertIn("none_matching", operators)
+        self.assertIn("count_matching_lte", operators)
+
+    def test_no_rule_decides_a_verdict_by_matching_a_message(self):
+        """The requirement. A pattern may be used; it may not be aimed at prose.
+
+        Prose here is the `issues` list — whose elements are serialised whole when no
+        `field` narrows them, message included — and any `message` field by name.
+        """
+        operators = self.pattern_operators()
+        offenders = []
+        for item in ITEMS:
+            rule = (item.get("check") or {}).get("assert") or {}
+            for block in (rule, rule.get("warn") or {}, rule.get("applies_when") or {}):
+                if not any(op in block for op in operators):
+                    continue
+                segments = str(block.get("path", "")).split(".")
+                target = [block.get("field") or ""] + segments
+                if any(name in self.PROSE for name in target):
+                    offenders.append(f"{item['id']}: {json.dumps(block)}")
+        self.assertEqual(
+            offenders, [],
+            "these rules decide a verdict by matching a pattern against text written "
+            "for a person; give the checker a counted field or a `value_map` over its "
+            "own vocabulary instead — " + "; ".join(offenders))
+
+    def test_a_pattern_over_a_machine_token_is_still_allowed(self):
+        """The rule forbids prose, not regular expressions, and a test that cannot
+        tell them apart would be satisfied by deleting every pattern in the tree.
+
+        CI-004 matches `noindex` against `meta_robots`, which is a value the page
+        emits for a machine in a vocabulary the machine defines. That is a field, and
+        it stays legal."""
+        by_id = {item["id"]: item for item in ITEMS}
+        rule = by_id["CI-004"]["check"]["assert"]
+        self.assertEqual(rule["path"], "meta_robots")
+        self.assertIn("none_matching", rule)
+        self.assertIn("none_matching", self.pattern_operators())
+
+    def test_the_four_that_were_repaired_read_counts_now(self):
+        """Named, because a sweep that has never had anything to find cannot say
+        whether it would. These are the four the specification's appendix listed, and
+        each is pinned at the field that replaced its pattern — so a revert is a
+        failure here rather than a silent return."""
+        by_id = {item["id"]: item for item in ITEMS}
+        for item_id, path in (("MB-095", "large_image_count"),
+                              ("MB-098", "srcset_without_sizes_count"),
+                              ("GO-138", "invalid_url_count"),
+                              ("GO-143", "incomplete_nodes_by_type.WebSite")):
+            with self.subTest(item=item_id):
+                rule = by_id[item_id]["check"]["assert"]
+                self.assertEqual(rule["path"], path)
+                self.assertFalse([op for op in self.pattern_operators() if op in rule])
+
+
 class VersionAndChangelog(unittest.TestCase):
     """A changelog nobody is forced to update is a changelog that lies. The failure
     mode is always the same one: the version moves and the entry does not."""
