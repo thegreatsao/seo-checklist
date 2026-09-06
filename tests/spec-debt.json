@@ -124,10 +124,10 @@
     },
     "scoring": {
       "counts": {
-        "enforced": 3,
+        "enforced": 4,
         "none": 0,
         "opposed": 0,
-        "partial": 11
+        "partial": 10
       },
       "opposed": [],
       "requirements": 14,
@@ -146,10 +146,10 @@
     }
   },
   "totals": {
-    "enforced": 56,
+    "enforced": 57,
     "none": 6,
     "opposed": 2,
-    "partial": 85,
+    "partial": 84,
     "requirements": 149
   }
 }

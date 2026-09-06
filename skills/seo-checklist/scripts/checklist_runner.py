@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import atexit
+import hashlib
 import ipaddress
 import json
 import os
@@ -501,6 +502,82 @@ NEEDS_INPUT = "NEEDS_INPUT"
 #  14.6. It moves the score most on exactly the sites where severity discriminates,
 #  which is where the critical items are the broken ones
 SEVERITY_WEIGHT = {"critical": 10, "high": 6, "medium": 3, "low": 1}
+
+# The credit a verdict earns against its item's weight. A table since 0.94.0; before
+# that the same three numbers were written inline twice — once for the headline and
+# once for the category bars — so an edit to one copy moved the score away from the
+# bars underneath it silently. That is the defect SCR-1 found in 0.92.0 one level up,
+# in the same two sums.
+#
+# NO_DATA, MANUAL, LLM_PENDING and N/A are absent by construction rather than set to
+# zero: they carry no weight at all, and a zero here would put an undecided item in
+# the denominator. `score()` selects the rows that may be weighed before consulting
+# this table; VRD-6 and VRD-7 own which statuses those are.
+# basis: convention — definitional rather than calibratable: a pass earns its weight,
+#  a fail earns none, and a warning is the half-credit that makes WARN a verdict
+#  rather than a soft FAIL. Any other value for WARN is a different instrument
+VERDICT_CREDIT = {PASS: 1.0, WARN: 0.5, FAIL: 0.0}
+
+# Ranking a fix list by severity alone puts a week of content rewriting above a
+# one-line meta tag. Dividing by effort answers the question people actually ask
+# first — what is worth doing this afternoon.
+#
+# Here rather than in checklist_report.py, where it lived until 0.94.0: SCR-2 makes
+# all three tables one instrument, and an instrument whose parts live in two modules
+# cannot be stamped in one place. `checklist_report` re-exports the name it used to
+# own, so every importer of it keeps working.
+# basis: inherited — low 1 / medium 2 / high 4, present at import. Divides
+#  SEVERITY_WEIGHT to rank what to do first. 0.18 measured what that ratio is worth
+#  with tools/audit_score_sensitivity.py: *dividing* changes 2-4 of the first ten
+#  rows against not dividing at all, so the idea earns its place, while the exact
+#  ratio does not — 1/2/3 gives the identical first ten on every run measured, and
+#  1/3/9 differs by one row. Whether to divide by effort is the decision; which
+#  numbers is not
+EFFORT_COST = {"low": 1, "medium": 2, "high": 4}
+
+
+def scoring_tables() -> dict:
+    """The three tables of `openspec/specs/scoring/` §2, as one value.
+
+    Assembled rather than written out again: a fourth copy of these numbers would be
+    the thing SCR-2 exists to prevent."""
+    return {"severity_weight": dict(SEVERITY_WEIGHT),
+            "verdict_credit": dict(VERDICT_CREDIT),
+            "effort_cost": dict(EFFORT_COST)}
+
+
+def scoring_stamp_of(tables: dict) -> str:
+    """Twelve hex digits naming one set of scoring tables.
+
+    Takes the tables rather than reading the constants, because the thing worth naming
+    is the instrument the *document* makes normative: `openspec/specs/scoring/` §2 is the
+    normative text and SCR-14's reader holds the code against it, so a stamp computed
+    from either side has to come out the same or the two have drifted. A stamp that
+    could only ever be taken from the code would agree with a quiet edit by construction.
+
+    Values are compared as floats: §2 prints `10` for a weight and `1.0` for a credit,
+    and a stamp that changed when a number was written `10` instead of `10.0` would name
+    the spelling rather than the instrument. Keys are sorted, so the stamp moves when a
+    value moves and when a band is added or dropped, and not when a comment above them
+    is reworded.
+    """
+    canonical = {name: {k: float(v) for k, v in rows.items()}
+                 for name, rows in tables.items()}
+    blob = json.dumps(canonical, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:12]
+
+
+def scoring_stamp() -> str:
+    """The stamp of the tables this tree ships.
+
+    Every run artifact carries it, `diff_runs` compares it and `tests/scoring-tables.json`
+    declares it. Its whole job is to make a table edit loud: the score is quoted to clients
+    and compared across months, so a run scored under an edited table is not comparable
+    with an archived one, and until 0.94.0 nothing said so — the two numbers sat in one
+    trend line looking like movement in the site.
+    """
+    return scoring_stamp_of(scoring_tables())
+
 
 # Two severity vocabularies exist in this tree and only one of them is the
 # registry's. Most evidence scripts came from upstream using `seo_common.issue()`,
@@ -1404,8 +1481,7 @@ def score(graded: list[dict]) -> dict:
     # look at. The second item still runs and still reports its own status; it is left
     # out of these sums and out of `weight_registry`, so the denominator matches.
     weighed = [g for g in scored if not g.get("scores_with")]
-    earned = sum(SEVERITY_WEIGHT[g["severity"]] * (1.0 if g["status"] == PASS else
-                                                   0.5 if g["status"] == WARN else 0.0)
+    earned = sum(SEVERITY_WEIGHT[g["severity"]] * VERDICT_CREDIT[g["status"]]
                  for g in weighed)
     total = sum(SEVERITY_WEIGHT[g["severity"]] for g in weighed)
 
@@ -1437,8 +1513,7 @@ def score(graded: list[dict]) -> dict:
         cs = c["counts"]
         dec = cs.get(PASS, 0) + cs.get(FAIL, 0) + cs.get(WARN, 0)
         c["decided"] = dec
-        earned_c = sum(SEVERITY_WEIGHT[g["severity"]] * (1.0 if g["status"] == PASS else
-                                                         0.5 if g["status"] == WARN else 0.0)
+        earned_c = sum(SEVERITY_WEIGHT[g["severity"]] * VERDICT_CREDIT[g["status"]]
                        for g in weighed if g["category"] == key)
         total_c = sum(SEVERITY_WEIGHT[g["severity"]]
                       for g in weighed if g["category"] == key)
@@ -1748,6 +1823,10 @@ def run_series(domain: str, exclude: str, limit: int = HISTORY_RUNS) -> list[dic
         rows.append((run_time(payload, name), {
             "started_at": payload.get("started_at"),
             "registry_version": payload.get("registry_version"),
+            # The arc is the place a table change does the most damage: a trend line
+            # is read as the site moving. Carried per point so the reader can see
+            # which stretch of it was scored with which instrument.
+            "scoring_stamp": (payload.get("scoring_tables") or {}).get("stamp"),
             "mode": payload.get("mode"),
             "profile": payload.get("profile"),
             "seo_score": scores.get("seo_score"),
@@ -1836,24 +1915,50 @@ def diff_runs(prev: dict, cur: dict) -> tuple[list[dict], str]:
                         "category_label": i.get("category_label", ""),
                         "evidence": i.get("evidence", "")})
 
-    note = ""
+    # One sentence per reason the two runs may not be comparable, joined once.
+    #
+    # Accumulated into a list rather than onto a string, because the string version
+    # printed the registry sentence twice whenever the mode had also changed: its
+    # last branch rebuilt `note` as `note + <mode sentence> + ". " + note`. Every
+    # test here moved exactly one axis, so no test ever held two sentences at once
+    # and the duplication survived from 0.15.0 to 0.94.0 — a client's report saying
+    # the same thing twice, in the paragraph whose whole job is to be believed.
+    reasons = []
     pv, cv = prev.get("registry_version"), cur.get("registry_version")
     if pv and cv and pv != cv:
-        note = (f"previous run used registry {pv}, this one {cv}; the item set "
-                f"itself changed, so differences may be edits to the checklist "
-                f"rather than to the site. ")
+        reasons.append(f"previous run used registry {pv}, this one {cv}; the item set "
+                       f"itself changed, so differences may be edits to the checklist "
+                       f"rather than to the site")
     dropped = len(set(old) - {i["id"] for i in cur["items"]})
     if dropped:
-        note += (f"{dropped} item(s) from the previous run are not in this one; "
-                 f"the diff covers only the {len(old) - dropped} they share")
+        reasons.append(f"{dropped} item(s) from the previous run are not in this one; "
+                       f"the diff covers only the {len(old) - dropped} they share")
     if prev.get("profile") and prev["profile"] != cur.get("profile"):
-        note += (f"previous run used --profile {prev['profile']}, this one "
-                 f"{cur.get('profile')}; scope differs. ")
+        reasons.append(f"previous run used --profile {prev['profile']}, this one "
+                       f"{cur.get('profile')}; scope differs")
     if prev.get("mode") and prev["mode"] != cur.get("mode"):
-        note = (note + f"previous run used --mode {prev['mode']}, this one {cur.get('mode')}; "
-                f"status changes may reflect the mode, not the site"
-                + (f". {note}" if note else ""))
-    return out, note
+        reasons.append(f"previous run used --mode {prev['mode']}, this one "
+                       f"{cur.get('mode')}; status changes may reflect the mode, "
+                       f"not the site")
+
+    # SCR-2: the score is quoted to clients and read across months, so a baseline
+    # scored under a different table is a change of instrument and not movement in
+    # the site. The two cases are different sentences on purpose — a run archived
+    # before 0.94.0 carries no stamp at all, and reporting that as "the tables
+    # changed" would accuse an edit nobody made.
+    ps, cs = prev.get("scoring_tables"), cur.get("scoring_tables")
+    pstamp = (ps or {}).get("stamp")
+    cstamp = (cs or {}).get("stamp")
+    if pstamp and cstamp and pstamp != cstamp:
+        reasons.append(f"previous run scored under scoring tables {pstamp}, this one "
+                       f"{cstamp}; the instrument changed, so the two scores are not "
+                       f"comparable and any difference between them is not movement "
+                       f"in the site")
+    elif cstamp and not pstamp:
+        reasons.append("the previous run does not record which scoring tables it used, "
+                       "so whether the two scores are comparable cannot be established")
+
+    return out, ". ".join(reasons) + (". " if reasons else "")
 
 
 # Portable default first; the second entry is one machine's pre-existing key and
@@ -3186,6 +3291,12 @@ def main() -> int:
         "started_at": datetime.now(timezone.utc).isoformat(),
         "registry_schema": registry.get("version"),
         "registry_version": registry_version,
+        # Which instrument scored this run. SCR-2: the three tables are normative
+        # constants, an edit to any of them is a change of instrument, and a score
+        # carries no meaning across one. Stored whole and not only as the stamp, so
+        # an archived run can still say what it was scored with after the tables in
+        # the tree have moved on.
+        "scoring_tables": {"stamp": scoring_stamp(), **scoring_tables()},
         "profile": a.profile,
         # Which slice of the registry this run covered. Without it a `--only`
         # run is indistinguishable in .seo-runs/ from a full one, and its score
@@ -3297,6 +3408,7 @@ def main() -> int:
         payload["compared_with"] = {
             "started_at": prev.get("started_at"),
             "registry_version": prev.get("registry_version"),
+            "scoring_stamp": (prev.get("scoring_tables") or {}).get("stamp"),
             "mode": prev.get("mode"),
             "profile": prev.get("profile"),
             "seo_score": ps.get("seo_score"),
@@ -3324,6 +3436,9 @@ def main() -> int:
                           for row in series] + [{
         "started_at": payload.get("started_at"),
         "registry_version": payload.get("registry_version"),
+        # Same key the earlier points carry, or the arc would end on a point that
+        # looks like a run from before the stamp existed.
+        "scoring_stamp": payload["scoring_tables"]["stamp"],
         "mode": payload.get("mode"), "profile": payload.get("profile"),
         "seo_score": payload["scores"].get("seo_score"),
         "weight_pct": payload["scores"].get("weight_pct"),

@@ -10,6 +10,79 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.94.0 — SCR-2: the score names the instrument that produced it
+
+Registry version: unchanged at `e9154e92f4dd`. The item set does not move. What moves is
+what a run artifact carries and what a comparison against an archived run says, so this is
+a minor.
+
+**No table value moves in this release.** The three tables are the ones this tree has
+always shipped; what they gain is an identity, stamp `a429e10f43d8`, and the machinery that
+makes the next change to them loud. A release that *does* move a value owes the marker line
+`Scoring tables changed:` with the old stamp and the new one, and
+`tests/test_scoring_tables.py` refuses to go green without it.
+
+**The half of SCR-2 nobody read was the half about people.** Severity weight, verdict
+credit and effort cost decide the number a client quotes and the order they work through.
+0.93.x had already stopped a value moving in the code alone: SCR-14's gate parses §2 of
+`openspec/specs/scoring/` and holds the running code against it row by row. What that gate
+cannot see is a change made in the code *and* the document together — which is what an
+author actually does — and nothing then required the release to say so, invalidated
+comparison with the archive, or warned a reader that a trend line spanned two instruments.
+Editing `SEVERITY_WEIGHT['critical']` from 10 to 27 in both places re-based every score in
+`.seo-runs/` and left the whole suite green. Three assertions fail on that edit now.
+
+**The three tables became one instrument with a name.** `scoring_stamp_of()` digests them
+with every value read as a float, so the stamp names the numbers and not whether one was
+written `10` or `10.0`; `tests/scoring-tables.json` declares which stamp is in force, which
+release set it and which it supersedes. The declaration deliberately does not transcribe
+the values — §2 is already normative and SCR-14 already holds the code against it, and a
+fourth copy of the numbers would be the hand-written set `specs/governance/` GOV-3 exists
+to count, agreeing with whichever copy was edited last. The stamp is computed from §2
+rather than from the constants for the same reason.
+
+**Every run says what scored it.** `checklist-results.json` carries `scoring_tables` — the
+stamp and the three tables whole, because a stamp is not reversible and an archived run has
+to be able to say what it was scored with after the tree has moved on. Every point of the
+history arc carries the stamp, including the current run, which is appended separately and
+would otherwise read as a run from before stamps existed.
+
+**A comparison across a table change now says so.** `diff_runs` reports a baseline scored
+under another stamp as a change of instrument, in the words that matter: the difference is
+not movement in the site. A baseline archived before 0.94.0 carries no stamp at all and
+gets a different sentence — that comparability *cannot be established* — because reporting
+that as a table change would accuse an edit nobody made.
+
+**Verdict credit is a table.** It was three literals written twice, once in the headline
+sum and once in the per-category sum, so an edit to one copy would have moved a category
+bar away from the headline above it in silence — the same defect SCR-1 closed one level up
+in 0.92.0, in the same two sums. `VERDICT_CREDIT` is now consulted by both. `EFFORT_COST`
+moves from `checklist_report.py` to `checklist_runner.py` beside the other two, since an
+instrument whose parts live in two modules cannot be stamped in one place;
+`checklist_report` re-exports the name it used to own, so `tools/audit_score_sensitivity.py`
+and everything else importing it from there keeps working.
+
+**A comparability warning told the client the same thing twice.** `diff_runs` built its
+note by string concatenation, and the last branch rebuilt it as `note + <mode sentence> +
+". " + note`: a run that changed both the registry version and the mode printed the
+registry sentence twice, in the paragraph whose whole job is to be believed. It has done
+that since 0.15.0. Every test of that function moved exactly one axis, so no test ever held
+two sentences at once — the new one asserts the invariant, that no reason is stated twice,
+rather than the pair that happened to collide.
+
+`openspec/specs/scoring/` SCR-2 goes from `partial` to `enforced`; the document's debt is
+four enforced, ten partial, none unread, of fourteen. Appendix A.8, which said the gate did
+not exist, records how it was closed in two steps and keeps its measurement as taken.
+
+Three ledgers move with it. The threshold inventory counts one more `convention` and one
+more constant — 146 verdict-deciding numbers become 147 — because a number that decides a
+verdict is only countable once it has a name, and the verdict credits had none. The
+hand-written set census goes to 167 sets of which 18 are read: `VERDICT_CREDIT` arrives
+read rather than unread, and `EFFORT_COST` stays read after changing module, both by
+membership assertions rather than by an import — the credit table's keys are derived from
+which statuses `score()` calls decided, and the effort table's from the efforts the
+registry actually uses. The unread column stays at 149.
+
 ## 0.93.9 — the notebook gate survives a blocked launcher and a broken upload
 
 Registry version: unchanged at `e9154e92f4dd`. Nothing a run produces changes. This is

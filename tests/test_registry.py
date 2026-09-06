@@ -290,23 +290,32 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # `cache_compression_checker.py`. Both bound the evidence behind an empty
         # `issues` assertion, so `inherited` rising from 75 to 77 is again the
         # inventory getting more honest, not the checks getting worse.
+        #
+        # 0.94.0 adds one `convention`: `VERDICT_CREDIT`, the credit a verdict earns
+        # against its item's weight. It was three inline literals written twice — in the
+        # headline sum and again in the per-category sum — so it was a number deciding a
+        # verdict that this inventory could not see at all. Naming it is what made it
+        # countable, and `inherited` does not move: `EFFORT_COST` changed module, not
+        # basis.
         self.assertEqual(by_kind, {
             "standard": 11,
             "measured": 11,
-            "convention": 47,
+            "convention": 48,
             "inherited": 77,
             "presentation": 13,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 146)
-        self.assertEqual(len(named), 159)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 147)
+        self.assertEqual(len(named), 160)
         self.assertEqual(len(uncounted), 13)
         # 169 -> 170: `external_link_quality.py`'s link cap was a default argument
         # value, which is a place no instrument here can see. Promoting it to a
         # module constant is what made it countable at all.
         # 170 -> 172: the two caps above were also invisible to the module-level
         # constant inventory until they were given names.
+        # 172 -> 173: `VERDICT_CREDIT`, for the same reason one line down — a number that
+        # decides a verdict is only countable once it has a name.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 172)
+                             for path in at._script_paths()), 173)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()

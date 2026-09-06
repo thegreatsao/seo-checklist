@@ -39,10 +39,18 @@ cheap work must outrank equally severe expensive work — so it fails at 1 and p
 credits. Nothing pins the `critical`, `high` or `low` severity weights — including
 `critical`, the most influential value of all.
 
-The release and history obligations in SCR-2 remain wholly unread: nothing requires a
-table change to be declared, invalidates comparison with old runs, or warns when a
-baseline used another table. This is a smaller finding than “the tables have no
-reader,” and it is still the largest enforcement gap in this document.
+The release and history obligations in SCR-2 were read by nothing until 0.94.0. SCR-14's
+gate had closed the first half — a weight cannot move in the code alone, because §2 of
+this document is parsed and held against it — and left the half about people open: a
+change made in the code *and* here, together, was silent, and every archived score was
+quietly re-based under an instrument nobody had declared.
+
+0.94.0 closes it. The three tables are stamped as one instrument, `tests/scoring-tables.json`
+declares which stamp is in force and which release put it there, every run artifact carries
+the stamp that scored it, and a comparison whose baseline was scored under another stamp
+warns rather than presenting the difference as movement in the site. The stamp is computed
+from §2 above rather than from the constants, so this document remains the normative text
+and the declaration cannot drift from it in silence.
 
 A CI sensitivity tool reported movements of 0.2, 1.9, 9.3 and 14.6 points under
 alternative tables. Those numbers are outputs of a tool that does not fold twins and
@@ -80,9 +88,15 @@ comparisons with archived runs in `.seo-runs/`.
 | medium | 2 | 52 |
 | high | 4 | 99 |
 
-All three are **normative constants of the audit**, not implementation details. Their
-provenance is `inherited`: nobody in this project chose them. SCR-2 says what follows
-from that.
+All three are **normative constants of the audit**, not implementation details. The
+provenance of severity weight and effort cost is `inherited`: nobody in this project chose
+those numbers. Verdict credit is `convention` — a pass earns its weight and a fail earns
+none, and WARN at half credit is what makes it a verdict rather than a soft FAIL.
+
+Together they are one **instrument**, named by a stamp: the twelve hex digits
+`scoring_stamp_of()` computes from these three tables with every value read as a float, so
+the stamp names the numbers and not their spelling. It is `a429e10f43d8` as this document
+stands. SCR-2 says what follows from a change to it.
 
 ---
 
@@ -137,12 +151,18 @@ be treated as a change of instrument:
 **Why:** the score is quoted to clients and compared across months. A table change is a
 change of instrument, not of the site, and a trend line spanning one is a lie about the
 site.
-**Reader:** partial. Two tests indirectly pin `SEVERITY_WEIGHT['medium'] = 3` through a
-concrete total of 6, and a priority-relation test indirectly pins
-`EFFORT_COST` as an inequality rather than a value; concrete single-row tests exercise the
-verdict credits. Nothing pins the `critical`, `high` or `low` severity weights, and no
-reader enforces any of the release, comparability or warning obligations. This smaller finding remains the largest
-enforcement gap in this document.
+**Reader:** enforced. `tests/test_scoring_tables.py` holds all three clauses.
+`TheDeclaration` reads the release clause: the instrument is stamped, `tests/scoring-tables.json`
+declares the stamp in force and the release that set it, and that release's CHANGELOG entry
+must carry the marker and the stamp — so a table edit cannot reach `main` without the
+release saying so in those words. `AComparisonAcrossTheChange` reads the warning clause
+through `diff_runs`, in both directions: a baseline under another stamp is reported as a
+change of instrument, and a baseline archived before the stamp existed is reported as
+*not establishable* rather than as a change nobody made.
+`TheArtifactRecordsTheInstrument` runs a live audit and reads the stamp back out of the
+artifact and out of the last point of its own history arc, because a stamp that is not
+archived cannot be compared against next month. The values themselves are held against §2
+by SCR-14.
 
 #### Scenario: a weight is edited
 - **WHEN** any value in any of the three tables changes
@@ -457,21 +477,24 @@ value. The gate covers verdict credit as well as severity weight and effort cost
 **Why:** SCR-2 states the obligation and nothing enforces it. A requirement whose
 violation is invisible is the failure mode this whole suite exists to prevent, and here
 it sits on the number the client repeats and the order they act on.
-**Reader:** partial, and the unread half is the half about people. The three tables are
+**Reader:** partial. The three tables are
 pinned by `TheNormativeTablesAreReadFromTheDocument`, which parses §2 out of this document
 rather than transcribing it, so the only green path is changing the code and the document
 together — and that is the moment a reviewer has to notice a release declaration is owed.
-Probed in all four directions on 6 September 2026: editing `SEVERITY_WEIGHT`, the inline
-verdict credit, or `EFFORT_COST` each reddens, and so does editing the table in §2 while
-the code stands still. Verdict credit is read behaviourally through both of the places it
-is written, since it is inline literals in two sums rather than a named constant, and
+Probed in all four directions on 6 September 2026: editing `SEVERITY_WEIGHT`, the verdict
+credit, or `EFFORT_COST` each reddens, and so does editing the table in §2 while the code
+stands still. Verdict credit is read behaviourally through the headline and through a
+category bar — it was inline literals in two sums until 0.94.0 and is `VERDICT_CREDIT`
+now, and reading the arithmetic rather than the name survives either spelling. 
 `test_the_item_counts_beside_each_table_still_describe_the_registry` holds the counts
 printed beside the tables against the registry itself.
 
-What is not read is the rest of the sentence: the gate does not name the old and new value,
-and it cannot see whether the SCR-2 declaration was made. A change with no declaration
-fails the gate the same way a typo does, so the reviewer is stopped but not told which
-obligation they are under. That half needs the release identity SCR-2 is waiting on.
+What SCR-14 asked for and still does not have is the naming: the gate reddens on a changed
+value but does not print the table with its old and new value beside each other, so a
+reviewer is stopped and then has to go and find out what moved. The obligation this
+requirement pointed at — that the reviewer be told a release declaration is owed — is
+held since 0.94.0 by `tests/test_scoring_tables.py`, whose failure message names the
+remedy; what is left here is the wording of the report, not the gate.
 
 #### Scenario: a table value moves
 - **WHEN** any of the three tables is edited
@@ -481,8 +504,8 @@ obligation they are under. That half needs the release identity SCR-2 is waiting
 
 #### Scenario: verdict credit is edited
 - **WHEN** the credit for `WARN` changes
-- **THEN** the gate fails too, even though the credit is written as inline literals
-  rather than as a named table
+- **THEN** the gate fails too, whether the credit is a named table or the inline literals
+  it was written as until 0.94.0
 
 ## 4. Invariants
 
@@ -625,18 +648,39 @@ with nothing reading it.
 There is no change-control gate on any of the three tables. This is a disagreement, not
 future work, because SCR-2 states obligations the tree does not meet today.
 
+**Closed in two steps.** 0.93.x built the gate: `TheNormativeTablesAreReadFromTheDocument`
+parses §2 and holds the code against it, so a value cannot move in the code alone. 0.94.0
+closed what that left — the obligations about people. Probed on 6 September 2026 by editing
+`SEVERITY_WEIGHT['critical']` from 10 to 27 in the code and in §2 together, which is the
+edit the 0.93.x gate cannot see: before 0.94.0 the whole suite stayed green, after it three
+assertions in `tests/test_scoring_tables.py` fail — the stamp in the tree is not the
+declared one, the declared release does not exist, and it does not state the change.
+
+A.1 is closed by the same two steps and is left as measured, for the same reason this
+appendix carries a date: it is what was true on 26 August 2026, and rewriting it would
+lose the record of how narrow the readers had been.
+
 ## Appendix B — how much of this document is enforced
 
 | | requirements |
 |---|---|
-| **enforced** | SCR-1, SCR-4, SCR-9 |
-| **partial** | SCR-2, SCR-3, SCR-5, SCR-6, SCR-7, SCR-8, SCR-10, SCR-11, SCR-12, SCR-13, SCR-14 |
+| **enforced** | SCR-1, SCR-2, SCR-4, SCR-9 |
+| **partial** | SCR-3, SCR-5, SCR-6, SCR-7, SCR-8, SCR-10, SCR-11, SCR-12, SCR-13, SCR-14 |
 | **none** | — none |
 
 Invariants: all four partial — INV-S4 is read for the single-twin case by a reversed-row
 test and unread for the rest.
 
-**Three enforced, eleven partial, none unread, of fourteen.**
+**Four enforced, ten partial, none unread, of fourteen.**
+
+SCR-2 moved on 6 September 2026, and it is worth saying which part of it had been missing,
+because the appendix had twice been wrong in the same direction before. SCR-14's gate was
+already refusing a value change made in the code alone; what nothing read was the sentence
+about people — that a change is declared in the release that makes it, and that a score
+compared across one is not movement in the site. The three clauses now have a reader each,
+and the probe is recorded in A.8: editing `SEVERITY_WEIGHT['critical']` from 10 to
+27 in code and document together left every test in this tree green before 0.94.0 and
+reddens three after it.
 
 Two earlier drafts of this appendix were both wrong, in the same direction. The first
 published four enforced, on readers assembled by reading the document. The second

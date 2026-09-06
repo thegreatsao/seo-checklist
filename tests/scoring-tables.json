@@ -1,0 +1,36 @@
+{
+  "_comment": [
+    "The declared identity of the three scoring tables of openspec/specs/scoring/ §2,",
+    "and the release that last moved them.",
+    "",
+    "SCR-2 makes those tables normative constants of the audit rather than",
+    "implementation details: a change to any value is a change of instrument, every",
+    "archived run scored under the previous table stops being comparable, and a trend",
+    "line spanning the change is a lie about the site.",
+    "",
+    "WHAT THIS FILE DOES NOT DO: it does not repeat the values. They are already",
+    "normative in §2 of the spec, and SCR-14's reader",
+    "(tests/test_runner.py::TheNormativeTablesAreReadFromTheDocument) holds the code",
+    "against that document row by row. A fourth transcription of the numbers here",
+    "would be exactly the hand-written set GOV-3 exists to count, and it would agree",
+    "with whichever copy was edited last.",
+    "",
+    "What is left over after SCR-14 is the half of SCR-2 that is about people: that a",
+    "table change is *stated in the release that does it*. That needs one value SCR-14",
+    "has no use for — a name for the instrument as a whole, which a release note can",
+    "quote and a run artifact can carry. That is `stamp`.",
+    "",
+    "To change a table: edit §2 of openspec/specs/scoring/spec.md and the constant in",
+    "scripts/checklist_runner.py together, run tests/test_scoring_tables.py to be told",
+    "the new stamp, put it here, move the old stamp to `supersedes`, set `declared_in`",
+    "to the release making the change, and write the marker line plus both stamps into",
+    "that release's CHANGELOG entry."
+  ],
+
+  "marker": "Scoring tables changed:",
+  "declared_in": "0.94.0",
+  "stamp": "a429e10f43d8",
+  "supersedes": null,
+
+  "covers": ["severity_weight", "verdict_credit", "effort_cost"]
+}

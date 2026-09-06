@@ -90,7 +90,10 @@ def load_scoring():
     return score
 
 
-from checklist_runner import SEVERITY_WEIGHT  # noqa: E402 — single source of truth
+from checklist_runner import EFFORT_COST, SEVERITY_WEIGHT  # noqa: E402,F401 — single
+#  source of truth. Both tables live in the runner since 0.94.0 so that SCR-2 can stamp
+#  the instrument in one place; `EFFORT_COST` is re-exported here, where it lived until
+#  then, because tools/audit_score_sensitivity.py imports it from this module.
 
 
 # Not every caller is the runner. This script prints `ensure_ascii=False` JSON, and a
@@ -207,17 +210,6 @@ class Lang:
 # Markdown
 # ---------------------------------------------------------------------------
 
-# Ranking a fix list by severity alone puts a week of content rewriting above a
-# one-line meta tag. Dividing by effort answers the question people actually ask
-# first — what is worth doing this afternoon.
-# basis: inherited — low 1 / medium 2 / high 4, present at import. Divides
-#  SEVERITY_WEIGHT to rank what to do first. 0.18 measured what that ratio is worth
-#  with tools/audit_score_sensitivity.py: *dividing* changes 2-4 of the first ten
-#  rows against not dividing at all, so the idea earns its place, while the exact
-#  ratio does not — 1/2/3 gives the identical first ten on every run measured, and
-#  1/3/9 differs by one row. Whether to divide by effort is the decision; which
-#  numbers is not
-EFFORT_COST = {"low": 1, "medium": 2, "high": 4}
 
 
 def priority_of(item: dict) -> float:

@@ -2542,9 +2542,12 @@ class TheNormativeTablesAreReadFromTheDocument(unittest.TestCase):
     the only green path is changing both — which is where a human notices the release
     obligation.
 
-    Verdict credit is not a named constant; it is written twice as inline literals, in
-    the headline sum and again in the per-category sum. Both are read behaviourally, so
-    the reader sees both copies without depending on how they are spelled.
+    Verdict credit was not a named constant when this was written: it was inline
+    literals in the headline sum and again in the per-category sum. 0.94.0 made it
+    `VERDICT_CREDIT` and both sums consult it. The two tests below still read it
+    behaviourally through the headline and through a category bar, which is the stronger
+    reading either way — it holds the arithmetic the report prints rather than the name
+    the arithmetic is spelled with, and it would survive the constant being inlined again.
     """
 
     SPEC = os.path.join(ROOT, "openspec", "specs", "scoring", "spec.md")
@@ -2587,15 +2590,16 @@ class TheNormativeTablesAreReadFromTheDocument(unittest.TestCase):
                 self.assertEqual(scored["weight_applicable"], weight)
 
     def test_the_verdict_credit_is_the_one_the_document_states(self):
-        """Through the headline, so the first of the two inline copies is read."""
+        """Through the headline: the sum the client's number comes out of."""
         for status, credit in self.table["verdict credit"].items():
             with self.subTest(status=status):
                 scored = runner.score([self.row(status=status)])
                 self.assertEqual(scored["seo_score"], round(100 * credit))
 
     def test_the_category_score_uses_the_same_credit(self):
-        """The second copy. It is a separate literal in the source and would not move
-        with the first."""
+        """The other sum. It was a separate literal until 0.94.0 and would not have moved
+        with the first; it now reads `VERDICT_CREDIT`, and this holds the two together
+        whichever way they are written."""
         for status, credit in self.table["verdict credit"].items():
             with self.subTest(status=status):
                 scored = runner.score([self.row(status=status)])
