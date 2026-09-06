@@ -10,6 +10,42 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.93.2 — a declaration records what it was reasoned from
+
+Registry version: unchanged at `e9154e92f4dd`. Nothing a run produces changes; what
+changes is that the oracle manifest can now be caught being out of date.
+
+**What was wrong.** `tests/fixtures/expectations.json` holds 250 predictions about how
+the two fixture trees should answer, and its own `declared_from` names two sources: the
+item title and the fixture construction. It stored neither. A title could be rewritten
+under 250 predictions with every gate green, and the obligation to re-read lived in the
+release ritual — a person remembering, rather than a file objecting. The census had this
+disease and was cured after the 0.89.0 finding; this is the same repair on the instrument
+that had not been bitten yet.
+
+**Both bases are stored now.** Each declaration carries the `title` it was reasoned
+from, and a test compares all 250 against the registry, naming the item and telling the
+reader to re-read the `why` before touching the stamp. The sample moved out of a comment
+beside the harness — `openspec/specs/declarations/` DEC-5 says in as many words that a
+comment does not make the sample part of what a declaration stores — into the manifest
+under `sample`, and the same class compares it against the pages the audit actually took,
+read from the run's own `sampled_urls` rather than from a second copy of the picking
+rule. `--sample 3` spreads its picks with `stride()` over whatever the crawl found, so
+adding a page to a fixture tree can move which three are read without anybody touching a
+declaration.
+
+**What the stamp claims, exactly.** The titles were written in from the registry as it
+stands today. That records the basis going forward. It is *not* evidence that each `why`
+was composed against that wording, and the reader's docstring says so rather than letting
+the field imply it — a stamp a hand can set is not a freshness check, and the point of
+this one is that the next move is visible.
+
+`openspec/specs/declarations/` goes to three enforced of fourteen, and DEC-5 is the
+manifest's first: until today every enforced requirement in that document belonged to the
+census and none to the manifest. The two that remain unread, DEC-1 and DEC-8, both ask
+about the order in which a person did something, which nothing here can re-take. The
+suite total moves 53 → 54 of 149.
+
 ## 0.93.1 — the registry stops stating a composition nothing could check
 
 Registry version: unchanged at `e9154e92f4dd`. The stamp is a hash of the items and no

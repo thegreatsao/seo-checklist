@@ -2,1012 +2,1284 @@
   "schema_version": 1,
   "registry_version": "e9154e92f4dd",
   "declared_from": "item title plus fixture construction; never from a run",
+  "sample": {
+    "good": [
+      "/",
+      "/about.html",
+      "/privacy.html"
+    ],
+    "broken": [
+      "/",
+      "/blog/duplicate-a.html",
+      "/orphan.html"
+    ],
+    "good_tls": [
+      "/",
+      "/about.html",
+      "/privacy.html"
+    ],
+    "broken_tls": [
+      "/",
+      "/blog/duplicate-a.html",
+      "/orphan.html"
+    ]
+  },
   "fixtures": {
     "good": {
       "AR-151": {
         "expect": "PASS",
+        "title": "Provide a Correct robots.txt",
         "why": "robots.txt exists, has a user-agent policy, and declares the sitemap"
       },
       "AR-158": {
         "expect": "FAIL",
+        "title": "Implement Breadcrumbs (UI + Schema)",
         "why": "'Implement Breadcrumbs (UI + Schema)' requires both halves; the entry has BreadcrumbList JSON-LD, but no page exposes a breadcrumb-named UI trail"
       },
       "AR-162": {
         "expect": "PASS",
+        "title": "Strengthen Internal Links and Remove Orphans",
         "why": "the crawlable pages are connected by descriptive internal links and no crawlable sitemap page is orphaned"
       },
       "BL-081": {
         "expect": "PASS",
+        "title": "Keep Anchor Text Natural and Varied",
         "why": "internal anchors are descriptive and varied; repeated Home links are ordinary navigation"
       },
       "CI-008": {
         "expect": "PASS",
+        "title": "Make the URL Discoverable via Internal Links/Navigation",
         "why": "every crawlable sitemap page is discoverable through internal navigation or contextual links"
       },
       "CI-019": {
         "expect": "PASS",
+        "title": "Noindex System & Search Pages (/search, /cart, /checkout, /login)",
         "why": "the title says 'Noindex System & Search Pages'; no such page exists, and robots.txt also excludes every named path"
       },
       "CN-041": {
         "expect": "PASS",
+        "title": "Eliminate Internal Duplicate Content",
         "why": "the reachable pages have distinct body content and do not duplicate one another"
       },
       "CN-054": {
         "expect": "PASS",
+        "title": "Ensure Lazy-Loaded Content Is Discoverable",
         "why": "the lazy image is present in ordinary picture, source, and img markup, so its URL and content remain discoverable"
       },
       "GO-132": {
         "expect": "PASS",
+        "title": "Prevent GA4 Tag Duplication",
         "why": "the sole GA4 measurement ID is configured once"
       },
       "GO-137": {
         "expect": "INDETERMINATE",
+        "title": "Reconcile Indexed Pages vs. Sitemaps",
         "why": "the fixture supplies a sitemap but no search-engine index inventory to reconcile against it"
       },
       "GO-138": {
         "expect": "PASS",
+        "title": "Remove Invalid URLs from Sitemaps",
         "why": "re-read for 0.93.0, which replaced `(?i)404|redirect|noindex` over issue messages with `invalid_url_count`. Every URL the sitemap lists is fetched, answers 200, redirects nowhere and carries no meta noindex; a robots Disallow conflict is not an invalid URL and never was"
       },
       "LO-200": {
         "expect": "PASS",
+        "title": "Publish Complete NAP in LocalBusiness Data",
         "why": "the entry-page Bakery node publishes a non-empty name, PostalAddress and telephone, so its LocalBusiness NAP is complete"
       },
       "MB-096": {
         "expect": "PASS",
+        "title": "Use Responsive Images",
         "why": "the picture source declares srcset candidates and sizes for responsive selection"
       },
       "MB-097": {
         "expect": "PASS",
+        "title": "Optimize Image Formats & Compression",
         "why": "the picture offers a WebP source and its tiny PNG fallback is compressed"
       },
       "MD-185": {
         "expect": "PASS",
+        "title": "Optimize Images",
         "why": "the image has a modern source, responsive candidates, dimensions, alt text, lazy loading, and async decoding"
       },
       "MS-022": {
         "expect": "PASS",
+        "title": "Remove Duplicate Page Titles (Handle Canonical/Pagination Correctly)",
         "why": "the title says 'Duplicate Page Titles', and every reachable page has a distinct normalized non-empty title"
       },
       "MS-029": {
         "expect": "PASS",
+        "title": "Eliminate Duplicate Meta Descriptions",
         "why": "every supplied meta description is distinct"
       },
       "TE-168": {
         "expect": "PASS",
+        "title": "Fix Broken & Redirected Links",
         "why": "the fixture deliberately removed its planted dead link and its internal links resolve"
       },
       "TE-172": {
         "expect": "PASS",
+        "title": "Implement Structured Data Correctly",
         "why": "the JSON-LD blocks are parseable and contain the required structures for their declared types"
       },
       "TE-174": {
         "expect": "PASS",
+        "title": "Minify & Optimize CSS",
         "why": "'Minify & Optimize CSS' asks for a stylesheet with waste worth removing; at 340 bytes there is none that a byte of request overhead would not eclipse, and the checker's 2 KB floor encodes the same reading rather than justifying it"
       },
       "TECH-001": {
         "expect": "PASS",
+        "title": "Modern schema types only (no HowTo/FAQ misuse)",
         "why": "the schema uses current Organization, WebSite, BreadcrumbList, Bakery, and Article types with no HowTo or FAQ misuse"
       },
       "CI-004": {
         "expect": "PASS",
+        "title": "Allow Indexing via Meta Robots",
         "why": "none of the crawlable pages carries a meta robots noindex directive"
       },
       "MS-020": {
         "expect": "PASS",
+        "title": "Keep Page Titles Concise (Avoid SERP Truncation)",
         "why": "every supplied page title is concise enough to avoid SERP truncation"
       },
       "MS-021": {
         "expect": "PASS",
+        "title": "Avoid Overly Short Titles (<30 Characters)",
         "why": "the exemplary fixture ought to keep every sampled page title at 30 characters or more; about.html needs its deliberately short title repaired after this declaration"
       },
       "MS-026": {
         "expect": "PASS",
+        "title": "Ensure Every Page Has a Title",
         "why": "every crawlable page has a non-empty title element"
       },
       "MS-028": {
         "expect": "PASS",
+        "title": "Fill Missing Meta Descriptions (High-Value Pages First)",
         "why": "the crawlable high-value pages all supply a meta description"
       },
       "MS-030": {
         "expect": "PASS",
+        "title": "Keep Meta Descriptions ~150–160 Characters (Clear & Relevant)",
         "why": "the sampled high-value pages carry clear meta descriptions in the fixture's intended 120–160-character range"
       },
       "MS-031": {
         "expect": "PASS",
+        "title": "Do Not Use Meta Keywords",
         "why": "no page uses the obsolete meta keywords element"
       },
       "CN-034": {
         "expect": "PASS",
+        "title": "Ensure Readable Font Sizes",
         "why": "the hand-written mobile render declares zero text nodes below 12 pixels"
       },
       "CN-035": {
         "expect": "PASS",
+        "title": "Make Hyperlinks Clear and Distinct",
         "why": "the hand-written mobile render declares zero indistinct links"
       },
       "CN-048": {
         "expect": "PASS",
+        "title": "Use Hierarchical Headings and Semantic HTML",
         "why": "'Use Hierarchical Headings and Semantic HTML' is satisfied: no page skips a heading level and every page marks its main content with <main>. A page with no footer is not less semantic, so its absence is not a finding"
       },
       "CN-051": {
         "expect": "PASS",
+        "title": "Avoid Intrusive Interstitials (Especially on Mobile)",
         "why": "the hand-written mobile render declares no overlay covering content"
       },
       "CN-065": {
         "expect": "PASS",
+        "title": "Use a Clear H1 Per Page",
         "why": "every crawlable page has exactly one clear h1"
       },
       "CN-066": {
         "expect": "PASS",
+        "title": "Use H2 Subheadings for Structure",
         "why": "every crawlable sampled page uses at least two h2 subheadings to structure its content"
       },
       "BL-084": {
         "expect": "PASS",
+        "title": "Check for Unnatural Link Concentration from Single Domains",
         "why": "the exemplary Links export to be staged after declaration will distribute backlinks across at least five domains with no domain supplying more than half"
       },
       "BL-086": {
         "expect": "PASS",
+        "title": "Track Total Backlinks (Quality Over Quantity)",
         "why": "the exemplary Links export to be staged after declaration will contain multiple backlinks"
       },
       "BL-087": {
         "expect": "PASS",
+        "title": "Track Total Linking Root Domains",
         "why": "the exemplary Links export to be staged after declaration will contain at least five linking root domains"
       },
       "MB-093": {
         "expect": "PASS",
+        "title": "Ensure Responsive Layout (Mobile-First)",
         "why": "every crawlable page declares a responsive viewport for a mobile-first layout"
       },
       "MB-094": {
         "expect": "PASS",
+        "title": "Avoid Intrusive Interstitials on Mobile",
         "why": "the 390-pixel-wide hand-written render declares no mobile overlay covering content"
       },
       "MB-103": {
         "expect": "PASS",
+        "title": "Make Tap Targets Easy to Click",
         "why": "the 390-pixel-wide hand-written render declares zero tap targets below 48 pixels"
       },
       "MB-104": {
         "expect": "PASS",
+        "title": "Ensure Favicon Displays in Mobile SERPs",
         "why": "'Ensure Favicon Displays in Mobile SERPs' needs an icon that a mobile result can actually render: declared, reachable, and at least 48 px on its shorter side. Every page in this fixture carries <link rel=\"icon\"> to /assets/logo.png, which the server returns as a 64x64 PNG"
       },
       "IN-123": {
         "expect": "PASS",
+        "title": "Make Page Language Obvious",
         "why": "every page makes its language obvious with html lang=en"
       },
       "AR-146": {
         "expect": "INDETERMINATE",
+        "title": "Check Pagination",
         "why": "the fixture contains no paginated series; it would need linked first, middle, and last pages with pagination markup to exercise this title"
       },
       "TE-166": {
         "expect": "PASS",
+        "title": "Add a Favicon",
         "why": "'Add a Favicon' is satisfied: every page in this fixture declares <link rel=\"icon\">. Whether a site-wide /favicon.ico should satisfy it without the element is REGISTRY-DECISIONS.md item 9"
       },
       "SP-214": {
         "expect": "PASS",
+        "title": "LCP within budget in a local trace (lab)",
         "why": "the hand-written local trace records an 820 ms largest contentful paint"
       },
       "SP-215": {
         "expect": "PASS",
+        "title": "CLS within budget in a local trace (lab)",
         "why": "the hand-written local trace records a cumulative layout shift of 0.01"
       },
       "SP-216": {
         "expect": "PASS",
+        "title": "Main thread not blocked in a local trace (TBT, lab proxy for INP)",
         "why": "the hand-written local trace records 40 ms of total blocking time"
       },
       "SE-117": {
         "expect": "FAIL",
+        "title": "Force HTTPS Across the Site (Single Canonical Protocol)",
         "why": "the site is served over plain HTTP, so it does not force HTTPS across the site"
       },
       "CI-001": {
         "expect": "PASS",
+        "title": "Ensure URL Is Indexed",
         "why": "the entry page is self-canonical, carries no robots meta, is listed in the sitemap and linked from the nav, and robots.txt disallows only /private/, /search, /cart, /checkout and /login"
       },
       "CI-003": {
         "expect": "PASS",
+        "title": "Page Returns 200 (OK) Status Code",
         "why": "the entry page is a static file the fixture server returns as 200; a non-200 entry would gate the audit before any other item ran"
       },
       "CI-005": {
         "expect": "PASS",
+        "title": "Do Not Block the URL in robots.txt",
         "why": "robots.txt disallows /private/, /search, /cart, /checkout and /login, and the audited entry is /"
       },
       "CI-015": {
         "expect": "PASS",
+        "title": "Eliminate 5xx Server Errors",
         "why": "a static file server handing back files that exist returns no 5xx"
       },
       "BL-083": {
         "expect": "PASS",
+        "title": "Fix Broken Backlinks (Redirect or Update Link)",
         "why": "the entry page's outbound links point at the neighbouring fixture origin, which is served for the length of the run"
       },
       "LO-198": {
         "expect": "PASS",
+        "title": "Implement Local Business Structured Data",
         "why": "the entry page carries a Bakery node, a LocalBusiness subtype, with name, address, telephone, geo and opening hours"
       },
       "GEO-001": {
         "expect": "PASS",
+        "title": "llms.txt present and well-formed",
         "why": "the tree carries /llms.txt with a title, a one-line summary, a Pages section of annotated links and a contact block"
       },
       "CI-006": {
         "expect": "PASS",
+        "title": "Declare Sitemap Location in robots.txt",
         "why": "robots.txt ends with a Sitemap: line pointing at the served sitemap.xml"
       },
       "CI-009": {
         "expect": "PASS",
+        "title": "Serve Content at a Single Canonical URL",
         "why": "every page in the tree carries a self-referencing canonical at its own served URL"
       },
       "CI-011": {
         "expect": "PASS",
+        "title": "Avoid Canonical/Indexing Mixed Signals",
         "why": "the entry page is self-canonical, carries no robots meta and is listed in its own sitemap - the three signals agree"
       },
       "TE-176": {
         "expect": "PASS",
+        "title": "Fix Canonicalization Issues",
         "why": "every page canonicalises to the URL it is served at"
       },
       "CI-012": {
         "expect": "PASS",
+        "title": "Use a Friendly URL Structure",
         "why": "the audited entry is the origin root, which has no query string, no session id and no extension"
       },
       "AR-147": {
         "expect": "PASS",
+        "title": "Use Short, Descriptive URLs",
         "why": "the audited entry is the origin root: short by construction and carrying no parameters"
       },
       "AR-155": {
         "expect": "PASS",
+        "title": "Use Consistent, Descriptive URL Slugs",
         "why": "the audited entry is the origin root, so there is no slug to be inconsistent with"
       },
       "CI-016": {
         "expect": "PASS",
+        "title": "Provide Meaningful Image Alt Text",
         "why": "the tree's only image is the loaf mark, and it carries descriptive alt text"
       },
       "MD-186": {
         "expect": "PASS",
+        "title": "Provide Meaningful Alt Text",
         "why": "the tree's only image is the loaf mark, and it carries descriptive alt text"
       },
       "MD-187": {
         "expect": "PASS",
+        "title": "Fix Broken Images",
         "why": "every image the tree references is a file the tree contains"
       },
       "AR-149": {
         "expect": "PASS",
+        "title": "Eliminate Internal Redirects",
         "why": "every internal link in this tree names a file the tree serves directly, so no crawled URL answers with a redirect and 'Eliminate Internal Redirects' has nothing to eliminate"
       },
       "AR-154": {
         "expect": "INDETERMINATE",
+        "title": "Optimize E-commerce Category Pages",
         "why": "'Optimize E-commerce Category Pages' needs a category page to judge; this fixture is a five-page bakery with no collection, listing or category page anywhere, so whatever the item reports would not be about its own subject"
       },
       "AR-163": {
         "expect": "INDETERMINATE",
+        "title": "Control Faceted Navigation (E-commerce)",
         "why": "'Control Faceted Navigation' needs facets; no page here exposes a filter, sort or facet URL, so the fixture cannot settle the item either way"
       },
       "CI-018": {
         "expect": "PASS",
+        "title": "Analyze Logs & Manage Crawl Budget",
         "why": "the audit now hands the run this tree's access log. 'Manage Crawl Budget' asks what the crawl was spent on, and this log spends none of it: 21 days in which Googlebot fetched every sitemap URL robots.txt allows — five of the six listed — and then revalidated them with 304s, bingbot took one page a day, and nothing answered 404, 301 or 5xx. /private/secret.html is in the sitemap, disallowed in robots.txt and deliberately absent from the log, so the never-crawled subtraction has to exclude it rather than report our own Disallow as a page nobody visited. Nothing wasted, nothing unoffered, no parameterised URL and a window long enough to judge coverage leaves no issue at any severity, so the assertion's 'no critical, high or medium issue' holds"
       },
       "CN-039": {
         "expect": "PASS",
+        "title": "Eliminate Low-Value/Thin Pages",
         "why": "every crawlable page carries several hundred words of prose; the one short page, /private/secret.html, is disallowed in robots.txt and is never crawled"
       },
       "CN-068": {
         "expect": "PASS",
+        "title": "Strengthen Authorship & E-E-A-T Signals",
         "why": "re-read for 0.87.0, which took the floor from 60 to 35 — the sum of the score components a page of any type can carry, authors 20 + trust 15. The sample is the entry page plus /about.html and /privacy.html. All three carry a named author and a contact route, so all three clear 35; the entry page reaches 75 on credential markers, first-hand experience and external citations, which are the article signals a policy page has no business carrying. The declaration this replaces read FAIL and said so about the floor rather than about the fixture, which is the reading 0.87.0 acted on"
       },
       "GEO-008": {
         "expect": "PASS",
+        "title": "Snippet directives leave the page usable in AI answers and result snippets",
         "why": "no page carries a robots meta, so nothing restricts the snippet an AI answer or a result would be built from"
       },
       "GO-131": {
         "expect": "PASS",
+        "title": "Install & Configure Google Analytics 4",
         "why": "declared with the repair that makes it true, in the same commit: /about.html and /privacy.html now carry the same GA4 snippet and the single measurement ID the entry page configures, so the sample no longer finds a page with no analytics. Flipped from FAIL, which described the tree before this commit"
       },
       "GO-136": {
         "expect": "PASS",
+        "title": "Provide Clean XML Sitemaps",
         "why": "the sitemap is well-formed, lists only URLs this origin serves, every one of which answers 200, and each lastmod is a real date. Its one deliberate oddity, the robots-disallowed /private/secret.html, is orphan arithmetic by the fixture's own note rather than sitemap hygiene"
       },
       "MB-102": {
         "expect": "N/A",
+        "title": "Optimize Video for Mobile",
         "why": "the check applies only where videos are present; no page in either tree embeds a video, so 'Optimize Video for Mobile' is out of scope rather than satisfied"
       },
       "MD-190": {
         "expect": "N/A",
+        "title": "Implement Video SEO Essentials",
         "why": "the check applies only where videos are present; no page in either tree embeds a video, so 'Implement Video SEO Essentials' is out of scope rather than satisfied"
       },
       "MS-032": {
         "expect": "PASS",
+        "title": "Implement & Validate Structured Data (Where Relevant)",
         "why": "the entry page's four JSON-LD blocks are complete for the types they declare, and the two other sampled pages carry no structured data that could be wrong"
       },
       "MS-033": {
         "expect": "PASS",
+        "title": "Add Social Preview Tags (Open Graph & Twitter Cards)",
         "why": "declared with the repair that makes it true, in the same commit: /about.html and /privacy.html now carry the full Open Graph and Twitter set the entry page carries, so every sampled page has something for a social preview to read. Flipped from FAIL, which described the tree before this commit"
       },
       "SP-109": {
         "expect": "PASS",
+        "title": "Fix Common Speed Traps",
         "why": "the only third-party script in the tree is the gtag loader and it is async, so nothing third-party holds the render up"
       },
       "SP-110": {
         "expect": "PASS",
+        "title": "Run a Comprehensive Speed Audit",
         "why": "re-read for 0.87.0, which regraded the render-blocking stylesheet from 'warning' to 'info'. A stylesheet in the head is how CSS is delivered, not a defect every site shares; the one finding this script grades as a defect on every site is the parser-blocking script in <head>, and this origin has none — its only head script is the async gtag loader, which blocks nothing. With the stylesheet at info and the missing preconnect already info, no finding reaches the asserted severities. The broken origin still earns FAIL on its blocking script, so the item keeps separating the two"
       },
       "TE-170": {
         "expect": "PASS",
+        "title": "Configure Server Rewrites & Headers",
         "why": "re-declared for 0.50.0. Serving text uncompressed is now graded 'error' = high, and the good origin compresses: the fixture server offers gzip on textual responses to a client that asks for it, with Vary and a validator header, which is what a competently configured server does and what this item's title is about. Nothing else here fires on an HTML entry page — the cache-lifetime findings are for static assets, which this invocation does not request"
       },
       "TECH-002": {
         "expect": "PASS",
+        "title": "Font loading does not block render",
         "why": "no page loads a web font: the stylesheet sets a system-ui stack and neither tree contains an @font-face rule or a font host"
       },
       "AR-152": {
         "expect": "PASS",
+        "title": "Block Crawl Strategically with robots.txt",
         "why": "robots.txt declares a policy for `*` and disallows five paths, so the file has user-agent groups in it"
       },
       "CI-013": {
         "expect": "PASS",
+        "title": "Do Not Block Critical CSS/JS/Images in robots.txt",
         "why": "robots.txt disallows /private/, /search, /cart, /checkout and /login and nothing under /assets/, so no stylesheet, script or image this tree serves is closed to Googlebot"
       },
       "CN-036": {
         "expect": "PASS",
+        "title": "Ensure Sufficient Text Contrast",
         "why": "no page in this tree carries a style attribute, so there is no inline colour pair for the contrast scan to weigh"
       },
       "GEO-002": {
         "expect": "PASS",
+        "title": "llms.txt quality score",
         "why": "llms.txt is the canonical shape the item asks for: a title, a one-line summary as a blockquote, a Pages section of annotated links and a contact address"
       },
       "GEO-003": {
         "expect": "PASS",
+        "title": "AI crawler policy is explicit",
         "why": "this origin publishes both a robots.txt naming its policy and an llms.txt, which is the documented end of the item's scale rather than the permitted-by-silence end"
       },
       "KW-076": {
         "expect": "PASS",
+        "title": "Include the Primary Keyword in Body Copy",
         "why": "the audit now supplies --keyword bread, and 'Include the Primary Keyword in Body Copy' is answered per page with the worst of the three sampled deciding. The sample is the entry page, /about.html and /privacy.html, and the word is in the copy article_seo.py reads on all three: 'Sourdough keeps longer than yeasted bread' on the entry page, 'four of them in bread specifically' on /about.html, and the 'Ordering bread' heading on /privacy.html — headings count, the corpus is h1, h2s, h3s and paragraphs inside <main>. A site whose own subject is on every page it publishes is what this item passes"
       },
       "MB-095": {
         "expect": "PASS",
+        "title": "Keep Mobile Page Weight Light",
         "why": "re-read for 0.93.0, which moved this off a pattern over issue messages and onto `large_image_count` — and onto `--fetch-images`, so the transfer sizes are learned rather than assumed. The tree's only raster image is a 64-pixel loaf mark, far under the 250,000-byte line, so the count is zero"
       },
       "MB-098": {
         "expect": "PASS",
+        "title": "Serve Properly Sized Images",
         "why": "re-read for 0.93.0, which replaced the pattern with `srcset_without_sizes_count: eq 0`. The one responsive image declares its candidates on a <source> that also carries `sizes`, and the <img> fallback declares no srcset at all, so nothing here owes a `sizes` it lacks"
       },
       "MB-100": {
         "expect": "PASS",
+        "title": "Fix Mobile UX Issues (see UX)",
         "why": "every page in this tree declares width=device-width with an initial scale, which is the defect this item exists to find"
       },
       "MB-105": {
         "expect": "INDETERMINATE",
+        "title": "Ensure Content, Meta & Directives Match Between Served and Rendered HTML",
         "why": "the fixture artifact carries no html, so there is no rendered document and nothing to compare; the title question this raised was settled in 0.72.0"
       },
       "MB-107": {
         "expect": "PASS",
+        "title": "Page fits the phone viewport without horizontal scrolling",
         "why": "the 390-pixel-wide hand-written render declares no horizontal overflow, inside the one-pixel tolerance the rule allows"
       },
       "MB-108": {
         "expect": "PASS",
+        "title": "Text is not clipped or cut off at a phone width",
         "why": "the 390-pixel-wide hand-written render declares no clipped text nodes"
       },
       "MD-184": {
         "expect": "PASS",
+        "title": "Confirm the Page References at Least One Image",
         "why": "re-declared for 0.49.0, which stopped image_inventory.py emitting count on a page with no images. The sample is the entry page plus /about.html and /privacy.html: the two policy pages reference no image at all and are now undecided rather than counted as zero, so the entry page decides, and it carries the loaf mark in a picture/source pair. 'Audit Sitewide Image Usage' is answered by the pages that have images, which is what the previous FAIL was recording the absence of. Re-read for 0.85.0 against the item's new title, Confirm the Page References at Least One Image: a declaration derived from a title has to be read again when the title moves. PASS stands and now follows from the title directly — the entry page's served HTML names an image with a src"
       },
       "MD-189": {
         "expect": "PASS",
+        "title": "Use Modern Formats & Responsive Images",
         "why": "corrected from FAIL after the run, and the disagreement is itself the finding: image_weight_audit.py omits responsive_count entirely on a page carrying no images, so /about.html and /privacy.html report nothing rather than zero and the entry page's picture/source pair decides. That is what 'empty input must not emit zero' asks for. Its neighbour image_inventory.py did the opposite on the same two pages until 0.49.0, which is what MD-184 above used to record"
       },
       "TE-169": {
         "expect": "PASS",
+        "title": "Provide Internal Links in the Served HTML",
         "why": "every sampled page carries internal links in the served HTML"
       },
       "TE-177": {
         "expect": "PASS",
+        "title": "Provide a Title Element in the Served HTML",
         "why": "every sampled page carries a title element in the served HTML"
       },
       "AR-153": {
         "expect": "PASS",
+        "title": "Design Clear Topic Hubs (Silos)",
         "why": "corrected from FAIL after the run: five flat pages and a two-post blog clear the silo score's floor, so 'Design Clear Topic Hubs (Silos)' cannot tell a site with hubs from one without. test_contract.py already had AR-153 in SAME_ON_BOTH, but under a reason belonging to its neighbour — 'neither fixture is an ecommerce catalogue' — which is repaired in the same commit as this correction"
       },
       "GEO-004": {
         "expect": "PASS",
+        "title": "Answer blocks present for AEO",
         "why": "re-read for 0.87.0, which took the floor from 70 to 32 — one direct answer (20) plus one definition (12), out of the four signals answer_block_scanner scores. Declared against the sampled set: the entry page carries question-shaped headings with their answers under them, and /about.html and /privacy.html each carry definition paragraphs. At 70 the item asked every sampled page to be an FAQ; at 32 it asks for the one signal a snippet can be lifted from"
       },
       "GEO-005": {
         "expect": "PASS",
+        "title": "Content is citation-ready for AI search",
         "why": "re-read for 0.87.0, which took the floor from 60 to 25 — author 15 plus canonical 10, the two components of the score any page type can carry. Declared against the sampled set: the entry page is built to be cited and reaches 60 on claim coverage, while /about.html and /privacy.html carry an author and a canonical and nothing a citation would rest on. Claim coverage, trusted links and sameAs are article and entity signals, and a floor above 25 asks a policy page for them"
       },
       "GEO-006": {
         "expect": "FAIL",
+        "title": "Entity is resolvable (Wikidata / KG)",
         "why": "'Entity is resolvable (Wikidata / KG)' asks for identifiers that resolve. The Organization and Bakery blocks here declare a name, a logo, an address and hours and no `sameAs` at all, so nothing points at an external identity"
       },
       "GEO-007": {
         "expect": "INDETERMINATE",
+        "title": "IndexNow configured",
         "why": "the check reads {indexnow_key}, an operator input the oracle audit does not pass, so the placeholder never resolves and no verdict is reachable"
       },
       "GO-143": {
         "expect": "PASS",
+        "title": "Complete Every WebSite Node Google Reads for the Site Name",
         "why": "re-read for 0.93.0, which replaced `(?i)WebSite` over issue messages with `incomplete_nodes_by_type.WebSite`. The entry page carries a WebSite node with a name and a url — the two properties Google's site-name documentation requires and the two the title names — so the node is complete and its count is zero. Declared from the title and the fixture: the markup was read in tests/fixtures/good/index.html, not from a run"
       },
       "GO-144": {
         "expect": "PASS",
+        "title": "Optimize for Featured Snippets",
         "why": "twin of GEO-004 through scores_with, same script and same floor, so it must land on the same verdict. Re-read for 0.87.0: the floor is 32, one direct answer plus one definition, and every sampled page of this origin carries at least that"
       },
       "GO-145": {
         "expect": "PASS",
+        "title": "Optimize for AI Overviews & Zero-Click SERPs",
         "why": "twin of GEO-005 through scores_with, same script and same floor: re-read for 0.87.0 against a floor of 25, which every sampled page of this origin clears on its author and its canonical alone"
       },
       "IN-121": {
         "expect": "INDETERMINATE",
+        "title": "Configure Geo-Targeting Signals",
         "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
       },
       "IN-122": {
         "expect": "INDETERMINATE",
+        "title": "Implement Valid hreflang (With Return Tags)",
         "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
       },
       "IN-127": {
         "expect": "INDETERMINATE",
+        "title": "Use a Clear International URL Structure",
         "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
       },
       "IN-128": {
         "expect": "INDETERMINATE",
+        "title": "Serve the Correct Localized Page",
         "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
       },
       "SE-118": {
         "expect": "INDETERMINATE",
+        "title": "Maintain a Valid TLS Certificate (HTTPS)",
         "why": "this origin is served over plain HTTP, so there is no certificate to call valid or invalid. The item's subject is the HTTPS pair, where it is declared"
       },
       "TE-180": {
         "expect": "PASS",
+        "title": "Meet Accessibility (WCAG) Basics",
         "why": "every page declares a language, carries one h1, keeps its headings in order, gives its only image descriptive alt text, labels its navigation landmark and sets a viewport"
       },
       "TECH-003": {
         "expect": "PASS",
+        "title": "LCP subparts within budget",
         "why": "the fixture is served from a loopback socket with the file already on disk, so time to first byte is a few milliseconds against a budget of 800"
       },
       "CN-038": {
         "expect": "PASS",
+        "title": "Balance Evergreen and Fresh Content",
         "why": "every sampled page now names a publication date and a review date, which is what the score this item asserts on is built from. The clause about the tree balancing evergreen pages against dated posts was removed after review: the rule scores one page at a time and does not measure that balance, so naming it was decoration rather than cause"
       },
       "CN-040": {
         "expect": "PASS",
+        "title": "Publish an Up-to-Date Privacy Policy",
         "why": "every sampled page links /privacy.html from its footer, and the policy it points at is current and dated"
       },
       "CN-044": {
         "expect": "PASS",
+        "title": "Provide a Clear, Easy-to-Find Contact Page",
         "why": "every sampled page links /about.html#contact, the anchor now exists as a Contact heading, and it carries a telephone and an email"
       },
       "CN-056": {
         "expect": "PASS",
+        "title": "Show Publication and Updated Dates",
         "why": "every sampled page carries a published and an updated date in a machine-readable time element"
       },
       "CN-057": {
         "expect": "PASS",
+        "title": "Show Author and Publisher Clearly",
         "why": "every sampled page carries a rel=author link naming the same person, and the page it points at describes who that is; every sampled page also carries og:site_name, which is the site naming its publisher"
       }
     },
     "broken": {
       "AR-151": {
         "expect": "FAIL",
+        "title": "Provide a Correct robots.txt",
         "why": "there is no robots.txt in the tree, so the requested file is a 404"
       },
       "AR-158": {
         "expect": "FAIL",
+        "title": "Implement Breadcrumbs (UI + Schema)",
         "why": "'Implement Breadcrumbs (UI + Schema)' requires both halves; there is no visible breadcrumb UI, regardless of the parseable BreadcrumbList node"
       },
       "AR-162": {
         "expect": "FAIL",
+        "title": "Strengthen Internal Links and Remove Orphans",
         "why": "orphan.html exists in the sitemap but no page links to it"
       },
       "BL-081": {
         "expect": "WARN",
+        "title": "Keep Anchor Text Natural and Varied",
         "why": "the title says 'Natural and Varied'; five repeated exact-match links create one overused target, which is the rule's warning band"
       },
       "CI-008": {
         "expect": "FAIL",
+        "title": "Make the URL Discoverable via Internal Links/Navigation",
         "why": "orphan.html is declared in the sitemap but is undiscoverable from internal links or navigation"
       },
       "CI-019": {
         "expect": "FAIL",
+        "title": "Noindex System & Search Pages (/search, /cart, /checkout, /login)",
         "why": "the reachable search-results page has no meta noindex, X-Robots-Tag noindex, or robots exclusion"
       },
       "CN-041": {
         "expect": "FAIL",
+        "title": "Eliminate Internal Duplicate Content",
         "why": "duplicate-a.html and duplicate-b.html expose identical reachable body content without a consolidating canonical"
       },
       "CN-054": {
         "expect": "PASS",
+        "title": "Ensure Lazy-Loaded Content Is Discoverable",
         "why": "the lazy-loaded hero uses native loading and an ordinary src attribute, so it remains discoverable"
       },
       "GO-132": {
         "expect": "FAIL",
+        "title": "Prevent GA4 Tag Duplication",
         "why": "the same GA4 measurement ID is configured twice on one page"
       },
       "GO-137": {
         "expect": "INDETERMINATE",
+        "title": "Reconcile Indexed Pages vs. Sitemaps",
         "why": "the fixture supplies a sitemap but no search-engine index inventory to reconcile against it"
       },
       "GO-138": {
         "expect": "FAIL",
+        "title": "Remove Invalid URLs from Sitemaps",
         "why": "re-read for 0.93.0. The sitemap lists URLs that are not there, so the fetch of each returns a status at or above 400 and the count is non-zero. Under the old pattern this passed on any status but 404, because the message it matched reads 'Sitemap URL returns HTTP {status}'"
       },
       "LO-200": {
         "expect": "INDETERMINATE",
+        "title": "Publish Complete NAP in LocalBusiness Data",
         "why": "Publish Complete NAP in LocalBusiness Data has no subject in this fixture because the tree carries no LocalBusiness node of any subtype"
       },
       "MB-096": {
         "expect": "FAIL",
+        "title": "Use Responsive Images",
         "why": "the large images have neither srcset nor sizes and provide no responsive variants"
       },
       "MB-097": {
         "expect": "INDETERMINATE",
+        "title": "Optimize Image Formats & Compression",
         "why": "a 54 KB PNG of simple line art may already be efficiently compressed, and no quality target or alternative encoding is supplied"
       },
       "MD-185": {
         "expect": "FAIL",
+        "title": "Optimize Images",
         "why": "re-declared for 0.50.0. The title says 'Optimize Images', and the constructed lazy LCP candidate — a 1200x600 hero, first in document order, with loading=lazy — is now graded 'error' = high rather than medium: telling the browser to defer the image the page is judged on is a defect in every layout, unlike the format and srcset advice around it, which stays informational. The other sampled pages carry no images and are undecided, so this page decides"
       },
       "MS-022": {
         "expect": "FAIL",
+        "title": "Remove Duplicate Page Titles (Handle Canonical/Pagination Correctly)",
         "why": "the title says 'Duplicate Page Titles', and the two reachable duplicate pages share the same normalized title"
       },
       "MS-029": {
         "expect": "FAIL",
+        "title": "Eliminate Duplicate Meta Descriptions",
         "why": "the two reachable duplicate pages use the same meta description"
       },
       "TE-168": {
         "expect": "WARN",
+        "title": "Fix Broken & Redirected Links",
         "why": "'Fix Broken & Redirected Links' finds one broken internal target and no redirecting target; one broken link remains inside the preserved up-to-three warning band"
       },
       "TE-172": {
         "expect": "FAIL",
+        "title": "Implement Structured Data Correctly",
         "why": "the page has malformed JSON-LD, an incomplete Product, and a BreadcrumbList without itemListElement"
       },
       "TE-174": {
         "expect": "FAIL",
+        "title": "Minify & Optimize CSS",
         "why": "the linked 21 KB stylesheet deliberately retains comments, whitespace, indentation, and repeated long-form rules"
       },
       "TECH-001": {
         "expect": "INDETERMINATE",
+        "title": "Modern schema types only (no HowTo/FAQ misuse)",
         "why": "the fixture needs a parseable HowTo or FAQPage block; its only HowTo appears inside unparseable JSON-LD and cannot be classified"
       },
       "CI-004": {
         "expect": "FAIL",
+        "title": "Allow Indexing via Meta Robots",
         "why": "the entry page explicitly blocks indexing with meta robots noindex"
       },
       "MS-020": {
         "expect": "PASS",
+        "title": "Keep Page Titles Concise (Avoid SERP Truncation)",
         "why": "every title that exists is at most 42 characters and cannot be truncated for excessive length; the missing entry-page title belongs to 'Ensure Every Page Has a Title'"
       },
       "MS-021": {
         "expect": "FAIL",
+        "title": "Avoid Overly Short Titles (<30 Characters)",
         "why": "the reachable thin page title '404 Not Found' is only 13 characters"
       },
       "MS-026": {
         "expect": "FAIL",
+        "title": "Ensure Every Page Has a Title",
         "why": "the entry page has no title element"
       },
       "MS-028": {
         "expect": "FAIL",
+        "title": "Fill Missing Meta Descriptions (High-Value Pages First)",
         "why": "the entry page and reachable thin page have no meta description"
       },
       "MS-030": {
         "expect": "FAIL",
+        "title": "Keep Meta Descriptions ~150–160 Characters (Clear & Relevant)",
         "why": "the search page description is only 'Search results.' and other reachable pages have no description"
       },
       "MS-031": {
         "expect": "FAIL",
+        "title": "Do Not Use Meta Keywords",
         "why": "the entry page contains a meta keywords element stuffed with bakery phrases"
       },
       "CN-034": {
         "expect": "FAIL",
+        "title": "Ensure Readable Font Sizes",
         "why": "the hand-written mobile render declares 14 text nodes below 12 pixels"
       },
       "CN-035": {
         "expect": "FAIL",
+        "title": "Make Hyperlinks Clear and Distinct",
         "why": "the hand-written mobile render declares six hyperlinks that are not clear and distinct"
       },
       "CN-048": {
         "expect": "FAIL",
+        "title": "Use Hierarchical Headings and Semantic HTML",
         "why": "'Use Hierarchical Headings and Semantic HTML' fails because the entry page has no semantic main landmark; its separate two-H1 defect belongs to CN-065"
       },
       "CN-051": {
         "expect": "FAIL",
+        "title": "Avoid Intrusive Interstitials (Especially on Mobile)",
         "why": "the hand-written mobile render declares one overlay covering content"
       },
       "CN-065": {
         "expect": "FAIL",
+        "title": "Use a Clear H1 Per Page",
         "why": "the entry page has two h1 elements instead of one clear h1"
       },
       "CN-066": {
         "expect": "FAIL",
+        "title": "Use H2 Subheadings for Structure",
         "why": "the broken pages contain no h2 subheadings"
       },
       "BL-084": {
         "expect": "FAIL",
+        "title": "Check for Unnatural Link Concentration from Single Domains",
         "why": "the broken Links export to be staged after declaration will put more than 65 percent of its backlinks on one referring domain"
       },
       "BL-086": {
         "expect": "PASS",
+        "title": "Track Total Backlinks (Quality Over Quantity)",
         "why": "the broken Links export to be staged after declaration will still contain backlinks; concentration does not make the total zero"
       },
       "BL-087": {
         "expect": "FAIL",
+        "title": "Track Total Linking Root Domains",
         "why": "the broken Links export to be staged after declaration will contain fewer than five linking root domains"
       },
       "MB-093": {
         "expect": "FAIL",
+        "title": "Ensure Responsive Layout (Mobile-First)",
         "why": "the entry page and reachable blog pages omit the responsive viewport declaration"
       },
       "MB-094": {
         "expect": "FAIL",
+        "title": "Avoid Intrusive Interstitials on Mobile",
         "why": "the 390-pixel-wide hand-written render declares an overlay covering mobile content"
       },
       "MB-103": {
         "expect": "FAIL",
+        "title": "Make Tap Targets Easy to Click",
         "why": "the 390-pixel-wide hand-written render declares nine tap targets below 48 pixels"
       },
       "MB-104": {
         "expect": "FAIL",
+        "title": "Ensure Favicon Displays in Mobile SERPs",
         "why": "no page in this fixture declares an icon at all, so nothing can display in a mobile result and the size threshold is never reached"
       },
       "IN-123": {
         "expect": "FAIL",
+        "title": "Make Page Language Obvious",
         "why": "the entry page and reachable thin page omit the html lang attribute"
       },
       "AR-146": {
         "expect": "INDETERMINATE",
+        "title": "Check Pagination",
         "why": "the fixture contains no paginated series; it would need linked first, middle, and last pages with pagination defects to exercise this title"
       },
       "TE-166": {
         "expect": "FAIL",
+        "title": "Add a Favicon",
         "why": "no page in this fixture declares <link rel=\"icon\">, and the fixture serves no /favicon.ico either"
       },
       "SP-214": {
         "expect": "FAIL",
+        "title": "LCP within budget in a local trace (lab)",
         "why": "the hand-written local trace records a 5200 ms largest contentful paint"
       },
       "SP-215": {
         "expect": "FAIL",
+        "title": "CLS within budget in a local trace (lab)",
         "why": "the hand-written local trace records a cumulative layout shift of 0.34"
       },
       "SP-216": {
         "expect": "FAIL",
+        "title": "Main thread not blocked in a local trace (TBT, lab proxy for INP)",
         "why": "the hand-written local trace records 980 ms of total blocking time"
       },
       "SE-117": {
         "expect": "FAIL",
+        "title": "Force HTTPS Across the Site (Single Canonical Protocol)",
         "why": "the site is served over plain HTTP, so it does not force HTTPS across the site"
       },
       "CI-001": {
         "expect": "FAIL",
+        "title": "Ensure URL Is Indexed",
         "why": "the entry page carries `noindex, nofollow, nosnippet` and a canonical pointing at a domain the fixture does not own"
       },
       "CI-003": {
         "expect": "PASS",
+        "title": "Page Returns 200 (OK) Status Code",
         "why": "the entry page is a static file the fixture server returns as 200; this tree's defects are in its markup, not in its status line"
       },
       "CI-005": {
         "expect": "PASS",
+        "title": "Do Not Block the URL in robots.txt",
         "why": "there is deliberately no robots.txt in this tree, and a missing robots.txt blocks nothing"
       },
       "CI-015": {
         "expect": "PASS",
+        "title": "Eliminate 5xx Server Errors",
         "why": "a static file server handing back files that exist returns no 5xx; the tree has no failing handler"
       },
       "BL-083": {
         "expect": "FAIL",
+        "title": "Fix Broken Backlinks (Redirect or Update Link)",
         "why": "the entry page links to dead.invalid and insecure.invalid, hosts under a TLD reserved never to resolve, and to /gone.html, which is not in the tree"
       },
       "LO-198": {
         "expect": "FAIL",
+        "title": "Implement Local Business Structured Data",
         "why": "the tree's only schema nodes are a truncated HowTo, a Product and an empty BreadcrumbList, and no LocalBusiness type of any kind"
       },
       "GEO-001": {
         "expect": "FAIL",
+        "title": "llms.txt present and well-formed",
         "why": "there is no llms.txt anywhere in this tree"
       },
       "CI-006": {
         "expect": "FAIL",
+        "title": "Declare Sitemap Location in robots.txt",
         "why": "there is deliberately no robots.txt in this tree, so it declares no sitemap location"
       },
       "CI-009": {
         "expect": "FAIL",
+        "title": "Serve Content at a Single Canonical URL",
         "why": "the entry page's canonical points at https://not-this-site.example.net/elsewhere, a domain the fixture does not own or serve"
       },
       "CI-011": {
         "expect": "FAIL",
+        "title": "Avoid Canonical/Indexing Mixed Signals",
         "why": "the entry page says noindex and points its canonical at another domain: two directives about indexing that contradict each other"
       },
       "TE-176": {
         "expect": "FAIL",
+        "title": "Fix Canonicalization Issues",
         "why": "the entry page canonicalises to a URL on a domain the fixture does not serve, so nothing resolves the duplicate it claims"
       },
       "CI-012": {
         "expect": "PASS",
+        "title": "Use a Friendly URL Structure",
         "why": "the audited entry is the origin root here too; this tree's defects are in its markup, not in the URL it is entered at"
       },
       "AR-147": {
         "expect": "PASS",
+        "title": "Use Short, Descriptive URLs",
         "why": "the audited entry is the origin root here too"
       },
       "AR-155": {
         "expect": "PASS",
+        "title": "Use Consistent, Descriptive URL Slugs",
         "why": "the audited entry is the origin root here too"
       },
       "CI-016": {
         "expect": "FAIL",
+        "title": "Provide Meaningful Image Alt Text",
         "why": "the entry page carries an img with no alt attribute at all and another with an empty one on a meaningful image"
       },
       "MD-186": {
         "expect": "FAIL",
+        "title": "Provide Meaningful Alt Text",
         "why": "the entry page carries an img with no alt attribute at all and another with an empty one on a meaningful image"
       },
       "MD-187": {
         "expect": "FAIL",
+        "title": "Fix Broken Images",
         "why": "the entry page references /assets/no-such-image.png, which is not in the tree and is served as a 404"
       },
       "AR-149": {
         "expect": "PASS",
+        "title": "Eliminate Internal Redirects",
         "why": "this tree's defects are 404s, duplicates and an orphan, not redirects; every link that resolves resolves in one hop"
       },
       "AR-154": {
         "expect": "INDETERMINATE",
+        "title": "Optimize E-commerce Category Pages",
         "why": "'Optimize E-commerce Category Pages' needs a category page to judge, and this tree has none either — its defects are elsewhere"
       },
       "AR-163": {
         "expect": "INDETERMINATE",
+        "title": "Control Faceted Navigation (E-commerce)",
         "why": "'Control Faceted Navigation' needs facets; the only form here posts nowhere and no URL carries a filter or sort parameter"
       },
       "CI-018": {
         "expect": "FAIL",
+        "title": "Analyze Logs & Manage Crawl Budget",
         "why": "this tree's log is the crawl budget going nowhere the item's title is about: every day for 21 days Googlebot spent six requests on a deleted /archive/ that answers 404, one on a /legacy/old-home redirect, one on an /about.html that answers 500, and five on ?sort= multiplying one page — against three requests that fetched a real page. The wasted share is far past the fifth of the crawl server_log_audit.py grades high, and any 5xx to a crawler is graded at least medium, so this is FAIL rather than WARN: the warn band tolerates a medium issue and this log carries high ones"
       },
       "CN-039": {
         "expect": "WARN",
+        "title": "Eliminate Low-Value/Thin Pages",
         "why": "the tree deliberately carries a thin page (/blog/thin.html, three words of body), two short duplicates and a short orphan — at most four of its five crawlable pages, which is inside the up-to-five band the item preserves, so this fixture demonstrates the warn band rather than the failure"
       },
       "CN-068": {
         "expect": "FAIL",
+        "title": "Strengthen Authorship & E-E-A-T Signals",
         "why": "no page on this origin carries an author, a byline, credentials, a policy page or a date, so there is nothing for 'Strengthen Authorship & E-E-A-T Signals' to find Re-read for 0.87.0 against the new floor of 35: no page here carries an author or a contact route, so the two page-type-neutral components are both absent and FAIL stands."
       },
       "GEO-008": {
         "expect": "FAIL",
+        "title": "Snippet directives leave the page usable in AI answers and result snippets",
         "why": "the entry page carries noindex, nofollow, nosnippet, so Google shows no snippet for it and the page cannot be used in an AI answer or a result snippet, which is what the title denies"
       },
       "GO-131": {
         "expect": "FAIL",
+        "title": "Install & Configure Google Analytics 4",
         "why": "the audit samples three pages and takes the worst, so this is declared about the sampled set, not the entry page: only the entry page carries a gtag snippet, and the sampled duplicate post and orphan page carry none"
       },
       "GO-136": {
         "expect": "WARN",
+        "title": "Provide Clean XML Sitemaps",
         "why": "corrected from FAIL after the run: the cross-host URL, the non-ISO lastmod and the missing ones are all graded warning or info, which is the whole of what 'clean' means to this item. The two sitemap entries that 404 are not missed by the tool — they belong to GO-138, which is the invocation that carries --fetch-urls"
       },
       "MB-102": {
         "expect": "N/A",
+        "title": "Optimize Video for Mobile",
         "why": "the check applies only where videos are present; no page in this tree embeds a video either"
       },
       "MD-190": {
         "expect": "N/A",
+        "title": "Implement Video SEO Essentials",
         "why": "the check applies only where videos are present; no page in this tree embeds a video either"
       },
       "MS-032": {
         "expect": "FAIL",
+        "title": "Implement & Validate Structured Data (Where Relevant)",
         "why": "the entry page carries an unparseable JSON-LD block, a Product with no offers, price or availability, and a BreadcrumbList with no itemListElement"
       },
       "MS-033": {
         "expect": "FAIL",
+        "title": "Add Social Preview Tags (Open Graph & Twitter Cards)",
         "why": "no page on this origin carries an Open Graph or Twitter tag"
       },
       "SP-109": {
         "expect": "PASS",
+        "title": "Fix Common Speed Traps",
         "why": "the render-blocking stylesheet and the synchronous script are both first-party; the only third-party script is the same async gtag loader, so the count this item asserts on is zero on a page built to be slow"
       },
       "SP-110": {
         "expect": "FAIL",
+        "title": "Run a Comprehensive Speed Audit",
         "why": "re-declared for 0.50.0. This page carries `<script src=\"/assets/blocking.js\">` in its head with neither async nor defer, which is now graded 'error' = high: the parser stops before anything has been painted. The 21 KB render-blocking stylesheet beside it stays medium, because a stylesheet in the head is what every site does. FAIL needs a high finding and this page has one, which is the whole point of a tree built to be slow Re-read for 0.87.0, which regraded the render-blocking stylesheet to info: this origin's FAIL never rested on the stylesheet but on the parser-blocking script in its head, which is graded error and unchanged."
       },
       "TE-170": {
         "expect": "FAIL",
+        "title": "Configure Server Rewrites & Headers",
         "why": "re-declared for 0.50.0, and now the opposite of the good origin rather than its twin: this tree's server is deliberately left without compression, and text sent uncompressed is graded 'error' = high. One high finding is all FAIL needs"
       },
       "TECH-002": {
         "expect": "PASS",
+        "title": "Font loading does not block render",
         "why": "neither this tree nor its stylesheet loads a web font, so no font can be blocking the render"
       },
       "AR-152": {
         "expect": "FAIL",
+        "title": "Block Crawl Strategically with robots.txt",
         "why": "this origin serves no robots.txt at all — the tree carries robots-note.txt explaining the omission — so there are no user-agent groups to find"
       },
       "CI-013": {
         "expect": "PASS",
+        "title": "Do Not Block Critical CSS/JS/Images in robots.txt",
         "why": "with no robots.txt there is nothing disallowing anything, so no stylesheet, script or image is blocked. The tree's defects are elsewhere, and this item cannot see them"
       },
       "CN-036": {
         "expect": "FAIL",
+        "title": "Ensure Sufficient Text Contrast",
         "why": "the entry page carries a paragraph styled inline as #bbb text on a #ccc background, planted for exactly this check"
       },
       "GEO-002": {
         "expect": "FAIL",
+        "title": "llms.txt quality score",
         "why": "this origin serves no llms.txt, so there is no quality to score"
       },
       "GEO-003": {
         "expect": "FAIL",
+        "title": "AI crawler policy is explicit",
         "why": "neither a robots.txt nor an llms.txt exists here, so every AI crawler is allowed by silence and nothing documents the policy"
       },
       "KW-076": {
         "expect": "FAIL",
+        "title": "Include the Primary Keyword in Body Copy",
         "why": "the sampled set here is the entry page, /blog/duplicate-a.html and /orphan.html. The entry page carries 'bread' five times over, inside the stuffed 'best sourdough bread vilnius' anchors, so on its own it would pass; the duplicate post is a heading and two sentences about being a duplicate, and the orphan is a heading and two about being an orphan, and neither says the word at all. The worst sampled page decides, so FAIL — a site that names its subject on the home page and nowhere else is the shape this item exists to catch"
       },
       "MB-095": {
         "expect": "PASS",
+        "title": "Keep Mobile Page Weight Light",
         "why": "re-read for 0.93.0. `large_image_count` counts images over 250,000 bytes; the tree's heavy image, /assets/huge.png, is 54,606 bytes and is kept small on purpose, so a page built to be slow still reports zero. This is the same reason the item sits in test_contract.py SAME_ON_BOTH"
       },
       "MB-098": {
         "expect": "PASS",
+        "title": "Serve Properly Sized Images",
         "why": "re-read for 0.93.0. The tree declares no `srcset` anywhere, so no element offers width-described candidates and the count is zero. A fixture could express the failure only by adding an <img srcset>, which would make `responsive_count` 1 here and hand MB-096 and MD-189 a pass on both trees"
       },
       "MB-100": {
         "expect": "FAIL",
+        "title": "Fix Mobile UX Issues (see UX)",
         "why": "the entry page declares no viewport at all, which is the mobile rendering failure rather than a warning about one"
       },
       "MB-105": {
         "expect": "INDETERMINATE",
+        "title": "Ensure Content, Meta & Directives Match Between Served and Rendered HTML",
         "why": "the fixture artifact carries no html, so there is no rendered document and nothing to compare; the title question this raised was settled in 0.72.0"
       },
       "MB-107": {
         "expect": "FAIL",
+        "title": "Page fits the phone viewport without horizontal scrolling",
         "why": "the 390-pixel-wide hand-written render declares 96 pixels of horizontal overflow, well past the one-pixel tolerance"
       },
       "MB-108": {
         "expect": "FAIL",
+        "title": "Text is not clipped or cut off at a phone width",
         "why": "the 390-pixel-wide hand-written render declares five clipped text nodes"
       },
       "MD-184": {
         "expect": "PASS",
+        "title": "Confirm the Page References at Least One Image",
         "why": "re-declared for 0.49.0 alongside the good origin. The entry page carries five img elements and decides; the sampled duplicate post and orphan page reference no image and are undecided rather than counted as zero. The item stops separating the fixtures, and that is the honest reading: both trees put images on the pages that have them, and everything this tree gets wrong about images is somebody else's item — alt text is CI-016 and MD-186, responsive variants are MB-096 and MD-189, weight is MB-095. Re-read for 0.85.0 against the new title, Confirm the Page References at Least One Image; PASS stands, and the reason the item stops separating the fixtures is the same under either wording"
       },
       "MD-189": {
         "expect": "FAIL",
+        "title": "Use Modern Formats & Responsive Images",
         "why": "no image in this tree offers a srcset, a modern format or a picture/source pair, and the two other sampled pages carry no images at all"
       },
       "TE-169": {
         "expect": "FAIL",
+        "title": "Provide Internal Links in the Served HTML",
         "why": "the sample is the entry page plus /blog/duplicate-a.html and /orphan.html and the worst decides: /blog/duplicate-a.html and /orphan.html are a heading and a paragraph with no link in either, so the served HTML offers a crawler nowhere to go"
       },
       "TE-177": {
         "expect": "FAIL",
+        "title": "Provide a Title Element in the Served HTML",
         "why": "the entry page has no title element — the tree's own comment lists it first among the things the page exists to fail"
       },
       "AR-153": {
         "expect": "PASS",
+        "title": "Design Clear Topic Hubs (Silos)",
         "why": "corrected from FAIL after the run, and the same verdict as the good origin is the finding: duplicates, a thin page and an orphan score as well on topic structure as a coherent five-page site"
       },
       "GEO-004": {
         "expect": "FAIL",
+        "title": "Answer blocks present for AEO",
         "why": "no page here poses a question or answers one; the entry page is filler prose, the duplicates are one paragraph twice and the orphan is three sentences Re-read for 0.87.0 against the new floor of 32: a single definition paragraph is 12, and no page here carries a direct answer, so the worst sampled page stays below it."
       },
       "GEO-005": {
         "expect": "FAIL",
+        "title": "Content is citation-ready for AI search",
         "why": "nothing here carries a citation, a date, an author or an evidence claim, which is the whole of what makes content citable Re-read for 0.87.0 against the new floor of 25: the sampled pages carry no author, so canonical alone is 10 and FAIL stands."
       },
       "GEO-006": {
         "expect": "FAIL",
+        "title": "Entity is resolvable (Wikidata / KG)",
         "why": "the only parseable schema here is a Product with a name and an image; there is no organization, no identifier and no `sameAs`"
       },
       "GEO-007": {
         "expect": "INDETERMINATE",
+        "title": "IndexNow configured",
         "why": "the check reads {indexnow_key}, which the oracle audit does not pass on either origin"
       },
       "GO-143": {
         "expect": "PASS",
+        "title": "Complete Every WebSite Node Google Reads for the Site Name",
         "why": "re-read for 0.93.0. The tree declares no WebSite node anywhere, so the map has no `WebSite` key and `missing_is: pass` answers — which is what the pattern did by matching nothing, said out loud this time. The item still cannot fail on absence, only on a node present and incomplete (test_contract.py SAME_ON_BOTH)"
       },
       "GO-144": {
         "expect": "FAIL",
+        "title": "Optimize for Featured Snippets",
         "why": "twin of GEO-004 through scores_with: no answer blocks anywhere Re-read for 0.87.0 against the new floor of 32; unchanged."
       },
       "GO-145": {
         "expect": "FAIL",
+        "title": "Optimize for AI Overviews & Zero-Click SERPs",
         "why": "twin of GEO-005 through scores_with: nothing here is citable Re-read for 0.87.0 against the new floor of 25; unchanged."
       },
       "IN-121": {
         "expect": "INDETERMINATE",
+        "title": "Configure Geo-Targeting Signals",
         "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
       },
       "IN-122": {
         "expect": "INDETERMINATE",
+        "title": "Implement Valid hreflang (With Return Tags)",
         "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
       },
       "IN-127": {
         "expect": "INDETERMINATE",
+        "title": "Use a Clear International URL Structure",
         "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
       },
       "IN-128": {
         "expect": "INDETERMINATE",
+        "title": "Serve the Correct Localized Page",
         "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
       },
       "SE-118": {
         "expect": "INDETERMINATE",
+        "title": "Maintain a Valid TLS Certificate (HTTPS)",
         "why": "plain HTTP here too, so there is no certificate to examine"
       },
       "TE-180": {
         "expect": "FAIL",
+        "title": "Meet Accessibility (WCAG) Basics",
         "why": "the entry page declares no language, carries two h1 elements, serves an image with no alt attribute and another with an empty one on meaningful content, puts unreadable grey-on-grey text on the page and offers a form input with no label"
       },
       "TECH-003": {
         "expect": "PASS",
+        "title": "LCP subparts within budget",
         "why": "served from the same loopback socket as the good origin, so its time to first byte is the same few milliseconds. The tree is slow in ways this item does not measure"
       },
       "CN-038": {
         "expect": "FAIL",
+        "title": "Balance Evergreen and Fresh Content",
         "why": "no page in this tree carries a date of any kind, so there is nothing to tell evergreen from stale"
       },
       "CN-040": {
         "expect": "FAIL",
+        "title": "Publish an Up-to-Date Privacy Policy",
         "why": "this tree has no privacy policy and no page links to one"
       },
       "CN-044": {
         "expect": "FAIL",
+        "title": "Provide a Clear, Easy-to-Find Contact Page",
         "why": "no page here offers a telephone, an email or a contact route of any kind"
       },
       "CN-056": {
         "expect": "FAIL",
+        "title": "Show Publication and Updated Dates",
         "why": "no page here carries a publication or an updated date"
       },
       "CN-057": {
         "expect": "FAIL",
+        "title": "Show Author and Publisher Clearly",
         "why": "no page here names an author or a publisher"
       }
     },
     "good_tls": {
       "SE-117": {
         "expect": "PASS",
+        "title": "Force HTTPS Across the Site (Single Canonical Protocol)",
         "why": "the site and its rewritten same-origin URLs are served over HTTPS"
       },
       "SE-115": {
         "expect": "PASS",
+        "title": "Enable HSTS (HTTP Strict Transport Security)",
         "why": "the HTTPS origin emits Strict-Transport-Security with a one-year max-age and includeSubDomains"
       },
       "SE-120": {
         "expect": "PASS",
+        "title": "Harden Security Headers (CSP, Permissions-Policy, Referrer-Policy)",
         "why": "the HTTPS origin emits CSP, Permissions-Policy, Referrer-Policy, and X-Content-Type-Options hardening headers"
       },
       "TE-175": {
         "expect": "PASS",
+        "title": "Secure Pages & Eliminate Errors",
         "why": "the HTTPS pages use the deliberately hardened response-header policy with only X-Frame-Options omitted"
       },
       "CI-014": {
         "expect": "PASS",
+        "title": "Use Correct Redirect Codes (No Chains/Loops)",
         "why": "the audited HTTPS entry responds directly with no redirect chain or loop"
       },
       "AR-150": {
         "expect": "PASS",
+        "title": "Remove Redirect Chains and Loops",
         "why": "the audited HTTPS entry responds directly and therefore has no redirect hops"
       },
       "SE-118": {
         "expect": "PASS",
+        "title": "Maintain a Valid TLS Certificate (HTTPS)",
         "why": "both HTTPS origins present the same certificate, issued for 127.0.0.1 with a matching subjectAltName and in date, and the audit child is given it as its trust anchor, so verification succeeds"
       }
     },
     "broken_tls": {
       "SE-117": {
         "expect": "PASS",
+        "title": "Force HTTPS Across the Site (Single Canonical Protocol)",
         "why": "the site and its rewritten same-origin URLs are still served over HTTPS despite the sparse header policy"
       },
       "SE-115": {
         "expect": "FAIL",
+        "title": "Enable HSTS (HTTP Strict Transport Security)",
         "why": "the HTTPS origin omits Strict-Transport-Security entirely"
       },
       "SE-120": {
         "expect": "FAIL",
+        "title": "Harden Security Headers (CSP, Permissions-Policy, Referrer-Policy)",
         "why": "the HTTPS origin omits CSP, Permissions-Policy, Referrer-Policy, and every other deliberate hardening header"
       },
       "TE-175": {
         "expect": "FAIL",
+        "title": "Secure Pages & Eliminate Errors",
         "why": "the HTTPS pages use a deliberately sparse response-header policy and omit every tracked security header"
       },
       "CI-014": {
         "expect": "INDETERMINATE",
+        "title": "Use Correct Redirect Codes (No Chains/Loops)",
         "why": "the shared TLS entry has no loop; the fixture needs a dedicated audited entry URL that loops without gating the security-header audit"
       },
       "AR-150": {
         "expect": "INDETERMINATE",
+        "title": "Remove Redirect Chains and Loops",
         "why": "the shared TLS entry has no chain; the fixture needs a dedicated audited entry URL with more than one redirect hop"
       },
       "SE-118": {
         "expect": "PASS",
+        "title": "Maintain a Valid TLS Certificate (HTTPS)",
         "why": "both HTTPS origins present the same certificate, issued for 127.0.0.1 with a matching subjectAltName and in date, and the audit child is given it as its trust anchor, so verification succeeds"
       }
     }

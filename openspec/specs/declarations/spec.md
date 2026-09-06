@@ -311,7 +311,18 @@ The census had exactly this disease and was cured: it copies four registry field
 since the 0.89.0 finding its test re-reads all four against the registry rather than
 trusting the stamp. The instrument that got bitten was fixed; the one that has not been
 bitten yet still carries the defect.
-**Reader:** **none.** A declaration carries `expect` and `why` and nothing else.
+**Reader:** enforced.
+`tests/test_fixture_oracle.py::ADeclarationRecordsWhatItWasReasonedFrom` holds it. Every
+declaration now carries the item title it was reasoned from, and a test compares all 250
+against the registry. The sample moved out of a comment beside the harness and into the
+manifest under `sample`, where the same class compares it against the pages the run
+actually took — read from the audit's own `sampled_urls`, not from a second copy of the
+picking rule.
+
+What the stamp claims is worth stating exactly, because it is less than it looks: the
+titles were written in from the registry as it stood on 6 September 2026. That records
+the basis going forward. It is not evidence that each `why` was composed against that
+wording, and the reader's docstring says so rather than letting the field imply it.
 
 #### Scenario: a title is rewritten under its predictions
 - **WHEN** an item's title changes in the registry and the declarations reasoned from it
@@ -326,12 +337,19 @@ bitten yet still carries the defect.
 - **THEN** the declaration is being compared against a different site, and is
   identifiable as unre-read
 - **AND** recording the sampled pages in a comment beside the harness does not make them
-  part of what the declaration stores
+  part of what the declaration stores; they are stored in the manifest and compared
+  against the run
 
 #### Scenario: nothing is stored to compare against
 - **WHEN** a declaration carries only `expect` and `why`
 - **THEN** a moved title is undetectable from the manifest, and the obligation to re-read
   falls on a person remembering a release ritual
+
+#### Scenario: the stamp is mistaken for a reading
+- **WHEN** a basis is written into a declaration in bulk, from the registry as it stands
+- **THEN** what it establishes is that the *next* move is visible, and not that the
+  declaration was composed against that basis
+- **AND** the record says which of the two it is
 
 ### Requirement: DEC-6 — the declared set is derived from what the harness can reach, not listed by hand
 
@@ -992,21 +1010,27 @@ values.
 
 | | requirements |
 |---|---|
-| **enforced** | DEC-11, DEC-12 |
+| **enforced** | DEC-5, DEC-11, DEC-12 |
 | **partial** | DEC-3, DEC-4, DEC-6, DEC-7, DEC-9, DEC-10, DEC-13, DEC-14 |
-| **none** | DEC-1, DEC-5, DEC-8 |
+| **none** | DEC-1, DEC-8 |
 | **opposed** | DEC-2 |
 
 Invariants: INV-D1 and INV-D2 enforced; INV-D3 and INV-D4 unread.
 
-**Two enforced, eight partial, three unread, one opposed, of fourteen.**
+**Three enforced, eight partial, two unread, one opposed, of fourteen.**
 
-One thing does fall cleanly along the line between the instruments, and it is worth
-stating in the direction that survives: **both enforced requirements belong to the census,
-and not one belongs to the manifest.** Nothing the manifest owes — that a prediction
-preceded the run, that it recorded what it was reasoned from, that a disagreement was
-triaged rather than edited away — is held by anything. The converse is not clean, and an
-earlier draft claimed it was: DEC-13 is a census requirement with no reader at all.
+The line between the instruments used to fall cleanly, and the sentence that stated it is
+worth keeping beside the one replacing it: **both enforced requirements belonged to the
+census, and not one belonged to the manifest.** Nothing the manifest owed — that a
+prediction preceded the run, that it recorded what it was reasoned from, that a
+disagreement was triaged rather than edited away — was held by anything. The converse was
+not clean, and an earlier draft claimed it was: DEC-13 is a census requirement whose
+reader arrived later still.
+
+DEC-5 is the manifest's first, and it was the reachable one for the reason the asymmetry
+below predicts. Recording a basis is a recording, and a recording can be checked by
+re-taking it. DEC-1 and DEC-8 remain, and both ask about the order in which a person did
+something — which nothing here can re-take.
 
 The asymmetry is structural rather than an accident of effort. A recording can be checked
 by re-taking it, which is why DEC-12 is the cheapest enforced requirement here and the

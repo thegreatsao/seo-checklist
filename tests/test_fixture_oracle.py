@@ -19,6 +19,7 @@ import json
 import os
 import sys
 import unittest
+import urllib.parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
@@ -106,11 +107,13 @@ ALLOWED = {"PASS", "WARN", "FAIL", "N/A", "INDETERMINATE"}
 # own `keywords` meta lists last. One keyword for one audit, so all four origins get
 # the same one — that is what an operator does.
 #
-# The sample it is judged over is measured, not assumed: `--sample 3` picks the entry
-# page, /about.html and /privacy.html on `good`, and the entry page,
-# /blog/duplicate-a.html and /orphan.html on `broken`. The broken tree has no
-# /about.html, which is the thing to check before reasoning about `stride()` from the
-# good tree's page list.
+# The sample it is judged over is measured, not assumed — and since 0.93.2 it is
+# recorded in the manifest rather than here. `openspec/specs/declarations/` DEC-5 says
+# in as many words that a comment beside the harness does not make the sample part of
+# what a declaration stores, so the pages live in `expectations.json` under `sample`
+# and `ADeclarationRecordsWhatItWasReasonedFrom` compares them with what the run took.
+# The thing to check before reasoning about `stride()` from the good tree's page list
+# is still worth saying out loud: the broken tree has no /about.html.
 #
 # Safe to pass only since 0.48.0. Before it the registry invoked `article_seo.py`
 # without `--no-autocomplete`, so supplying a keyword here would have sent it to
@@ -118,6 +121,11 @@ ALLOWED = {"PASS", "WARN", "FAIL", "N/A", "INDETERMINATE"}
 KEYWORD = "bread"
 SITE = None
 RESULTS: dict[str, dict[str, str]] = {}
+# The pages each origin's run actually sampled, filled in by `audit()`. The manifest
+# records the same thing, and `openspec/specs/declarations/` DEC-5 is the requirement
+# that the two must agree: a declaration written against three pages and compared
+# against a different three is being compared against a different site.
+SAMPLES: dict[str, list[str]] = {}
 
 
 def manifest() -> dict:
@@ -165,6 +173,10 @@ def audit(label: str, url: str) -> dict[str, str]:
             f"{proc.stdout[-3000:]}\n{proc.stderr[-3000:]}")
     with open(out, encoding="utf-8") as stream:
         payload = json.load(stream)
+    # Paths, not URLs: the origin's port is ephemeral, and what a declaration was
+    # reasoned from is which pages of the tree were read, not where they were served.
+    SAMPLES[label] = [urllib.parse.urlparse(u).path or "/"
+                      for u in payload.get("sampled_urls") or []]
     rows = payload["items"]
     if isinstance(rows, dict):
         return {item_id: row["status"] for item_id, row in rows.items()}
@@ -259,6 +271,77 @@ def tearDownModule():
     finally:
         if SITE:
             SITE.stop()
+
+
+class ADeclarationRecordsWhatItWasReasonedFrom(unittest.TestCase):
+    """`openspec/specs/declarations/` DEC-5. A declaration stores its basis, so a basis
+    that moves is mechanically identifiable rather than remembered.
+
+    `declared_from` names two sources — the item title and the fixture construction —
+    and both move. Before 0.93.2 the manifest kept neither, so a title could be
+    rewritten under 250 predictions with every gate green, and the obligation to re-read
+    lived in a release ritual: a person remembering, rather than a file objecting.
+
+    The census had this disease and was cured after the 0.89.0 finding: it copies four
+    registry fields and its test re-reads all four rather than trusting the stamp. This
+    is the same repair on the instrument that had not been bitten yet.
+
+    **What the stamp does and does not claim.** The titles here were written in at
+    0.93.2 from the registry as it then stood. That records the basis going forward; it
+    is not evidence that each `why` was composed against exactly that wording, and this
+    class does not pretend otherwise. What it guarantees is that the *next* move is
+    visible.
+    """
+
+    def test_every_declaration_stores_the_title_it_was_reasoned_from(self):
+        with open(REGISTRY, encoding="utf-8") as stream:
+            titles = {item["id"]: item["title"]
+                      for item in json.load(stream)["items"]}
+        for label, declarations in manifest()["fixtures"].items():
+            for item_id, declared in declarations.items():
+                with self.subTest(fixture=label, item=item_id):
+                    self.assertIn("title", declared,
+                                  "a declaration with no recorded basis")
+                    self.assertEqual(
+                        declared["title"], titles[item_id],
+                        f"{item_id} was declared against a title the registry no "
+                        f"longer carries. Re-read the `why` against the new one, then "
+                        f"update the stored title — not the other way round")
+
+    def test_the_manifest_records_the_pages_each_origin_was_declared_against(self):
+        """The second basis. A declaration is made against the pages the run visits,
+        which is a sample; recording it in a comment beside the harness does not make
+        it part of what the declaration stores, which is what the requirement says in
+        as many words."""
+        sample = manifest().get("sample")
+        self.assertIsInstance(sample, dict, "the manifest records no sample")
+        self.assertEqual(set(sample), set(DECLARED_IDS),
+                         "an origin has declarations and no recorded sample")
+        for label, pages in sample.items():
+            with self.subTest(fixture=label):
+                self.assertTrue(pages, "an empty sample is not a recorded one")
+                self.assertEqual(len(pages), len(set(pages)), "a page recorded twice")
+                for page in pages:
+                    self.assertTrue(page.startswith("/"),
+                                    "record the path, not the URL: the port is "
+                                    "ephemeral and the tree is what was read")
+
+    def test_the_recorded_sample_is_the_one_the_run_takes(self):
+        """Compared against the run, not against the comment that used to hold it.
+
+        `--sample 3` spreads its picks with `stride()` over whatever the crawl found,
+        so adding a page to a fixture tree can move which three are read without
+        anybody touching a declaration."""
+        recorded = manifest().get("sample") or {}
+        self.assertTrue(SAMPLES, "no origin was audited; this compares nothing")
+        for label, taken in sorted(SAMPLES.items()):
+            with self.subTest(fixture=label):
+                self.assertEqual(
+                    recorded.get(label), taken,
+                    f"the {label} run sampled {taken}; the manifest was declared "
+                    f"against {recorded.get(label)}. The declarations for this origin "
+                    f"describe a different set of pages — re-read them, then record "
+                    f"the pages the run now takes")
 
 
 class ManifestContract(unittest.TestCase):

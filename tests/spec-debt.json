@@ -2,8 +2,8 @@
   "documents": {
     "declarations": {
       "counts": {
-        "enforced": 2,
-        "none": 3,
+        "enforced": 3,
+        "none": 2,
         "opposed": 1,
         "partial": 8
       },
@@ -13,7 +13,6 @@
       "requirements": 14,
       "unread": [
         "DEC-1",
-        "DEC-5",
         "DEC-8"
       ]
     },
@@ -153,8 +152,8 @@
     }
   },
   "totals": {
-    "enforced": 53,
-    "none": 11,
+    "enforced": 54,
+    "none": 10,
     "opposed": 2,
     "partial": 83,
     "requirements": 149

@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.93.1 — see [CHANGELOG.md](CHANGELOG.md). The last four verdicts decided by
+Version 0.93.2 — see [CHANGELOG.md](CHANGELOG.md). The last four verdicts decided by
 matching words in a message now read counted fields, and three of them move: GO-138's
 `404` matched a 404 and not a 500, so a sitemap of URLs returning 503 passed; MB-095
 counted a message its script only emits when told to fetch images, which the registry
