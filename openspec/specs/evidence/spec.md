@@ -186,11 +186,18 @@ beside it.
 **Why:** the catalogue is the document a rule-writer reads before writing a rule. Its
 opening paragraph is where they learn which checkers are exceptions, and an exception it
 fails to name is a rule written against a field that is not there.
-**Reader:** **none**, and it is wrong today in two ways at once (Appendix A.1). The
-document says it covers "all 57 scripts the registry runs" — the registry runs 58 — and it
-omits one of the two extra checkers it actually documents. Its account of the deviants
-names three scripts and calls them four, and attributes to one script a deviation that
-both of them have.
+**Reader:** enforced. `tools/audit_catalogue.py` derives the account and writes it
+into the file between two markers; `--check` runs in CI and in
+`tests/test_registry.py::TheCatalogueDescribesThisTree`, which also asks the questions
+the gate cannot ask about itself — that the classes partition the documented set, that
+none of them is empty because the parser went blind, and that three known deviants land
+where reading the script puts them rather than where the file says.
+
+The counts come from `checklist.json` and the `###` headings. The convention classes come
+from the catalogue's own body, the `item keys:` line under each `issues[]`, because that
+line is the evidence a rule-writer would act on. Severity *case* cannot come from there —
+the probe records keys, not values — so it comes from the same AST read
+`tools/audit_assertions.py` performs in CI, with the case kept.
 
 #### Scenario: the catalogue counts itself
 - **WHEN** the catalogue states how many checkers it documents
@@ -441,37 +448,43 @@ a stretch. What would settle it: a ratchet — `inherited` permitted but never p
 
 Observation, not specification. Measured at commit `f81f0a3`, registry `b0abf2819da0`.
 
-#### A.1 — the catalogue's account of itself is wrong in two ways
+#### A.1 — the catalogue's account of itself was wrong in every clause
 
-The first paragraph of `script-output-shapes.md` is what a rule-writer reads before writing
-a rule. It says:
+Closed in 0.93.3. The first paragraph of `script-output-shapes.md` is what a rule-writer
+reads before writing a rule. It said:
 
-> All 57 scripts the registry runs are documented here, plus `site_crawl.py` …
-
-Measured: the registry names **58** scripts, and `site_crawl.py` is not among them. The
-document contains **60** sections — the 58, plus `site_crawl.py`, plus `detect_profile.py`,
-which its own sentence does not mention. So the count is one low and the list of extras is
-one short.
-
-The same paragraph accounts for the deviants:
-
-> Four of them break the `issues[].severity` + `message` convention … `gsc_checker.py` and
+> All 57 scripts the registry runs are documented here, plus `site_crawl.py` … Four of
+> them break the `issues[].severity` + `message` convention … `gsc_checker.py` and
 > `indexnow_checker.py` capitalise severity, `indexnow_checker.py` uses `finding` instead
 > of `message`, and `robots_path_tester.py` emits no `issues[]` at all.
 
-Measured: **three** scripts deviate, not four, and `gsc_checker.py` uses `finding` as well
-— the sentence attributes to one script a deviation both of them have. A rule-writer
-reading it would expect `gsc_checker.py` to carry `message`.
+Measured: the registry names **58** scripts. The document holds **60** sections — those
+58, plus `site_crawl.py` and `detect_profile.py`, and the sentence named one of the two.
+The convention clause is the interesting half:
 
-| script | capitalised severity | `finding` instead of `message` | no `issues[]` |
-|---|---|---|---|
-| `gsc_checker.py` | yes | **yes** — undocumented | — |
-| `indexnow_checker.py` | yes | yes | — |
-| `robots_path_tester.py` | — | — | yes |
+| the file's own body says | scripts |
+|---|---|
+| `issues[]` with `severity` **and** `message` | 18 |
+| no root `issues[]` at all | 15 |
+| an `issues[]` and no record of what is in one | 22 |
+| the human text under another key (`finding`) | 5 |
+| a severity the source can capitalise | 7 |
 
-Nothing reads any of it. This is the same shape as the registry's own `source` string
-(REG-12) and the four drifted counts in the census tooling: a number written beside the
-thing it counts, reproduced faithfully by every gate, compared with nothing.
+Four was not an undercount by one. It was the count of the scripts the sentence itself
+named.
+
+**And an earlier draft of this appendix made the same mistake one level up.** It reported
+"three scripts deviate, not four" — having checked the three the sentence named, found
+the fourth was a double-count, and stopped. Correcting a list's arithmetic without asking
+whether the list is complete leaves the reader with a number that is now right about the
+wrong set. The derivation enumerates instead: it classifies every documented section, and
+`test_every_documented_script_is_classified_exactly_once` fails if the classes stop
+covering them.
+
+Two of the five rows are gaps in this file rather than facts about the scripts. Twenty-two
+sections record an `issues[]` and never say what an element looks like — the probe saw the
+key and captured no element — so a rule naming a field inside one of those is a guess, and
+the paragraph now says so where it used to say nothing.
 
 #### A.2 — twenty checkers are exercised and unjudged, and none is unjudged
 
@@ -558,14 +571,14 @@ half it believes unread.
 
 | | requirements |
 |---|---|
-| **enforced** | EVD-3, EVD-5, EVD-6, EVD-7 |
+| **enforced** | EVD-3, EVD-4, EVD-5, EVD-6, EVD-7 |
 | **partial** | EVD-1, EVD-2, EVD-8, EVD-9, EVD-10 |
-| **none** | EVD-4 |
+| **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-E1 and INV-E2 enforced; INV-E3 and INV-E4 partial.
 
-**Four enforced, five partial, one unread, of ten.**
+**Five enforced, five partial, none unread, of ten.**
 
 This is the best-read layer in the suite so far, and the reason is specific enough to be
 worth copying. Its three enforced requirements are all held by *generated* readers — a

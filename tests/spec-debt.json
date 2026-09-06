@@ -18,16 +18,14 @@
     },
     "evidence": {
       "counts": {
-        "enforced": 4,
-        "none": 1,
+        "enforced": 5,
+        "none": 0,
         "opposed": 0,
         "partial": 5
       },
       "opposed": [],
       "requirements": 10,
-      "unread": [
-        "EVD-4"
-      ]
+      "unread": []
     },
     "governance": {
       "counts": {
@@ -152,8 +150,8 @@
     }
   },
   "totals": {
-    "enforced": 54,
-    "none": 10,
+    "enforced": 55,
+    "none": 9,
     "opposed": 2,
     "partial": 83,
     "requirements": 149

@@ -57,6 +57,14 @@ jobs:
       - name: No assertion can never fire
         run: python skills/seo-checklist/tools/audit_assertions.py
 
+      # The catalogue's opening paragraph is what a rule-writer reads before writing a
+      # rule, and every clause of it was wrong: 57 scripts where the registry runs 58,
+      # one extra where there are two, four convention-breakers where the file itself
+      # describes forty-nine departures. It is derived now, and this fails when it and
+      # the tree disagree.
+      - name: The catalogue describes this tree
+        run: python skills/seo-checklist/tools/audit_catalogue.py --check
+
       # The quietest of the three, and the one nothing watched until 0.46: an
       # assertion that fires correctly, on the right field, and can only ever come
       # out one way. KW-076 asserted a field `article_seo.py` wrote only when it
@@ -509,6 +517,9 @@ jobs:
 
       - name: No assertion can never fire
         run: python skills/seo-checklist/tools/audit_assertions.py
+
+      - name: The catalogue describes this tree
+        run: python skills/seo-checklist/tools/audit_catalogue.py --check
 
       - name: No verdict is unreachable without saying so
         run: python skills/seo-checklist/tools/audit_reachability.py

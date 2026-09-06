@@ -10,6 +10,70 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.93.3 — the shapes catalogue's account of itself, and every CI gate run locally
+
+Registry version: unchanged at `e9154e92f4dd`. No item moves and no run produces a
+different number.
+
+**What was wrong.** `resources/references/script-output-shapes.md` opens with the
+paragraph a rule-writer reads before writing a rule — how many checkers it covers and
+which of them break the `issues[].severity` + `message` convention the rest share. Every
+clause of it was wrong. It said "all 57 scripts the registry runs" where the registry
+runs 58; it named `site_crawl.py` as the only extra where `detect_profile.py` is
+documented too; it said `gsc_checker.py` capitalises severity in `issues[]`, where its
+`issues[]` are lowercase and its `opportunities[]` are the capitalised ones; and it said
+four scripts break the convention, where the file's own body describes this:
+
+| the body says | scripts |
+|---|---|
+| `issues[]` with `severity` **and** `message` | 18 |
+| no root `issues[]` at all | 15 |
+| an `issues[]` and no record of what is in one | 22 |
+| the human text under another key (`finding`) | 5 |
+| a severity the source can capitalise | 7 |
+
+Four was not an undercount by one. It was the count of the scripts the sentence itself
+named — and `openspec/specs/evidence/` A.1, which corrected the sentence, made the same
+mistake one level up: it checked those same three, found the fourth was a double-count,
+reported "three, not four", and never asked whether the list was complete.
+
+**What now holds it.** `tools/audit_catalogue.py` derives the paragraph and writes it
+between two markers; `--check` is a CI step and a test. The counts come from
+`checklist.json` and the `###` headings; the convention classes from the catalogue's own
+body — the `item keys:` line under each `issues[]`, which is the evidence a rule-writer
+would act on — and the severity case from the same AST read `audit_assertions.py`
+performs, with the case kept. `TheCatalogueDescribesThisTree` asks what the gate cannot
+ask about itself: that the classes partition the documented set, that none is empty
+because the parser went blind, and that three known deviants land where reading the
+script puts them rather than where the file says.
+
+Two of those five rows are gaps in the catalogue rather than facts about the scripts.
+Twenty-two sections record an `issues[]` and never say what an element looks like — the
+probe saw the key and captured no element — so a rule naming a field inside one of them
+is a guess. The paragraph says so now where it used to say nothing.
+
+**Every tool gate now runs in the suite as well as in the workflow.** On 6 September a
+release added four registry paths, passed 1 370 local tests, and failed on CI because
+`tools/audit_assertions.py` refuses a path no script is documented as emitting — the gate
+built to catch exactly that defect, invisible from the machine that made it, because a
+workflow `run:` step is not something `unittest discover` executes.
+`EveryToolGateRunsHereToo` runs the same eight commands and costs a few seconds. It does
+not reimplement them, so the two answers cannot differ, and it derives the list from the
+workflow: a gate added there and not here fails rather than being quietly unrun. Four
+exceptions are enumerated with a reason each — the public-suffix snapshot reddens on a
+calendar, the score-sensitivity audit needs a live results file, the shape probe leaves
+loopback, and the notebook sync is an outward-facing action rather than a gate.
+
+Its first draft called `subprocess.run` with a `cwd`, and two standing rules in
+`test_runner.py` reddened on it: a working directory forces CPython onto the fork path,
+and macOS kills a forked child inside Apple's atfork handler before it execs. It goes
+through `harness.spawn` like every other child in this suite, and `spec_debt.py --check`
+gets an absolute path instead of a relative one.
+
+`openspec/specs/evidence/` goes to five enforced of ten with nothing unread. The suite
+total moves 54 → 55 of 149, and **eight of the twelve documents now have no unread
+requirement left**.
+
 ## 0.93.2 — a declaration records what it was reasoned from
 
 Registry version: unchanged at `e9154e92f4dd`. Nothing a run produces changes; what

@@ -1,13 +1,16 @@
 <!-- Updated: 2026-09-06 -->
 # Script output shapes
 
-All 57 scripts the registry runs are documented here, plus `site_crawl.py`, which
-the runner runs itself before building the plan and whose inventory the site-wide
-checks read. Four of them break the
-`issues[].severity` + `message` convention the rest share — `gsc_checker.py` and
-`indexnow_checker.py` capitalise severity, `indexnow_checker.py` uses `finding`
-instead of `message`, and `robots_path_tester.py` emits no `issues[]` at all.
-Check the section before writing a rule.
+<!-- derived: tools/audit_catalogue.py -->
+This catalogue documents 60 checkers: the 58 the registry runs, plus 2 it does not name — `detect_profile.py`, `site_crawl.py` — which the runner runs itself before building the plan and whose output the rest of the audit reads.
+
+Only 18 of them are documented as carrying an `issues[]` whose elements have both `severity` and `message` — the convention a rule can rely on. **Check the section before writing a rule.** The other ways this file describes an `issues[]`, counting a script once per way, come to 49 entries:
+
+* **15 emit no root `issues[]`**: `ai_crawler_policy_matrix.py`, `article_seo.py`, `cwv_metrics.py`, `detect_profile.py`, `duplicate_content.py`, `hreflang_checker.py`, `indexability_matrix.py`, `javascript_render_audit.py`, `lcp_subparts.py`, `llms_txt_checker.py`, `pagespeed.py`, `rendered_audit.py`, `robots_path_tester.py`, `site_crawl.py`, `url_quality.py`. A `none_severity` or `len_eq: 0` rule over one of these reads a key that is never there, which is `NO_DATA` forever.
+* **22 record an `issues[]` and never say what is in one**: `broken_links.py`, `cache_compression_checker.py`, `canonical_checker.py`, `css_minify_check.py`, `domain_safety_check.py`, `faceted_nav_audit.py`, `font_audit.py`, `ga4_tag_checker.py`, `gsc_cannibalization.py`, `gsc_links_csv.py`, `gsc_url_inspection.py`, `html_validator.py`, `internal_links.py`, `redirect_checker.py`, `rich_results_guard.py`, `robots_checker.py`, `security_headers.py`, `server_log_audit.py`, `social_meta.py`, `tls_certificate.py`, `topical_cluster_mapper.py`, `video_schema_checker.py`. That is a gap in this file rather than a fact about the script — the probe saw the key and captured no element — and a rule naming a field inside one of these is a guess.
+* **5 carry the human text under another key**: `entity_checker.py` (`finding`), `gsc_checker.py` (`finding`), `indexnow_checker.py` (`finding`), `link_profile.py` (`finding`), `mobile_render_checker.py` (`finding`). `none_matching` with `field: message` matches nothing on these.
+* **7 can put a capitalised severity in a dict**: `article_seo.py`, `duplicate_content.py`, `entity_checker.py`, `gsc_checker.py`, `hreflang_checker.py`, `indexnow_checker.py`, `link_profile.py`. `none_severity` compares lowercase, and `SEVERITY_ALIAS` in `tools/audit_assertions.py` is what keeps that from silently clearing a rule.
+<!-- /derived -->
 
 Machine-probed JSON structure of the evidence scripts, captured by running each one
 with `--json` against a live URL (https://www.plerdy.com/seo-checklist/, WordPress).

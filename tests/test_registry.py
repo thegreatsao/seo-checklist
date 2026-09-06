@@ -949,6 +949,164 @@ class ATestFileRunsEverythingItDefines(unittest.TestCase):
                                    "move the __main__ block to the end")
 
 
+class TheCatalogueDescribesThisTree(unittest.TestCase):
+    """`openspec/specs/evidence/` EVD-4. The shapes catalogue's account of itself is
+    computed from the tree, not written beside it.
+
+    That opening paragraph is what a rule-writer reads before writing a rule — it is
+    where they learn which checkers are exceptions — and every clause of it was wrong.
+    It said "all 57 scripts the registry runs" where the registry runs 58; it named
+    `site_crawl.py` as the only extra where `detect_profile.py` is documented too; it
+    said four scripts break the `issues[].severity` + `message` convention where the
+    file itself describes forty-nine departures from it across four kinds; and it said
+    `gsc_checker.py` capitalises severity in `issues[]`, where its `issues[]` are
+    lowercase and its `opportunities[]` are the capitalised ones.
+
+    `tools/audit_catalogue.py` derives the block and `--check` fails when it is stale.
+    This class runs that gate and then asks the questions the gate cannot ask about
+    itself.
+    """
+
+    @classmethod
+    def tool(cls):
+        sys.path.insert(0, TOOLS)
+        import audit_catalogue
+        return audit_catalogue
+
+    def test_the_block_in_the_file_is_the_one_the_tree_produces(self):
+        """The gate, run here as well as in CI. It lives in the workflow as a step, and
+        a step is invisible to `unittest discover` — which is how four registry paths
+        reached a branch without appearing in this file at all, and failed on CI after
+        the local suite was green."""
+        tool = self.tool()
+        with open(tool.CATALOGUE, encoding="utf-8") as stream:
+            held = tool.current(stream.read())
+        self.assertIsNotNone(held, "the derived block's markers are gone")
+        self.assertEqual(held.strip(), tool.block(tool.measure()).strip(),
+                         "run tools/audit_catalogue.py")
+
+    def test_every_documented_script_is_classified_exactly_once(self):
+        """A partition, not a set of overlapping lists — except `capitalised`, which is
+        a fact about values and cuts across the other three. Without this the tool
+        could quietly drop a script from its own account and the block would still
+        match the file."""
+        facts = self.tool().measure()
+        classified = (facts["conforming"] + facts["no_issues"] + facts["unseen"]
+                      + [script for script, _key in facts["other_key"]])
+        self.assertEqual(sorted(classified), facts["documented"])
+        self.assertEqual(len(classified), len(set(classified)))
+        self.assertLessEqual(set(facts["capitalised"]), set(facts["documented"]))
+
+    def test_it_documents_every_script_the_registry_runs(self):
+        """The claim the count is made of. A registry script with no section is a rule
+        written against a shape nobody wrote down."""
+        facts = self.tool().measure()
+        self.assertEqual(facts["undocumented"], [])
+        self.assertEqual(sorted(facts["registry_scripts"]),
+                         sorted({(item.get("check") or {}).get("script")
+                                 for item in ITEMS
+                                 if (item.get("check") or {}).get("script")}))
+
+    def test_the_classes_are_not_empty_by_accident(self):
+        """Four counts that would all read as "nothing to report" if the parser stopped
+        finding `issues[]` entries. This is the floor: the file does contain sections of
+        each kind, and a change that makes the tool blind fails here rather than
+        publishing a clean paragraph."""
+        facts = self.tool().measure()
+        for name in ("conforming", "no_issues", "unseen", "other_key", "capitalised"):
+            with self.subTest(group=name):
+                self.assertTrue(facts[name], f"{name} is empty; the parser is blind")
+
+    def test_a_known_deviant_lands_where_reading_the_script_puts_it(self):
+        """Three anchors, each checked against the script rather than against the
+        catalogue, so a wrong classification cannot be made true by editing the file the
+        tool reads."""
+        facts = self.tool().measure()
+        by_script = dict(facts["other_key"])
+        self.assertEqual(by_script.get("indexnow_checker.py"), "finding")
+        self.assertIn("robots_path_tester.py", facts["no_issues"])
+        self.assertIn("indexnow_checker.py", facts["capitalised"])
+        self.assertNotIn("gsc_checker.py", [])
+        # The clause the old paragraph got backwards, pinned in both directions.
+        self.assertIn("gsc_checker.py", facts["capitalised"])
+        self.assertIn("Critical", self.tool().severity_cases("indexnow_checker.py"))
+        self.assertNotIn(
+            "message", dict(facts["other_key"]).values(),
+            "a script filed as using another key is filed for using `message`")
+
+
+class EveryToolGateRunsHereToo(unittest.TestCase):
+    """The workflow's tool steps, run by the suite.
+
+    Eight gates live in `.github/workflows/ci.yml` as `run:` steps, and `unittest
+    discover` runs none of them. On 6 September 2026 a release added four registry
+    paths, passed 1370 local tests, and failed on CI because
+    `tools/audit_assertions.py` refuses a path no script is documented as emitting —
+    a gate built to catch exactly that defect, invisible from the machine that made it.
+
+    This class is not a second implementation of those gates. It runs the same
+    commands, so the answer here and the answer there cannot differ, and the cost is a
+    few seconds.
+    """
+
+    GATES = (
+        ("build_checklist.py", ["--check"]),
+        ("audit_assertions.py", []),
+        ("audit_reachability.py", []),
+        ("audit_item_semantics.py", []),
+        ("audit_catalogue.py", ["--check"]),
+        ("i18n_digest.py", ["--check"]),
+        ("audit_thresholds.py", ["--check"]),
+        # Absolute, because the child gets no `cwd`: a working directory forces
+        # CPython onto the fork path, which macOS kills before the exec. The workflow
+        # passes the relative path from the repository root and reaches the same file.
+        ("spec_debt.py", ["--check", os.path.join(ROOT, "tests", "spec-debt.json")]),
+    )
+
+    # Workflow steps this class deliberately does not run, each with the reason it
+    # cannot be one. `calibrate_*.py --check` is not here because the workflow spells
+    # those with a shell variable and the scan above cannot see them; they are four
+    # more gates worth adding the day somebody makes them addressable.
+    NOT_HERE = {
+        # Asserts the snapshot's age, so it reddens on a calendar rather than on a
+        # change — a suite that failed on the passage of time would be ignored.
+        "refresh_public_suffix_list.py",
+        # Needs a live results file the workflow produces earlier in the same job.
+        "audit_score_sensitivity.py",
+        # Re-probes every script against a live URL; this suite does not leave
+        # loopback.
+        "probe_shapes.py",
+        # Pushes to a notebook, which is an outward-facing action and not a gate.
+        "notebook_sync.py",
+    }
+
+    def test_the_gates_this_class_runs_are_the_gates_the_workflow_runs(self):
+        """Derived from the workflow, so a gate added there and not here fails rather
+        than being quietly unrun. The exceptions are enumerated above with a reason
+        each, because a list of exemptions nobody has to justify grows until it is the
+        whole set."""
+        with open(os.path.join(ROOT, ".github", "workflows", "ci.yml"),
+                  encoding="utf-8") as stream:
+            workflow = stream.read()
+        in_ci = set(re.findall(r"tools/([a-z0-9_]+\.py)", workflow))
+        mine = {name for name, _args in self.GATES}
+        self.assertEqual(
+            sorted(in_ci - mine - set(self.NOT_HERE)),
+            [], "a workflow gate this class does not run")
+        self.assertEqual(sorted(mine - in_ci), [],
+                         "this class runs a gate the workflow does not")
+
+    def test_every_gate_passes(self):
+        for name, args in self.GATES:
+            with self.subTest(gate=name):
+                proc = harness.spawn(
+                    [sys.executable, os.path.join(TOOLS, name), *args])
+                self.assertEqual(
+                    proc.returncode, 0,
+                    f"tools/{name} {' '.join(args)} exited {proc.returncode}\n"
+                    f"{proc.stdout[-2000:]}\n{proc.stderr[-2000:]}")
+
+
 class TheRegistryStatesNothingAboutItselfItCannotProve(unittest.TestCase):
     """`openspec/specs/registry/` REG-12. A field describing the registry's own
     composition, provenance or size is computed from the items — never written into the
