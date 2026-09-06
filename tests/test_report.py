@@ -1339,5 +1339,83 @@ class TheHalfTranslatedReportKnowsWhichHalf(unittest.TestCase):
             "a string that can go untranslated with nothing to say so."
             % (len(computed), self.COMPUTED_CALLS))
 
+
+class ACategoryBarSaysWhatItsScoreWasComputedFrom(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-10, and the repair is not the obvious one.
+
+    The obvious reading — fold the twins out of the category counts — is wrong, and two
+    tests in `test_runner.py` say why in their own failure messages: `openspec/specs/scoring/`
+    SCR-1 requires a twin to keep reporting its own status, so it is "still decided, still
+    counted and still printed". Hiding it would answer this requirement by breaking that one.
+
+    What was actually wrong is narrower and was invisible in the payload: the bar printed
+    `decided` beside a `score` computed over a different set. Measured on a live run,
+    `media` showed five decided items and a score computed from three, `geo_ai` seven and
+    five. Nothing let a reader see the denominator, so "100/100 over 5 items" was a sentence
+    the report did not mean.
+
+    `score_population` is that denominator, and the surfaces print it **only when it differs
+    from `decided`** — on nine of twelve categories in that run the two agree, and a note on
+    every bar is one nobody reads by the second page.
+    """
+
+    def rows(self, *specs):
+        out = []
+        for n, (cat, status, twin_of) in enumerate(specs):
+            row = {"id": "X-%d" % n, "title": "x", "status": status, "severity": "high",
+                   "category": cat, "category_label": cat.title(), "effort": "low",
+                   "evidence": "e", "fix": ""}
+            if twin_of:
+                row["scores_with"] = twin_of
+            out.append(row)
+        return out
+
+    def test_the_population_is_the_set_the_score_divided_by(self):
+        result = runner.score(self.rows(("media", PASS, None),
+                                        ("media", FAIL, "X-0"),
+                                        ("media", PASS, None)))
+        cat = result["by_category"]["media"]
+        self.assertEqual(cat["decided"], 3, "a twin stopped being counted, which SCR-1 "
+                                            "requires it to keep doing")
+        self.assertEqual(cat["score_population"], 2)
+        self.assertEqual(cat["score"], 100, "the twin's FAIL was weighed after all")
+
+    def test_a_category_with_no_twins_reports_the_same_two_numbers(self):
+        cat = runner.score(self.rows(("meta", PASS, None),
+                                     ("meta", FAIL, None)))["by_category"]["meta"]
+        self.assertEqual(cat["score_population"], cat["decided"])
+
+    def test_the_surfaces_say_so_when_the_two_numbers_differ(self):
+        data = results(*self.rows(("media", PASS, None),
+                                  ("media", FAIL, "X-0"),
+                                  ("media", PASS, None)))
+        data["scores"] = runner.score(data["items"])
+        row = next(ln for ln in render_markdown(data).splitlines()
+                   if ln.startswith("| ") and "Media" in ln and "/100" in ln)
+        self.assertIn("scored over 2", row,
+                      "the bar does not say how many items its score covered")
+        self.assertIn("scored over 2", render_html(data),
+                      "the HTML bar does not say it either")
+
+    def test_the_surfaces_stay_quiet_when_they_agree(self):
+        """Nine of twelve categories on a live run have nothing to disclose here, and a
+        note printed on every bar is one a reader learns to skip — the same argument the
+        parser caveat and the cache warning make."""
+        data = results(*self.rows(("meta", PASS, None), ("meta", FAIL, None)))
+        data["scores"] = runner.score(data["items"])
+        for surface in (render_markdown(data), render_html(data)):
+            self.assertNotIn("ask a question this audit answers", surface)
+
+    def test_the_two_numbers_are_never_inverted(self):
+        """`score_population` counts a subset of `decided`, so it cannot exceed it. Asserted
+        because the pair is computed by two different comprehensions over two different
+        lists, which is how they came to disagree silently in the first place."""
+        data = runner.score(self.rows(("media", PASS, None), ("media", FAIL, "X-0"),
+                                      ("mobile", PASS, "X-0"), ("mobile", WARN, None),
+                                      ("meta", NO_DATA, None)))
+        for name, cat in data["by_category"].items():
+            with self.subTest(category=name):
+                self.assertLessEqual(cat["score_population"], cat["decided"])
+
 if __name__ == "__main__":
     unittest.main()

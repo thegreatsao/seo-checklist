@@ -1513,10 +1513,13 @@ def score(graded: list[dict]) -> dict:
         cs = c["counts"]
         dec = cs.get(PASS, 0) + cs.get(FAIL, 0) + cs.get(WARN, 0)
         c["decided"] = dec
+        # Protect the reader from a score whose denominator is invisible when twins
+        # carry their weight in another category but remain decided in this one.
+        cat_weighed = [g for g in weighed if g["category"] == key]
+        c["score_population"] = len(cat_weighed)
         earned_c = sum(SEVERITY_WEIGHT[g["severity"]] * VERDICT_CREDIT[g["status"]]
-                       for g in weighed if g["category"] == key)
-        total_c = sum(SEVERITY_WEIGHT[g["severity"]]
-                      for g in weighed if g["category"] == key)
+                       for g in cat_weighed)
+        total_c = sum(SEVERITY_WEIGHT[g["severity"]] for g in cat_weighed)
         c["score"] = round(100 * earned_c / total_c) if total_c else None
         # What the bar cannot show: a single failing critical in an otherwise clean
         # category still scores well, so the count travels with the score.

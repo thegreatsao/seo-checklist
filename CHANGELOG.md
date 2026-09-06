@@ -10,6 +10,39 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.94.3 — a category bar says what its score was computed from
+
+Registry version: unchanged at `e9154e92f4dd`. A number a client reads changes, so this is
+a minor.
+
+**A bar printed two numbers that described different sets.** `by_category` counted every
+graded row and scored the folded ones, so on a live run `media` showed five decided items
+beside a score computed from three, and `geo_ai` seven beside five. "100/100 over 5 items"
+was a sentence the report did not mean, and nothing in the payload let a reader see the
+denominator.
+
+**The obvious repair was wrong, and that is the part worth keeping.** Folding the twins out
+of the category counts would have answered `openspec/specs/reporting/` REP-10 by breaking
+`openspec/specs/scoring/` SCR-1, which requires a twin to keep reporting its own status —
+"still decided, still counted and still printed", as one of the two tests holding it says in
+its own failure message. Asked to make that change, the executor stopped and named those two
+tests rather than editing them, which is the outcome the instruction to stop exists for.
+
+So `decided` and `counts` keep their meaning and a new field carries the denominator:
+`score_population`, the number of that category's decided items that carried weight. Both
+surfaces print it **only when it differs from `decided`** — nine of twelve categories on
+that run had nothing to disclose, and a note on every bar is one nobody reads by the second
+page:
+
+    | Images / Video | 100/100 (scored over 3 of them: 2 ask a question this audit
+      answers in another section) | 5 | 0 |
+
+REP-10 goes to `enforced`, probed by deleting the field, which reddens four assertions
+including the one that reads the rendered surface. `openspec/specs/reporting/` is nine
+enforced of thirteen.
+
+Tree debt: 73 enforced, 68 partial, 6 unread, 2 opposed, of 149.
+
 ## 0.94.2 — eleven English strings in a Russian report, and nothing said so
 
 Registry version: unchanged at `e9154e92f4dd`. The item set does not move. What moves is

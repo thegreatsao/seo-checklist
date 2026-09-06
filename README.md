@@ -4,7 +4,9 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.94.2 — see [CHANGELOG.md](CHANGELOG.md). A verdict a person asserted no longer
+Version 0.94.3 — see [CHANGELOG.md](CHANGELOG.md). A category bar now says how many of its
+items its score was actually computed from, which on a live run was three of the five it
+printed. Before that, `0.94.2` made it so a verdict a person asserted no longer
 renders exactly like one a script measured, and the check for what is still untranslated
 can see all 150 report strings rather than 99 — eleven of them really were English in a
 Russian report, with nothing to say so. Before that, `0.94.1` made the `robots.txt` fetch — the first

@@ -321,18 +321,32 @@ them and show the ruled survivor.
 **Why:** a client reading the same finding twice concludes the audit is padded, and they are
 right. The registry's own rule on which twin carries the weight is `openspec/specs/registry/` REG-11;
 this is the display half.
-**Reader:** partial. Five test functions cover the folding. The category-level counts are
-recorded elsewhere in this suite as counting twins the headline folds, so the fold is read
-for one surface and not for all of them.
+**Reader:** enforced. `tests/test_report.py::ACategoryBarSaysWhatItsScoreWasComputedFrom`
+holds the surface half and five test functions cover the folding itself.
+
+The repair was not the obvious one, and that is worth keeping. Folding the twins out of the
+category counts would answer this requirement by breaking `openspec/specs/scoring/` SCR-1,
+which requires a twin to keep reporting its own status — two tests in `test_runner.py` say so
+in their own failure messages, and an executor asked to make the change stopped and named
+them rather than editing them. What was actually wrong was narrower and invisible in the
+payload: the bar printed `decided` beside a `score` computed over a different set. Measured
+6 September 2026, `media` showed five decided items and a score computed from three, and
+`geo_ai` seven and five, so "100/100 over 5 items" was a sentence the report did not mean.
+
+`score_population` is that denominator, printed on both surfaces only when it differs from
+`decided` — nine of twelve categories on that run had nothing to disclose, and a note on
+every bar is one nobody reads by the second page. Probed by deleting the field, which
+reddens four of the five including the surface assertion.
 
 #### Scenario: one finding, two source numbers
 - **WHEN** a twin pair would both appear in a report surface
 - **THEN** the survivor is shown once
 
-#### Scenario: a surface that does not fold
-- **WHEN** a count elsewhere in the report tallies both halves of a pair
-- **THEN** the fold is read for one surface and not for all of them, which is what makes
-  this requirement `partial` rather than met
+#### Scenario: a count that tallies both halves of a pair
+- **WHEN** a category's item count includes a twin whose weight belongs elsewhere
+- **THEN** the count keeps it, because SCR-1 requires a twin to report its own status
+- **AND** the bar says how many of those items its score was computed from, so the reader
+  is not given a denominator they cannot see
 
 ### Requirement: REP-11 — every model-judged item belongs to exactly one lens, and each queue names its own items
 
@@ -547,7 +561,7 @@ measurement.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** REP-3, REP-4, REP-9, REP-11 and REP-13, by mutation, on 6 September 2026 — deleting the cache branch
+**Probed:** REP-3, REP-4, REP-9, REP-10, REP-11 and REP-13, by mutation, on 6 September 2026 — deleting the cache branch
 from `provenance_warnings` reddens the membership reader from both sides, and — setting `EFFORT_COST['high']` to 1
 reddens three readers across two documents. The rest were derived by parsing the 1 280 test
 functions and reading the bodies that name each symbol: the executor running mutation probes
@@ -559,14 +573,14 @@ summary that bound is unusually tight, because there is no plausible way to exer
 
 | | requirements |
 |---|---|
-| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-7, REP-9, REP-11, REP-13 |
-| **partial** | REP-5, REP-6, REP-8, REP-10, REP-12 |
+| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-7, REP-9, REP-10, REP-11, REP-13 |
+| **partial** | REP-5, REP-6, REP-8, REP-12 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-P2 and INV-P3 enforced; INV-P1 partial; INV-P4 unread.
 
-**Eight enforced, five partial, nothing unread, of thirteen.**
+**Nine enforced, four partial, nothing unread, of thirteen.**
 
 REP-9 moved without a line of work in this document: its gap was a sentence about another
 one — the effort costs the ordering divides by were pinned by nothing — and closing SCR-2

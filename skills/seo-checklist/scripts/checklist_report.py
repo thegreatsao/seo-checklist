@@ -1093,6 +1093,15 @@ def render_markdown(data: dict, L: Lang | None = None) -> str:
     for cat in s["by_category"].values():
         c = cat["counts"]
         sc = f"{cat['score']}/100" if cat["score"] is not None else "—"
+        population = cat.get("score_population", cat["decided"])
+        if population != cat["decided"]:
+            note = L.t(
+                "cat_score_population",
+                "scored over {scored} of them: {repeated} ask a question this "
+                "audit answers in another section",
+            ).format(scored=population, decided=cat["decided"],
+                     repeated=cat["decided"] - population)
+            sc += f" ({note})"
         out.append(f"| {cat['label']} | {sc} | {cat['decided']} | {c.get(FAIL, 0)} |")
 
     # Folded, because this list asks the reader to do things and a synonym pair is one
@@ -1538,6 +1547,15 @@ def render_html(data: dict, L: Lang | None = None) -> str:
             tone = ("fail" if score < BAR_FAIL_SCORE
                     else ("warn" if score < BAR_WARN_SCORE else "pass"))
             failed = cat["counts"].get(FAIL, 0) + cat["counts"].get(WARN, 0)
+            population = cat.get("score_population", cat["decided"])
+            population_note = ""
+            if population != cat["decided"]:
+                population_note = " · " + L.t(
+                    "cat_score_population",
+                    "scored over {scored} of them: {repeated} ask a question this "
+                    "audit answers in another section",
+                ).format(scored=population, decided=cat["decided"],
+                         repeated=cat["decided"] - population)
             parts.append(
                 f'<div class="catrow"><div class="catname">{html.escape(cat["label"])}</div>'
                 f'<div class="cattrack"><i class="{tone}" style="width:{score}%"></i></div>'
@@ -1545,6 +1563,7 @@ def render_html(data: dict, L: Lang | None = None) -> str:
                 f'<div class="catmeta">'
                 + html.escape(L.t("cat_meta", "{decided} checked, {failed} need work")
                               .format(decided=cat["decided"], failed=failed))
+                + html.escape(population_note)
                 + (f' · <b>{html.escape(L.sev(cat["worst_open"]))}</b>'
                    if cat.get("worst_open") in ("critical", "high") else "")
                 + "</div></div>")
