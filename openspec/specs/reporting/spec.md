@@ -234,9 +234,18 @@ answer that is ignored MUST say why.
 
 **Why:** without this, an answer file is a way to overwrite the audit. The whole value of a
 script verdict is that nobody typed it.
-**Reader:** partial. Each merge is asserted to act only on its own status — that is the
-best-read part of this document — and the ignored-answer path is asserted for the manual
-merge. That every ignored answer *prints* a reason is asserted for one merge of the three.
+**Reader:** enforced. `tests/test_report.py::EveryMergeSaysWhyItIgnoredAnAnswer` holds the
+second sentence across all three merges, in the two ways an answer file is wrong: aimed at
+an item a script has since decided, and carrying a status that is not one. Each merge must
+name the id, because a count of ignored answers sends an operator to read the whole file
+again. Each merge is separately asserted to act only on its own status — the best-read part
+of this document — and that half was already held.
+
+The set of merges is derived from the module rather than listed: a function taking `data`
+and one other mapping that *assigns* an item's status. The first version of that derivation
+collected the renderers too, which take the same arguments and walk the same list — reading
+is not merging, and the difference is the assignment. Probed by silencing one merge's
+refusal, which reddens that merge by name.
 
 #### Scenario: an answer aimed at a measured verdict
 - **WHEN** either merge targets an item a script decided
@@ -276,9 +285,13 @@ and the report MUST say so rather than preserve the number.
 
 **Why:** the alternative is an audit whose score cannot go down when its confidence does,
 which is the same defect as scoring an unanswerable item.
-**Reader:** partial. The status change is enforced by REP-7's tests, and the scoring rules
-that exclude an undecided item are enforced in `openspec/specs/scoring/`. That the *coverage line*
-moves — that a reader sees the audit got smaller — is not asserted anywhere.
+**Reader:** enforced. `tests/test_report.py::ContestingAnAnswerIsVisibleInTheCoverage`
+holds the sentence this requirement is actually about. The status change is enforced by
+REP-7's tests and the scoring rules by `openspec/specs/scoring/`; what nothing asserted was
+that the *coverage line* moves — that a reader sees the audit got smaller. Both halves are
+read now: the share falls when an answer is withdrawn, and the smaller number reaches the
+rendered surfaces rather than only the payload, which is the shape REP-4 and HTTP-8 both
+turned out to have.
 
 #### Scenario: a contested answer costs reach
 - **WHEN** an item is returned to undecided by a review
@@ -390,10 +403,17 @@ page section MUST exist exactly when sampling occurred.
 **Why:** this is the file somebody opens when they are arguing with a verdict. Flattening
 sampled runs into site runs would make it impossible to tell which page produced which
 number, which is the question it exists to answer.
-**Reader:** partial. Five test functions cover the artifact's shape, and redaction reaching
-it is separately enforced by `openspec/specs/inputs/` INP-7. That the internal `__`-prefixed keys are
-stripped is asserted; that page runs are never flattened is asserted through the shape and
-not as a rule.
+**Reader:** enforced. Five test functions cover the artifact's shape, redaction reaching it
+is separately enforced by `openspec/specs/inputs/` INP-7, and the internal `__`-prefixed keys
+are asserted stripped. The sentence this requirement exists for — that page runs are never
+flattened — was read only through the shape until 0.94.3, which says nothing about the case
+where flattening would actually happen: a page run whose script and arguments collide with a
+site run's, which a real sampled audit produces on every run.
+`tests/test_report.py::PageRunsAreNeverFlattenedIntoSiteRuns` asserts it as a property over
+constructed runs, including that collision, that `None` and `{}` stay different statements —
+no sampling, versus sampling that produced nothing — and that a failed run keeps the reason
+it failed, since a failure is usually why the file is opened at all. Probed by merging the
+page sections into the site's, which reddens two.
 
 #### Scenario: somebody argues with a verdict
 - **WHEN** a reader opens the artifact to see what a script actually returned
@@ -561,7 +581,7 @@ measurement.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** REP-3, REP-4, REP-9, REP-10, REP-11 and REP-13, by mutation, on 6 September 2026 — deleting the cache branch
+**Probed:** REP-3, REP-4, REP-6, REP-9, REP-10, REP-11, REP-12 and REP-13, by mutation, on 6 September 2026 — deleting the cache branch
 from `provenance_warnings` reddens the membership reader from both sides, and — setting `EFFORT_COST['high']` to 1
 reddens three readers across two documents. The rest were derived by parsing the 1 280 test
 functions and reading the bodies that name each symbol: the executor running mutation probes
@@ -573,14 +593,23 @@ summary that bound is unusually tight, because there is no plausible way to exer
 
 | | requirements |
 |---|---|
-| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-7, REP-9, REP-10, REP-11, REP-13 |
-| **partial** | REP-5, REP-6, REP-8, REP-12 |
+| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-6, REP-7, REP-8, REP-9, REP-10, REP-11, REP-12, REP-13 |
+| **partial** | REP-5 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-P2 and INV-P3 enforced; INV-P1 partial; INV-P4 unread.
 
-**Nine enforced, four partial, nothing unread, of thirteen.**
+**Twelve enforced, one partial, nothing unread, of thirteen.**
+
+The one that remains is REP-5, and it is not a missing test. The merges are asymmetric on
+purpose: a model's answer without a rationale degrades to "no rationale given" and a person's
+is refused outright, and `merge_manual_answers` argues for that in its own docstring — a
+human `PASS` with nothing beside it is indistinguishable from a tick made to clear the list,
+while a model's answer is stamped and now marked on every surface. `openspec/specs/verdicts/`
+VRD-10 says no status may be emitted without a sentence saying what was decided, and "no
+rationale given" is not that sentence. Whether to require a rationale from the model too is a
+decision about live verdicts on every audited site, not an omission to be closed by a test.
 
 REP-9 moved without a line of work in this document: its gap was a sentence about another
 one — the effort costs the ordering divides by were pinned by nothing — and closing SCR-2

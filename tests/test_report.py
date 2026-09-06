@@ -1417,5 +1417,213 @@ class ACategoryBarSaysWhatItsScoreWasComputedFrom(unittest.TestCase):
             with self.subTest(category=name):
                 self.assertLessEqual(cat["score_population"], cat["decided"])
 
+
+class EveryMergeSaysWhyItIgnoredAnAnswer(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-6's second sentence: every answer that is ignored
+    MUST say why.
+
+    The first sentence — that a merge only fills a status waiting for it — is the
+    best-read part of that document. The second was asserted for one merge of the three,
+    and the three are not interchangeable: an operator hand-editing `MANUAL-QUEUE.md` and a
+    model answering `LLM-QUEUE.md` fail in different ways, and the reviewer pass fails in a
+    third. An answer silently dropped is an operator who thinks the audit read their file.
+
+    The set of merges is derived from the module rather than listed, for the reason this
+    tree keeps relearning: a fourth merge added later would be covered by a list only if
+    somebody remembered to add it, and the omission is invisible from inside the list.
+    """
+
+    REPORT = os.path.join(SKILL, "scripts", "checklist_report.py")
+
+    @classmethod
+    def merges(cls):
+        """Every module-level function that folds an answer file into results.
+
+        Identified by what it does rather than by what it is called: takes `data` and one
+        other mapping, and *assigns* an item's status. Renderers also take `data` and walk
+        `data["items"]`, and the first version of this test collected them too — reading
+        is not merging, and the difference is the assignment.
+        """
+        import ast
+        with open(cls.REPORT, encoding="utf-8") as fh:
+            tree = ast.parse(fh.read())
+        found = []
+        for node in tree.body:
+            if not isinstance(node, ast.FunctionDef):
+                continue
+            args = [a.arg for a in node.args.args]
+            if args[:1] != ["data"] or len(args) != 2:
+                continue
+            assigns_status = any(
+                isinstance(n, ast.Assign)
+                and any(isinstance(t, ast.Subscript) and isinstance(t.slice, ast.Constant)
+                        and t.slice.value == "status" for t in n.targets)
+                for n in ast.walk(node))
+            if assigns_status:
+                found.append(node.name)
+        return found
+
+    def test_the_three_merges_are_the_ones_this_test_knows_about(self):
+        self.assertEqual(sorted(self.merges()),
+                         ["apply_llm_review", "merge_llm_answers", "merge_manual_answers"],
+                         "a merge was added or renamed; the assertions below cover the "
+                         "three that existed, and an uncovered merge can drop an "
+                         "operator's answer in silence")
+
+    def item_waiting(self, status):
+        row = {"id": "Q-1", "title": "q", "status": status, "severity": "high",
+               "category": "meta", "category_label": "Meta", "effort": "low",
+               "evidence": "e", "fix": ""}
+        return {"items": [row], "scores": {}}
+
+    def captured(self, fn, data, answers):
+        stream = io.StringIO()
+        with contextlib.redirect_stderr(stream):
+            fn(data, answers)
+        return stream.getvalue()
+
+    def test_an_answer_aimed_at_a_measured_verdict_is_named_by_every_merge(self):
+        """The case an operator hits: they answer an item a script has since decided.
+        Each merge must refuse it *and say which id*, because a count of ignored answers
+        sends them to read the whole file again."""
+        from checklist_report import (apply_llm_review, merge_llm_answers,
+                                      merge_manual_answers)
+        answer = {"Q-1": {"status": PASS, "evidence": "because I say so"}}
+        for fn in (merge_llm_answers, merge_manual_answers, apply_llm_review):
+            with self.subTest(merge=fn.__name__):
+                printed = self.captured(fn, self.item_waiting(FAIL), answer)
+                self.assertIn("Q-1", printed,
+                              "%s dropped an answer without naming it" % fn.__name__)
+
+    def test_an_invalid_status_is_named_by_every_merge(self):
+        """The other way an answer file is wrong, and the one a typo produces."""
+        from checklist_report import (apply_llm_review, merge_llm_answers,
+                                      merge_manual_answers)
+        answer = {"Q-1": {"status": "DONE", "evidence": "typed by hand"}}
+        for fn, waiting in ((merge_llm_answers, LLM_PENDING),
+                            (merge_manual_answers, MANUAL),
+                            (apply_llm_review, PASS)):
+            with self.subTest(merge=fn.__name__):
+                printed = self.captured(fn, self.item_waiting(waiting), answer)
+                self.assertIn("Q-1", printed)
+                self.assertIn("DONE", printed,
+                              "%s refused the answer without showing what it read"
+                              % fn.__name__)
+
+
+class ContestingAnAnswerIsVisibleInTheCoverage(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-8: an item returned to undecided leaves the scored
+    set, the audit's coverage falls, and the report must say so rather than preserve the
+    number.
+
+    The status change is enforced by REP-7's tests and the scoring rules by
+    `openspec/specs/scoring/`. What nothing asserted is the sentence this requirement is
+    actually about — that a reader *sees* the audit got smaller. An audit whose score cannot
+    go down when its confidence does is the same defect as scoring an unanswerable item, one
+    level along.
+    """
+
+    def rows(self, *statuses):
+        return [{"id": "C-%d" % n, "title": "c", "status": s, "severity": "high",
+                 "category": "meta", "category_label": "Meta", "effort": "low",
+                 "evidence": "e", "fix": ""} for n, s in enumerate(statuses)]
+
+    def test_a_contested_item_leaves_the_scored_set_and_the_coverage_falls(self):
+        before = runner.score(self.rows(PASS, PASS, PASS))
+        after = runner.score(self.rows(PASS, PASS, NO_DATA))
+        self.assertEqual(before["weight_pct"], 100)
+        self.assertLess(after["weight_pct"], before["weight_pct"],
+                        "the coverage did not fall when an answer was withdrawn, so the "
+                        "audit reports the same reach with less of it decided")
+        self.assertEqual(after["decided"], 2)
+
+    def test_the_reader_is_shown_the_smaller_number(self):
+        """Through the rendered surface, not the payload: the requirement is about what a
+        reader sees, and a field nobody prints is the shape REP-4 and HTTP-8 were."""
+        data = results(*self.rows(PASS, PASS, NO_DATA))
+        data["scores"] = runner.score(data["items"])
+        pct = data["scores"]["weight_pct"]
+        self.assertLess(pct, 100)
+        for surface in (render_markdown(data), render_html(data)):
+            self.assertIn(str(pct), surface,
+                          "the surface does not carry the share of the registry this "
+                          "score covered")
+
+
+class PageRunsAreNeverFlattenedIntoSiteRuns(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-12 as a rule rather than as a shape.
+
+    Five test functions already cover the artifact's shape, and the `__`-prefixed internal
+    keys are asserted stripped. What was read only incidentally is the sentence the
+    requirement exists for: this is the file somebody opens when they are arguing with a
+    verdict, and flattening a sampled page's run into the site's would make it impossible to
+    tell which page produced which number — the one question it is opened to answer.
+
+    Asserted here as a property over constructed runs rather than as a snapshot of one
+    artifact's keys: a shape test passes as long as today's fixture has the shape, and says
+    nothing about a page run whose script name collides with a site run's, which is exactly
+    when flattening would happen and exactly what a real sampled audit produces.
+    """
+
+    def key(self, script, *args):
+        """A run key as the runner builds it: the script, then the argv it was given.
+
+        Written out rather than borrowed from a helper because the collision this class is
+        about is a property of that shape — `run_label` joins the script to its arguments,
+        so two runs of one script differ only by what follows.
+        """
+        return (script, (script, *args))
+
+    def run_of(self, **fields):
+        return dict({"issues": [], "url": "https://example.test/"}, **fields)
+
+    def test_a_page_run_never_lands_in_the_site_section(self):
+        """The collision case. Both sections hold a run from the same script — the site's
+        of the entry page, the page section's of a sampled URL — and the artifact must keep
+        them apart rather than let the second overwrite the first."""
+        site = {self.key("meta_check.py", "https://example.test/"):
+                self.run_of(url="https://example.test/", title="home")}
+        pages = {"https://example.test/a": {
+            "meta_check.py https://example.test/a":
+                self.run_of(url="https://example.test/a", title="a")}}
+        artifact = runner.evidence_artifact(site, pages)
+        label = "meta_check.py https://example.test/"
+        self.assertEqual(artifact[label]["title"], "home",
+                         "a sampled page's run overwrote the site's run of one script")
+        self.assertEqual(
+            artifact["pages"]["https://example.test/a"]
+                    ["meta_check.py https://example.test/a"]["title"], "a")
+
+    def test_the_page_section_exists_exactly_when_sampling_happened(self):
+        """`None` and `{}` are different statements — no sampling, versus sampling that
+        produced nothing — and collapsing them would make an empty sample look like a run
+        that never sampled."""
+        site = {self.key("meta_check.py", "https://example.test/"): self.run_of()}
+        self.assertNotIn("pages", runner.evidence_artifact(site, None))
+        self.assertEqual(runner.evidence_artifact(site, {})["pages"], {})
+
+    def test_internal_keys_are_stripped_from_every_section(self):
+        """Asserted for both sections rather than one: the stripping happens in
+        `evidence_runs`, which the page section does not go through, so a `__`-prefixed key
+        inside a page run is a different code path from the same key inside a site run."""
+        site = {self.key("meta_check.py", "https://example.test/"):
+                self.run_of(__error__=None, __elapsed__=1.5)}
+        artifact = runner.evidence_artifact(site, None)
+        kept = artifact["meta_check.py https://example.test/"]
+        self.assertEqual([k for k in kept if k.startswith("__")], [])
+
+    def test_a_failed_run_keeps_its_summary_rather_than_disappearing(self):
+        """The reason someone opens this file is often that a check failed. A run that
+        errored has no parsed output to keep, and dropping it would leave the reader with
+        an item reporting NO_DATA and nothing to read about why."""
+        site = {self.key("meta_check.py", "https://example.test/"):
+                self.run_of(__error__="boom", __elapsed__=0.2)}
+        artifact = runner.evidence_artifact(site, None)
+        label = "meta_check.py https://example.test/"
+        self.assertIn(label, artifact)
+        self.assertEqual(artifact[label]["error"], "boom",
+                         "a failed run lost the reason it failed, so the artifact cannot "
+                         "say what happened")
+
 if __name__ == "__main__":
     unittest.main()

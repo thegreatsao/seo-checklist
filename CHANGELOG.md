@@ -10,6 +10,52 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.94.4 — `specs/reporting/` is twelve of thirteen, and the last one is a decision
+
+Registry version: unchanged at `e9154e92f4dd`. Nothing a run produces changes: this release
+is three readers and the reasons they were needed.
+
+**REP-6 — one merge of three said why it ignored an answer.** An answer file silently
+dropped is an operator who thinks the audit read their file, and the three merges fail in
+three different ways: an operator hand-editing `MANUAL-QUEUE.md`, a model answering
+`LLM-QUEUE.md`, and the reviewer pass. All three are now held in both directions an answer
+file is wrong — aimed at an item a script has since decided, and carrying a status that is
+not one — and each must name the id, because a count sends the operator back to read the
+whole file. The set of merges is derived from the module rather than listed: a function
+taking `data` and one other mapping that *assigns* an item's status. The first version of
+that derivation collected the renderers too, which take the same arguments and walk the same
+list — reading is not merging, and the difference is the assignment.
+
+**REP-8 — the coverage was asserted in the data and not on the page.** An item returned to
+undecided leaves the scored set; that half was enforced. What the requirement is actually
+about is that a reader *sees* the audit got smaller, and that reached no test. The same
+shape as REP-4 and HTTP-8 in the two releases before this one: a field written and never
+carried to the person holding the report.
+
+**REP-12 — the artifact's shape was asserted, and the shape is not the rule.** "Page runs
+are never flattened into site runs" was read through a snapshot of one artifact's keys,
+which says nothing about the case where flattening would happen: a page run whose script and
+arguments collide with a site run's, which every real sampled audit produces. It is asserted
+as a property now, along with `None` and `{}` staying different statements — no sampling
+versus sampling that produced nothing — and a failed run keeping the reason it failed, since
+a failure is usually why that file is opened.
+
+All three probed by mutation: silencing one merge's refusal, and merging the page sections
+into the site's.
+
+**REP-5 stays `partial`, and not for want of a test.** The merges are asymmetric on purpose:
+a model's answer without a rationale degrades to "no rationale given" and a person's is
+refused outright, and `merge_manual_answers` argues for that in its own docstring — a human
+`PASS` with nothing beside it is indistinguishable from a tick made to clear the list, while
+a model's answer is stamped and, since 0.94.2, marked on every surface. `openspec/specs/verdicts/`
+VRD-10 says no status may be emitted without a sentence saying what was decided, and "no
+rationale given" is not that sentence. Requiring a rationale from the model too would move
+live verdicts on every audited site, so it is a decision rather than an omission, and it is
+recorded as one.
+
+`openspec/specs/reporting/` goes from three enforced of thirteen at the start of the day to
+twelve. Tree debt: 76 enforced, 65 partial, 6 unread, 2 opposed, of 149.
+
 ## 0.94.3 — a category bar says what its score was computed from
 
 Registry version: unchanged at `e9154e92f4dd`. A number a client reads changes, so this is
