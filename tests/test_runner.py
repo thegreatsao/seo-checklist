@@ -4410,5 +4410,100 @@ class TextOutsideLatin1SurvivesTheEvidenceLayer(unittest.TestCase):
         self.assertIn('encoding="utf-8"', source.split("subprocess.run(", 1)[1][:300])
 
 
+
+class TheSecretSetIsDerivedFromWhatTheRunActuallyCarries(unittest.TestCase):
+    """`openspec/specs/inputs/` INP-7's unread half: the *membership* of the secret set.
+
+    Five test functions hold the redaction mechanism — substitution through a nested
+    structure, the identity case, the written file, the sampled path, and the one secret
+    that arrives from the environment. None of them names which keys are secret, so a key
+    added to the run and forgotten in `SECRET_CTX_KEYS` would be written out in full, into
+    the file operators send to clients.
+
+    That is the failure this project has now met in five places, and it always looks the
+    same: the mechanism gets readers, the list it runs over does not, and a list cannot say
+    what is missing from it. Here the cost is a credential in a deliverable.
+
+    So the set is derived from the operation rather than compared with a copy. Every context
+    value the runner fills from an environment variable whose name looks like key material
+    must be in `SECRET_CTX_KEYS`; the pairs are read out of the runner's own syntax, so a
+    sixth pair added below them is covered the day it is written.
+    """
+
+    RUNNER = os.path.join(SKILL, "scripts", "checklist_runner.py")
+
+    # What a name has to contain to be key material rather than a path or a property id.
+    # Deliberately broad: a false positive here is a demand that something be redacted,
+    # which costs a reader nothing, while a false negative is a key in a client's file.
+    SECRET_WORDS = ("KEY", "TOKEN", "SECRET", "PASSWORD")
+
+    @classmethod
+    def env_backed_context_keys(cls):
+        """`{context key: environment variable}` for every pair the runner reads.
+
+        Taken from the `for k, env in ((...))` loops that fill `ctx` from the environment,
+        by walking the syntax rather than by importing and running `main`.
+        """
+        import ast
+        with open(cls.RUNNER, encoding="utf-8") as fh:
+            tree = ast.parse(fh.read())
+        pairs = {}
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.For) or not isinstance(node.iter, ast.Tuple):
+                continue
+            fills_ctx = any(
+                isinstance(n, ast.Assign)
+                and any(isinstance(t, ast.Subscript) and isinstance(t.value, ast.Name)
+                        and t.value.id == "ctx" for t in n.targets)
+                for n in ast.walk(node))
+            if not fills_ctx:
+                continue
+            for element in node.iter.elts:
+                if (isinstance(element, ast.Tuple) and len(element.elts) == 2
+                        and all(isinstance(e, ast.Constant) for e in element.elts)):
+                    pairs[element.elts[0].value] = element.elts[1].value
+        return pairs
+
+    def test_the_runner_still_fills_context_from_the_environment(self):
+        """Guards the guard. If the loop this reads is rewritten in another shape, the
+        derivation below returns nothing and every assertion over it passes vacuously."""
+        pairs = self.env_backed_context_keys()
+        self.assertTrue(pairs, "no environment-backed context keys were found, so the "
+                               "assertions below are reading an empty set")
+
+    def test_every_environment_key_that_looks_like_a_credential_is_redacted(self):
+        from checklist_runner import SECRET_CTX_KEYS
+        for ctx_key, env in sorted(self.env_backed_context_keys().items()):
+            if not any(word in env.upper() for word in self.SECRET_WORDS):
+                continue
+            with self.subTest(ctx_key=ctx_key, env=env):
+                self.assertIn(ctx_key, SECRET_CTX_KEYS,
+                              "%s is filled from %s and is not redacted, so it reaches "
+                              "checklist-results.json and .seo-runs/ in full" % (ctx_key, env))
+
+    def test_nothing_is_declared_secret_that_the_run_never_carries(self):
+        """The other direction. A name left behind after a rename redacts nothing and
+        reads as coverage that is not there."""
+        from checklist_runner import SECRET_CTX_KEYS
+        known = set(self.env_backed_context_keys())
+        self.assertEqual(set(SECRET_CTX_KEYS) - known, set(),
+                         "a declared secret is not a context key this runner fills")
+
+    def test_the_environment_only_secrets_are_read_by_something(self):
+        """`SAFE_BROWSING_ENV_KEYS` never reaches `ctx` — the scripts read it themselves —
+        so it cannot be derived the same way. What can be checked is that the names are
+        live: a variable no script reads is a redaction of nothing."""
+        from checklist_runner import SAFE_BROWSING_ENV_KEYS
+        corpus = ""
+        scripts = os.path.join(SKILL, "scripts")
+        for name in sorted(os.listdir(scripts)):
+            if name.endswith(".py"):
+                with open(os.path.join(scripts, name), encoding="utf-8") as fh:
+                    corpus += fh.read()
+        for env in SAFE_BROWSING_ENV_KEYS:
+            with self.subTest(env=env):
+                self.assertIn(env, corpus,
+                              "%s is redacted and read by nothing in scripts/" % env)
+
 if __name__ == "__main__":
     unittest.main()

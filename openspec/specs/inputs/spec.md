@@ -326,15 +326,28 @@ because a reader needs to know which credential was used.
 in it verbatim, and the artifact is a file operators send to clients. Redaction over the
 whole payload rather than the log alone is deliberate: a script that echoes its arguments
 into an error message leaks the same key by a route nobody enumerated.
-**Reader:** partial, and the split inside it is the point.
+**Reader:** enforced, and the split inside it is the point.
 `test_secret_values_are_replaced_everywhere` pins
 substitution throughout a nested structure, `test_nothing_is_touched_without_secrets` pins
 the identity case, `test_an_evidence_file_is_redacted_and_written` pins the written file,
 `test_redaction_reaches_sampled_page_evidence` pins the sampled path, and
 `test_a_safe_browsing_env_key_never_reaches_written_artifacts` pins the one secret that
-arrives from the environment rather than from a flag. What is unread is the *membership* of
-the secret set: the two constants naming which keys are secret are named by no test, so a
-key added to the run and forgotten here would be written out in full.
+arrives from the environment rather than from a flag. The *membership* of the secret set was
+unread until 0.94.4 — the two constants naming which keys are secret were named by no test,
+so a key added to the run and forgotten there would be written out in full, into the file
+operators send to clients.
+
+`tests/test_runner.py::TheSecretSetIsDerivedFromWhatTheRunActuallyCarries` derives it from
+the operation: every context value the runner fills from an environment variable whose name
+looks like key material must be declared secret, with the pairs read out of the runner's own
+syntax so a sixth is covered the day it is written. The reverse direction is read too — a
+declared name that is no longer a context key redacts nothing and reads as coverage that is
+not there — and a guard assertion refuses the vacuous case where the loop is rewritten and
+the derivation returns an empty set. `SAFE_BROWSING_ENV_KEYS` cannot be derived the same way
+because the scripts read it themselves, so what is checked there is that the names are live.
+
+Probed 6 September 2026 by adding a `moz_key` / `MOZ_API_KEY` pair and not declaring it,
+which names the key and says where it would have been written.
 
 #### Scenario: a key passed as an argument
 - **WHEN** a secret was given on the command line, so a script's argv carries it into the
@@ -608,8 +621,9 @@ turns the limit on turns this on with it, and the two must be fixed together.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** none of these rows by mutation — the executor that had been running mutation
-probes ran out of credits partway through this suite of documents. The rows below were
+**Probed:** INP-7 by mutation on 6 September 2026 — adding an undeclared credential to the
+context reddens the membership reader by name. The rest were not: the executor that had been
+running mutation probes ran out of credits partway through this suite of documents. The rows below were
 derived by parsing all 1 280 test functions and asking, per symbol, which bodies name it,
 then reading those bodies. That is the method Appendix A.1 to A.4 rest on, and its limit is
 the one `openspec/specs/evidence/` A.4 states: a test can exercise something without naming it, so
@@ -617,14 +631,14 @@ the one `openspec/specs/evidence/` A.4 states: a test can exercise something wit
 
 | | requirements |
 |---|---|
-| **enforced** | INP-1, INP-4, INP-6, INP-9 |
-| **partial** | INP-2, INP-3, INP-5, INP-7, INP-8, INP-10 |
+| **enforced** | INP-1, INP-4, INP-6, INP-7, INP-9 |
+| **partial** | INP-2, INP-3, INP-5, INP-8, INP-10 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-I3 enforced; INV-I1 and INV-I2 partial; INV-I4 unread.
 
-**Four enforced, six partial, nothing unread, of ten.**
+**Five enforced, five partial, nothing unread, of ten.**
 
 The split fell along one line, and it was not the line effort would predict. Both enforced
 requirements were about a *file* — is it about this page, is it applied to the right page.
