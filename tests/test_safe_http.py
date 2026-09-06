@@ -461,5 +461,138 @@ class TheRobotsFetchGoesThroughTheGuardToo(unittest.TestCase):
                          "a robots.txt redirect reached a guarded address")
         self.assertEqual(text, "", "an unfollowable redirect yields no policy, fail-open")
 
+
+class TheAgentIdentifiesItselfOnTheWire(unittest.TestCase):
+    """`openspec/specs/http/` HTTP-6. Politeness that cannot be declined is not politeness:
+    a site owner's only lever is a `robots.txt` rule, and it works only if the token this
+    audit sends is stable and matchable.
+
+    The token half was read — a rule naming it beats the wildcard, and it carries no slash
+    so the matcher cannot read it as a browser name. What no test named was the other end
+    of the same sentence: what actually leaves the substrate. `AGENTIC_SEO_USER_AGENT` and
+    `DEFAULT_HEADERS` were named by nothing, so the header could have been emptied, renamed
+    or overridden per-caller and the suite would have stayed green while every rule written
+    against us stopped matching.
+
+    Asserted through a real request rather than against the constants, and with a caller
+    supplying its own headers, because that is the case that would break it: `fetch_url`
+    passes `extra_headers` straight through, and a caller passing its own `User-Agent`
+    must not be able to take the tool's name off the wire.
+    """
+
+    def setUp(self):
+        self.saved = {name: os.environ.get(name) for name in
+                      ("SEO_ALLOW_PRIVATE", "SEO_HTTP_CACHE", "SEO_MAX_RPS")}
+        os.environ.pop("SEO_ALLOW_PRIVATE", None)
+        os.environ.pop("SEO_HTTP_CACHE", None)
+        os.environ["SEO_MAX_RPS"] = "0"
+
+    def tearDown(self):
+        for name, value in self.saved.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+    def sent_headers(self, **kwargs):
+        seen = []
+
+        def send(adapter, request, **rest):
+            seen.append(request.headers)
+            return response_for(request)
+
+        with mock.patch.object(sh.socket, "getaddrinfo",
+                               side_effect=lambda *a, **k: answer(PUBLIC_A, 80)), \
+                mock.patch.object(sh._PinnedAdapter, "send", new=send), \
+                mock.patch.object(sh, "robots_allows", return_value=(True, 0.0)):
+            sh.safe_get("http://public.example/page", **kwargs)
+        self.assertEqual(len(seen), 1)
+        return seen[0]
+
+    def test_a_request_carries_the_shared_user_agent(self):
+        self.assertEqual(self.sent_headers()["User-Agent"], sh.AGENTIC_SEO_USER_AGENT)
+
+    def test_the_user_agent_names_the_tool_and_where_to_read_about_it(self):
+        """The token a site owner blocks has to be findable in the string they see in
+        their log, and the string has to say what the thing is."""
+        agent = sh.AGENTIC_SEO_USER_AGENT
+        self.assertIn(sh.ROBOTS_TOKEN, agent)
+        self.assertIn("+http", agent, "the agent names no page explaining what it is")
+
+    def test_a_callers_own_user_agent_does_not_replace_it(self):
+        """`default_headers` sets the agent *after* merging the caller's extras, and this
+        is the assertion that says so — a caller that could rename the agent could make
+        the audit unblockable by accident."""
+        headers = self.sent_headers(headers={"User-Agent": "Something/1.0",
+                                             "X-Caller": "kept"})
+        self.assertEqual(headers["User-Agent"], sh.AGENTIC_SEO_USER_AGENT)
+        self.assertEqual(headers["X-Caller"], "kept",
+                         "the caller's other headers must still travel")
+
+
+class ASuccessfulFetchCarriesNoFailure(unittest.TestCase):
+    """`openspec/specs/http/` HTTP-9's `iff`, read from the side nothing read.
+
+    Every failure carries a message and a kind, and seven tests assert that direction over
+    all seven exception types. The other direction — that a fetch which *succeeded* carries
+    neither — was unasserted, and it is the half a downstream consumer depends on:
+    `broken_links.py` and everything like it decide "broken" from the presence of the
+    field, so a success that left a stale kind behind would report a working URL as a false
+    accusation about somebody else's site.
+
+    Read through `seo_common.fetch_url`, which is where the two fields are written, and in
+    the three shapes a success can take: a plain 200, a redirect chain, and a 404 — which
+    is a *successful fetch of an error page*, not a failed fetch, and is exactly where the
+    two ideas are easiest to confuse.
+    """
+
+    def setUp(self):
+        self.saved = {name: os.environ.get(name) for name in
+                      ("SEO_HTTP_CACHE", "SEO_MAX_RPS")}
+        os.environ.pop("SEO_HTTP_CACHE", None)
+        os.environ["SEO_MAX_RPS"] = "0"
+
+    def tearDown(self):
+        for name, value in self.saved.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+    def fetched(self, status=200, headers=None):
+        import seo_common
+
+        def send(adapter, request, **kwargs):
+            return response_for(request, status=status, headers=headers)
+
+        with mock.patch.object(sh.socket, "getaddrinfo",
+                               side_effect=lambda *a, **k: answer(PUBLIC_A, 80)), \
+                mock.patch.object(sh._PinnedAdapter, "send", new=send), \
+                mock.patch.object(sh, "robots_allows", return_value=(True, 0.0)):
+            return seo_common.fetch_url("http://public.example/page")
+
+    def test_a_plain_success_sets_neither_field(self):
+        result = self.fetched()
+        self.assertEqual(result["status"], 200)
+        self.assertIsNone(result.get("error"))
+        self.assertIsNone(result.get("error_kind"))
+
+    def test_an_error_status_is_still_a_successful_fetch(self):
+        """A 404 is the server answering, not the fetch failing. Filing it as a failure
+        would turn every soft-404 audit into a report about this tool's own connectivity."""
+        result = self.fetched(status=404)
+        self.assertEqual(result["status"], 404)
+        self.assertIsNone(result.get("error"))
+        self.assertIsNone(result.get("error_kind"))
+
+    def test_the_two_fields_travel_together_or_not_at_all(self):
+        """The `iff` as one assertion rather than two: whatever the outcome, a kind
+        without a message or a message without a kind is a shape no consumer handles."""
+        for status in (200, 301, 404, 500):
+            with self.subTest(status=status):
+                result = self.fetched(status=status)
+                self.assertEqual(result.get("error") is None,
+                                 result.get("error_kind") is None)
+
 if __name__ == "__main__":
     unittest.main()

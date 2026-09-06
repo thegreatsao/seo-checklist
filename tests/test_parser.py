@@ -42,6 +42,7 @@ import json
 import os
 import pathlib
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -51,6 +52,9 @@ sys.path.insert(0, SCRIPTS)
 
 import bs4  # noqa: E402
 import seo_common  # noqa: E402
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from harness import served, spawn  # noqa: E402
 
 PARSERS = ("lxml", "html.parser")
 
@@ -570,6 +574,88 @@ class PageSchemaBoundary(unittest.TestCase):
         parsed = self._split_page()
         self.assertEqual(len(parsed["schema"]), 2)
 
+
+
+class TheRecordedParserReachesTheArtifactAndTheReader(unittest.TestCase):
+    """`openspec/specs/http/` HTTP-12's last clause: the run SHALL record which parser
+    produced its verdicts, and a report produced by the fallback parser says so on its face.
+
+    Agreement between the parsers is enforced across fifteen document shapes, and the single
+    choice point by two AST censuses. The *recording* was the gap, and the gap had a
+    particular shape worth naming: `test_the_run_records_which_parser_produced_its_verdicts`
+    is named for it and asserts that two functions return the same string. That reads the
+    label; nothing read the field. The runner could have stopped writing `html_parser` into
+    the payload, or written a constant, and the suite would have stayed green — and the
+    field exists for exactly one purpose, which is to be read out of an artifact months
+    later when two runs disagree about a structural verdict.
+
+    So this runs the audit twice, once under each parser, and reads the field out of the
+    file both times. It is slower than any other test in this module and it is the only one
+    that holds the sentence.
+    """
+
+    PAGE = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+            "<title>A page that satisfies the basics</title>"
+            "<meta name=\"description\" content=\"Enough of a page for the runner to reach "
+            "the end and write an artifact.\"></head><body><h1>A page</h1>"
+            "<p>Body copy with enough words in it that the thin-entry guard stays quiet, "
+            "because a guard firing here would stop the audit before the thing under test "
+            "ran at all.</p></body></html>")
+
+    @classmethod
+    def audit(cls, parser=None):
+        work = tempfile.mkdtemp(prefix="seo-parser-")
+        out = os.path.join(work, "results.json")
+        env = dict(os.environ)
+        env.pop("SEO_HTML_PARSER", None)
+        if parser:
+            env["SEO_HTML_PARSER"] = parser
+        with served({"/": cls.PAGE}) as site:
+            proc = spawn([sys.executable, os.path.join(SCRIPTS, "checklist_runner.py"),
+                          site.url, "--allow-private", "--max-rps", "0", "--no-history",
+                          "--no-prompt", "--quiet", "--timeout", "90", "--json", out,
+                          "--only", "crawling_indexing"], env=env, timeout=600)
+        if proc.returncode != 0:
+            raise AssertionError("the audit exited %s\n%s\n%s"
+                                 % (proc.returncode, proc.stdout[-2000:],
+                                    proc.stderr[-2000:]))
+        with open(out, encoding="utf-8") as fh:
+            return json.load(fh)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.default = cls.audit()
+        cls.fallback = cls.audit("html.parser")
+
+    def test_the_artifact_names_the_parser_that_produced_the_verdicts(self):
+        self.assertEqual(self.default["html_parser"], seo_common.html_parser())
+
+    def test_choosing_the_other_parser_changes_what_the_artifact_says(self):
+        """The half a hard-coded field would pass: the recording has to follow the choice,
+        not merely exist."""
+        self.assertEqual(self.fallback["html_parser"], "html.parser")
+        self.assertNotEqual(self.fallback["html_parser"], self.default["html_parser"])
+
+    def test_a_report_from_the_fallback_parser_says_so_on_its_face(self):
+        """The recording is only diagnosable if it reaches the file a person is handed.
+        `provenance_warnings` is that surface, and it had no test naming the parser."""
+        sys.path.insert(0, SCRIPTS)
+        from checklist_report import provenance_warnings
+        warnings = provenance_warnings(self.fallback)
+        self.assertTrue(any("html.parser" in w for w in warnings),
+                        "a report produced by the fallback parser does not say so: %r"
+                        % (warnings,))
+
+    def test_the_default_parser_is_not_announced(self):
+        """The other direction, and the reason the warning is conditional: `lxml` is what a
+        normal run uses, so saying it every time would be noise a reader learns to skip —
+        and a caveat everybody skips is not a caveat."""
+        sys.path.insert(0, SCRIPTS)
+        from checklist_report import provenance_warnings
+        if self.default["html_parser"] != "lxml":
+            self.skipTest("lxml is not installed here, so there is no default to be quiet "
+                          "about")
+        self.assertFalse(any("parser" in w.lower() for w in provenance_warnings(self.default)))
 
 if __name__ == "__main__":
     unittest.main()

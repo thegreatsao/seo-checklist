@@ -92,7 +92,7 @@ resolves twice cannot answer the check with one address and the request with ano
 **Why:** a validate-then-connect gap is the whole of DNS rebinding, and it turns the guard
 into decoration. The audited URL is attacker-controlled by construction: it is whatever the
 operator was given.
-**Reader:** partial, and the missing half is a request rather than a test — see A.5.
+**Reader:** enforced. `tests/test_safe_http.py` holds it in two classes.
 `test_dns_rebinding_connects_only_to_the_answer_the_guard_validated`
 resolves a name to a public address and then to loopback and asserts one lookup, a
 connection to the public address only, and the `Host` header preserved;
@@ -100,9 +100,20 @@ connection to the public address only, and the `Host` header preserved;
 case; `test_resolution_failure_is_refused_before_a_request` asserts that a name that does
 not resolve costs no request at all. All three read the path a checker's fetch takes.
 
-What no reader covers is the one request the substrate makes on its own account:
-`_fetch_robots` calls `requests.get` directly, so every origin's `/robots.txt` is
-fetched without the guard and without the pin. The requirement says *every* request.
+The one request the substrate made on its own account was uncovered until 0.94.1, and it
+was uncovered because it was also unguarded: `_fetch_robots` called `requests.get`
+directly, so every origin's `/robots.txt` — the *first* request the audit makes to any
+host — went out with no validation, no pin and unvalidated redirects. The requirement says
+*every* request. `TheRobotsFetchGoesThroughTheGuardToo` reads all three halves of that
+sentence: a blocked origin is not asked for its rules, the answer the guard validated is
+the address the transport uses, and a redirect to a guarded address is not followed. Each
+also asserts fail-open survives — a refusal costs no request and yields no policy, rather
+than becoming an audit failure.
+
+The comment that explained the direct call named a real constraint and it still holds:
+`safe_get` consults `robots.txt`, so fetching `robots.txt` through it recurses. The guard
+is a mechanism one level below that, and `_validated_url` and `_PinnedAdapter` are both
+callable without touching robots at all — which is what the repair does.
 
 #### Scenario: a name that answers the guard and the connection differently
 - **WHEN** a host resolves to a public address for the guard's lookup and to loopback for
@@ -312,10 +323,15 @@ a site owner can write a rule against.
 
 **Why:** politeness that cannot be declined is not politeness. A site owner's only lever is
 a rule in `robots.txt`, and it only works if the token is stable and matchable.
-**Reader:** partial. `test_rules_naming_our_token_are_obeyed` asserts that a rule naming the
-token beats the wildcard, and asserts the token is bare — no slash. Nothing asserts what
-user agent actually goes on the wire: the header constant and the default header set are
-named by no test.
+**Reader:** enforced. `test_rules_naming_our_token_are_obeyed` asserts that a rule naming
+the token beats the wildcard, and asserts the token is bare — no slash.
+`TheAgentIdentifiesItselfOnTheWire` holds the other end of the same sentence, through a
+real request rather than against the constants: the shared agent is what leaves the
+substrate, it carries the blockable token and a URL explaining what the tool is, and a
+caller supplying its own `User-Agent` cannot take the tool's name off the wire while its
+other headers still travel. Probed 6 September 2026 by moving the agent assignment in
+`default_headers` above the caller merge — the shape that would make the audit unblockable
+by accident — which reddens the third test.
 
 #### Scenario: a site owner writes a rule against us
 - **WHEN** `robots.txt` carries a group naming the token and a separate wildcard group
@@ -432,11 +448,16 @@ SHALL produce a broken link and the rest an unchecked one.
 **Why:** the message is for a person and drifts; the kind is for the code and must not. A
 link reported as broken because the audit was blocked is a false accusation about somebody
 else's site.
-**Reader:** partial. `test_the_closed_vocabulary_is_produced_from_exception_types` asserts
+**Reader:** enforced. `test_the_closed_vocabulary_is_produced_from_exception_types` asserts
 the seven kinds in order and all seven exception mappings, and
-`test_unresolved_is_broken_and_blocked_is_unchecked` pins the downstream split. The `iff` is
-half-read: the failure direction is asserted seven times over, and nothing asserts that a
-*successful* fetch leaves both fields unset.
+`test_unresolved_is_broken_and_blocked_is_unchecked` pins the downstream split.
+`ASuccessfulFetchCarriesNoFailure` reads the other half of the `iff` through
+`seo_common.fetch_url`, where the fields are written: a plain 200, a 404 — a successful
+fetch of an error page, which is where the two ideas are easiest to confuse — and a
+subtest over four statuses asserting the fields travel together or not at all. Probed
+6 September 2026 by setting a kind on any status ≥ 400, the shape a consumer of
+`broken_links.py` would turn into a false accusation about somebody else's site, which
+reddens three.
 
 #### Scenario: every failure carries a kind
 - **WHEN** a fetch fails
@@ -566,12 +587,18 @@ SHALL record which parser produced its verdicts.
 the differences is pinned in the suite as a known divergence. It can only come from a test
 over a corpus, which means it holds for the shapes in the corpus and is a promise about the
 rest. Recording the choice is what makes a future disagreement diagnosable.
-**Reader:** partial, and the recording half is the gap. Agreement is enforced across fifteen
+**Reader:** enforced. Agreement is enforced across fifteen
 document shapes for every field a rule reads; the single choice point is enforced by two AST
 censuses — one asserting the parser name appears in no other file, one asserting every
-`BeautifulSoup(` call names the shared choice. The recording is unread: the field is written
-into the artifact and no test opens it, the report's parser caveat has no test, and the test
-named for the recording asserts only that two functions return the same string.
+`BeautifulSoup(` call names the shared choice. The recording half was the gap until
+6 September 2026, and its shape is worth keeping: the test *named* for the recording
+asserts that two functions return the same string, which reads the label and not the field.
+`TheRecordedParserReachesTheArtifactAndTheReader` runs the audit twice, once under each
+parser, and reads `html_parser` out of both artifacts — so the recording has to follow the
+choice rather than merely exist — then reads the report surface in both directions: a
+fallback run says so on its face, and a default run does not, because a caveat printed
+every time is one a reader learns to skip. Probed by hard-coding the recorded field to
+`lxml`, which reddens two of the four.
 
 #### Scenario: the parsers disagree and no verdict moves
 - **WHEN** a document shape the two parsers genuinely read differently is parsed with each
@@ -768,21 +795,27 @@ and reddens two of its four readers now. HTTP-8 — as of 5 September 2026 the r
 provenance omission is pinned as an absence; before that, the string
 `http_cache` appears nowhere under `tests/`.
 
-**Derived, not probed:** the eight `partial` rows. Each names which half it believes is
+**Derived, not probed:** the six `partial` rows. Each names which half it believes is
 unread; that half was established by reading the asserting test's body and by greps for the
 absences, not by breaking the code. A `partial` that is really an `enforced` or a `none` is
 the error this method leaves open, and the halves are where to look first.
 
 | | requirements |
 |---|---|
-| **enforced** | HTTP-7, HTTP-11 |
-| **partial** | HTTP-1, HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-8, HTTP-9, HTTP-10, HTTP-12 |
+| **enforced** | HTTP-1, HTTP-6, HTTP-7, HTTP-9, HTTP-11, HTTP-12 |
+| **partial** | HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-8, HTTP-10 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-H2 and INV-H3 enforced; INV-H1 and INV-H4 partial.
 
-**Two enforced, ten partial, nothing unread, of twelve.**
+**Six enforced, six partial, nothing unread, of twelve.**
+
+HTTP-1 moved on 6 September 2026, and the half that was missing turned out to be a hole
+rather than a gap in the tests: the `robots.txt` fetch skipped the guard entirely, so the
+first request to any host was the one request nothing protected. Three tests now hold it,
+each written red first — a blocked origin was contacted, the validated answer was
+discarded and the name resolved again, and a redirect to `169.254.169.254` was followed.
 
 The first two enforced are the cache and the pinned connection, and they have in common
 something worth noticing: both were built *after* a specific failure was understood, and

@@ -399,13 +399,37 @@ def _fetch_robots(origin: str) -> str:
     and the reason is here so it can be argued with.
     """
     try:
-        response = requests.get(  # not safe_get: that would recurse into this
-            urljoin(origin, "/robots.txt"),
-            headers=default_headers(),
-            timeout=10,
-            allow_redirects=True,
-            verify=True,
-        )
+        url, pinned_addresses = _validated_url(urljoin(origin, "/robots.txt"))
+        headers = CaseInsensitiveDict(default_headers())
+        headers.setdefault("Host", _host_header(url))
+        response = None
+        with _owned_session() as requester:
+            for address in pinned_addresses:
+                adapter = _PinnedAdapter(url, address)
+                requester.mount(f"{urlparse(url).scheme}://", adapter)
+                try:
+                    # `allow_redirects=False`, and a redirect is read below as "no
+                    # rules". Following one would mean validating the Location's address
+                    # before each hop, which is what `safe_request` does for a page; here
+                    # the hop is not worth the machinery, because the answer either way is
+                    # a policy this audit fails open on. Not following it is what stops a
+                    # public robots.txt from bouncing this request to 169.254.169.254.
+                    response = requester.get(  # not safe_get: that would recurse into this
+                        url,
+                        headers=headers,
+                        timeout=10,
+                        allow_redirects=False,
+                        verify=True,
+                    )
+                    break
+                except requests.exceptions.ConnectionError:
+                    adapter.close()
+        # Every validated address refused the connection. Same answer as an absent
+        # robots.txt, for the reason in the docstring: an origin whose rules cannot be
+        # fetched is an origin with no rules, and this is an audit its own operator asked
+        # for rather than an unattended crawl.
+        if response is None:
+            return ""
         if response.status_code != 200:
             return ""
         return response.content[:ROBOTS_MAX_BYTES].decode("utf-8", "replace")
