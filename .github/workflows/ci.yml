@@ -65,6 +65,14 @@ jobs:
       - name: The catalogue describes this tree
         run: python skills/seo-checklist/tools/audit_catalogue.py --check
 
+      # A hand-kept list cannot say what is missing from it, and the reader that would
+      # have noticed is the same line somebody would have had to edit to avoid it —
+      # `openspec/specs/governance/` GOV-3, the defect found in six of twelve layers.
+      # 166 module-level literals decide behaviour here and 16 are imported by a test.
+      # This fails when that census moves, in either direction.
+      - name: Every set that decides behaviour is counted
+        run: python skills/seo-checklist/tools/audit_derived_sets.py --check tests/derived-sets.json
+
       # The quietest of the three, and the one nothing watched until 0.46: an
       # assertion that fires correctly, on the right field, and can only ever come
       # out one way. KW-076 asserted a field `article_seo.py` wrote only when it
@@ -520,6 +528,9 @@ jobs:
 
       - name: The catalogue describes this tree
         run: python skills/seo-checklist/tools/audit_catalogue.py --check
+
+      - name: Every set that decides behaviour is counted
+        run: python skills/seo-checklist/tools/audit_derived_sets.py --check tests/derived-sets.json
 
       - name: No verdict is unreachable without saying so
         run: python skills/seo-checklist/tools/audit_reachability.py

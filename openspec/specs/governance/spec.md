@@ -139,10 +139,26 @@ hand-kept list guarded only by the mechanism that consumes it is neither.
 **Why:** this is the defect this suite found in six of its eleven layers (§1). A hand-kept
 list cannot say what is missing from it, and the reader that would notice the omission is
 the same line somebody would have had to edit to avoid it.
-**Reader:** **none**, and it is new here. Two lists were converted to derivations during
-this suite's writing — the notebook's spec manifest, and this document's own reader
-discovering documents by glob rather than by name — and neither conversion was required by
-anything. The remaining four are recorded in their own documents.
+**Reader:** partial. `tools/audit_derived_sets.py` enumerates every module-level
+upper-case name in `scripts/` and `tools/` bound to a list, tuple, set or dict
+**literal** — a collection built by a comprehension or a call is derived, which is what
+this requirement asks for, so it is out of scope by construction — and records which of
+them a test imports from its module. `tests/test_derived_sets.py` re-takes the census
+every run, refuses a stale record, and ratchets the unread column downward.
+
+**Partial, and the label is the honest one twice over.** A ratchet holds "no worse",
+not the requirement; and "read" here means *imported*, which is an upper bound on the
+membership being asserted. Measured on 6 September 2026: **166 sets, 16 imported by a
+test, 150 named by nothing outside the code that consumes them.** A looser match — the
+bare name anywhere in the test corpus — reports 44, by crediting `build_checklist.PAGE`
+with a test that mentions some other module's `PAGE`. The stricter measure is the one
+recorded, because the flattering number is the one that would let this be called
+enforced.
+
+Two lists were converted to derivations during this suite's writing — the notebook's spec
+manifest, and this document's own reader discovering documents by glob rather than by
+name — and neither conversion was required by anything. That is what the census now
+makes visible: not that a list is wrong, but that nothing would notice if it were.
 
 #### Scenario: a list decides what the tool does
 - **WHEN** a list, tuple or mapping determines behaviour — which words are severities,
@@ -446,7 +462,36 @@ docstring, the shapes reference's account of itself, and the guard's marker coun
 have the same form: a number written beside the thing it counts, reproduced faithfully, read
 by nobody. GOV-3 is the general rule; this is the sixth instance of its absence.
 
-#### A.3 — the ledger is the best-guarded instrument in the repository
+#### A.3 — 150 of 166 behaviour-deciding sets are named by nothing
+
+Measured 6 September 2026 by `tools/audit_derived_sets.py`, recorded in
+`tests/derived-sets.json`. The population is module-level upper-case names in `scripts/`
+and `tools/` bound to a collection **literal**; a set built by a comprehension or a call
+is derived and out of scope. "Read" is the strictest available measure — a test imports
+the name from its module — and is still an upper bound, since importing a name is not
+asserting what belongs in it.
+
+| module | unread |
+|---|---:|
+| `checklist_runner` | 24 |
+| `build_checklist` | 21 |
+| `checklist_report` | 9 |
+| `server_log_audit` | 6 |
+| `calibrate_serp_length` | 5 |
+| `detect_profile` | 5 |
+| `pagespeed` | 5 |
+
+The first two are the ones that matter: the runner's sets decide which modes exist, what
+each capability permits, and which statuses are terminal, and the builder's decide the
+registry's shape. Both are the kind of set whose forgotten entry is invisible from the
+consuming code, which is the whole sentence of GOV-3.
+
+The census moved by two the moment its own reader was written — `LITERALS` and one
+neighbour left the unread column because a test imported them. That is worth recording
+rather than tidying away: the measure is of *this* tree including its tests, and a
+reader that changes what it measures is a reader that is really reading.
+
+#### A.4 — the ledger is the best-guarded instrument in the repository
 
 Recorded because the suite's findings are otherwise uniformly negative, and this one is not.
 
@@ -475,13 +520,13 @@ rest were derived by reading the gates and their tests.
 | | requirements |
 |---|---|
 | **enforced** | GOV-1, GOV-4, GOV-8, GOV-9, GOV-10 |
-| **partial** | GOV-5, GOV-6, GOV-7 |
-| **none** | GOV-2, GOV-3 |
+| **partial** | GOV-3, GOV-5, GOV-6, GOV-7 |
+| **none** | GOV-2 |
 | **opposed** | — none |
 
 Invariants: INV-G2 and INV-G4 enforced; INV-G1 partial; INV-G3 unread.
 
-**Five enforced, three partial, two unread, of ten.**
+**Five enforced, four partial, one unread, of ten.**
 
 The two unread requirements are the two that ask the machinery to be *governed* rather than
 to govern. GOV-2 asks that an admission not become a justification; GOV-3 asks that lists be

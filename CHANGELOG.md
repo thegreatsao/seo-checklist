@@ -10,6 +10,60 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.93.4 — 166 sets decide what this tool does, and sixteen of them are read
+
+Registry version: unchanged at `e9154e92f4dd`. No run produces a different number. What
+arrives is a census and a ratchet over the defect this suite has found in six of its
+twelve layers.
+
+**The shape of it.** `openspec/specs/governance/` GOV-3: where a list, tuple or mapping
+decides behaviour, it is derived from what it describes or read by something. A hand-kept
+list guarded only by the mechanism that consumes it is neither — and the reason this is
+never found by looking harder at the consuming code is that **a list cannot say what is
+missing from it, and the reader that would have noticed the omission is the same line
+somebody would have had to edit to avoid it.**
+
+**Measured.** `tools/audit_derived_sets.py` enumerates every module-level upper-case name
+in `scripts/` and `tools/` bound to a list, tuple, set or dict *literal*. A collection
+built by a comprehension or a call is derived, which is what the requirement asks for, so
+it is out of scope by construction. **166 sets; 16 imported by a test; 150 named by
+nothing outside the code that consumes them.**
+
+| module | unread |
+|---|---:|
+| `checklist_runner` | 24 |
+| `build_checklist` | 21 |
+| `checklist_report` | 9 |
+| `server_log_audit` | 6 |
+| `calibrate_serp_length`, `detect_profile`, `pagespeed` | 5 each |
+
+The first two are the ones that matter: the runner's sets decide which modes exist, what
+each capability permits and which statuses are terminal; the builder's decide the
+registry's shape.
+
+**Sixteen is the flattering number, deliberately.** "Read" means a test imports the name
+from its module, which is an upper bound — importing a name is not asserting what belongs
+in it. A looser match, the bare name anywhere in the test corpus, reports 44 by crediting
+`build_checklist.PAGE` with a test that mentions some other module's `PAGE`. That measure
+was written first and discarded, because the number that would let this be called
+`enforced` is the one to distrust.
+
+**What holds it.** `tests/test_derived_sets.py` re-takes the census every run rather than
+trusting the record — a stamp a hand can set is not a freshness check — and ratchets the
+unread column downward, so a new hand-kept set that nothing reads fails rather than being
+counted. `--check` is also a CI step and is in the suite's gate list. GOV-3 moves to
+`partial`, and the label is honest twice over: a ratchet holds "no worse" rather than the
+requirement, and the read column is a ceiling.
+
+The census moved by two the moment its own reader existed, because the test imports two of
+the tool's own constants. Recorded rather than tidied: the measure is of this tree
+including its tests, and a reader that changes what it measures is one that is really
+reading.
+
+`openspec/specs/governance/` goes to five enforced and four partial of ten, with GOV-2 —
+`inherited` is an admission, not a justification — the only unread row left. The suite
+total is 55 enforced of 149, and the unread column falls to **eight**.
+
 ## 0.93.3 — the shapes catalogue's account of itself, and every CI gate run locally
 
 Registry version: unchanged at `e9154e92f4dd`. No item moves and no run produces a

@@ -30,15 +30,14 @@
     "governance": {
       "counts": {
         "enforced": 5,
-        "none": 2,
+        "none": 1,
         "opposed": 0,
-        "partial": 3
+        "partial": 4
       },
       "opposed": [],
       "requirements": 10,
       "unread": [
-        "GOV-2",
-        "GOV-3"
+        "GOV-2"
       ]
     },
     "history": {
@@ -151,9 +150,9 @@
   },
   "totals": {
     "enforced": 55,
-    "none": 9,
+    "none": 8,
     "opposed": 2,
-    "partial": 83,
+    "partial": 84,
     "requirements": 149
   }
 }

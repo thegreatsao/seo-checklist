@@ -1,0 +1,957 @@
+{
+  "measured": "module-level upper-case names bound to a list, tuple, set or dict literal in scripts/ or tools/",
+  "read_means": "a test imports the name from its module, which is an upper bound on the membership being asserted",
+  "total": 166,
+  "read": 16,
+  "unread": 150,
+  "modules": {
+    "ai_crawler_policy_matrix": {
+      "read": [],
+      "unread": [
+        {
+          "name": "AI_CRAWLERS",
+          "entries": 15
+        }
+      ]
+    },
+    "anchor_text_audit": {
+      "read": [],
+      "unread": [
+        {
+          "name": "GENERIC_ANCHORS",
+          "entries": 11
+        }
+      ]
+    },
+    "answer_block_scanner": {
+      "read": [
+        {
+          "name": "SIGNAL_POINTS",
+          "entries": 4
+        }
+      ],
+      "unread": []
+    },
+    "article_seo": {
+      "read": [],
+      "unread": [
+        {
+          "name": "STOP_WORDS",
+          "entries": 3
+        },
+        {
+          "name": "DEPRECATED_SCHEMA",
+          "entries": 8
+        },
+        {
+          "name": "RESTRICTED_SCHEMA",
+          "entries": 1
+        }
+      ]
+    },
+    "audit_assertions": {
+      "read": [
+        {
+          "name": "PATH_EXEMPT",
+          "entries": 3
+        },
+        {
+          "name": "PAGE_DERIVED",
+          "entries": 1
+        }
+      ],
+      "unread": [
+        {
+          "name": "PATTERN_OPS",
+          "entries": 4
+        }
+      ]
+    },
+    "audit_catalogue": {
+      "read": [],
+      "unread": [
+        {
+          "name": "CONVENTION",
+          "entries": 2
+        }
+      ]
+    },
+    "audit_derived_sets": {
+      "read": [
+        {
+          "name": "LITERALS",
+          "entries": 4
+        }
+      ],
+      "unread": [
+        {
+          "name": "SOURCES",
+          "entries": 2
+        }
+      ]
+    },
+    "audit_item_semantics": {
+      "read": [],
+      "unread": [
+        {
+          "name": "STOP",
+          "entries": 64
+        },
+        {
+          "name": "REVIEWED",
+          "entries": 34
+        },
+        {
+          "name": "_SUFFIXES",
+          "entries": 13
+        }
+      ]
+    },
+    "audit_reachability": {
+      "read": [],
+      "unread": [
+        {
+          "name": "MECHANISMS",
+          "entries": 4
+        },
+        {
+          "name": "COMPLEMENTS",
+          "entries": 4
+        },
+        {
+          "name": "EMPTY_BAND",
+          "entries": 8
+        }
+      ]
+    },
+    "audit_score_sensitivity": {
+      "read": [],
+      "unread": [
+        {
+          "name": "DECIDED",
+          "entries": 3
+        },
+        {
+          "name": "SEVERITIES",
+          "entries": 4
+        },
+        {
+          "name": "CANDIDATE_WEIGHTS",
+          "entries": 5
+        },
+        {
+          "name": "CANDIDATE_EFFORTS",
+          "entries": 4
+        }
+      ]
+    },
+    "audit_thresholds": {
+      "read": [],
+      "unread": [
+        {
+          "name": "KINDS",
+          "entries": 5
+        },
+        {
+          "name": "VERDICT_KINDS",
+          "entries": 4
+        }
+      ]
+    },
+    "build_checklist": {
+      "read": [
+        {
+          "name": "PAGE",
+          "entries": 1
+        }
+      ],
+      "unread": [
+        {
+          "name": "CATEGORIES",
+          "entries": 15
+        },
+        {
+          "name": "JSRENDER",
+          "entries": 3
+        },
+        {
+          "name": "HTMLARG",
+          "entries": 3
+        },
+        {
+          "name": "CRAWLARG",
+          "entries": 3
+        },
+        {
+          "name": "GSCARG",
+          "entries": 3
+        },
+        {
+          "name": "LINKSARG",
+          "entries": 3
+        },
+        {
+          "name": "INSPECTARG",
+          "entries": 5
+        },
+        {
+          "name": "REQUIRES",
+          "entries": 22
+        },
+        {
+          "name": "ITEM_REQUIRES",
+          "entries": 5
+        },
+        {
+          "name": "APPLIES_WHEN",
+          "entries": 2
+        },
+        {
+          "name": "CANNOT_FAIL",
+          "entries": 2
+        },
+        {
+          "name": "EFFORT_BY_CATEGORY",
+          "entries": 16
+        },
+        {
+          "name": "EFFORT_OVERRIDES",
+          "entries": 8
+        },
+        {
+          "name": "EFFORT_FLOOR_BY_SOURCE",
+          "entries": 2
+        },
+        {
+          "name": "EFFORT_RANK",
+          "entries": 3
+        },
+        {
+          "name": "MAP",
+          "entries": 0
+        },
+        {
+          "name": "RENDERED",
+          "entries": 1
+        },
+        {
+          "name": "EXTRA",
+          "entries": 17
+        },
+        {
+          "name": "LENS",
+          "entries": 4
+        },
+        {
+          "name": "SAME_CHECK",
+          "entries": 7
+        }
+      ]
+    },
+    "cache_compression_checker": {
+      "read": [],
+      "unread": [
+        {
+          "name": "STATIC_EXTENSIONS",
+          "entries": 11
+        },
+        {
+          "name": "TEXT_EXTENSIONS",
+          "entries": 8
+        }
+      ]
+    },
+    "calibrate_css_minification": {
+      "read": [],
+      "unread": [
+        {
+          "name": "PACKAGES",
+          "entries": 19
+        },
+        {
+          "name": "CONSTANT_NAMES",
+          "entries": 6
+        },
+        {
+          "name": "_RUNTIME",
+          "entries": 0
+        }
+      ]
+    },
+    "calibrate_font_weight": {
+      "read": [],
+      "unread": [
+        {
+          "name": "PACKAGES",
+          "entries": 8
+        }
+      ]
+    },
+    "calibrate_gsc_sample_floors": {
+      "read": [],
+      "unread": [
+        {
+          "name": "TABLE_IMPRESSIONS",
+          "entries": 6
+        },
+        {
+          "name": "PAIRS",
+          "entries": 2
+        },
+        {
+          "name": "UNCALIBRATED_FLOORS",
+          "entries": 2
+        }
+      ]
+    },
+    "calibrate_serp_length": {
+      "read": [],
+      "unread": [
+        {
+          "name": "FONT_FILES",
+          "entries": 4
+        },
+        {
+          "name": "ENGLISH_LETTER_FREQUENCY",
+          "entries": 26
+        },
+        {
+          "name": "COMPOSITION_MIXES",
+          "entries": 3
+        },
+        {
+          "name": "SURFACES",
+          "entries": 3
+        },
+        {
+          "name": "CONSTANT_NAMES",
+          "entries": 4
+        }
+      ]
+    },
+    "checklist_report": {
+      "read": [
+        {
+          "name": "EFFORT_COST",
+          "entries": 3
+        },
+        {
+          "name": "OPPORTUNITY_PHRASE",
+          "entries": 3
+        }
+      ],
+      "unread": [
+        {
+          "name": "SEVERITY_ORDER",
+          "entries": 4
+        },
+        {
+          "name": "STATUS_ICON",
+          "entries": 8
+        },
+        {
+          "name": "STATUS_ORDER",
+          "entries": 8
+        },
+        {
+          "name": "CATEGORY_HELP",
+          "entries": 16
+        },
+        {
+          "name": "DIRECTION_HEADING",
+          "entries": 3
+        },
+        {
+          "name": "DIRECTION_NOTE",
+          "entries": 3
+        },
+        {
+          "name": "FIX_STATUSES",
+          "entries": 3
+        },
+        {
+          "name": "FIX_COLUMNS",
+          "entries": 10
+        },
+        {
+          "name": "LENS_AGENTS",
+          "entries": 4
+        }
+      ]
+    },
+    "checklist_runner": {
+      "read": [
+        {
+          "name": "SEVERITY_WEIGHT",
+          "entries": 4
+        }
+      ],
+      "unread": [
+        {
+          "name": "FAILURE_LABEL",
+          "entries": 5
+        },
+        {
+          "name": "CHALLENGE_MARKUP_MARKERS",
+          "entries": 11
+        },
+        {
+          "name": "CHALLENGE_TEXT_MARKERS",
+          "entries": 3
+        },
+        {
+          "name": "CHALLENGE_TITLES",
+          "entries": 13
+        },
+        {
+          "name": "SEVERITY_ALIAS",
+          "entries": 5
+        },
+        {
+          "name": "GSC_UNAVAILABLE",
+          "entries": 3
+        },
+        {
+          "name": "MODE_CAPS",
+          "entries": 3
+        },
+        {
+          "name": "MODE_HELP",
+          "entries": 3
+        },
+        {
+          "name": "SLOW_FIRST",
+          "entries": 8
+        },
+        {
+          "name": "THRESHOLD_OPS",
+          "entries": 15
+        },
+        {
+          "name": "HOW_TO_SUPPLY",
+          "entries": 6
+        },
+        {
+          "name": "UNREAD_KEYS",
+          "entries": 2
+        },
+        {
+          "name": "SECRET_CTX_KEYS",
+          "entries": 2
+        },
+        {
+          "name": "SAFE_BROWSING_ENV_KEYS",
+          "entries": 2
+        },
+        {
+          "name": "NEEDS_A_LIVE_SITE",
+          "entries": 3
+        },
+        {
+          "name": "NEEDS_THE_OUTSIDE_WORLD",
+          "entries": 3
+        },
+        {
+          "name": "SEVERITY_ORDER_KEY",
+          "entries": 4
+        },
+        {
+          "name": "VERDICT_RANK",
+          "entries": 3
+        },
+        {
+          "name": "GSC_FALLBACKS",
+          "entries": 2
+        },
+        {
+          "name": "SITEMAP_PATHS",
+          "entries": 2
+        },
+        {
+          "name": "ASSET_EXTENSIONS",
+          "entries": 47
+        },
+        {
+          "name": "PAGE_LEVEL",
+          "entries": 2
+        },
+        {
+          "name": "PAGE_ARTIFACT_KEYS",
+          "entries": 2
+        },
+        {
+          "name": "STATUS_RANK",
+          "entries": 3
+        }
+      ]
+    },
+    "citation_readiness": {
+      "read": [],
+      "unread": [
+        {
+          "name": "FOOTNOTE_WORDS",
+          "entries": 10
+        }
+      ]
+    },
+    "collection_page_checker": {
+      "read": [],
+      "unread": [
+        {
+          "name": "FILTER_PARAMS",
+          "entries": 10
+        }
+      ]
+    },
+    "cwv_metrics": {
+      "read": [
+        {
+          "name": "THRESHOLDS",
+          "entries": 3
+        }
+      ],
+      "unread": []
+    },
+    "detect_profile": {
+      "read": [],
+      "unread": [
+        {
+          "name": "SCHEMA_SIGNALS",
+          "entries": 18
+        },
+        {
+          "name": "PLATFORM_SIGNALS",
+          "entries": 8
+        },
+        {
+          "name": "PATH_SIGNALS",
+          "entries": 8
+        },
+        {
+          "name": "MARKUP_SIGNALS",
+          "entries": 7
+        },
+        {
+          "name": "PROFILES",
+          "entries": 5
+        }
+      ]
+    },
+    "domain_safety_check": {
+      "read": [],
+      "unread": [
+        {
+          "name": "SB_THREAT_TYPES",
+          "entries": 4
+        }
+      ]
+    },
+    "duplicate_content": {
+      "read": [],
+      "unread": [
+        {
+          "name": "THIN_CONTENT_THRESHOLDS",
+          "entries": 5
+        }
+      ]
+    },
+    "entity_checker": {
+      "read": [
+        {
+          "name": "SAMEAS_PLATFORMS",
+          "entries": 10
+        }
+      ],
+      "unread": []
+    },
+    "env_loader": {
+      "read": [],
+      "unread": [
+        {
+          "name": "_LOADED_FROM",
+          "entries": 0
+        }
+      ]
+    },
+    "external_link_quality": {
+      "read": [],
+      "unread": [
+        {
+          "name": "LOW_TRUST_HOST_HINTS",
+          "entries": 9
+        }
+      ]
+    },
+    "faceted_nav_audit": {
+      "read": [],
+      "unread": [
+        {
+          "name": "FACET_KEYS",
+          "entries": 13
+        }
+      ]
+    },
+    "favicon_check": {
+      "read": [],
+      "unread": [
+        {
+          "name": "JPEG_SOF_MARKERS",
+          "entries": 13
+        }
+      ]
+    },
+    "font_audit": {
+      "read": [],
+      "unread": [
+        {
+          "name": "FONT_EXTENSIONS",
+          "entries": 5
+        }
+      ]
+    },
+    "gsc_checker": {
+      "read": [],
+      "unread": [
+        {
+          "name": "SCOPES",
+          "entries": 1
+        }
+      ]
+    },
+    "gsc_links_csv": {
+      "read": [],
+      "unread": [
+        {
+          "name": "SITE_SHEETS",
+          "entries": 4
+        },
+        {
+          "name": "ANCHOR_SHEETS",
+          "entries": 4
+        },
+        {
+          "name": "PAGE_SHEETS",
+          "entries": 4
+        }
+      ]
+    },
+    "gsc_url_inspection": {
+      "read": [],
+      "unread": [
+        {
+          "name": "INDEXED_MARKERS",
+          "entries": 2
+        },
+        {
+          "name": "NOT_INDEXED_MARKERS",
+          "entries": 8
+        }
+      ]
+    },
+    "hreflang_checker": {
+      "read": [],
+      "unread": [
+        {
+          "name": "VALID_LANG_CODES",
+          "entries": 108
+        },
+        {
+          "name": "COMMON_LANG_MISTAKES",
+          "entries": 6
+        },
+        {
+          "name": "VALID_REGION_CODES",
+          "entries": 199
+        },
+        {
+          "name": "COMMON_REGION_MISTAKES",
+          "entries": 3
+        }
+      ]
+    },
+    "image_weight_audit": {
+      "read": [],
+      "unread": [
+        {
+          "name": "MODERN_FORMATS",
+          "entries": 2
+        },
+        {
+          "name": "RASTER_FORMATS",
+          "entries": 4
+        }
+      ]
+    },
+    "indexnow_checker": {
+      "read": [],
+      "unread": [
+        {
+          "name": "INDEXNOW_ENDPOINTS",
+          "entries": 4
+        }
+      ]
+    },
+    "local_seo_checker": {
+      "read": [],
+      "unread": [
+        {
+          "name": "MAP_PATTERNS",
+          "entries": 4
+        },
+        {
+          "name": "GBP_PATTERNS",
+          "entries": 3
+        }
+      ]
+    },
+    "notebook_sync": {
+      "read": [],
+      "unread": [
+        {
+          "name": "FIXED",
+          "entries": 8
+        },
+        {
+          "name": "CONFIG",
+          "entries": 2
+        }
+      ]
+    },
+    "pagespeed": {
+      "read": [
+        {
+          "name": "CWV_THRESHOLDS",
+          "entries": 5
+        }
+      ],
+      "unread": [
+        {
+          "name": "VALID_STRATEGIES",
+          "entries": 2
+        },
+        {
+          "name": "PSI_METRIC_MAP",
+          "entries": 5
+        },
+        {
+          "name": "CRUX_RATING",
+          "entries": 3
+        },
+        {
+          "name": "CORE_WEB_VITALS",
+          "entries": 3
+        },
+        {
+          "name": "KNOWN_RATINGS",
+          "entries": 3
+        }
+      ]
+    },
+    "probe_shapes": {
+      "read": [],
+      "unread": [
+        {
+          "name": "CTX",
+          "entries": 1
+        }
+      ]
+    },
+    "rendered_audit": {
+      "read": [
+        {
+          "name": "MOBILE_METRICS",
+          "entries": 4
+        }
+      ],
+      "unread": [
+        {
+          "name": "GENERAL_METRICS",
+          "entries": 3
+        }
+      ]
+    },
+    "rich_results_guard": {
+      "read": [],
+      "unread": [
+        {
+          "name": "DEPRECATED_TYPES",
+          "entries": 8
+        },
+        {
+          "name": "RESTRICTED_TYPES",
+          "entries": 2
+        },
+        {
+          "name": "RICH_RESULT_REQUIRED",
+          "entries": 4
+        }
+      ]
+    },
+    "robots_checker": {
+      "read": [],
+      "unread": [
+        {
+          "name": "AI_CRAWLERS",
+          "entries": 13
+        },
+        {
+          "name": "STANDARD_CRAWLERS",
+          "entries": 5
+        }
+      ]
+    },
+    "robots_path_tester": {
+      "read": [],
+      "unread": [
+        {
+          "name": "DEFAULT_AGENTS",
+          "entries": 11
+        }
+      ]
+    },
+    "schema_required_props": {
+      "read": [
+        {
+          "name": "REQUIRED_PROPS",
+          "entries": 12
+        },
+        {
+          "name": "RECOMMENDED_PROPS",
+          "entries": 9
+        }
+      ],
+      "unread": [
+        {
+          "name": "PLACEHOLDER_MARKERS",
+          "entries": 5
+        }
+      ]
+    },
+    "security_headers": {
+      "read": [],
+      "unread": [
+        {
+          "name": "SECURITY_HEADERS",
+          "entries": 6
+        }
+      ]
+    },
+    "seo_common": {
+      "read": [
+        {
+          "name": "FETCH_ERROR_KINDS",
+          "entries": 7
+        },
+        {
+          "name": "DEAD_FETCH_ERROR_KINDS",
+          "entries": 3
+        }
+      ],
+      "unread": [
+        {
+          "name": "HTML_CTYPES",
+          "entries": 2
+        },
+        {
+          "name": "XML_CTYPES",
+          "entries": 3
+        },
+        {
+          "name": "CONVENTIONAL_SITEMAP_PATHS",
+          "entries": 3
+        }
+      ]
+    },
+    "server_log_audit": {
+      "read": [],
+      "unread": [
+        {
+          "name": "SEARCH_BOTS",
+          "entries": 9
+        },
+        {
+          "name": "AI_BOTS",
+          "entries": 15
+        },
+        {
+          "name": "NOT_USER_AGENTS",
+          "entries": 2
+        },
+        {
+          "name": "CRAWLER_DOMAINS",
+          "entries": 6
+        },
+        {
+          "name": "JSON_KEYS",
+          "entries": 6
+        },
+        {
+          "name": "WASTED",
+          "entries": 4
+        }
+      ]
+    },
+    "site_crawl": {
+      "read": [],
+      "unread": [
+        {
+          "name": "CHROME_TAGS",
+          "entries": 8
+        }
+      ]
+    },
+    "social_meta": {
+      "read": [],
+      "unread": [
+        {
+          "name": "OG_REQUIREMENTS",
+          "entries": 7
+        },
+        {
+          "name": "TWITTER_REQUIREMENTS",
+          "entries": 6
+        }
+      ]
+    },
+    "spec_debt": {
+      "read": [],
+      "unread": [
+        {
+          "name": "CLASSES",
+          "entries": 4
+        }
+      ]
+    },
+    "third_party_script_audit": {
+      "read": [],
+      "unread": [
+        {
+          "name": "KNOWN_TAGS",
+          "entries": 12
+        }
+      ]
+    },
+    "topical_cluster_mapper": {
+      "read": [],
+      "unread": [
+        {
+          "name": "STOPWORDS",
+          "entries": 26
+        }
+      ]
+    },
+    "url_quality": {
+      "read": [],
+      "unread": [
+        {
+          "name": "FACET_PARAMS",
+          "entries": 12
+        },
+        {
+          "name": "TRACKING_PREFIXES",
+          "entries": 4
+        }
+      ]
+    }
+  }
+}

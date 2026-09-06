@@ -1055,6 +1055,8 @@ class EveryToolGateRunsHereToo(unittest.TestCase):
         ("audit_reachability.py", []),
         ("audit_item_semantics.py", []),
         ("audit_catalogue.py", ["--check"]),
+        ("audit_derived_sets.py", ["--check",
+                                   os.path.join(ROOT, "tests", "derived-sets.json")]),
         ("i18n_digest.py", ["--check"]),
         ("audit_thresholds.py", ["--check"]),
         # Absolute, because the child gets no `cwd`: a working directory forces
