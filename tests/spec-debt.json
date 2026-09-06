@@ -3,9 +3,9 @@
     "declarations": {
       "counts": {
         "enforced": 2,
-        "none": 4,
+        "none": 3,
         "opposed": 1,
-        "partial": 7
+        "partial": 8
       },
       "opposed": [
         "DEC-2"
@@ -13,7 +13,6 @@
       "requirements": 14,
       "unread": [
         "DEC-1",
-        "DEC-13",
         "DEC-5",
         "DEC-8"
       ]
@@ -165,9 +164,9 @@
   },
   "totals": {
     "enforced": 48,
-    "none": 18,
+    "none": 17,
     "opposed": 2,
-    "partial": 81,
+    "partial": 82,
     "requirements": 149
   }
 }

@@ -104,5 +104,90 @@ class RecordedCensus(unittest.TestCase):
             self.assertNotIn("MISSING", row["distinct"], item_id)
 
 
+class TheHarnessSaysWhatItCannotExercise(unittest.TestCase):
+    """`openspec/specs/declarations/` DEC-13. An item that gave one answer everywhere is
+    a question for a person, and what the mechanism cannot express has to be written
+    where the output is read — otherwise each reader re-derives it and the third one
+    files it as a defect.
+
+    Four items need a 5xx, a redirect chain, a redirect loop, or a status that varies by
+    user agent. A static file server produces none of those, so those four can never be
+    seen failing here, and that is a fact about the harness rather than about the
+    registry.
+
+    Two of the three clauses hold and are pinned below. The third — that the *census
+    output itself* says so, rather than a README beside the trees — does not exist, and
+    is pinned as an absence in the same shape `openspec/specs/http/` HTTP-8 uses: a test
+    written to fail on the day the gap closes, saying in its own message what to replace
+    it with.
+    """
+
+    README = os.path.join(ROOT, "tests", "corpus", "README.md")
+
+    @classmethod
+    def unexercisable(cls):
+        """The ids the corpus README names as impossible here, read from the README.
+
+        Derived rather than retyped. The list is hand-kept — DEC-6's objection applies
+        to it exactly as it does to the manifest — so reading it is what makes the
+        drift visible instead of duplicating it here.
+        """
+        import re
+        with open(cls.README, encoding="utf-8") as stream:
+            text = stream.read()
+        start = text.index("## What a corpus tree can and cannot express")
+        end = text.find(chr(10) + "## ", start + 1)
+        section = text[start:end if end != -1 else len(text)]
+        return sorted(set(re.findall(r"`([A-Z]{2,4}-\d+)`", section)))
+
+    def setUp(self):
+        with open(CENSUS, encoding="utf-8") as stream:
+            self.census = json.load(stream)
+
+    def test_the_items_it_names_are_items(self):
+        """A list of ids nobody resolves is a list that outlives the ids in it."""
+        named = self.unexercisable()
+        self.assertTrue(named, "the README section names no ids; this test is vacuous")
+        missing = [i for i in named if i not in self.census["items"]]
+        self.assertEqual(missing, [],
+                         "the corpus README names items the registry does not have")
+
+    def test_none_of_them_was_ever_seen_failing(self):
+        """The claim itself. If one of these does fail on some tree, the harness grew a
+        capability the README says it lacks, and the sentence is now wrong."""
+        for item_id in self.unexercisable():
+            with self.subTest(item=item_id):
+                distinct = self.census["items"][item_id]["distinct"]
+                self.assertNotIn(
+                    "FAIL", distinct,
+                    f"{item_id} failed somewhere, so the corpus can express what the "
+                    f"README says it cannot — update the README, not this test")
+
+    def test_the_census_still_knows_nothing_of_the_limit(self):
+        """The half DEC-13 asks for and the tree does not do.
+
+        The output *does* print these four ids — as members of the group they inflate,
+        the way it prints every id in every group. What it never does is mark them as
+        items no tree here can exercise, so a reader sees them beside items that simply
+        did not fail and cannot tell the two apart. The connection lives only in a
+        README beside the fixtures, which is the Reader line's own complaint.
+
+        Pinned structurally, because that is where the absence is: the census tool has
+        no reference to the corpus README and no knowledge of any of the four ids. This
+        goes red on the day somebody gives it one, and says what to replace it with.
+        """
+        with open(os.path.join(ROOT, "tests", "verdict_census.py"),
+                  encoding="utf-8") as stream:
+            source = stream.read()
+        knows = [t for t in ["corpus/README", "corpus" + chr(92) + "README"]
+                            + self.unexercisable()
+                 if t in source]
+        self.assertEqual(
+            knows, [],
+            "the census now knows which items the harness cannot exercise — good; "
+            "replace this test with one asserting the output marks them, and close "
+            "DEC-13 in openspec/specs/declarations/")
+
+
 if __name__ == "__main__":
     unittest.main()
