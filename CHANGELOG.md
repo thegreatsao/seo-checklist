@@ -10,6 +10,61 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.93.6 — the count ledger leaves the protocol, and finds sixteen more
+
+Registry version: unchanged at `e9154e92f4dd`. Nothing a run produces changes; sixteen
+sentences about this tree stop being wrong.
+
+**Where this came from.** `0.92.1` built a ledger for the counts
+`openspec/specs/operator-protocol/` OPR-8 governs, and said in its own docstring what it
+could not do: *"a ledger cannot notice a count somebody adds in a sentence nobody entered
+into it."* That gap is `openspec/specs/governance/` GOV-3's, and the way to close it for
+a population is not to look harder — it is to sweep the tree for every sentence stating
+one, and derive them all. The sweep found about thirty candidates; every number below was
+recomputed by hand before it was touched.
+
+**The eleven the widened ledger caught, all in files with no reason to agree because
+nothing made them:**
+
+| where | stated | tree |
+|---|---|---|
+| `checklist_runner.py` — "211 items collapse to ~45 process launches" | 211, 45 | **217, 66** |
+| `checklist_report.py` — "a hand-maintained copy of 211 checklist strings" | 211 | **217** |
+| `detect_profile.py` — "4 of the 215 items" | 215 | **217** |
+| `probe_shapes.py` — "the 214 items collapse to" | 214 | **217** |
+| `audit_item_semantics.py` — "23 of 215 titles fire" | 215 | **217** |
+| `site_crawl.py` — "decides ten items, three of them `high`" | 10, 3 | **13, 8** |
+| `README.md` — "Of 143 script-backed assertions" | 143 | **145** |
+| `README.md` — "every one of the 55 evidence scripts has tests" | 55 | **58** |
+| `README.md` — "`pagespeed.py` runs once, not seven times" | 7 | **6** |
+| `CREDITS.md` — "the registry calls 55 of the 60" | 55, 60 | **58 of 64** |
+
+**And five more with no ledger entry, corrected by hand and named here so the next sweep
+starts from a shorter list:** `KNOWN-ISSUES.md` stated the profile exclusions over 215
+items, the reachability claims as 141 of 143, the title survey over 215, the false-alarm
+rate over 215, and — in a sentence ending "carry Russian today" — 215 of 215 titles and
+recommendations where `ru.json` holds 217 of each. `notebook_sync.py` labelled the agent
+directory "5 lenses"; there are four lenses and five files, and the fifth is the
+adversary, which is the distinction `openspec/specs/operator-protocol/` INV-O2 exists to
+make.
+
+**The README's copy of the lens table is swept now too.** It repeated SKILL.md's table —
+`copy` 14, `layout` 11, `market` 2 — and nothing derived either copy, so the two agreed
+with each other and both were wrong. Both are swept from the registry's own set of
+lenses rather than compared with each other.
+
+**What the ledger holds after this: 29 claims across nine files.** Each names a file, a
+pattern that must match exactly once, and a population derived from `checklist.json`. Two
+populations arrived with it — `translated()`, which intersects `ru.json`'s two maps by
+item id rather than comparing their lengths, because two maps of the right size can
+disagree about which items they cover; and the count of distinct `(script, args)`
+launches, which is what "collapses to" means and had never been derived anywhere.
+
+**One number deliberately left out.** `audit_item_semantics.py` says "23 of 217 titles
+fire": the denominator is in the ledger and the 23 is not, because it is that heuristic's
+own output and no registry field gives it. The entry says so, rather than leaving a
+reader to wonder why half a sentence is held.
+
 ## 0.93.5 — the protocol says which sentences are the tool's and which are yours
 
 Registry version: unchanged at `e9154e92f4dd`. No run produces a different number. What

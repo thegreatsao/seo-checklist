@@ -53,7 +53,7 @@ FIXED = [
     ("Playbook - local SEO", "file", SKILL / "resources/playbooks/local-seo.md"),
     ("Playbook - competitor research", "file",
      SKILL / "resources/playbooks/competitor-research.md"),
-    ("LLM reviewer agents - 5 lenses", "agents", AGENT_DIR),
+    ("LLM reviewer agents - 4 lenses and the adversary", "agents", AGENT_DIR),
 ]
 
 SPECS = Path("openspec") / "specs"

@@ -34,6 +34,7 @@ import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL_DIR = os.path.join(ROOT, "skills", "seo-checklist")
+SCRIPTS = os.path.join(SKILL_DIR, "scripts")
 REGISTRY = os.path.join(SKILL_DIR, "resources", "config", "checklist.json")
 
 UNITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
@@ -99,12 +100,46 @@ def population() -> dict:
         # protocol said seven and named seven, leaving CI-002 out of both.
         "gsc_answered": sum(1 for item in ITEMS
                             if (item.get("check") or {}).get("requires") == "gsc"),
+        # Populations outside the protocol, added in 0.93.6. Every one of them was
+        # stated somewhere in this tree and wrong, in four files that had no reason to
+        # agree with each other because nothing made them.
+        "script_files": len([f for f in os.listdir(SCRIPTS) if f.endswith(".py")]),
+        "named_scripts": len({(item.get("check") or {}).get("script")
+                              for item in ITEMS
+                              if (item.get("check") or {}).get("script")}),
+        "launches": len({((item.get("check") or {}).get("script"),
+                          tuple((item.get("check") or {}).get("args") or []))
+                         for item in ITEMS if (item.get("check") or {}).get("script")}),
+        "asserted": sum(1 for item in ITEMS
+                        if item["source"] == "script"
+                        and (item.get("check") or {}).get("assert")),
+        "crawl_readers": sum(
+            1 for item in ITEMS
+            if any("inventory_json" in str(arg)
+                   for arg in ((item.get("check") or {}).get("args") or []))),
+        "pagespeed": sum(1 for item in ITEMS
+                         if (item.get("check") or {}).get("script") == "pagespeed.py"),
+        "translated": translated(),
         "llm": BY_SOURCE["llm"],
         "manual": BY_SOURCE["manual"],
         "twins": len(TWINS),
         "carriers": len(CARRIERS),
         **{f"lens:{lens}": count for lens, count in BY_LENS.items()},
     }
+
+
+def translated() -> int:
+    """Items carrying a Russian title *and* a Russian recommendation.
+
+    Both maps, intersected by id rather than compared by length: two maps of the right
+    size can disagree about which items they cover, and the sentence in `KNOWN-ISSUES`
+    is a claim about coverage.
+    """
+    with open(os.path.join(SKILL_DIR, "resources", "i18n", "ru.json"),
+              encoding="utf-8") as stream:
+        russian = json.load(stream)
+    ids = {item["id"] for item in ITEMS}
+    return len(ids & set(russian["item_titles"]) & set(russian["item_fixes"]))
 
 
 def agents(name: str) -> str:
@@ -169,6 +204,44 @@ LEDGER = [
     (agents("seo-llm-market.md"),
      r"^([A-Za-z]+) items, each cheap to answer badly", "lens:market",
      "the market lens describing its own workload"),
+
+    # Outside the protocol. These were found by sweeping the tree for numbers that
+    # count a registry population, after the protocol's own were closed — the answer
+    # to "what else states one of these and is read by nothing".
+    (os.path.join(SKILL_DIR, "scripts", "checklist_runner.py"),
+     r"— (\d+) items collapse to", "items",
+     "the runner's own account of what its plan does"),
+    (os.path.join(SKILL_DIR, "scripts", "checklist_runner.py"),
+     r"items collapse to ~?(\d+) process launches", "launches",
+     "the same sentence's second number"),
+    (os.path.join(SKILL_DIR, "scripts", "checklist_report.py"),
+     r"hand-maintained copy of (\d+) checklist strings", "items",
+     "why a translation file is a second copy of the registry"),
+    (os.path.join(SKILL_DIR, "scripts", "detect_profile.py"),
+     r"excludes 4 of the (\d+) items", "items",
+     "the profile detector's account of what a profile costs"),
+    (os.path.join(SKILL_DIR, "scripts", "site_crawl.py"),
+     r"crawl of some other host decides ([a-z]+) items", "crawl_readers",
+     "how much a crawl of the wrong host would decide"),
+    (os.path.join(SKILL_DIR, "tools", "probe_shapes.py"),
+     r"the (\d+) items collapse to the same handful", "items",
+     "why probing the registry's own invocations is the same work as a run"),
+    (os.path.join(SKILL_DIR, "tools", "audit_item_semantics.py"),
+     r"\d+ of (\d+) titles fire", "items",
+     "the denominator under the semantics auditor's false-alarm rate; the "
+     "numerator is that heuristic's own output and no registry field gives it"),
+    (os.path.join(ROOT, "README.md"),
+     r"Of (\d+) script-backed assertions", "asserted",
+     "the README's account of what the reachability audit covers"),
+    (os.path.join(ROOT, "README.md"),
+     r"Every one of the (\d+) evidence scripts has tests", "named_scripts",
+     "the claim that every checker is tested"),
+    (os.path.join(ROOT, "README.md"),
+     r"`pagespeed\.py` runs once, not\s+([a-z]+) times", "pagespeed",
+     "the example of what grouping by invocation saves"),
+    (os.path.join(ROOT, "CREDITS.md"),
+     r"The registry calls (\d+) of the", "named_scripts",
+     "the attribution's account of which scripts the registry uses"),
 ]
 
 
@@ -204,6 +277,20 @@ class TheProtocolsCountsComeFromTheRegistry(unittest.TestCase):
                     to_int(found.group(1)), counts[key],
                     f"{os.path.relpath(path, ROOT)} states {found.group(1)!r} where the "
                     f"registry holds {counts[key]} — {why}")
+
+    def test_the_readme_repeats_the_queue_table_and_gets_it_right(self):
+        """The same table, in the file more people read. It is a copy, and nothing
+        derived it until 0.93.6 — `copy` said 14, `layout` 11 and `market` 2 against a
+        registry holding 19, 13 and 3. Swept from the registry's lenses rather than
+        compared against SKILL.md, so the two copies cannot agree with each other and
+        both be wrong."""
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as stream:
+            text = stream.read()
+        for lens, size in sorted(BY_LENS.items()):
+            with self.subTest(lens=lens):
+                row = re.search(r"\| `LLM-QUEUE-%s\.md` \|[^|]+\| (\d+) \|" % lens, text)
+                self.assertIsNotNone(row, f"the README has no row for {lens!r}")
+                self.assertEqual(int(row.group(1)), size)
 
     def test_the_queue_table_names_every_lens_and_states_its_size(self):
         """A sweep over the lenses the registry carries, not over a list written here.

@@ -464,7 +464,7 @@ name. A column called `url` would be read as "fix this page".
     `NO_DATA` — the one thing this number can do to a verdict is withhold it, which is
     the family of `DEFAULT_TIMEOUT` and `DEFAULT_MAX_RESPONSE_BYTES`;
   - **`detect_profile`'s three weight tables decide scope, under a flag somebody typed.**
-    Counted: `local` excludes 4 of 215 items, `saas`, `blog` and `media` 7 each,
+    Counted: `local` excludes 4 of 217 items, `saas`, `blog` and `media` 7 each,
     `default` and `ecommerce` none, and an excluded item reports N/A. `choose_profile`
     takes the detector's answer only for an explicit `--profile auto`, and with no
     terminal falls back to `default` — the whole registry — saying so on stderr. Declared
@@ -742,7 +742,7 @@ name. A column called `url` would be read as "fix this page".
   Kept, rewritten rather than deleted, because the entry itself is the finding: **a record
   of a defect is not evidence the defect is still there**, and this one read as open
   through every audit of this file until somebody ran the detector it asked for. What
-  `audit_reachability.py` still cannot do is claim reachability — 141 of 143 script-backed
+  `audit_reachability.py` still cannot do is claim reachability — 143 of 145 script-backed
   assertions are not claimed either way, and that number is the honest measure of how much
   of the registry this tool speaks about at all.
   <!-- ki: items-that-could-not-fail -->
@@ -850,7 +850,7 @@ name. A column called `url` would be read as "fix this page".
   it was. The vocabulary check was satisfied, and satisfied by the very word that
   made the title wrong: `restricted` appears on both sides, which is what that check
   is looking for. Corrected by hand before landing to *"Snippet directives leave the
-  page usable in AI answers and result snippets"*. Every other one of the 215 titles
+  page usable in AI answers and result snippets"*. Every other one of the 217 titles
   states the desired state; this is one occurrence, not a pattern, and it was caught
   by a person re-reading the item rather than by anything in CI.
 
@@ -860,7 +860,7 @@ name. A column called `url` would be read as "fix this page".
   defect, so a title repeating that segment names the defect too. Measured against
   the registry:
 
-  - **It is almost all false alarm.** 23 of 215 titles fire, and all 23 are correct —
+  - **It is almost all false alarm.** 23 of 217 titles fire, and all 23 are correct —
     *Fix Broken Images* over `broken_image_count == 0`, *Eliminate Internal Duplicate
     Content* over `exact_duplicate_groups == 0`, *Avoid Intrusive Interstitials on
     Mobile*. They name the defect because they are remediation instructions, which is
@@ -1469,7 +1469,7 @@ name. A column called `url` would be read as "fix this page".
   <!-- ki: page-guard-is-fingerprint-based -->
 - **Closed in 0.19.0 — the Russian report is Russian throughout.** All 214 item
   titles and all 214 recommendations were translated, and the registry has grown by one
-  since: **215** of 215 titles and 215 of 215 recommendations carry Russian today, with
+  since: **217** of 217 titles and 217 of 217 recommendations carry Russian today, with
   no untranslated id. The claim is computed by a test against `checklist.json` rather
   than declared in the file. That matters here more than the translation does:
   this file has twice asserted a completeness it did

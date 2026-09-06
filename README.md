@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.93.5 — see [CHANGELOG.md](CHANGELOG.md). The last four verdicts decided by
+Version 0.93.6 — see [CHANGELOG.md](CHANGELOG.md). The last four verdicts decided by
 matching words in a message now read counted fields, and three of them move: GO-138's
 `404` matched a 404 and not a 500, so a sitemap of URLs returning 503 passed; MB-095
 counted a message its script only emits when told to fetch images, which the registry
@@ -18,7 +18,9 @@ one inside `checklist.json` itself, which said the plugin adds 15 checks where i
 staleness check and compared with nothing. `0.93.4` counts the rest of them: 166 sets in
 `scripts/` and `tools/` decide what this tool does, and sixteen are read by anything, and
 `0.93.5` gives `SKILL.md` a contract table saying, per section, what the tool guarantees
-and what the operator has to supply.
+and what the operator has to supply. `0.93.6` widens the count ledger past the protocol
+and corrects sixteen more numbers about this tree, ten of them in this file and in the
+scripts' own docstrings.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -88,7 +90,7 @@ measures read from a rendered page.
 
 Those 145 items collapse to **66 unique process launches** over 58 distinct scripts —
 the runner deduplicates by script *and* arguments, so `pagespeed.py` runs once, not
-seven times, and `MB-107` and `MB-108` cost no launch at all: they read the artifact
+six times, and `MB-107` and `MB-108` cost no launch at all: they read the artifact
 five other items already read.
 
 Nine items moved from script to judgement in August 2026 as a correction, not a
@@ -333,7 +335,7 @@ apart in a delivered report is the record of which was which.
 
 ## The LLM queue is not optional
 
-30 items cannot be settled by a script — grammar, cloaking, doorway patterns,
+38 items cannot be settled by a script — grammar, cloaking, doorway patterns,
 translation quality, ad density, whether the page was written for a reader. Left
 unanswered they stay `LLM_PENDING` and cap coverage.
 
@@ -343,10 +345,10 @@ agents can work concurrently, each reading its own slice once:
 
 | Queue | Agent | Items |
 |---|---|---|
-| `LLM-QUEUE-copy.md` | `seo-llm-copy` | 14 |
-| `LLM-QUEUE-layout.md` | `seo-llm-layout` | 11 |
+| `LLM-QUEUE-copy.md` | `seo-llm-copy` | 19 |
+| `LLM-QUEUE-layout.md` | `seo-llm-layout` | 13 |
 | `LLM-QUEUE-locale.md` | `seo-llm-locale` | 3 |
-| `LLM-QUEUE-market.md` | `seo-llm-market` | 2 |
+| `LLM-QUEUE-market.md` | `seo-llm-market` | 3 |
 
 Answer each `PASS` / `FAIL` / `WARN` / `N/A` with concrete evidence, then merge:
 
@@ -606,7 +608,7 @@ declared, a declaration nothing proves any more, and a declaration naming a
 mechanism other than the one proved. The third is the one an exemption list can
 never catch, and this repository has watched one rot in exactly that spot.
 
-It proves rather than surveys. Of 143 script-backed assertions, two are proved
+It proves rather than surveys. Of 145 script-backed assertions, two are proved
 unable to fail and the other 141 are **not claimed either way** — the summary line
 prints that count instead of implying coverage it does not have.
 
@@ -729,7 +731,7 @@ names but nobody shipped, an LLM item with no lens, a profile that hides a criti
 check, and the boundary between "failed", "could not be decided" and "out of scope"
 that every metric here depends on.
 
-Every one of the 55 evidence scripts has tests, and each asserts *the field the
+Every one of the 58 evidence scripts has tests, and each asserts *the field the
 registry actually reads*, named in the test. That is how three releases running found
 defects at about one per three tests: 0.5.0's eighteen assertions that had never
 fired, 0.7.0's two items that failed a site for serving images the recommended way,

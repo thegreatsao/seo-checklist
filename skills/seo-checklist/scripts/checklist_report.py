@@ -117,7 +117,7 @@ class Lang:
 
     Only the report's own wording is translated. Item titles, evidence and fixes
     stay as the registry wrote them unless a translation file explicitly
-    overrides a title — a second, hand-maintained copy of 211 checklist strings
+    overrides a title — a second, hand-maintained copy of 217 checklist strings
     would drift away from the registry the moment either side changed."""
 
     def __init__(self, code: str = "en"):

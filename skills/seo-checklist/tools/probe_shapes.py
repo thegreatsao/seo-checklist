@@ -116,7 +116,7 @@ def registry_jobs(ctx):
     """(script, args) for every registry check we can supply the inputs for.
 
     Deduplicated by (script, args) the way `checklist_runner.build_plan` does, so
-    the 214 items collapse to the same handful of runs a real audit performs — and
+    the 217 items collapse to the same handful of runs a real audit performs — and
     the shapes come back from the same command lines.
     """
     with open(REGISTRY, encoding="utf-8") as f:

@@ -81,7 +81,7 @@ SCHEMA_SIGNALS = {
 # Platform fingerprints in markup and asset paths.
 # basis: inherited — present at import, and the same argument as `SCHEMA_SIGNALS` above,
 #  now with the measurement under it. What a profile decides was counted for 0.80.1:
-#  `local` excludes 4 of the 215 items, `saas`, `blog` and `media` exclude 7 each, and
+#  `local` excludes 4 of the 217 items, `saas`, `blog` and `media` exclude 7 each, and
 #  `default` and `ecommerce` exclude none — an excluded item reports N/A. What stops that
 #  from being a silent narrowing is `choose_profile`, and the order of its branches is the
 #  whole of it: `--profile auto` returns the detector's answer in any environment, with or

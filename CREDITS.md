@@ -14,24 +14,29 @@ local browser trace, and two mobile-layout checks) are new here.
 
 ## Evidence scripts
 
-48 of the 60 scripts in `skills/seo-checklist/scripts/` come from
+Sixty of the sixty-seven `.py` files under `skills/seo-checklist/scripts/` were present
+at this repository's first commit; 48 of those come from
 [Agentic-SEO-Skill](https://github.com/Bhanunamikaze/Agentic-SEO-Skill) (MIT),
-as do both files in `scripts/lib/`, with three bug fixes applied:
+as do both files that were then in `scripts/lib/`, with three bug fixes applied:
 
 - `article_seo.py` crashed on JSON-LD in array or `@graph` form
 - `lib/safe_http.py` exited the process at import when `requests` was absent
 - `validate_skill_inventory.py` had a regex that never matched, so the check it
   performed silently validated nothing
 
-New in this plugin, 12 of the 60: `checklist_runner.py`, `checklist_report.py`,
+Written here, twelve of that sixty: `checklist_runner.py`, `checklist_report.py`,
 `detect_profile.py`, `gsc_cannibalization.py`, `gsc_url_inspection.py`,
 `gsc_links_csv.py`, `html_validator.py`, `domain_safety_check.py`,
 `ga4_tag_checker.py`, `css_minify_check.py`, `cwv_metrics.py` and
 `rendered_audit.py`, plus the registry, its generator, the tools in `tools/`, the
 four judgement agents and the adversarial reviewer.
 
-The registry calls 55 of the 60; the other five are the runner, the report, profile
-detection and two shared helpers.
+The registry calls 58 of the 64 files directly in `scripts/`; the other six are the
+runner, the report, profile detection, the shared crawl, and two shared helpers. Two of
+those six are documented in
+[script-output-shapes.md](skills/seo-checklist/resources/references/script-output-shapes.md)
+anyway, because the runner runs them itself and the rest of the audit reads what they
+produce.
 
 ## Public Suffix List
 

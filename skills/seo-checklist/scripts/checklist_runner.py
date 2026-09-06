@@ -6,7 +6,7 @@ resources/config/checklist.json gets a status, and items nobody could answer
 are reported as NO_DATA rather than silently dropped.
 
 Each unique (script, args) pair executes exactly once no matter how many
-checklist items depend on it — 211 items collapse to ~45 process launches.
+checklist items depend on it — 217 items collapse to 66 process launches.
 
 Usage:
     python3 checklist_runner.py https://example.com
