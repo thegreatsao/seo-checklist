@@ -342,5 +342,124 @@ class CertificateVerificationCannotBeTurnedOff(unittest.TestCase):
                               "only because its verdict comes from a verifying one")
 
 
+
+class TheRobotsFetchGoesThroughTheGuardToo(unittest.TestCase):
+    """`openspec/specs/http/` HTTP-1 says *every* request is validated before it is made
+    and connects to the address that was validated. One request in this module was not:
+    `_fetch_robots` called `requests.get` directly, so every origin's `/robots.txt` — the
+    first request made to any host the audit touches — went out with no guard and no pin.
+
+    The comment on it named a real constraint rather than an oversight: `safe_get` consults
+    `robots.txt`, so fetching `robots.txt` through it would recurse. That argues against
+    reusing `safe_get`; it does not argue for skipping the guard, which is a separate
+    mechanism one level below. `_validated_url` and `_PinnedAdapter` are both callable
+    without touching robots at all.
+
+    Three holes, one per test below, in order of what they cost:
+
+    * a host that resolves to an address the guard blocks is contacted anyway. The audit
+      refuses to fetch its pages and fetches its `robots.txt` — from a link-local address,
+      the metadata service included;
+    * the answer the guard would have validated is discarded and the name is resolved
+      again by the transport, which is the rebinding case `safe_get` was pinned against in
+      0.58.0, still open here;
+    * a redirect is followed to wherever it points, so a public `robots.txt` that answers
+      302 to `169.254.169.254` reaches it.
+
+    These stop at the same adapter seam as the rest of this file, and each asserts that
+    *nothing went out* rather than that an exception was raised: fail-open is deliberate
+    here (see `_fetch_robots`), so a blocked origin must yield an empty policy — the
+    refusal must cost no request, not turn into an audit failure.
+    """
+
+    def setUp(self):
+        self.saved = {name: os.environ.get(name) for name in
+                      ("SEO_ALLOW_PRIVATE", "SEO_HTTP_CACHE", "SEO_MAX_RPS",
+                       "SEO_RATE_LIMIT_DIR")}
+        os.environ.pop("SEO_ALLOW_PRIVATE", None)
+        os.environ.pop("SEO_HTTP_CACHE", None)
+        os.environ["SEO_MAX_RPS"] = "0"
+        # Its own state directory, or a cached robots.txt from another test — or another
+        # run on this machine — decides the answer and nothing is fetched at all.
+        self.state = tempfile.mkdtemp(prefix="seo-robots-guard-")
+        os.environ["SEO_RATE_LIMIT_DIR"] = self.state
+        sh._announced_private = False
+
+    def tearDown(self):
+        for name, value in self.saved.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+        sh._announced_private = False
+
+    def test_a_blocked_origin_is_not_asked_for_its_robots_txt(self):
+        """The audit will not fetch this host's pages. It must not fetch its rules."""
+        sent = []
+
+        def send(adapter, request, **kwargs):
+            sent.append(request.url)
+            return response_for(request, body=b"User-agent: *\nDisallow:\n")
+
+        with mock.patch.object(sh.socket, "getaddrinfo",
+                               side_effect=lambda *a, **k: answer(METADATA, 80)), \
+                mock.patch.object(sh.requests.adapters.HTTPAdapter, "send", new=send):
+            text = sh._robots_text_once("http://metadata.example",
+                                        "metadata.example",
+                                        sh._robots_cache_path("http://metadata.example"))
+
+        self.assertEqual(sent, [], "robots.txt was fetched from a guarded address")
+        self.assertEqual(text, "", "a blocked origin must yield no policy, fail-open")
+
+    def test_the_robots_fetch_connects_to_the_answer_the_guard_validated(self):
+        """The rebinding case, one request earlier than the one 0.58.0 pinned."""
+        lookups, connected = [], []
+
+        def rebinding(host, port, *args, **kwargs):
+            lookups.append(host)
+            return answer(PUBLIC_A if len(lookups) == 1 else LOOPBACK, port)
+
+        def send(adapter, request, **kwargs):
+            connected.append(getattr(getattr(adapter, "pool", None), "host", None))
+            return response_for(request, body=b"User-agent: *\nDisallow:\n")
+
+        with mock.patch.object(sh.socket, "getaddrinfo", side_effect=rebinding), \
+                mock.patch.object(sh._PinnedAdapter, "send", new=send), \
+                mock.patch.object(sh.requests.adapters.HTTPAdapter, "send", new=send):
+            sh._robots_text_once("http://rebind.example", "rebind.example",
+                                 sh._robots_cache_path("http://rebind.example"))
+
+        self.assertEqual(lookups, ["rebind.example"],
+                         "the name was resolved more than once, so the address the "
+                         "guard validated is not the address the transport used")
+        self.assertEqual(connected, [PUBLIC_A])
+        self.assertNotIn(LOOPBACK, connected)
+
+    def test_a_redirect_to_a_blocked_address_is_not_followed(self):
+        """A public robots.txt answering 302 to the metadata service is the same hole
+        wearing a hop. The second address gets its own validation, exactly as
+        `safe_request` gives every hop of a page fetch."""
+        sent = []
+
+        def resolve(host, port, *args, **kwargs):
+            return answer(PUBLIC_A if host == "public.example" else METADATA, port)
+
+        def send(adapter, request, **kwargs):
+            sent.append(request.url)
+            if request.url.endswith("/robots.txt") and "public.example" in request.url:
+                return response_for(request, status=302,
+                                    headers={"Location": "http://metadata.example/x"})
+            return response_for(request, body=b"User-agent: *\nDisallow: /\n")
+
+        with mock.patch.object(sh.socket, "getaddrinfo", side_effect=resolve), \
+                mock.patch.object(sh._PinnedAdapter, "send", new=send), \
+                mock.patch.object(sh.requests.adapters.HTTPAdapter, "send", new=send):
+            text = sh._robots_text_once("http://public.example", "public.example",
+                                        sh._robots_cache_path("http://public.example"))
+
+        self.assertNotIn("http://metadata.example/x", sent,
+                         "a robots.txt redirect reached a guarded address")
+        self.assertEqual(text, "", "an unfollowable redirect yields no policy, fail-open")
+
 if __name__ == "__main__":
     unittest.main()
