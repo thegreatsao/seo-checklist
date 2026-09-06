@@ -4,7 +4,9 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.94.6 — see [CHANGELOG.md](CHANGELOG.md). An artifact that names no page is
+Version 0.94.7 — see [CHANGELOG.md](CHANGELOG.md). A Core Web Vitals rating taken from a
+synthetic load rather than from real visitors now says so in the report, which matters for
+two items whose titles do not mention field data at all. Before that, `0.94.6` made an artifact that names no page
 recorded as having named none rather than as a checked match, and the search order for a
 Search Console key is fixed rather than incidental. Before that, `0.94.5` made a supplied server log or link export
 now carries its age and can be refused for being stale; until now only the two artifacts

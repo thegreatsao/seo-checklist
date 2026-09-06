@@ -134,6 +134,7 @@ The list is normative, and it is this:
 |---|---|---|
 | `w_parser` | `html_parser` | the pages were read through the fallback substrate |
 | `w_http_cache` | `http_cache_hits` | some verdicts describe the page as it was earlier in the run |
+| `w_synthetic` | `synthetic_metrics` | a Core Web Vitals rating came from one synthetic load rather than from real visitors |
 | `w_private_host` | `entry_private` | the host is reachable only from the auditing machine |
 | `w_private` | `allow_private`, `mode` | a private address could have been reached while crawling |
 | `w_guard` | `entry_guard`, `entry_guard_enforced` | the entry page looked like an interstitial and was scored anyway |

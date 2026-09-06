@@ -186,6 +186,7 @@ def parse_pagespeed_response(data: dict[str, Any], url: str, strategy: str = "mo
                     # reader check this mapping against the API response.
                     "rating": CRUX_RATING.get(category, category),
                     "crux_category": category,
+                    "source": "field",
                 }
 
     # Fall back to Lighthouse lab data if no field data
@@ -225,6 +226,15 @@ def parse_pagespeed_response(data: dict[str, Any], url: str, strategy: str = "mo
                     "unit": thresholds.get("unit", ""),
                     "label": thresholds.get("label", label),
                     "rating": rating,
+                    # Where this number came from, beside the number, because two items
+                    # decide from `rating` without their titles saying anything about
+                    # field data — SP-107 reads FCP and SE-119 reads CLS. A lab rating
+                    # answers "what did one synthetic load do", a field rating answers
+                    # "what do real visitors get", and a client acts differently on each.
+                    # The field branch above records `crux_category` for the same reason;
+                    # this side recorded nothing, so the distinction was invisible to
+                    # every surface. `openspec/specs/inputs/` INP-5.
+                    "source": "lab",
                 }
 
     # Extract opportunities

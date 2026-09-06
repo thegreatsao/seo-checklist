@@ -62,10 +62,10 @@
     },
     "inputs": {
       "counts": {
-        "enforced": 8,
+        "enforced": 9,
         "none": 0,
         "opposed": 0,
-        "partial": 2
+        "partial": 1
       },
       "opposed": [],
       "requirements": 10,
@@ -146,10 +146,10 @@
     }
   },
   "totals": {
-    "enforced": 80,
+    "enforced": 81,
     "none": 6,
     "opposed": 2,
-    "partial": 61,
+    "partial": 60,
     "requirements": 149
   }
 }

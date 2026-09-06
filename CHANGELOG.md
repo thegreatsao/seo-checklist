@@ -10,6 +10,32 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.94.7 — two verdicts came from a synthetic load and the report did not say so
+
+Registry version: unchanged at `e9154e92f4dd`. A report gains a sentence and an artifact a
+field, so this is a minor.
+
+**`pagespeed.py` answers two questions with one field.** Where Chrome has a sample for the
+page it reports what real visitors got; where it does not, it falls back to Lighthouse's lab
+audits — one synthetic load in a datacentre — and both land in `metrics.*.rating`. SP-107
+reads FCP from it and SE-119 reads CLS, and neither title says anything about field data, so
+`openspec/specs/inputs/` INP-5's second clause is satisfied and its first was not: nothing
+told the reader which question had been answered. A client acts differently on the two, and
+the distinction is invisible in the number itself.
+
+Every metric now records `source` as `field` or `lab` beside its rating, the runner lifts the
+lab ones into the artifact as `synthetic_metrics`, and the report names them — only on a
+page with no field data, since a caveat printed on every run is one nobody reads. Named
+rather than counted: "2 lab metrics" is a sentence a reader cannot act on.
+
+**Read on both sides, which the first attempt missed.** A test that builds its own payload
+holds the runner and the report and says nothing about what `pagespeed.py` actually writes;
+the mutation that labelled the lab branch `field` passed it. The parser-side assertion in
+`tests/test_evidence.py` is the other half, and it reddens.
+
+`openspec/specs/inputs/` goes from four enforced of ten this morning to nine. Tree debt: 81
+enforced, 60 partial, 6 unread, 2 opposed, of 149.
+
 ## 0.94.6 — three readers in `specs/inputs/`, and one test written, run and deleted
 
 Registry version: unchanged at `e9154e92f4dd`. Nothing a run produces changes.

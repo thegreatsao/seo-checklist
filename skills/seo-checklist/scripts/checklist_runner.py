@@ -1195,6 +1195,36 @@ def lab_performance(results: dict) -> dict:
     return out
 
 
+def synthetic_metrics(results: dict) -> list:
+    """Which Core Web Vitals ratings came from a synthetic load rather than real users.
+
+    `pagespeed.py` reports field data when CrUX has a sample for the page and falls back to
+    Lighthouse's lab audits when it does not, and both land in `metrics.*.rating`. Two items
+    decide from that field without their titles saying anything about field data — SP-107
+    reads FCP, SE-119 reads CLS — so their verdicts can be earned on one synthetic load in a
+    datacentre while the report says nothing about it.
+
+    `openspec/specs/inputs/` INP-5 asks for exactly this: where a number was produced by a
+    synthetic run rather than observed from real users, the report says so. The items whose
+    *titles* ask about field data are a different clause and are already refused a lab
+    number outright; this is the quieter half, where the answer is defensible and its
+    provenance is not visible.
+
+    Names the metrics rather than counting them, because "2 lab metrics" is a sentence a
+    reader cannot act on and "LCP and CLS came from a synthetic load" is.
+    """
+    out = set()
+    for key, payload in results.items():
+        if key[0] != "pagespeed.py" or not isinstance(payload, dict):
+            continue
+        if payload.get("field_data_available"):
+            continue
+        for label, metric in (payload.get("metrics") or {}).items():
+            if isinstance(metric, dict) and metric.get("source") == "lab":
+                out.add(label)
+    return sorted(out)
+
+
 def gsc_opportunities(results: dict) -> list:
     """The `opportunities[]` gsc_checker.py found, lifted out of its payload.
 
@@ -3411,6 +3441,10 @@ def main() -> int:
         # Reported, never scored — see lab_performance(). In the artifact because no item
         # asserts on it any more and nothing else in a run would remember it.
         "lab_performance": lab_performance(results) or None,
+        # Which Core Web Vitals ratings were a synthetic load rather than real users.
+        # Two items decide from these without saying so in their titles, so the fact has
+        # to travel to the report — INP-5.
+        "synthetic_metrics": synthetic_metrics(results) or None,
         "items": graded,
     }
 

@@ -254,7 +254,7 @@ a lab number.
 
 **Why:** the two answer different questions and a client acts differently on each. The
 distinction is invisible in the number itself.
-**Reader:** partial, and the two clauses are read very differently.
+**Reader:** enforced, and the two clauses are read very differently.
 
 The second clause — an item whose title asks about field data is never decided from a lab
 number — is enforced. `test_no_field_titled_item_is_ever_decided_from_a_lab_number` derives
@@ -271,14 +271,28 @@ Probed on 6 September 2026 by removing that guard, and the failure is the requir
 harm in one line — the lab-only payload comes back carrying `field_cwv: verdict pass`, so
 all four would report a Core Web Vitals pass earned on a synthetic run.
 
-The first clause — that the report says a number came from a synthetic run — is unread, and
-one case of it is a live gap rather than a missing test. `metrics.*.rating` carries CrUX
+The first clause — that the report says a number came from a synthetic run — is enforced
+since 0.94.7, and closing it took a repair rather than a test. `metrics.*.rating` carries CrUX
 where field data exists and Lighthouse's lab audits where it does not, and SP-107 and SE-119
 decide from it. Their titles do not name field data, so the second clause is satisfied; but
 nothing in the report says those two verdicts came from a synthetic run, which is what the
 first clause asks for. `openspec/specs/registry/` records the neighbouring confusion:
 SP-112's title names Core Web Vitals *in Search Console* and its rule reads the PageSpeed
 API — the identical rule to SP-108.
+
+What the repair added is provenance beside the number: `pagespeed.py` records `source` as
+`field` or `lab` on every metric, the runner lifts the lab ones into the artifact as
+`synthetic_metrics`, and `provenance_warnings` names them — only on a page that has no field
+data, since a caveat on every run is one nobody reads. The metrics are named rather than
+counted, because "2 lab metrics" is a sentence a reader cannot act on.
+
+Read on both sides, which is what the first attempt missed: a test that builds its own
+payload holds the runner and the report and says nothing about what `pagespeed.py` actually
+writes. `tests/test_evidence.py::PageSpeed::test_a_rating_says_which_kind_of_measurement_it_is`
+is the other half. Probed 6 September 2026 by labelling the lab branch `field`, which the
+payload-side tests pass and the parser-side test reddens.
+
+**Reader:** enforced.
 
 #### Scenario: no real-user sample exists for this page
 - **WHEN** the field source has no sample for the audited URL and only a synthetic
@@ -678,7 +692,7 @@ turns the limit on turns this on with it, and the two must be fixed together.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** INP-2, INP-3, INP-7 and INP-8 by mutation on 6 September 2026 — adding an undeclared credential to the
+**Probed:** INP-2, INP-3, INP-5, INP-7 and INP-8 by mutation on 6 September 2026 — adding an undeclared credential to the
 context reddens the membership reader by name. The rest were not: the executor that had been
 running mutation probes ran out of credits partway through this suite of documents. The rows below were
 derived by parsing all 1 280 test functions and asking, per symbol, which bodies name it,
@@ -688,14 +702,14 @@ the one `openspec/specs/evidence/` A.4 states: a test can exercise something wit
 
 | | requirements |
 |---|---|
-| **enforced** | INP-1, INP-2, INP-3, INP-4, INP-6, INP-7, INP-8, INP-9 |
-| **partial** | INP-5, INP-10 |
+| **enforced** | INP-1, INP-2, INP-3, INP-4, INP-5, INP-6, INP-7, INP-8, INP-9 |
+| **partial** | INP-10 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-I3 enforced; INV-I1 and INV-I2 partial; INV-I4 unread.
 
-**Eight enforced, two partial, nothing unread, of ten.**
+**Nine enforced, one partial, nothing unread, of ten.**
 
 The split fell along one line, and it was not the line effort would predict. Both enforced
 requirements were about a *file* — is it about this page, is it applied to the right page.

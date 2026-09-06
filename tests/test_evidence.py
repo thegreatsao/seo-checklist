@@ -1051,6 +1051,16 @@ class PageSpeed(unittest.TestCase):
         return self.ps.parse_pagespeed_response(payload, "https://example.com/",
                                                 "mobile")
 
+    def test_a_rating_says_which_kind_of_measurement_it_is(self):
+        """`openspec/specs/inputs/` INP-5. Both branches write `metrics.*.rating`, and two
+        items decide from it without their titles mentioning field data — SP-107 reads FCP,
+        SE-119 reads CLS. Without `source` beside the rating, a verdict earned on one
+        synthetic load in a datacentre is indistinguishable in the payload from one earned
+        on what real visitors got, and the report has nothing to disclose."""
+        self.assertEqual(self.parse(self.crux())["metrics"]["FCP"]["source"], "field")
+        lab = self.parse(self.lab_only())["metrics"]
+        self.assertEqual({m["source"] for m in lab.values()}, {"lab"})
+
     def test_field_data_is_normalised_to_one_vocabulary(self):
         out = self.parse(self.crux())
         self.assertIs(out["field_data_available"], True)

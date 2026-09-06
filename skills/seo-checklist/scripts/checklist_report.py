@@ -785,6 +785,17 @@ def provenance_warnings(data: dict, L: "Lang | None" = None) -> list[str]:
                        "the checklist reads is identical between the two, but checks "
                        "that depend on document structure are not — a run with the "
                        "other parser can disagree about them.").format(parser=parser))
+    # A rating CrUX had no sample for is Lighthouse's, taken on one synthetic load in a
+    # datacentre. Two items decide from it — SP-107 and SE-119 — and neither title says
+    # anything about field data, so without this the reader cannot tell a verdict about
+    # what visitors get from a verdict about what one machine measured once. INP-5.
+    synthetic = data.get("synthetic_metrics") or []
+    if synthetic:
+        out.append(L.t("w_synthetic",
+                       "{metrics} came from a synthetic load rather than from real "
+                       "visitors: this page has no field data in Chrome's report, so "
+                       "those verdicts describe one measurement in a datacentre.")
+                   .format(metrics=", ".join(synthetic)))
     cache_hits = data.get("http_cache_hits") or 0
     if cache_hits > 0:
         out.append(L.t("w_http_cache",

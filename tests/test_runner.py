@@ -4808,5 +4808,66 @@ class TheStaleListThresholdIsANumberSomebodyChose(unittest.TestCase):
         self.assertTrue(taken, "the bundled list declares no snapshot date")
         self.assertGreaterEqual(age, 0, "the bundled snapshot's date cannot be read")
 
+
+class ALabRatingSaysItIsALabRating(unittest.TestCase):
+    """`openspec/specs/inputs/` INP-5's first clause: where a number was produced by a
+    synthetic run rather than observed from real users, the report says so.
+
+    The second clause — an item whose *title* asks about field data is never decided from a
+    lab number — was already enforced. This is the quieter half. `pagespeed.py` reports CrUX
+    where a page has a sample and Lighthouse's lab audits where it does not, and both land
+    in `metrics.*.rating`; SP-107 reads FCP from it and SE-119 reads CLS, and neither title
+    says anything about field data. So those two verdicts can be earned on one synthetic
+    load in a datacentre, which is a defensible answer to a different question, and until
+    0.94.7 nothing anywhere said which question had been answered.
+
+    Asserted in both directions, because a caveat printed on every run is one nobody reads:
+    a page with field data must say nothing.
+    """
+
+    def payload(self, field_data):
+        metrics = {"FCP": {"value": 1200, "rating": "good",
+                           "source": "field" if field_data else "lab"},
+                   "CLS": {"value": 0.05, "rating": "good",
+                           "source": "field" if field_data else "lab"}}
+        if field_data:
+            for metric in metrics.values():
+                metric["crux_category"] = "FAST"
+        return {"field_data_available": field_data, "metrics": metrics}
+
+    def results(self, field_data):
+        return {("pagespeed.py", ("pagespeed.py", "--strategy", "mobile")):
+                self.payload(field_data)}
+
+    def test_a_lab_rating_is_named_in_the_artifact(self):
+        self.assertEqual(runner.synthetic_metrics(self.results(False)), ["CLS", "FCP"])
+
+    def test_a_field_rating_is_not(self):
+        """The floor. Without it, an implementation that named every metric would pass."""
+        self.assertEqual(runner.synthetic_metrics(self.results(True)), [])
+
+    def test_the_metrics_are_named_rather_than_counted(self):
+        """"2 lab metrics" is a sentence a reader cannot act on; "CLS and FCP came from a
+        synthetic load" tells them which verdicts to weigh differently."""
+        named = runner.synthetic_metrics(self.results(False))
+        self.assertIn("CLS", named)
+        self.assertIn("FCP", named)
+
+    def test_the_reader_of_the_report_is_told(self):
+        sys.path.insert(0, os.path.join(SKILL, "scripts"))
+        from checklist_report import provenance_warnings
+        warned = provenance_warnings({"html_parser": "lxml",
+                                      "synthetic_metrics": ["CLS", "FCP"]})
+        self.assertTrue(any("synthetic" in w for w in warned), warned)
+        self.assertTrue(any("CLS" in w for w in warned),
+                        "the caveat does not say which metrics it is about")
+
+    def test_a_run_with_field_data_says_nothing_about_it(self):
+        sys.path.insert(0, os.path.join(SKILL, "scripts"))
+        from checklist_report import provenance_warnings
+        self.assertEqual(
+            [w for w in provenance_warnings({"html_parser": "lxml"}) if "synthetic" in w],
+            [])
+
 if __name__ == "__main__":
     unittest.main()
