@@ -984,5 +984,129 @@ class ThePrivateEntryIsObservedAndCostsCoverage(unittest.TestCase):
             "the weight of the items a private host blocked is not in the denominator, "
             "so the coverage this run reports is the coverage of a smaller registry")
 
+
+class TheRobotsAsymmetryIsRead(unittest.TestCase):
+    """`openspec/specs/http/` HTTP-5. A URL the audit found for itself is fetched only if
+    robots allows it; the URL the operator handed in is fetched regardless, and a rule
+    forbidding it is a finding about the site rather than a refusal to work.
+
+    Both halves of the pin existed. The asymmetry itself did not: it was asserted through
+    the *signature* — that `respect_robots` defaults to `False` — and nothing showed what
+    breaks when either half is reversed. A default read off a function definition is a fact
+    about Python, and the requirement is about what an operator gets.
+
+    So this audits a real site whose `robots.txt` says `Disallow: /`, which is the shape the
+    requirement was written for, and asserts the outcome rather than the parameter: the
+    entry page is fetched, ordinary page-level items are decided from it, and the block
+    arrives as the `critical` item that names it. The reversed world is asserted in the same
+    run — `respect_robots=True` against the same URL refuses — so the two behaviours are
+    held side by side rather than one of them being inferred.
+
+    `CI-005` is the item, and its severity is asserted here because the requirement says
+    `critical` and the previous reader pinned only that it failed. A `critical` demoted to
+    `medium` would still fail, still be reported, and would sink below a dozen cosmetic
+    findings in the fix list — which is the whole difference between "your site is invisible
+    to Google" and a suggestion.
+    """
+
+    PAGE = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+            "<title>A page a robots rule forbids</title>"
+            "<meta name=\"description\" content=\"Served behind Disallow: / so the audit "
+            "has to decide whether to look at it.\"></head><body><h1>A page</h1>"
+            "<p>Body copy with enough words in it that the thin-entry guard stays quiet, "
+            "because a guard firing here would stop the audit before the thing under test "
+            "ran at all.</p></body></html>")
+
+    ROBOTS = "User-agent: *\nDisallow: /\n"
+
+    @classmethod
+    def setUpClass(cls):
+        work = tempfile.mkdtemp(prefix="seo-robots-")
+        out = os.path.join(work, "results.json")
+        state = tempfile.mkdtemp(prefix="seo-robots-state-")
+        env = dict(os.environ, SEO_RATE_LIMIT_DIR=state)
+        env.pop("SEO_HTTP_CACHE", None)
+        # Entered by hand rather than with `with`, because the last test in this class
+        # fetches the same URL itself: the asymmetry is only visible when both behaviours
+        # are exercised against one server holding one rule.
+        cls.site_cm = served({"/": cls.PAGE,
+                              "/robots.txt": (200, {"Content-Type": "text/plain"},
+                                              cls.ROBOTS)})
+        site = cls.site_cm.__enter__()
+        cls.url = site.url
+        cls.state = state
+        proc = spawn([sys.executable, str(SCRIPTS / "checklist_runner.py"), site.url,
+                      "--allow-private", "--max-rps", "0", "--no-history",
+                      "--no-prompt", "--quiet", "--timeout", "90", "--json", out,
+                      "--only", "crawling_indexing"], env=env, timeout=900)
+        if proc.returncode != 0:
+            cls.site_cm.__exit__(None, None, None)
+            raise AssertionError("the audit exited %s\n%s\n%s"
+                                 % (proc.returncode, proc.stdout[-3000:],
+                                    proc.stderr[-3000:]))
+        with open(out, encoding="utf-8") as fh:
+            cls.audit = json.load(fh)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.site_cm.__exit__(None, None, None)
+
+    def item(self, item_id):
+        found = [i for i in self.audit["items"] if i["id"] == item_id]
+        self.assertEqual(len(found), 1, "%s is not in this run" % item_id)
+        return found[0]
+
+    def test_the_audited_url_is_fetched_even_though_robots_forbids_it(self):
+        """The operator handed us this URL. Declining it would produce nothing, and the
+        operator could not tell that outcome from a crash."""
+        self.assertTrue(self.audit["entry_reachable"])
+        self.assertIsNone(self.audit["entry_error"])
+
+    def test_the_block_arrives_as_the_critical_finding_that_names_it(self):
+        blocked = self.item("CI-005")
+        self.assertEqual(blocked["severity"], "critical",
+                         "the item that says the site is blocked from crawling is no "
+                         "longer critical, so it sinks below cosmetic findings in the "
+                         "fix list")
+        self.assertEqual(blocked["status"], "FAIL")
+
+    def test_the_audit_does_not_collapse_into_undecided_items(self):
+        """The reversed world, stated as the outcome the requirement forbids: robots
+        applied to the audited URL turns one finding into forty items reporting that they
+        could not look."""
+        decided = [i for i in self.audit["items"]
+                   if i["status"] in ("PASS", "FAIL", "WARN")]
+        undecided = [i for i in self.audit["items"] if i["status"] == "NO_DATA"]
+        self.assertGreater(len(decided), len(undecided),
+                           "most of this run is undecided, which is what applying robots "
+                           "to the audited URL looks like")
+        self.assertIsNotNone(self.audit["scores"]["seo_score"])
+
+    def test_the_same_url_is_refused_when_robots_is_respected(self):
+        """The other half of the asymmetry, against the same server and the same rule, so
+        the difference is the parameter and nothing else. This is the behaviour every
+        discovered URL gets."""
+        saved = {name: os.environ.get(name) for name in
+                 ("SEO_MAX_RPS", "SEO_ALLOW_PRIVATE", "SEO_RATE_LIMIT_DIR",
+                  "SEO_HTTP_CACHE")}
+        os.environ["SEO_MAX_RPS"] = "0"
+        # The fixture is on loopback, so this call needs the same allowance the audit was
+        # given; without it the refusal below would be the guard's rather than robots'.
+        os.environ["SEO_ALLOW_PRIVATE"] = "1"
+        os.environ["SEO_RATE_LIMIT_DIR"] = self.state
+        os.environ.pop("SEO_HTTP_CACHE", None)
+        try:
+            with self.assertRaises(sh.RobotsDisallowed):
+                sh.safe_get(self.url, respect_robots=True)
+            # And permitted without it, so the refusal above is the rule rather than the
+            # server having gone away between the two calls.
+            self.assertEqual(sh.safe_get(self.url).status_code, 200)
+        finally:
+            for name, value in saved.items():
+                if value is None:
+                    os.environ.pop(name, None)
+                else:
+                    os.environ[name] = value
+
 if __name__ == "__main__":
     unittest.main()

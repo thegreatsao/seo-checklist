@@ -51,10 +51,10 @@
     },
     "http": {
       "counts": {
-        "enforced": 2,
+        "enforced": 12,
         "none": 0,
         "opposed": 0,
-        "partial": 10
+        "partial": 0
       },
       "opposed": [],
       "requirements": 12,
@@ -146,10 +146,10 @@
     }
   },
   "totals": {
-    "enforced": 57,
+    "enforced": 67,
     "none": 6,
     "opposed": 2,
-    "partial": 84,
+    "partial": 74,
     "requirements": 149
   }
 }

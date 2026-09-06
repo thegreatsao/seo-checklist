@@ -299,16 +299,26 @@ to work.
 "your robots.txt blocks this page" into a tool that produces nothing, and the operator
 cannot tell that from a crash. Not applying it to discovered URLs makes the audit crawl
 whatever it happens to find, which is what robots exists to prevent.
-**Reader:** partial, and the asymmetry itself is unread. `test_a_disallowed_path_is_refused`
+**Reader:** enforced. `test_a_disallowed_path_is_refused`
 and `test_rules_naming_our_token_are_obeyed` pin the discovered half;
 `test_an_absent_or_unreadable_robots_txt_allows` and
 `test_a_fetch_that_raises_allows_rather_than_failing_the_audit` pin fail-open;
 `test_robots_txt_is_fetched_once_per_origin_and_cached` pins the caching; and
-`test_a_refusal_is_flagged_apart_from_a_failure` pins that a refusal is not a failure. But
-the default that produces the asymmetry is asserted only through the function's *signature*
-— that the parameter's default is `False` — and no test shows what breaks when either half
-is reversed. That an audited URL blocked by robots yields a `critical` finding rather than
-a refusal is pinned as a `FAIL` and not as a severity.
+`test_a_refusal_is_flagged_apart_from_a_failure` pins that a refusal is not a failure.
+
+The asymmetry itself was unread until 0.94.1: the default that produces it was asserted
+through the function's *signature*, which is a fact about Python rather than about what an
+operator gets. `TheRobotsAsymmetryIsRead` audits a real server whose `robots.txt` says
+`Disallow: /` and asserts the outcome — the entry page is fetched, the ordinary items are
+decided from it, and the block arrives as `CI-005` at `critical`, a severity the previous
+reader did not hold. A `critical` demoted to `medium` would still fail, still be reported,
+and would sink under a dozen cosmetic findings in the fix list. The same URL is then
+fetched with `respect_robots=True` against the same server and the same rule, so both
+behaviours are held side by side rather than one being inferred from the other.
+
+Probed 6 September 2026 by reversing the default, which produces the third scenario as a
+measurement: 0 decided items against 15 undecided, and the entry page unreachable — the
+collapse the requirement says an operator cannot tell from a crash.
 
 #### Scenario: a URL the audit found for itself
 - **WHEN** a sitemap, a link or a crawl yields a URL a robots rule disallows
@@ -451,11 +461,13 @@ robots re-check does not, and a second process reads the same tally — and
 making the warning fire on `http_cache` instead of on the count, which reddens the silent
 case.
 
-The absence itself had been pinned rather than left to be rediscovered:
-`test_the_provenance_list_still_omits_the_cache` was written to fail *at the moment the
-cache joined the list* and to say in its own message that it should then be replaced. It
-did, on a full audit that answered 69 responses off disk, and
-`test_the_reader_of_the_report_is_told_the_cache_answered` is what replaced it.
+The absence itself had been pinned rather than left to be rediscovered: the test holding it
+was written to fail *at the moment the cache joined the list* and to say in its own message
+that it should then be replaced. It did, on a full audit that answered 69 responses off
+disk, and `test_the_reader_of_the_report_is_told_the_cache_answered` is what replaced it —
+which is why that name no longer appears here. A document naming a test that no longer
+exists is what `tests/test_specs.py::ADocumentNamesThingsThatExist` refuses, and it
+refused this on the first full run after the replacement.
 
 #### Scenario: the artifact says the cache was on
 - **WHEN** a run that could fetch anything completes
@@ -839,21 +851,31 @@ and reddens two of its four readers now. HTTP-8 — as of 5 September 2026 the r
 provenance omission is pinned as an absence; before that, the string
 `http_cache` appears nowhere under `tests/`.
 
-**Derived, not probed:** the one remaining `partial` row. Each names which half it believes is
+**Derived, not probed:** nothing now. Every row above was probed by mutation before it
+was moved, which is the method this appendix distinguishes from a guess, and the guessing
+direction had been wrong four times. Each names which half it believes is
 unread; that half was established by reading the asserting test's body and by greps for the
 absences, not by breaking the code. A `partial` that is really an `enforced` or a `none` is
 the error this method leaves open, and the halves are where to look first.
 
 | | requirements |
 |---|---|
-| **enforced** | HTTP-1, HTTP-2, HTTP-3, HTTP-4, HTTP-6, HTTP-7, HTTP-8, HTTP-9, HTTP-10, HTTP-11, HTTP-12 |
-| **partial** | HTTP-5 |
+| **enforced** | HTTP-1, HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-7, HTTP-8, HTTP-9, HTTP-10, HTTP-11, HTTP-12 |
+| **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-H2 and INV-H3 enforced; INV-H1 and INV-H4 partial.
 
-**Eleven enforced, one partial, nothing unread, of twelve.**
+**Twelve enforced, nothing partial, nothing unread, of twelve.**
+
+Closed on 6 September 2026, and the shape of what was left is worth recording. Nine of the
+ten `partial` rows were not missing tests of their mechanisms — those were thorough. What
+was missing, every time, was one of three things: a *number* nothing named (the rate, the
+two caps), a *fact recorded and never carried* to the person reading the report (the parser,
+the cache), or an *asymmetry asserted through a signature* rather than through the outcome
+it produces (robots, the private allowance). Only HTTP-1 was an actual hole in the code,
+and it was the one nobody had probed.
 
 HTTP-1 moved on 6 September 2026, and the half that was missing turned out to be a hole
 rather than a gap in the tests: the `robots.txt` fetch skipped the guard entirely, so the
