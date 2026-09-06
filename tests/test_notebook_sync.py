@@ -57,9 +57,14 @@ class FakeCli:
         self.delete = delete or result(0, "deleted")
         self.list_result = list_result
         self.calls = []
+        # What went down stdin, per call. Recorded rather than dropped: since
+        # 0.93.9 the document body travels that way, and a double that ignored it
+        # would pass a version that put a 73 KB registry back on the command line.
+        self.stdin = []
 
-    def __call__(self, *args, timeout=600):
+    def __call__(self, *args, timeout=600, stdin_text=None):
         self.calls.append(args)
+        self.stdin.append(stdin_text)
         verb = args[:2]
         if verb == ("source", "list"):
             if self.list_result is not None:
@@ -233,6 +238,127 @@ class TheSpecsAreDerivedRatherThanListed(unittest.TestCase):
                 self.assertFalse(Path(target).is_absolute(), title)
 
 
+class TheBodyTravelsOnStdinAndTheCliIsACommand(unittest.TestCase):
+    """`notebook_sync.py` reaches NotebookLM two ways it did not before 0.93.9, and
+    both are repairs to a run that had already gone wrong once.
+
+    **The CLI is a command, not an executable.** Windows Application Control refused
+    `notebooklm.exe` with WinError 4551 while the package behind it stayed usable as
+    `python -m notebooklm`. A launcher shim is not the tool, and a gate that can only
+    run the shim goes dark for a reason unrelated to what it measures.
+
+    **A source is pasted, not uploaded.** The upload endpoint answered 500 and then
+    401 on a session whose every other call worked. `sync` deletes through the working
+    path and used to add through the broken one, so it removed three good sources,
+    added none, and left four half-registered rows stuck in `preparing`. The paste
+    endpoint takes the same session; the body goes down stdin, because Windows caps a
+    command line near 32 KB and the registry document is 73 KB.
+    """
+
+    def setUp(self):
+        self.saved = dict(N.CONFIG)
+
+    def tearDown(self):
+        N.CONFIG.update(self.saved)
+
+    def test_a_one_word_setting_still_resolves_through_the_path(self):
+        self.assertEqual(N.resolve_cli(sys.executable), [sys.executable])
+
+    def test_a_command_is_split_and_its_arguments_kept(self):
+        resolved = N.resolve_cli(f'"{sys.executable}" -m notebooklm')
+        self.assertEqual(resolved[1:], ["-m", "notebooklm"])
+        self.assertTrue(resolved[0].endswith(os.path.basename(sys.executable)))
+
+    def test_an_unusable_head_is_refused_by_name(self):
+        with self.assertRaises(SystemExit) as raised:
+            N.resolve_cli("definitely-not-on-this-machine -m notebooklm")
+        self.assertIn("definitely-not-on-this-machine", str(raised.exception))
+
+    def test_the_command_reaches_the_child_whole(self):
+        """The head alone would run `python source list` and ask the wrong program."""
+        seen = {}
+        old = N.run
+        N.run = lambda args, timeout=600, stdin_text=None: (
+            seen.setdefault("args", args), result(0, "{}"))[1]
+        try:
+            N.CONFIG["cli"] = [sys.executable, "-m", "notebooklm"]
+            N.CONFIG["notebook"] = "nb-1"
+            N.nlm("source", "list", "--json")
+        finally:
+            N.run = old
+        self.assertEqual(seen["args"][:3], [sys.executable, "-m", "notebooklm"])
+        self.assertEqual(seen["args"][3:5], ["source", "list"])
+
+
+class ASourceIsPastedRatherThanUploaded(unittest.TestCase):
+
+    def setUp(self):
+        self.saved = dict(N.CONFIG)
+        N.CONFIG["cli"], N.CONFIG["notebook"] = ["notebooklm"], "nb-1"
+
+    def tearDown(self):
+        N.CONFIG.update(self.saved)
+
+    def sync(self, cli, manifest):
+        old_nlm, old_manifest = N.nlm, N.manifest
+        N.nlm, N.manifest = cli, lambda repo: manifest
+        try:
+            with redirect_stdout(io.StringIO()) as out:
+                N.do_sync(REPO)
+            return out.getvalue()
+        finally:
+            N.nlm, N.manifest = old_nlm, old_manifest
+
+    def stale(self):
+        """One manifest entry the notebook holds at the wrong stamp."""
+        return [("README - project overview", "file", Path("README.md"))]
+
+    def adds(self, cli):
+        return [(args, body) for args, body in zip(cli.calls, cli.stdin, strict=True)
+                if args[:2] == ("source", "add")]
+
+    def test_the_add_names_the_body_on_stdin_and_not_on_the_command_line(self):
+        cli = FakeCli({"README - project overview": "id-1"}, {"id-1": "0" * 64})
+        self.sync(cli, self.stale())
+        added = self.adds(cli)
+        self.assertEqual(len(added), 1)
+        args, body = added[0]
+        self.assertIn("-", args, "the content argument is not the stdin marker")
+        self.assertIn("--type", args)
+        self.assertEqual(args[args.index("--type") + 1], "text")
+        self.assertTrue(body, "nothing went down stdin")
+        self.assertIn("source-sha256:", body)
+        for piece in args:
+            self.assertLess(len(piece), 200,
+                            "a document travelled as an argument; Windows caps the "
+                            "command line near 32 KB and the registry is 73 KB")
+
+    def test_the_title_is_given_to_the_add_so_no_rename_follows(self):
+        """A rename after an add is a second call that can fail on its own, leaving a
+        source under a filename nobody looks for. The paste path takes the title."""
+        cli = FakeCli({"README - project overview": "id-1"}, {"id-1": "0" * 64})
+        self.sync(cli, self.stale())
+        args, _body = self.adds(cli)[0]
+        self.assertEqual(args[args.index("--title") + 1], "README - project overview")
+        self.assertNotIn("source rename", cli.verbs())
+
+    def test_a_source_the_manifest_does_not_name_is_reported_and_left(self):
+        """The renamed twin. `LLM reviewer agents - 5 lenses` became
+        `… - 4 lenses and the adversary` in 0.93.6, and because title is identity the
+        sync added the new one beside the old and the notebook answered from both.
+
+        Reported, not deleted: this tool cannot tell a leftover from something a person
+        added by hand inside NotebookLM, and that edit is the one the gate has always
+        said it does not see."""
+        cli = FakeCli({"README - project overview": "id-1", "Something I added": "id-2"},
+                      {"id-1": "0" * 64, "id-2": "1" * 64})
+        printed = self.sync(cli, self.stale())
+        self.assertIn("EXTRA", printed)
+        self.assertIn("Something I added", printed)
+        self.assertNotIn(("source", "delete-by-title", "Something I added", "--yes"),
+                         cli.calls)
+
+
 class ADeadSessionEndsTheRun(unittest.TestCase):
 
     def setUp(self):
@@ -244,7 +370,7 @@ class ADeadSessionEndsTheRun(unittest.TestCase):
 
     def call(self, answer):
         old = N.run
-        N.run = lambda args, timeout=600: answer
+        N.run = lambda args, timeout=600, stdin_text=None: answer
         try:
             return N.nlm("source", "list", "--json")
         finally:

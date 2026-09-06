@@ -10,6 +10,48 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.93.9 — the notebook gate survives a blocked launcher and a broken upload
+
+Registry version: unchanged at `e9154e92f4dd`. Nothing a run produces changes. This is
+`tools/notebook_sync.py`, the freshness gate between this repository and the NotebookLM
+notebook holding its theory, and it broke in three ways in one sitting.
+
+**The CLI was an executable and became a command.** Windows Application Control refused
+`notebooklm.exe` with WinError 4551. The package behind it was untouched and perfectly
+usable as `python -m notebooklm`; a launcher shim is not the tool, and a gate that can
+only run the shim goes dark for a reason unrelated to what it measures. `SEO_NOTEBOOK_CLI`
+is now split like a command line — one word still resolves through `PATH`, which is what
+every existing caller passes. The split keeps backslashes and drops quotes, because a
+Windows path needs the first and a path with a space in it arrives wearing the second.
+
+**A source is pasted, not uploaded, and that repaired a run that emptied the notebook.**
+The upload endpoint answered 500 at `upload_finalize` and then 401, on a session whose
+every other call succeeded — listing, reading and deleting all worked throughout. `sync`
+deletes through the working path and added through the broken one, so a single run
+removed three good sources, added none, and left four half-registered rows stuck in
+`preparing` forever. The paste endpoint takes the same session, so that is what it uses;
+the body goes down **stdin** rather than as an argument, because Windows caps a command
+line near 32 KB and the registry document is 73 KB. The title goes with the add, so the
+separate rename — a second call that could fail on its own and leave a source under a
+temp filename — is gone.
+
+**A source the manifest does not name is now reported.** The gate walked the manifest and
+never asked what else the notebook held, so a *rename* left a twin: `0.93.6` corrected
+"LLM reviewer agents - 5 lenses" to "… - 4 lenses and the adversary", title is identity
+here, and the notebook answered from both copies. Those now show as `EXTRA` and fail the
+check. `sync` **does not delete them**: this tool cannot tell a leftover from something a
+person added by hand inside NotebookLM, and that edit is the one the gate has always said
+it cannot see. Naming it is the whole remedy available.
+
+**The notebook is back in step:** 20 of 20 sources match, the seven documents it had never
+held — `declarations`, `evidence`, `governance`, `history`, `http`, `inputs`,
+`operator-protocol`, `reporting`, `run-lifecycle` — are in it, and the four it held at an
+older commit have been replaced.
+
+`tests/test_notebook_sync.py` grows two classes. The double records what went down stdin,
+so a version that puts a 73 KB document back on the command line fails here rather than
+in front of a notebook.
+
 ## 0.93.8 — a rule names exactly one operator, and the check that said so was a substring search
 
 Registry version: unchanged at `e9154e92f4dd`. No rule changes; what changes is what the

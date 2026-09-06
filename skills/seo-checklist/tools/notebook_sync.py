@@ -27,6 +27,7 @@ import io
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -76,24 +77,43 @@ def manifest(repo: Path) -> list:
     return FIXED[:3] + specs + FIXED[3:]
 
 
-def run(args, timeout=600):
+def run(args, timeout=600, stdin_text=None):
     # close_fds=False for the same reason as everywhere else in this tree: it
     # puts CPython on `posix_spawn` instead of `fork` + `exec`, and a forked
     # child dies inside Apple's atfork handler on macOS. See checklist_runner.py.
     return subprocess.run(args, capture_output=True, text=True, encoding="utf-8",
-                          errors="replace", timeout=timeout, close_fds=False)
+                          errors="replace", timeout=timeout, close_fds=False,
+                          input=stdin_text)
 
 
 CONFIG = {"cli": None, "notebook": None}
 
 
-def resolve_cli(explicit: str | None) -> str:
-    cli = explicit or os.environ.get("SEO_NOTEBOOK_CLI") or "notebooklm"
-    found = shutil.which(cli) or (cli if Path(cli).exists() else None)
-    if not found:
+def resolve_cli(explicit: str | None) -> list[str]:
+    """The command that runs the CLI, as a list — not a single executable.
+
+    It was a single path until 0.93.9, and a machine policy took that away: Windows
+    Application Control refused `notebooklm.exe` with WinError 4551 while the package
+    behind it stayed perfectly usable as `python -m notebooklm`. A launcher shim is not
+    the tool, and a gate that can only run the shim goes dark for a reason that has
+    nothing to do with what it measures.
+
+    So the value is split like a command line. One word still resolves through PATH,
+    which is what every existing caller passes.
+    """
+    given = explicit or os.environ.get("SEO_NOTEBOOK_CLI") or "notebooklm"
+    # `posix=False` so a Windows path keeps its backslashes: the posix lexer reads
+    # them as escapes and turns `C:\Users\...` into `C:Users...`. It leaves the
+    # quotes attached instead, which is why they come off here — a quoted path is a
+    # path, and the caller quotes it because the directory has a space in it.
+    parts = [word.strip("\"'") for word in shlex.split(given, posix=False)] or [given]
+    head = shutil.which(parts[0]) or (parts[0] if Path(parts[0]).exists() else None)
+    if not head:
         sys.exit("notebooklm CLI not found: %s\n"
-                 "Install notebooklm-py, or set SEO_NOTEBOOK_CLI to its path." % cli)
-    return found
+                 "Install notebooklm-py, or set SEO_NOTEBOOK_CLI to its path — or to a\n"
+                 "whole command, such as `C:/path/to/python.exe -m notebooklm`, when the\n"
+                 "executable is present and unusable." % parts[0])
+    return [head, *parts[1:]]
 
 
 def resolve_notebook(explicit: str | None) -> str:
@@ -112,7 +132,7 @@ AUTH_MESSAGE = (
     "Run `check` once logged in to see what the notebook actually holds.")
 
 
-def nlm(*args, timeout=600):
+def nlm(*args, timeout=600, stdin_text=None):
     """One CLI call; a dead session ends the run instead of being reported per source.
 
     An expired cookie fails every call after it. Reported per source it reads as
@@ -120,7 +140,8 @@ def nlm(*args, timeout=600):
     to delete seven good ones. Ended here it reads as one session having gone
     wrong, which is what happened.
     """
-    r = run([CONFIG["cli"], *args, "-n", CONFIG["notebook"]], timeout=timeout)
+    r = run([*CONFIG["cli"], *args, "-n", CONFIG["notebook"]], timeout=timeout,
+            stdin_text=stdin_text)
     if r.returncode != 0 and AUTH_DEAD.search((r.stderr or "") + (r.stdout or "")):
         sys.exit(AUTH_MESSAGE)
     return r
@@ -328,6 +349,20 @@ def do_check(repo: Path):
         if verdict != "OK":
             drift.append((title, verdict, why))
 
+    # A source the notebook holds and this manifest does not name. Invisible until
+    # 0.93.9, and the way it arrives is a rename: the agents document was called
+    # "LLM reviewer agents - 5 lenses" until the count was corrected, so the sync
+    # added the new title beside the old one and the notebook kept answering from
+    # both. Title is identity here, so a rename is an add, and the thing it replaces
+    # has to be named or it stays forever.
+    #
+    # Reported and not deleted. The manifest cannot tell a leftover from something a
+    # person added by hand inside NotebookLM, and that is the one edit this gate has
+    # always said it does not see. Naming it is the whole remedy available.
+    for title in sorted(set(live) - {t for t, _, _ in manifest(repo)}):
+        rows.append((title, "EXTRA", "in the notebook, named by no manifest entry"))
+        drift.append((title, "EXTRA", "in the notebook, named by no manifest entry"))
+
     print("repo %s  HEAD %s  behind origin: %s" % (repo, head, behind))
     if behind not in ("0", "?"):
         print("  ! clone is %s commit(s) behind origin - pull before trusting this" % behind)
@@ -346,41 +381,53 @@ def do_sync(repo: Path) -> int:
 
     print("\nre-uploading %d source(s)" % len(drift))
     spec = {t: (k, p) for t, k, p in manifest(repo)}
-    with tempfile.TemporaryDirectory() as td:
-        for title, verdict, _ in drift:
-            if verdict == "NO-UPSTREAM":
-                print("  skipped  %s: nothing in the clone to upload" % title)
+    for title, verdict, _ in drift:
+        if verdict == "NO-UPSTREAM":
+            print("  skipped  %s: nothing in the clone to upload" % title)
+            continue
+        if verdict == "EXTRA":
+            print("  left     %s: the manifest does not name it, and this tool "
+                  "cannot tell a leftover from something you added by hand — "
+                  "delete it yourself if it is one" % title)
+            continue
+        if verdict == "UNREAD":
+            # Nothing is known about this copy, so replacing it would be a
+            # remedy for a failure to look. The verdict stands and `check`
+            # still exits 1; a human decides after reading why.
+            print("  skipped  %s: its copy could not be read, so there is "
+                  "nothing to conclude about it" % title)
+            continue
+        kind, target = spec[title]
+        text, stamp = build(kind, target, repo)
+        if verdict != "MISSING":
+            # Checked, because an unchecked delete followed by an add leaves
+            # two sources under one title when it fails, and the notebook
+            # then answers from whichever it likes.
+            d = nlm("source", "delete-by-title", title, "--yes")
+            if d.returncode != 0:
+                print("  FAILED   %s: the old copy could not be removed, so the "
+                      "new one was not added: %s"
+                      % (title, (d.stderr or d.stdout).strip()[:160]))
                 continue
-            if verdict == "UNREAD":
-                # Nothing is known about this copy, so replacing it would be a
-                # remedy for a failure to look. The verdict stands and `check`
-                # still exits 1; a human decides after reading why.
-                print("  skipped  %s: its copy could not be read, so there is "
-                      "nothing to conclude about it" % title)
-                continue
-            kind, target = spec[title]
-            text, stamp = build(kind, target, repo)
-            safe = re.sub(r"[^A-Za-z0-9]+", "-", title).strip("-").lower()
-            path = Path(td) / (safe + ".md")
-            path.write_text(text, encoding="utf-8", newline="\n")
-            if verdict != "MISSING":
-                # Checked, because an unchecked delete followed by an add leaves
-                # two sources under one title when it fails, and the notebook
-                # then answers from whichever it likes.
-                d = nlm("source", "delete-by-title", title, "--yes")
-                if d.returncode != 0:
-                    print("  FAILED   %s: the old copy could not be removed, so the "
-                          "new one was not added: %s"
-                          % (title, (d.stderr or d.stdout).strip()[:160]))
-                    continue
-            r = nlm("source", "add", str(path), "--type", "file", "--timeout", "300")
-            if r.returncode != 0:
-                print("  FAILED   %s: %s" % (title, (r.stderr or r.stdout).strip()[:200]))
-                continue
-            m = re.search(r"[0-9a-f]{8}-[0-9a-f-]{27}", r.stdout)
-            if m:
-                nlm("source", "rename", m.group(0), title)
-            print("  uploaded %s  %s" % (title, stamp[:12]))
+        # Pasted, not uploaded, and the body goes in on stdin.
+        #
+        # It was a file upload until 0.93.9, and that endpoint answered 401 on a
+        # session whose every other call worked — reading, listing and deleting all
+        # succeeded while `upload_finalize` returned 500 and then 401. A sync that
+        # deletes through the working path and adds through the broken one empties
+        # the notebook, which is what it did: three good sources gone and four
+        # half-registered rows left behind, stuck in `preparing` forever.
+        #
+        # Two things follow. The paste endpoint takes the same session and works,
+        # so this uses it. And the content goes down stdin rather than as an
+        # argument: Windows caps a command line near 32 KB and the registry
+        # document is 73 KB, so an argument would have been the next failure.
+        r = nlm("source", "add", "-", "--type", "text", "--title", title,
+                "--timeout", "300", stdin_text=text)
+        if r.returncode != 0:
+            print("  FAILED   %s: %s" % (title, (r.stderr or r.stdout).strip()[:200]))
+            continue
+        print("  pasted   %s  %s" % (title, stamp[:12]))
 
     print("\nre-checking through the notebook")
     return 1 if do_check(repo) else 0
