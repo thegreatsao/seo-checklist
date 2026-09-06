@@ -143,11 +143,26 @@ maximum age, and an artifact older than it MUST be refused with its age named.
 **Why:** a Core Web Vitals export from March describes a site that has been deployed a
 hundred times since. Nothing about the file says it is stale, and the verdict it produces
 is indistinguishable from a fresh one.
-**Reader:** **none**, and the default makes it matter. The limit is off unless the operator
-passes one — `--max-artifact-age` defaults to `0`, meaning no limit — so the shipped
-behaviour is that an artifact of any age is accepted. Neither the age computation nor the
-limit is named by any test function: an artifact-age check that returned a constant zero
-would pass the suite.
+**Reader:** partial. `AnArtifactIsAsOldAsItIs` holds the computation in four ways: the age
+is read from the filesystem and counted in whole days, a file written yesterday is a day
+old rather than zero, an unreadable file has *no* age rather than a fresh one — `None` and
+`0` mean opposite things and only one of them flatters — and an age is never negative, so a
+clock that moved cannot make a file fresh forever. Probed on 6 September 2026 by returning
+a constant zero, by turning the unreadable case into zero, and by dropping the clamp. Each
+reddens; the constant-zero mutation is the one this line used to say would pass the suite.
+
+Two halves remain unread, and they are different in kind.
+`test_the_recorded_set_is_still_narrower_than_the_supplied_set` pins the first as an
+absence: the loop records `PAGE_ARTIFACT_KEYS` where the requirement says *every* supplied
+artifact, so a link export or a server log has no age at all and no limit can reject one —
+A.5, a defect in the tree rather than a gap in the tests, and the pin reddens when it is
+fixed. The second is the refusal itself, which is computed inside `main` and has no seam a
+unit test can reach; holding it needs a run with `--max-artifact-age` against a backdated
+file, which is a test worth writing and is not written.
+
+The default still makes all of this matter: `--max-artifact-age` is `0`, meaning no limit,
+so the shipped behaviour is that an artifact of any age is accepted. §6 asks whether that
+should change.
 
 #### Scenario: every supplied artifact carries its age
 - **WHEN** a run is given an artifact of any kind and no maximum age
@@ -582,13 +597,13 @@ the one `openspec/specs/evidence/` A.4 states: a test can exercise something wit
 | | requirements |
 |---|---|
 | **enforced** | INP-1, INP-4, INP-6, INP-9 |
-| **partial** | INP-2, INP-7, INP-8, INP-10 |
-| **none** | INP-3, INP-5 |
+| **partial** | INP-2, INP-3, INP-7, INP-8, INP-10 |
+| **none** | INP-5 |
 | **opposed** | — none |
 
 Invariants: INV-I3 enforced; INV-I1 and INV-I2 partial; INV-I4 unread.
 
-**Four enforced, four partial, two unread, of ten.**
+**Four enforced, five partial, one unread, of ten.**
 
 The split fell along one line, and it was not the line effort would predict. Both enforced
 requirements were about a *file* — is it about this page, is it applied to the right page.

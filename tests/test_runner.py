@@ -2479,6 +2479,72 @@ class TheNormativeTablesAreReadFromTheDocument(unittest.TestCase):
                         f"§{heading} does not say there are {number} {name} items")
 
 
+class AnArtifactIsAsOldAsItIs(unittest.TestCase):
+    """`openspec/specs/inputs/` INP-3. A Core Web Vitals export from March describes a
+    site deployed a hundred times since, and nothing about the file says so — the verdict
+    it produces is indistinguishable from a fresh one.
+
+    Neither the age computation nor the limit was named by any test: an age check that
+    returned a constant zero passed the whole suite, which is the first thing pinned
+    below.
+
+    The requirement says *every* supplied artifact. Two of the four are recorded, and
+    that half is a defect in the tree rather than a gap here — `openspec/specs/inputs/`
+    A.5. It is pinned as an absence, so it reddens on the day the sets are reconciled
+    and says what to put in its place.
+    """
+
+    def aged(self, days):
+        """A file whose mtime is `days` old, which is what the age is read from."""
+        work = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, work, True)
+        path = os.path.join(work, "cwv.json")
+        with open(path, "w", encoding="utf-8") as stream:
+            stream.write("{}")
+        when = time.time() - days * 86400
+        os.utime(path, (when, when))
+        return path
+
+    def test_the_age_is_read_from_the_filesystem_and_counted_in_whole_days(self):
+        self.assertEqual(runner.artifact_age_days(self.aged(0)), 0)
+        self.assertEqual(runner.artifact_age_days(self.aged(30)), 30)
+        self.assertEqual(runner.artifact_age_days(self.aged(1)), 1,
+                         "a file written yesterday is a day old, not zero")
+
+    def test_a_file_that_cannot_be_read_has_no_age_rather_than_a_zero(self):
+        """`None` and `0` mean opposite things here: one is "no answer", the other is
+        "written today". A missing file reported as fresh is the direction that
+        flatters."""
+        absent = os.path.join(tempfile.gettempdir(), "definitely-absent-artifact.json")
+        self.assertIsNone(runner.artifact_age_days(absent))
+
+    def test_an_age_is_never_negative(self):
+        """A clock that moved, or a file stamped in the future, must not produce an age
+        the comparison against a limit would read as fresh forever."""
+        self.assertEqual(runner.artifact_age_days(self.aged(-5)), 0)
+
+    def test_the_recorded_set_is_still_narrower_than_the_supplied_set(self):
+        """The half INP-3 asks for and the tree does not do.
+
+        `ARTIFACT_CTX_KEYS` is the inputs an operator may supply; the loop that records
+        subject, age and match iterates `PAGE_ARTIFACT_KEYS`, which is two of them. A
+        supplied link export or server log therefore has no recorded age at all, and the
+        limit cannot reject one however old it is.
+
+        Pinned as an absence, not asserted as a failure: this goes red the day somebody
+        widens the loop, and says what to replace it with.
+        """
+        recorded = set(runner.PAGE_ARTIFACT_KEYS)
+        supplied = set(runner.ARTIFACT_CTX_KEYS)
+        self.assertTrue(
+            recorded < supplied,
+            "every supplied artifact is recorded now — good; replace this with an "
+            "assertion that each of ARTIFACT_CTX_KEYS gets an age, and close INP-3 in "
+            "openspec/specs/inputs/")
+        self.assertEqual(sorted(supplied - recorded), ["links_csv", "server_log"],
+                         "the unrecorded set moved; A.5 of that document names these two")
+
+
 class NetworkOptIns(unittest.TestCase):
     def test_return_tags_are_verified_in_both_network_modes(self):
         for mode in ("live", "page"):
