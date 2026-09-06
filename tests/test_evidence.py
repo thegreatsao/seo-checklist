@@ -1088,6 +1088,50 @@ class PageSpeed(unittest.TestCase):
         self.assertNotIn("field_cwv", out)
         self.assertEqual(verdict("SP-108", out), NO_DATA)
 
+    def field_titled_items(self):
+        """Every registry item that decides on `field_cwv`, derived rather than listed.
+
+        Four today — SP-108, SP-111, SP-112, SP-113 — and the set is read from the
+        registry so a fifth is swept the day somebody adds it. Two of the four are
+        already pinned individually above; this is the invariant they are halves of.
+        """
+        import json
+        with open(REGISTRY, encoding="utf-8") as stream:
+            items = json.load(stream)["items"]
+        found = [i["id"] for i in items
+                 if "field_cwv" in json.dumps((i.get("check") or {}).get("assert") or {})]
+        self.assertGreaterEqual(len(found), 3, "the field-data items moved; re-read INP-5")
+        return found
+
+    def test_no_field_titled_item_is_ever_decided_from_a_lab_number(self):
+        """`openspec/specs/inputs/` INP-5. A synthetic run and a real-user sample answer
+        different questions and a client acts differently on each; the distinction is
+        invisible in the number itself.
+
+        The structural reason this holds is worth naming, because it is what a future
+        edit would break: `field_cwv` is written only inside `if field_data_available`,
+        so an item asserting on it cannot be reached by a lab measurement. Dedent that
+        assignment and every one of these decides from Lighthouse ratings instead.
+        """
+        lab = self.parse(self.lab_only())
+        self.assertIs(lab["field_data_available"], False)
+        self.assertNotIn("field_cwv", lab,
+                         "a lab-only payload carries a field verdict")
+        for item_id in self.field_titled_items():
+            with self.subTest(item=item_id):
+                self.assertEqual(
+                    verdict(item_id, lab), NO_DATA,
+                    f"{item_id} asks about field data and answered from a lab run")
+
+    def test_the_same_items_do_decide_when_there_is_field_data(self):
+        """Without this the sweep above would pass on a payload nothing can decide, and
+        on an implementation that answered NO_DATA to everything."""
+        real = self.parse(self.crux())
+        self.assertIs(real["field_data_available"], True)
+        for item_id in self.field_titled_items():
+            with self.subTest(item=item_id):
+                self.assertNotEqual(verdict(item_id, real), NO_DATA)
+
     def test_a_slow_lcp_in_the_field_fails_the_whole_group(self):
         """SP-108, SP-112 and SP-113 are one measurement as of 0.25.0, so they answer
         together. SP-113 used to read `metrics.LCP.rating` alone with a three-band warn

@@ -69,15 +69,13 @@
     "inputs": {
       "counts": {
         "enforced": 4,
-        "none": 1,
+        "none": 0,
         "opposed": 0,
-        "partial": 5
+        "partial": 6
       },
       "opposed": [],
       "requirements": 10,
-      "unread": [
-        "INP-5"
-      ]
+      "unread": []
     },
     "operator-protocol": {
       "counts": {
@@ -163,9 +161,9 @@
   },
   "totals": {
     "enforced": 48,
-    "none": 16,
+    "none": 15,
     "opposed": 2,
-    "partial": 83,
+    "partial": 84,
     "requirements": 149
   }
 }

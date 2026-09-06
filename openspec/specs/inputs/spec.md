@@ -224,10 +224,31 @@ a lab number.
 
 **Why:** the two answer different questions and a client acts differently on each. The
 distinction is invisible in the number itself.
-**Reader:** **none.** Nothing in the suite distinguishes the two provenances, and
-`openspec/specs/registry/` records the one item where the confusion has already been measured:
-SP-112's title names Core Web Vitals *in Search Console* and its rule reads field data from
-the PageSpeed API — the identical rule to SP-108.
+**Reader:** partial, and the two clauses are read very differently.
+
+The second clause — an item whose title asks about field data is never decided from a lab
+number — is enforced. `test_no_field_titled_item_is_ever_decided_from_a_lab_number` derives
+the items that assert on `field_cwv` from the registry rather than listing them, so a fifth
+is swept the day it is added, and requires every one to be `NO_DATA` on a lab-only payload;
+`test_the_same_items_do_decide_when_there_is_field_data` is the floor under it, without
+which the sweep would pass on an implementation that answered `NO_DATA` to everything. Two
+of the four were already pinned individually — this is the invariant those two are halves
+of, which is the shape this suite has been wrong about before.
+
+It holds structurally rather than by care: `field_cwv` is written only inside
+`if result["field_data_available"]`, so a lab run cannot reach an item that asserts on it.
+Probed on 6 September 2026 by removing that guard, and the failure is the requirement's own
+harm in one line — the lab-only payload comes back carrying `field_cwv: verdict pass`, so
+all four would report a Core Web Vitals pass earned on a synthetic run.
+
+The first clause — that the report says a number came from a synthetic run — is unread, and
+one case of it is a live gap rather than a missing test. `metrics.*.rating` carries CrUX
+where field data exists and Lighthouse's lab audits where it does not, and SP-107 and SE-119
+decide from it. Their titles do not name field data, so the second clause is satisfied; but
+nothing in the report says those two verdicts came from a synthetic run, which is what the
+first clause asks for. `openspec/specs/registry/` records the neighbouring confusion:
+SP-112's title names Core Web Vitals *in Search Console* and its rule reads the PageSpeed
+API — the identical rule to SP-108.
 
 #### Scenario: no real-user sample exists for this page
 - **WHEN** the field source has no sample for the audited URL and only a synthetic
@@ -597,13 +618,13 @@ the one `openspec/specs/evidence/` A.4 states: a test can exercise something wit
 | | requirements |
 |---|---|
 | **enforced** | INP-1, INP-4, INP-6, INP-9 |
-| **partial** | INP-2, INP-3, INP-7, INP-8, INP-10 |
-| **none** | INP-5 |
+| **partial** | INP-2, INP-3, INP-5, INP-7, INP-8, INP-10 |
+| **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-I3 enforced; INV-I1 and INV-I2 partial; INV-I4 unread.
 
-**Four enforced, five partial, one unread, of ten.**
+**Four enforced, six partial, nothing unread, of ten.**
 
 The split fell along one line, and it was not the line effort would predict. Both enforced
 requirements were about a *file* — is it about this page, is it applied to the right page.
