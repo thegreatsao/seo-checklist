@@ -240,25 +240,43 @@ abuse, and nothing asserts that the refusal is visible to the operator who cause
 ### Requirement: OPR-8 — the protocol's counts come from the registry
 
 Where the protocol states how many items a queue produces, how many a person must
-answer, or how a lens splits, those numbers SHALL be derived from the registry and MUST
-NOT be written into the prose.
+answer, or how a lens splits, that number SHALL be checked against the registry by a
+gate that fails when the two disagree, and a count no gate reads MUST NOT appear in the
+protocol at all.
 
 **Why:** the protocol is what an agent reads before running anything, and a wrong count
 there sets a wrong expectation for the whole run — an operator told to expect 33 model
 verdicts who receives 38 will assume something went wrong, or worse, will not notice.
-**Reader:** **none**, and five counts are wrong today (Appendix A.1), the largest by eight.
-No gate compares prose to the registry, which is the same absence
-`openspec/specs/governance/` GOV-3 states in general.
+
+The sentence used to end "and MUST NOT be written into the prose", which is
+unimplementable: a Markdown file cannot derive anything, and removing the numbers would
+make the protocol worse for the reader it is written for. The harm the requirement was
+built around is an *unheld* count, not a written one, so that is what it now forbids.
+
+**Reader:** enforced. `tests/test_protocol_counts.py` holds it: each claim names a file,
+a pattern that must match exactly once, and a population derived from `checklist.json`;
+the match-once half runs first, because a pattern that has stopped matching makes every
+assertion about it vacuously true. Two of the sweeps are mechanisms rather than lists —
+the queue table and the lens agent files are generated from the set of lenses the
+registry carries, so a new lens fails until its row and its agent exist. What is *not*
+held is a count nobody entered in the ledger; that is `openspec/specs/governance/`
+GOV-3's general absence, and it stands.
 
 #### Scenario: the registry grows
 - **WHEN** items are added or their source changes
 - **THEN** every count the protocol states moves with the registry
 
-#### Scenario: a count typed into a sentence
-- **WHEN** a number is written into the prose beside the thing it counts
+#### Scenario: a count typed into a sentence with no gate behind it
+- **WHEN** a number is written into the prose beside the thing it counts and nothing
+  derives it
 - **THEN** it is wrong within a release and nothing says so
 - **AND** the operator plans their work from it, which is what makes this worse here
   than in a comment
+
+#### Scenario: the sentence holding a count is reworded
+- **WHEN** the prose around a checked number changes so the gate no longer finds it
+- **THEN** the gate fails for that reason rather than passing on a match it did not
+  make
 
 ## 4. Invariants
 
@@ -310,25 +328,45 @@ settle it: whether anyone other than an agent has run this tool.
 
 Observation, not specification. Measured at commit `9408a4c`, registry `b0abf2819da0`.
 
-#### A.1 — five counts in the prose disagree with the registry, by up to eight
+#### A.1 — fourteen counts in the prose disagreed with the registry, by up to eight
 
-| where | states | registry |
+Closed on 6 September 2026. Recorded in full because the shape of the miss is the useful
+part: five were found by reading the document and nine more by writing the derivation
+the reading said was needed.
+
+| where | stated | registry |
 |---|---|---|
 | `SKILL.md` — "the LLM queue produces" | 33 | **38** |
 | `SKILL.md` — "the model's" | 36 | **38** |
 | `SKILL.md` — "a person has to look at" | 34 | **31** |
-| `checklist_runner.py` `score()` docstring | "eight duplicate groups … ten twins" | **9 twins** |
-| `checklist_report.py` `apply_llm_review()` docstring | "thirty items rest on one model's reading" | **38** |
+| `SKILL.md` — "thirty-four ticks would move" | 34 | **31** |
+| `SKILL.md` — queue table, `copy` | 14 | **19** |
+| `SKILL.md` — queue table, `layout` | 11 | **13** |
+| `SKILL.md` — queue table, `market` | 2 | **3** |
+| `checklist_runner.py` `score()` comment | "eight duplicate groups" | **7** |
+| `checklist_runner.py` `score()` comment | "ten twins" | **9** |
+| `checklist_report.py` `apply_llm_review()` docstring | "thirty items rest on" | **38** |
+| `seo-llm-copy.md` — `description:` | 14 | **19** |
+| `seo-llm-layout.md` — `description:` | 11 | **13** |
+| `seo-llm-market.md` — `description:` | 2 | **3** |
+| `seo-llm-market.md` — "Two items" | 2 | **3** |
 
-The last is the largest and the one that matters most: it is the sentence explaining why a
-second reading exists, and it understates the exposure by eight items — a fifth of the
-population it is arguing about.
+The `apply_llm_review()` docstring is the largest and the one that mattered most: it is
+the sentence explaining why a second reading exists, and it understated the exposure by
+eight items — a fifth of the population it argues about. The nine unrecorded ones are
+the more interesting half. Three of them sit in an agent file's `description:`, which is
+what a host matches a task against, so a stale number there is read before the file is;
+and the queue table is the thing an operator uses to decide how many agents to run.
 
-No gate compares prose to the registry. This is the seventh count in this tree found
-stating something the tree does not, after the registry's own `source` string, two in the
-corpus README, two in the census docstring, the shapes reference's account of itself, the
-guard's marker count and the inventory's basis distribution. Every one has the same form,
-and `openspec/specs/governance/` GOV-3 is the general rule they all violate.
+Only `seo-llm-adversary.md` had it right, at thirty-eight, which is why the gate compares
+values rather than spellings.
+
+This was the seventh count in this tree found stating something the tree does not, after
+the registry's own `source` string, two in the corpus README, two in the census
+docstring, the shapes reference's account of itself, the guard's marker count and the
+inventory's basis distribution. Every one has the same form, and
+`openspec/specs/governance/` GOV-3 is the general rule they all violate — still unheld in
+general, now held for these.
 
 #### A.2 — the protocol has three mentions in the suite and none of them reads it
 
@@ -355,25 +393,26 @@ that went wrong, and consistently absent from the document that ought to own the
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** A.1's five counts, by deriving each figure from the registry and grepping the
-prose for the stated one. The rest were derived by reading, since most of this capability
-has no mechanical surface to probe.
+**Probed:** A.1's counts, by deriving each figure from the registry and grepping the
+prose for the stated one — and then by writing that derivation as a gate, which found
+nine more. The rest were derived by reading, since most of this capability has no
+mechanical surface to probe.
 
 | | requirements |
 |---|---|
-| **enforced** | — none |
+| **enforced** | OPR-8 |
 | **partial** | OPR-4, OPR-7 |
-| **none** | OPR-1, OPR-2, OPR-3, OPR-5, OPR-6, OPR-8 |
+| **none** | OPR-1, OPR-2, OPR-3, OPR-5, OPR-6 |
 | **opposed** | — none |
 
 Invariants: INV-O3 and INV-O4 enforced; INV-O2 partial; INV-O1 unread.
 
-**Nothing fully enforced, two partial, six unread, of eight.**
+**One enforced, two partial, five unread, of eight.**
 
-Nothing enforced is the worst census in the suite, matched only by `openspec/specs/scoring/`, and it
-is the only one that is not an indictment. Six of these eight requirements are obligations
-on a person or an agent, and no test can hold them — OPR-2 cannot be enforced because the
-tool cannot see what the operator writes; OPR-6 cannot be enforced because fabrication is
+This was the only census in the suite with nothing enforced at all, and it was the one
+that was not an indictment. Five of these eight requirements are obligations on a person
+or an agent, and no test can hold them — OPR-2 cannot be enforced because the tool cannot
+see what the operator writes; OPR-6 cannot be enforced because fabrication is
 indistinguishable from work from the inside. Writing them down is the entire available
 remedy, and it is why this document exists.
 
@@ -381,11 +420,13 @@ The two `partial` rows are the two where the tool does something and stops short
 the sharpest: the one operator obligation the tool *can* enforce, guarding the one path a
 person can abuse, and it has a single test function behind it.
 
-Two of the six are different, and they are the ones to act on. OPR-8's counts could be
-derived — a gate comparing the protocol's numbers to the registry is a morning's work and
-would have caught all five drifts. And OPR-1's marking is a property of a document, which
-`tests/test_specs.py` already demonstrates is testable: this suite's other eleven documents
-are read by a machine for exactly that kind of structural obligation.
+Two of the six were different, and they were the ones to act on. OPR-8's counts could be
+derived — "a gate comparing the protocol's numbers to the registry is a morning's work
+and would have caught all five drifts" is what this appendix said, and it was a morning's
+work, and it caught fourteen. OPR-1 is the other: its marking is a property of a
+document, which `tests/test_specs.py` already demonstrates is testable, since this
+suite's other eleven documents are read by a machine for exactly that kind of structural
+obligation.
 
 The rest are a boundary rather than a debt. Every specification eventually reaches the point
 where the next reader is a person, and this document is where this one does. What it can do

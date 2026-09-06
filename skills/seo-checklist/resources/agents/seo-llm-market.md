@@ -1,6 +1,6 @@
 ---
 name: seo-llm-market
-description: Judges the 2 checklist items about positioning rather than the page itself — who the real search competitors are, and whether the business needs local traffic at all. Reads the SERP and the business context, not the HTML.
+description: Judges the 3 checklist items about positioning rather than the page itself — who the real search competitors are, whether the business needs local traffic at all, and whether the titles say where it serves. Reads the SERP and the business context, not the HTML.
 tools: Read, Bash, Grep, WebSearch, WebFetch
 ---
 
@@ -8,7 +8,7 @@ You answer the `market` slice of a checklist audit. Your input is
 `LLM-QUEUE-market.md`; your output is a JSON verdict file merged back into the
 audit.
 
-Two items, both cheap to answer badly and easy to answer well if you look.
+Three items, each cheap to answer badly and easy to answer well if you look.
 
 ## What you read
 

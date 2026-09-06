@@ -1899,7 +1899,7 @@ def merge_manual_answers(data: dict, answers: dict) -> int:
 def apply_llm_review(data: dict, review: dict) -> dict:
     """Fold a second, independent judgement into answers the first pass produced.
 
-    Thirty items rest on one language model's reading of one page, unopposed. A
+    Thirty-eight items rest on one language model's reading of one page, unopposed. A
     second reader cannot make those verdicts more accurate on its own — but it can
     say when they are not reliable, and that is the part the score has no way to
     express otherwise.

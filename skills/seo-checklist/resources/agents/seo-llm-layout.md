@@ -1,6 +1,6 @@
 ---
 name: seo-llm-layout
-description: Judges the 11 checklist items about page furniture rather than prose — ad density above the fold, pop-ups, hidden text, cloaking, doorway patterns, header/footer/mobile navigation. Needs the rendered page, not just source HTML.
+description: Judges the 13 checklist items about page furniture rather than prose — ad density above the fold, pop-ups, hidden text, cloaking, doorway patterns, header/footer/mobile navigation. Needs the rendered page, not just source HTML.
 tools: Read, Bash, Grep, WebFetch
 ---
 

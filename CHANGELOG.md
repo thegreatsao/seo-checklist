@@ -10,6 +10,63 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.92.1 — fourteen counts in the prose, none of them the registry's
+
+Registry version: unchanged at `b0abf2819da0`. No item moves, no assertion changes and
+no run produces a different number. What changes is what the operator and the four lens
+agents are *told*, which until today was wrong in six files.
+
+**What was wrong.** `openspec/specs/operator-protocol/` OPR-8 says the protocol's counts
+must come from the registry. Five drifts were already recorded in its Appendix A; writing
+the gate that derives them found nine more:
+
+| where | stated | registry |
+|---|---|---|
+| `SKILL.md` — "the LLM queue produces" | 33 | **38** |
+| `SKILL.md` — "the model's" | 36 | **38** |
+| `SKILL.md` — "a person has to look at" | 34 | **31** |
+| `SKILL.md` — "thirty-four ticks would move" | 34 | **31** |
+| `SKILL.md` — queue table: `copy`, `layout`, `market` | 14, 11, 2 | **19, 13, 3** |
+| `checklist_runner.py` — "eight duplicate groups … ten twins" | 8, 10 | **7, 9** |
+| `checklist_report.py` — "thirty items rest on one model's reading" | 30 | **38** |
+| `seo-llm-copy.md`, `-layout.md`, `-market.md` — `description:` | 14, 11, 2 | **19, 13, 3** |
+| `seo-llm-market.md` — "Two items" | 2 | **3** |
+
+Only the adversary agent had it right, at thirty-eight.
+
+**Why the unrecorded nine are the worse half.** Three of them sit in an agent file's
+`description:`, which is what a host matches a task against — a stale number there is
+read before the file is. Three more are the queue table an operator uses to decide how
+many agents to run. Nobody had read those against the registry because nothing had ever
+had to.
+
+**What now holds them.** `tests/test_protocol_counts.py`. Every claim names a file, a
+pattern that must match exactly once, and a population derived from `checklist.json`.
+The match-once half runs first and is the point: a pattern that has stopped matching
+makes every assertion about it vacuously true, so a reworded sentence fails for that
+reason instead of passing on a match it never made. Two of the sweeps are mechanisms
+rather than lists — the queue table and the lens agent files are generated from the set
+of lenses the registry actually carries, so a new lens fails until its row and its agent
+file exist.
+
+Not held: a count somebody writes in a sentence nobody enters in the ledger. That is
+`openspec/specs/governance/` GOV-3's general absence and it stands; what is closed is
+that no known count can drift, and that a new source or a new lens cannot appear without
+forcing an entry.
+
+**One sentence in the requirement changed with it.** OPR-8 used to end "and MUST NOT be
+written into the prose", which is unimplementable — a Markdown file cannot derive
+anything, and deleting the numbers would make the protocol worse for the reader it is
+written for. The harm it was built around is an *unheld* count, so that is what it
+forbids now. `openspec/specs/operator-protocol/` goes from nothing enforced — the only
+such census in the suite — to one of eight; the suite total moves 50 → 51 of 149.
+
+Three descriptions gained a clause while their numbers were corrected: the `market` lens
+had grown a third item (localized title tags) that its own file did not mention, and the
+`copy` lens had grown five keyword-placement items its description did not name. An
+agent dispatched on a description that omits a third of its work is the same defect one
+level along.
+
 ## 0.92.0 — the category bars fold twins, as the headline always did
 
 Registry version: unchanged at `b0abf2819da0`. No item moves and no assertion changes.

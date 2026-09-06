@@ -154,7 +154,7 @@ a report for somebody else.
 
 ## The second reading
 
-The LLM queue produces 33 verdicts from one model's reading of one page, and the
+The LLM queue produces 38 verdicts from one model's reading of one page, and the
 report presents them beside measured HTTP statuses with the same confidence. Have
 them reviewed before the report goes to anyone:
 
@@ -457,11 +457,11 @@ interstitial without admitting it would be the same lie in a new place.
 Two doors, deliberately separate, and neither can touch a verdict a script reached.
 
 ```bash
-# the model's 36, after the lens agents have read the page
+# the model's 38, after the lens agents have read the page
 python3 <SKILL_DIR>/scripts/checklist_report.py checklist-results.json \
     --llm-answers answers.json
 
-# the 34 a person has to look at — Search Console UI, Business Profile, a phone call
+# the 31 a person has to look at — Search Console UI, Business Profile, a phone call
 python3 <SKILL_DIR>/scripts/checklist_report.py checklist-results.json \
     --manual-answers manual.json
 ```
@@ -471,7 +471,7 @@ two fields per line instead of building the structure and possibly the ids. Merg
 id that is not in the right state prints why rather than applying nothing in silence.
 
 `--manual-answers` merges `MANUAL` items only, and **every answer needs a reason**.
-A `PASS` with nothing beside it is refused with its id: thirty-four ticks would move
+A `PASS` with nothing beside it is refused with its id: thirty-one ticks would move
 the score with nothing for a reader to argue with. The HTML report's "Needs a person"
 section exports the ticked items as a starting file — a tick claims `PASS` and carries
 no reason, so the exported evidence says so and has to be replaced before it merges.
@@ -660,10 +660,10 @@ concurrently, each reading its own slice of the page once:
 
 | Queue file | Agent | Items |
 |---|---|---|
-| `LLM-QUEUE-copy.md` | [seo-llm-copy](resources/agents/seo-llm-copy.md) | 14 — prose quality, originality, intent match |
-| `LLM-QUEUE-layout.md` | [seo-llm-layout](resources/agents/seo-llm-layout.md) | 11 — ads, pop-ups, cloaking, navigation |
+| `LLM-QUEUE-copy.md` | [seo-llm-copy](resources/agents/seo-llm-copy.md) | 19 — prose quality, originality, intent match, keyword placement |
+| `LLM-QUEUE-layout.md` | [seo-llm-layout](resources/agents/seo-llm-layout.md) | 13 — ads, pop-ups, cloaking, navigation |
 | `LLM-QUEUE-locale.md` | [seo-llm-locale](resources/agents/seo-llm-locale.md) | 3 — translation, language/region targeting |
-| `LLM-QUEUE-market.md` | [seo-llm-market](resources/agents/seo-llm-market.md) | 2 — competitors, local-traffic need |
+| `LLM-QUEUE-market.md` | [seo-llm-market](resources/agents/seo-llm-market.md) | 3 — competitors, local-traffic need, localized titles |
 
 Splitting by lens rather than by category is deliberate: 16 category agents would
 have four of them re-reading the same body copy. Answering the combined

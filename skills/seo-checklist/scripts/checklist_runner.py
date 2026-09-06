@@ -1394,8 +1394,8 @@ def score(graded: list[dict]) -> dict:
     scored = [g for g in graded if g["status"] in (PASS, FAIL, WARN)]
     applicable = [g for g in graded if g["status"] != NA]
 
-    # Weight is carried per *check*, not per item. Eight duplicate groups in this
-    # registry carry ten `scores_with` twins: one script, one set of arguments and one
+    # Weight is carried per *check*, not per item. Seven duplicate groups in this
+    # registry carry nine `scores_with` twins: one script, one set of arguments and one
     # assertion under multiple source numbers. "Provide Meaningful Image Alt Text" and
     # "Provide Meaningful Alt Text" are one question asked twice, and until 0.22 both
     # halves scored. That did two things: it doubled

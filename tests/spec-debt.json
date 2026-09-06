@@ -79,8 +79,8 @@
     },
     "operator-protocol": {
       "counts": {
-        "enforced": 0,
-        "none": 6,
+        "enforced": 1,
+        "none": 5,
         "opposed": 0,
         "partial": 2
       },
@@ -91,8 +91,7 @@
         "OPR-2",
         "OPR-3",
         "OPR-5",
-        "OPR-6",
-        "OPR-8"
+        "OPR-6"
       ]
     },
     "registry": {
@@ -158,8 +157,8 @@
     }
   },
   "totals": {
-    "enforced": 50,
-    "none": 14,
+    "enforced": 51,
+    "none": 13,
     "opposed": 2,
     "partial": 83,
     "requirements": 149

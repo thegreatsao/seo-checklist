@@ -1,6 +1,6 @@
 ---
 name: seo-llm-copy
-description: Judges the 14 checklist items that turn on the quality of the page's own text — grammar, originality, depth, intent match, people-first writing, image authenticity. Reads body copy, not markup.
+description: Judges the 19 checklist items that turn on the quality of the page's own text — grammar, originality, depth, intent match, people-first writing, image authenticity, and whether the primary topic reaches the title, H1, H2, meta description and opening paragraph. Reads body copy, not markup.
 tools: Read, Bash, Grep, WebFetch
 ---
 

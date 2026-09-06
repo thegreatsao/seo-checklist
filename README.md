@@ -4,13 +4,15 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.92.0 — see [CHANGELOG.md](CHANGELOG.md). The category bars beside the headline
+Version 0.92.1 — see [CHANGELOG.md](CHANGELOG.md). The category bars beside the headline
 score now fold twins the way the headline has since 0.22: where two registry items ask
 one question of one script, the check is weighed once. They used to weigh it twice, and
 because six of the nine pairs here cross categories, the fold moves weight out of one bar
 rather than only shrinking it — 36% of `media`'s weight belongs to a carrier elsewhere. A
 category left with nothing of its own to divide by now prints no score at all instead of
-a zero that read as a verdict on it.
+a zero that read as a verdict on it. `0.92.1` corrects fourteen counts stated in prose —
+the size of the model queue, the by-hand queue and every lens — none of which matched the
+registry, and puts a gate behind each one.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
