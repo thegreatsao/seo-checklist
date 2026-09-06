@@ -75,6 +75,21 @@ def provenance_line(s: dict, L) -> str:
         decided=s["decided"], parts=parts)
 
 
+def item_provenance(item: dict, L) -> str:
+    """Short origin label for verdicts that were not measured here.
+
+    Measured is deliberately silent. Marking every row makes provenance invisible
+    again, while omitting this distinction lets a claimed PASS borrow the checker's
+    authority.
+    """
+    kind = item.get("decided_by") or "measured"
+    markers = {
+        "model": L.t("item_by_model", "model-read"),
+        "claimed": L.t("item_by_claimed", "claimed"),
+    }
+    return markers.get(kind, "")
+
+
 PARTITION_NOTE = (
     "Every item is in exactly one row and the rows add up to the registry, so "
     "nothing is hidden in a denominator. There is no single coverage percentage on "
@@ -1106,7 +1121,9 @@ def render_markdown(data: dict, L: Lang | None = None) -> str:
                 "|---|---|---|---|---|"]
         for i in sorted(items, key=lambda x: (x["status"] != FAIL,
                                               SEVERITY_ORDER.get(x["severity"], 9))):
-            out.append(f"| {STATUS_ICON[i['status']]} | {L.sev(i['severity'])} | {i['id']} | "
+            origin = item_provenance(i, L)
+            status = STATUS_ICON[i["status"]] + (f" ({origin})" if origin else "")
+            out.append(f"| {status} | {L.sev(i['severity'])} | {i['id']} | "
                        f"{esc_md(L.title(i))} | {esc_md(i['evidence'])} |")
         out.append("")
 
@@ -1277,6 +1294,7 @@ h2{font-size:1.05rem;margin:1.75rem 0 .5rem;padding-bottom:.3rem;border-bottom:1
 border-bottom:1px solid var(--line);align-items:start}
 .row:last-child{border-bottom:0}
 .st{font-size:.7rem;font-weight:700;letter-spacing:.03em;padding-top:.15rem}
+.origin{display:block;color:var(--mut);font-size:.9em;font-weight:400;letter-spacing:0}
 .PASS{color:var(--pass)}.FAIL{color:var(--fail)}.WARN{color:var(--warn)}
 .NO_DATA,.LLM_PENDING,.NEEDS_INPUT{color:var(--none)}.MANUAL{color:var(--fg)}.NA{color:var(--na)}
 .sev{font-size:.7rem;color:var(--mut);padding-top:.2rem}
@@ -1791,9 +1809,12 @@ def render_html(data: dict, L: Lang | None = None) -> str:
         for i in sorted(items, key=lambda x: (x["status"] != FAIL,
                                               SEVERITY_ORDER.get(x["severity"], 9))):
             cls = i["status"].replace("/", "").replace(" ", "_")
+            origin = item_provenance(i, L)
+            marker = (f'<span class="origin">{html.escape(origin)}</span>'
+                      if origin else "")
             full.append(
                 f'<div class="row" data-st="{i["status"]}">'
-                f'<div class="st {cls}">{STATUS_ICON[i["status"]]}</div>'
+                f'<div class="st {cls}">{STATUS_ICON[i["status"]]}{marker}</div>'
                 f'<div class="sev">{html.escape(L.sev(i["severity"]))}<br>{i["id"]}</div>'
                 f'<div><div class="ttl">{html.escape(L.title(i))}</div>'
                 f'<div class="ev">{html.escape(i.get("evidence", ""))}</div></div></div>')

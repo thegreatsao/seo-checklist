@@ -1119,5 +1119,155 @@ class TheProvenanceListIsTheOneThisDocumentNames(unittest.TestCase):
         self.assertIn("w_http_cache", emitted)
         self.assertIn("http_cache_hits", consulted)
 
+
+class AClaimedVerdictIsNotShownAsAMeasurement(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-4, the half that was a defect rather than a gap.
+
+    The stamp existed and three tests asserted the merges set it. Nothing showed it: the
+    report printed one aggregate sentence — "Of the 2 decided items: 1 answered by a person,
+    on their word" — and the rows themselves were identical. Measured on 6 September 2026, a
+    claimed `PASS` and a measured `PASS` rendered as the same Markdown row and the same HTML
+    block, so a reader was told that one of the items was somebody's word and never which
+    one. That is the whole failure the requirement names: a `PASS` a person typed, rendered
+    identically to a `PASS` a checker computed, spends credibility the tool has not earned.
+
+    Three things are asserted, and the third is the one that outlives this release.
+
+    `claimed` and `model` are marked and are marked *differently*, because they are
+    different statements — REP-5 requires evidence from a person and asks a model without
+    requiring it, and a marker that collapses them loses that.
+
+    `measured` is silent, for the same reason the parser caveat is silent for `lxml`: a
+    marker on every row is one a reader stops seeing by the third report.
+
+    And the set of origins each surface marks is derived from what `decided_by` can hold
+    rather than written out, so a fourth kind added to the merges cannot quietly render as
+    a measurement on one surface while being marked on another. The markers are currently
+    written twice — `item_provenance` for the report, an inline mapping for the console
+    diff — and that is exactly the shape that put the category bars out of step with the
+    headline in 0.92.0.
+    """
+
+    ORIGINS = ("measured", "model", "claimed")
+
+    def rendered(self, decided_by):
+        data = results(item("A-1", PASS))
+        data["items"][0]["decided_by"] = decided_by
+        data["items"][0]["evidence"] = "some evidence"
+        data["scores"] = runner.score(data["items"])
+        return render_markdown(data), render_html(data)
+
+    def row_of(self, markdown):
+        rows = [ln for ln in markdown.splitlines() if ln.startswith("| ") and "A-1" in ln]
+        self.assertEqual(len(rows), 1, markdown)
+        return rows[0]
+
+    def test_a_measured_verdict_carries_no_marker(self):
+        md, html_out = self.rendered("measured")
+        self.assertNotIn("(", self.row_of(md).split("|")[1],
+                         "every row is marked, so no row is")
+        self.assertNotIn('class="origin"', html_out)
+
+    def test_a_claimed_verdict_says_so_beside_the_verdict(self):
+        md, html_out = self.rendered("claimed")
+        self.assertIn("claimed", self.row_of(md))
+        self.assertIn('class="origin"', html_out)
+        self.assertIn("claimed", html_out)
+
+    def test_a_model_read_verdict_is_marked_and_not_as_a_claim(self):
+        """Two different statements about where an answer came from. A person must show
+        evidence; a model is asked and not required — REP-5 — and one marker for both
+        would put those on the same footing."""
+        md, html_out = self.rendered("model")
+        row = self.row_of(md)
+        self.assertIn("model", row)
+        self.assertNotIn("claimed", row)
+        self.assertIn('class="origin"', html_out)
+
+    def test_every_origin_the_merges_can_stamp_is_marked_on_every_surface(self):
+        """Derived from what `decided_by` can hold, not from a list written here.
+
+        `checklist_runner` stamps `measured` and the two merges in `checklist_report`
+        stamp `model` and `claimed` over it; those three are read out of the source below,
+        so adding a fourth without teaching the surfaces about it fails here rather than
+        rendering as a measurement.
+        """
+        import ast
+        stamped = set()
+        for path in (os.path.join(SKILL, "scripts", "checklist_report.py"),
+                     os.path.join(SKILL, "scripts", "checklist_runner.py")):
+            with open(path, encoding="utf-8") as fh:
+                for node in ast.walk(ast.parse(fh.read())):
+                    if (isinstance(node, ast.Assign) and len(node.targets) == 1
+                            and isinstance(node.targets[0], ast.Subscript)
+                            and isinstance(node.targets[0].slice, ast.Constant)
+                            and node.targets[0].slice.value == "decided_by"
+                            and isinstance(node.value, ast.Constant)):
+                        stamped.add(node.value.value)
+        self.assertEqual(stamped, set(self.ORIGINS),
+                         "the origins this tree can stamp are not the ones the surfaces "
+                         "were taught to mark")
+        for origin in stamped - {"measured"}:
+            with self.subTest(origin=origin):
+                md, html_out = self.rendered(origin)
+                self.assertNotEqual(self.row_of(md).split("|")[1].strip(), PASS,
+                                    "%s renders as a plain measured verdict" % origin)
+                self.assertIn('class="origin"', html_out)
+
+
+class TheLensRoutingTableIsDerivedFromWhatItRoutes(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-11's unread half: the lens-to-agent table was named
+    by no test.
+
+    It is a hand-written mapping that decides which model reads which slice of a page, and
+    `openspec/specs/governance/` GOV-3 is about exactly this shape — a list guarded only by
+    the mechanism that consumes it. The mechanism has four readers here. The membership had
+    none, and a list cannot say what is missing from it: a lens added to the registry with
+    no row here routes its items to an agent named `""`, which renders a queue file
+    addressed to nobody, and every test of the rendering still passes.
+
+    So both ends are derived rather than restated. The keys come from the registry — the
+    lenses items actually carry — and the agent names are checked against the files that
+    have to exist for the routing to mean anything. Neither number is written here.
+    """
+
+    AGENTS = os.path.join(SKILL, "resources", "agents")
+
+    @classmethod
+    def registry_lenses(cls):
+        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
+                  encoding="utf-8") as fh:
+            items = json.load(fh)["items"]
+        return {lens for lens in
+                ((item.get("check") or {}).get("lens") or item.get("lens")
+                 for item in items) if lens}
+
+    def test_every_lens_the_registry_uses_has_an_agent(self):
+        from checklist_report import LENS_AGENTS
+        self.assertEqual(set(LENS_AGENTS), self.registry_lenses(),
+                         "the lens routing table and the registry disagree about which "
+                         "lenses exist. A lens with no row routes its queue to an agent "
+                         "named '', addressed to nobody")
+
+    def test_every_agent_it_routes_to_exists_in_the_tree(self):
+        """The other end. A row naming an agent that was renamed or removed sends a queue
+        to a file nobody can open, and the failure is silent — the queue renders."""
+        from checklist_report import LENS_AGENTS
+        for lens, (agent, _reads) in sorted(LENS_AGENTS.items()):
+            with self.subTest(lens=lens):
+                self.assertTrue(
+                    os.path.exists(os.path.join(self.AGENTS, agent + ".md")),
+                    "%s routes to %s, which is not in resources/agents/" % (lens, agent))
+
+    def test_each_lens_says_what_its_agent_has_to_read(self):
+        """The second half of each row is the instruction that makes the split worth
+        having — four agents each reading their own slice once, rather than four agents
+        re-reading the same body copy. A row with an empty description is a queue whose
+        reader is told nothing."""
+        from checklist_report import LENS_AGENTS
+        for lens, (_agent, reads) in sorted(LENS_AGENTS.items()):
+            with self.subTest(lens=lens):
+                self.assertTrue(reads.strip())
+
 if __name__ == "__main__":
     unittest.main()

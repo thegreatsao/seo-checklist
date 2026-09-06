@@ -176,9 +176,19 @@ report MUST show that.
 **Why:** the audit's authority rests on the reader being able to tell which claims were
 checked. A `PASS` a person typed, rendered identically to a `PASS` a checker computed,
 spends credibility the tool has not earned.
-**Reader:** partial. The stamp exists and three test functions assert it is set by the
-merges. That the *report* displays it — that a reader of the Markdown or the HTML can tell
-a claimed verdict from a measured one — has no test.
+**Reader:** enforced since 0.94.2, and what was missing was the showing rather than the
+test. The stamp exists and three test functions assert it is set by the merges; measured on
+6 September 2026, the report then printed one aggregate sentence — "Of the 2 decided items:
+1 answered by a person, on their word" — and rendered the rows identically, so a reader was
+told that one of the items was somebody's word and never which one.
+
+`AClaimedVerdictIsNotShownAsAMeasurement` holds all three surfaces. A claimed verdict is
+marked beside the verdict, a model-read one is marked *differently* — they are different
+statements, and REP-5 is the reason — and a measured one is silent, for the reason the
+parser caveat is silent for `lxml`. The set of origins each surface must mark is derived
+from what `decided_by` can hold, read out of the two modules that stamp it, so a fourth
+kind cannot render as a measurement on one surface while being marked on another. Probed by
+collapsing the two markers into one, which reddens the model row.
 
 #### Scenario: a person's answer in the report
 - **WHEN** an item was decided by a typed claim rather than a measurement
@@ -332,10 +342,16 @@ exactly the ids of that file.
 **Why:** an item in two lenses is judged twice and merged twice; an item in none is never
 judged and waits forever. A skeleton naming ids that are not in its file was the shipped
 defect that produced this rule.
-**Reader:** partial. Four test functions cover the queue rendering, including one pinning
+**Reader:** enforced. Four test functions cover the queue rendering, including one pinning
 that a per-lens queue's example names that file's real ids rather than two fixed ones.
 That every model item has exactly one lens is read on the registry side by
-`openspec/specs/registry/` and not here; the lens-to-agent routing table is named by no test.
+`openspec/specs/registry/`. The lens-to-agent routing table was named by no test until
+0.94.2 — a hand-written mapping guarded only by the mechanism that consumes it, which is
+`openspec/specs/governance/` GOV-3's shape exactly: a lens added to the registry with no row
+routes its queue to an agent named `""`, addressed to nobody, and every test of the
+rendering still passes. `TheLensRoutingTableIsDerivedFromWhatItRoutes` derives the keys from
+the lenses the registry actually uses and checks each agent against the file that has to
+exist for the routing to mean anything. Probed by dropping a lens from the table.
 
 #### Scenario: an item in two lenses
 - **WHEN** one item appears in more than one lens's queue
@@ -514,7 +530,7 @@ measurement.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** REP-3 and REP-9, by mutation, on 6 September 2026 — deleting the cache branch
+**Probed:** REP-3, REP-4, REP-9 and REP-11, by mutation, on 6 September 2026 — deleting the cache branch
 from `provenance_warnings` reddens the membership reader from both sides, and — setting `EFFORT_COST['high']` to 1
 reddens three readers across two documents. The rest were derived by parsing the 1 280 test
 functions and reading the bodies that name each symbol: the executor running mutation probes
@@ -526,14 +542,14 @@ summary that bound is unusually tight, because there is no plausible way to exer
 
 | | requirements |
 |---|---|
-| **enforced** | REP-1, REP-2, REP-3, REP-7, REP-9 |
-| **partial** | REP-4, REP-5, REP-6, REP-8, REP-10, REP-11, REP-12, REP-13 |
+| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-7, REP-9, REP-11 |
+| **partial** | REP-5, REP-6, REP-8, REP-10, REP-12, REP-13 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-P2 and INV-P3 enforced; INV-P1 partial; INV-P4 unread.
 
-**Five enforced, eight partial, nothing unread, of thirteen.**
+**Seven enforced, six partial, nothing unread, of thirteen.**
 
 REP-9 moved without a line of work in this document: its gap was a sentence about another
 one — the effort costs the ordering divides by were pinned by nothing — and closing SCR-2

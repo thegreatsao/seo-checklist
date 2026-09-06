@@ -2880,8 +2880,16 @@ def print_report(payload, a, hist, crawl_path, diff_note) -> None:
             print("Diff: no status changes since the previous run")
         else:
             print(f"\nChanged since previous run ({len(d)}):")
+            origins = {i["id"]: i.get("decided_by") or "measured"
+                       for i in payload.get("items", [])}
             for c in d:
-                print(f"  {c['from']} -> {c['to']}  {c['id']} {c['title']}")
+                # Without this, a claimed PASS in the item list borrows the authority
+                # of an identically printed measured PASS.
+                origin = origins.get(c["id"], "measured")
+                marker = {"claimed": " (claimed)",
+                          "model": " (model-read)"}.get(origin, "")
+                print(f"  {c['from']} -> {c['to']}{marker}  "
+                      f"{c['id']} {c['title']}")
         if diff_note:
             print(f"Diff scope: {diff_note}")
 
