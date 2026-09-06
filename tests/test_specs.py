@@ -450,7 +450,7 @@ class TheMigrationIntoOpenSpecGrammarIsCheckable(unittest.TestCase):
     def test_a_converted_requirement_states_at_least_one_case(self):
         """The scenarios are the reason for the conversion. A converted document whose
         requirements carry none has paid the cost and taken none of the value."""
-        for name, lines, path in DOCS:
+        for name, lines, _path in DOCS:
             if not self.converted(lines):
                 continue
             current, seen = None, {}
