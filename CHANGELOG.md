@@ -10,6 +10,94 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.96.0 — eight items judged sites that had none of the thing they judge
+
+Registry version: **`e9154e92f4dd` → `f989d31af77a`**. Eight items answer differently on a
+site without their subject, seven of them moving off a `PASS` a client may have read. That
+is a breaking change for whoever quoted the old number, and saying so is the point.
+
+**An item whose rule passes by finding nothing awards a quality verdict to a site that has
+none of the thing.** `openspec/specs/registry/` REG-9 has said so since the document was
+written, with seventeen items named and two carrying a declaration. What kept it open is
+in its own last sentence: *nothing identified an item that owed one*. A hand sweep found
+the seventeen, and a hand sweep cannot say what it missed.
+
+Measured on a four-line text-only page served for the purpose:
+
+| item | title | answered |
+|---|---|---|
+| MS-032 | Implement & Validate Structured Data | `PASS` with no structured data |
+| TE-172 | Implement Structured Data Correctly | `PASS`, same page |
+| TE-174 | Minify & Optimize CSS | `PASS` with no stylesheet |
+| BL-081 | Keep Anchor Text Natural and Varied | `PASS` with no anchors |
+| AR-146 | Check Pagination | `PASS` with no series |
+| MD-185 | Optimize Images | `PASS` with no images |
+| AR-163 | Control Faceted Navigation | `PASS` with no facets |
+| AR-154 | Optimize E-commerce Category Pages | **`WARN`** about a page that is not one |
+
+AR-154 is worth naming apart: it did not award a free pass, it produced a finding about a
+page it should never have judged, and that finding lands in a client's fix list.
+
+**The rule, not the list.** Every item whose assertion passes by finding nothing must
+either declare `applies_when` or record why its subject cannot be absent, and the
+candidate set is derived from the registry through the runner's own `passes_by_absence`.
+Sixty-three items qualify; sixteen declare and forty-seven record a reason. An item added
+tomorrow joins the sweep by existing, and the build refuses it until somebody decides.
+Deciding is the part no derivation can do; being made to decide is the part this does.
+
+**The reader had to go first.** `test_video_applicability_is_narrowly_declared` pinned the
+declared set to exactly the two existing entries, so adding any declaration broke it —
+which is why the document counted REG-9 `opposed` rather than unread: the reader fired
+when the requirement was met. It is replaced by rules about what a declaration may *say*,
+one of which found a mistake in this release's own work.
+
+**The hand list was wrong in both directions.** Four of the seventeen owe nothing —
+CN-034, MB-103 and MB-108 judge what a rendered page always has, and the mobile-only keys
+are already withheld from a desktop trace. CN-035 owes a declaration and cannot pay it:
+the render reports no total for links, so there is no field to declare against, and that
+is recorded rather than left looking settled. TECH-001 owed one and was not on the list.
+
+**And a count beside a thing was not a count of it, again.** AR-163's subject is faceted
+URLs; `faceted_nav_audit.py`'s `count` is `len(rows)` over every internal URL and read 1
+on a page with no parameters anywhere. Declaring against it would have called the item
+applicable everywhere. `faceted_count` is the subject, and the mistake was caught by
+running the script rather than by reading the shapes file.
+
+**What this does not reach.** The derivation finds rules satisfied by finding nothing. It
+does not find rules that *require* something over a subject that may legitimately be
+absent — `openspec/specs/declarations/` A.1 names eleven of those, and none of their items
+is in the sixty-three. Checked rather than assumed. That class cannot award a free pass,
+so the harm is smaller, and it needs its own derivation.
+
+**What the fixtures said.** The verdict census moved for three items on all five fixture
+origins, `PASS`/`WARN` to `N/A`: AR-146, AR-154 and AR-163. The corpus is a five-page
+bakery with no paginated series, no category page and no facets, and all three were
+deciding anyway — the defect measured on the tree's own fixtures rather than on a page
+written to provoke it.
+
+**And three things the suite found once the declarations landed.** Two tests built a
+synthetic payload from the assertion alone and stopped reaching the rule; a clean run
+includes the declaration now, filled in from the operator rather than per item.
+`FacetedNavigation`'s fixture linked URLs with no parameters at all, so a test about
+AR-163's truncation rule was exercising a page the item does not apply to — it links
+controlled facets now, which a test for an item about faceted navigation should always
+have done. And one exemption list was serving two questions: `url_quality.py` and
+`faceted_nav_audit.py` were exempt both from "no item gets a verdict from a site that
+answered nothing" and from "a script that answered said why". The first stopped being
+true of `faceted_nav_audit.py` the moment AR-163 declared its subject, and the second
+still is. They are two lists now, each with the reason that belongs to it.
+
+**Two pinned lists moved, and both moves are the repair.** AR-154 joined the
+"answers the same on both fixtures" exemption — it used to tell them apart by warning
+about a bakery homepage that is not a category page, so answering the same on both is
+what a correct answer looks like here. And the floor under the items that reach a `WARN`
+band drops from six to five, because that warning was the sixth. A floor is a number and
+not a requirement: it says where the line is, not what the corpus owes.
+
+`openspec/specs/registry/` goes from six enforced of thirteen to seven, and its `opposed`
+column is empty for the first time. Tree debt: 94 enforced, 48 partial, 6 unread, 1
+opposed, of 149.
+
 ## 0.95.2 — the score of a slice was printed where the score of the site goes
 
 Registry version: unchanged at `e9154e92f4dd`. A narrowed run reports every item in the

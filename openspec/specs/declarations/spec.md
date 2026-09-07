@@ -842,6 +842,16 @@ seventeen**, because a hand sweep of the registry looks for the false `PASS`, an
 through what somebody wrote down at the moment they declined to declare — the debt is
 larger than the sweep found, and the sweep's blind spot has a shape.
 
+**REG-9 closed at 0.96.0, and this half did not close with it.** Its derivation is
+`passes_by_absence`, which finds a rule satisfied by finding nothing; the eleven here are
+`truthy` and `gte: 1` rules, which *require* something and cannot award a free pass. That
+was checked against the derived candidate set rather than assumed: none of IN-121, IN-122,
+IN-127, IN-128, SE-118 or LO-200 is among the sixty-three. The prediction this appendix
+made — that a sweep looking for the false `PASS` would miss them — held, and it holds for
+the derived sweep too, because the derivation encodes the same side of the question. What
+closes this half is a second derivation over requiring rules, with the same two-table
+judgement behind it.
+
 Every one of the seventeen would fail the oracle if it were declared `N/A` today. That
 failure is the instrument working: it would be pointing at six items whose applicability
 debt is already recorded, and five whose is not.

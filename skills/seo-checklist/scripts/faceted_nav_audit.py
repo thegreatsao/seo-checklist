@@ -107,7 +107,15 @@ def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:
     frequent_params = {k: v for k, v in param_counts.items() if v >= FREQUENT_PARAM_COUNT}
     if frequent_params:
         issues.append({"severity": "info", "message": "Frequent URL parameters detected", "evidence": frequent_params})
-    return {"count": len(rows), "frequent_params": frequent_params, "path_explosions": path_explosions, "rows": rows, "issues": issues}
+    # `count` is every internal URL this page led to, which is what the row table
+    # describes. It is not the subject: a page with no faceted navigation at all still
+    # produces rows, and AR-163 declaring applicability against `count` would call
+    # itself applicable everywhere. `faceted_count` is the subject — URLs carrying a
+    # filter, sort or facet parameter — and it is 0 exactly when there is nothing here
+    # to control.
+    return {"count": len(rows), "faceted_count": sum(1 for r in rows if r["facet_params"]),
+            "frequent_params": frequent_params, "path_explosions": path_explosions,
+            "rows": rows, "issues": issues}
 
 
 def urls_from_page(url: str, timeout: int = 15,

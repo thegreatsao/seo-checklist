@@ -176,6 +176,14 @@ at all:
 > CI-016, CN-034, CN-035, CN-054, MS-032, BL-081, MB-098, MB-103, MB-108, AR-146,
 > AR-154, AR-163, GO-143, TE-172, TE-174, MD-185, MD-186.
 
+**That list was a hand reading and it was wrong in both directions.** The derived sweep
+at 0.96.0 found sixty-three absence-passing items; four of the seventeen owe nothing
+(CN-034, MB-103 and MB-108 judge what a rendered page always has, and the mobile keys are
+already withheld from a desktop trace), one owes a declaration the schema cannot express
+(CN-035), and TECH-001 owed one and was not on the list.
+`openspec/specs/registry/` A.6 records the eight items whose verdict moved, seven of them
+free passes and one — AR-154 — a `WARN` about a page it should never have judged.
+
 The unclassifiable one is CN-036 *Ensure Sufficient Text Contrast*, whose assertion
 counts elements carrying inline colour syntax rather than contrast violations, and which
 therefore cannot say whether zero means no violation or no text. An applicability
@@ -203,11 +211,19 @@ does not have.
 by evidence from this run — the sampled pages contain no such entity — never by an
 inference about what kind of business the site appears to be. Inferring the site's
 category is governed separately by VRD-11.
-**Reader:** partial. The `applies_when` mechanism is enforced where present — a failed
-rule yields `N/A` with a reason and a matching one grades normally — but only two items
-of 217, MB-102 and MD-190, declare it, at `item["check"]["applies_when"]`. That location
-cannot express applicability for a sourceless item such as LO-199. Neither declaration
-completeness nor that sourceless gap has a reader; both belong to the registry document.
+**Reader:** partial, and the half that was missing is held from 0.96.0. The
+`applies_when` mechanism is enforced where present — a failed rule yields `N/A` with a
+reason and a matching one grades normally — and where it is *absent* is now a decision
+somebody made: `openspec/specs/registry/` REG-9 derives every item whose rule passes by
+finding nothing and refuses the build unless each declares applicability or records why
+its subject cannot be absent. Eighteen of the two hundred and seventeen declare it and
+forty-seven carry the recorded reason.
+
+What is still unread is the sourceless gap. `item["check"]["applies_when"]` lives inside
+a rule, so an item answered by a person or a model — LO-199 — cannot express
+applicability at all, and no reader identifies that class. It is a schema gap and belongs
+to the registry document; the difference from before is that it is the only one left
+here.
 
 #### Scenario: the checker never wrote the field
 - **WHEN** an item's assertion reads a key the checker did not emit
@@ -882,9 +898,15 @@ VRD-11.
 
 Invariants: INV-1, INV-2, INV-3 and INV-4 partial; INV-2 is violated.
 
-**Twelve enforced, five partial, none unread.** Four requirements are violated by shipped
-behaviour or declarations while nothing reddens: VRD-2 and VRD-3 by the seventeen missing
-applicability declarations; VRD-10 by the LLM answer merge; and VRD-12 by the manifest.
+**Twelve enforced, five partial, none unread.** Two requirements are violated by shipped
+behaviour or declarations while nothing reddens: VRD-10 by the LLM answer merge, and
+VRD-12 by the manifest.
+
+VRD-2 and VRD-3 left that list at 0.96.0. The missing applicability declarations were the
+violation, and `openspec/specs/registry/` REG-9 now derives which items owe one and
+refuses a build that leaves an item unjudged. Both stay `partial`, for a narrower reason
+than they carried: `applies_when` lives inside a rule, so an item answered by a person or
+a model cannot express applicability at all, and that class has no reader.
 
 VRD-11 left that list at 0.95.1, with the tree repaired rather than the record kept. Its
 four tests had all been written where the defect cannot appear — the prompt called with no

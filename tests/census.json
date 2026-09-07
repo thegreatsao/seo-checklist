@@ -3,14 +3,14 @@
   "items": {
     "AR-146": {
       "answers": {
-        "failing-shapes": "PASS",
-        "fixture:broken": "PASS",
-        "fixture:broken_tls": "PASS",
-        "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "failing-shapes": "N/A",
+        "fixture:broken": "N/A",
+        "fixture:broken_tls": "N/A",
+        "fixture:good": "N/A",
+        "fixture:good_tls": "N/A"
       },
       "distinct": [
-        "PASS"
+        "N/A"
       ],
       "script": "parse_html.py",
       "severity": "medium",
@@ -133,15 +133,14 @@
     },
     "AR-154": {
       "answers": {
-        "failing-shapes": "WARN",
-        "fixture:broken": "WARN",
-        "fixture:broken_tls": "WARN",
-        "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "failing-shapes": "N/A",
+        "fixture:broken": "N/A",
+        "fixture:broken_tls": "N/A",
+        "fixture:good": "N/A",
+        "fixture:good_tls": "N/A"
       },
       "distinct": [
-        "PASS",
-        "WARN"
+        "N/A"
       ],
       "script": "collection_page_checker.py",
       "severity": "medium",
@@ -280,14 +279,14 @@
     },
     "AR-163": {
       "answers": {
-        "failing-shapes": "PASS",
-        "fixture:broken": "PASS",
-        "fixture:broken_tls": "PASS",
-        "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "failing-shapes": "N/A",
+        "fixture:broken": "N/A",
+        "fixture:broken_tls": "N/A",
+        "fixture:good": "N/A",
+        "fixture:good_tls": "N/A"
       },
       "distinct": [
-        "PASS"
+        "N/A"
       ],
       "script": "faceted_nav_audit.py",
       "severity": "medium",
@@ -3586,7 +3585,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "e9154e92f4dd",
+  "registry_version": "f989d31af77a",
   "sites": [
     "fixture:good",
     "fixture:broken",

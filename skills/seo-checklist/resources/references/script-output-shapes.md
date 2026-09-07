@@ -534,7 +534,14 @@ than fetching them.
 
 ### faceted_nav_audit.py
 
-`count` — int
+`count` — int — every internal URL this page led to, which is what `rows` describes.
+  **Not the subject of AR-163**: a page with no faceted navigation still produces rows,
+  and this read 1 on a plain page with no parameters anywhere
+`faceted_count` — int — rows carrying a filter, sort or facet parameter. AR-163
+  declares applicability against this, so an item about controlling faceted navigation
+  reports `N/A` on a site that has none instead of passing. Added at 0.96.0 and read
+  from a fixture run rather than from the live probe, on the same terms as the four
+  keys named at the top of this file
 `rows[]` — array
   - item keys: url, path, params, facet_params, flags
 `issues[]` — array

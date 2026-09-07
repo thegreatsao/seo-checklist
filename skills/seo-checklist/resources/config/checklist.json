@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "e9154e92f4dd",
+  "registry_version": "f989d31af77a",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -458,6 +458,10 @@
         "assert": {
           "path": "missing_alt",
           "eq": 0
+        },
+        "applies_when": {
+          "path": "summary.images",
+          "gt": 0
         }
       },
       "effort": "low",
@@ -826,6 +830,10 @@
         "assert": {
           "path": "summary.errors",
           "eq": 0
+        },
+        "applies_when": {
+          "path": "schema_nodes",
+          "gt": 0
         },
         "warn": {
           "path": "summary.warnings",
@@ -1227,6 +1235,10 @@
         "assert": {
           "path": "summary.lazy_lcp_candidates",
           "eq": 0
+        },
+        "applies_when": {
+          "path": "summary.images",
+          "gt": 0
         }
       },
       "effort": "high",
@@ -1658,6 +1670,10 @@
           "path": "summary.overused_exact_match_targets",
           "eq": 0
         },
+        "applies_when": {
+          "path": "links_analyzed",
+          "gt": 0
+        },
         "warn": {
           "path": "summary.overused_exact_match_targets",
           "lte": 10
@@ -1971,6 +1987,10 @@
         "assert": {
           "path": "srcset_without_sizes_count",
           "eq": 0
+        },
+        "applies_when": {
+          "path": "image_count",
+          "gt": 0
         }
       },
       "effort": "medium",
@@ -2965,6 +2985,10 @@
           "path": "incomplete_nodes_by_type.WebSite",
           "eq": 0,
           "missing_is": "pass"
+        },
+        "applies_when": {
+          "path": "schema_nodes",
+          "gt": 0
         }
       },
       "effort": "low",
@@ -3036,6 +3060,10 @@
             "critical",
             "high"
           ]
+        },
+        "applies_when": {
+          "path": "pagination.paginated",
+          "truthy": true
         }
       },
       "effort": "high",
@@ -3212,6 +3240,10 @@
             "medium"
           ]
         },
+        "applies_when": {
+          "path": "product_links_detected",
+          "gt": 0
+        },
         "warn": {
           "path": "issues",
           "none_severity": [
@@ -3382,6 +3414,10 @@
             "high",
             "medium"
           ]
+        },
+        "applies_when": {
+          "path": "faceted_count",
+          "gt": 0
         },
         "warn": {
           "path": "issues",
@@ -3586,6 +3622,10 @@
         "assert": {
           "path": "summary.errors",
           "eq": 0
+        },
+        "applies_when": {
+          "path": "nodes",
+          "gt": 0
         }
       },
       "effort": "low",
@@ -3619,6 +3659,10 @@
         "assert": {
           "path": "unminified_count",
           "eq": 0
+        },
+        "applies_when": {
+          "path": "checked",
+          "gt": 0
         }
       },
       "effort": "low",
@@ -3859,6 +3903,10 @@
             "medium"
           ]
         },
+        "applies_when": {
+          "path": "image_count",
+          "gt": 0
+        },
         "warn": {
           "path": "issues",
           "none_severity": [
@@ -3887,6 +3935,10 @@
         "assert": {
           "path": "missing_alt",
           "eq": 0
+        },
+        "applies_when": {
+          "path": "summary.images",
+          "gt": 0
         }
       },
       "effort": "medium",
@@ -4340,6 +4392,10 @@
         "assert": {
           "path": "summary.warnings",
           "eq": 0
+        },
+        "applies_when": {
+          "path": "nodes",
+          "gt": 0
         }
       },
       "effort": "low",

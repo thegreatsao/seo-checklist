@@ -4,7 +4,14 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.95.2 — see [CHANGELOG.md](CHANGELOG.md). Auditing one category used to drop the
+Version 0.96.0 — see [CHANGELOG.md](CHANGELOG.md). Eight checks used to judge sites that
+had none of the thing they judge: a page with no structured data passed "Implement &
+Validate Structured Data", a page with no stylesheet passed "Minify & Optimize CSS", and a
+page that is not a category page got a warning about being a bad one. Every check that can
+pass by finding nothing now either says when it applies or records why its subject cannot
+be absent, and the build refuses an item nobody has decided about. The registry version
+moved, so scores before and after are not comparable. Before that, `0.95.2` fixed auditing
+one category, which used to drop the
 other 210 items out of the report entirely, so the partition summed to the slice and the
 slice's score was printed where the site's goes — 100 over 10 rows next to a full run's 57
 over 217. Every item is reported now, the ones outside the selection as N/A naming it. Two

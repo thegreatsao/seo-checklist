@@ -4588,9 +4588,22 @@ class FacetedNavigation(unittest.TestCase):
     PAGE_URL_LIMIT = 3
 
     def from_page(self, internal_links: int) -> dict:
-        links = "".join(f'<a href="/plain-{i}">plain</a>'
+        """A page linking `internal_links` faceted URLs.
+
+        They carried no parameters until 0.96.0, which was fine while AR-163 graded
+        whatever it was given and wrong once the item declares its subject: a page with
+        no faceted navigation is `N/A`, so the truncation rule these tests are about was
+        never reached. A test for an item about faceted navigation should exercise a
+        page that has some.
+        """
+        links = "".join(f'<a href="/plain-{i}?color=red">plain</a>'
                         for i in range(internal_links))
-        page = f"<html><body>{links}</body></html>"
+        # Controlled facets: canonicalised and noindexed, which is what the item asks
+        # for. Without the controls the verdict is a FAIL and the withholding rule —
+        # which is only about a *clean* answer — is never reached either.
+        head = ('<link rel="canonical" href="/plain">'
+                '<meta name="robots" content="noindex">')
+        page = f"<html><head>{head}</head><body>{links}</body></html>"
         routes = {"/": page, **{f"/plain-{i}": page
                                 for i in range(internal_links)}}
         with served(routes) as site:
@@ -5492,9 +5505,23 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
     # Two scripts judge the URL *string* and fetch nothing to do it. A verdict from
     # them about an unreachable host is correct: whether `/shop?SESSIONID=1&sort=x` is
     # a clean URL does not depend on the server answering.
-    URL_ONLY = {
+    # One list served two questions until 0.96.0, and they came apart the moment one of
+    # its members changed. Both are about a script that judges the URL rather than the
+    # page, and what follows from that differs:
+    #
+    #   * it has no fetch to fail, so it carries no error and none is owed;
+    #   * it therefore still reaches a verdict on a host that answered nothing.
+    #
+    # The second stopped being true of `faceted_nav_audit.py` when AR-163 began
+    # declaring its subject: a dead host whose URL carries no facet parameter is `N/A`,
+    # which is not a verdict about a site that answered nothing and is a better answer
+    # than the `PASS` the exemption existed to allow. The first is still true of it.
+    NO_FETCH_TO_FAIL = {
         "url_quality.py": "judges the URL it was given, and does not fetch it",
         "faceted_nav_audit.py": "judges URL shape; the page fetch is --from-page only",
+    }
+    URL_ONLY = {
+        "url_quality.py": "judges the URL it was given, and still decides it",
     }
 
     def graded_status(self, item, script, payload):
@@ -5513,7 +5540,7 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
     def test_no_item_gets_a_verdict_from_a_site_that_answered_nothing(self):
         decided = []
         for script, payload in self.dead_output.items():
-            if payload is None or script in self.URL_ONLY:
+            if payload is None or script in self.NO_FETCH_TO_FAIL:
                 continue
             for item in ITEMS.values():
                 if (item.get("check") or {}).get("script") != script:
@@ -5550,7 +5577,7 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
         being enforced is "say why", not "name an exception".
         """
         silent = [script for script, payload in self.dead_output.items()
-                  if payload is not None and script not in self.URL_ONLY
+                  if payload is not None and script not in self.NO_FETCH_TO_FAIL
                   and not any(str(payload.get(key) or "")
                               for key in ("error", "fetch_error", "fetch_errors",
                                           "reason"))]
@@ -5580,6 +5607,15 @@ class IndexNow(unittest.TestCase):
         bad = out("indexnow_bad")
         self.assertIs(bad["checks"]["key_file"]["passed"], False)
         self.assertEqual(verdict("GEO-007", bad), FAIL)
+
+
+def _set(payload: dict, path: str, value) -> None:
+    """Write `value` at a dotted path, creating the dicts on the way."""
+    node = payload
+    parts = path.split(".")
+    for part in parts[:-1]:
+        node = node.setdefault(part, {})
+    node[parts[-1]] = value
 
 
 class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
@@ -5626,15 +5662,27 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
         return grade([item], {key: [item["id"]]}, {key: payload}, {}, False)[0]
 
     @staticmethod
-    def _clean_payload(rule):
-        """The smallest output that satisfies `rule` by finding nothing."""
+    def _clean_payload(rule, applies_when=None):
+        """The smallest output that satisfies `rule` by finding nothing.
+
+        `applies_when` is filled in too, from 0.96.0. An item that declares its subject
+        is `N/A` over a payload that does not carry one, and a synthetic payload built
+        from the assertion alone carries nothing — so this stopped reaching the rule for
+        every item REG-9's repair touched, and reported it as "the payload is not a
+        clean one". The declaration is part of what a clean run looks like now.
+        """
         payload: dict = {}
-        node = payload
-        parts = rule["path"].split(".")
-        for part in parts[:-1]:
-            node = node.setdefault(part, {})
-        node[parts[-1]] = 0 if rule.get("eq") == 0 else []
+        _set(payload, rule["path"], 0 if rule.get("eq") == 0 else [])
+        if applies_when:
+            # Whatever makes the declaration hold: `gt: 0` wants a count, `truthy`
+            # wants something true. Derived from the operator rather than special-cased
+            # per item, so a declaration added tomorrow is satisfied by this too.
+            operator = (set(applies_when) - {"path", "field", "missing_is", "scope"}).pop()
+            value = True if operator == "truthy" else (applies_when[operator] or 0) + 1
+            _set(payload, applies_when["path"], value)
         return payload
+
+
 
     def _covered(self):
         reporters = self._reporters()
@@ -5699,7 +5747,8 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
     def test_a_clean_answer_over_a_capped_input_is_withheld(self):
         decided = []
         for item in self._covered():
-            payload = self._clean_payload(item["check"]["assert"])
+            payload = self._clean_payload(
+                item["check"]["assert"], item["check"].get("applies_when"))
             self.assertEqual(self._graded(item, dict(payload))["status"], PASS,
                              f"{item['id']}: the payload is not a clean one")
             payload["truncated"] = True

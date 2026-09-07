@@ -99,13 +99,139 @@ class RegistryShape(unittest.TestCase):
                                   f"{i['id']} uses operator {key!r}, which "
                                   f"checklist_runner.py does not implement")
 
-    def test_video_applicability_is_narrowly_declared(self):
-        declared = {item["id"]: item["check"]["applies_when"]
-                    for item in ITEMS if (item.get("check") or {}).get("applies_when")}
-        self.assertEqual(declared, {
-            "MB-102": {"path": "videos", "gt": 0},
-            "MD-190": {"path": "videos", "gt": 0},
-        })
+    def test_every_absence_passing_item_says_what_its_subject_is(self):
+        """`openspec/specs/registry/` REG-9, and the reason it stood open.
+
+        The requirement was never hard to state — an item judging the quality of
+        something a site may legitimately not have declares the condition under which
+        it applies. What was missing is that **nothing identified an item that owed
+        one**, so the seventeen were visible only through a hand sweep, and a hand
+        sweep cannot say what it missed.
+
+        The candidate set is derived from the registry through the runner's own
+        `passes_by_absence`, and every candidate must be in exactly one of the two
+        tables in `build_checklist.py`: it declares `applies_when`, or it records why
+        its subject cannot be absent. An item added tomorrow is swept by existing.
+
+        Deciding which table an item belongs in is a judgement no derivation can make.
+        Being made to decide is what this holds."""
+        sys.path.insert(0, os.path.join(SKILL, "tools"))
+        import build_checklist
+        complaints = build_checklist.subject_is_declared_for_every_absence_passing_item(
+            ITEMS)
+        self.assertEqual(complaints, [], complaints)
+
+    def test_the_gate_complains_about_an_item_that_says_nothing(self):
+        """The gate itself, not the tree it passes over. A
+        `subject_is_declared_for_every_absence_passing_item` that returned an empty
+        list whatever it was handed would satisfy the test above and let a build
+        through, and the probe that replaced its body with `return []` showed exactly
+        that: only the independent count below reddened, and only because the tables
+        happened to be wrong at the same time.
+
+        So hand it an item that passes by absence and says nothing, and require it to
+        say so."""
+        sys.path.insert(0, os.path.join(SKILL, "tools"))
+        import build_checklist
+        invented = {"id": "ZZ-999", "title": "An invented item",
+                    "check": {"script": "s.py", "assert": {"path": "x", "eq": 0}}}
+        complaints = build_checklist.subject_is_declared_for_every_absence_passing_item(
+            ITEMS + [invented])
+        self.assertEqual([c for c in complaints if "ZZ-999" in c][:1],
+                         [c for c in complaints][:1], complaints)
+        self.assertEqual(len(complaints), 1, complaints)
+
+    def test_the_gate_complains_about_an_excuse_for_an_item_that_is_gone(self):
+        """The other direction. An entry left behind when an item is renamed or dropped
+        excuses nothing and reads as a decision somebody made about a live item."""
+        sys.path.insert(0, os.path.join(SKILL, "tools"))
+        import build_checklist
+        build_checklist.SUBJECT_ALWAYS_PRESENT["ZZ-998"] = "an item that is not here"
+        try:
+            complaints = build_checklist.subject_is_declared_for_every_absence_passing_item(
+                ITEMS)
+        finally:
+            del build_checklist.SUBJECT_ALWAYS_PRESENT["ZZ-998"]
+        self.assertEqual(complaints, ["ZZ-998 is excused and is not in the registry"])
+
+    def test_the_two_tables_do_not_overlap_and_cover_the_candidates_exactly(self):
+        """The floor under the gate. A `subject_is_declared_...` that returned an empty
+        list for every input would satisfy the test above, so this counts the
+        classification independently: every candidate is in one table, no candidate is
+        in both, and no table names an item that is not a candidate."""
+        sys.path.insert(0, os.path.join(SKILL, "tools"))
+        import build_checklist
+        from checklist_runner import passes_by_absence
+        candidates = {i["id"] for i in ITEMS
+                      if (i.get("check") or {}).get("assert")
+                      and passes_by_absence(i["check"]["assert"])}
+        declared = {i["id"] for i in ITEMS
+                    if (i.get("check") or {}).get("applies_when")}
+        excused = set(build_checklist.SUBJECT_ALWAYS_PRESENT)
+        self.assertTrue(candidates, "nothing passes by absence; the sweep reads nothing")
+        self.assertEqual(declared & excused, set())
+        self.assertEqual(declared | excused, candidates)
+
+    def test_every_recorded_reason_names_a_subject_rather_than_asserting_a_verdict(self):
+        """A reason is only worth keeping if the next person can argue with it. The
+        cheap failure is an entry that restates the conclusion — "no declaration
+        needed" — and says nothing about what the item judges, so this requires each
+        to be a sentence about the subject rather than about the requirement."""
+        sys.path.insert(0, os.path.join(SKILL, "tools"))
+        import build_checklist
+        for item_id, why in sorted(build_checklist.SUBJECT_ALWAYS_PRESENT.items()):
+            with self.subTest(item=item_id):
+                self.assertGreaterEqual(len(why.split()), 6, why)
+                self.assertNotIn("applies_when", why)
+                self.assertNotIn("REG-9", why)
+
+    def test_every_applicability_declaration_is_a_rule_the_evaluator_can_read(self):
+        """This replaces `test_video_applicability_is_narrowly_declared`, which pinned
+        the declared set to exactly MB-102 and MD-190 with exactly their condition —
+        so **satisfying REG-9 broke it**. That is the correct behaviour for a test
+        describing the present and the wrong shape for one guarding a rule, and
+        `openspec/specs/registry/` counted REG-9 `opposed` for it: a reader that fires
+        when the requirement is met is not merely absent, it is aimed against it.
+
+        What a declaration may *say* is the property worth holding. It is one path and
+        one operator from the same closed vocabulary the assertions use — REG-7 — and
+        it must not be trivially true, because a condition that always holds declares
+        nothing and reads like a decision somebody made."""
+        for item in ITEMS:
+            rule = (item.get("check") or {}).get("applies_when")
+            if not rule:
+                continue
+            with self.subTest(item=item["id"]):
+                self.assertIn("path", rule, "a declaration names the field it reads")
+                operators = set(rule) - {"path", "field", "missing_is", "scope"}
+                self.assertEqual(len(operators), 1,
+                                 f"{item['id']} uses {sorted(operators)}; a rule is one "
+                                 f"path and one operator")
+                operator, = operators
+                self.assertIn(operator, operator_vocabulary(),
+                              f"{item['id']} declares applicability with {operator!r}, "
+                              f"which checklist_runner.py does not implement")
+                self.assertNotEqual(
+                    rule, {"path": rule["path"], "truthy": False},
+                    f"{item['id']} declares a condition that cannot hold")
+
+    def test_the_declared_condition_reads_a_field_its_own_checker_emits(self):
+        """A declaration naming a field the script never writes makes the item NO_DATA
+        forever, which looks like a cautious audit and is a silent deletion. Read from
+        the shapes reference, which is machine-probed from real runs rather than
+        written by hand."""
+        with open(os.path.join(SKILL, "resources", "references",
+                               "script-output-shapes.md"), encoding="utf-8") as f:
+            shapes = f.read()
+        for item in ITEMS:
+            rule = (item.get("check") or {}).get("applies_when")
+            if not rule:
+                continue
+            leaf = rule["path"].split(".")[-1]
+            with self.subTest(item=item["id"], path=rule["path"]):
+                self.assertIn(leaf, shapes,
+                              f"{item['id']} declares applicability against "
+                              f"{rule['path']!r}, which no probed script output names")
 
     def test_only_safe_browsing_verdicts_require_its_key(self):
         requires = {item["id"]: item["check"]["requires"] for item in ITEMS

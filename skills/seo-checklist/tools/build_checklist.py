@@ -25,6 +25,12 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
+# The runner's own definition, imported rather than restated: the gate below and the
+# rule the runner applies at grading time have to be the same set, or an item can owe a
+# declaration to one and not the other.
+sys.path.insert(0, os.path.join(SKILL_DIR, "scripts"))
+from checklist_runner import passes_by_absence  # noqa: E402
+
 DEFAULT_OUT = os.path.join(SKILL_DIR, "resources", "config", "checklist.json")
 TITLE_OVERRIDES = os.path.join(
     SKILL_DIR, "resources", "config", "title-overrides.json")
@@ -207,11 +213,134 @@ ITEM_REQUIRES = {
     "TE-171": "safe_browsing",
 }
 
-# Empty evidence is not positive evidence. These two items share one video check and
-# apply only when the script actually found a video on the page.
+# Empty evidence is not positive evidence.
+#
+# An item whose rule passes by finding none of the thing it forbids awards a quality
+# verdict to a site that has none of the thing — `openspec/specs/registry/` REG-9 and
+# `openspec/specs/verdicts/` VRD-2. Measured on a four-line text-only page served for
+# the purpose: with no structured data MS-032 and TE-172 passed "Implement & Validate
+# Structured Data" and "Implement Structured Data Correctly"; with no stylesheet TE-174
+# passed "Minify & Optimize CSS"; with no anchors BL-081 passed "Keep Anchor Text
+# Natural and Varied"; with no images MD-185 passed "Optimize Images"; with no
+# pagination AR-146 passed "Check Pagination"; and AR-154 returned a **WARN** about a
+# page that is not a category page at all.
+#
+# Every item whose assertion `passes_by_absence` must therefore appear in exactly one of
+# the two tables below, and `subject_is_declared_for_every_absence_passing_item` derives
+# the candidate set from the built registry and fails the build otherwise. That is what
+# makes this a rule rather than a list: an item added tomorrow joins the sweep by
+# existing, and the build refuses it until somebody has decided which table it belongs
+# in. Before 0.96.0 nothing identified an item that owed a declaration, which is why
+# seventeen of them went unnoticed for the life of the registry.
 APPLIES_WHEN = {
     "MB-102": {"path": "videos", "gt": 0},
     "MD-190": {"path": "videos", "gt": 0},
+    # Images. `image_inventory.py` already withholds `count`, `missing_alt` and
+    # `summary.lazy_lcp_candidates` on a page with no images, so these three reported
+    # NO_DATA rather than a free pass — the debt was the status, not the pass. The
+    # descriptive `summary.images` stays at 0 and is what makes the subject decidable.
+    "CI-016": {"path": "summary.images", "gt": 0},
+    "MD-186": {"path": "summary.images", "gt": 0},
+    "CN-054": {"path": "summary.images", "gt": 0},
+    # `image_weight_audit.py` counts before it judges. MB-098's own field is withheld
+    # on a page with no images; MD-185 reads `issues` and passed on an empty list.
+    "MB-098": {"path": "image_count", "gt": 0},
+    "MD-185": {"path": "image_count", "gt": 0},
+    # Structured data. A page that declares no schema has nothing for either of these
+    # to validate, and both returned `summary.errors` 0 — a pass for "implement
+    # structured data" awarded to a page that implements none.
+    "MS-032": {"path": "schema_nodes", "gt": 0},
+    "GO-143": {"path": "schema_nodes", "gt": 0},
+    "TE-172": {"path": "nodes", "gt": 0},
+    "TECH-001": {"path": "nodes", "gt": 0},
+    # Anchors. `links_analyzed` is 0 on a page with no links, and 0 overused targets
+    # out of 0 anchors is not a finding about anchor text.
+    "BL-081": {"path": "links_analyzed", "gt": 0},
+    # A paginated series. `pagination.paginated` is the checker's own answer to
+    # whether there is one; without it `pagination.issues` is empty by construction.
+    "AR-146": {"path": "pagination.paginated", "truthy": True},
+    # A category page. Without one, `collection_page_checker.py` reports thin copy and
+    # a missing description about whatever page it was given — two `warning` issues,
+    # which `SEVERITY_ALIAS` reads as `medium`, so the item returned WARN about a page
+    # it should never have judged. The only free-pass entry here that was not a pass.
+    "AR-154": {"path": "product_links_detected", "gt": 0},
+    # Faceted URLs. `count` is `len(rows)` over every internal URL and read 1 on a page
+    # with no facets at all, so the subject needed a count of its own — see
+    # `faceted_count` in `faceted_nav_audit.py`.
+    "AR-163": {"path": "faceted_count", "gt": 0},
+    # Stylesheets. A page linking none has no CSS to minify, and `unminified_count`
+    # was 0 out of `checked` 0.
+    "TE-174": {"path": "checked", "gt": 0},
+}
+
+# Why an absence-passing item needs no applicability declaration: the entity whose
+# quality it judges cannot legitimately be absent from a site, so finding none of the
+# forbidden thing is a real pass rather than an empty one.
+#
+# Prose rather than a flag, because the claim is arguable and the next person has to be
+# able to argue with it. A wrong entry here is a free pass nobody can see, so each names
+# the subject rather than asserting the conclusion.
+SUBJECT_ALWAYS_PRESENT = {
+    # The page's own directives and markup. Every page has a `meta robots`, a set of
+    # headings and a DOM, present or absent by the author's choice — which is the
+    # finding, not a missing subject.
+    "CI-004": "every page has indexing directives, present or absent by choice",
+    "MS-031": "every page either carries meta keywords or does not; that is the finding",
+    "CI-017": "every page has markup for the validator to read",
+    "TE-181": "every rendered page has a DOM for the validator to read",
+    "CN-048": "every page has a heading structure, even an empty one",
+    "AR-155": "every page has a URL, which is what this judges",
+    "CN-036": "every page has text; what this counts is not contrast — see REG-6",
+    # The site's own crawl and link graph. A site always has pages and a shape.
+    "CI-008": "every crawled site has a link graph; orphans are a property of it",
+    "AR-162": "the same link graph, judged for strength rather than for orphans",
+    "AR-149": "every crawled site has internal links, redirecting or not",
+    "TE-168": "every crawled site has links to check",
+    "CI-013": "every site has a robots policy, permissive or not",
+    "CI-019": "the same policy, read for what it leaves indexable",
+    "GO-136": "every site is asked for a sitemap; its absence is the finding",
+    "GO-138": "the same sitemap, read for invalid URLs",
+    "GO-137": "the crawl and the sitemap both exist whenever this runs",
+    "MS-022": "every crawled site has titles to compare",
+    "MS-029": "every crawled site has descriptions to compare, present or empty",
+    "CN-039": "every crawled site has pages, and their thinness is the finding",
+    "CN-041": "the same pages, compared for duplication",
+    "TE-176": "every page has a canonical decision, made or omitted",
+    "CI-014": "every requested URL has a redirect chain, possibly of length zero",
+    # The response, and the server behind it. A run that got here got a response.
+    "TE-170": "every response carries headers, and their absence is the finding",
+    "SP-109": "every page loads some set of third-party scripts, possibly empty",
+    "SP-110": "every page has a request chain; its shape is the finding",
+    "TECH-002": "every page loads fonts or does not, and either is a finding here",
+    "CN-051": "every rendered page has overlays or has none; zero is a real pass",
+    "MB-094": "the same overlays, on a mobile render",
+    "CN-034": "every page has text nodes to measure",
+    # The weakest entry here, and it says so. A page with no links is possible, and
+    # zero indistinct links out of zero is not a finding about hyperlinks. What stops
+    # this being a declaration debt is that `rendered_audit.py` reports no total for
+    # links, so there is no field to declare against — a schema gap rather than a
+    # judgement. Recorded here so the gap is visible instead of the item looking settled.
+    "CN-035": "every page has links or has none; the render reports no total to "
+              "declare against, so the subject cannot be stated as a condition",
+    "MB-103": "a rendered mobile page has tap targets; a desktop trace omits the key",
+    "MB-108": "a rendered mobile page has text; a desktop trace omits the key",
+    "MB-100": "every page renders on a phone, well or badly",
+    "MB-105": "every page has a rendered and an unrendered form to compare",
+    "MD-187": "the key is withheld unless statuses were collected, so zero means "
+              "checked and sound rather than nothing looked at",
+    # Answers from a service. The service was asked; an empty answer is its answer.
+    "SE-114": "Safe Browsing answered; an empty threat list is that answer",
+    "SE-116": "the same answer, read for hacked content",
+    "TE-171": "the same answer, read as a blocklist check",
+    "TE-178": "the neighbour lookup answered; an empty list is that answer",
+    "GO-132": "the page either carries duplicate GA4 tags or does not",
+    "GO-134": "Search Console answered; no issues is that answer",
+    "GO-135": "URL Inspection answered for this URL",
+    "MS-023": "Search Console answered with the queries this site ranks for",
+    "KW-071": "the same queries, read for contested ones",
+    "BL-083": "the backlink export was supplied and read; none broken is a finding",
+    "CI-018": "a server log was supplied and parsed; no issues is a finding about it",
+    "GEO-006": "every entity check asks about this site's own identity",
 }
 
 # Items whose rule cannot report FAIL, and are meant not to.
@@ -1595,6 +1724,41 @@ def build(titles: dict[int, str] | None = None,
     return out
 
 
+def subject_is_declared_for_every_absence_passing_item(items: list[dict]) -> list[str]:
+    """Every item that can pass by finding nothing has said what its subject is.
+
+    `openspec/specs/registry/` REG-9 asked for this and nothing could enforce it,
+    because nothing identified which items owed a declaration — the seventeen were
+    visible only through a hand sweep, and a hand sweep cannot say what it missed.
+
+    The candidate set is derived from the built registry through the runner's own
+    `passes_by_absence`, so this is a rule and not a membership list: an item added
+    tomorrow is swept by existing, and the build refuses it until somebody has decided
+    whether its subject can be absent. Deciding is the part no derivation can do; being
+    made to decide is the part this does.
+    """
+    complaints = []
+    for item in items:
+        check = item.get("check") or {}
+        rule = check.get("assert")
+        if not rule or not passes_by_absence(rule):
+            continue
+        declared = bool(check.get("applies_when"))
+        excused = item["id"] in SUBJECT_ALWAYS_PRESENT
+        if declared and excused:
+            complaints.append(f"{item['id']} both declares applicability and claims "
+                              f"its subject is always present")
+        elif not declared and not excused:
+            complaints.append(
+                f"{item['id']} ({item['title']}) passes by finding nothing and says "
+                f"nothing about its subject: add `applies_when` to APPLIES_WHEN, or "
+                f"say in SUBJECT_ALWAYS_PRESENT why the subject cannot be absent")
+    for item_id in sorted(SUBJECT_ALWAYS_PRESENT):
+        if item_id not in {i["id"] for i in items}:
+            complaints.append(f"{item_id} is excused and is not in the registry")
+    return complaints
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Generate the SEO checklist registry")
     ap.add_argument("--out", default=DEFAULT_OUT)
@@ -1615,6 +1779,11 @@ def main() -> int:
         print(f"LLM items with no lens: {', '.join(unlensed)} — add them to LENS, "
               "otherwise no agent is responsible for answering them",
               file=sys.stderr)
+        return 1
+    undeclared = subject_is_declared_for_every_absence_passing_item(items)
+    if undeclared:
+        for line in undeclared:
+            print(line, file=sys.stderr)
         return 1
     # A content hash of the items, so a result file can say which registry it was
     # produced from. Without it, two runs whose item sets differ silently compare

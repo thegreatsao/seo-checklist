@@ -89,14 +89,12 @@
     },
     "registry": {
       "counts": {
-        "enforced": 6,
+        "enforced": 7,
         "none": 0,
-        "opposed": 1,
+        "opposed": 0,
         "partial": 6
       },
-      "opposed": [
-        "REG-9"
-      ],
+      "opposed": [],
       "requirements": 13,
       "unread": []
     },
@@ -146,9 +144,9 @@
     }
   },
   "totals": {
-    "enforced": 93,
+    "enforced": 94,
     "none": 6,
-    "opposed": 2,
+    "opposed": 1,
     "partial": 48,
     "requirements": 149
   }

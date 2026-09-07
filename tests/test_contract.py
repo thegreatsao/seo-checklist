@@ -162,6 +162,12 @@ SAME_ON_BOTH = {
     "AR-158": "neither fixture exposes a breadcrumb-named UI trail; the good entry's "
               "schema alone cannot satisfy a title that requires UI + Schema",
     "AR-146": "neither fixture paginates",
+    # Joined at 0.96.0, when AR-154 began declaring its subject. Before that it told
+    # the fixtures apart — WARN on `broken`, PASS on `good` — by reporting thin copy
+    # and a missing description about a bakery homepage, which is not a category page
+    # and was never a subject it should have judged. Answering the same on both is
+    # what a correct answer looks like here.
+    "AR-154": "neither fixture has a category page for it to judge",
     "CN-055": "neither fixture paginates",
     "IN-121": "neither fixture is multilingual",
     "IN-122": "neither fixture is multilingual",
@@ -450,8 +456,15 @@ class EveryWarnBandTheFixturesReachHasBeenSeen(unittest.TestCase):
         return {i["id"] for i in self.banded() if WARN in self.states(i["id"])}
 
     def test_a_fixture_reaches_some_band(self):
-        """Otherwise the rest of this class is about an empty set."""
-        self.assertGreater(len(self.seen()), 5)
+        """Otherwise the rest of this class is about an empty set.
+
+        The floor was six until 0.96.0 and is five now, and the item that left is the
+        reason: AR-154 reached its band by warning about a bakery homepage that is not
+        a category page, so losing that WARN is the repair rather than a regression.
+        A floor is a number and not a requirement — it says where the line is, not what
+        the corpus owes — so it moves when the population does, with the move recorded.
+        """
+        self.assertGreater(len(self.seen()), 4)
 
     def test_every_band_the_fixtures_exercise_is_seen_or_explained(self):
         unexplained = []

@@ -368,23 +368,33 @@ given `missing_is` is *justified* for its item.
 
 ### Requirement: REG-9 — an item judging an optional entity declares its applicability
 
-> **This requirement's reader is aimed against it.** See the Reader line: satisfying
-> REG-9 makes an existing test fail. It is counted separately in Appendix B for that
-> reason — an unread requirement is merely unprotected, while this one is opposed.
-
 Where an item judges the quality of something a site may legitimately not have, the item
 SHALL declare the condition under which it applies. Absent that declaration, the item
 reports success on a site that has none of the thing, which VRD-2 forbids.
 
 **Why:** this is the largest measured defect class in the registry — seventeen items owe
 such a declaration and two carry one.
-**Reader:** opposed. `test_video_applicability_is_narrowly_declared`
-pins the declaration set to exactly MB-102 and MD-190 with exactly their condition — so
-**satisfying this requirement breaks that test**. Adding the declaration CI-016 owes makes
-it fail. That is the correct behaviour for a test that describes the present and the wrong
-shape for one that guards a rule: the release closing this debt must turn it from a fixed
-membership list into a rule about what a declaration may say. Nothing identifies an item
-that owes one, which is why the seventeen are visible only through a hand sweep.
+**Reader:** enforced, at 0.96.0, and the order of the repair is the requirement's own
+last scenario. The test that pinned the declaration set to exactly MB-102 and MD-190 with
+exactly their condition — deleted at 0.96.0, and named in the release rather than here,
+because a document naming a test that no longer exists is a defect `tests/test_specs.py`
+catches — meant that **satisfying this requirement broke it**. The reader was aimed
+against the requirement, which is what `opposed` meant here. It is replaced by two rules about what a declaration may *say*: one path and
+one operator from the vocabulary `evaluate()` implements, and a field the probed script
+output actually names, so a declaration cannot quietly make an item `NO_DATA` forever.
+
+What kept the requirement open was the sentence at the end of this line: nothing
+identified an item that owed a declaration, so the seventeen were visible only through a
+hand sweep and a hand sweep cannot say what it missed. The candidate set is derived now,
+through the runner's own `passes_by_absence`, and every candidate must be in exactly one
+of two tables — it declares `applies_when`, or it records why its subject cannot be
+absent. `build_checklist.py` fails the build otherwise, and four tests hold it: the gate
+over the shipped registry, the gate over an invented unclassified item, an independent
+count that the two tables partition the candidates exactly, and a rule that a recorded
+reason must name a subject rather than restate the conclusion.
+
+Sixty-three items pass by absence. Sixteen declare applicability and forty-seven record
+why they need none. What that moved on a served page is A.6.
 
 #### Scenario: an item owing a declaration and carrying none
 - **WHEN** an item's rule passes by finding none of the thing it forbids, and the
@@ -628,12 +638,75 @@ appear unnoticed.
 
 #### A.2 — seventeen items owe an applicability declaration; two carry one
 
+**Closed at 0.96.0, and the hand sweep was wrong in both directions** — see A.6.
+
 CI-016, CN-034, CN-035, CN-054, MS-032, BL-081, MB-098, MB-103, MB-108, AR-146, AR-154,
 AR-163, GO-143, TE-172, TE-174, MD-185, MD-186. The declared two are MB-102 and MD-190.
 
 A further item, CN-036, cannot be classified either way: its assertion counts elements
 carrying inline colour syntax rather than contrast violations, so zero does not
 distinguish "no violation" from "no text". That is a REG-6 defect, not a REG-9 one.
+
+#### A.6 — what the seventeen turned out to be, 7 September 2026
+
+The sweep behind A.2 was a hand reading, and closing REG-9 required a derived one. The
+candidate set — every item whose assertion `passes_by_absence` — is **sixty-three**, of
+which two already declared applicability. Sixteen now do and forty-seven record why they
+need none.
+
+The hand list was wrong in both directions, which is the point of deriving it:
+
+* **four of the seventeen do not owe a declaration.** CN-034 (readable font sizes) and
+  MB-103, MB-108 (tap targets, clipped text) judge things a rendered page always has, and
+  the mobile-only keys are already withheld from a desktop trace and listed in `missing`,
+  so those report `NO_DATA` rather than a free pass. Checked in `rendered_audit.py`'s
+  source rather than inferred;
+* **CN-035 owes one and cannot pay it.** A page with no links is possible, and zero
+  indistinct links out of zero is not a finding about hyperlinks — but the render reports
+  no total for links, so there is no field to declare against. Recorded as that rather
+  than left looking settled;
+* **TECH-001 owes one and was not on the list.** It reads `summary.warnings` from
+  `rich_results_guard.py`, and a page with no structured data has none.
+
+**What the free passes actually were.** Measured on a four-line text-only page served for
+the purpose:
+
+| item | title | what it answered |
+|---|---|---|
+| MS-032 | Implement & Validate Structured Data | `PASS` on a page with no structured data |
+| TE-172 | Implement Structured Data Correctly | `PASS`, same page |
+| TE-174 | Minify & Optimize CSS | `PASS` on a page linking no stylesheet |
+| BL-081 | Keep Anchor Text Natural and Varied | `PASS` on a page with no anchors |
+| AR-146 | Check Pagination | `PASS` on a page in no series |
+| MD-185 | Optimize Images | `PASS` on a page with no images |
+| AR-163 | Control Faceted Navigation | `PASS` on a page with no facets |
+| AR-154 | Optimize E-commerce Category Pages | **`WARN`** about a page that is not one |
+
+AR-154 is the one worth naming apart. `collection_page_checker.py` reported thin copy and
+a missing description about whatever page it was given; `SEVERITY_ALIAS` reads `warning`
+as `medium`; the rule forbids `medium`. So the item did not award a free pass — it
+produced a finding about a page it should never have judged, which is the same defect
+pointing the other way and lands in a client's fix list.
+
+**What this sweep does not reach, stated so the closure is not read as wider than it
+is.** `passes_by_absence` finds rules satisfied by finding nothing. It does not find rules
+that *require* something — `truthy`, `gte: 1` — over a subject that may legitimately be
+absent, and `openspec/specs/declarations/` A.1 names eleven of those: IN-121, IN-122,
+IN-127 and IN-128 on both HTTP origins, SE-118 on both, LO-200 and MB-097. Checked here
+rather than assumed: none of the six ids is in the sixty-three.
+
+They are the same absent subject taking a different exit. A requiring rule over an absent
+subject cannot award a free pass — it reports `NO_DATA` or fails — so the harm is smaller
+and the repair is the same word, `N/A`. That class needs its own derivation and its own
+judgement, and it is not closed by this.
+
+**And one field had to be added.** AR-163's subject is faceted URLs, and
+`faceted_nav_audit.py`'s `count` is `len(rows)` over every internal URL — it read 1 on a
+page with no parameters anywhere, so declaring against it would have called the item
+applicable everywhere. `faceted_count` is the subject, and it is 0 exactly when there is
+nothing to control. Found by running the script rather than by reading the shapes file,
+which is the second time in this appendix that a count beside a thing was not a count
+of it.
 
 #### A.3 — nine items measure something other than their title
 
@@ -701,21 +774,22 @@ five; REG-7 now says what a rule is, so the count above is taken over all three.
 
 | | requirements |
 |---|---|
-| **enforced** | REG-2, REG-5, REG-7, REG-10, REG-11, REG-12 |
+| **enforced** | REG-2, REG-5, REG-7, REG-9, REG-10, REG-11, REG-12 |
 | **partial** | REG-1, REG-3, REG-4, REG-6, REG-8, REG-13 |
 | **none** | — none |
-| **opposed** | REG-9 |
+| **opposed** | — none |
 
 Invariants: INV-R2 enforced; INV-R1, INV-R3 and INV-R4 partial.
 
-**Six enforced, six partial, none unread, one opposed, of thirteen.**
+**Seven enforced, six partial, none unread, none opposed, of thirteen.**
 
-`opposed` is a fourth category this document introduces, and it earns its place: REG-9's
-reader does not merely fail to protect the requirement, it fires when the requirement is
-met. A fixed-membership test pinning the two existing applicability declarations makes
-the seventeen owed ones impossible to add without changing it. An unread requirement is
-unprotected; an opposed one is barricaded, and the distinction changes what the closing
-release has to do first.
+`opposed` is a fourth category this document introduced and its column is empty now.
+REG-9 earned it: a fixed-membership test pinning the two existing applicability
+declarations made the seventeen owed ones impossible to add without changing it, so the
+reader did not merely fail to protect the requirement — it fired when the requirement was
+met. The distinction was worth having because it said what the closing release had to do
+*first*: replace the test before adding a single declaration. The category stays in the
+vocabulary; a document that finds another case will need it.
 
 An earlier draft called this the best-governed capability in the suite, and the census
 does not support it: `verdicts/` has nine of seventeen enforced against four of thirteen
@@ -723,6 +797,13 @@ here. What is distinctive about this document is not its coverage but the shape 
 remains, and the shape is consistent: the readers cover *structure* — that a field
 exists, that a value is in a vocabulary, that a script exists, that a duplicate is ruled
 on — and stop at *meaning*.
-Nothing checks that an item measures its title, that an applicability declaration is
-owed, or that the registry's account of itself is true. Nine items answer a question
-other than the one they name, and every gate stays green.
+Nothing checks that an item measures its title or that the registry's account of itself
+is true. Nine items answer a question other than the one they name, and every gate stays
+green.
+
+**Whether an applicability declaration is owed left that list at 0.96.0**, and it is the
+one place this document's readers reach past structure into meaning — not because a
+derivation can judge whether a subject may be absent, but because the derivation says
+which items the judgement is owed for, and the build refuses an item nobody has judged.
+That is the shape available wherever a claim about meaning has a decidable candidate set:
+derive who must answer, and make the absence of an answer a failure.
