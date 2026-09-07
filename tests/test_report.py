@@ -6,6 +6,7 @@ ranking claims to know what to do first.
 """
 import argparse
 import contextlib
+import html as html_escape
 import io
 import json
 import os
@@ -22,8 +23,8 @@ from checklist_report import (  # noqa: E402
     FAIL, FIX_STATUSES, LLM_PENDING, MANUAL, NA, NEEDS_INPUT, NO_DATA, PASS,
     STATUS_ICON, STATUS_ORDER, WARN, Lang, apply_llm_review,
     fix_rows, history_section, merge_llm_answers, merge_manual_answers,
-    phrase_measure, priority_of, provenance_line, render_html,
-    render_llm_queue, render_markdown, write_fixes,
+    phrase_measure, plain_summary, priority_of, provenance_line, render_html,
+    render_llm_queue, render_markdown, why_no_score, write_fixes,
 )
 
 I18N = os.path.join(SKILL, "resources", "i18n")
@@ -334,8 +335,83 @@ class NoScoreSurvivesEveryRenderer(unittest.TestCase):
         data["entry_error"] = "soft 404: a 200 response titled '404 Not Found'"
         return data
 
+    def _reachable_but_undecided(self):
+        """The case `openspec/specs/scoring/` A.4 names: the site answered, and no
+        item reached a quality verdict. `score()` returns an absent headline for it,
+        and every surface printed `None/100` because it asked a different question."""
+        from checklist_runner import score
+        data = results(item("A", "NO_DATA"))
+        data["scores"] = score(data["items"])
+        data["entry_reachable"] = True
+        data["entry_error"] = ""
+        return data
+
     def test_the_score_is_none_when_nothing_was_decided(self):
         self.assertIsNone(self._unread()["scores"]["seo_score"])
+
+    def test_no_surface_prints_a_number_for_a_reachable_run_that_decided_nothing(self):
+        """SCR-3's third scenario. Four surfaces branched on `entry_reachable is
+        False` where the question is whether a score exists, and the two differ in
+        exactly one direction: a run that read the site and decided nothing. It has a
+        reachable entry and an absent score, and each of them rendered `None`.
+
+        `score()` was right throughout — the absence was computed and not delivered,
+        which is why a unit test on `score()` could not see it."""
+        data = self._reachable_but_undecided()
+        md, html_out = render_markdown(data), render_html(data)
+        # The spellings a rendered `None` actually takes, not a bare substring
+        # search: the Markdown legitimately contains the word in "None of them
+        # lowers the score", and an assertion that trips on prose gets loosened by
+        # whoever hits it next rather than tightened.
+        for spelling in ("None/100", "None%", "None</", ">None<", "| None"):
+            with self.subTest(spelling=spelling):
+                self.assertNotIn(spelling, md)
+                self.assertNotIn(spelling, html_out)
+
+    def test_the_two_reasons_for_an_absent_score_are_different_sentences(self):
+        """An unreadable entry is a fact about the site or the network; a reachable
+        site that decided nothing is a fact about the audit. Telling the second
+        reader the page could not be read would be false, and it is the sentence
+        they got.
+
+        Asserted on what each sentence *claims*, not on the two being unequal: the
+        first version compared them for inequality and passed a mutation that made
+        the undecided branch return the unreadable text, because the two carry
+        different error strings and were still unequal."""
+        unread, undecided = self._unread(), self._reachable_but_undecided()
+        _, _, said = why_no_score(undecided)
+        self.assertIn("answered", said)
+        self.assertNotIn("entry page", said)
+        self.assertNotIn("nothing was measured", said)
+        _, _, other = why_no_score(unread)
+        self.assertIn("entry page", other)
+        self.assertNotIn("answered", other)
+
+    def test_all_three_surfaces_take_the_sentence_from_one_place(self):
+        """A helper read by one surface and inlined in the others is how they
+        diverged in the first place, and it happened again inside this release: the
+        first cut returned the body alone and left each surface to pick its own
+        heading from `entry_reachable`. Every string a no-score run shows comes from
+        `why_no_score` now, and this holds each surface to it."""
+        for data in (self._unread(), self._reachable_but_undecided()):
+            headline, title, body = why_no_score(data)
+            with self.subTest(reachable=data["entry_reachable"]):
+                self.assertEqual(plain_summary(data), [headline])
+                md = render_markdown(data)
+                self.assertIn(title, md)
+                self.assertIn(body, md)
+                # Escaped, because the HTML renderer escapes it and an assertion on
+                # the raw string would pass only for sentences with no punctuation.
+                self.assertIn(html_escape.escape(body), render_html(data))
+
+    def test_a_run_with_a_score_has_no_reason_to_give(self):
+        """The floor. A `why_no_score` that answered unconditionally would satisfy
+        every assertion above and blank the score on a good run."""
+        from checklist_report import why_no_score
+        data = results(item("A", PASS))
+        from checklist_runner import score
+        data["scores"] = score(data["items"])
+        self.assertEqual(why_no_score(data), ("", "", ""))
 
     def test_the_markdown_says_why_instead_of_a_number(self):
         out = render_markdown(self._unread())

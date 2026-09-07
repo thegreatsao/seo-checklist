@@ -185,10 +185,21 @@ excluding twins. When nothing was decided, the score MUST be **absent**, not zer
 
 **Why:** zero is a verdict about a site; absence is a statement about the audit. A site
 that could not be read must not be reported as scoring zero.
-**Reader:** partial. Unit tests pin `score()`'s arithmetic and its absent value, and the
+**Reader:** enforced. Unit tests pin `score()`'s arithmetic and its absent value, and the
 unreachable-site CI step asserts that no score line is printed for an unreachable run.
-No reader covers a reachable run with nothing decided; both renderers and the console
-currently print `None/100` for that case.
+The third scenario — a reachable run with nothing decided — was unread until 0.95.2 and
+violated: `score()` returned the absent headline correctly, and four surfaces asked
+`entry_reachable is False` instead, which is a different question. It differs in exactly
+one direction, and that is the direction this scenario names, so all four rendered
+`None/100`.
+
+`test_no_surface_prints_a_number_for_a_reachable_run_that_decided_nothing` holds the
+absence on both renderers, `test_the_two_reasons_for_an_absent_score_are_different_sentences`
+holds that the sentence a reader gets is true of their case, and
+`test_all_three_surfaces_take_the_sentence_from_one_place` holds them to one construction.
+That third test exists because the first cut of the repair returned the body alone and let
+each surface pick its own heading from `entry_reachable` — the same branch in three places
+again, and a probe that collapsed the two bodies passed by way of the headings.
 
 #### Scenario: a site with a mix of verdicts
 - **WHEN** items are decided `PASS`, `WARN` and `FAIL`
@@ -279,9 +290,18 @@ verify.
 **Why:** the documented route to a better-looking audit is a narrower one, and the only
 defence available here is that narrowing is visible and scores nothing. A `high` item
 excluded by a profile is a scoping decision a reader must be able to see.
-**Reader:** partial. Registry and profile tests govern some exclusions and forbid a
-profile from excluding a `critical` item. They do not enforce the full-registry
-partition across every narrowing mechanism, and category selection violates it today.
+**Reader:** enforced. Registry and profile tests govern some exclusions and forbid a
+profile from excluding a `critical` item. Category selection violated the requirement
+until 0.95.2 — `--only` filtered the item list before planning, so the rows it dropped
+never became `N/A`, the five buckets summed to the selection, and A.3's measurement is what
+that costs: a full run scoring 57 over 217 rows beside a single-category slice scoring 100
+over 10, the second printed where the first goes.
+
+`NarrowingIsAPartitionOfTheRegistry` runs a narrowed live audit and holds all of it — every
+registry id reported exactly once, the buckets summing to the registry, and every row
+outside the selection `N/A` naming the category and the flag. Its fourth test is the floor:
+marking everything `N/A` satisfies the other three and audits nothing, so the selected
+category is asserted to carry real verdicts.
 
 #### Scenario: one category is selected
 - **WHEN** a run is narrowed to a single category
@@ -322,10 +342,14 @@ The bucket is a work list again, which is what SCR-7 says it is for.
 one that reports coverage is a number to argue about. Deriving it from statuses is what
 makes it checkable — reconstructing it by matching words in evidence broke silently the
 first time a reason was reworded.
-**Reader:** partial. `tests/test_runner.py` asserts the buckets sum to the number of
-graded rows and pins the mapping for all eight statuses. Nothing asserts the sum against
-the registry's real item count on a narrowed live run, and an id-set check would still
-pass if a row appeared twice.
+**Reader:** enforced. `tests/test_runner.py` asserts the buckets sum to the number of
+graded rows and pins the mapping for all eight statuses. The sum against the registry's
+real item count on a narrowed live run is held from 0.95.2 by
+`test_the_buckets_sum_to_the_registry`, which needed SCR-6's repair before such a run
+existed to assert on. The id check this line asked for is beside it: a sum alone still
+passes when one row is counted twice, so
+`test_a_narrowed_run_still_reports_every_item_once` compares the reported ids against the
+registry's own as a set.
 
 #### Scenario: the buckets add up
 - **WHEN** the partition is computed for any run
@@ -436,9 +460,25 @@ one of those values is zero, that value is absent, never zero.
 **Why:** precision and the empty-set result are output semantics, not renderer choices.
 Two conforming implementations must not turn the same fraction into different claims,
 and zero must remain a verdict rather than a synonym for “nothing to divide by.”
-**Reader:** partial. Tests pin several integer examples and `score()` returns an absent
-headline for an empty decided set. No reader pins half-to-even behavior, and the current
-weight share returns zero when applicable weight is zero.
+**Reader:** enforced. Tests pin several integer examples and `score()` returns an absent
+headline for an empty decided set.
+
+The absence clause was broken in one of three places: the headline returned `None` for an
+empty decided set and each category bar returned `None` for an empty weighed set, and
+`weight_pct` returned **0**. Zero is a claim about how much of the registry a score speaks
+for, so "0% of the weight in scope" reads as a very bad audit rather than an empty one.
+`test_a_score_like_fraction_with_no_denominator_is_absent_not_zero` holds it, with
+`test_a_share_over_a_real_denominator_is_still_a_number` beside it so an absent share
+cannot come to mean an empty numerator — a run that decided nothing over items that do
+apply speaks for 0%, and that zero is true.
+
+Half-to-even needed no repair: Python's `round` is already banker's. It needed a reader
+that goes through `score()` rather than through `round()`, because asserting `round(2.5)`
+tests Python. The shipped weights put a two-item run on an exact half in exactly two ways,
+and only one of them discriminates — `critical` passing beside `high` failing gives 62.5,
+which half-up rounds to 63 and this rounds to 62. `test_an_exact_half_rounds_to_the_even_integer`
+asserts the published value, its companion case, and that the weights still land on the
+half at all, so a change to the table turns it into a failure rather than a silent pass.
 
 #### Scenario: an exact half
 - **WHEN** a score-like fraction lands exactly on .5
@@ -603,8 +643,13 @@ unmeasured. The tests stay green because they use synthetic rows carrying no
 
 #### A.3 — scope narrowing removes or reclassifies rows today
 
-The `--only` category selection filters the item list before planning, so excluded rows
-never become `N/A`. On a real artifact the full run scored 57 over 217 rows while a
+**The `--only` half is fixed at 0.95.2**; the measurement is kept because the number is
+what makes the defect legible. Every registry row is reported now, the ones outside the
+selection as `N/A` naming the category and the flag, and the buckets sum to the registry
+again.
+
+The `--only` category selection filtered the item list before planning, so excluded rows
+never became `N/A`. On a real artifact the full run scored 57 over 217 rows while a
 single-category slice scored 100 over 10.
 
 The profile route also changes the arithmetic. Reclassifying one real run under the
@@ -613,10 +658,19 @@ shipped `local` exclusions moved its score from 57 to 58. In a two-row probe, ch
 
 #### A.4 — reachable runs can render an absent score as a number
 
-`score()` correctly returns an absent score when nothing was decided. Both report
-renderers and the console branch on reachability instead of score presence, so a
-reachable run with only a `NO_DATA` row prints `None/100`. The cited tests cover only the
-unreachable subtype.
+**Fixed at 0.95.2.** Every surface asks `why_no_score`, which asks the score.
+
+`score()` correctly returned an absent score when nothing was decided. Both report
+renderers and the console branched on reachability instead of score presence, so a
+reachable run with only a `NO_DATA` row printed `None/100`. The cited tests covered only
+the unreachable subtype.
+
+Two things the repair added that the entry did not ask for. The sentence had to fork,
+because "the entry page could not be read" is false for a run that read the site and
+decided nothing, and that reader needs sending somewhere else. And the fork had to live in
+one place: the first cut returned the body from a helper and left each surface to choose
+its own heading from `entry_reachable`, which is the same branch in three places, and a
+mutation collapsing the two bodies passed every assertion by way of the headings.
 
 #### A.5 — the field that carries the worst unresolved severity is named for a status
 
@@ -641,7 +695,12 @@ produce the same membership or deterministic tie-break.
 
 #### A.7 — the code's own count of twins is wrong
 
-A comment immediately after `score()`'s docstring states “Eight duplicate groups in
+**Closed.** The comment reads "Seven duplicate groups in this registry carry nine
+`scores_with` twins" and `tests/test_protocol_counts.py` reads the number out of it, so
+the claim and the tree move together. Left as measured, because the class it names is the
+point.
+
+A comment immediately after `score()`'s docstring stated “Eight duplicate groups in
 this registry carry ten `scores_with` twins.” Measured: **9 twins across 7 primaries** —
 MD-190, SP-108 (×2), SE-114 (×2), CI-016, MB-096, GO-144, GO-145. Both numbers in the
 comment are wrong, in opposite directions.
@@ -671,14 +730,24 @@ lose the record of how narrow the readers had been.
 
 | | requirements |
 |---|---|
-| **enforced** | SCR-1, SCR-2, SCR-4, SCR-9 |
-| **partial** | SCR-3, SCR-5, SCR-6, SCR-7, SCR-8, SCR-10, SCR-11, SCR-12, SCR-13, SCR-14 |
+| **enforced** | SCR-1, SCR-2, SCR-3, SCR-4, SCR-6, SCR-7, SCR-9, SCR-12 |
+| **partial** | SCR-5, SCR-8, SCR-10, SCR-11, SCR-13, SCR-14 |
 | **none** | — none |
 
 Invariants: all four partial — INV-S4 is read for the single-twin case by a reversed-row
 test and unread for the rest.
 
-**Four enforced, ten partial, none unread, of fourteen.**
+**Eight enforced, six partial, none unread, of fourteen.**
+
+SCR-3, SCR-6, SCR-7 and SCR-12 moved at 0.95.2, and three of the four were violated in the
+shipped tree rather than merely unread — A.3 and A.4 record two of them, and the third is
+in SCR-12's own line. They went in one release because they are one subject: what a number
+is allowed to claim when there is nothing behind it. A slice reported as a site, an absent
+score rendered as `None`, and an empty denominator rendered as zero are the same mistake
+about three different quantities.
+
+SCR-7's reader could not have been written first. It asks for the buckets to sum to the
+registry on a narrowed run, and until SCR-6 was repaired no such run existed to assert on.
 
 SCR-2 moved on 6 September 2026, and it is worth saying which part of it had been missing,
 because the appendix had twice been wrong in the same direction before. SCR-14's gate was
@@ -711,8 +780,10 @@ learns where the number is. Nothing about that method is specific to this requir
 it is the obvious tool for the display half of the nine `partial` rows whose computation is
 read and whose rendering is not.
 
-The largest gap is not that a table value is unread. It is that the release,
-comparability and warning obligations for changing the scoring instrument have no reader
-at all, and that the gate which would detect an undeclared change does not exist —
-`SCR-2` and `SCR-14`, which cannot be implemented until this suite decides what a scoring
-identity is and where an archived run records it.
+That last paragraph used to end here saying the largest gap was that the release,
+comparability and warning obligations had no reader and the gate did not exist. Both were
+closed on 6 September 2026, in the two steps A.8 records, and the sentence stayed — which
+is the failure this appendix keeps finding in other people's documents. What is actually
+left is smaller and less structural: five of the six `partial` rows are display halves
+whose computation is read and whose rendering is not, and SCR-4's method is the tool for
+all of them — render twice with the value changed and require the output to move.

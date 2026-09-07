@@ -36,7 +36,7 @@ from checklist_runner import (  # noqa: E402
     NEEDS_THE_OUTSIDE_WORLD, NO_DATA, PASS, WARN, aggregate_pages, artifact_subject,
     audit_target,
     build_plan, choose_profile, diff_runs, evaluate, grade, is_page_level,
-    private_host_skips, reads_artifact, same_page,
+    SEVERITY_WEIGHT, private_host_skips, reads_artifact, same_page,
     looks_like_a_page, page_guard, profile_excludes, redact, registrable_domain,
     THIN_ENTRY_WORDS, history_path, load_public_suffixes, previous_run,
     psl_snapshot_date, psl_staleness, resolve, run_script,
@@ -1310,6 +1310,58 @@ class Scoring(unittest.TestCase):
         murky = score(self.rows(PASS, PASS, NO_DATA))
         self.assertEqual(clean["seo_score"], murky["seo_score"])
         self.assertLess(murky["weight_pct"], clean["weight_pct"])
+
+    def test_a_score_like_fraction_with_no_denominator_is_absent_not_zero(self):
+        """`openspec/specs/scoring/` SCR-12's second clause, which the weight share
+        was the one of three to break.
+
+        The headline already returned an absent value for an empty decided set and
+        each category bar already returned one for an empty weighed set; `weight_pct`
+        returned **0**. Zero is a claim about how much of the registry a score speaks
+        for, and "0% of the weight in scope" reads as a very bad audit rather than an
+        empty one. The denominator here is the applicable weight, so it is empty when
+        every item is `N/A` — the case a mode or a profile can produce on its own."""
+        s = score(self.rows(NA, NA))
+        self.assertEqual(s["weight_applicable"], 0)
+        self.assertIsNone(s["weight_pct"])
+        self.assertIsNone(s["seo_score"])
+
+    def test_a_share_over_a_real_denominator_is_still_a_number(self):
+        """The floor: an absent share must mean an empty denominator, not an empty
+        numerator. A run that decided nothing over items that do apply speaks for 0%
+        of the weight, and that zero is true."""
+        s = score(self.rows(NO_DATA, NO_DATA))
+        self.assertGreater(s["weight_applicable"], 0)
+        self.assertEqual(s["weight_pct"], 0)
+        self.assertIsNone(s["seo_score"])
+
+    def test_an_exact_half_rounds_to_the_even_integer(self):
+        """SCR-12's first clause, read through `score()` rather than through
+        `round()`. Asserting `round(2.5) == 2` tests Python; what the requirement
+        binds is the number this tree publishes, so the rows are built to land the
+        fraction exactly on .5 and the published value is the assertion.
+
+        The shipped weights are 10/6/3/1, and exactly two pairs of them land a
+        two-item run on an exact half: `critical` passing beside `high` failing gives
+        62.5, and the reverse gives 37.5. Only the first discriminates — half-up
+        rounds it to 63 and half-to-even to 62, while both rules answer 38 for the
+        second. So the first is the assertion and the second is the companion that
+        would catch a rule applied to only one side of the .5."""
+        def two(passing, failing):
+            return score([
+                {"id": "A", "status": PASS, "severity": passing, "category": "c",
+                 "category_label": "C", "effort": "low"},
+                {"id": "B", "status": FAIL, "severity": failing, "category": "c",
+                 "category_label": "C", "effort": "low"}])["seo_score"]
+
+        self.assertEqual(two("critical", "high"), 62)
+        self.assertEqual(two("high", "critical"), 38)
+        # Named, so a change to the weights that stops these landing on a half turns
+        # this into a test of nothing rather than a silent pass.
+        self.assertEqual(
+            100 * SEVERITY_WEIGHT["critical"]
+            / (SEVERITY_WEIGHT["critical"] + SEVERITY_WEIGHT["high"]), 62.5,
+            "the weights no longer put this run on an exact half")
 
     def test_every_item_lands_in_exactly_one_bucket(self):
         """The property that replaced the coverage percentage.

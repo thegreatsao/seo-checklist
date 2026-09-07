@@ -10,6 +10,56 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.95.2 — the score of a slice was printed where the score of the site goes
+
+Registry version: unchanged at `e9154e92f4dd`. A narrowed run reports every item in the
+registry instead of only the selected ones, and two numbers that were printed become
+absent, so this is a minor.
+
+**`--only` removed rows instead of reporting them.** It filtered the item list before
+planning, so the categories it dropped never became `N/A`: the five-bucket partition
+summed to the selection rather than to the registry, and `openspec/specs/scoring/` A.3
+measured what that costs — a full run scoring 57 over 217 rows beside a single-category
+slice scoring 100 over 10, the second printed in the place the first goes. The documented
+route to a better-looking audit is a narrower one, and the only defence available is that
+narrowing is visible and scores nothing.
+
+Every registry row is reported now, the ones outside the selection as `N/A` naming the
+category and the flag, through the same channel a profile's exclusions use. A profile's
+reason wins where both apply: "does not apply to your kind of site" is a statement about
+the site and outlives this run, while "you asked for another category" describes an
+invocation the operator typed. Nothing runs that did not run before — a pre-skipped item
+never reaches the plan.
+
+**A reachable run that decided nothing printed `None/100`.** `score()` returned the absent
+headline correctly throughout; four surfaces asked `entry_reachable is False` instead,
+which is a different question and differs in exactly one direction — a run that read the
+site and answered nothing. The absence was computed and never delivered.
+
+The sentence had to fork, because "the entry page could not be read" is false for that
+reader. And the fork had to live in one place: the first cut of the repair returned the
+body from a helper and left each surface to pick its own heading from `entry_reachable`,
+which is the same branch in three places again — a probe that collapsed the two bodies
+passed every assertion by way of the headings. All three strings come from one function
+now, and a test holds each surface to it.
+
+**The weight share returned zero when there was nothing to divide by.** The headline
+already returned an absent value for an empty decided set and each category bar already
+did for an empty weighed set; the share was the one of three that did not. Zero is a claim
+about how much of the registry a score speaks for, so "0% of the weight in scope" reads as
+a very bad audit rather than an empty one.
+
+**And half-to-even got a reader without needing a repair.** Python's `round` is already
+banker's, so what was missing was an assertion that goes through `score()` rather than
+through `round()` — asserting `round(2.5)` tests Python. The shipped weights put a
+two-item run on an exact half in exactly two ways and only one discriminates: `critical`
+passing beside `high` failing gives 62.5, which half-up rounds to 63 and this rounds to
+62. The test names that fact too, so a change to the weights fails rather than passing
+silently over a fraction that is no longer a half.
+
+`openspec/specs/scoring/` goes from four enforced of fourteen to eight. Tree debt: 93
+enforced, 50 partial, 6 unread, 2 opposed, of 149.
+
 ## 0.95.1 — three ways to end a prompt without answering, and all of them narrowed the audit
 
 Registry version: unchanged at `e9154e92f4dd`. A run can report a different profile than it

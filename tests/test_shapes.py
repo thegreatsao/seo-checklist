@@ -34,7 +34,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from harness import served, spawn, tls_env  # noqa: E402
 
 RUNNER = os.path.join(SCRIPTS, "checklist_runner.py")
-PASS, FAIL, WARN, NO_DATA = "PASS", "FAIL", "WARN", "N/A"
+REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
+                        "checklist.json")
+
+# Imported rather than retyped. This line read
+# `PASS, FAIL, WARN, NO_DATA = "PASS", "FAIL", "WARN", "N/A"` until 0.95.2 — the
+# fourth name bound to the third status's string, harmless only because nothing had
+# used it yet, and a trap for whoever did.
+from checklist_runner import FAIL, NA, PASS, WARN  # noqa: E402
 
 
 def run_audit(url: str, *extra: str, env=None, only: str = "crawling_indexing") -> dict:
@@ -256,6 +263,63 @@ class ASiteLargeEnoughToSample(unittest.TestCase):
                       "the evidence does not say how many pages it saw")
         self.assertRegex(item.get("evidence") or "", r"6[1-9]|7\d|8\d|9\d|\d{3}",
                          "the measurement is not the worst page's")
+
+
+class NarrowingIsAPartitionOfTheRegistry(unittest.TestCase):
+    """`openspec/specs/scoring/` SCR-6 and SCR-7, on a narrowed live run.
+
+    The documented route to a better-looking audit is a narrower one, and the only
+    defence available is that narrowing is visible and scores nothing. `--only`
+    filtered the item list before planning until 0.95.2, so the rows it dropped never
+    became `N/A`: the five buckets summed to the selection rather than to the
+    registry, and the score of that slice was printed where the score of the site
+    goes. Measured on a real artifact, a full run scored 57 over 217 rows while a
+    single-category slice scored 100 over 10.
+
+    SCR-7's own gap was that nothing asserted the sum against the registry's real
+    item count on a narrowed run. This is that run, and the id check belongs to it:
+    the requirement says an id-set check is needed because a sum alone still passes
+    if one row is counted twice.
+    """
+
+    ONLY = "security"
+
+    @classmethod
+    def setUpClass(cls):
+        with served({"/": page("A small site",
+                               "Some words that make this a real page. " * 8)}) as site:
+            cls.payload = run_audit(site.url, only=cls.ONLY)
+        with open(REGISTRY, encoding="utf-8") as f:
+            cls.registry = json.load(f)["items"]
+
+    def test_a_narrowed_run_still_reports_every_item_once(self):
+        ids = [i["id"] for i in self.payload["items"]]
+        self.assertEqual(len(ids), len(self.registry))
+        self.assertEqual(sorted(set(ids)), sorted(i["id"] for i in self.registry))
+
+    def test_the_buckets_sum_to_the_registry(self):
+        p = self.payload["scores"]["partition"]
+        self.assertEqual(sum(p.values()), len(self.registry))
+        self.assertEqual(self.payload["scores"]["total_items"], len(self.registry))
+
+    def test_every_row_outside_the_selection_says_the_selection_dropped_it(self):
+        outside = [i for i in self.payload["items"] if i["category"] != self.ONLY]
+        self.assertTrue(outside, "the selection excluded nothing to read")
+        for row in outside:
+            with self.subTest(item=row["id"]):
+                self.assertEqual(row["status"], NA)
+                self.assertIn("--only", row["evidence"])
+                self.assertIn(row["category"], row["evidence"])
+
+    def test_the_selected_category_is_the_one_that_was_actually_run(self):
+        """The floor. Marking everything `N/A` would satisfy the three assertions
+        above and audit nothing, so the selected rows have to carry real verdicts."""
+        inside = [i for i in self.payload["items"] if i["category"] == self.ONLY]
+        self.assertTrue(inside)
+        self.assertEqual([i["id"] for i in inside if i["status"] == NA], [],
+                         "the selected category was excluded too")
+        self.assertTrue(any(i["status"] in (PASS, FAIL, WARN) for i in inside),
+                        "nothing in the selected category reached a verdict")
 
 
 class HttpsAndHsts(unittest.TestCase):

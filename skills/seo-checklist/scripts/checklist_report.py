@@ -393,6 +393,48 @@ def phrase_measure(item: dict, L: "Lang | None" = None) -> str:
     return text
 
 
+def why_no_score(data: dict, L: "Lang | None" = None) -> tuple[str, str, str]:
+    """`(headline, title, body)` for a run with no score, or three empty strings.
+
+    Four surfaces used to ask `entry_reachable is False` instead, which is a
+    different question and answers it wrongly in one direction: a run that read the
+    site and decided nothing has a reachable entry and an absent score, and every one
+    of them rendered `None/100`. `score()` was right throughout — the absence was
+    computed and never delivered.
+
+    All three strings come from here rather than the body alone, because the first
+    version of this returned the body and left each surface to pick its own heading
+    from `entry_reachable` — which is the same branch in three places again, and a
+    mutation that collapsed the two bodies passed every assertion by way of the
+    headings.
+
+    Two cases, because they send a reader somewhere different. An unreadable entry is
+    a fact about the site or the network. A reachable site with nothing decided is a
+    fact about the audit, and telling that reader the page could not be read is false.
+    """
+    L = L or Lang()
+    if data["scores"].get("seo_score") is not None:
+        return "", "", ""
+    if data.get("entry_reachable") is False:
+        return (L.t("p_unreadable",
+                    "The page could not be read, so nothing here was measured. "
+                    "There is no score for the same reason."),
+                L.t("unreachable_title", "The site could not be read"),
+                L.t("no_score_unreadable",
+                    "the entry page returned no usable page ({err}). Every check that "
+                    "reads the live site is NO_DATA. No score is reported, because "
+                    "nothing was measured.").format(
+                        err=data.get("entry_error") or "unknown error"))
+    return (L.t("p_nothing_decided",
+                "The site answered, and no check reached a verdict, so there is no "
+                "score. What stopped each of them is beside it below."),
+            L.t("no_verdict_title", "No score for this run"),
+            L.t("no_score_undecided",
+                "the site answered, and no check reached a quality verdict. No score "
+                "is reported: zero would be a verdict about the site, and this is a "
+                "statement about the audit."))
+
+
 def plain_summary(data: dict, L: "Lang | None" = None) -> list[str]:
     """The three or four sentences that answer "so what?" before any number does."""
     L = L or Lang()
@@ -400,10 +442,9 @@ def plain_summary(data: dict, L: "Lang | None" = None) -> list[str]:
     c = s["status_counts"]
     broken = c.get(FAIL, 0) + c.get(WARN, 0)
     out = []
-    if data.get("entry_reachable") is False:
-        return [L.t("p_unreadable",
-                    "The page could not be read, so nothing here was measured. "
-                    "There is no score for the same reason.")]
+    headline, _, _ = why_no_score(data, L)
+    if headline:
+        return [headline]
     out.append(L.t("p_checked",
                    "We checked {decided} things on this site and {broken} of them "
                    "need work.").format(decided=s["decided"], broken=broken))
@@ -619,7 +660,7 @@ def trend_section(data: dict, L: "Lang | None" = None) -> list[str]:
                 f"{' *(' + L.t('this_run', 'this run') + ')*' if row.get('current') else ''} "
                 f"| {row.get('mode') or '?'} "
                 f"| {'—' if score is None else score} "
-                f"| {row.get('weight_pct', '—')}% "
+                f"| {'—' if row.get('weight_pct') is None else str(row['weight_pct']) + '%'} "
                 f"| {row.get('decided', '—')} |")
         out.append("")
     if streaks:
@@ -1027,16 +1068,9 @@ def render_markdown(data: dict, L: Lang | None = None) -> str:
     # print. Showing one anyway — even a low one — would present the absence of
     # evidence as a measurement, which is the failure this whole report exists
     # to avoid.
-    if data.get("entry_reachable") is False:
-        out += [
-            f"> **{L.t('unreachable_title', 'The site could not be read')}** — "
-            + L.t("unreachable_body",
-                  "the entry page returned no usable page ({err}). Every check "
-                  "that reads the live site is NO_DATA. No score is reported, "
-                  "because nothing was measured.").format(
-                      err=data.get("entry_error") or "unknown error"),
-            "",
-        ]
+    _, title, body = why_no_score(data, L)
+    if title:
+        out += [f"> **{title}** — {body}", ""]
     else:
         p, w = s["partition"], s["waiting_on_you"]
         out += [
@@ -1492,8 +1526,6 @@ def render_html(data: dict, L: Lang | None = None) -> str:
     s = data["scores"]
     mode = data.get("mode", "live")
     counts = s["status_counts"]
-    unreadable = data.get("entry_reachable") is False
-
     seg = [(FAIL, "var(--fail)"), (WARN, "var(--warn)"), (PASS, "var(--pass)"),
            (NO_DATA, "var(--none)"), (NEEDS_INPUT, "var(--none)"),
            (LLM_PENDING, "var(--none)"),
@@ -1517,9 +1549,10 @@ def render_html(data: dict, L: Lang | None = None) -> str:
     parts.append('<div class="plain">'
                  + "".join(f"<p>{html.escape(line)}</p>" for line in plain_summary(data, L))
                  + "</div>")
-    if unreadable:
+    _, _, no_score = why_no_score(data, L)
+    if no_score:
         parts.append(f'<div class="metrics"><div class="metric"><b>&mdash;</b><span>'
-                     f'{html.escape(L.t("no_score", "No score: the entry page could not be read"))}'
+                     f'{html.escape(no_score)}'
                      f'</span></div></div>')
     else:
         parts += [
@@ -1667,7 +1700,7 @@ def render_html(data: dict, L: Lang | None = None) -> str:
                 f'{" <b>(" + html.escape(L.t("this_run", "this run")) + ")</b>" if r.get("current") else ""}</td>'
                 f'<td>{html.escape(str(r.get("mode") or "?"))}</td>'
                 f'<td>{"&mdash;" if r.get("seo_score") is None else r["seo_score"]}</td>'
-                f'<td>{r.get("weight_pct", "&mdash;")}%</td>'
+                f'<td>{"&mdash;" if r.get("weight_pct") is None else str(r["weight_pct"]) + "%"}</td>'
                 f'<td>{r.get("decided", "&mdash;")}</td></tr>' for r in history)
             block.append(
                 f'<p class="note">{html.escape(L.t("trend_note", "Every audit of this domain that is still on disk, oldest first. The reach column matters as much as the score: a run that could decide less of the checklist is not a run that found less wrong."))}</p>'

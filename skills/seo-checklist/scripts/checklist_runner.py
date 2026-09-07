@@ -1634,7 +1634,12 @@ def score(graded: list[dict]) -> dict:
         "decided_by": provenance,
         # How much of the registry the score speaks for. Always printed beside it;
         # a score without it is a fraction with the denominator torn off.
-        "weight_pct": round(100 * total / weight_registry) if weight_registry else 0,
+        # Absent, never zero - the same sentence SCR-3 makes about the headline and
+        # the category bars already make about themselves. Zero is a claim about how
+        # much of the registry a score speaks for; there being nothing to divide by is
+        # a statement about the audit, and a reader who cannot tell them apart reads
+        # "0% of the weight in scope" as a very bad audit rather than an empty one.
+        "weight_pct": round(100 * total / weight_registry) if weight_registry else None,
         "weight_decided": total,
         "weight_applicable": weight_registry,
         "partition": partition,
@@ -2886,10 +2891,17 @@ def print_report(payload, a, hist, crawl_path, diff_note) -> None:
     entry_guard = payload.get("entry_guard") or ""
     s = payload["scores"]
     print(f"\nMode: {mode}   GSC: {'yes' if payload['gsc_credentials_found'] else 'no'}")
-    if entry_error:
-        print(f"UNREACHABLE: {audit_url} could not be read — {entry_error}.")
-        print(f"No score: nothing about this site was measured. "
-              f"{s['decided']}/{s['total_items']} items decided.")
+    if s.get("seo_score") is None:
+        if entry_error:
+            print(f"UNREACHABLE: {audit_url} could not be read — {entry_error}.")
+            print(f"No score: nothing about this site was measured. "
+                  f"{s['decided']}/{s['total_items']} items decided.")
+        else:
+            # The site answered and decided nothing. Reported apart from the line
+            # above because it sends a reader to a different place, and because
+            # branching on reachability here is what printed `None/100` for years.
+            print(f"No score: the site answered and no check reached a verdict. "
+                  f"{s['decided']}/{s['total_items']} items decided.")
     else:
         print(f"SEO Score: {s['seo_score']}/100 — over {s['decided']} items, "
               f"{s['weight_pct']}% of the weight in scope")
@@ -3002,10 +3014,10 @@ def main() -> int:
         registry = json.load(f)
     items = registry["items"]
     registry_version = registry.get("registry_version", "unknown")
+    keep: set[str] = set()
     if a.only:
         keep = {c.strip() for c in a.only.split(",") if c.strip()}
-        items = [i for i in items if i["category"] in keep]
-        if not items:
+        if not any(i["category"] in keep for i in items):
             print(f"No items match --only {a.only}", file=sys.stderr)
             return 2
 
@@ -3146,6 +3158,23 @@ def main() -> int:
         return 2
     excluded = profile_excludes(items, profile)
     preskip = {i: (NA, f"{why} ({a.profile})") for i, why in excluded.items()}
+    # `--only` narrows attention, not the registry. It used to filter `items` before
+    # anything else, so the rows it dropped never became `N/A` and the five-bucket
+    # partition summed to the selection: measured on a real artifact, a full run
+    # scored 57 over 217 rows while a single-category slice scored 100 over 10, and
+    # the second number went where the first one goes. `openspec/specs/scoring/` SCR-6
+    # says the documented route to a better-looking audit is a narrower one, and the
+    # defence is that narrowing is visible and scores nothing.
+    #
+    # `setdefault`, so a profile's reason survives where both apply: "does not apply
+    # to your kind of site" is a statement about the site and outlives this run, while
+    # "you asked for another category" describes an invocation the operator typed.
+    # Nothing runs that did not run before - a pre-skipped item never reaches the plan.
+    if a.only:
+        for it in items:
+            if it["category"] not in keep:
+                preskip.setdefault(it["id"], (
+                    NA, f"category {it['category']} is outside --only {a.only}"))
     # A profile exclusion is a scoping decision and outranks reachability: an
     # item that does not apply to this site type is N/A whether or not the page
     # loaded. Everything else the live site would have answered is undecided.

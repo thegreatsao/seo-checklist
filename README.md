@@ -4,7 +4,12 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.95.1 — see [CHANGELOG.md](CHANGELOG.md). Three ways to end the profile question
+Version 0.95.2 — see [CHANGELOG.md](CHANGELOG.md). Auditing one category used to drop the
+other 210 items out of the report entirely, so the partition summed to the slice and the
+slice's score was printed where the site's goes — 100 over 10 rows next to a full run's 57
+over 217. Every item is reported now, the ones outside the selection as N/A naming it. Two
+numbers that had no denominator also stopped being printed as numbers. Before that,
+`0.95.1` fixed three ways to end the profile question
 without answering it — end of input, an interrupt, three replies naming no profile — all
 returned the *detected* profile, so an operator who pressed Ctrl-C got an audit narrowed to
 a site type nobody chose. All three run the full registry now. Writing the test the same
