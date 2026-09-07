@@ -10,6 +10,67 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.96.1 — two of the forty-seven were free passes, inside the repair that closed them
+
+Registry version: **`f989d31af77a` → `7c7b9d827179`**. Two items answer differently on a
+site without their subject, both moving off a `PASS` a client may have read. That is a
+breaking change for whoever quoted the old number, and saying so is the point.
+
+**0.96.0 derived who owed an applicability declaration. It could not say whether the
+answers were true.** Sixty-three items pass by finding nothing; sixteen declared a
+condition and forty-seven recorded, in a sentence, why their subject cannot legitimately
+be absent from a site. That sentence is a judgement, no derivation can make it, and until
+this release nobody but its author had read one.
+
+Handed to a second reader — one task, one model, the table and all twenty-nine checkers,
+a calibration block answered first — and every claim it made measured against the tree
+afterwards:
+
+| item | title | the recorded reason | what a run actually does |
+|---|---|---|---|
+| BL-083 | Fix Broken Backlinks | *the backlink export was supplied and read* | there is no export. The item runs `external_link_quality.py {url}` over **outbound** links, and `summary.broken_links` is 0 on a page whose links are all internal — `PASS` |
+| GO-137 | Reconcile Indexed Pages vs. Sitemaps | *the crawl and the sitemap both exist whenever this runs* | with no sitemap, `orphan_pages` is `∅ - reachable` = 0 on a site that answered every request — `PASS` |
+
+Both now declare: `summary.unique_external_links > 0` and `summary.sitemap_urls > 0`.
+`sitemaps_checked` counts locations *tried*, so it is not the condition — reconciliation
+needs URLs to reconcile. BL-083 is also an aboutness defect, its title saying backlinks
+where its rule reads outbound links; that half is REG-6 and is not repaired here.
+
+**A third entry awarded nothing and was the more instructive one.** TE-178 recorded *"the
+neighbour lookup answered; an empty list is that answer"*. `check_neighbors()` resolves
+the hosting IP and stops — `suspicious` is written nowhere in `domain_safety_check.py`,
+the rule reads `neighbors.suspicious missing`, and the item is `NO_DATA` on every site.
+`CANNOT_FAIL` recorded the true mechanism two tables away and nothing held the two
+together. The conclusion was right and the reason was false, which is a free pass waiting
+for the day somebody wires in the reverse-IP service.
+
+**So the reason has to earn its sentence.** A new gate proves, from each checker's own
+source through the AST reading `tools/audit_reachability.py` already makes, how the
+asserted key reaches the runner: written on every run, withheld when there was nothing to
+measure, or written nowhere. The recorded reason must open with what was proved —
+`withheld_key:` or `path_never_emitted:`, or neither where neither was proved — and the
+rule runs in both directions, so claiming protection the code does not give is as much an
+error as staying silent about protection it does.
+
+Six entries were leaning on a withholding none of them mentioned: CI-013, CI-019, GO-134,
+GO-138, MB-105 and MD-187. Each says so now. The forty-five that remain are the ones where
+the sentence really is the only thing between the item and a free pass, and they are
+visible as such instead of looking like the other six. It costs 0.25 s of AST over the
+whole table, measured rather than guessed, so it runs in the suite rather than as a
+re-recorded ledger with a stamp a hand can set.
+
+**Four of the second reader's seven findings were the runner working.** It was given the
+checkers and not `checklist_runner.py`, so it reported SE-114, SE-116 and TE-171 as
+passing without a Safe Browsing key and CI-018 as passing without a server log, where
+`build_plan` skips all four to `NEEDS_INPUT` before the script ever runs. Material that
+omits the caller makes a judge report the caller's guarantees as defects. The cost was in
+the brief, not in the judge, and it is written down in `openspec/specs/registry/` A.7 so
+the next brief carries the caller.
+
+Neither free pass was found by a gate, and the release does not claim otherwise. They were
+found by a second reader over a table of judgements — the instrument this class needs, and
+the one 0.96.0 did without.
+
 ## 0.96.0 — eight items judged sites that had none of the thing they judge
 
 Registry version: **`e9154e92f4dd` → `f989d31af77a`**. Eight items answer differently on a

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "f989d31af77a",
+  "registry_version": "7c7b9d827179",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1710,6 +1710,10 @@
         "assert": {
           "path": "summary.broken_links",
           "eq": 0
+        },
+        "applies_when": {
+          "path": "summary.unique_external_links",
+          "gt": 0
         }
       },
       "effort": "high",
@@ -2876,6 +2880,10 @@
         "assert": {
           "path": "summary.orphan_pages",
           "eq": 0
+        },
+        "applies_when": {
+          "path": "summary.sitemap_urls",
+          "gt": 0
         },
         "warn": {
           "path": "summary.orphan_pages",

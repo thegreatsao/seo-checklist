@@ -388,13 +388,37 @@ identified an item that owed a declaration, so the seventeen were visible only t
 hand sweep and a hand sweep cannot say what it missed. The candidate set is derived now,
 through the runner's own `passes_by_absence`, and every candidate must be in exactly one
 of two tables — it declares `applies_when`, or it records why its subject cannot be
-absent. `build_checklist.py` fails the build otherwise, and four tests hold it: the gate
+absent. `build_checklist.py` fails the build otherwise, and six tests hold it: the gate
 over the shipped registry, the gate over an invented unclassified item, an independent
-count that the two tables partition the candidates exactly, and a rule that a recorded
-reason must name a subject rather than restate the conclusion.
+count that the two tables partition the candidates exactly, a rule that a recorded
+reason must name a subject rather than restate the conclusion, a rule that every
+recorded reason opens with the mechanism its checker proves, and a probe that the last
+of those refuses a claim in both directions.
 
-Sixty-three items pass by absence. Sixteen declare applicability and forty-seven record
-why they need none. What that moved on a served page is A.6.
+**Recording a reason is a judgement, and 0.96.1 measured what a wrong one costs.** Two
+of the forty-seven were free passes and read exactly like the forty-five that were not:
+`BL-083` claimed a backlink export the item does not take — it runs
+`external_link_quality.py {url}` over *outbound* links — and passed "Fix Broken
+Backlinks" on a site with none; `GO-137` claimed a sitemap that a site is free not to
+have, and passed "Reconcile Indexed Pages vs. Sitemaps" where `sitemap - reachable` is
+empty by construction. Both now declare. Neither was found by a gate: they were found by
+handing the table to a second reader, which is the instrument this class needs and the
+one the release before it did without.
+
+What a gate *can* do is say how much each sentence is carrying, and that is the reader
+added at 0.96.1. Where the checker writes the asserted key on every run the prose is the
+only thing between the item and a free pass; where the key is withheld the item is
+`NO_DATA` whatever the prose says; and one entry, `TE-178`, named a key its checker
+writes nowhere at all while claiming the lookup answered. The mechanism is proved from
+the checker's source through the same AST reading `audit_reachability.py` makes, and the
+sentence must open with what was proved — in both directions, so a claim of protection
+the code does not give is as much an error as a silence about protection it does. Six
+entries were leaning on a withholding none of them mentioned. The day a script stops
+withholding, its entry reddens instead of becoming the next `BL-083`.
+
+Sixty-three items pass by absence. Eighteen declare applicability and forty-five record
+why they need none. What that moved on a served page is A.6, and what a second reader
+found in the forty-seven a day later is A.7.
 
 #### Scenario: an item owing a declaration and carrying none
 - **WHEN** an item's rule passes by finding none of the thing it forbids, and the
@@ -651,8 +675,9 @@ distinguish "no violation" from "no text". That is a REG-6 defect, not a REG-9 o
 
 The sweep behind A.2 was a hand reading, and closing REG-9 required a derived one. The
 candidate set — every item whose assertion `passes_by_absence` — is **sixty-three**, of
-which two already declared applicability. Sixteen now do and forty-seven record why they
-need none.
+which two already declared applicability. Sixteen did after this sweep and forty-seven
+recorded why they need none; A.7 moved two of the forty-seven across a day later, so the
+shipped split is eighteen and forty-five.
 
 The hand list was wrong in both directions, which is the point of deriving it:
 
@@ -707,6 +732,36 @@ applicable everywhere. `faceted_count` is the subject, and it is 0 exactly when 
 nothing to control. Found by running the script rather than by reading the shapes file,
 which is the second time in this appendix that a count beside a thing was not a count
 of it.
+
+#### A.7 — two of the forty-seven recorded reasons were free passes, 7 September 2026
+
+A.6 closed REG-9 by deriving who owed a declaration. It could not say whether the
+forty-seven answers to *"my subject cannot be absent"* were **right**, and nobody had
+read them but their author. Handed to a second reader — one task, one model, the whole
+table and all twenty-nine checkers, a calibration block answered first — with every
+claim measured afterwards against the tree:
+
+| id | title | the recorded reason | what a run does |
+|---|---|---|---|
+| BL-083 | Fix Broken Backlinks | *the backlink export was supplied and read* | there is no export: `external_link_quality.py {url}` measures **outbound** links, and `summary.broken_links` is 0 on a page whose links are all internal — `PASS` |
+| GO-137 | Reconcile Indexed Pages vs. Sitemaps | *the crawl and the sitemap both exist whenever this runs* | with no sitemap, `orphan_pages` is `∅ - reachable` = 0 on a site that answered every request — `PASS` |
+| TE-178 | Audit Neighboring Sites on the Server | *the neighbour lookup answered; an empty list is that answer* | `suspicious` is written nowhere in `domain_safety_check.py`; the rule reads `neighbors.suspicious missing` and the item is `NO_DATA` everywhere |
+
+The first two are the defect A.6 set out to close, surviving inside its own repair.
+BL-083's is also an aboutness defect — the title says backlinks and the rule reads
+outbound links — which belongs to REG-6 and is not repaired here.
+
+TE-178 awarded nothing, and is the more instructive entry: the conclusion was right and
+the reason was false, so a change to `check_neighbors()` would have turned a sentence
+nobody re-reads into a live free pass. `CANNOT_FAIL` already recorded the true mechanism
+two tables away, and nothing held the two together.
+
+**Four of the second reader's seven findings were the runner working.** It was given the
+checkers and not `checklist_runner.py`, so it reported SE-114, SE-116 and TE-171 as
+passing without a Safe Browsing key, and CI-018 as passing without a server log, where
+`build_plan` skips all four to `NEEDS_INPUT` before the script runs. Material that omits
+the caller makes a judge report the caller's guarantees as defects — the cost is in the
+brief, not in the judge.
 
 #### A.3 — nine items measure something other than their title
 

@@ -392,7 +392,7 @@
     },
     "BL-083": {
       "answers": {
-        "failing-shapes": "PASS",
+        "failing-shapes": "N/A",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -400,6 +400,7 @@
       },
       "distinct": [
         "FAIL",
+        "N/A",
         "PASS"
       ],
       "script": "external_link_quality.py",
@@ -3585,7 +3586,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "f989d31af77a",
+  "registry_version": "7c7b9d827179",
   "sites": [
     "fixture:good",
     "fixture:broken",

@@ -31,6 +31,13 @@ SKILL_DIR = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(SKILL_DIR, "scripts"))
 from checklist_runner import passes_by_absence  # noqa: E402
 
+# The same AST reading `tools/audit_reachability.py` makes of a checker's source, for
+# a different question: not "can this rule ever fail" but "does this rule's key reach
+# the runner at all". One implementation, so the two cannot disagree about what a
+# script writes.
+sys.path.insert(0, HERE)
+import audit_reachability  # noqa: E402
+
 DEFAULT_OUT = os.path.join(SKILL_DIR, "resources", "config", "checklist.json")
 TITLE_OVERRIDES = os.path.join(
     SKILL_DIR, "resources", "config", "title-overrides.json")
@@ -271,6 +278,21 @@ APPLIES_WHEN = {
     # Stylesheets. A page linking none has no CSS to minify, and `unminified_count`
     # was 0 out of `checked` 0.
     "TE-174": {"path": "checked", "gt": 0},
+    # Outbound links. Found at 0.96.1 by a second reader over the table below, and
+    # measured: a page whose only links are internal gives `summary.broken_links` 0
+    # out of `unique_external_links` 0, and BL-083 passed "Fix Broken Backlinks" on a
+    # site with nothing to break. The entry that stood here claimed a backlink export
+    # had been supplied and read — this item runs `external_link_quality.py {url}`,
+    # takes no export, and measures *outbound* links. The aboutness half is REG-6.
+    "BL-083": {"path": "summary.unique_external_links", "gt": 0},
+    # A sitemap with URLs in it. `orphan_pages` is `sitemap - reachable`, so a live
+    # site with no sitemap gave `∅ - reachable` = no orphans = a pass for "Reconcile
+    # Indexed Pages vs. Sitemaps". The script's own comment names this arithmetic and
+    # closes only the dead-host case, through `fetch_error`; a site that answered
+    # every request and simply has no sitemap walked through it. `sitemaps_checked`
+    # counts locations *tried*, so it is not the condition — reconciliation needs
+    # URLs to reconcile.
+    "GO-137": {"path": "summary.sitemap_urls", "gt": 0},
 }
 
 # Why an absence-passing item needs no applicability declaration: the entity whose
@@ -280,6 +302,22 @@ APPLIES_WHEN = {
 # Prose rather than a flag, because the claim is arguable and the next person has to be
 # able to argue with it. A wrong entry here is a free pass nobody can see, so each names
 # the subject rather than asserting the conclusion.
+#
+# **Not every entry here carries the same weight, and until 0.96.1 they all looked
+# alike.** For most, the sentence is the only thing between the item and a free pass:
+# the checker writes the asserted key on every run, so if the subject can be absent
+# after all, the item passes and nothing says otherwise. That is how `BL-083` and
+# `GO-137` sat here for the life of the registry. For others the key is *withheld* when
+# there was nothing to measure, and the item is NO_DATA rather than a pass whatever the
+# sentence says — there the prose is a description, not a guard. One entry, `TE-178`,
+# names a key the checker writes nowhere at all.
+#
+# `reason_matches_what_the_checker_emits` derives which of the three each entry is,
+# from the checker's own source through `audit_reachability`, and requires the sentence
+# to open with the mechanism it proved — `path_never_emitted:` or `withheld_key:` — or
+# with neither where it proved neither. So an entry cannot claim protection the code
+# does not give, and the day a script stops withholding a key the entry that leaned on
+# it reddens instead of quietly becoming a free pass.
 SUBJECT_ALWAYS_PRESENT = {
     # The page's own directives and markup. Every page has a `meta robots`, a set of
     # headings and a DOM, present or absent by the author's choice — which is the
@@ -296,11 +334,14 @@ SUBJECT_ALWAYS_PRESENT = {
     "AR-162": "the same link graph, judged for strength rather than for orphans",
     "AR-149": "every crawled site has internal links, redirecting or not",
     "TE-168": "every crawled site has links to check",
-    "CI-013": "every site has a robots policy, permissive or not",
-    "CI-019": "the same policy, read for what it leaves indexable",
+    "CI-013": "withheld_key: `blocked_urls` is written only where assets were "
+              "discovered, so a page linking none gets no key rather than an empty one",
+    "CI-019": "withheld_key: `indexable_urls` is written only where the paths were "
+              "probed and robots.txt was readable; the same policy, read for what it "
+              "leaves indexable",
     "GO-136": "every site is asked for a sitemap; its absence is the finding",
-    "GO-138": "the same sitemap, read for invalid URLs",
-    "GO-137": "the crawl and the sitemap both exist whenever this runs",
+    "GO-138": "withheld_key: `invalid_url_count` is written only where sitemap URLs "
+              "were probed and all of them answered, so no sitemap means no key",
     "MS-022": "every crawled site has titles to compare",
     "MS-029": "every crawled site has descriptions to compare, present or empty",
     "CN-039": "every crawled site has pages, and their thinness is the finding",
@@ -325,20 +366,31 @@ SUBJECT_ALWAYS_PRESENT = {
     "MB-103": "a rendered mobile page has tap targets; a desktop trace omits the key",
     "MB-108": "a rendered mobile page has text; a desktop trace omits the key",
     "MB-100": "every page renders on a phone, well or badly",
-    "MB-105": "every page has a rendered and an unrendered form to compare",
-    "MD-187": "the key is withheld unless statuses were collected, so zero means "
-              "checked and sound rather than nothing looked at",
+    "MB-105": "withheld_key: `diffs` is written only where a render was obtained, so "
+              "a page with no rendered form to compare gets no key",
+    "MD-187": "withheld_key: `broken_image_count` is written only where statuses were "
+              "collected, so zero means checked and sound rather than nothing looked at",
     # Answers from a service. The service was asked; an empty answer is its answer.
     "SE-114": "Safe Browsing answered; an empty threat list is that answer",
     "SE-116": "the same answer, read for hacked content",
     "TE-171": "the same answer, read as a blocklist check",
-    "TE-178": "the neighbour lookup answered; an empty list is that answer",
+    # Not a subject that is always present: a subject the checker never reports at
+    # all. `check_neighbors()` resolves the hosting IP and stops, so `suspicious`
+    # appears nowhere in `domain_safety_check.py` and the rule reads
+    # `neighbors.suspicious missing` — NO_DATA on every site, which is what
+    # `CANNOT_FAIL` records as `path_never_emitted`. The entry that stood here said
+    # the lookup answered with an empty list. It never answers, and the day the
+    # reverse-IP service is wired in that sentence becomes a free pass nobody
+    # re-read. `reason_matches_what_the_checker_emits` holds the two tables together
+    # now.
+    "TE-178": "path_never_emitted: `suspicious` is written nowhere in the checker, so "
+              "this item is NO_DATA everywhere and never passes by absence",
     "GO-132": "the page either carries duplicate GA4 tags or does not",
-    "GO-134": "Search Console answered; no issues is that answer",
+    "GO-134": "withheld_key: `issues` is written only where the sitemap report could "
+              "be read, so no key rather than an empty list when it could not",
     "GO-135": "URL Inspection answered for this URL",
     "MS-023": "Search Console answered with the queries this site ranks for",
     "KW-071": "the same queries, read for contested ones",
-    "BL-083": "the backlink export was supplied and read; none broken is a finding",
     "CI-018": "a server log was supplied and parsed; no issues is a finding about it",
     "GEO-006": "every entity check asks about this site's own identity",
 }
@@ -1759,6 +1811,90 @@ def subject_is_declared_for_every_absence_passing_item(items: list[dict]) -> lis
     return complaints
 
 
+# The two mechanisms a recorded reason may claim, and the token that claims each.
+# Anchored to a word the source has to keep earning, the way `CANNOT_FAIL` anchors its
+# own reasons — prose nobody re-reads is what this whole table was before 0.96.1.
+NEVER_EMITTED = "path_never_emitted"
+WITHHELD_KEY = "withheld_key"
+GUARD_TOKENS = (NEVER_EMITTED, WITHHELD_KEY)
+
+
+def emission_of(script: str, key: str) -> str:
+    """How the checker writes `key`: never, only under a test, or on every run.
+
+    `unscanned` is the honest fourth answer. `producing_sites` finds a dict literal, a
+    subscript assignment and a `setdefault`, and `rendered_audit.py` writes its metrics
+    through a table none of those spellings reach — so an empty result means *either*
+    the key is never written *or* the scan cannot follow it, and `mentions_key` is what
+    separates the two. Claiming a field is never emitted when it is would be the worst
+    mistake available here, so the scan stands down rather than guessing.
+    """
+    try:
+        sites = audit_reachability.producing_sites(script, key)
+    except (OSError, SyntaxError):
+        return "unscanned"
+    if not sites:
+        return ("never" if not audit_reachability.mentions_key(script, key)
+                else "unscanned")
+    if all(guards for _value, guards, _line in sites):
+        return "withheld"
+    return "always"
+
+
+def reason_matches_what_the_checker_emits(items: list[dict]) -> list[str]:
+    """Every recorded reason opens with the mechanism its checker actually provides.
+
+    `SUBJECT_ALWAYS_PRESENT` is a table of judgements, and a judgement cannot be
+    derived. What can be derived is *how much the judgement is carrying*: where the
+    checker writes the asserted key on every run, the sentence is the only thing
+    between the item and a free pass, and where the key is withheld the item is
+    NO_DATA whatever the sentence says.
+
+    Both of the free passes 0.96.1 repaired were in the first group and read like the
+    second. `TE-178` was a third thing again — a reason claiming the neighbour lookup
+    answered with an empty list, for a key `domain_safety_check.py` writes nowhere.
+
+    So the mechanism is proved from the source and the reason must open with it, in
+    both directions: a proved mechanism that the reason does not claim, and a claimed
+    mechanism the source does not prove, are both errors. The point is not the token.
+    The point is that an entry can no longer describe protection the code stopped
+    giving, and 0.25 s of AST over the whole table is what that costs.
+    """
+    complaints = []
+    by_id = {item["id"]: item for item in items}
+    for item_id, why in sorted(SUBJECT_ALWAYS_PRESENT.items()):
+        item = by_id.get(item_id)
+        if not item:
+            continue  # `subject_is_declared_...` owns the absent-item complaint
+        check = item.get("check") or {}
+        script, rule = check.get("script"), check.get("assert") or {}
+        if not script or not rule.get("path"):
+            continue
+        claimed = next((t for t in GUARD_TOKENS if why.startswith(t + ":")), "")
+        proved = emission_of(script, rule["path"].split(".")[-1])
+        wanted = {"never": NEVER_EMITTED, "withheld": WITHHELD_KEY}.get(proved, "")
+        if claimed == wanted:
+            continue
+        if not wanted:
+            complaints.append(
+                f"{item_id} opens its reason with `{claimed}:` and {script} writes "
+                f"{rule['path']!r} " + ("on every run" if proved == "always" else
+                                        "in a way the scan cannot follow, so nothing "
+                                        "is proved"))
+        elif not claimed:
+            complaints.append(
+                f"{item_id} rests on prose while {script} "
+                + (f"writes {rule['path']!r} nowhere at all — this item is NO_DATA "
+                   f"everywhere and never passes by absence"
+                   if wanted == NEVER_EMITTED else
+                   f"withholds {rule['path']!r} when there was nothing to measure")
+                + f": open the reason with `{wanted}:` and say so")
+        else:
+            complaints.append(f"{item_id} claims `{claimed}:` and {script} proves "
+                              f"`{wanted}:` for {rule['path']!r}")
+    return complaints
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Generate the SEO checklist registry")
     ap.add_argument("--out", default=DEFAULT_OUT)
@@ -1783,6 +1919,11 @@ def main() -> int:
     undeclared = subject_is_declared_for_every_absence_passing_item(items)
     if undeclared:
         for line in undeclared:
+            print(line, file=sys.stderr)
+        return 1
+    mismatched = reason_matches_what_the_checker_emits(items)
+    if mismatched:
+        for line in mismatched:
             print(line, file=sys.stderr)
         return 1
     # A content hash of the items, so a result file can say which registry it was

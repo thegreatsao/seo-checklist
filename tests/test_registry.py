@@ -185,6 +185,56 @@ class RegistryShape(unittest.TestCase):
                 self.assertNotIn("applies_when", why)
                 self.assertNotIn("REG-9", why)
 
+    def test_every_recorded_reason_opens_with_the_mechanism_its_checker_proves(self):
+        """The test above holds that a reason is arguable. This holds that it is true
+        about the code, which is a different question and the one 0.96.1 was about.
+
+        Two of these entries were free passes and read exactly like the entries that
+        were not: `BL-083` claimed a backlink export the item does not take, and
+        `GO-137` claimed a sitemap that a site is free not to have. What separated them
+        from the safe ones was never in the prose — it was whether the checker writes
+        the asserted key on every run or withholds it when there was nothing to
+        measure. So the mechanism is proved from the checker's source, through the same
+        AST reading `audit_reachability.py` makes, and the sentence must open with it.
+
+        The day a script stops withholding a key, the entry that leaned on it reddens
+        here instead of quietly becoming the next `BL-083`."""
+        sys.path.insert(0, os.path.join(SKILL, "tools"))
+        import build_checklist
+        complaints = build_checklist.reason_matches_what_the_checker_emits(ITEMS)
+        self.assertEqual(complaints, [], complaints)
+
+    def test_the_mechanism_gate_refuses_a_claim_the_source_does_not_support(self):
+        """The gate itself, in both directions, because half of it would pass a tree
+        that says nothing and half would pass a tree that says anything.
+
+        `TE-178` is the one entry whose key its checker writes nowhere — the mutation
+        that drops its token must be caught, or the gate does not read the token — and
+        `CI-004`'s key is written unconditionally, so claiming a withholding there is
+        the opposite error and must be caught too. A gate that only complained about
+        missing tokens would let every false claim of protection through."""
+        sys.path.insert(0, os.path.join(SKILL, "tools"))
+        import build_checklist
+        table = build_checklist.SUBJECT_ALWAYS_PRESENT
+        for item_id, mutation in (("TE-178", "the neighbour lookup answered with an "
+                                             "empty list"),
+                                  ("CI-004", "withheld_key: every page has indexing "
+                                             "directives, present or absent")):
+            original = table[item_id]
+            try:
+                table[item_id] = mutation
+                complaints = build_checklist.reason_matches_what_the_checker_emits(
+                    ITEMS)
+            finally:
+                table[item_id] = original
+            with self.subTest(item=item_id):
+                self.assertEqual([c for c in complaints if c.startswith(item_id)],
+                                 complaints, complaints)
+                self.assertTrue(complaints, f"{item_id}: {mutation!r} passed the gate")
+        self.assertEqual(
+            build_checklist.reason_matches_what_the_checker_emits(ITEMS), [],
+            "the probe left the table mutated")
+
     def test_every_applicability_declaration_is_a_rule_the_evaluator_can_read(self):
         """This replaces `test_video_applicability_is_narrowly_declared`, which pinned
         the declared set to exactly MB-102 and MD-190 with exactly their condition —
