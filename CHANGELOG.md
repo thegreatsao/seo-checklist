@@ -10,6 +10,85 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.96.2 — thirteen requirements said `enforced`; two were not, and one line named no test
+
+Registry version: **`7c7b9d827179`, unchanged.** No item, rule or checker moved and no
+verdict changes on any site. What moved is this project's account of how much of its own
+specification the suite actually holds.
+
+**Thirteen requirements were reclassified to `enforced` across 0.95.0–0.96.0, on one
+person's reading of what the new tests hold.** A Reader line is a claim about the suite,
+and the ledger that counts those claims is quoted as a measure of how real the
+specification is — so a requirement that is only mostly enforced makes every other row
+worth less. They were read again: eight by `agy` with `claude-opus-4-6-thinking`, five by
+Codex, each with the requirement blocks, every test their Reader lines name, and the
+project functions those tests reach. Both scored 4/4 on a calibration block answered
+before the material, against answers written down first.
+
+Then every claim either judge made was **measured**, by making the change it said would
+go unnoticed and running the whole suite.
+
+| requirement | claim | measured against 1565 tests |
+|---|---|---|
+| SCR-3 | partial | **caught** — 5 failures |
+| SCR-6 | partial | **caught** — 217 failures |
+| SCR-7 | partial | **caught** by `test_every_item_lands_in_exactly_one_bucket`, the test named for that property |
+| SCR-12 | partial | **missed** — shipped green, twice |
+| REG-9 | partial | confirmed by derivation |
+| RUN-15 | partial | **caught** — the requirement was enforced and its Reader line was not checkable |
+
+**SCR-12 named three values and read one.** It binds "the headline score, weight share and
+category scores" to half-to-even rounding, so that two conforming implementations cannot
+turn one fraction into different claims. Replacing `round` with `int(x + 0.5)` reddened
+the headline and left the category bar and the weight share green — the whole suite, no
+failures, both times. The repair is the two missing readers rather than the smaller label:
+`test_the_category_bar_rounds_its_exact_half_the_same_way` and
+`test_the_weight_share_rounds_its_exact_half_the_same_way`. They are reached differently,
+which is why extending one test could not have covered both — the bar rests on a pass
+beside a fail, the share on a decided item beside an applicable undecided one, and both
+land on 62.5. Each names the weights it stands on, so a change to the table turns them
+into failures rather than tests of nothing. Both breakages redden now.
+
+**REG-9 is `partial`, and the label was the thing that was wrong.** The requirement says an
+item judging something a site may legitimately not have must declare when it applies. The
+gate reaches the **145** items that carry a rule; `applies_when` lives inside `check`, and
+**72 items carry no check at all** — 38 answered by the model, 31 by a person, 3 by Search
+Console. The mechanism that could cover them is the profile, and it is not: measured
+through `profile_excludes`, the shipped `blog` profile excludes **7 of 217**, so a blog is
+asked to judge *Handle Out-of-Stock/Discontinued Products*, *Provide a Google News Sitemap
+(If Eligible)* and *Ensure the Disavow File Doesn't Include Valuable Links*.
+`tests/census.json` records all three answering `MANUAL` on all five fixture sites.
+
+This is the requirement's own third scenario, written at `3bc5535` on 6 September — a day
+*before* `211e4ee` marked it `enforced`, with no argument recorded anywhere that the
+scenario was out of scope. The harm is not 0.96.0's free pass: these are handed on, and
+whoever answers then puts a verdict into the score for a question that does not apply,
+which is a free pass or a false finding by a different road. Not repaired here, and
+`openspec/specs/registry/` A.8 says why — the repair is 72 judgements that each move a
+live verdict, and 0.96.1 is the release that showed one reader is not enough for those.
+
+**A Reader line that names no test cannot be read.** RUN-15's line described four tests in
+prose — "prose naming a platform fingerprints nothing, the same names in markup still do"
+— and named none of them. A judge given the requirement and every test its line identifies
+returned `partial`, because it could not tell a test it was not given from a test that does
+not exist. All four exist; the breakage it proposed reddens; the requirement is enforced
+and the line was the defect. They are named now.
+
+**Both wrong findings came from the material, not the judges.** Reader lines name tests by
+three conventions — a `test_` function, a CamelCase class, and a sentence naming neither —
+and the brief was assembled by a regex matching the first. Given the same gap the two
+models did opposite things: `agy` returned `NEEDS_CODE` naming the class it could not find,
+and Codex reported the tests inside that class as absent. With the classes supplied, `agy`
+flipped both refusals to `enforced` and they measure as `enforced`. `openspec/specs/run-lifecycle/`
+A.11 records this beside `openspec/specs/registry/` A.7, which is the same shape from eight
+days ago: a judge given the checkers and not their caller reported the caller's guarantees
+as defects.
+
+**Eleven of the thirteen hold.** RUN-2, RUN-5, RUN-13, RUN-14, RUN-15, RUN-18, VRD-5,
+VRD-11, SCR-3, SCR-6 and SCR-7 are enforced, confirmed by a breakage or by a judge with
+complete material. The ledger moves **94 enforced / 48 partial → 93 / 49**, and the one row
+that moved is the one the tree could not hold.
+
 ## 0.96.1 — two of the forty-seven were free passes, inside the repair that closed them
 
 Registry version: **`f989d31af77a` → `7c7b9d827179`**. Two items answer differently on a

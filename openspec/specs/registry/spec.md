@@ -374,7 +374,13 @@ reports success on a site that has none of the thing, which VRD-2 forbids.
 
 **Why:** this is the largest measured defect class in the registry — seventeen items owe
 such a declaration and two carry one.
-**Reader:** enforced, at 0.96.0, and the order of the repair is the requirement's own
+**Reader:** partial — enforced for the 145 items that carry a rule, and unreachable for
+the 72 that do not. That boundary is this requirement's own third scenario, and 0.96.0
+called the requirement `enforced` with the scenario already written; 0.96.2 corrected the
+label rather than the scenario, because the scenario is right. What the gate holds over
+the items it reaches is below, and A.8 measures what it does not reach.
+
+The gate itself arrived at 0.96.0, and the order of the repair is the requirement's own
 last scenario. The test that pinned the declaration set to exactly MB-102 and MD-190 with
 exactly their condition — deleted at 0.96.0, and named in the release rather than here,
 because a document naming a test that no longer exists is a defect `tests/test_specs.py`
@@ -763,6 +769,52 @@ passing without a Safe Browsing key, and CI-018 as passing without a server log,
 the caller makes a judge report the caller's guarantees as defects — the cost is in the
 brief, not in the judge.
 
+#### A.8 — the gate reaches 145 items of 217, 14 September 2026
+
+A.6 and A.7 both worked inside the population of items that carry an assertion, because
+that is where the mechanism lives. This measures the population outside it, which is what
+REG-9's third scenario has named since `3bc5535` on 6 September — a day before `211e4ee`
+marked the requirement `enforced`, with no argument recorded anywhere that the scenario
+was out of scope.
+
+**72 of 217 items carry no rule at all:** 38 answered by the model, 31 by a person, 3 by
+Search Console. `applies_when` lives inside `check`, so none of them can hold one, and
+`subject_is_declared_for_every_absence_passing_item` never looks at them — its candidate
+set is derived through `passes_by_absence`, which takes a rule.
+
+The other mechanism that puts an item out of scope is the **profile**, and it is not
+carrying this. Measured through `profile_excludes` on the shipped `blog` profile: **7 of
+217** items excluded. These three stay in scope and are put to a person on a site that
+has none of the thing they judge:
+
+| item | severity | answered by | subject a blog has none of |
+|---|---|---|---|
+| AR-164 | medium | a person | out-of-stock and discontinued **products** |
+| GO-140 | low | a person | a **Google News sitemap**, and the title says *(If Eligible)* |
+| BL-089 | high | a person | a **disavow file** |
+
+`tests/census.json` records all three answering `MANUAL` on all five fixture sites: the
+class is live on every site the suite audits, not a corner case.
+
+**The harm is not the free pass A.6 closed, and it is not nothing.** A script item with an
+absent subject answers `PASS` and a client reads it. These answer `MANUAL` or
+`LLM_PENDING` — they are handed on. Whoever answers then puts a verdict into the score for
+a question that does not apply, and both answers are wrong in the way this document
+already names: `PASS` is A.6's free pass arriving by a different road, `FAIL` is AR-154's
+finding about a page nobody should have judged.
+
+`SKILL.md` tells whoever answers the queue to *"answer `N/A` rather than inventing a
+`PASS`"*. That is the right instruction and it is not a declaration: it lives outside the
+item, it is addressed to a reader rather than derived from the registry, no test holds it,
+and the 31 items answered by a person never pass through the queue that carries it.
+
+**Not repaired here, and the reason is that the repair is a decision.** The profile is the
+mechanism that already exists, has a reader, and reports `N/A` naming itself — so the
+question is which of the 72 owe a profile exclusion in which profile. That is 72
+judgements of exactly the kind A.7 showed one reader is not enough for, and every one of
+them moves a live verdict. It belongs in a release of its own, with a second reader, not
+in the correction of a label.
+
 #### A.3 — nine items measure something other than their title
 
 A sample of twenty items, read rule against title, found nine mismatches. They are not
@@ -829,14 +881,14 @@ five; REG-7 now says what a rule is, so the count above is taken over all three.
 
 | | requirements |
 |---|---|
-| **enforced** | REG-2, REG-5, REG-7, REG-9, REG-10, REG-11, REG-12 |
-| **partial** | REG-1, REG-3, REG-4, REG-6, REG-8, REG-13 |
+| **enforced** | REG-2, REG-5, REG-7, REG-10, REG-11, REG-12 |
+| **partial** | REG-1, REG-3, REG-4, REG-6, REG-8, REG-9, REG-13 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-R2 enforced; INV-R1, INV-R3 and INV-R4 partial.
 
-**Seven enforced, six partial, none unread, none opposed, of thirteen.**
+**Six enforced, seven partial, none unread, none opposed, of thirteen.**
 
 `opposed` is a fourth category this document introduced and its column is empty now.
 REG-9 earned it: a fixed-membership test pinning the two existing applicability

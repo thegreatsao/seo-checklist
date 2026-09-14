@@ -4,15 +4,18 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.96.1 — see [CHANGELOG.md](CHANGELOG.md). Two more checks judged sites that had
-none of the thing they judge, and both were hiding inside the repair that was meant to
-end that: "Fix Broken Backlinks" passed a site with no outbound links, and "Reconcile
-Indexed Pages vs. Sitemaps" passed a site with no sitemap. Both were written down last
-release as subjects that cannot be absent, and neither was; a second reader over that
-table found them. Every recorded reason now has to open with the mechanism its own
-checker proves, so a sentence cannot claim protection the code stopped giving. The
-registry version moved, so scores before and after are not comparable. Before that,
-`0.96.0` closed the same class for eight other checks — a page with no structured data
+Version 0.96.2 — see [CHANGELOG.md](CHANGELOG.md). A release about this project's own
+honesty rather than about any site's SEO: no check changed, no verdict moves, and the
+registry is untouched. Thirteen requirements had been marked fully enforced on one
+person's reading, and reading them again — with two other models, and by breaking the
+code to see whether anything went red — found two that were not. The rounding rule that
+keeps two reports from turning one fraction into different numbers was being checked on
+the headline score and on neither of the two other numbers beside it; both are checked
+now. And the rule that a check must say when it does not apply is honestly marked
+partial, because it can only reach the 145 checks that run a script and not the 72
+answered by a person or a model. Before that, `0.96.1` fixed two checks that passed
+sites with none of the thing they judge, and `0.96.0` closed the same class for eight
+others — a page with no structured data
 passed "Implement & Validate Structured Data" and a page that is not a category page got
 a warning about being a bad one — and `0.95.2` fixed auditing one category, which used to drop the
 other 210 items out of the report entirely, so the partition summed to the slice and the

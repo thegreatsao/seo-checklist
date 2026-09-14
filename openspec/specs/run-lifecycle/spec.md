@@ -685,10 +685,21 @@ answered" half, which had been read inside one unit test of `detect` and by noth
 surface the operator sees.
 
 The claim that detection reads structure rather than wording had no test in either
-direction, and writing one found it false — A.8. Four tests hold it now: prose naming a
-platform fingerprints nothing, the same names in markup still do, an inline script still
-counts, and link paths, which were always read from `href` alone, still count. The last two
-are what stop the first from being a way to switch detection off.
+direction, and writing one found it false — A.8. Four tests hold it now:
+`test_prose_that_names_a_platform_does_not_fingerprint_it`,
+`test_the_same_words_in_markup_still_fingerprint`,
+`test_a_platform_that_announces_itself_in_inline_script_still_counts` and
+`test_link_paths_are_structure_and_are_still_read`, whose `href` was always read from the
+attribute alone. The last two are what stop the first from being a way to switch
+detection off.
+
+**They are named here because at 0.96.2 they were not.** This line described the four in
+prose and named none of them, and a second reader handed the requirement and its tests
+returned `partial` for exactly that: it could not tell a test it could not find from a
+test that does not exist. A Reader line is a claim about the suite, and a claim naming
+nothing cannot be checked by the next reader either — the same objection this document
+makes to a rule with no reader, one level up. The breakage that settles it is recorded
+in A.11.
 
 #### Scenario: the evidence is thin
 - **WHEN** detection finds nothing conclusive
@@ -1198,6 +1209,26 @@ looks like a decision somebody made.
 Worth naming beside `test_image_paths_do_not_fingerprint_magento`, which fixed a
 false-positive fingerprint by narrowing the *pattern*. This is the same class one level up:
 the patterns were right and the haystack was wrong.
+
+#### A.11 — a Reader line that names no test cannot be read, 14 September 2026
+
+A.8's four tests were described in the Reader line above and none was named. A second
+reader, handed RUN-15 with every test its line identifies, returned `partial`: it could
+not distinguish a test it was not given from a test that does not exist, and it proposed
+the breakage that settles which — `structure()` returning the page's prose alongside its
+markup, undoing A.8 exactly.
+
+Measured: the breakage **reddens**, so the requirement is enforced and it was the line
+that could not be checked. The four are named above now.
+
+That is the second time in eight days that material assembled by one convention produced
+a finding about the tree rather than about the material. `openspec/specs/registry/` A.7
+records the first — a judge given the checkers and not their caller reported the caller's
+guarantees as defects — and the shape here is the same one turned inward: a Reader line
+names its tests for the same reason a declaration names its subject, so that somebody who
+was not there can check it. Three naming conventions are now in use across these Reader
+lines — a `test_` function, a CamelCase class, and a sentence describing neither — and
+only the first two can be followed by anyone who does not already know the answer.
 
 #### A.6 — the survey that produced this appendix
 

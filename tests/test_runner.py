@@ -1363,6 +1363,49 @@ class Scoring(unittest.TestCase):
             / (SEVERITY_WEIGHT["critical"] + SEVERITY_WEIGHT["high"]), 62.5,
             "the weights no longer put this run on an exact half")
 
+    def test_the_category_bar_rounds_its_exact_half_the_same_way(self):
+        """SCR-12 names three values and this is the second of them.
+
+        The requirement binds "the headline score, weight share and category scores".
+        Measured at 0.96.2 by replacing the category bar's `round` with `int(x + 0.5)`
+        and running the whole suite: **1565 tests, all green**. The headline had a
+        reader, the other two did not, and a requirement quantifying over three values
+        with one of them read is `partial` however direct that one reader is. Found by
+        a second reader over the Reader line, and confirmed by that breakage.
+
+        The rows are the pair above and sit in one category, so the bar rests on the
+        same 62.5 the headline does — which is the point: two values computed from one
+        fraction had better publish one integer."""
+        rows = [
+            {"id": "A", "status": PASS, "severity": "critical", "category": "c",
+             "category_label": "C", "effort": "low"},
+            {"id": "B", "status": FAIL, "severity": "high", "category": "c",
+             "category_label": "C", "effort": "low"}]
+        s = score(rows)
+        self.assertEqual(s["by_category"]["c"]["score"], 62)
+        self.assertEqual(s["by_category"]["c"]["score"], s["seo_score"],
+                         "one fraction, two published integers")
+
+    def test_the_weight_share_rounds_its_exact_half_the_same_way(self):
+        """SCR-12's third value, and the one that needed its own arithmetic.
+
+        The headline's half comes from a pass beside a fail; the share's comes from a
+        decided item beside an applicable undecided one — `critical` decided over
+        `critical` plus `high` applicable is 10/16, which is 62.5, and half-up
+        publishes 63. Same breakage, same result: the whole suite stayed green.
+
+        `weight_pct` is the value that returned **0** for an empty denominator until
+        0.95.2, so it has form on being the one of the three that gets missed."""
+        rows = [
+            {"id": "A", "status": PASS, "severity": "critical", "category": "c",
+             "category_label": "C", "effort": "low"},
+            {"id": "B", "status": NO_DATA, "severity": "high", "category": "c",
+             "category_label": "C", "effort": "low"}]
+        s = score(rows)
+        self.assertEqual((s["weight_decided"], s["weight_applicable"]), (10, 16),
+                         "the weights no longer put this share on an exact half")
+        self.assertEqual(s["weight_pct"], 62)
+
     def test_every_item_lands_in_exactly_one_bucket(self):
         """The property that replaced the coverage percentage.
 

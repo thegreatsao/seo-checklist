@@ -460,8 +460,26 @@ one of those values is zero, that value is absent, never zero.
 **Why:** precision and the empty-set result are output semantics, not renderer choices.
 Two conforming implementations must not turn the same fraction into different claims,
 and zero must remain a verdict rather than a synonym for “nothing to divide by.”
-**Reader:** enforced. Tests pin several integer examples and `score()` returns an absent
-headline for an empty decided set.
+**Reader:** enforced, and only from 0.96.2 for the three values this requirement names.
+Tests pin several integer examples and `score()` returns an absent headline for an empty
+decided set; the half-to-even rule is read for the headline, the category bar and the
+weight share separately.
+
+**It was read for one of the three until 0.96.2, and the label said `enforced` anyway.**
+A second reader over this line said `partial` and proposed the breakage; measured by
+replacing each `round` with `int(x + 0.5)` and running the whole suite, the headline
+reddened and **the category bar and the weight share shipped green — 1565 tests, no
+failures, twice**. A requirement quantifying over three published values with a reader on
+one of them is `partial`, and the honest repair was the two missing readers rather than
+the smaller label. `test_the_category_bar_rounds_its_exact_half_the_same_way` and
+`test_the_weight_share_rounds_its_exact_half_the_same_way` hold them, and both breakages
+redden now.
+
+The two additions are reached differently, which is why extending one test could not have
+covered both: the headline and the category bar rest on a pass beside a fail, and the
+share rests on a decided item beside an applicable undecided one — 10/16, which is also
+62.5. Each names the weights it stands on, so a change to the table turns these into
+failures rather than tests of nothing.
 
 The absence clause was broken in one of three places: the headline returned `None` for an
 empty decided set and each category bar returned `None` for an empty weighed set, and
