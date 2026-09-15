@@ -123,9 +123,19 @@ difference MUST be a comparison over the same registry, profile and mode.
 **Why:** the score is a fraction of the registry, so a registry that gained eight items
 moves it without the site moving. A profile change moves the denominator; a mode change
 moves what could be answered at all. All three produce a number that looks like news.
-**Reader:** partial. Four test functions cover the comparison, and two of them pin warnings
-directly — that a changed registry version warns, and that a barely-overlapping pair of
-runs warns. The profile and mode halves have no test.
+**Reader:** enforced, at 0.96.7, and the tree held it before the line said so.
+`test_warns_when_the_registry_changed_underneath` pins the registry,
+`test_warns_when_the_compared_sets_barely_overlap` the empty intersection,
+`test_warns_when_the_mode_changed` the mode, and `test_two_reasons_are_stated_once_each`
+moves all four axes at once — registry, profile, mode and scoring tables — and requires
+**one sentence each**, which is what holds the profile branch and what makes a fifth axis
+added silently a failure in either direction.
+
+**This line said the profile and mode halves had no test, and both had one.** It was
+written before 0.94.0 added the four-axis reader and never re-read against the tree.
+Measured by mutation at 0.96.7: deleting the profile branch reddens
+`test_two_reasons_are_stated_once_each`, and deleting the mode branch reddens that and
+`test_warns_when_the_mode_changed`. A.3 records what the stale line cost.
 
 #### Scenario: the checklist itself changed between the runs
 - **WHEN** the previous run recorded one `registry_version` and this run another
@@ -150,10 +160,22 @@ run's own recorded fields — and never by a phrase such as "the last one".
 **Why:** "since the previous audit" is ambiguous the moment two audits happen on one day,
 or a run is deleted, or the operator has two machines. A reader who cannot identify the
 baseline cannot check the claim.
-**Reader:** partial. Three test functions cover the recorded baseline, including that a
-report with no baseline prints no trend section and that neither renderer prints a missing
-number. That the baseline is *named* where the comparison is shown is asserted for the
-absence case and not the presence case.
+**Reader:** enforced, at 0.96.7. The payload half is held by
+`test_the_payload_carries_the_comparison_though_nobody_asked_to_see_it`, which compares
+two real audits and requires `compared_with.started_at` to be the *predecessor's* —
+the one field of the four that differs between two runs of an unchanged fixture, and
+therefore the one that reads the scenario's "rather than this run's". The absence case is
+held by `test_no_baseline_means_no_section`. The naming where the comparison is shown is
+held on both surfaces: `test_the_baseline_is_named_not_implied` for markdown and
+`test_the_html_report_names_the_baseline_too` for HTML.
+
+**The HTML half was the real gap and the line did not name it.** The two renderers build
+this section separately — `history_section` for markdown, an inline block inside
+`render_html` — and only the first was asserted. Measured at 0.96.7 against the whole
+suite: replacing the HTML renderer's baseline timestamp with a literal `?` reddens
+**nothing**, so a delivered document could read *"Compared with the run of ?"* and ship.
+An anonymous baseline carries no `None`, so the sweep that catches a missing number on
+both renderers could not catch this one.
 
 #### Scenario: a comparison names the run it was made against
 - **WHEN** a run finds a predecessor for the same site
@@ -214,9 +236,36 @@ same clock tick MUST get separate files.
 
 **Why:** a collision loses an audit silently. A shared directory across sites would compare
 one client's run against another's, which is worse than losing it.
-**Reader:** partial. `test_two_runs_in_one_stamp_do_not_share_a_file` pins the collision
-case. The per-site keying is exercised by every test that writes history and asserted by
-none.
+**Reader:** enforced, at 0.96.7. `test_two_runs_in_one_stamp_do_not_share_a_file` pins the
+collision case. The per-site keying is held from both ends by four tests over two domains
+in one working directory: `test_a_run_is_filed_under_the_site_it_describes` for the write,
+`test_the_predecessor_is_never_another_site` and
+`test_a_site_with_no_history_of_its_own_gets_no_predecessor` for the lookup, and
+`test_the_series_holds_only_this_site` for the arc, which keys through a second
+`os.path.join` of its own.
+
+**What the old line said was "exercised by every test and asserted by none", and the
+measurement found that understated.** One domain cannot tell whether the lookup is keyed
+at all. Against the whole suite before 0.96.7:
+
+| breakage in `previous_run` | |
+|---|---|
+| it scans its own site and then every sibling | **MISSED** |
+| it takes whichever site directory sorts first | **MISSED** |
+| it scans `.seo-runs/` itself, finding nothing | CAUGHT |
+
+Only the third reddened, and not for this requirement's reason: pointing the path at the
+parent breaks every site at once, so what failed were the tests asserting their *own* runs
+are found — `test_it_reads_no_more_than_the_limit` does not care whose runs it read. The
+mutation that keeps each site working and merely widens what the lookup sees is the one
+this requirement exists for, and nothing held it.
+
+**The one genuine reader was accidental and was about to be deleted by a repair.** The
+shared-directory mutation also reddened
+`test_the_comparison_is_quiet_on_the_record_as_recorded`, because the known-issues ledger
+quotes this path inside the **open** entry for the Windows colon defect (§HST-8). Fixing
+that defect and closing the entry would have removed the only thing asserting where a run
+is filed — a reader that exists because a bug is still open. A.3.
 
 #### Scenario: two runs in the same clock tick
 - **WHEN** two audits of one site produce the same timestamp
@@ -293,8 +342,11 @@ document is about has never run end to end in CI on any platform.
 
 ## 4. Invariants
 
-* **INV-HS1** — a run compares against a run of the same site. *Reader:* **none.** The
-  directory keying makes it true; nothing asserts it.
+* **INV-HS1** — a run compares against a run of the same site. *Reader: enforced, at
+  0.96.7* — `test_the_predecessor_is_never_another_site` and
+  `test_a_site_with_no_history_of_its_own_gets_no_predecessor` assert it over two domains
+  in one directory, which is the smallest arrangement that can tell. Until then the line
+  was exactly right: the directory keying made it true and nothing asserted it.
 * **INV-HS2** — the series is ordered by when each run happened, not by filename.
   *Reader: enforced* — asserted directly, and separately for the newest-run selection.
 * **INV-HS3** — every item in the comparison exists in both runs, or is reported as added or
@@ -384,24 +436,65 @@ That is the same shape three other documents in this suite have now recorded fro
 side: the machinery is tested and the *judgement* it feeds is not. Here the judgement is a
 single function with a three-line body.
 
+#### A.3 — what three Reader lines classified by reading turned out to be worth, 15 September 2026
+
+Appendix B says it plainly: HST-1 was probed by mutation and the other rows were derived
+by parsing test functions and reading bodies, because the executor running probes ran out
+of credits. Those three `partial` rows then sat in the ledger for eleven releases, and two
+successive session plans allocated work to them as *"three cheap readers"*. Measuring them
+first — before writing a line — found all three wrong, in three different directions.
+
+| | the line said | measured |
+|---|---|---|
+| **HST-2** | the profile and mode halves have no test | both are read; the mode directly, the profile by a four-axis sweep added at 0.94.0 |
+| **HST-3** | the presence case is unasserted | markdown is asserted; **HTML is not**, and nothing in the suite reddens when its baseline goes anonymous |
+| **HST-6** | the keying is exercised by every test and asserted by none | understated — the two mutations that keep each site working and merely widen the lookup both **MISSED**, and the one accidental reader lives inside an *open* known-issues entry |
+
+So of the three, one needed no code at all, one needed a single test on a surface the line
+did not mention, and one was a real hole in a sharper shape than the line described.
+
+**Three things worth carrying.**
+
+*A Reader line classified by reading is a hypothesis.* It is written from what the author
+could see, it does not move when the tree does, and nothing checks it — the suite's gates
+compare a line against its own document's table, never against the tests. HST-2's line
+was falsified by a test that existed before the line was last touched.
+
+*Reading understates as well as overstates.* HST-6's line is the interesting one: it said
+the keying was unasserted, which sounds like the worst case and was not. The keying *is*
+asserted, by a test written about something else, and that reader disappears the moment
+the Windows colon defect is repaired and its ledger entry closed. A defect's own record
+was holding a requirement up.
+
+*A mutation that breaks everything proves nothing about a rule.* The first HST-6 round
+pointed the history at `.seo-runs/` itself and read CAUGHT twice. Both were tests
+asserting their own runs are found. The requirement is about reading *another site's*
+runs, and the mutation for that has to leave each site working — which is the general
+form: **a breakage has to be the shape of the violation, not merely upstream of it.**
+
 ## Appendix B — how much of this document is enforced
 
 **Probed:** HST-1 by mutation, 5 September 2026 — `NO_DATA` added to `VERDICT_RANK`, which
-reddens the sweep six ways. The other rows were derived by parsing the test functions and
-reading the bodies that name each symbol, then reading the implementation; the executor
-that had been running mutation probes for this suite ran out of credits before it reached
-them.
+reddens the sweep six ways. HST-2, HST-3 and HST-6 by mutation at 0.96.7, twelve
+breakages across three rounds. The remaining rows were derived by parsing the test
+functions and reading the bodies that name each symbol, then reading the implementation;
+the executor that had been running mutation probes for this suite ran out of credits
+before it reached them, and A.3 is what that turned out to have cost.
 
 | | requirements |
 |---|---|
-| **enforced** | HST-1, HST-4, HST-5, HST-7, HST-8 |
-| **partial** | HST-2, HST-3, HST-6 |
+| **enforced** | HST-1, HST-2, HST-3, HST-4, HST-5, HST-6, HST-7, HST-8 |
+| **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
-Invariants: INV-HS2 enforced; INV-HS3 partial; INV-HS1 and INV-HS4 unread.
+Invariants: INV-HS1 and INV-HS2 enforced; INV-HS3 partial; INV-HS4 unread.
 
-**Five enforced, three partial, nothing unread, of eight.**
+**Eight enforced of eight, nothing partial, nothing unread.**
+
+HST-2, HST-3 and HST-6 moved at 0.96.7, and only one of the three needed the tree to move
+at all — see A.3. INV-HS4 is now the document's whole remaining debt: nothing writes to an
+existing history file, and nothing forbids it.
 
 The enforced requirements were all about *files*: exclude this one, skip that broken one,
 count the run of them. The unread ones were about *meaning*: what a change is, and whether

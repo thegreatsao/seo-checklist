@@ -44,10 +44,10 @@
     "history": {
       "counts": {
         "bounded": 0,
-        "enforced": 5,
+        "enforced": 8,
         "none": 0,
         "opposed": 0,
-        "partial": 3
+        "partial": 0
       },
       "opposed": [],
       "requirements": 8,
@@ -152,10 +152,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 99,
+    "enforced": 102,
     "none": 2,
     "opposed": 1,
-    "partial": 43,
+    "partial": 40,
     "requirements": 149
   }
 }

@@ -4,9 +4,20 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.96.6 — see [CHANGELOG.md](CHANGELOG.md). A test release, with no change to
-what any check decides. Three rules about what a run *does* were all checked by reading
-what it *writes down*. The clearest: when a site's front page will not load, the audit is
+Version 0.96.7 — see [CHANGELOG.md](CHANGELOG.md). A test release, with no change to
+what any check decides. Three rules about comparing an audit with the last one were
+recorded as half-checked; measuring them first found the record wrong about all three.
+Two were better covered than it said. The third was worse, and in a way that matters if
+you audit more than one site from one folder: nothing in the suite would have noticed a
+change that made one site's audit compare itself against **another site's** — reported, in
+a client's report, as movement on a site that never produced those numbers. The code was
+right; nothing was holding it that way. The same was true of the HTML report naming the
+run it compared against: it names it correctly today, and only the markdown version was
+checked, so the HTML one could have started printing "the run of ?" without anything
+saying so. Both are guarantees that were true and unguarded, which is the kind this
+release is about.
+Before that, `0.96.6` closed three rules about what a run *does* that were all checked by
+reading what it *writes down*. The clearest: when a site's front page will not load, the audit is
 supposed to stop asking that site for anything — and everything testing it checked that
 the list of work came out empty, which a tool that empties the list and then crawls the
 site anyway would also pass. The server itself is the only witness, and now it is the one

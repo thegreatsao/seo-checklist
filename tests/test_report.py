@@ -564,6 +564,27 @@ class HistoryReachesTheFile(unittest.TestCase):
         self.assertIn("64", text)
         self.assertIn("71", text)
 
+    def test_the_html_report_names_the_baseline_too(self):
+        """`openspec/specs/history/` HST-3 on the other renderer, which had no reader.
+
+        The two surfaces build this section from the same payload and build it
+        *separately* — `history_section` for markdown, an inline block in
+        `render_html` for HTML — and only the first was asserted. Measured against the
+        full suite before this was written: replacing the HTML renderer's baseline
+        timestamp with a literal `?` reddens **nothing**, so a deliverable could say
+        "Compared with the run of ?" and ship.
+
+        That is the same shape `test_neither_renderer_prints_a_missing_number` above
+        was written for: a payload key renamed on one side reaches a client through the
+        untested half. It is asserted here for the identity rather than for the
+        absence of `None`, because a baseline that is anonymous carries no `None` —
+        it carries a question mark, and reads as though somebody meant it.
+        """
+        html_text = render_html(self._data())
+        self.assertIn("2026-07-01T09:30", html_text,
+                      "the HTML report does not name the run it compared against")
+        self.assertNotIn("run of ?", html_text)
+
     def test_a_fix_and_a_regression_are_told_apart(self):
         text = "\n".join(history_section(self._data(
             self._change("CN-047", FAIL, PASS, "improved"),

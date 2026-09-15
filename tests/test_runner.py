@@ -3421,6 +3421,102 @@ class History(unittest.TestCase):
                 json.dump({"name": name}, f)
         self.assertEqual(previous_run("e.com", "")["name"], "20260803T094000Z.json")
 
+    # -- Two sites in one working directory ---------------------------------------
+    #
+    # `openspec/specs/history/` HST-6's second scenario and INV-HS1. Every test above
+    # uses one domain, and one domain cannot tell whether the lookup is keyed at all:
+    # a `previous_run` reading the whole of `.seo-runs/` would pass all six.
+    #
+    # Measured before these were written, against the full suite:
+    #
+    #   | breakage in `previous_run` | |
+    #   |---|---|
+    #   | it scans its own site and then every sibling | **MISSED** |
+    #   | it takes whichever site directory sorts first | **MISSED** |
+    #   | it scans `.seo-runs/` itself, finding nothing | CAUGHT |
+    #
+    # Only the third reddened, and not for this reason: pointing the path at the
+    # parent breaks *every* site at once, so what reddened were the tests asserting
+    # their own runs are found. `test_it_reads_no_more_than_the_limit` does not care
+    # whose runs it read. The one mutation that keeps each site working and merely
+    # widens what the lookup sees — which is the defect this requirement is about,
+    # one client's audit compared against another's — reddened nothing.
+    #
+    # The single real reader was accidental and was about to disappear:
+    # `test_the_comparison_is_quiet_on_the_record_as_recorded` reddened because the
+    # *known-issues* ledger quotes this path in the open entry for the Windows colon
+    # defect. Fix that defect, close the entry, and the reader goes with it.
+
+    def two_sites(self):
+        """One run each for two domains, the second site's newer than the first's."""
+        for domain, name, started, points in (
+                ("alpha.example", "20260803T090000Z.json",
+                 "2026-08-03T09:00:00+00:00", 41),
+                ("beta.example", "20260803T100000Z.json",
+                 "2026-08-03T10:00:00+00:00", 92)):
+            os.makedirs(os.path.join(".seo-runs", domain), exist_ok=True)
+            with open(os.path.join(".seo-runs", domain, name), "w",
+                      encoding="utf-8") as f:
+                json.dump({"started_at": started, "domain": domain,
+                           "scores": {"seo_score": points}}, f)
+
+    def test_a_run_is_filed_under_the_site_it_describes(self):
+        """The write half. `history_path` is the only thing that decides this, and
+        the requirement is that the domain is in the path rather than beside it."""
+        path = history_path("alpha.example", run_stamp())
+        self.assertEqual(os.path.basename(os.path.dirname(path)), "alpha.example",
+                         f"a run for alpha.example was filed at {path}")
+        self.assertNotEqual(
+            os.path.dirname(history_path("beta.example", run_stamp())),
+            os.path.dirname(path),
+            "two sites were filed in one directory, so each would become the "
+            "other's previous run")
+
+    def test_the_predecessor_is_never_another_site(self):
+        """The read half, and the harm the requirement names: a comparison across
+        two clients is worse than losing a run, because it is reported as news
+        about a site that never produced it.
+
+        `beta.example`'s run is the newest on disk, so a lookup that ignores the key
+        returns it for either site — which is why it is the newer of the two.
+        """
+        self.two_sites()
+        for domain, expected in (("alpha.example", 41), ("beta.example", 92)):
+            with self.subTest(domain=domain):
+                found = previous_run(domain, "")
+                self.assertIsNotNone(found, f"{domain}'s own run was not found")
+                self.assertEqual(found["domain"], domain,
+                                 f"{domain} was compared against {found['domain']}")
+                self.assertEqual(found["scores"]["seo_score"], expected)
+
+    def test_a_site_with_no_history_of_its_own_gets_no_predecessor(self):
+        """The sharpest form, and the one both missed mutations produce: a first
+        audit of a site that reports a comparison against somebody else's."""
+        self.two_sites()
+        self.assertIsNone(
+            previous_run("gamma.example", ""),
+            "a site with no runs of its own was handed another site's as its "
+            "previous run, so its first audit reports a trend that never happened")
+
+    def test_the_series_holds_only_this_site(self):
+        """`run_series` builds the arc the trend and every streak are computed from,
+        and it keys the same way. Asserted separately because it is a separate
+        `os.path.join` — the two have been edited apart before.
+
+        Keyed on the score rather than on the domain: `run_series` returns a *compact*
+        record and `domain` is not one of the nine fields it keeps. The first version
+        of this assertion looked for one and compared two empty sets against two
+        non-empty ones, which fails for a reason that has nothing to do with the
+        requirement. The expected value belongs to the output, not to me.
+        """
+        self.two_sites()
+        for domain, mine in (("alpha.example", 41), ("beta.example", 92)):
+            with self.subTest(domain=domain):
+                series = run_series(domain, "")
+                self.assertTrue(series, f"{domain}'s own arc is empty")
+                self.assertEqual([r["seo_score"] for r in series], [mine],
+                                 f"{domain}'s arc carries another site's runs")
+
 
 class LabCoreWebVitals(unittest.TestCase):
     """Lab metrics from a browser trace. The risks are units and silence: a

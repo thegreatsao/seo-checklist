@@ -10,6 +10,72 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.96.7 — three rows classified by reading, and all three were wrong
+
+Registry version: **`7c7b9d827179`, unchanged.** No item, rule, checker or verdict moved.
+Three requirements and one invariant move to `enforced`; the ledger goes **99/43 →
+102/40**, and `history` is **eight of eight**.
+
+**This document's Appendix B says how its rows were classified:** HST-1 by mutation, and
+*"the other rows were derived by parsing the test functions and reading the bodies that
+name each symbol, then reading the implementation; the executor that had been running
+mutation probes for this suite ran out of credits before it reached them."* Those three
+`partial` rows sat in the ledger for eleven releases, and two successive session plans
+allocated work to them as "three cheap readers".
+
+**Measuring them before writing anything found all three wrong, in three directions.**
+
+| | the line said | measured |
+|---|---|---|
+| **HST-2** | the profile and mode halves have no test | both are read — the mode directly, the profile by a four-axis sweep added at 0.94.0 |
+| **HST-3** | the presence case is unasserted | markdown is asserted; **HTML is not** |
+| **HST-6** | the keying is exercised by every test and asserted by none | understated — see below |
+
+**HST-2 needed no code.** The line was written before 0.94.0 added
+`test_two_reasons_are_stated_once_each`, which moves registry, profile, mode and scoring
+tables at once and requires one sentence for each. Deleting the profile branch reddens it;
+deleting the mode branch reddens it and `test_warns_when_the_mode_changed`. The line was
+never re-read against the tree, and nothing in the suite compares a Reader line to the
+tests — the gates compare it to its own document's table.
+
+**HST-3's gap was on a surface the line did not mention.** The two renderers build the
+trend section separately, and only markdown was asserted. Nothing is wrong in the shipped
+tree — the HTML report names its baseline correctly today — but replacing that timestamp
+with a literal `?` reddened **nothing** against the whole suite, so the day it stopped
+naming it, a delivered document would have read *"Compared with the run of ?"* and
+shipped. The existing sweep
+that catches a missing number on both renderers could not catch it: an anonymous baseline
+carries no `None`, it carries a question mark, and reads as though somebody meant it.
+
+**HST-6 was a real hole, in a sharper shape than the line described — one client's audit
+compared against another's.** Every existing history test uses one domain, and one domain
+cannot tell whether the lookup is keyed at all. Against the whole suite:
+
+| breakage in `previous_run` | |
+|---|---|
+| it scans its own site and then every sibling | **MISSED** |
+| it takes whichever site directory sorts first | **MISSED** |
+| it scans `.seo-runs/` itself, finding nothing | CAUGHT |
+
+Only the third reddened, and not for this requirement's reason: pointing the path at the
+parent breaks every site at once, so what failed were the tests asserting their *own* runs
+are found — `test_it_reads_no_more_than_the_limit` does not care whose runs it read. **A
+breakage has to be the shape of the violation, not merely upstream of it.**
+
+**And the one genuine reader was accidental, and a repair would have deleted it.** The
+shared-directory mutation also reddened the known-issues ledger's own check, because that
+ledger quotes this path inside the **open** entry for the Windows colon defect. Fix that
+defect, close the entry, and the only thing asserting where a run is filed goes with it.
+
+Four tests over two domains in one working directory now hold both ends — the write, the
+predecessor lookup, a site with no history of its own, and the series, which keys through
+a second `os.path.join`. INV-HS1, *a run compares against a run of the same site*, moves
+from unread to enforced on the same two tests; it was the honest half of the old record,
+which said the directory keying made it true and nothing asserted it.
+
+Six new readers, no source change: nothing about any verdict on any site is different.
+`openspec/specs/history/` A.3 has the anatomy.
+
 ## 0.96.6 — three requirements read through what the run records, not what it does
 
 Registry version: **`7c7b9d827179`, unchanged.** No item, rule, checker or verdict moved.
