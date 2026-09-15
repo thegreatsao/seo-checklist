@@ -10,6 +10,67 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.96.5 — a rule with three readers and an input with none
+
+Registry version: **`7c7b9d827179`, unchanged.** No item, rule, checker or verdict moved.
+Two requirements move to `enforced`; the ledger goes **94/48 → 95/47**.
+
+**RUN-19 is one of the better-read rules in this tree, and nothing read its input.** The
+requirement withholds a clean answer over a capped input — "no violations found" over
+three pages of sixty is not a finding about the site — and keeps a failure found in the
+part that *was* read, because a defect in half a site is still a defect. Three tests
+cover that asymmetry in both directions, one of them sweeping every registry item that
+passes by absence.
+
+**All three hand it `truncated=True`.** Measured by mutation against the suite as it
+stood:
+
+| breakage | |
+|---|---|
+| `site_crawl.py` stops reporting the cap — `"truncated": False` | **MISSED** |
+| `duplicate_content.py` stops copying the flag out of the inventory | **MISSED** |
+| the grader stops asking — `input_truncated(data)` | CAUGHT |
+
+So the mechanism was guarded and everything feeding it was not. The crawl could have
+stopped producing the flag entirely and the suite would have stayed green — and a flag
+nothing produces is a rule that never fires, which returns "no violations found" over
+three pages of sixty to reading as a finding about the site.
+
+`ACrawlThatStoppedAtItsPageLimit` serves sixty pages, fetches three, and reads the whole
+path as one thing. It took three attempts, and the two failures are the interesting part:
+
+* **matching the evidence prose** for `truncat` failed against the shipped wording,
+  *"only part of the input was read"* — an expected value taken from the author instead
+  of from the output. It compares two runs of the same site now, so a report free to
+  reword its own prose does not redden it;
+* **"at least one item was withheld"** passed, and the probe still read MISSED. The flag
+  is copied once per checker and eight of them take an inventory, so one checker dropping
+  it hides behind the seven that keep it. The assertion is per item now, over a candidate
+  set derived from the registry through the runner's own `passes_by_absence` — twelve
+  items across eight checkers — so a checker added tomorrow joins the sweep by existing.
+
+A second test holds the floor: a two-page site under a hundred-page cap must claim no
+truncation, or the caveat appears on every audit and stops being read.
+
+**RUN-6's opt-in flags were tested where they are generated and nowhere where they are
+used.** A second reader over the requirement proposed the breakage that shows it —
+delete the `opt_in` append from `build_plan`, and every test the Reader line named stays
+green. It does. `--verify-returns` is what makes the hreflang checker fetch the other
+side of a pair, so without it the checker answers a narrower question under the same item
+id and the recorded invocation shows a run nobody performed.
+`test_opt_in_flags_reach_the_plan_as_argv` reads it where it is used, and
+`test_archive_mode_adds_no_opt_in_flag_and_the_plan_shows_it` is the floor: a
+`build_plan` appending unconditionally would make an archive run claim it verified
+returns it never fetched. RUN-6 stays `partial` for its remaining half — nothing asserts
+the recorded `profile_args` reach the artifact.
+
+**The general form, stated once because this is the second time in a day.**
+`openspec/specs/run-lifecycle/` A.12's counter had the same shape, and A.13 names it: **a
+test that supplies the input it is testing reads the consumer and not the producer.** A
+mechanism can be covered three times over while the path into it is covered nowhere, and
+every one of those tests passes for the same reason it is useless — it provides what it
+should be checking somebody else provides.
+
 ## 0.96.4 — a sixth failure kind that no census could see and no tally could count
 
 Registry version: **`7c7b9d827179`, unchanged.** No item, rule or checker moved. One new

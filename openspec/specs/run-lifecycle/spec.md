@@ -328,12 +328,21 @@ invocation, and a threshold a profile moved MUST be visible beside the verdict i
 **Why:** a profile that changes a threshold changes what `PASS` means. A report that shows
 the verdict and not the threshold is unfalsifiable from the outside — the number is right
 for a rule the reader cannot see.
-**Reader:** partial, and the visible half is not the one that matters most.
-`test_profile_args_reach_the_plan_as_argv` pins the arguments into the invocation, and
-`test_the_moved_threshold_is_in_the_evidence_trail` pins the moved threshold into the
-answering script's own summary. Nothing asserts that the run's recorded `profile_args`
-reach the artifact, and nothing threads opt-in flags through the plan at all — they are
-tested where they are generated and not where they are used.
+**Reader:** partial. Two of the three kinds are read where they are used:
+`test_profile_args_reach_the_plan_as_argv` pins a profile's arguments into the
+invocation, `test_the_moved_threshold_is_in_the_evidence_trail` pins the moved threshold
+into the answering script's own summary, and from 0.96.5
+`test_opt_in_flags_reach_the_plan_as_argv` does the same for opt-in flags, with
+`test_archive_mode_adds_no_opt_in_flag_and_the_plan_shows_it` as its floor.
+
+**What remains is the artifact.** Nothing asserts that the run's recorded `profile_args`
+reach it, so a reader consulting the JSON to find out what was actually asked has no
+guarantee the answer is there. The opt-in half was the same shape until 0.96.5 — tested
+where the flags are *generated*, nowhere where they are *used* — and a second reader over
+this requirement named the breakage that showed it: delete the `opt_in` append from
+`build_plan` and every test this line named stayed green. That matters because
+`--verify-returns` is what makes the hreflang checker fetch the other side of a pair;
+without it the checker answers a narrower question under the same item id.
 
 #### Scenario: a profile moves a threshold
 - **WHEN** a profile's `script_args` change the bound an item is judged against
@@ -877,15 +886,35 @@ failure found in the part that was read MUST still fail, named as a floor.
 **Why:** "no violations found" over half a site is not a finding about the site. But a
 violation found in half a site is still a violation, so the downgrade must be asymmetric or
 it destroys real findings.
-**Reader:** partial, and the untested half is the join. The rule itself is covered
-thoroughly and in both directions: `test_a_clean_answer_over_a_capped_input_is_withheld`
-sweeps every registry item that passes by absence,
-`test_a_defect_found_in_the_part_that_was_read_still_fails` and
+**Reader:** enforced, at 0.96.5, and the half that was missing was the join. The rule
+itself was always covered thoroughly and in both directions:
+`test_a_clean_answer_over_a_capped_input_is_withheld` sweeps every registry item that
+passes by absence, `test_a_defect_found_in_the_part_that_was_read_still_fails` and
 `test_a_failing_count_over_a_capped_input_is_named_as_a_floor` pin the asymmetry, and
 `test_every_reporter_can_actually_set_the_flag` derives the reporters from the scripts
-themselves. Every one of those injects the flag by hand. No test starts from a crawl that
-truncated and follows the flag through to a verdict, so the propagation the requirement
-names — from the crawl to the rule — is unread.
+themselves. **Every one of those injects the flag by hand**, and A.13 measures what that
+left open: the crawl could stop reporting truncation altogether, or a checker could stop
+copying it out of the inventory, and the suite stayed green.
+
+`ACrawlThatStoppedAtItsPageLimit` in `tests/test_shapes.py` starts from a real capped
+crawl — sixty pages served, three fetched — and reads the three links as one thing: the
+crawl says it was capped, and **every** item that answered `PASS` over the whole site
+answers `NO_DATA` over part of it. Three properties make it a reader rather than a
+green test:
+
+* it compares two runs instead of matching the withholding sentence, because the first
+  version matched the evidence for `truncat` and failed against the shipped wording —
+  the expected value coming from the author rather than from the output;
+* it asserts **per item**, not "at least one was withheld". The flag is copied once per
+  checker and eight of them take an inventory, so one checker dropping it hides behind
+  the seven that keep it. A probe cutting the copy out of `duplicate_content.py` read
+  MISSED against the weaker form, twice;
+* the candidate set is derived — every item whose script takes `{inventory_json}` and
+  whose rule `passes_by_absence`, twelve of them across eight checkers — so a checker
+  added tomorrow joins the sweep by existing.
+
+A second test holds the floor: a two-page site under a hundred-page cap must claim no
+truncation, or the caveat appears everywhere and stops being read.
 
 #### Scenario: nothing found in the half that was read
 - **WHEN** a rule that passes by absence answers over an input the checker says was
@@ -1286,6 +1315,40 @@ on `script_failures` did, saying the tally was *empty*, a statement about the fi
 `unreadable_count()` is a named function now, and its reader starts from rows `grade()`
 produced. Five probes, five caught.
 
+#### A.13 — a rule with three readers and an input with none, 15 September 2026
+
+RUN-19's rule is one of the better-read things in this tree. Three tests cover it in both
+directions, one of them sweeping every registry item that passes by absence. All three
+hand it `truncated=True`.
+
+Measured by mutation, against the suite as it stood:
+
+| breakage | |
+|---|---|
+| `site_crawl.py` stops reporting the cap — `"truncated": False` | **MISSED** |
+| `duplicate_content.py` stops copying the flag out of the inventory | **MISSED** |
+| the grader stops asking — `input_truncated(data)` | CAUGHT |
+
+So the mechanism was guarded and everything that feeds it was not. The crawl could have
+stopped producing the flag entirely and nothing would have said so — and a flag nothing
+produces is a rule that never fires, which returns "no violations found" over three pages
+of sixty to reading as a finding about the site. The three tests would all still pass,
+because each supplies the flag it is testing.
+
+**This is the second time in one day.** `openspec/specs/run-lifecycle/` A.12's counter had
+the same shape: a reader that fed the number in by hand and never read the arithmetic
+producing it. The general form is worth stating once — **a test that supplies the input it
+is testing reads the consumer and not the producer**, and a mechanism can be covered three
+times over while the path into it is covered nowhere.
+
+The repair costs one live run. `ACrawlThatStoppedAtItsPageLimit` serves sixty pages,
+fetches three, and asserts both ends: the crawl says it was capped, and an item that
+answers `PASS` over the whole site answers `NO_DATA` over part of it. Comparing two runs
+is what makes it survive a rewording of the withholding sentence — the first version
+matched the evidence prose for `truncat` and failed against the shipped text, *"only part
+of the input was read"*, which is the expected value coming from my head instead of from
+the output.
+
 #### A.6 — the survey that produced this appendix
 
 Appendices A.1 through A.4 came from a reader census over C9–C18 that named, for each
@@ -1312,14 +1375,14 @@ requests, even though the suite does not).
 
 | | requirements |
 |---|---|
-| **enforced** | RUN-1, RUN-2, RUN-3, RUN-4, RUN-5, RUN-7, RUN-9, RUN-10, RUN-11, RUN-12, RUN-13, RUN-14, RUN-15, RUN-16, RUN-18, RUN-20 |
-| **partial** | RUN-6, RUN-8, RUN-17, RUN-19 |
+| **enforced** | RUN-1, RUN-2, RUN-3, RUN-4, RUN-5, RUN-7, RUN-9, RUN-10, RUN-11, RUN-12, RUN-13, RUN-14, RUN-15, RUN-16, RUN-18, RUN-19, RUN-20 |
+| **partial** | RUN-6, RUN-8, RUN-17 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-L1 enforced; INV-L2, INV-L3 and INV-L4 partial.
 
-**Sixteen enforced, four partial, nothing unread, of twenty.**
+**Seventeen enforced, three partial, nothing unread, of twenty.**
 
 RUN-13, RUN-14 and RUN-15 moved at 0.95.1 — the whole profile layer in one release,
 because they are one subject: a profile is a decision, and an operator has to be able to

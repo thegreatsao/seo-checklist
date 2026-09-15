@@ -369,6 +369,45 @@ class AProfileMeasuresItsOwnKindOfSite(unittest.TestCase):
         self.assertEqual(script, "duplicate_content.py")
         self.assertEqual(list(args), ["https://example.com/", "--thin-words", "150"])
 
+    def test_opt_in_flags_reach_the_plan_as_argv(self):
+        """The other half of RUN-6, and the one that had no reader anywhere.
+
+        Opt-in flags were tested where they are *generated* — `opt_in_flags()` returns
+        the right mapping for a mode — and nowhere where they are *used*. A second
+        reader over the requirement proposed the breakage that shows it: delete
+        `args += (opt_in or {}).get(chk["script"], [])` from `build_plan` and every
+        named RUN-6 test stays green.
+
+        The consequence is not cosmetic. `--verify-returns` is what makes the hreflang
+        checker fetch the other side of a pair; without it the checker answers a
+        narrower question under the same item id, and the recorded invocation — which
+        is what a reader consults to find out what was actually asked — shows a run
+        nobody performed.
+        """
+        items = [{"id": "IN-121", "source": "script", "severity": "high",
+                  "check": {"script": "hreflang_checker.py", "requires": "fetch",
+                            "args": ["{url}"]}}]
+        plan, skipped = self.runner.build_plan(
+            items, {"url": "https://example.com/"}, {"offline", "fetch", "crawl"},
+            "live", opt_in=self.runner.opt_in_flags("live", verify_bots=False))
+        self.assertEqual(skipped, {})
+        (script, args), = plan.keys()
+        self.assertEqual(script, "hreflang_checker.py")
+        self.assertEqual(list(args), ["https://example.com/", "--verify-returns"])
+
+    def test_archive_mode_adds_no_opt_in_flag_and_the_plan_shows_it(self):
+        """The floor. A `build_plan` appending the flags unconditionally would satisfy
+        the test above, and would make an archive run claim it verified returns it never
+        fetched — which is why `opt_in_flags` withholds the flag in that mode."""
+        items = [{"id": "IN-121", "source": "script", "severity": "high",
+                  "check": {"script": "hreflang_checker.py", "requires": "offline",
+                            "args": ["{url}"]}}]
+        plan, _ = self.runner.build_plan(
+            items, {"url": "https://example.com/"}, {"offline"}, "archive",
+            opt_in=self.runner.opt_in_flags("archive", verify_bots=False))
+        (_script, args), = plan.keys()
+        self.assertEqual(list(args), ["https://example.com/"])
+
     def test_the_two_editorial_items_are_out_of_scope_with_a_reason(self):
         self.assertEqual(self.local["exclude_items"], ["CN-056", "CN-057"])
         for item_id in ("CN-056", "CN-057"):

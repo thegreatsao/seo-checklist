@@ -4,15 +4,16 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.96.4 — see [CHANGELOG.md](CHANGELOG.md). **If a site starts refusing requests
-partway through an audit, the run now says so.** Until this release it did not: a host
-that answers the first request and then stops — rate limiting, a firewall tripping, a
-deploy mid-audit — left dozens of checks undecided and printed nothing about why. The
-report said as much as it would have for a clean run. That is fixed, and the count is
-reported on its own line, kept apart from the checks that failed for the plugin's own
-reasons, because the remedy is different: come back later rather than open anything.
-Before that, `0.96.3` gave this project's own unfinished-work ledger a category for
-rules no test could ever hold, `0.96.2` found two requirements claiming more than the
+Version 0.96.5 — see [CHANGELOG.md](CHANGELOG.md). A test release, with no change to
+what any check decides. The rule that keeps an audit honest about a site it only half
+read — "no problems found" over three pages of sixty is not a finding about the site —
+was itself well tested, and *every one of those tests handed it the "I only read half"
+flag directly. Nothing checked that a real half-read crawl ever raises the flag*, so
+the crawl could have stopped raising it and the suite would have stayed quiet. That
+path is now walked end to end against a real sixty-page site read three pages deep.
+Before that, `0.96.4` made a run say so when a site starts refusing requests partway
+through, `0.96.3` gave this project's own unfinished-work ledger a category for rules
+no test could ever hold, `0.96.2` found two requirements claiming more than the
 tests held, `0.96.1` fixed two checks that passed sites with none of the thing they
 judge, and `0.96.0` closed the same class for eight others — a page with no structured data
 passed "Implement & Validate Structured Data" and a page that is not a category page got

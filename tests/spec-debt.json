@@ -116,10 +116,10 @@
     "run-lifecycle": {
       "counts": {
         "bounded": 0,
-        "enforced": 16,
+        "enforced": 17,
         "none": 0,
         "opposed": 0,
-        "partial": 4
+        "partial": 3
       },
       "opposed": [],
       "requirements": 20,
@@ -152,10 +152,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 94,
+    "enforced": 95,
     "none": 2,
     "opposed": 1,
-    "partial": 48,
+    "partial": 47,
     "requirements": 149
   }
 }

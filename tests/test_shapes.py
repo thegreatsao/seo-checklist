@@ -41,7 +41,14 @@ REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
 # `PASS, FAIL, WARN, NO_DATA = "PASS", "FAIL", "WARN", "N/A"` until 0.95.2 — the
 # fourth name bound to the third status's string, harmless only because nothing had
 # used it yet, and a trap for whoever did.
-from checklist_runner import FAIL, NA, PASS, WARN  # noqa: E402
+from checklist_runner import (  # noqa: E402
+    FAIL, NA, PASS, WARN, passes_by_absence)
+
+
+def registry_items():
+    """The shipped registry, read once per call site that needs it."""
+    with open(REGISTRY, encoding="utf-8") as stream:
+        return json.load(stream)["items"]
 
 
 def run_audit(url: str, *extra: str, env=None, only: str = "crawling_indexing") -> dict:
@@ -364,6 +371,124 @@ class HttpsAndHsts(unittest.TestCase):
         payload = self.audit_over_tls(self.HSTS)
         self.assertTrue(payload["url"].startswith("https://"), payload["url"])
         self.assertTrue(payload["entry_reachable"], payload.get("entry_error"))
+
+
+class ACrawlThatStoppedAtItsPageLimit(unittest.TestCase):
+    """`openspec/specs/run-lifecycle/` RUN-19's join, which nothing read until 0.96.5.
+
+    The rule is covered thoroughly and in both directions — a clean answer over a capped
+    input is withheld, a defect found in the part that was read still fails, a failing
+    count is named as a floor. **Every one of those tests injects `truncated` by hand.**
+
+    Measured by mutation against the suite before this class existed:
+
+    | breakage | |
+    |---|---|
+    | the crawl never reports that it was capped (`"truncated": False`) | **MISSED** |
+    | one checker stops copying the flag out of the inventory | **MISSED** |
+    | the grader stops asking (`input_truncated`) | CAUGHT |
+
+    So the rule was guarded and both halves of the path feeding it were not:
+    `site_crawl.py` could have stopped reporting truncation altogether and the suite
+    would have stayed green. A flag nothing produces is a rule that never fires, and
+    "no violations found" over three pages of sixty would have gone back to reading as
+    a finding about the site.
+
+    This starts from a real capped crawl and follows it to a verdict, so the three
+    links are read as one thing.
+    """
+
+    PAGES = 60
+    CAP = 3
+
+    def build(self):
+        links = "".join(f'<a href="/p{i:02d}.html">p{i:02d}</a> '
+                        for i in range(self.PAGES))
+        routes = {"/robots.txt": (200, {"Content-Type": "text/plain"},
+                                  "User-agent: *\nDisallow:\n")}
+        for index in range(self.PAGES):
+            routes[f"/p{index:02d}.html"] = page(
+                f"Page {index:02d} of a site with sixty of them",
+                f"Body copy for page {index:02d}, with enough words to be a page "
+                f"rather than a stub. {links}")
+        routes["/"] = page("The entry page of a sixty page site",
+                           "Every page links to every other, so the crawl has more "
+                           f"queued than it may fetch. {links}")
+        return routes
+
+    def test_the_crawl_says_it_was_capped_and_the_verdict_follows(self):
+        # The whole registry, not one category. The flag is copied **per checker** and
+        # nine of them take a crawl inventory, so a narrowed run exercises only the
+        # checkers in its own category: a probe that cut the copy out of
+        # `duplicate_content.py` read MISSED against a `crawling_indexing` run while
+        # the same probe against `site_crawl.py` was caught. Two full audits of a
+        # sixty-page site is what closing that costs.
+        with served(self.build()) as site:
+            payload = run_audit(site.url, "--crawl-max-pages", str(self.CAP), only="")
+
+        summary = (payload.get("crawl") or {}).get("summary") or {}
+        self.assertTrue(
+            summary.get("truncated"),
+            f"a crawl of {self.PAGES} pages capped at {self.CAP} did not report itself "
+            f"truncated, so every rule that withholds over a capped input is inert: "
+            f"{summary}")
+
+        # The other end of the same path, read by comparing two runs of the same site
+        # rather than by matching a sentence: an item that answers `PASS` when the whole
+        # site was read, and `NO_DATA` when three pages of sixty were, is the
+        # propagation working. Asserting the evidence wording instead would pin a
+        # sentence the report is free to rewrite, and the first version of this test
+        # did exactly that and failed on "only part of the input was read".
+        with served(self.build()) as site:
+            whole = run_audit(site.url, "--crawl-max-pages", str(self.PAGES + 10),
+                              only="")
+        capped_status = {row["id"]: row["status"] for row in payload["items"]}
+        whole_status = {row["id"]: row["status"] for row in whole["items"]}
+
+        # Per item, not "at least one". The flag is copied once per checker, and eight
+        # of them take an inventory — so "some item was withheld" is satisfied by the
+        # seven that still copy it while the eighth quietly stops. Measured: a probe
+        # cutting the copy out of `duplicate_content.py` read MISSED against exactly
+        # that assertion, twice, once narrowed and once over the whole registry.
+        #
+        # The candidate set is derived from the registry through the runner's own
+        # `passes_by_absence`, so a checker added tomorrow is swept by existing.
+        candidates = {item["id"] for item in registry_items()
+                      if "{inventory_json}" in ((item.get("check") or {}).get("args")
+                                                or [])
+                      and passes_by_absence((item.get("check") or {}).get("assert")
+                                            or {})}
+        self.assertTrue(candidates, "nothing reads an inventory; this test is vacuous")
+
+        # Only the ones that actually decided over the whole site: an item that was
+        # `N/A` or `NEEDS_INPUT` there says nothing about propagation either way.
+        should_withhold = sorted(i for i in candidates if whole_status.get(i) == PASS)
+        self.assertTrue(
+            should_withhold,
+            f"no inventory-reading item passed over the whole site, so this asserts "
+            f"nothing: {sorted((i, whole_status.get(i)) for i in candidates)}")
+        kept = {i: capped_status.get(i) for i in should_withhold
+                if capped_status.get(i) != "NO_DATA"}
+        self.assertEqual(
+            kept, {},
+            f"these passed over three pages of {self.PAGES} and were not withheld, so "
+            f"their checker does not carry the crawl's truncation flag: {kept}")
+
+    def test_an_uncapped_crawl_of_a_small_site_says_nothing_about_truncation(self):
+        """The floor. A crawl reporting `truncated` unconditionally would satisfy the
+        test above and withhold every clean answer on every site, which is the failure
+        mode that makes a caveat worthless."""
+        routes = {"/robots.txt": (200, {"Content-Type": "text/plain"},
+                                  "User-agent: *\nDisallow:\n"),
+                  "/": page("A two page site", 'Small. <a href="/b.html">b</a>'),
+                  "/b.html": page("The second page", "Also small, and links nowhere.")}
+        with served(routes) as site:
+            payload = run_audit(site.url, "--crawl-max-pages", "100",
+                                only="crawling_indexing")
+        summary = (payload.get("crawl") or {}).get("summary") or {}
+        self.assertFalse(summary.get("truncated"),
+                         f"a two-page site under a hundred-page cap reported itself "
+                         f"truncated: {summary}")
 
 
 class WhatStaysUnexercised(unittest.TestCase):
