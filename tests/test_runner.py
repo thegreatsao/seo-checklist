@@ -23,6 +23,7 @@ from unittest import mock
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 SCRIPTS = os.path.join(SKILL, "scripts")
+TOOLS = os.path.join(SKILL, "tools")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -31,11 +32,13 @@ import checklist_runner as runner  # noqa: E402
 import checklist_report as report  # noqa: E402
 
 from checklist_runner import (  # noqa: E402
-    ANCHOR_RE, FAIL, FAILURE_LABEL, GSC_UNAVAILABLE, LLM_PENDING, MANUAL, NA,
+    ANCHOR_RE, ERROR_KINDS, FAIL, FAILURE_LABEL, GSC_UNAVAILABLE, LLM_PENDING, MANUAL,
+    NA, SITE_UNREADABLE,
     NEEDS_INPUT, open_since, run_series,
     NEEDS_THE_OUTSIDE_WORLD, NO_DATA, PASS, WARN, aggregate_pages, artifact_subject,
     audit_target,
     build_plan, choose_profile, diff_runs, evaluate, grade, is_page_level,
+    unreadable_count,
     SEVERITY_WEIGHT, private_host_skips, reads_artifact, same_page,
     looks_like_a_page, page_guard, profile_excludes, redact, registrable_domain,
     THIN_ENTRY_WORDS, history_path, load_public_suffixes, previous_run,
@@ -4124,12 +4127,103 @@ class ScriptFailureKind(unittest.TestCase):
 
     def test_every_kind_run_script_produces_has_a_label(self):
         """The labels live next to the code that raises them; a list kept in a
-        test drifts exactly the way the bug did."""
-        with open(os.path.join(SCRIPTS, "checklist_runner.py"), encoding="utf-8") as f:
-            src = f.read()
-        kinds = set(re.findall(r'"error_kind":\s*"(\w+)"', src))
-        self.assertTrue(kinds)
-        self.assertEqual(kinds - set(FAILURE_LABEL), set())
+        test drifts exactly the way the bug did.
+
+        Read over the AST from 0.96.4, and the regex it replaces is the whole reason:
+        `re.findall(r'"error_kind":\\s*"(\\w+)"', src)` finds a dict literal and not a
+        keyword argument, and `grade()` assigns the sixth kind as
+        `row.update(..., error_kind="unread")`. So the check whose only job was noticing
+        an unlabelled kind could not see the one unlabelled kind there was — and because
+        it was unlabelled it was also uncounted, and a run against a site that stopped
+        answering printed no failure line at all.
+
+        Both directions now, through `tools/audit_error_kinds.py`: a kind assigned and
+        not named is an unlabelled failure, and a kind named and never assigned is a
+        dead label that reads as coverage.
+        """
+        sys.path.insert(0, TOOLS)
+        import audit_error_kinds
+        assigned = audit_error_kinds.assigned_kinds()
+        self.assertTrue(assigned, "no kinds derived; this test is vacuous")
+        self.assertEqual(assigned, set(ERROR_KINDS))
+        self.assertEqual(audit_error_kinds.disagreements(), [])
+
+    def test_the_unreadable_kind_is_not_one_of_the_script_failures(self):
+        """The sixth kind is a different claim, and filing it with the five would send
+        an operator to the wrong place.
+
+        The five in `FAILURE_LABEL` say the *script* did not produce usable output and
+        the remedy is to the plugin. `unread` says the script ran, exited 0, and the
+        *site* answered nothing — a WAF tripping after N requests, a rate limit, a
+        deploy mid-audit — and the remedy is to come back later. Telling somebody their
+        scripts are broken when the host throttled them is the confusion VRD-5 exists
+        to prevent, one layer down.
+        """
+        self.assertNotIn(SITE_UNREADABLE, FAILURE_LABEL)
+        self.assertIn(SITE_UNREADABLE, ERROR_KINDS)
+        self.assertEqual(set(ERROR_KINDS) - {SITE_UNREADABLE}, set(FAILURE_LABEL))
+
+    def _graded_with(self, data: dict) -> dict:
+        item = {"id": "CI-004", "plerdy_ref": 4, "category": "crawling_indexing",
+                "category_label": "C", "title": "t", "severity": "critical",
+                "source": "script", "effort": "low", "fix": "f",
+                "check": {"script": "parse_html.py", "requires": "fetch",
+                          "assert": {"path": "meta_robots",
+                                     "none_matching": "noindex",
+                                     "missing_is": "pass"}}}
+        key = ("parse_html.py", ("https://example.test/",))
+        return grade([item], {key: ["CI-004"]}, {key: data}, {}, False)[0]
+
+    def test_every_failure_kind_becomes_no_data_and_not_a_verdict(self):
+        """RUN-7's second scenario, and the gap it names.
+
+        Only `timeout` was followed through to a verdict. The other four were each
+        asserted to *carry their label* and never to *become* anything, so a change
+        routing `crash` past the grading branch to `PASS` would have reddened nothing.
+        Asserting that a kind carries its label says nothing about the status it becomes.
+
+        The rule here would answer `PASS` on its own — `missing_is: pass` over an absent
+        `meta_robots` — which is what makes this a test of the branch rather than of the
+        fixture: the failure has to win over a rule that would otherwise decide.
+        """
+        for kind in sorted(FAILURE_LABEL):
+            with self.subTest(kind=kind):
+                row = self._graded_with({"__error__": "boom", "__error_kind__": kind})
+                self.assertEqual(row["status"], NO_DATA,
+                                 f"{kind} did not become NO_DATA")
+                self.assertEqual(row["error_kind"], kind)
+                self.assertIn(FAILURE_LABEL[kind], row["evidence"])
+
+    def test_a_site_that_stopped_answering_is_no_data_and_says_which(self):
+        """The sixth kind through the same door. The script exited 0 and returned its
+        defaults — `issues: []`, `missing_alt: 0` — and those grade perfectly well, so
+        this branch is the only thing between a throttled host and a confident PASS."""
+        row = self._graded_with({"fetch_error": "connection reset by peer",
+                                 "meta_robots": ""})
+        self.assertEqual(row["status"], NO_DATA)
+        self.assertEqual(row["error_kind"], SITE_UNREADABLE)
+        self.assertIn("connection reset by peer", row["evidence"])
+
+    def test_the_count_follows_the_rows_grade_produced(self):
+        """The path from a throttled fetch to the reported number, with nothing injected.
+
+        The first reader written for this counter fed `unreadable_items` into a payload
+        by hand and asserted the console reacted. It passed with the counting replaced
+        by `0` — a test of the surface that reads the number and not of the arithmetic
+        that produces it, which is the same shape as the defect the counter exists for.
+        Caught by a mutation probe, and this is the reader that answers it: `grade()`
+        makes the rows, `unreadable_count` counts them, and nothing here writes the
+        number.
+        """
+        unread = {"fetch_error": "connection reset by peer", "meta_robots": ""}
+        healthy = {"meta_robots": ""}
+        self.assertEqual(unreadable_count([self._graded_with(unread)]), 1)
+        self.assertEqual(unreadable_count([self._graded_with(healthy)]), 0,
+                         "a run that read the site counts no unreadable items")
+        self.assertEqual(
+            unreadable_count([self._graded_with(unread),
+                              self._graded_with(healthy),
+                              self._graded_with(unread)]), 2)
 
     def test_a_missing_script_says_so(self):
         out = run_script("definitely_not_a_script.py", [])

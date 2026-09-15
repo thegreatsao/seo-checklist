@@ -1339,6 +1339,7 @@ class EveryToolGateRunsHereToo(unittest.TestCase):
         ("build_checklist.py", ["--check"]),
         ("audit_assertions.py", []),
         ("audit_reachability.py", []),
+        ("audit_error_kinds.py", ["--check"]),
         ("audit_item_semantics.py", []),
         ("audit_catalogue.py", ["--check"]),
         ("audit_derived_sets.py", ["--check",

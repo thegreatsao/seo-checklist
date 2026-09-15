@@ -1102,6 +1102,34 @@ class TheScoreNeverTravelsWithoutItsShare(unittest.TestCase):
         self.assertIsNotNone(scores["seo_score"])
         self.assertIsNotNone(scores["weight_pct"])
 
+    def test_the_console_says_when_the_site_stopped_answering(self):
+        """`openspec/specs/run-lifecycle/` RUN-7's other half: the counts are reported.
+
+        The per-kind tally had no reader in either form, and the one assertion on it
+        said it was *empty* — a statement about the fixtures, not about the tally. So
+        the sixth kind arrived uncounted and nothing noticed: a site that answers the
+        entry request and then stops produced dozens of NO_DATA rows and a console that
+        printed no failure line at all.
+
+        Asserted the way the surfaces above are, by moving the number rather than
+        pinning the sentence: a console that stopped reading `unreadable_items` stops
+        reacting to it, while one that rewords or translates the line still passes.
+        """
+        quiet, loud = self.payload(), self.payload()
+        quiet["unreadable_items"], loud["unreadable_items"] = 0, 11
+        self.assertNotEqual(self.console(quiet), self.console(loud),
+                            "the console does not read unreadable_items, so a run "
+                            "against a throttled host reports nothing about it")
+        self.assertIn("11", self.console(loud))
+
+    def test_a_run_that_read_everything_says_nothing_about_it(self):
+        """The floor under the test above. A console printing the line unconditionally
+        would satisfy it and would put a failure notice on every clean run, which is
+        how a warning stops being read."""
+        clean = self.payload()
+        clean["unreadable_items"] = 0
+        self.assertNotIn("stopped answering", self.console(clean))
+
 
 
 class TheProvenanceListIsTheOneThisDocumentNames(unittest.TestCase):

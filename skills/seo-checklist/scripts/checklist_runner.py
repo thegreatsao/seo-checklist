@@ -79,6 +79,24 @@ FAILURE_LABEL = {
     "signal": "script was killed by the operating system",
 }
 
+# The sixth kind, and deliberately not one of the five above.
+#
+# Those five say **the script** did not produce usable output, and the remedy is to the
+# plugin. `unread` says the script ran, exited 0, and the **site** answered nothing: a
+# WAF tripping after N requests, a rate limit, a deploy mid-audit. The remedy is to come
+# back later, and telling an operator their scripts are broken when the site throttled
+# them sends them to the wrong place entirely.
+#
+# It had no label and no count until 0.96.4, and neither absence was visible: the census
+# over the runner's source derived kinds with `re.findall(r'"error_kind":\s*"(\w+)"')`,
+# which sees a dict literal and not the keyword argument this one is written as. So a
+# run against a site that stopped answering reported dozens of NO_DATA rows and printed
+# no failure line at all. `ERROR_KINDS` is the whole vocabulary now, derived from the
+# source by `tools/audit_error_kinds.py` in both directions.
+SITE_UNREADABLE = "unread"
+UNREADABLE_LABEL = "the site stopped answering"
+ERROR_KINDS = tuple(FAILURE_LABEL) + (SITE_UNREADABLE,)
+
 
 def _signal_failure(script_name: str, signal_number: int, stderr: str) -> dict:
     """A script the OS killed, reported as that rather than as a script defect.
@@ -1298,6 +1316,25 @@ def execute(plan: dict[tuple, list[str]], workers: int, timeout: int, quiet: boo
 # discarding the other forty-nine verdicts because of it would be its own kind of
 # dishonesty.
 UNREAD_KEYS = ("fetch_error", "error")
+
+
+def unreadable_count(graded: list[dict]) -> int:
+    """How many items were undecided because the site stopped answering.
+
+    Counted off the graded rows and not off `results`, which is the whole point.
+    `grade()` assigns `unread` onto the row — the script returned cleanly, so there is
+    nothing in `results` to count — and `script_failures`, which reads
+    `__error_kind__` from the script outputs, could never see it however many kinds
+    were added to the vocabulary. Measured before the repair: a site that answers the
+    entry request and then stops produced dozens of NO_DATA rows, an empty
+    `script_failures`, and a run that printed no failure line at all.
+
+    A function rather than an expression inside the payload because the first reader
+    written for it fed the number in by hand and passed while this counting was
+    replaced by `0` — the same shape as the defect, one level up. Named, it can be
+    handed real rows from `grade()`.
+    """
+    return sum(1 for row in graded if row.get("error_kind") == SITE_UNREADABLE)
 
 
 def unread_reason(data: dict) -> str:
@@ -2940,6 +2977,13 @@ def print_report(payload, a, hist, crawl_path, diff_note) -> None:
         print(f"Script failures: {parts}"
               + ("  — timeouts are retryable: raise --timeout or lower --workers"
                  if "timeout" in payload["script_failures"] else ""))
+    # Its own line, because it sends the reader somewhere else. A script failure is the
+    # plugin's problem and this is the site's: the checks ran and the host stopped
+    # answering them, so the fix is to come back rather than to open anything.
+    if payload.get("unreadable_items"):
+        print(f"{payload['unreadable_items']} item(s) undecided because "
+              f"{UNREADABLE_LABEL} partway through — the scripts ran and read nothing. "
+              f"Re-run later, or lower --workers if the host is rate limiting.")
     c = payload.get("crawl")
     if c and c.get("broken"):
         print(f"\nBroken URLs ({len(c['broken'])}):")
@@ -3504,6 +3548,7 @@ def main() -> int:
             for kind in FAILURE_LABEL
             if any(v.get("__error_kind__") == kind for v in results.values())
         },
+        "unreadable_items": unreadable_count(graded),
         # Search Console's opportunities: work a person can do, carried in the artifact
         # because no item asserts on them any more and nothing else in a run knows about
         # them. GO-134 used to read this field through a severity gate, so "position 4.0

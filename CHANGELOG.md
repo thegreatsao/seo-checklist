@@ -10,6 +10,67 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.96.4 — a sixth failure kind that no census could see and no tally could count
+
+Registry version: **`7c7b9d827179`, unchanged.** No item, rule or checker moved. One new
+line can appear in a report, and it appears on runs that were previously silent about
+the thing that mattered most.
+
+**A site that stops answering partway through an audit said nothing about it.** The
+entry-reachability gate catches a host that is dead when the run starts. It cannot see
+the other case: a host that answers the entry request and then stops — a WAF tripping
+after N requests, a rate limit, a deploy during an audit. `grade()` has a branch for
+exactly that, and it marks those items `NO_DATA` with the kind `unread`. Measured
+through `grade()` before the repair:
+
+    row status: NO_DATA | error_kind: 'unread'
+    script_failures: {}          -> the run printed no failure line at all
+
+So an operator got a report with dozens of undecided items and nothing saying the site
+had throttled them. It read like a clean run that happened to know less.
+
+**Two independent reasons, and the first hid the second.** The kind was in no
+vocabulary: `FAILURE_LABEL` named five and this was a sixth. And the census that exists
+to catch exactly that derived its list with
+
+    re.findall(r'"error_kind":\s*"(\w+)"', src)
+
+which finds a dict literal. `grade()` writes this one as a keyword argument —
+`row.update(status=NO_DATA, error_kind="unread")` — so **the check whose only job was
+noticing an unlabelled kind could not see the one unlabelled kind there was.**
+`tools/audit_error_kinds.py` reads the AST now, in both directions: a kind assigned and
+not named is an unlabelled failure, and a kind named and never assigned is a dead label
+that reads as coverage. It runs in CI.
+
+**And the tally was looking somewhere else entirely.** `script_failures` counts
+`results[key]["__error_kind__"]` — what a *script* reported. `unread` is assigned by the
+grader onto the **row**, because the script exited zero and there is nothing in
+`results` to count. Adding the kind to `FAILURE_LABEL` would still have counted zero.
+`unreadable_count()` reads the graded rows.
+
+**Kept out of the five on purpose.** Those say the script produced nothing usable, and
+the remedy is to this plugin. `unread` says the checks ran and the host stopped
+answering them, and the remedy is to come back later. Reporting them together would tell
+an operator their scripts are broken when they were throttled — the confusion
+`openspec/specs/verdicts/` VRD-5 exists to prevent, one layer down. It has its own
+constant, its own count and its own line.
+
+**RUN-7's other half, which the same release owed.** Of the five kinds, only `timeout`
+was ever followed through to a verdict; `crash`, `missing`, `bad_output` and `signal`
+were each asserted to carry their label and never to *become* anything, so a change
+routing one of them past the grading branch to `PASS` reddened nothing. All five are now
+graded through `grade()` against a rule that would otherwise answer `PASS`, so the
+failure has to win rather than merely be recorded. RUN-7 moves `partial` → `enforced`;
+the ledger goes **93/49 → 94/48**.
+
+**The first reader written for the count was the same defect one level up.** It fed
+`unreadable_items` into a payload by hand and asserted the console reacted — and a
+mutation probe replaced the counting with `0` and it passed. It read the surface that
+shows the number and never the arithmetic that produces it, which is precisely what the
+old assertion on `script_failures` did by asserting the tally was *empty*: a statement
+about the fixtures. The counter is a named function now and its reader starts from rows
+`grade()` produced. Five probes on the final readers, five caught.
+
 ## 0.96.3 — `bounded`, a fifth debt class, for where the suite runs out of program
 
 Registry version: **`7c7b9d827179`, unchanged.** No item, rule or checker moved and no

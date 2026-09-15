@@ -355,22 +355,30 @@ tested where they are generated and not where they are used.
 
 ### Requirement: RUN-7 — a failed script is `NO_DATA` with a kind, and the kinds are counted apart
 
-Five failure kinds, all of which SHALL be graded `NO_DATA`, and none of which is
-interchangeable with another. The kind MUST be recorded per item and the counts reported
-per kind.
+Six kinds of undecided answer, all of which SHALL be graded `NO_DATA`, and none of which
+is interchangeable with another. The kind MUST be recorded per item and the counts
+reported. Five of them say **the script** produced nothing usable; the sixth says the
+script ran and **the site** answered nothing, and it is not one of the failures.
 
 **Why:** the status says the audit could not answer, which is what the score needs. The
 kind says whose problem it is, which is what the next release needs. A run where eleven
 items timed out and a run where eleven crashed produce the same score and require entirely
-different work.
-**Reader:** partial, and thinner than the vocabulary suggests. Every kind is *labelled* —
-`test_every_kind_run_script_produces_has_a_label` derives the kinds from the runner's own
-source and asserts none is unlabelled, which is a good shape and not a reader of the
-statuses. Only `timeout` is followed through to a verdict:
-`test_timeout_is_labelled_and_marked_retryable` asserts `NO_DATA`. `crash`, `missing`,
-`bad_output` and `signal` are each asserted at the label and never graded, so a change
-routing one of them to `PASS` would redden nothing. The per-kind tally has no reader at
-all.
+different work — and a run where the host stopped answering requires no work on this
+plugin at all.
+**Reader:** enforced, at 0.96.4. Every kind is labelled and every kind is graded:
+`test_every_failure_kind_becomes_no_data_and_not_a_verdict` runs all five through
+`grade()` against a rule that would otherwise answer `PASS`, so the failure has to win
+rather than merely be recorded, and
+`test_a_site_that_stopped_answering_is_no_data_and_says_which` does the same for
+`unread`. The vocabulary is derived from the runner's source in both directions by
+`tools/audit_error_kinds.py`, which runs in CI, and the count has a reader that starts
+from rows `grade()` produced rather than from a number written by the test.
+
+**What this line said until 0.96.4, and what it cost.** It said `partial`, and it was
+right: four kinds were asserted at the label and never graded, so a change routing
+`crash` to `PASS` reddened nothing, and the per-kind tally had no reader in either form.
+Repairing it turned up the defect underneath, in A.12 — a sixth kind that no census
+could see and no tally could count.
 
 #### Scenario: a checker crashes
 - **WHEN** a planned script exits non-zero
@@ -392,6 +400,12 @@ all.
 #### Scenario: two runs with the same score and different work
 - **WHEN** one run has eleven timeouts and another eleven crashes
 - **THEN** the scores are identical and the per-kind tally is what separates them
+
+#### Scenario: the site stops answering partway through
+- **WHEN** a script runs, exits zero, and reports that it read nothing
+- **THEN** the items are `NO_DATA` carrying the kind `unread`, and the count is reported
+- **AND** it is not counted among the script failures, because the scripts did not
+  fail and sending the operator to the plugin is the wrong remedy
 - **AND** a tally asserted only to be empty is a statement about the fixtures
 
 ### Requirement: RUN-8 — nothing runs against an entry the audit could not read, and the absence of a score is the output
@@ -1230,6 +1244,48 @@ was not there can check it. Three naming conventions are now in use across these
 lines — a `test_` function, a CamelCase class, and a sentence describing neither — and
 only the first two can be followed by anyone who does not already know the answer.
 
+#### A.12 — a sixth failure kind no census could see, 15 September 2026
+
+RUN-7 said *five* kinds. `grade()` assigns a sixth:
+
+    row.update(status=NO_DATA, error_kind="unread", ...)
+
+for the case the entry-reachability gate cannot catch — a site that answers the entry
+request and then stops, which is a WAF tripping after N requests, a rate limit, or a
+deploy during an audit. It was in no vocabulary and no tally, and both absences came
+from the same place.
+
+**The census could not see it.** `test_every_kind_run_script_produces_has_a_label`
+derived the vocabulary with `re.findall(r'"error_kind":\s*"(\w+)"', src)`, which finds a
+dict literal. The sixth kind is written as a keyword argument, so the check whose only
+job was noticing an unlabelled kind could not see the one unlabelled kind there was.
+A census finds the spellings it was given; `tools/audit_error_kinds.py` reads the AST,
+and both directions — a kind assigned and not named, and a kind named and never
+assigned.
+
+**And the tally was looking somewhere else entirely.** `script_failures` counts
+`results[key]["__error_kind__"]` — what a *script* reported. `unread` is assigned by the
+grader onto the **row**, because the script exited zero and there is nothing in
+`results` to count. So adding the kind to `FAILURE_LABEL` would still have counted zero.
+Measured before the repair, through `grade()`:
+
+    row status: NO_DATA | error_kind: 'unread'
+    script_failures: {}          -> the run printed no failure line at all
+
+**It is kept out of the five on purpose.** Those say the script produced nothing usable
+and the remedy is to this plugin. `unread` says the checks ran and the host stopped
+answering them, and the remedy is to come back later. Reporting them together would tell
+an operator their scripts are broken when they were throttled — VRD-5's confusion, one
+layer down — so the sixth kind has its own constant, its own count and its own line.
+
+**The first reader written for the count was the same defect one level up.** It fed
+`unreadable_items` into a payload by hand and asserted the console reacted; a mutation
+probe replaced the counting with `0` and it passed. It read the surface that shows the
+number and never the arithmetic that makes it — which is exactly what the old assertion
+on `script_failures` did, saying the tally was *empty*, a statement about the fixtures.
+`unreadable_count()` is a named function now, and its reader starts from rows `grade()`
+produced. Five probes, five caught.
+
 #### A.6 — the survey that produced this appendix
 
 Appendices A.1 through A.4 came from a reader census over C9–C18 that named, for each
@@ -1256,14 +1312,14 @@ requests, even though the suite does not).
 
 | | requirements |
 |---|---|
-| **enforced** | RUN-1, RUN-2, RUN-3, RUN-4, RUN-5, RUN-9, RUN-10, RUN-11, RUN-12, RUN-13, RUN-14, RUN-15, RUN-16, RUN-18, RUN-20 |
-| **partial** | RUN-6, RUN-7, RUN-8, RUN-17, RUN-19 |
+| **enforced** | RUN-1, RUN-2, RUN-3, RUN-4, RUN-5, RUN-7, RUN-9, RUN-10, RUN-11, RUN-12, RUN-13, RUN-14, RUN-15, RUN-16, RUN-18, RUN-20 |
+| **partial** | RUN-6, RUN-8, RUN-17, RUN-19 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-L1 enforced; INV-L2, INV-L3 and INV-L4 partial.
 
-**Fifteen enforced, five partial, nothing unread, of twenty.**
+**Sixteen enforced, four partial, nothing unread, of twenty.**
 
 RUN-13, RUN-14 and RUN-15 moved at 0.95.1 — the whole profile layer in one release,
 because they are one subject: a profile is a decision, and an operator has to be able to

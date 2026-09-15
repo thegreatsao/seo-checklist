@@ -85,6 +85,9 @@ jobs:
       # finds as an error, so the band could not fire on any page ever built.
       - name: No verdict is unreachable without saying so
         run: python skills/seo-checklist/tools/audit_reachability.py
+      - name: Every failure kind the runner assigns is labelled and counted
+        run: python skills/seo-checklist/tools/audit_error_kinds.py --check
+
 
       # The other half of that objection: an assertion that fires correctly, on the
       # wrong thing. Held out of CI through 0.20 and 0.21 because it exited 1 on the
@@ -534,6 +537,9 @@ jobs:
 
       - name: No verdict is unreachable without saying so
         run: python skills/seo-checklist/tools/audit_reachability.py
+      - name: Every failure kind the runner assigns is labelled and counted
+        run: python skills/seo-checklist/tools/audit_error_kinds.py --check
+
 
       - name: Every item asserts what its title says
         run: python skills/seo-checklist/tools/audit_item_semantics.py
