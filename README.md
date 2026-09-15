@@ -4,18 +4,18 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.96.2 — see [CHANGELOG.md](CHANGELOG.md). A release about this project's own
-honesty rather than about any site's SEO: no check changed, no verdict moves, and the
-registry is untouched. Thirteen requirements had been marked fully enforced on one
-person's reading, and reading them again — with two other models, and by breaking the
-code to see whether anything went red — found two that were not. The rounding rule that
-keeps two reports from turning one fraction into different numbers was being checked on
-the headline score and on neither of the two other numbers beside it; both are checked
-now. And the rule that a check must say when it does not apply is honestly marked
-partial, because it can only reach the 145 checks that run a script and not the 72
-answered by a person or a model. Before that, `0.96.1` fixed two checks that passed
-sites with none of the thing they judge, and `0.96.0` closed the same class for eight
-others — a page with no structured data
+Version 0.96.3 — see [CHANGELOG.md](CHANGELOG.md). Like the release before it, this one
+changes no check and moves no verdict: it fixes how this project counts its own
+unfinished work. Four rules in the operator's protocol govern what a *person* writes to
+a client — whether the summary they send says a verdict was claimed rather than
+measured, whether they answer from memory when the tool for the question is missing —
+and no test can ever hold those, because the violation happens in somebody's sentence.
+They were being counted as work nobody had got round to, which made this project's own
+debt look four items larger than it is. They are now a category of their own, and two
+new rules stop it becoming a hiding place: a requirement filed there may not name a test,
+and it has to argue why no test could exist. Before that, `0.96.2` found two requirements
+claiming more than the tests held, `0.96.1` fixed two checks that passed sites with none
+of the thing they judge, and `0.96.0` closed the same class for eight others — a page with no structured data
 passed "Implement & Validate Structured Data" and a page that is not a category page got
 a warning about being a bad one — and `0.95.2` fixed auditing one category, which used to drop the
 other 210 items out of the report entirely, so the partition summed to the slice and the

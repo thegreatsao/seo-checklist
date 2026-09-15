@@ -2,8 +2,8 @@
 """What the twelve normative documents in `specs/` do and do not hold.
 
 Each document ends with a census of its own requirements — enforced, partial, none,
-opposed — and `tests/test_specs.py` makes sure each of those censuses is honest about
-itself. Nothing summed them, so the suite's total debt was twelve numbers in twelve
+opposed, bounded — and `tests/test_specs.py` makes sure each of those censuses is honest
+about itself. Nothing summed them, so the suite's total debt was twelve numbers in twelve
 files and, as the coverage map put it, a feeling rather than a number.
 
 This is the sum. It reads the documents, not a ledger beside them: there is nothing
@@ -37,11 +37,11 @@ import sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 SPECS = os.path.join(ROOT, "openspec", "specs")
 
-CLASSES = ("enforced", "partial", "none", "opposed")
+CLASSES = ("enforced", "partial", "none", "opposed", "bounded")
 # Both grammars: `### Requirement: HST-1 — ...` after the OpenSpec conversion and
 # `### HST-1 — ...` before it. The twelve convert one at a time.
 REQUIREMENT = re.compile(r"^### (?:Requirement: )?([A-Z]{2,4}-\d+) — (.+)$")
-ROW = re.compile(r"^\| \*\*(enforced|partial|none|opposed)\*\* \| (.+?) \|$")
+ROW = re.compile(r"^\| \*\*(enforced|partial|none|opposed|bounded)\*\* \| (.+?) \|$")
 ID = re.compile(r"\b([A-Z]{2,4}-\d+)\b")
 
 
@@ -96,23 +96,34 @@ def record() -> dict:
 def report(data: dict, with_titles: bool = False) -> list[str]:
     docs, totals = data["documents"], data["totals"]
     width = max(len(n) for n in docs)
-    out = ["%-*s  %5s %8s %7s %5s %8s" % (width, "document", "reqs", "enforced",
-                                          "partial", "none", "opposed")]
+    # Columns derived from CLASSES rather than spelled out. A fifth class arrived at
+    # 0.96.3, and a hand-written header would have gone on printing four of them beside
+    # a `reqs` total they no longer sum to: a table that does not add up, in the tool
+    # whose whole purpose is adding up.
+    def cell(label: str) -> int:
+        return max(8, len(label) + 1)
+
+    out = ["%-*s  %5s" % (width, "document", "reqs")
+           + "".join(" %*s" % (cell(c), c) for c in CLASSES)]
+
+    def row(label: str, reqs: int, counts: dict) -> str:
+        return ("%-*s  %5d" % (width, label, reqs)
+                + "".join(" %*d" % (cell(c), counts[c]) for c in CLASSES))
+
     for name in sorted(docs):
-        d = docs[name]
-        c = d["counts"]
-        out.append("%-*s  %5d %8d %7d %5d %8d"
-                   % (width, name, d["requirements"], c["enforced"], c["partial"],
-                      c["none"], c["opposed"]))
-    out.append("%-*s  %5d %8d %7d %5d %8d"
-               % (width, "TOTAL", totals["requirements"], totals["enforced"],
-                  totals["partial"], totals["none"], totals["opposed"]))
+        out.append(row(name, docs[name]["requirements"], docs[name]["counts"]))
+    out.append(row("TOTAL", totals["requirements"], totals))
     held = totals["enforced"]
     out.append("")
     out.append("%d of %d requirements are held by something that fails when they are "
                "violated." % (held, totals["requirements"]))
     out.append("%d are unread and %d are opposed — a reader that fires when the "
                "requirement is *met*." % (totals["none"], totals["opposed"]))
+    # Said on its own line because it is a different claim. `none` is work outstanding;
+    # `bounded` is a boundary the document argues. Summing them was the ledger reporting
+    # a debt where there is an edge, and understating the tree by exactly four.
+    out.append("%d are bounded — their subject is outside the program, so no fixture, "
+               "harness or gate could observe the violation." % totals["bounded"])
     out.append("")
     out.append("A count is not a verdict on the tree: `partial` is the largest column "
                "and says nothing about")

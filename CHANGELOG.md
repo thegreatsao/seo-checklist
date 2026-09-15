@@ -10,6 +10,66 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.96.3 — `bounded`, a fifth debt class, for where the suite runs out of program
+
+Registry version: **`7c7b9d827179`, unchanged.** No item, rule or checker moved and no
+verdict changes on any site.
+
+**Four requirements were being counted as unread work, and they are a boundary.**
+`openspec/specs/operator-protocol/` OPR-2, OPR-3, OPR-5 and OPR-6 constrain what a
+*person* does outside this program: what they quote in a client email, whether their
+summary says a verdict was claimed rather than measured, whether they let a playbook set
+a status, whether they answer from memory when the tool for the question is absent. No
+fixture, harness or gate could observe any of those violations, because the violation
+happens in somebody's sentence. Each carried that argument in prose from the first draft
+and the ledger counted all four `none`, level with a requirement nobody got round to —
+so the tree's own debt total **understated it by four, in the direction that flatters
+effort rather than the tree**.
+
+`bounded` is the fifth class. The suite's unread count drops **6 → 2**; nothing else
+moves, and the total is unchanged at 149.
+
+| | enforced | partial | none | opposed | bounded |
+|---|---|---|---|---|---|
+| before | 93 | 49 | 6 | 1 | — |
+| after | 93 | 49 | 2 | 1 | 4 |
+
+**It is not a softer `none`, and two new rules keep it from becoming one.** A `bounded`
+line **may name no test** — naming one contradicts the claim that no reader could exist,
+which is the same self-contradiction `tests/test_specs.py` was written to catch. And it
+**must argue rather than assert**, because for this class the classification *is* the
+argument and a bare word is the argument missing. Neither judges whether a boundary is
+real; that is what the line is for, and a wrong one is an argument somebody can take up.
+Both were probed by mutation, along with the table/reader agreement rule now that
+`bounded` is new to it — three mutations, three caught, each by the test named for it.
+
+**The distinction the class does not blur.** `openspec/specs/inputs/` INP-10 is unread
+because this suite's fixtures cannot reach the branch — a limit of the instrument that a
+better fixture removes. Nothing removes the limit under OPR-6: fabrication is
+indistinguishable from work from the inside, which is a fact about audits rather than
+about this suite's effort.
+
+**Two things the change broke on the way, both caught by existing gates.**
+`tools/spec_debt.py` printed its table from five hard-coded column names, so a fifth
+class would have gone on printing four of them beside a `reqs` total they no longer sum
+to — a table that does not add up, in the tool whose whole purpose is adding up. The
+columns are derived from `CLASSES` now. And `governance/` GOV-9 states how many
+properties `tests/test_specs.py` holds; adding two tests moved it from twenty-three to
+twenty-five, and the reader over that sentence said so.
+
+**A failure message that printed the same numbers on both sides.**
+`tools/audit_derived_sets.py --check` reported staleness as *"it records 169 sets and 145
+unread, the tree has 169 and 145"* — because the fifth class changed a set's
+**membership** and neither total. A reader would take that for a broken tool rather than
+a stale record. It names what moved now (`spec_debt.CLASSES: 4 entries -> 5`), and falls
+back to the totals only when the totals are what differ.
+
+**And the gate found its own first defect.** `test_a_bounded_requirement_argues_rather
+_than_asserts` failed OPR-3 on its first run: the parser kept only the *first line* of a
+`Reader:` block, so a rule about whether a line argues was measuring one line of a
+paragraph. `requirements()` keeps the whole block now, and the rule reads the argument
+rather than its opening.
+
 ## 0.96.2 — thirteen requirements said `enforced`; two were not, and one line named no test
 
 Registry version: **`7c7b9d827179`, unchanged.** No item, rule or checker moved and no

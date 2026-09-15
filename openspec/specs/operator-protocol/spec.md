@@ -130,9 +130,11 @@ the proportion of the registry it was computed over SHALL go with it.
 **Why:** this is `openspec/specs/reporting/` REP-1 restated for the human link in the chain, and it
 is the one place the number escapes the tool's control entirely. "96" travels; "96, over
 60% of the registry" does not travel as well and is the true one.
-**Reader:** **none**, and unenforceable by construction — the tool cannot see what the
-operator writes. The renderers print the pair, which is REP-1's `none` for a different
-reason; here nothing is even in a position to check.
+**Reader:** bounded. The subject is a sentence somebody writes outside this program — a
+summary, a message, a client email — and no fixture, harness or gate is in a position to
+read it. The renderers print the pair, which is REP-1's business and a different
+question: that one is about a surface this tree controls, and this one begins where the
+number leaves it.
 
 #### Scenario: the number leaves the tool
 - **WHEN** an operator or an agent quotes the score anywhere outside the report
@@ -152,8 +154,10 @@ found".
 **Why:** the audit's authority rests on the reader being able to tell measurement from
 judgement. The payload records who decided each item precisely so this is possible; a
 summary that drops it spends the distinction the tool went to trouble to preserve.
-**Reader:** **none.** The `decided_by` stamp exists and is asserted in the payload
-(`openspec/specs/reporting/` REP-4); nothing reads what the operator does with it.
+**Reader:** bounded. The `decided_by` stamp exists and is asserted in the payload
+(`openspec/specs/reporting/` REP-4), which is the whole of what this tree can do: it
+preserves the distinction and hands it over. What the operator writes with it is outside
+the program, and an audit that could read the summary would not have needed the stamp.
 
 #### Scenario: a summary of mixed provenance
 - **WHEN** some items were measured, some judged by a model and some claimed by a person
@@ -194,9 +198,10 @@ items, and following one is not evidence.
 **Why:** a playbook is a procedure, and a procedure that could set a verdict would be a
 checker written in prose and run by hand — with no evidence trail, no reproducibility and
 no way for anybody to disagree with it.
-**Reader:** **none.** The rule is stated in the playbooks themselves and nothing enforces
-it. In practice it holds because a playbook has no mechanism to write a status; the rule
-exists for the operator, who does.
+**Reader:** bounded. The rule is stated in the playbooks themselves, and in practice it
+holds because a playbook has no mechanism to write a status — the rule exists for the
+operator, who does. Nothing here can watch a person decide that following a procedure
+counts as having looked, which is the only way this is violated.
 
 #### Scenario: a playbook followed
 - **WHEN** an operator works through a playbook
@@ -218,9 +223,12 @@ answer assembled from memory MUST be refused.
 competitor list assembled from memory "is fabrication with a confident tone, and it is
 worse than an honest N/A". The confident tone is the whole problem — it is indistinguishable
 from a researched answer, and it is the failure mode an agent operator is most prone to.
-**Reader:** **none.** The playbook instructs the operator to stop; nothing checks that they
-did, and nothing could. This is the single most consequential unenforceable rule in the
-suite, and writing it down is the only available remedy.
+**Reader:** bounded, and this is the entry the category was needed for. The playbook
+instructs the operator to stop; nothing checks that they did, and nothing could —
+fabrication is indistinguishable from work from the inside, which is a fact about audits
+rather than about this suite's effort. Writing it down is the only available remedy, and
+filing it level with a requirement nobody got round to reading was the ledger claiming a
+debt where there is a boundary.
 
 #### Scenario: the tool for the question is absent
 - **WHEN** an item needs a search, a browser or a credential the operator does not have
@@ -430,12 +438,29 @@ mechanical surface to probe.
 |---|---|
 | **enforced** | OPR-8 |
 | **partial** | OPR-1, OPR-4, OPR-7 |
-| **none** | OPR-2, OPR-3, OPR-5, OPR-6 |
+| **none** | — none |
 | **opposed** | — none |
+| **bounded** | OPR-2, OPR-3, OPR-5, OPR-6 |
 
 Invariants: INV-O3 and INV-O4 enforced; INV-O2 partial; INV-O1 unread.
 
-**One enforced, three partial, four unread, of eight.**
+**One enforced, three partial, none unread, four bounded, of eight.**
+
+`bounded` is a fifth class, introduced here at 0.96.3 because this is where the suite runs
+out of program. A bounded requirement's subject is a sentence a person writes to a client,
+or a decision they make before writing anything: no fixture, harness or gate could observe
+the violation. The four below carried that argument in prose from the first draft, and the
+ledger counted them level with work nobody got round to — so the tree's own debt total
+understated it by four, in the direction that flatters effort rather than the tree.
+
+It is not a softer `none`, and two rules keep it from becoming one: a bounded line may
+name no test, because naming one contradicts the claim, and it must argue rather than
+assert. Neither judges whether a boundary is *real* — that is what the line is for, and a
+wrong one is an argument somebody can take up.
+
+The distinction it does not blur: `openspec/specs/inputs/` INP-10 is unread because this
+suite's fixtures cannot reach the branch, which is a limit of the instrument that a better
+fixture removes. Nothing removes the limit below.
 
 This was the only census in the suite with nothing enforced at all, and it was the one
 that was not an indictment. Five of these eight requirements are obligations on a person

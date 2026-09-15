@@ -38,7 +38,12 @@ SPECS = os.path.join(ROOT, "openspec", "specs")
 TESTS = os.path.dirname(os.path.abspath(__file__))
 SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 
-CLASSES = ("enforced", "partial", "none", "opposed")
+# `bounded` is the fifth, and it is not a softer `none`. A requirement is bounded when
+# its subject is outside the program: no fixture, no harness and no gate could observe
+# the violation, because the violation happens in a person's sentence to a client. The
+# ledger counted four of those level with work nobody got round to, and understated the
+# tree by exactly that many — in the direction that flatters effort rather than the tree.
+CLASSES = ("enforced", "partial", "none", "opposed", "bounded")
 
 # The word a summary sentence uses for a count. `none` is spelled as a phrase —
 # "Nothing fully enforced" — because a document with an empty column says so in prose.
@@ -48,9 +53,11 @@ NUMBER = {"nothing": 0, "no": 0, "zero": 0, "one": 1, "two": 2, "three": 3, "fou
           "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20}
 
 # `none` in the table is spelled `unread` in the summary sentence: the table names the
-# reader's state and the sentence names the requirement's. Both appear in all four.
+# reader's state and the sentence names the requirement's. Both appear in all five.
+# `bounded` is spelled the same in both, because the table and the sentence are making
+# the same claim about it — that nothing could read it, not that nothing does.
 SUMMARY_WORD = {"enforced": "enforced", "partial": "partial", "none": "unread",
-                "opposed": "opposed"}
+                "opposed": "opposed", "bounded": "bounded"}
 
 # `### Requirement: HST-1 — title` is the OpenSpec grammar; `### HST-1 — title` is what
 # these documents used before the migration. All twelve are converted, and the old form
@@ -60,7 +67,7 @@ SUMMARY_WORD = {"enforced": "enforced", "partial": "partial", "none": "unread",
 REQUIREMENT = re.compile(r"^### (?:Requirement: )?([A-Z]{2,4})-(\d+) — (.+)$")
 READER = re.compile(r"^\*\*Reader:\*\*\s+(.*)$")
 WHY = re.compile(r"^\*\*Why:\*\*")
-ROW = re.compile(r"^\| \*\*(enforced|partial|none|opposed)\*\* \| (.+?) \|$")
+ROW = re.compile(r"^\| \*\*(enforced|partial|none|opposed|bounded)\*\* \| (.+?) \|$")
 ID = re.compile(r"\b([A-Z]{2,4}-\d+)\b")
 
 # A classification word may be wrapped in `**` and must end the claim. Everything after
@@ -89,16 +96,32 @@ def read(path: str) -> list[str]:
 
 
 def requirements(lines: list[str]) -> dict:
-    """id -> {"title", "line", "why", "reader"} for every requirement in a document."""
+    """id -> {"title", "line", "why", "reader", "reader_block"} per requirement.
+
+    `reader` is the first line, which is what every rule about the *classification*
+    reads: the word a line opens with, and whether a qualifier is welded to it.
+
+    `reader_block` is that line plus its continuations, to the first blank line. Rules
+    about the *argument* need it, and the difference is not cosmetic — the gate added at
+    0.96.3 asks whether a `bounded` line argues its boundary, and measured against the
+    first line alone it failed OPR-3, whose argument runs to the third. A reader line is
+    a paragraph; only its opening is a classification.
+    """
     out = {}
     current = None
+    collecting = None
     for number, line in enumerate(lines, 1):
+        if collecting is not None:
+            if line.strip():
+                out[collecting]["reader_block"] += " " + line.strip()
+                continue
+            collecting = None
         heading = REQUIREMENT.match(line)
         if heading:
             prefix, index, title = heading.groups()
             current = f"{prefix}-{index}"
             out[current] = {"title": title, "line": number, "why": 0, "reader": None,
-                            "reader_line": 0}
+                            "reader_line": 0, "reader_block": ""}
             continue
         if line.startswith("## "):          # a new section ends the requirement
             current = None
@@ -110,6 +133,8 @@ def requirements(lines: list[str]) -> dict:
         if seen and out[current]["reader"] is None:
             out[current]["reader"] = seen.group(1)
             out[current]["reader_line"] = number
+            out[current]["reader_block"] = seen.group(1)
+            collecting = current
     return out
 
 
@@ -231,6 +256,56 @@ class AReaderLineMeansWhatTheTableSaysItMeans(unittest.TestCase):
                         f"{body['reader'][:70]!r} — and Appendix B files it under "
                         f"{where.get(item)!r}. Either de-qualify the line or move the "
                         f"row; a qualified claim is at most `partial`.")
+
+    def test_a_bounded_requirement_names_no_test(self):
+        """`bounded` says no reader could exist. Naming one contradicts that.
+
+        The category could otherwise become a place to put work somebody did not want to
+        do, and no test can judge whether a boundary is real — that is an argument, and
+        the Reader line is where it is made. What a test *can* hold is the
+        contradiction, which is the property this module exists for: a document must not
+        disagree with itself. A line claiming nothing could read a requirement, while
+        naming the thing that reads it, is disagreeing with itself.
+        """
+        named = re.compile(r"\btests?/|\btest_[a-z0-9_]+")
+        for name, lines, path in DOCS:
+            table = appendix_b(lines)
+            found_reqs = requirements(lines)
+            for item in table.get("bounded", []):
+                body = found_reqs.get(item)
+                with self.subTest(document=name, requirement=item):
+                    self.assertIsNotNone(body, f"{item} is tabulated and not defined")
+                    found = named.findall(body["reader"])
+                    self.assertEqual(
+                        found, [],
+                        f"{item} at {os.path.basename(path)}:{body['reader_line']} is "
+                        f"filed as bounded — no reader could exist — and its reader "
+                        f"line names {found}. Either it has a reader and is not "
+                        f"bounded, or the line is naming something it does not read.")
+
+    def test_a_bounded_requirement_argues_rather_than_asserts(self):
+        """The weaker half, and worth having.
+
+        A bounded line has to say *why* nothing could read the requirement, because for
+        this class the classification **is** the argument and a bare word is the
+        argument missing. Length is a crude proxy and the only one available here; what
+        it rules out is `**Reader:** bounded.` standing alone, which is exactly the
+        shape that would let the category absorb unread work without anyone noticing.
+
+        Measured over `reader_block`, not `reader`: the argument is a paragraph and the
+        first line is only its opening. This test failed OPR-3 on its first run for
+        exactly that reason, which is how the parser came to keep the block at all.
+        """
+        for name, lines, path in DOCS:
+            table = appendix_b(lines)
+            found_reqs = requirements(lines)
+            for item in table.get("bounded", []):
+                body = found_reqs.get(item) or {}
+                with self.subTest(document=name, requirement=item):
+                    self.assertGreater(
+                        len((body.get("reader_block") or "").split()), 25,
+                        f"{item} at {os.path.basename(path)} claims a boundary without "
+                        f"arguing it; for this class the argument is the whole claim")
 
     def test_the_table_and_the_reader_lines_agree(self):
         for name, lines, _ in DOCS:

@@ -135,6 +135,40 @@ def report(record: dict) -> list[str]:
     return lines
 
 
+def moved(stored: dict, fresh: dict) -> list[str]:
+    """Which named sets differ between a stored record and the tree, in its own words.
+
+    The two totals are not where most differences live. A set whose *membership* moved
+    leaves both counts alone, and the message then read "it records 169 sets and 145
+    unread, the tree has 169 and 145" — identical numbers on both sides, which reads as
+    a broken tool rather than as a stale record. That happened at 0.96.3, when a fifth
+    debt class took `spec_debt.CLASSES` from four entries to five.
+    """
+    def flat(record: dict) -> dict:
+        out = {}
+        for module, columns in (record.get("modules") or {}).items():
+            for column, sets in columns.items():
+                for entry in sets:
+                    out[f"{module}.{entry['name']}"] = (column, entry.get("entries"))
+        return out
+
+    before, after = flat(stored), flat(fresh)
+    lines = []
+    for name in sorted(set(before) | set(after)):
+        old, new = before.get(name), after.get(name)
+        if old == new:
+            continue
+        if old is None:
+            lines.append(f"{name} is new to the tree ({new[1]} entries, {new[0]})")
+        elif new is None:
+            lines.append(f"{name} is recorded and is no longer in the tree")
+        elif old[1] != new[1]:
+            lines.append(f"{name}: {old[1]} entries -> {new[1]}")
+        else:
+            lines.append(f"{name}: {old[0]} -> {new[0]}")
+    return lines
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", help="write the record here")
@@ -157,10 +191,16 @@ def main() -> int:
         if stored == record:
             print("\nthe record is in step with the tree")
             return 0
-        print(f"\n{os.path.relpath(args.check, ROOT)} is stale: it records "
-              f"{stored.get('total')} sets and {stored.get('unread')} unread, the tree "
-              f"has {record['total']} and {record['unread']}. Re-record with --out and "
-              f"say in the commit which set moved and why.", file=sys.stderr)
+        print(f"\n{os.path.relpath(args.check, ROOT)} is stale.", file=sys.stderr)
+        if (stored.get("total"), stored.get("unread")) != (record["total"],
+                                                           record["unread"]):
+            print(f"  it records {stored.get('total')} sets and "
+                  f"{stored.get('unread')} unread; the tree has {record['total']} "
+                  f"and {record['unread']}.", file=sys.stderr)
+        for line in moved(stored, record):
+            print(f"  {line}", file=sys.stderr)
+        print("Re-record with --out and say in the commit which set moved and why.",
+              file=sys.stderr)
         return 1
     return 0
 
