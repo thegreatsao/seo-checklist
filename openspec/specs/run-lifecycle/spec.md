@@ -328,21 +328,29 @@ invocation, and a threshold a profile moved MUST be visible beside the verdict i
 **Why:** a profile that changes a threshold changes what `PASS` means. A report that shows
 the verdict and not the threshold is unfalsifiable from the outside — the number is right
 for a rule the reader cannot see.
-**Reader:** partial. Two of the three kinds are read where they are used:
+**Reader:** enforced, at 0.96.6. All three kinds are read where they are used:
 `test_profile_args_reach_the_plan_as_argv` pins a profile's arguments into the
 invocation, `test_the_moved_threshold_is_in_the_evidence_trail` pins the moved threshold
 into the answering script's own summary, and from 0.96.5
 `test_opt_in_flags_reach_the_plan_as_argv` does the same for opt-in flags, with
-`test_archive_mode_adds_no_opt_in_flag_and_the_plan_shows_it` as its floor.
+`test_archive_mode_adds_no_opt_in_flag_and_the_plan_shows_it` as its floor. The artifact
+is held by `test_a_profile_that_moves_a_threshold_records_it_in_the_artifact`, which runs
+every shipped profile that carries `script_args` and compares the recorded mapping
+against `profiles.json` rather than against a number typed into the test, and by
+`test_a_profile_that_moves_nothing_records_nothing`, which is the floor: a runner writing
+the same mapping on every run would satisfy the first and tell every reader their
+thresholds had moved.
 
-**What remains is the artifact.** Nothing asserts that the run's recorded `profile_args`
-reach it, so a reader consulting the JSON to find out what was actually asked has no
-guarantee the answer is there. The opt-in half was the same shape until 0.96.5 — tested
-where the flags are *generated*, nowhere where they are *used* — and a second reader over
-this requirement named the breakage that showed it: delete the `opt_in` append from
-`build_plan` and every test this line named stayed green. That matters because
-`--verify-returns` is what makes the hreflang checker fetch the other side of a pair;
-without it the checker answers a narrower question under the same item id.
+**Both remaining halves were the same shape, and both were found the same way.** The
+opt-in flags were tested where they are *generated* and nowhere where they are *used*
+until 0.96.5, and a second reader over this requirement named the breakage that showed
+it: delete the `opt_in` append from `build_plan`, and every test this line named stayed
+green. That matters because `--verify-returns` is what makes the hreflang checker fetch
+the other side of a pair; without it the checker answers a narrower question under the
+same item id. The artifact half was the same claim one surface further out — nothing
+asserted that the run's recorded `profile_args` reach the JSON, so a reader consulting it
+to find out what was actually asked had no guarantee the answer was in it. Probed at
+0.96.6 by writing `None` into that field: CAUGHT.
 
 #### Scenario: a profile moves a threshold
 - **WHEN** a profile's `script_args` change the bound an item is judged against
@@ -426,13 +434,32 @@ MUST carry no score, and MUST say why.
 **Why:** a score computed from the handful of items that do not need the site is a number
 about almost nothing, printed in the same place as a real one. Refusing to print it is the
 finding.
-**Reader:** partial. `test_everything_that_reads_the_live_site_is_undecided` and its
-siblings pin the statuses, that they are `NO_DATA` rather than `N/A`, that Search Console
-still answers, and that the gated items never reach the plan;
+**Reader:** enforced, at 0.96.6. `test_everything_that_reads_the_live_site_is_undecided`,
+`test_undecided_not_out_of_scope`, `test_search_console_still_answers`,
+`test_offline_checks_fall_out_on_their_missing_input` and
+`test_the_dead_entry_gives_every_item_one_status` pin the statuses and their asymmetry;
+`test_no_live_site_check_reaches_the_plan` pins the empty plan;
 `test_the_score_is_none_when_nothing_was_decided` and
 `test_a_challenge_page_is_refused_and_nothing_is_scored` pin the missing score in both the
-unit and the live path. What is unread is the "nothing runs" half as opposed to "nothing
-is planned": no test asserts that execution was skipped, only that the plan was empty.
+unit and the live path. The second scenario — nothing *run* as opposed to nothing
+*planned* — is held by `test_a_dead_entry_leaves_the_origin_alone`, which audits a 503
+entry over the whole registry under `--sample 5` and asserts the origin was asked for
+nothing beyond `/` and `/robots.txt`, with
+`test_the_same_origin_is_asked_for_more_when_it_is_up` as its floor.
+
+**The witness is the origin, and nothing was asking it.** Every reader this line carried
+until 0.96.6 read a plan or a report, which is a statement about a dict: a runner that
+built an empty plan and then crawled the site, fetched the sitemap and sampled five pages
+anyway would have satisfied all of them. `Served.requested` had kept that record since
+the harness was written. Two probes, both CAUGHT: dropping `and not entry_error` from the
+crawl gate, and dropping the sampler's `elif entry_error`.
+
+**The second one missed on the first attempt, and the miss is the useful part.** There
+are two gates between a dead entry and a request, and `--sample` defaults to 1 — so the
+first draft of the test, which passed no `--sample`, never entered the sampler's branch
+at all and read **MISSED** against a breakage that removes it. A test can name a clause
+in its own docstring and never reach the code that clause is about; only the mutation
+says which.
 
 #### Scenario: the entry page cannot be read
 - **WHEN** the entry fetch fails
@@ -795,13 +822,37 @@ with a count the operator can see.
 **Why:** a sample of the first N URLs measures a sitemap's ordering. Stability is what
 makes two audits comparable at all. And a sample silently reduced by robots or by content
 type is a smaller audit reported as a full one.
-**Reader:** partial. The spread and the stability are enforced —
+**Reader:** enforced, at 0.96.6. The spread and the stability:
 `test_picks_are_spread_across_the_whole_list` pins exact indices,
 `test_both_ends_of_the_sitemap_are_covered`, `test_the_same_sitemap_yields_the_same_pages`
 and `test_the_sample_spans_the_site_rather_than_its_first_corner` pin the rest, the last
-through a live sixty-page site. The three drop rules are not: the extension filter is
-tested through `test_assets_are_not_pages`, and the content-type rejection, the
-robots-disallowed count and the message a single-URL run prints have no reader at all.
+through a live sixty-page site. The three drop rules: the extension filter through
+`test_assets_are_not_pages`, the content-type rejection through
+`test_a_candidate_the_extension_filter_kept_is_dropped_on_its_type` — which first asserts
+`looks_like_a_page` keeps the URL, so the rule being read is the type and not the
+extension — with `test_a_page_of_the_right_type_survives_the_same_run` as its floor, the
+robots count through
+`test_the_count_of_robots_drops_is_the_number_of_picks_robots_took`, and the single-URL
+message through `test_a_site_with_nothing_to_discover_says_so_and_audits_one_page`, with
+`test_a_site_with_something_to_discover_does_not` as its floor.
+
+**The count is read against the program, not against a number in the test.** A.13's
+shape applies here too: an assertion that the run prints `3` is an assertion about the
+fixture the test wrote. The reader samples one site twice, once with the section
+disallowed and once without, and requires the printed count to equal the difference
+between the two samples. That the two runs pick the same candidates is this requirement's
+own stability clause doing the work — `stride` runs before the robots filter.
+
+**Two of the three rules are reachable only under `--mode page`, and the first
+measurement of them was wrong.** A `live` run crawls, and `discover_urls` then takes its
+candidates out of the crawl inventory, which has already dropped what is not HTML and
+already honoured robots. Measured under `live`, a sitemap listing a PDF and a
+robots-disallowed section produces exactly the right sample and prints nothing — which
+reads as the two rules working and is in fact the two rules never being reached. Had the
+readers been written against that measurement they would have passed for the wrong reason
+for as long as they lived. Four probes, all CAUGHT: the content-type branch removed, the
+robots count not printed, robots not consulted for the picks at all, and the one-page run
+no longer saying it found nothing.
 
 #### Scenario: the sample is taken from the top
 - **WHEN** the first N URLs of a sitemap are sampled
@@ -1349,6 +1400,59 @@ matched the evidence prose for `truncat` and failed against the shipped text, *"
 of the input was read"*, which is the expected value coming from my head instead of from
 the output.
 
+#### A.14 — three rules, and the two places nothing was standing, 15 September 2026
+
+The last three `partial` rows in this document went together because their gaps are one
+gap in three costumes: a requirement about what the *program* does, read through what the
+program *records*.
+
+**RUN-8 — the origin is the witness, and nobody was asking it.** "Nothing runs against an
+entry the audit could not read" had seven readers, and every one of them read a plan or a
+report. A runner that built an empty plan and then crawled the site, fetched the sitemap
+and sampled five pages anyway satisfies all seven; the requirement's own second scenario
+says as much — *"an assertion that the plan is empty does not establish this"*. The
+harness has kept the missing record since it was written: `Served.requested` is what the
+origin actually received. Over the whole registry against a 503 entry, that is one
+request.
+
+The probe that proves it is where the useful part is. There are **two** gates between a
+dead entry and a request — the crawl's `and not entry_error`, and the sampler's
+`elif entry_error` — and `--sample` defaults to 1. The first draft of the test passed no
+`--sample`, so removing the second gate read **MISSED**: the test named a clause in its
+own docstring and never reached the code that clause is about. A docstring is not a
+reader. With `--sample 5` both breakages are CAUGHT.
+
+**RUN-17 — two of the three drop rules are unreachable where they were measured.** The
+sample must contain pages: assets go by extension, non-page content types by their type,
+robots-disallowed URLs with a count the operator can see. Only the extension filter had a
+reader. Measured under `live`, the other two appear to work perfectly and print nothing —
+a sitemap listing a PDF and a disallowed section produces exactly the right sample. That
+is not the rules working. A `live` run crawls, and `discover_urls` then takes its
+candidates out of the crawl inventory, which has already dropped what is not HTML and
+already honoured robots, so neither rule is reached at all. `--mode page` has no `crawl`
+capability, the sitemap fallback is used, and both fire.
+
+**Readers written against the first measurement would have passed for the wrong reason
+for as long as they lived** — green, well-named, and about a branch no run entered. The
+general form: a rule that has a second mechanism in front of it is measured where that
+mechanism is absent, or it is not measured.
+
+The count has A.13's shape too, and is read the same way out of it: the reader samples
+one site twice, disallowed and not, and requires the printed number to equal the
+difference between the two samples. That the picks are the same across the pair is this
+requirement's own stability clause — `stride` runs before the robots filter — so the
+arithmetic is checked against the program rather than against a number typed into a test.
+
+**RUN-6 — the artifact was the same claim one surface further out.** 0.96.5 closed the
+opt-in half, which was tested where the flags are generated and nowhere where they are
+used. What was left was the same sentence about `profile_args`: a reader consulting the
+JSON to find out what was asked had no guarantee the answer was in it. The field could
+have been written `None` and every named test would have stayed green. It is compared
+against `profiles.json` now, over every shipped profile that moves an argument, with the
+floor that a profile moving nothing records nothing.
+
+Nine breakages, nine caught. `run-lifecycle` is twenty of twenty.
+
 #### A.6 — the survey that produced this appendix
 
 Appendices A.1 through A.4 came from a reader census over C9–C18 that named, for each
@@ -1375,14 +1479,20 @@ requests, even though the suite does not).
 
 | | requirements |
 |---|---|
-| **enforced** | RUN-1, RUN-2, RUN-3, RUN-4, RUN-5, RUN-7, RUN-9, RUN-10, RUN-11, RUN-12, RUN-13, RUN-14, RUN-15, RUN-16, RUN-18, RUN-19, RUN-20 |
-| **partial** | RUN-6, RUN-8, RUN-17 |
+| **enforced** | RUN-1, RUN-2, RUN-3, RUN-4, RUN-5, RUN-6, RUN-7, RUN-8, RUN-9, RUN-10, RUN-11, RUN-12, RUN-13, RUN-14, RUN-15, RUN-16, RUN-17, RUN-18, RUN-19, RUN-20 |
+| **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-L1 enforced; INV-L2, INV-L3 and INV-L4 partial.
 
-**Seventeen enforced, three partial, nothing unread, of twenty.**
+**Twenty enforced, nothing partial, nothing unread, of twenty.**
+
+RUN-6, RUN-8 and RUN-17 moved at 0.96.6, together, because their gaps were one gap in
+three costumes: a requirement about what the program *does*, read through what the program
+*records*. A.14 has the anatomy and the nine probes. The three invariants that stay
+`partial` are the remaining debt in this document, and they are counted apart from the
+requirements above rather than folded into them.
 
 RUN-13, RUN-14 and RUN-15 moved at 0.95.1 — the whole profile layer in one release,
 because they are one subject: a profile is a decision, and an operator has to be able to

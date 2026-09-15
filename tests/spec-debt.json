@@ -116,10 +116,10 @@
     "run-lifecycle": {
       "counts": {
         "bounded": 0,
-        "enforced": 17,
+        "enforced": 20,
         "none": 0,
         "opposed": 0,
-        "partial": 3
+        "partial": 0
       },
       "opposed": [],
       "requirements": 20,
@@ -140,10 +140,10 @@
     "verdicts": {
       "counts": {
         "bounded": 0,
-        "enforced": 12,
+        "enforced": 13,
         "none": 0,
         "opposed": 0,
-        "partial": 5
+        "partial": 4
       },
       "opposed": [],
       "requirements": 17,
@@ -152,10 +152,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 95,
+    "enforced": 99,
     "none": 2,
     "opposed": 1,
-    "partial": 47,
+    "partial": 43,
     "requirements": 149
   }
 }

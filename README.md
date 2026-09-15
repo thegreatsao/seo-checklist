@@ -4,11 +4,20 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.96.5 — see [CHANGELOG.md](CHANGELOG.md). A test release, with no change to
-what any check decides. The rule that keeps an audit honest about a site it only half
+Version 0.96.6 — see [CHANGELOG.md](CHANGELOG.md). A test release, with no change to
+what any check decides. Three rules about what a run *does* were all checked by reading
+what it *writes down*. The clearest: when a site's front page will not load, the audit is
+supposed to stop asking that site for anything — and everything testing it checked that
+the list of work came out empty, which a tool that empties the list and then crawls the
+site anyway would also pass. The server itself is the only witness, and now it is the one
+asked: against a site answering "service unavailable", it receives exactly one request.
+Two more were rules about which pages get sampled — a file that is not a page, and a page
+the site's own robots.txt asks crawlers to leave alone — that *appeared* to work when
+measured, because a different part of the run was quietly handling both first.
+Before that, `0.96.5` closed a rule that keeps an audit honest about a site it only half
 read — "no problems found" over three pages of sixty is not a finding about the site —
-was itself well tested, and *every one of those tests handed it the "I only read half"
-flag directly. Nothing checked that a real half-read crawl ever raises the flag*, so
+which was itself well tested, and *every one of those tests handed it the "I only read
+half" flag directly. Nothing checked that a real half-read crawl ever raises the flag*, so
 the crawl could have stopped raising it and the suite would have stayed quiet. That
 path is now walked end to end against a real sixty-page site read three pages deep.
 Before that, `0.96.4` made a run say so when a site starts refusing requests partway

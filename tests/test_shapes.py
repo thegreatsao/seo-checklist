@@ -491,6 +491,286 @@ class ACrawlThatStoppedAtItsPageLimit(unittest.TestCase):
                          f"truncated: {summary}")
 
 
+class ADeadEntryRunsNothing(unittest.TestCase):
+    """`openspec/specs/run-lifecycle/` RUN-8's second scenario, which had no reader.
+
+    The requirement has two halves and only one of them was read. The statuses are
+    pinned in five places and the missing score in two, and every one of those reads a
+    plan or a report: `test_no_live_site_check_reaches_the_plan` asserts that the plan
+    contains no gated item, which is a statement about a dict. A runner that built an
+    empty plan and then crawled the site, fetched the sitemap and sampled five pages
+    anyway would satisfy it exactly, and the spec says so in its own words — "an
+    assertion that the plan is empty does not establish this".
+
+    The origin is the only witness there is, and `Served.requested` already keeps the
+    record. Measured over the whole registry against an entry answering 503: the
+    origin received **one** request, `GET /`. The assertion below is the requirement's
+    own bound rather than that number — the entry, and the robots.txt any fetch is
+    entitled to ask for — so a robots request appearing tomorrow is not a failure and
+    a sitemap request is.
+
+    Whole registry on the dead run, and one category on the floor, deliberately. The
+    claim being made is that *nothing* ran, so narrowing it would leave every script
+    outside the selection unwatched; the floor only has to show this origin answers
+    more than the entry when it is up, which one category proves as well as twelve.
+
+    **`--sample 5`, and the first draft did not pass it.** There are two gates between a
+    dead entry and a request — the crawl's `and not entry_error`, and the sampler's
+    `elif entry_error` — and `--sample` defaults to 1, so a run that omits it never
+    enters the second branch at all. Measured: removing the sampler's guard against a
+    run with no `--sample` read **MISSED**, and the test looked like it held a clause it
+    could not reach. With the flag it is CAUGHT, because `discover_urls` then asks the
+    dead origin for its sitemap.
+    """
+
+    ENTRY_AND_ROBOTS = {"/", "/robots.txt"}
+
+    def up(self):
+        return {"/robots.txt": (200, {"Content-Type": "text/plain"},
+                                "User-agent: *\nDisallow:\n"),
+                "/": page("A site that is up",
+                          'Two pages. <a href="/second.html">the second one</a>'),
+                "/second.html": page("The second page", "Linked from the entry.")}
+
+    def test_a_dead_entry_leaves_the_origin_alone(self):
+        with served({"/": (503, {}, "down")}) as site:
+            payload = run_audit(site.url, "--sample", "5", only="")
+            asked = site.paths("GET") + site.paths("HEAD")
+        self.assertFalse(payload["entry_reachable"], payload.get("entry_error"))
+        beyond = sorted(set(asked) - self.ENTRY_AND_ROBOTS)
+        self.assertEqual(
+            beyond, [],
+            f"the entry answered 503 and the run went on asking this origin for "
+            f"{beyond}; nothing planned is not nothing run")
+
+    def test_the_same_origin_is_asked_for_more_when_it_is_up(self):
+        """The floor. An origin nothing ever fetches from satisfies the test above
+        without the run having refused anything, and a runner that fetched only the
+        entry on every site would look identical from inside a single case."""
+        with served(self.up()) as site:
+            payload = run_audit(site.url, "--sample", "3", only="crawling_indexing")
+            asked = site.paths("GET") + site.paths("HEAD")
+        self.assertTrue(payload["entry_reachable"], payload.get("entry_error"))
+        beyond = sorted(set(asked) - self.ENTRY_AND_ROBOTS)
+        self.assertTrue(
+            beyond,
+            f"a reachable two-page site was asked for nothing but its entry, so the "
+            f"dead-entry assertion is about an origin nobody fetches from: {asked}")
+
+
+class ASampleMadeOfPages(unittest.TestCase):
+    """`openspec/specs/run-lifecycle/` RUN-17's three drop rules, two of which had no
+    reader at all and one of which is reachable only where nothing was looking.
+
+    The spread and the stability are enforced. Of the three ways a candidate leaves the
+    sample, only the extension filter is read — `test_assets_are_not_pages` covers it as
+    a function. The content-type rejection, the robots-disallowed count and the message
+    a single-URL run prints had nothing.
+
+    **Two of them live under `--mode page`, and the first measurement of them was
+    wrong.** A `live` run crawls, and `discover_urls` then takes its candidates out of
+    the crawl inventory, which has already dropped what is not HTML and already honoured
+    robots. Run under `live`, a sitemap listing a PDF and a robots-disallowed section
+    produces exactly the right sample and prints nothing — which reads as the two rules
+    working and is in fact the two rules never being reached. `page` mode has no `crawl`
+    capability, the sitemap fallback is used, and both fire. A test written against the
+    first measurement would have passed for the wrong reason for as long as it lived.
+    """
+
+    ALLOW_ALL = (200, {"Content-Type": "text/plain"}, "User-agent: *\nDisallow:\n")
+
+    @staticmethod
+    def sitemap(*paths):
+        return (200, {"Content-Type": "application/xml"},
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                + "".join(f"<url><loc>__BASE__{p}</loc></url>" for p in paths)
+                + "</urlset>")
+
+    def test_a_candidate_the_extension_filter_kept_is_dropped_on_its_type(self):
+        """The scenario's own second half: "the extension filter alone does not settle
+        the second case". `/report` has no extension, so `looks_like_a_page` keeps it
+        and it is sampled; what removes it is the `application/pdf` it answers with.
+
+        Asserted on the ASCII of the message rather than the whole line: the runner
+        joins the URL to the reason with an em dash, and this suite's captured stderr
+        is not read back as UTF-8 on every host.
+        """
+        from checklist_runner import looks_like_a_page
+        routes = {"/robots.txt": self.ALLOW_ALL,
+                  "/": page("The entry page",
+                            "Its sitemap lists a report with no extension. " * 4),
+                  "/report": (200, {"Content-Type": "application/pdf"},
+                              "%PDF-1.4 and not a page"),
+                  "/real.html": page("A real second page",
+                                     "Enough words here to be a page, not a stub."),
+                  "/sitemap.xml": self.sitemap("/report", "/real.html")}
+        with served(routes) as site:
+            site.rewrite("__BASE__", site.base)
+            report_url = f"{site.base}/report"
+            self.assertTrue(
+                looks_like_a_page(report_url),
+                "the extension filter already rejects this URL, so the content-type "
+                "rule is not what this test is reading")
+            payload = run_audit(site.url, "--mode", "page", "--sample", "3",
+                                only="meta_structured")
+        self.assertIn(report_url, payload["sampled_urls"],
+                      "the candidate never reached the fetch, so nothing here reads "
+                      "the content-type rejection")
+        noise = payload["_stdout"] + payload["_stderr"]
+        self.assertIn("not a page: Content-Type application/pdf", noise,
+                      "a non-page content type was sampled and the run did not say so")
+
+    def test_a_page_of_the_right_type_survives_the_same_run(self):
+        """The floor for the rule above. A sampler that dropped every candidate would
+        satisfy it, and would report a one-page audit of a site with a sitemap."""
+        routes = {"/robots.txt": self.ALLOW_ALL,
+                  "/": page("The entry page", "Its sitemap lists one real page. " * 4),
+                  "/real.html": page("A real second page",
+                                     "Enough words here to be a page, not a stub."),
+                  "/sitemap.xml": self.sitemap("/real.html")}
+        with served(routes) as site:
+            site.rewrite("__BASE__", site.base)
+            payload = run_audit(site.url, "--mode", "page", "--sample", "3",
+                                only="meta_structured")
+            fetched = site.paths("GET")
+        self.assertIn("/real.html", fetched,
+                      "a page of the right type was not fetched either")
+        self.assertNotIn("not a page", payload["_stdout"] + payload["_stderr"])
+
+    def test_the_count_of_robots_drops_is_the_number_of_picks_robots_took(self):
+        """RUN-17's third scenario. The count is not read against a number written
+        here — that is the shape A.13 names — but against the same site sampled twice,
+        once with the section disallowed and once without. The picks are identical
+        across the pair because `stride` runs before the robots filter and the sitemap
+        does not move, which is this requirement's own stability clause doing the work.
+
+        So: (what the permissive run sampled) minus (what the restrictive run sampled)
+        is how many picks robots took, and that is the number the run has to print.
+        """
+        def routes(disallow):
+            out = {"/robots.txt": (200, {"Content-Type": "text/plain"},
+                                   f"User-agent: *\n{disallow}\n"),
+                   "/": page("The entry page",
+                             "A sitemap, and a section robots keeps to itself. " * 4),
+                   "/open.html": page("The page robots allows",
+                                      "Enough words here to be a page, not a stub."),
+                   "/sitemap.xml": self.sitemap(
+                       *[f"/private/p{i}.html" for i in range(4)], "/open.html")}
+            for i in range(4):
+                out[f"/private/p{i}.html"] = page(
+                    f"Private page {i}", "Nothing should ever sample this one.")
+            return out
+
+        sampled, closed_noise, closed_fetched = {}, "", []
+        for label, disallow in (("open", "Disallow:"),
+                                ("closed", "Disallow: /private/")):
+            with served(routes(disallow)) as site:
+                site.rewrite("__BASE__", site.base)
+                payload = run_audit(site.url, "--mode", "page", "--sample", "5",
+                                    only="meta_structured")
+                sampled[label] = [u.replace(site.base, "") or "/"
+                                  for u in payload["sampled_urls"]]
+                if label == "closed":
+                    closed_noise = payload["_stdout"] + payload["_stderr"]
+                    closed_fetched = site.paths("GET")
+
+        taken = len(sampled["open"]) - len(sampled["closed"])
+        self.assertGreater(
+            taken, 0,
+            f"robots took nothing out of the sample, so there is no count to read: "
+            f"{sampled}")
+        self.assertIn(f"{taken} sampled URL(s) skipped: robots.txt disallows them",
+                      closed_noise,
+                      f"robots took {taken} of the picks and the run did not say so; "
+                      f"a sample silently reduced is a smaller audit reported as a "
+                      f"full one. sampled={sampled}")
+        self.assertEqual(
+            [p for p in closed_fetched if p.startswith("/private/")], [],
+            "a disallowed URL was counted as dropped and fetched anyway")
+
+    def test_a_site_with_nothing_to_discover_says_so_and_audits_one_page(self):
+        """The third of RUN-17's unread messages. `--sample 5` against a site with no
+        sitemap and no internal links must not report a five-page audit of one page."""
+        lonely = page("A page that links nowhere",
+                      "No sitemap and no anchors anywhere on this site. " * 6)
+        with served({"/": lonely}) as site:
+            payload = run_audit(site.url, "--sample", "5", only="meta_structured")
+        self.assertEqual(payload["sampled_urls"], [])
+        self.assertIn("--sample found no other URLs", payload["_stderr"],
+                      "a one-page audit was run under --sample 5 without saying so")
+
+    def test_a_site_with_something_to_discover_does_not(self):
+        """The floor. A `discover_urls` that always returned `[]` would satisfy the
+        test above on every site in the world."""
+        with served({"/robots.txt": self.ALLOW_ALL,
+                     "/": page("The entry page",
+                               'It links onward. <a href="/second.html">second</a>'),
+                     "/second.html": page("The second page",
+                                          "Enough words to be a page, not a stub.")
+                     }) as site:
+            payload = run_audit(site.url, "--sample", "5", only="meta_structured")
+        self.assertGreater(len(payload["sampled_urls"]), 1, payload["sampled_urls"])
+        self.assertNotIn("--sample found no other URLs", payload["_stderr"])
+
+
+class AProfileThatMovedAThreshold(unittest.TestCase):
+    """`openspec/specs/run-lifecycle/` RUN-6's remaining half: the artifact.
+
+    Two of the three kinds of appended argument are now read where they are used, and
+    the moved threshold is pinned into the answering script's own summary. What nothing
+    asserted is the sentence the requirement actually ends on — that the moved
+    threshold is visible *beside the verdict it moved*, which for anybody reading the
+    JSON means `profile_args`. A reader consulting the artifact to find out what was
+    asked had no guarantee the answer was in it: the field could have stopped being
+    written and every named test would have stayed green.
+
+    The expected value is read out of `profiles.json`, not typed here. A profile that
+    changes its threshold tomorrow moves this test with it, and a test carrying the
+    number by hand would go on asserting the old one.
+    """
+
+    PROFILES = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
+                            "profiles.json")
+
+    @classmethod
+    def setUpClass(cls):
+        with open(cls.PROFILES, encoding="utf-8") as stream:
+            cls.profiles = json.load(stream)["profiles"]
+        cls.moved = sorted(name for name, body in cls.profiles.items()
+                           if (body or {}).get("script_args"))
+
+    def audit(self, *extra):
+        with served({"/": page("A small site",
+                               "Some words that make this a real page. " * 8)}) as site:
+            return run_audit(site.url, *extra, only="meta_structured")
+
+    def test_a_profile_that_moves_a_threshold_records_it_in_the_artifact(self):
+        self.assertTrue(self.moved,
+                        "no shipped profile moves a script argument, so this test "
+                        "asserts nothing; RUN-6's third clause needs a new subject")
+        for name in self.moved:
+            with self.subTest(profile=name):
+                payload = self.audit("--profile", name)
+                self.assertEqual(payload["profile"], name)
+                self.assertEqual(payload["profile_args"],
+                                 self.profiles[name]["script_args"],
+                                 f"the {name} profile moved a threshold and the "
+                                 f"artifact does not say which")
+
+    def test_a_profile_that_moves_nothing_records_nothing(self):
+        """The floor, and the half that makes the field mean something: a runner
+        writing the same mapping on every run would satisfy the test above while
+        telling every reader their thresholds had moved."""
+        unmoved = sorted(set(self.profiles) - set(self.moved))
+        self.assertTrue(unmoved, "every profile moves a threshold")
+        payload = self.audit("--profile", unmoved[0])
+        self.assertEqual(payload["profile"], unmoved[0])
+        self.assertIsNone(payload["profile_args"],
+                          f"the {unmoved[0]} profile moves no script argument and the "
+                          f"artifact claims it moved one")
+
+
 class WhatStaysUnexercised(unittest.TestCase):
     """The fifth shape, named so it cannot be quietly forgotten.
 

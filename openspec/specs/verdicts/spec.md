@@ -84,9 +84,18 @@ absent from a report, and no item may carry two.
 
 **Why:** a report that omits items cannot be compared with another report, and a
 denominator that varies between runs means nothing.
-**Reader:** partial. `tests/test_contract.py` compares each fixture run's id set against
-all 217 registry ids, which catches omission; set equality would still accept a
-duplicate row, so "exactly once" is not fully read.
+**Reader:** enforced, at 0.96.6. `test_no_item_is_missing_from_either_run` compares each
+fixture run's id set against the registry's, which catches omission, and
+`test_no_item_is_answered_twice_in_either_run` counts the rows, which catches the
+duplicate a set comparison cannot see. Both run over both fixture audits. Probed by
+appending a row to the artifact's `items` and by removing one: CAUGHT, one each.
+
+**Why the second one had to exist.** `{ids} == {registry ids}` is satisfied by a run that
+reports CN-035 twice — once `PASS` and once `FAIL` — because both rows collapse into the
+same member. The requirement is worded "exactly one" and not "at least one" for that
+reason, and the duplicate is wrong whether or not the two rows agree: the denominator it
+doubles is what makes two audits comparable at all. The reader names the duplicated ids
+rather than asserting a length, so the failure says which row to look at.
 
 #### Scenario: every item is answered
 - **WHEN** an audit finishes, whatever its mode, profile or reach
@@ -685,7 +694,10 @@ membership, zero additional score effect and unchanged weight coverage.
 ## 4. Invariants
 
 * **INV-1** — the report's partition of the registry sums to the item count, with every
-  item in exactly one row. *Reader: partial, as VRD-1.*
+  item in exactly one row. *Reader: enforced, at 0.96.6.
+  `test_every_item_lands_in_exactly_one_bucket` holds both directions over rows carrying
+  all eight statuses, and `test_the_partition_of_a_full_audit_counts_every_row_once` holds
+  them over the two full fixture audits, where every bucket is occupied.*
 * **INV-2** — the statuses any layer may declare are a subset of §2. *Reader: partial;
   answer merges and report surfaces read subsets, while the fixture oracle enforces the
   violation.*
@@ -885,6 +897,38 @@ is therefore a floor on this class of defect and never a measure of it — the g
 of that, and the requirement that an instrument publish its own limits, is
 [`openspec/specs/declarations/`](../declarations/spec.md) DEC-13.
 
+#### A.4 — a sum that reads a partition only over a run that fills it
+
+Measured 15 September 2026, while moving VRD-1 and INV-1 to `enforced`.
+
+INV-1 says the partition sums to the item count with every item in exactly one row, and
+until 0.96.6 its Reader line said *"partial, as VRD-1"* — a classification borrowed from
+a neighbouring requirement rather than measured on this one. Measuring it found that the
+borrowing had hidden something: of the two readers over the partition, the live one
+cannot see half of what it guards.
+
+| breakage in `score()`'s partition | `test_every_item_lands_in_exactly_one_bucket` | `test_the_buckets_sum_to_the_registry` |
+|---|---|---|
+| `MANUAL` counted into `undecided` as well | CAUGHT | **MISSED** |
+| `N/A` counted into nothing | CAUGHT | CAUGHT |
+
+The miss is about the fixture and not the assertion. That test audits with
+`--only security`; a narrowed run answers `N/A`, `NO_DATA` and `FAIL` and nothing else,
+so `needs_a_person` is 0 and doubling it adds 0 to the sum. Three of the five buckets are
+empty, and a sum cannot see an item counted into a bucket that has nothing in it.
+
+The general form is worth carrying past this row: **a sum over a partition is an honest
+reader of it only over a run that occupies the buckets**, and a test asserting a sum says
+nothing about the buckets its own corpus leaves at zero. The repair is the assertion
+moved to a run that fills them —
+`test_the_partition_of_a_full_audit_counts_every_row_once`, over both full fixture
+audits, which refuses outright if it finds fewer than four buckets occupied rather than
+passing quietly the way the narrowed one did. Both breakages CAUGHT there.
+
+This is the same family as A.3's closing note and as
+[`openspec/specs/declarations/`](../declarations/spec.md) DEC-13: a number measured over a
+corpus reports what that corpus provoked, and the instrument has to say so.
+
 ## Appendix B — how much of this document is enforced
 
 Compiled by analysis of the tree, and spot-checked by hand on VRD-3, VRD-6, VRD-8 and
@@ -892,15 +936,23 @@ VRD-11.
 
 | | requirements |
 |---|---|
-| **enforced** | VRD-4, VRD-5, VRD-6, VRD-7, VRD-8, VRD-9, VRD-11, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
-| **partial** | VRD-1, VRD-2, VRD-3, VRD-10, VRD-12 |
+| **enforced** | VRD-1, VRD-4, VRD-5, VRD-6, VRD-7, VRD-8, VRD-9, VRD-11, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
+| **partial** | VRD-2, VRD-3, VRD-10, VRD-12 |
 | **none** | — none |
 
-Invariants: INV-1, INV-2, INV-3 and INV-4 partial; INV-2 is violated.
+Invariants: INV-1 enforced; INV-2, INV-3 and INV-4 partial; INV-2 is violated.
 
-**Twelve enforced, five partial, none unread.** Two requirements are violated by shipped
+**Thirteen enforced, four partial, none unread.** Two requirements are violated by shipped
 behaviour or declarations while nothing reddens: VRD-10 by the LLM answer merge, and
 VRD-12 by the manifest.
+
+VRD-1 and INV-1 left that list at 0.96.6, and they left it separately. VRD-1's set
+comparison caught omission and could not see a duplicate, which is why the requirement is
+worded "exactly one"; counting the rows closes it. INV-1 had borrowed VRD-1's word rather
+than a measurement of itself, and measuring it turned up a reader whose fixture cannot
+provoke the defect it guards — a `--only security` run has no `MANUAL` row, so a partition
+that counted one item into two buckets summed the same. A sum reads a partition honestly
+only over a run that fills the buckets. A.4.
 
 VRD-2 and VRD-3 left that list at 0.96.0. The missing applicability declarations were the
 violation, and `openspec/specs/registry/` REG-9 now derives which items owe one and

@@ -812,6 +812,69 @@ class NothingIsDecidedWithoutEvidence(unittest.TestCase):
             self.assertEqual({i["id"] for i in RESULTS[label]["items"]}, expected,
                              f"{label} did not report on every registry item")
 
+    def test_no_item_is_answered_twice_in_either_run(self):
+        """`openspec/specs/verdicts/` VRD-1's second scenario, and the other half of
+        the test above.
+
+        "Exactly one status per item" is two claims and a set comparison makes only
+        one of them. `{ids} == {registry ids}` is satisfied by a run that reports
+        CN-035 twice — once `PASS` and once `FAIL` — because both rows collapse into
+        the same member. The requirement says so itself: it is worded "exactly one"
+        and not "at least one" for this reason, and a duplicate is wrong whether or
+        not the two rows agree, because the denominator it doubles is what makes two
+        audits comparable at all.
+
+        Counted rather than compared, so the failure names the ids: a bare length
+        assertion says a number is off by one and leaves finding which row to a
+        person.
+        """
+        for label in ("good", "broken"):
+            ids = [i["id"] for i in RESULTS[label]["items"]]
+            twice = sorted(i for i in set(ids) if ids.count(i) > 1)
+            self.assertEqual(twice, [],
+                             f"{label} reported these items more than once: {twice}")
+
+    def test_the_partition_of_a_full_audit_counts_every_row_once(self):
+        """`openspec/specs/verdicts/` INV-1, on a run where every bucket is occupied.
+
+        INV-1 borrowed VRD-1's classification — its Reader line read "partial, as
+        VRD-1" — so when that requirement moved, the invariant had to be measured on
+        its own rather than carried along. Two probes, `MANUAL` counted into
+        `undecided` as well and `N/A` counted into nothing:
+
+        | reader | two buckets | no bucket |
+        |---|---|---|
+        | `test_every_item_lands_in_exactly_one_bucket` | CAUGHT | CAUGHT |
+        | `test_the_buckets_sum_to_the_registry` | **MISSED** | CAUGHT |
+
+        The unit reader holds both directions over synthetic rows carrying all eight
+        statuses. The live one missed the double count for a reason that is about its
+        fixture and not its assertion: it audits with `--only security`, and a narrowed
+        run has no `MANUAL` row anywhere — `needs_a_person` is 0, so doubling it adds
+        nothing to the sum. A sum is an honest reader of a partition only over a run
+        that fills the buckets.
+
+        These two audits are full ones and do fill them, which is the only thing this
+        test adds. It asserts the sum against the registry read off disk rather than
+        against `total_items`, because a `total_items` derived from the same rows would
+        move with the defect.
+        """
+        with open(REGISTRY, encoding="utf-8") as f:
+            expected = len(json.load(f)["items"])
+        for label in ("good", "broken"):
+            scores = RESULTS[label]["scores"]
+            partition = scores["partition"]
+            occupied = [name for name, n in partition.items() if n]
+            self.assertGreater(
+                len(occupied), 3,
+                f"{label} filled only {occupied}, so its sum cannot see an item "
+                f"counted into a bucket this run leaves empty: {partition}")
+            self.assertEqual(
+                sum(partition.values()), expected,
+                f"{label}'s buckets sum to {sum(partition.values())} over a registry "
+                f"of {expected}: {partition}")
+            self.assertEqual(scores["total_items"], expected)
+
 
 class TheRunSaysWhetherItUsedACache(unittest.TestCase):
     """`openspec/specs/http/` HTTP-8. With the cache off two items may describe two states of the

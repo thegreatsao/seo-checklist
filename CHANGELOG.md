@@ -10,6 +10,86 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.96.6 — three requirements read through what the run records, not what it does
+
+Registry version: **`7c7b9d827179`, unchanged.** No item, rule, checker or verdict moved.
+Four requirements and one invariant move to `enforced`; the ledger goes **95/47 → 99/43**,
+and `run-lifecycle` is **twenty of twenty**.
+
+**The last three `partial` rows in `run-lifecycle` were one gap in three costumes:** a
+requirement about what the program *does*, read through what the program *records*.
+
+**RUN-8 — the origin is the witness, and nothing was asking it.** "Nothing runs against an
+entry the audit could not read" had seven readers and every one of them read a plan or a
+report. A runner that built an empty plan and then crawled the site, fetched the sitemap
+and sampled five pages anyway satisfies all seven — the requirement's own second scenario
+says so: *"an assertion that the plan is empty does not establish this"*. The harness has
+kept the missing record since it was written. Over the whole registry against a 503 entry,
+the origin receives **one** request.
+
+The probe is where the useful part is. There are **two** gates between a dead entry and a
+request — the crawl's and the sampler's — and `--sample` defaults to 1, so the first draft
+of the test never entered the second branch and read **MISSED** against a breakage that
+removes it. It named the clause in its own docstring and never reached the code. A
+docstring is not a reader.
+
+**RUN-17 — two of its three drop rules are unreachable where you would measure them.** A
+sample must be made of pages: assets go by extension, non-page content types by their
+type, robots-disallowed URLs with a count the operator can see. Only the extension filter
+had a reader. Measured under `live`, the other two look like they work and print nothing —
+a sitemap listing a PDF and a disallowed section produces exactly the right sample. That
+is not the rules working: a `live` run crawls, and the sampler then takes its candidates
+out of the crawl inventory, which has already dropped what is not HTML and already
+honoured robots, so neither rule is reached at all. `--mode page` has no crawl, the
+sitemap fallback is used, and both fire.
+
+Readers written against the first measurement would have been green, well named, and
+about a branch no run entered.
+
+The robots count is read against the program rather than against a number typed into the
+test: the same site is sampled twice, once with the section disallowed and once without,
+and the printed count has to equal the difference between the two samples. That the picks
+are identical across the pair is this requirement's own stability clause doing the work.
+
+**RUN-6 — the artifact was the same claim one surface further out.** 0.96.5 closed the
+opt-in half, tested where the flags are generated and nowhere where they are used. What
+was left was the same sentence about `profile_args`: a reader consulting the JSON to find
+out what was actually asked had no guarantee the answer was in it, and the field could
+have been written `None` with every named test staying green. It is compared against
+`profiles.json` now — over every shipped profile that moves an argument, so a profile that
+changes its threshold tomorrow moves the test with it — with the floor that a profile
+moving nothing records nothing.
+
+**VRD-1 — a set comparison cannot see a duplicate.** "Exactly one status per item per run"
+is two claims and `{ids} == {registry ids}` makes one of them: a run reporting CN-035
+twice, once `PASS` and once `FAIL`, collapses into the same member and passes. The
+requirement is worded "exactly one" and not "at least one" for that reason. The rows are
+counted now, and the failure names the ids rather than reporting a length that is off by
+one.
+
+**INV-1 had borrowed VRD-1's classification, and measuring it found a reader whose fixture
+cannot provoke what it guards.** Its line read *"partial, as VRD-1"*. Two probes against
+`score()`'s partition:
+
+| breakage | `test_every_item_lands_in_exactly_one_bucket` | `test_the_buckets_sum_to_the_registry` |
+|---|---|---|
+| `MANUAL` counted into `undecided` as well | CAUGHT | **MISSED** |
+| `N/A` counted into nothing | CAUGHT | CAUGHT |
+
+The miss is about the fixture, not the assertion: that test audits with `--only security`,
+and a narrowed run answers `N/A`, `NO_DATA` and `FAIL` and nothing else — `needs_a_person`
+is 0, so doubling it adds 0 to the sum. Three of the five buckets are empty, and a sum
+cannot see an item counted into a bucket that has nothing in it. **A sum reads a partition
+honestly only over a run that fills it.** The assertion now also runs over the two full
+fixture audits, and refuses outright if it finds fewer than four buckets occupied rather
+than passing quietly the way the narrowed one did. `openspec/specs/verdicts/` A.4.
+
+Nine breakages proposed for the three `run-lifecycle` rules, nine caught, one of them only
+after the test that claimed the clause was made to reach it. Two more for the invariant.
+`openspec/specs/run-lifecycle/` A.14 has the anatomy.
+
+Ten new readers, no source change: nothing about any verdict on any site is different.
+
 ## 0.96.5 — a rule with three readers and an input with none
 
 Registry version: **`7c7b9d827179`, unchanged.** No item, rule, checker or verdict moved.
