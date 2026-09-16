@@ -140,10 +140,10 @@
     "verdicts": {
       "counts": {
         "bounded": 0,
-        "enforced": 13,
+        "enforced": 14,
         "none": 0,
         "opposed": 0,
-        "partial": 4
+        "partial": 3
       },
       "opposed": [],
       "requirements": 17,
@@ -152,10 +152,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 106,
+    "enforced": 107,
     "none": 2,
     "opposed": 1,
-    "partial": 36,
+    "partial": 35,
     "requirements": 149
   }
 }

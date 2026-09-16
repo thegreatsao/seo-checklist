@@ -222,9 +222,8 @@ silent, the refusal stripped of its id, the model's missing rationale recorded a
 the model's answer refused outright, the reviewer's missing note recorded as nothing. Only
 accepting an empty manual reason reddened anything. The line this replaces counted test
 functions per merge and read the count as coverage; A.2. Whether a model should be
-*required* to give a rationale is `openspec/specs/verdicts/` VRD-10's open question and
-A.3's disagreement, and these readers hold the rule as written so that changing it is a
-visible edit.
+*required* to give a rationale was decided on 16 September 2026: it is not, and
+`openspec/specs/verdicts/` VRD-10 accepts `no rationale given` as its sentence (A.3).
 
 #### Scenario: a person answers without saying why
 - **WHEN** a manual answer carries no reason
@@ -607,6 +606,11 @@ normative documents disagree about the same behaviour, and it is recorded rather
 resolved because resolving it is a decision about what the tool owes a reader, not a
 measurement.
 
+**Resolved on 16 September 2026, by Anton, in REP-5's favour.** A model's answer without a
+rationale stays accepted; `no rationale given`, beside a verdict marked as the model's, is
+the sentence VRD-10 asks for, and VRD-10's text now says so. Requiring one would have sent
+every such item back to `LLM_PENDING` on every audited site.
+
 ## Appendix B — how much of this document is enforced
 
 **Probed:** REP-5 by six mutations on 16 September 2026, against the whole suite and then against its four readers (A.2); REP-3, REP-4, REP-6, REP-9, REP-10, REP-11, REP-12 and REP-13, by mutation, on 6 September 2026 — deleting the cache branch
@@ -639,15 +643,14 @@ could be broken with the whole suite green (A.2), and that was a missing test. C
 row by the argument around it rather than by breaking it is the mistake `history` Appendix B
 admits to, made here too.
 
-The decision stays where it was. The merges are asymmetric on purpose: a model's answer
+The decision was made on 16 September 2026 and kept the asymmetry (A.3). The merges are asymmetric on purpose: a model's answer
 without a rationale degrades to "no rationale given" and a person's is refused outright, and
 `merge_manual_answers` argues for that in its own docstring — a human `PASS` with nothing
 beside it is indistinguishable from a tick made to clear the list, while a model's answer is
 stamped and marked on every surface. `openspec/specs/verdicts/` VRD-10 says no status may be
-emitted without a sentence saying what was decided, and "no rationale given" is not that
-sentence. Whether to require a rationale from the model too is a decision about live verdicts
-on every audited site. REP-5 is now held as written, so making that decision means editing a
-test that says what the rule was — not changing a merge nothing watched.
+emitted without a sentence saying what was decided, and it now names "no rationale given"
+as one. Reversing that would move live verdicts on every audited site, and would mean editing
+a test that says what the rule is — not changing a merge nothing watched.
 
 REP-9 moved without a line of work in this document: its gap was a sentence about another
 one — the effort costs the ordering divides by were pinned by nothing — and closing SCR-2

@@ -453,24 +453,30 @@ pin a mixed result containing an unmapped value and mapped failure to failure.
 ### Requirement: VRD-10 — every status carries evidence
 
 No status SHALL be emitted without a sentence saying what was decided, or what was
-sought and not found, or which input was missing. This includes `PASS`.
+sought and not found, or which input was missing. This includes `PASS`. A model's answer
+given without a rationale satisfies this by saying so — `no rationale given`, beside a
+verdict marked as the model's — as `openspec/specs/reporting/` REP-5 requires.
 
 **Why:** a bare status cannot be triaged, and a `PASS` with no evidence is
 indistinguishable from a `PASS` for lack of a subject — which is how the Appendix A.1
 violations went unnoticed.
-**Reader:** partial, and what remains is shipped behaviour rather than a missing test.
-The coverage half is closed since 0.94.2:
+**Reader:** enforced.
 `tests/test_contract.py::EveryStatusCarriesEvidenceIncludingTheTwoNobodyChecked` runs the
 whole registry against both fixture sites and requires evidence on every status. The two
 that had gone unchecked — `NEEDS_INPUT` and `LLM_PENDING` — are 55 of the 217 items on a
 live run, so the unchecked pair was a quarter of the registry; both carried evidence
 already, and nothing required them to.
 
-What is still open is Appendix B's other charge: this requirement is violated by shipped
-behaviour in two places — the LLM answer merge, and the GSC status/evidence mismatch —
-which no test can close by asserting, because the tree does the wrong thing there today.
-Those are repairs, and until they are made this row stays `partial` however well the eight
-statuses are covered.
+A run grades no merged answers, so that test cannot see the merges.
+`tests/test_report.py::AModelIsAskedForARationaleAndNotRequiredOne` holds the sentence a
+model's answer carries when it gave no rationale, on the merge and on the review, and
+`tests/test_report.py::AnswersFromAPerson::test_an_answer_with_no_reason_is_refused` holds
+that a person's cannot arrive without one.
+
+This row was `partial` for two shipped violations. The GSC status/evidence mismatch was
+repaired at 0.95.0 (VRD-5). The LLM answer merge was settled on 16 September 2026 by
+decision rather than repair: the sentence `no rationale given` counts, and this requirement
+says so — Appendix A, the table of shipped violations.
 
 The status set is derived from `STATUS_ORDER` rather than listed, which is the point and
 not a convenience: the previous check named the statuses it covered, and a list cannot say
@@ -818,16 +824,18 @@ The checker that fed MB-098 was wrong in the same direction and was corrected wi
 it reported a missing `sizes` for any `srcset`, where only width descriptors need one.
 An `srcset` in `x` descriptors is correct markup and was being reported as a defect.
 
-One shipped path still violates these requirements:
+No shipped path is recorded as violating these requirements.
 
-| path | observed behaviour | breaks | should be |
-|---|---|---|---|
-| LLM answer merge | an empty rationale becomes a scored quality verdict with `LLM: no rationale given` | VRD-10 | refuse the answer until it says what was decided |
+**The last row left by a decision, not a repair — 16 September 2026.** It read: *the LLM
+answer merge turns an empty rationale into a scored verdict with `LLM: no rationale given`;
+breaks VRD-10; should refuse the answer until it says what was decided.* Anton decided the
+other way: a model's answer without a rationale stays accepted, and the sentence
+`no rationale given`, beside a verdict every surface marks as the model's, **is** the
+sentence VRD-10 asks for — it says who decided and that they gave no reason. The alternative
+was dropping such items back to `LLM_PENDING` on every audited site. VRD-10 now says so in
+its own text, and `openspec/specs/reporting/` REP-5 holds the sentence with four readers.
 
-The manual answer path already refuses an empty rationale, so the enforceable VRD-10
-rule exists next door to the LLM violation.
-
-**Two rows left this table, and both were closed by repairing the tree.**
+**Two rows left this table before that, and both were closed by repairing the tree.**
 
 `gsc` grading without credentials, at 0.95.0. What it was, and why it took a document about
 the run lifecycle finding the same swap from the other side to close it, is
@@ -946,15 +954,17 @@ VRD-11.
 
 | | requirements |
 |---|---|
-| **enforced** | VRD-1, VRD-4, VRD-5, VRD-6, VRD-7, VRD-8, VRD-9, VRD-11, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
-| **partial** | VRD-2, VRD-3, VRD-10, VRD-12 |
+| **enforced** | VRD-1, VRD-4, VRD-5, VRD-6, VRD-7, VRD-8, VRD-9, VRD-10, VRD-11, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
+| **partial** | VRD-2, VRD-3, VRD-12 |
 | **none** | — none |
 
 Invariants: INV-1 enforced; INV-2, INV-3 and INV-4 partial; INV-2 is violated.
 
-**Thirteen enforced, four partial, none unread.** Two requirements are violated by shipped
-behaviour or declarations while nothing reddens: VRD-10 by the LLM answer merge, and
-VRD-12 by the manifest.
+**Fourteen enforced, three partial, none unread.** One requirement is violated by shipped
+declarations while nothing reddens: VRD-12, by the manifest.
+
+VRD-10 left that list at 0.97.3, by decision: the LLM answer merge's `no rationale given`
+is accepted as the sentence the requirement asks for, and the requirement now says so.
 
 VRD-1 and INV-1 left that list at 0.96.6, and they left it separately. VRD-1's set
 comparison caught omission and could not see a duplicate, which is why the requirement is
@@ -988,8 +998,8 @@ in 0.93.0, and it is the one entry here closed by repairing the tree rather than
 writing a test: the four rules now read counted fields, and the sweep that holds them
 would redden on a revert. The totals are recomputed from the readers named above: E1 leaves VRD-3
 partial because declaration completeness is unread, E2's two-status gap is closed in 0.94.2 — evidence is now required on all
-eight, derived from `STATUS_ORDER` — and VRD-10 stays partial for the LLM answer merge
-rather than for coverage. E3 said VRD-5's general rule was only partially read, and stayed
+eight, derived from `STATUS_ORDER` — and VRD-10 stayed partial for the LLM answer merge
+rather than for coverage, until 0.97.3. E3 said VRD-5's general rule was only partially read, and stayed
 true for six releases after it was written; it is the entry that moved.
 
 An earlier draft of this appendix published `5 none / 3 partial / 4 enforced` and was

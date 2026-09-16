@@ -4,7 +4,9 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.97.2 — see [CHANGELOG.md](CHANGELOG.md). Test-only: nothing about an audit
+Version 0.97.3 — see [CHANGELOG.md](CHANGELOG.md). Specification only: a model's answer
+given without a reason stays accepted and is shown as "no rationale given" — now written
+down as intended rather than listed as a defect. `0.97.2` was test-only: nothing about an audit
 changes. The rules for handing answers back — a person's answer needs a reason, a model's
 is marked when it gives none — were mostly unchecked: an answer could have been dropped
 without saying which, or a model's empty answer shown with nothing beside it, and the tests

@@ -10,6 +10,19 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.97.3 — VRD-10 settled by decision
+
+Registry version: **`7c7b9d827179`, unchanged.** No code, test behaviour or verdict moved.
+**VRD-10 `partial` → `enforced`**, ledger 106 → 107 of 149.
+
+VRD-10 had one recorded violation left: a model's answer without a rationale is scored with
+`LLM: no rationale given`, where the requirement asked for "a sentence saying what was
+decided". The alternative was refusing such answers, which would send every one back to
+`LLM_PENDING` on every audited site. Anton decided to keep the behaviour: that sentence,
+beside a verdict every surface marks as the model's, is the evidence. VRD-10's text says
+so now, and the four REP-5 readers of 0.97.2 hold it. The disagreement `reporting` A.3
+recorded between the two documents is closed.
+
 ## 0.97.2 — REP-5 was held by one clause of six
 
 Registry version: **`7c7b9d827179`, unchanged.** No item, rule, checker or verdict moved,

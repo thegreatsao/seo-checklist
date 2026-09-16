@@ -924,9 +924,9 @@ class AModelIsAskedForARationaleAndNotRequiredOne(unittest.TestCase):
     reader is owed the statement that nothing was given. The literal appeared twice in
     the source and nowhere in `tests/`.
 
-    Whether a model *should* be required to give one is `openspec/specs/verdicts/` VRD-10's
-    open question and a decision about live verdicts. These tests hold the rule as written,
-    so changing it is a visible edit here rather than a quiet one in the merge.
+    Whether a model *should* be required to give one was decided on 16 September 2026: it is
+    not, and `openspec/specs/verdicts/` VRD-10 accepts this sentence as its evidence. Reversing
+    that moves live verdicts, and is a visible edit here rather than a quiet one in the merge.
     """
 
     EMPTY = ({"status": PASS, "evidence": ""},
