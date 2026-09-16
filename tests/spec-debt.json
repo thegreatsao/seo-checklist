@@ -20,10 +20,10 @@
     "evidence": {
       "counts": {
         "bounded": 0,
-        "enforced": 5,
+        "enforced": 7,
         "none": 0,
         "opposed": 0,
-        "partial": 5
+        "partial": 3
       },
       "opposed": [],
       "requirements": 10,
@@ -152,10 +152,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 102,
+    "enforced": 104,
     "none": 2,
     "opposed": 1,
-    "partial": 40,
+    "partial": 38,
     "requirements": 149
   }
 }

@@ -333,9 +333,21 @@ evidence answers is a question about which agent made the request.
 **Why:** a format that parses but cannot carry the answer is worse than one that fails to
 parse. Reading CLF and reporting "no crawler activity" would be a true statement about a
 file and a false one about the site.
-**Reader:** partial. The parser distinguishes the two formats and the refusal is written
-into the checker with its reason; what is unread is the refusal as a *contract* — nothing
-asserts that a CLF file produces the refusal rather than an empty result.
+**Reader:** enforced, at 0.97.0, and the tree held it before the line said so.
+`test_a_log_with_no_user_agent_refuses_to_answer` requires the refusal, its reason, the
+format label, and — the half that matters — that `summary` and `bots` are left **empty**,
+so no zero is left lying about for a rule to read as a pass.
+
+**This line said the contract was unread, and it was read.** Two mutations at 0.97.0:
+stopping the refusal so CLF answers with zeros is CAUGHT, and rewording the reason so it
+no longer names the format is CAUGHT. The line predates the assertions on `summary` and
+`bots` and was never re-read against them.
+
+**One of those probes first read MISSED, and the probe was wrong rather than the tree.**
+The mutation wrote `result["error"] = None or (…)`, which is the original string — an
+inert edit against a green suite, reported as a hole. A probe that changes nothing is
+indistinguishable from a suite that guards nothing, and only reading the mutation says
+which. A.5.
 
 #### Scenario: a log without a user agent
 - **WHEN** an operator supplies Common Log Format
@@ -355,9 +367,34 @@ rather than report an absence.
 **Why:** a crawler that visits weekly has not skipped a URL it has not reached yet. An
 absence over three days of logs is a statement about the log, and reporting it as a
 statement about the site produces work nobody needed to do.
-**Reader:** partial. Both constants exist and are named in the source with their reasoning
-— seven days for coverage, fifty requests for rates. Whether the decline actually happens
-below them is asserted for one of the two.
+**Reader:** enforced, at 0.97.0. Both declines are asserted from a log built to provoke
+them rather than from an injected flag — `test_a_window_too_short_for_coverage_says_the_answer_is_partial`
+and `test_a_sample_too_small_for_shares_says_the_answer_is_partial`, with
+`test_a_complete_log_claims_nothing_partial` as the floor, and
+`test_an_unreadable_inventory_says_the_answer_is_partial` and
+`test_a_log_nothing_can_be_dated_from_says_the_answer_is_partial` covering the two other
+ways this checker stops covering its subject. The verdict half is held by
+`test_the_item_withholds_its_pass_over_a_log_that_could_not_answer`,
+`test_a_defect_found_in_the_part_that_was_read_still_fails` and
+`test_a_complete_clean_log_still_passes`.
+
+**The decline was honest and the verdict was not, and this requirement did not say so.**
+The rule above is about what the *checker* reports, and the checker obeyed it exactly:
+`never_crawled` stays `None` rather than becoming `[]`, with a caveat saying why. But
+CI-018 passes by finding nothing at medium or above, so a `low` caveat and an empty
+finding list are the same thing to it. Measured at 0.97.0: a one-day log and an
+unreadable inventory both graded **PASS**, indistinguishable from a site with nothing
+wrong. Declining to report and reporting nothing wrong are opposite answers, and the item
+gave the second for both.
+
+**A run whose answer does not cover its subject SHALL say so, and the item's verdict
+follows from that.** The mechanism already existed and was already enforced —
+`openspec/specs/verdicts/` VRD-14 turns a pass-by-absence over a truncated input into
+`NO_DATA` — and `DEFAULT_MAX_LINES` in this checker already carried the argument for the
+line cap. The other three ways it stops covering its subject were simply never marked.
+Which caveats qualify is derived from the checker's own `_findings`: a caveat marks the
+answer partial when it suppresses a finding that could otherwise have reached the
+severity the rule reads. A.5.
 
 #### Scenario: three days of log
 - **WHEN** the supplied window is shorter than seven days
@@ -379,8 +416,20 @@ reader assume it was.
 other about being ingested — and averaging them answers neither. And a user agent string is
 a claim by the client: counting unverified claims as crawler traffic is how a log audit
 reports a bot problem that is somebody's scraper.
-**Reader:** partial. The separation is implemented and exercised; the opt-in flag exists.
-Nothing asserts that unverified counts are labelled as unverified where they are read.
+**Reader:** partial, and for a sharper reason than this line carried. The separation is
+implemented and exercised, the opt-in flag exists, and the caveat itself *is* asserted:
+`test_the_user_agent_is_reported_as_a_claim` and
+`test_nothing_asks_dns_unless_the_operator_asked_for_it` both redden when `bot_identity`
+stops saying the identity is unverified — probed at 0.97.0, CAUGHT by both.
+
+**What is unread is not the label but its journey.** `bot_identity` is written on every
+run and read by nothing: `grep` over `checklist_report.py` and `checklist_runner.py`
+returns no hit for it, so the sentence saying these counts are a claim rather than a
+measurement reaches no report surface at all. The second scenario below is therefore
+violated by shipped behaviour rather than merely unasserted — a reader of the deliverable
+is not told, because nothing tells them. The repair is a provenance warning beside the
+parser and the cache (`openspec/specs/reporting/` REP-3's table), which is a change to the
+report rather than to this checker and is not made here.
 
 #### Scenario: two kinds of crawler in one log
 - **WHEN** a log contains both search-engine and AI-crawler requests
@@ -557,6 +606,55 @@ function" is a lower bound on coverage, not an upper one, and A.2's claim is del
 the narrow one: nothing asserts these checkers' answers *by name*. The one-checker
 intersection with the oracle is the claim that survives either reading.
 
+#### A.5 — a decline the checker made honestly and the item reported as a pass, 16 September 2026
+
+EVD-9 asks the checker to decline rather than report an absence below seven days or below
+the rate floor, and the checker declines exactly as asked: `never_crawled` stays `None`
+rather than becoming `[]` — the source says why in its own words — and a `low` caveat
+explains it. Then CI-018 reads `issues` for anything at medium or above, finds nothing,
+and reports **PASS**.
+
+Measured through the shipped rule over the shipped checker's real output:
+
+| the log | the analysis | CI-018 said |
+|---|---|---|
+| one day, thirty sweeps | never-crawled never computed | **PASS** |
+| fourteen days, unreadable inventory | never-crawled and unoffered never computed | **PASS** |
+| fourteen days, good inventory, one orphan | ran | WARN |
+| fourteen days, good inventory, clean | ran | PASS |
+
+The first two are the finding. An operator who supplies a log and reads *Analyze Logs &
+Manage Crawl Budget: PASS* had, in those cases, no coverage analysis performed at all.
+Declining to report and reporting nothing wrong are opposite answers and the item gave the
+second for both.
+
+**The mechanism was already there and already enforced.** `openspec/specs/verdicts/`
+VRD-14 withholds a pass-by-absence over a truncated input, and this checker's own
+`DEFAULT_MAX_LINES` carries a basis line making that argument for the line cap — *"a log
+longer than this is read from its first million lines, so the cap decides that verdict"*.
+Nothing was missing but the flag on the other three ways of not covering the subject.
+
+**Which caveats qualify is derived, not chosen.** A caveat marks the answer partial when
+it suppresses a finding that could otherwise have reached the severity the rule reads:
+
+| caveat | suppresses |
+|---|---|
+| `no_timestamps` | the window, so `window_too_short` follows |
+| `window_too_short` | `sitemap_urls_never_crawled` — medium |
+| `inventory_unreadable` | that one and `disallowed_paths_crawled` — medium |
+| `too_few_requests` | `crawl_budget_wasted`, `server_errors_to_crawlers`, `crawl_spent_on_redirects` — medium and high |
+
+`too_few_requests` is the one a first reading waves off — *the shares are omitted, the
+counts stand* — and three findings at medium and high live inside the branch it silences.
+`crawled_not_offered` and `mixed_format` are not caveats and are exempted in the tree with
+written reasons; an AST sweep refuses a low-severity finding that is neither.
+
+**And the sentence under the withheld verdict was wrong the moment the flag stopped
+meaning a cap.** The runner said *"this says nothing about what the cap left out"* under
+every withholding, which is true of every other script that sets the flag and false of a
+three-day window. The reason now travels with the flag, and the cap wording remains the
+fallback for the scripts where a cap is what happened.
+
 ## Appendix B — how much of this document is enforced
 
 **Probed:** EVD-3 — deleting one checker's whole section from the catalogue makes
@@ -566,19 +664,28 @@ without a basis. INV-E1 — reconciled by counting: 58 named, 58 documented, two
 A.2's three counts were computed by parsing all 1 280 test functions, then cross-read
 against the recorded census and the fixture manifest.
 
-**Derived, not probed:** the five `partial` rows and the two `none` rows. Each names which
-half it believes unread.
+**Probed at 0.97.0:** EVD-8 and EVD-9, six breakages between them, and EVD-10's caveat.
+EVD-9's repair carries seven of its own — the flag never raised, the reason never carried,
+the runner ignoring it, a caveat reverting to a raw append, one caveat alone, every answer
+called partial, and a defect withheld along with the pass. All seven caught.
+
+**Derived, not probed:** the remaining `partial` rows. Each names which half it believes
+unread — **and two of the three that said so were wrong.** EVD-8's contract was read
+before its line admitted it, and EVD-10's label is read too; what is unread there is
+whether the label reaches a reader, which is a different and larger claim. A row
+classified by reading is a hypothesis, and this document's own note above says which rows
+were.
 
 | | requirements |
 |---|---|
-| **enforced** | EVD-3, EVD-4, EVD-5, EVD-6, EVD-7 |
-| **partial** | EVD-1, EVD-2, EVD-8, EVD-9, EVD-10 |
+| **enforced** | EVD-3, EVD-4, EVD-5, EVD-6, EVD-7, EVD-8, EVD-9 |
+| **partial** | EVD-1, EVD-2, EVD-10 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-E1 and INV-E2 enforced; INV-E3 and INV-E4 partial.
 
-**Five enforced, five partial, none unread, of ten.**
+**Seven enforced, three partial, none unread, of ten.**
 
 This is the best-read layer in the suite so far, and the reason is specific enough to be
 worth copying. Its three enforced requirements are all held by *generated* readers — a

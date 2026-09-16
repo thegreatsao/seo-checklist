@@ -5,8 +5,11 @@ It records which findings a ``none_severity`` assertion cannot act on, but it ca
 decide whether any one of them is deliberate advice or an item that cannot keep the
 claim in its title.
 
-Recomputing the AST measurement does not belong in the suite. These cheap invariants
-make a stale or empty record visible; re-record and read it with
+Recomputing the AST measurement was said not to belong in the suite, and that was an
+estimate rather than a measurement: it costs 0.15 s against a 418 s run. Until 0.97.0
+the recompute therefore ran only in ``ci.yml``, and a change that blinded the reader
+passed locally and failed there. It runs here now, beside the cheap invariants that
+make a stale or empty record visible. Re-record and read it with
 
     python tests/inert_findings.py --out tests/inert-findings.json
 """
@@ -84,6 +87,31 @@ class RecordedInertFindings(unittest.TestCase):
 
     def test_the_record_is_not_empty(self):
         self.assertTrue(self.record["items"], "the inert-findings record is empty")
+
+    def test_the_measurement_itself_still_describes_this_tree(self):
+        """The recompute, which this file's docstring said does not belong here.
+
+        It said so on an estimate, and the estimate was wrong by orders of magnitude:
+        `measure()` costs **0.15 s** against a 418 s suite. What the estimate bought
+        instead was a gate living only in `ci.yml`, and on 16 September that cost a
+        red pipeline after a green local run — four CI-018 caveats moved behind a
+        helper, this record lost all four and gained a meaningless `{message}` in
+        their place, and nothing local said so.
+
+        Kept as a whole-record comparison rather than a spot check, deliberately. The
+        failure that prompted it was not a wrong value in a field; it was rows quietly
+        leaving, and only comparing the whole thing sees that.
+        """
+        import sys
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import inert_findings
+        fresh = json.loads(json.dumps(inert_findings.measure(), sort_keys=True))
+        self.assertEqual(
+            self.record, fresh,
+            "the inert-findings measurement moved; re-record with "
+            "python tests/inert_findings.py --out tests/inert-findings.json — and "
+            "read what changed first: a finding leaving this list is either a rule "
+            "that now acts on it, or a reader that has gone blind to it")
 
 
 if __name__ == "__main__":

@@ -612,6 +612,16 @@ would turn an incomplete search into a clean bill of health.
 pin the `PASS` to `NO_DATA` transition, preserve both `WARN` and `FAIL`, and require floor
 evidence for the surviving non-pass.
 
+**The withheld verdict says why, from 0.97.0.** Until then the sentence read *"this says
+nothing about what the cap left out"* whatever had happened, which was true of every
+script that set the flag: they all set it for a cap. `server_log_audit` then set it for a
+window too short to support a coverage claim and an inventory it could not read, and the
+sentence sent the operator looking for a cap that does not exist. A script may now name
+its own reason (`truncated_reason`) and the cap wording is the fallback, held in both
+directions by `test_the_withheld_verdict_names_what_actually_stopped_it` and
+`test_the_cap_wording_survives_where_a_cap_is_what_happened`. The requirement is unchanged:
+what moved is whether its own evidence describes the case it is about.
+
 #### Scenario: a clean bill of health over a capped search
 - **WHEN** an assertion passes by finding none of the thing it forbids, and the input
   says it was truncated

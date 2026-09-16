@@ -4,8 +4,16 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.96.7 — see [CHANGELOG.md](CHANGELOG.md). A test release, with no change to
-what any check decides. Three rules about comparing an audit with the last one were
+Version 0.97.0 — see [CHANGELOG.md](CHANGELOG.md). **One check changes what it decides.**
+If you hand the audit a server access log, *Analyze Logs & Manage Crawl Budget* used to
+say PASS in cases where it had not actually done the work: a log covering one day, or a
+log it could read beside a site inventory it could not, meant the "which pages has Google
+never visited" analysis never ran at all — and the item reported the same clean result as
+a site with nothing wrong. It now says it could not answer, and says which of the four
+reasons stopped it. A log with everything it needs still passes, and a real problem found
+in the part it *could* read still fails. If you have been getting a PASS on that item from
+a short log, expect it to become "no data" — that is the audit admitting it never checked.
+Before that, `0.96.7` found three rules about comparing an audit with the last one were
 recorded as half-checked; measuring them first found the record wrong about all three.
 Two were better covered than it said. The third was worse, and in a way that matters if
 you audit more than one site from one folder: nothing in the suite would have noticed a

@@ -906,6 +906,25 @@ def input_truncated(data: dict) -> bool:
     return bool(isinstance(data, dict) and data.get("truncated"))
 
 
+def truncation_reason(data: dict) -> str:
+    """Why the answer does not cover its subject, in the script's own words.
+
+    Optional, and absent from most scripts on purpose. `broken_links`,
+    `redirect_checker` and the rest set `truncated` because a cap stopped the
+    reading, and "the cap" is a true description of what happened there.
+
+    `server_log_audit` set it for a cap too, and now for three things that are not
+    caps: a window too short to support a coverage claim, an inventory it could not
+    read, a sample too small to express as shares. The withheld verdict is right in
+    all four — the answer does not cover its subject — but telling an operator that
+    "the cap left out" the never-crawled analysis sends them looking for a cap that
+    does not exist. A sentence that misdescribes the cause is its own defect, and a
+    smaller one to fix than the verdict it sits under.
+    """
+    value = data.get("truncated_reason") if isinstance(data, dict) else None
+    return str(value).strip() if value else ""
+
+
 # Which key of a rule holds the threshold, per operator. Used to report *what was
 # compared* as data, so a report can put it in a sentence in any language instead
 # of printing the assertion's internals.
@@ -1497,10 +1516,18 @@ def grade(items: list[dict], plan: dict, results: dict, skipped: dict,
                             # the citation score. A FAIL is untouched — a defect
                             # found in part of a site is still a defect, and
                             # withholding it would lose a true finding to a cap.
+                            #
+                            # The cause is the script's to name. Until 0.97.0 this
+                            # sentence said "what the cap left out" whatever had
+                            # happened, which was true for every script that set the
+                            # flag — they all set it for a cap. It stopped being true
+                            # the moment one script set it for a window too short to
+                            # support a coverage claim.
+                            why = (truncation_reason(data)
+                                   or "this says nothing about what the cap left out")
                             row.update(status=NO_DATA,
                                        evidence=f"{ev}, but only part of the input "
-                                                f"was read: this says nothing about "
-                                                f"what the cap left out")
+                                                f"was read: {why}")
                         elif ok:
                             row.update(status=PASS, evidence=ev)
                         else:

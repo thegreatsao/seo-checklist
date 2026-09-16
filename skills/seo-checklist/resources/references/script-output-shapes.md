@@ -1496,7 +1496,12 @@ it, CI-018 decides. Same artifact pattern as `cwv_metrics.py`.
 `log_file` / `base_url` — str
 `format` — str — `combined` / `common` / `json` / `unknown`
 `lines_read` / `lines_parsed` / `lines_unparsed` — int
-`truncated` — bool (`--max-lines` reached)
+`truncated` — bool — **this answer does not cover its whole subject.** Four causes:
+  `--max-lines` reached, a window under 7 days, an inventory that would not load, or a
+  sample under the rate floor. Each silences a finding CI-018 would otherwise read, so a
+  clean answer here is not a clean bill of health and the runner withholds the `PASS`
+`truncated_reason` — str — why, in the checker's own words; `""` when nothing was
+  withheld. The runner prints it under the withheld verdict instead of blaming a cap
 `user_agent_recorded` — NoneType or bool
 `error` — NoneType or str — **set, and everything else left empty, when the log
   cannot answer**: no such file, nothing parsed, or Common Log Format, which records

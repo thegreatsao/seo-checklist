@@ -33,6 +33,7 @@ import inspect
 import json
 import os
 import re
+import shutil
 import socket
 import struct
 import sys
@@ -41,7 +42,7 @@ import threading
 import unittest
 import zlib
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from unittest import mock
 from urllib.parse import urlsplit
 
@@ -1159,6 +1160,282 @@ class CrawlerAddressesAreConfirmed(unittest.TestCase):
         still says the word "claim" out loud."""
         self.assertEqual(out("log_good")["address_checks"], {})
         self.assertIn("not verified", out("log_good")["bot_identity"])
+
+
+class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
+    """`openspec/specs/evidence/` EVD-9, and the verdict it never spoke about.
+
+    EVD-9 requires the checker to **decline** below seven days or below the rate
+    floor rather than report an absence, and the checker does: `never_crawled` stays
+    `None` rather than becoming `[]`, and a caveat says why. What EVD-9 does not say
+    is what the *item* should then report, and CI-018 passes by finding nothing at
+    medium or above. So the decline was honest and the verdict was not — measured
+    before this class existed, a one-day log and an unreadable inventory both graded
+    **PASS**, indistinguishable from a site with nothing wrong.
+
+    The mechanism for saying so already existed and was already enforced.
+    `openspec/specs/verdicts/` VRD-14 turns a pass-by-absence over a truncated input
+    into `NO_DATA`, and `DEFAULT_MAX_LINES` in this very script carries a basis line
+    making that argument for the line cap — *"a log longer than this is read from its
+    first million lines, so the cap decides that verdict"*. The three other ways this
+    script stops covering its subject were simply never marked.
+
+    Which caveats belong is derived from `_findings` rather than chosen:
+
+    | caveat | the finding it suppresses |
+    |---|---|
+    | `no_timestamps` | the window is unknown, so `window_too_short` follows |
+    | `window_too_short` | `sitemap_urls_never_crawled` (medium) |
+    | `inventory_unreadable` | that one and `disallowed_paths_crawled` (medium) |
+    | `too_few_requests` | `crawl_budget_wasted`, `server_errors_to_crawlers`, `crawl_spent_on_redirects` — medium and high |
+
+    Every log below is built here rather than injected. A test that sets `truncated`
+    by hand reads the runner and says nothing about whether this script ever raises
+    it, which is the shape `openspec/specs/run-lifecycle/` A.13 names.
+    """
+
+    GOOGLEBOT = ("Mozilla/5.0 (compatible; Googlebot/2.1; "
+                 "+http://www.google.com/bot.html)")
+    SITE = "https://example.com"
+    PATHS = ("/", "/a.html", "/b.html")
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp(prefix="seo-log-partial-")
+        self.addCleanup(shutil.rmtree, self.dir, True)
+        self.now = datetime.now(timezone.utc)
+        self.written = 0
+
+    def write(self, text, suffix):
+        self.written += 1
+        path = os.path.join(self.dir, f"f{self.written}{suffix}")
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
+        return path
+
+    def line(self, when, path, status=200):
+        stamp = when.strftime("%d/%b/%Y:%H:%M:%S +0000")
+        return (f'66.249.66.1 - - [{stamp}] "GET {path} HTTP/1.1" {status} 1024 '
+                f'"-" "{self.GOOGLEBOT}"')
+
+    def log(self, days, per_day=1, stamped=True):
+        """A log of `days` days, `per_day` sweeps of every path per day."""
+        rows = []
+        for day in range(days):
+            for slot in range(per_day):
+                for path in self.PATHS:
+                    when = self.now - timedelta(days=day, minutes=slot * 7)
+                    row = self.line(when, path)
+                    if not stamped:
+                        # The same shape with an unreadable stamp: the parser takes
+                        # the line and cannot date it, which is a different case from
+                        # a file that is not a log at all.
+                        row = row.replace(when.strftime("%d/%b/%Y:%H:%M:%S +0000"),
+                                          "not-a-timestamp")
+                    rows.append(row)
+        return self.write("\n".join(rows) + "\n", ".log")
+
+    def inventory(self, paths, sitemap=None):
+        """An inventory `site_crawl.load` accepts, keyed off its own constant."""
+        from site_crawl import INVENTORY_VERSION
+        return self.write(json.dumps({
+            "inventory_version": INVENTORY_VERSION,
+            "site": self.SITE,
+            "entry": self.SITE + "/",
+            "pages": {f"{self.SITE}{p}": {"url": f"{self.SITE}{p}", "status": 200,
+                                          "html": True,
+                                          "final_url": f"{self.SITE}{p}",
+                                          "redirected": False,
+                                          "redirect_chain": []}
+                      for p in paths},
+            "sitemap": {"urls": [f"{self.SITE}{p}" for p in (sitemap or paths)]},
+            "robots_blocked": {},
+            "fetch_error": None,
+            "summary": {"pages_fetched": len(paths), "truncated": False},
+        }), ".json")
+
+    def audit(self, log_path, inventory_path):
+        import server_log_audit as sla
+        return sla.audit(log_path, inventory_path, self.SITE)
+
+    def caveats(self, data):
+        return {i["type"] for i in data["issues"] if i["severity"] == "low"}
+
+    # -- the four, each provoked from a log rather than asserted about ------------
+
+    def test_a_window_too_short_for_coverage_says_the_answer_is_partial(self):
+        data = self.audit(self.log(days=1, per_day=30), self.inventory(self.PATHS))
+        self.assertIn("window_too_short", self.caveats(data))
+        self.assertIsNone(data["never_crawled"],
+                          "the coverage analysis ran on a one-day window")
+        self.assertTrue(data["truncated"],
+                        "a log that cannot support a coverage claim did not say so")
+        self.assertIn("day(s)", data["truncated_reason"])
+
+    def test_an_unreadable_inventory_says_the_answer_is_partial(self):
+        data = self.audit(self.log(days=14, per_day=30),
+                          self.write("{not json", ".json"))
+        self.assertIn("inventory_unreadable", self.caveats(data))
+        self.assertTrue(data["truncated"])
+        self.assertIn("inventory", data["truncated_reason"])
+
+    def test_a_log_nothing_can_be_dated_from_says_the_answer_is_partial(self):
+        data = self.audit(self.log(days=3, per_day=30, stamped=False),
+                          self.inventory(self.PATHS))
+        self.assertIn("no_timestamps", self.caveats(data))
+        self.assertTrue(data["truncated"])
+
+    def test_a_sample_too_small_for_shares_says_the_answer_is_partial(self):
+        """The least obvious of the four, and the one a first reading waves off. The
+        shares are omitted and the counts stand — but three findings at medium and
+        high are computed *only* inside the `rates_meaningful` branch, so a small
+        sample silences all three."""
+        data = self.audit(self.log(days=14, per_day=1), self.inventory(self.PATHS))
+        self.assertIn("too_few_requests", self.caveats(data))
+        self.assertFalse(data["summary"]["rates_meaningful"])
+        self.assertTrue(data["truncated"])
+
+    def test_a_complete_log_claims_nothing_partial(self):
+        """The floor, and the one that catches a repair gone too far. Every caveat
+        above suppresses a finding, so it is entirely possible to withhold every
+        verdict by accident and call the item safer for it."""
+        data = self.audit(self.log(days=14, per_day=30), self.inventory(self.PATHS))
+        self.assertEqual(self.caveats(data), set(), data["issues"])
+        self.assertFalse(data["truncated"])
+        self.assertEqual(data["truncated_reason"], "")
+        self.assertIsNotNone(data["never_crawled"],
+                             "the coverage analysis did not run on a complete log")
+
+    # -- the join, through the grader rather than through the rule ----------------
+
+    def verdict_of(self, data):
+        item = ITEMS["CI-018"]
+        key = (item["check"]["script"], ())
+        rows = grade([item], {key: [item["id"]]}, {key: data}, {}, False)
+        return rows[0]["status"], rows[0].get("evidence") or ""
+
+    def test_the_item_withholds_its_pass_over_a_log_that_could_not_answer(self):
+        """`grade`, not `evaluate`: the withholding VRD-14 requires lives in the
+        runner and not in the rule, so an assertion over the rule alone cannot see
+        this repair at all — which is why `verdict()` is not used here."""
+        for label, args in (
+                ("a one-day window",
+                 (self.log(days=1, per_day=30), self.inventory(self.PATHS))),
+                ("an unreadable inventory",
+                 (self.log(days=14, per_day=30), self.write("{not json", ".json")))):
+            with self.subTest(case=label):
+                status, evidence = self.verdict_of(self.audit(*args))
+                self.assertEqual(status, NO_DATA,
+                                 f"{label}: the item reported {status} over an "
+                                 f"analysis that never ran — {evidence}")
+
+    def test_a_defect_found_in_the_part_that_was_read_still_fails(self):
+        """VRD-14's second scenario. Withholding the failure too would lose a true
+        finding to a missing half, which is what makes a caveat worthless. The sample
+        here is small, so the answer is partial *and* a defect is found."""
+        data = self.audit(
+            self.log(days=14, per_day=1),
+            self.inventory(self.PATHS,
+                           sitemap=list(self.PATHS) + ["/never-crawled.html"]))
+        self.assertTrue(data["truncated"])
+        status, evidence = self.verdict_of(data)
+        self.assertIn(status, (WARN, FAIL), evidence)
+        self.assertIn("never requested", evidence)
+
+    def test_a_complete_clean_log_still_passes(self):
+        """The floor for the join. An item that can no longer pass is not a repaired
+        item, and every case above ends in `NO_DATA`."""
+        status, evidence = self.verdict_of(
+            self.audit(self.log(days=14, per_day=30), self.inventory(self.PATHS)))
+        self.assertEqual(status, PASS, evidence)
+
+    def test_the_withheld_verdict_names_what_actually_stopped_it(self):
+        """The sentence, which stopped being true the moment the flag stopped
+        meaning a cap.
+
+        Until 0.97.0 the runner said *"this says nothing about what the cap left
+        out"* under every withheld verdict, because every script that set `truncated`
+        set it for a cap. A three-day window is not a cap, and an operator sent
+        looking for one finds nothing. A sentence that misdescribes its own cause is
+        the same family of defect as the verdict it sits under, and cheaper to fix.
+        """
+        _, evidence = self.verdict_of(
+            self.audit(self.log(days=1, per_day=30), self.inventory(self.PATHS)))
+        self.assertIn("day(s)", evidence,
+                      "the withheld verdict does not say the window was too short")
+        self.assertNotIn("cap left out", evidence,
+                         "the withheld verdict blames a cap that does not exist")
+
+    def test_the_cap_wording_survives_where_a_cap_is_what_happened(self):
+        """The other side of that sentence. `broken_links`, `redirect_checker` and
+        the rest set `truncated` for a real cap and name no reason; the fallback has
+        to keep describing them correctly."""
+        from checklist_runner import truncation_reason
+        self.assertEqual(truncation_reason({"truncated": True}), "")
+        self.assertEqual(truncation_reason({}), "")
+        self.assertEqual(
+            truncation_reason({"truncated": True, "truncated_reason": " why "}),
+            "why")
+
+    # -- the sweep that catches the next caveat -----------------------------------
+
+    # A caveat added tomorrow will be written the way these four were: an `issues`
+    # append at `low`, beside a `return`. A test naming today's four would not notice
+    # it. This walks the module instead and requires every low-severity append to go
+    # through `_incomplete` — or to be one of two exemptions that say, here, why it
+    # is not a caveat at all.
+    NOT_CAVEATS = {
+        "crawled_not_offered":
+            "a finding about the site rather than about the reading: crawlers "
+            "requested URLs the crawl found neither linked nor in the sitemap. It "
+            "is low because it is usually old links rather than a defect, and it "
+            "suppresses nothing.",
+        "mixed_format":
+            "some lines carry no User-Agent. The totals stand and no finding is "
+            "withheld; a sample that fell below the rate floor because of it says "
+            "so through too_few_requests, which does mark the answer partial.",
+    }
+
+    def test_every_low_finding_is_a_caveat_or_says_why_it_is_not(self):
+        source = os.path.join(SCRIPTS, "server_log_audit.py")
+        with open(source, encoding="utf-8") as handle:
+            tree = ast.parse(handle.read())
+
+        found = []
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not node.args:
+                continue
+            func = node.func
+            if not (isinstance(func, ast.Attribute) and func.attr == "append"):
+                continue
+            payload = node.args[0]
+            if not isinstance(payload, ast.Dict):
+                continue
+            fields = {k.value: v
+                      for k, v in zip(payload.keys, payload.values, strict=True)
+                      if isinstance(k, ast.Constant)}
+            severity, kind = fields.get("severity"), fields.get("type")
+            if (isinstance(severity, ast.Constant) and severity.value == "low"
+                    and isinstance(kind, ast.Constant)):
+                found.append(kind.value)
+
+        self.assertTrue(found, "no low-severity append found; this sweep is vacuous")
+        unexplained = sorted(set(found) - set(self.NOT_CAVEATS))
+        self.assertEqual(
+            unexplained, [],
+            f"these report at `low` without going through `_incomplete` and without "
+            f"a recorded reason: {unexplained}. A caveat that suppresses a finding "
+            f"must mark the answer partial, or CI-018 passes over an analysis that "
+            f"never ran; a finding about the site must not.")
+
+    def test_no_exemption_outlives_the_finding_it_describes(self):
+        """The other direction, so the list above cannot rot into fiction."""
+        source = os.path.join(SCRIPTS, "server_log_audit.py")
+        with open(source, encoding="utf-8") as handle:
+            text = handle.read()
+        for kind in self.NOT_CAVEATS:
+            with self.subTest(kind=kind):
+                self.assertIn(f'"type": "{kind}"', text,
+                              f"{kind} is exempted here and no longer exists")
 
 
 # ---------------------------------------------------------------------------

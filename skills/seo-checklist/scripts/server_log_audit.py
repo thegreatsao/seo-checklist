@@ -486,6 +486,9 @@ def audit(log_path: str, inventory_path: str = "", base_url: str = "",
         "lines_parsed": 0,
         "lines_unparsed": 0,
         "truncated": False,
+        # Why, when there is a why. Declared here rather than only where it is set,
+        # so a reader of the output shape sees it exists on every run.
+        "truncated_reason": "",
         "user_agent_recorded": None,
         "window": {"first": None, "last": None, "days": None},
         "bot_identity": "claimed, not verified — a User-Agent is what the client "
@@ -660,12 +663,53 @@ def audit(log_path: str, inventory_path: str = "", base_url: str = "",
     return result
 
 
+# A caveat is not a finding about the site, and it must not read as one.
+#
+# Every branch below declines to report something — which is right, and is what
+# `openspec/specs/evidence/` EVD-9 asks for: an absence over three days of logs is a
+# statement about the log. What EVD-9 does not say is what the *verdict* should then
+# be, and CI-018 passes by finding nothing at medium or above. So an analysis that
+# never ran and a site with nothing wrong produced the identical `PASS`.
+#
+# `truncated` is the runner's name for "this answer does not cover its subject", and
+# it already meant exactly that here for the line cap — `DEFAULT_MAX_LINES` says so in
+# its own basis line. The runner turns a pass-by-absence over a truncated input into
+# `NO_DATA` (`openspec/specs/verdicts/` VRD-14), which is the honest answer: the item
+# applies, and this log could not settle it.
+#
+# Which caveats belong here is derived from `_findings`, not chosen: a caveat marks
+# the answer incomplete when it suppresses a finding that could otherwise have reached
+# the severity CI-018's rule reads.
+#
+#   no_timestamps        -> the window is unknown, so window_too_short follows
+#   window_too_short     -> sitemap_urls_never_crawled (medium) cannot be raised
+#   inventory_unreadable -> that one and disallowed_paths_crawled (medium)
+#   too_few_requests     -> crawl_budget_wasted, server_errors_to_crawlers and
+#                           crawl_spent_on_redirects, all medium or high
+#
+# `mixed_format` is deliberately not here: unattributed requests move the totals but
+# suppress no finding outright, and a log whose sample fell below the rate floor says
+# so through `too_few_requests` already.
+def _incomplete(result: dict, kind: str, message: str) -> None:
+    """Record a caveat, and say the answer no longer covers its whole subject.
+
+    The reason travels with the flag. The runner's withheld-verdict sentence used to
+    say "what the cap left out" unconditionally, which is a true description of a
+    line cap and a false one of a three-day window — and it is the sentence the
+    operator reads under a `NO_DATA`. Every caveat that reaches here is already a
+    plain-English explanation, so it is the reason, verbatim.
+    """
+    result["issues"].append({"severity": "low", "type": kind, "message": message})
+    result["truncated"] = True
+    said = result.get("truncated_reason") or ""
+    result["truncated_reason"] = f"{said}; {message}" if said else message
+
+
 def _window(result: dict, first_at, last_at) -> None:
     if first_at is None or last_at is None:
-        result["issues"].append({
-            "severity": "low", "type": "no_timestamps",
-            "message": "no line carried a timestamp this script could read, so "
-                       "the window is unknown and rates per day are not reported"})
+        _incomplete(result, "no_timestamps",
+                    "no line carried a timestamp this script could read, so "
+                    "the window is unknown and rates per day are not reported")
         return
     span = last_at - first_at
     result["window"] = {
@@ -680,10 +724,9 @@ def _compare_with_inventory(result: dict, inventory_path: str,
     """The three findings that need both halves: the log and what the site offers."""
     facts = _inventory_facts(inventory_path)
     if facts.get("error"):
-        result["issues"].append({
-            "severity": "low", "type": "inventory_unreadable",
-            "message": f"{facts['error']}; the log was read on its own, so "
-                       f"never-crawled and unoffered-URL findings are absent"})
+        _incomplete(result, "inventory_unreadable",
+                    f"{facts['error']}; the log was read on its own, so "
+                    f"never-crawled and unoffered-URL findings are absent")
         return
 
     hits = [{"path": p, "hits": crawled[p]}
@@ -695,12 +738,11 @@ def _compare_with_inventory(result: dict, inventory_path: str,
         # Left as None rather than as an empty list, because an empty list reads as
         # "we looked and there were none". A one-day log would otherwise report
         # every URL on the site as never crawled.
-        result["issues"].append({
-            "severity": "low", "type": "window_too_short",
-            "message": f"the log covers {days or 'an unknown number of'} day(s); "
-                       f"coverage findings need at least {MIN_DAYS_FOR_COVERAGE} "
-                       f"days, because below that 'never crawled' and 'not crawled "
-                       f"yet' are the same thing"})
+        _incomplete(result, "window_too_short",
+                    f"the log covers {days or 'an unknown number of'} day(s); "
+                    f"coverage findings need at least {MIN_DAYS_FOR_COVERAGE} "
+                    f"days, because below that 'never crawled' and 'not crawled "
+                    f"yet' are the same thing")
         return
 
     never = sorted(facts["sitemap"] - search_paths - facts["robots_refused"])
@@ -760,10 +802,9 @@ def _findings(result: dict) -> None:
         return
 
     if not summary.get("rates_meaningful"):
-        issues.append({
-            "severity": "low", "type": "too_few_requests",
-            "message": f"{total} search-bot request(s) is too few to express as "
-                       f"percentages, so shares are omitted; the counts stand"})
+        _incomplete(result, "too_few_requests",
+                    f"{total} search-bot request(s) is too few to express as "
+                    f"percentages, so shares are omitted; the counts stand")
     else:
         waste = summary["wasted_pct"]
         if waste >= WASTE_HIGH_PCT:

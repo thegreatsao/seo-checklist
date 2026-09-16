@@ -10,6 +10,101 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.97.0 — a caveat wearing a finding's costume, and the free pass behind it
+
+Registry version: **`7c7b9d827179`, unchanged.** No item, rule or checker moved. **One
+item's verdict does move on real sites**, which is what makes this a minor rather than a
+patch: CI-018 now answers `NO_DATA` where it used to answer `PASS` over a log that could
+not settle the question. Two requirements move to `enforced`; the ledger goes **102/38 →
+104/38**.
+
+**Eleven items carry findings no rule can act on — 29 of them, all at `low`.** Reading
+all 29 end to end found three kinds and not one: deliberate advice that belongs at `low`
+forever (*Consider AVIF/WebP*), a genuine site defect parked below the line, and a
+**caveat wearing a finding's costume** — a sentence that is not about the site at all but
+about the checker having been unable to measure. Only the third had a live defect behind
+it, and it had a serious one.
+
+**CI-018 passed over analyses that never ran.** `server_log_audit.py` declines, correctly
+and deliberately, when it cannot support a claim: `never_crawled` stays `None` rather than
+becoming `[]` — an empty list would read as *we looked and there were none* — and a `low`
+caveat says why. CI-018 then reads `issues` for anything at medium or above, finds
+nothing, and passes. Measured through the shipped rule over the shipped checker:
+
+| the log | the analysis | CI-018 said |
+|---|---|---|
+| one day | never-crawled never computed | **PASS** |
+| fourteen days, unreadable inventory | never-crawled and unoffered never computed | **PASS** |
+| fourteen days, good inventory, one orphan | ran | WARN |
+| fourteen days, good inventory, clean | ran | PASS |
+
+An operator who supplies a server log and reads *Analyze Logs & Manage Crawl Budget:
+PASS* had, in the first two cases, no coverage analysis performed at all. **Declining to
+report and reporting nothing wrong are opposite answers, and the item gave the second for
+both.**
+
+**The mechanism to say so already existed and was already enforced.**
+`openspec/specs/verdicts/` VRD-14 turns a pass-by-absence over a truncated input into
+`NO_DATA`, and this checker's own `DEFAULT_MAX_LINES` carried the argument in a basis line
+— *"a log longer than this is read from its first million lines, so the cap decides that
+verdict"*. Nothing was missing except the flag on the three other ways of not covering the
+subject. No new vocabulary, no new status, no registry change.
+
+**Which caveats qualify is derived from the checker's own findings, not chosen:** a caveat
+marks the answer partial when it silences a finding that could otherwise have reached the
+severity the rule reads.
+
+| caveat | silences |
+|---|---|
+| `no_timestamps` | the window, so `window_too_short` follows |
+| `window_too_short` | `sitemap_urls_never_crawled` — medium |
+| `inventory_unreadable` | that one and `disallowed_paths_crawled` — medium |
+| `too_few_requests` | `crawl_budget_wasted`, `server_errors_to_crawlers`, `crawl_spent_on_redirects` — medium and high |
+
+`too_few_requests` is the one a first reading waves off — *the shares are omitted, the
+counts stand* — and three findings at medium and high live inside the branch it silences.
+`crawled_not_offered` and `mixed_format` are exempted in the tree with written reasons,
+and an AST sweep refuses a low-severity finding that is neither a caveat nor explained, so
+the next one added cannot be silent.
+
+**A smaller defect, found on the way, in the sentence under the withheld verdict.** The
+runner said *"this says nothing about what the cap left out"* under every withholding.
+That is true of every other script that sets the flag — they all set it for a cap — and
+false of a three-day window, and it is the sentence the operator reads. The reason now
+travels with the flag; the cap wording stays as the fallback, and both directions are
+asserted.
+
+**Two requirements were better read than their own lines said.** EVD-8's CLF refusal is
+held as a contract — stopping the refusal so the log answers with zeros reddens, and so
+does rewording the reason. EVD-9 is now enforced by the repair above. EVD-10 stays
+`partial` for a sharper reason than it carried: its caveat *is* asserted, and what is
+unread is that `bot_identity` reaches no report surface at all — nothing in the runner or
+the report reads it, so the sentence saying these counts are a claim rather than a
+measurement is written on every run and shown to nobody. That repair is a provenance
+warning and belongs to `openspec/specs/reporting/` REP-3.
+
+Seven breakages against the new readers, seven caught. One probe reported a hole that was
+not there — the mutation wrote `result["error"] = None or (…)`, which is the original
+string, so it changed nothing and read as MISSED. A probe that mutates nothing is
+indistinguishable from a suite that guards nothing.
+
+**And moving those four caveats behind a helper blinded the instrument that lists them.**
+`tests/inert_findings.py` reads findings out of the AST as literal dicts. Routed through
+`_incomplete()`, the four became one entry reading `{message}` — a parameter name, a
+finding no script emits — and the record lost every real sentence. **The suite was green
+and CI was red**, because the `--check` gate that noticed runs only in `ci.yml`.
+
+Both halves are fixed rather than re-recorded. The scanner resolves helpers generally now
+— any module function whose body appends a dict with a literal severity and a message that
+is one of its own parameters, read at each call site — so the four reappear with their
+real text and `tests/inert-findings.json` needed **no change at all**: the record was
+never wrong, the reader had gone blind. And the recompute runs in the suite, where this
+file's own docstring had said it did not belong. That was an estimate: measured, it costs
+**0.15 s** against a 418 s run, and what the estimate bought was a gate invisible where
+the work happens.
+
+`openspec/specs/evidence/` A.5 has the anatomy.
+
 ## 0.96.7 — three rows classified by reading, and all three were wrong
 
 Registry version: **`7c7b9d827179`, unchanged.** No item, rule, checker or verdict moved.
