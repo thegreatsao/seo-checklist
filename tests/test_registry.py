@@ -1385,6 +1385,63 @@ class EveryToolGateRunsHereToo(unittest.TestCase):
         self.assertEqual(sorted(mine - in_ci), [],
                          "this class runs a gate the workflow does not")
 
+    # Gates the workflow runs out of `tests/` rather than `tools/`, each named with
+    # the test that makes the same comparison here. They are not run twice: the
+    # ledgers' own modules already recompute and compare, at the same cost.
+    #
+    # This map exists because the derivation above could not see them at all. It
+    # matches `tools/` alone, so three `--check` gates sat outside the set a test
+    # written to enumerate gates was enumerating — and on 16 September the one of the
+    # three with no equivalent test, `inert_findings.py --check`, went red on CI after
+    # a green local run. A gate outside the pattern is not exempted, it is invisible:
+    # the assertion above passes because the set it compares never held the gate,
+    # which is how every derivation bounded by a spelling fails.
+    IN_TESTS = {
+        "inert_findings.py":
+            "tests/test_inert_findings.py::"
+            "test_the_measurement_itself_still_describes_this_tree",
+        "known_issues.py":
+            "tests/test_known_issues.py::"
+            "test_the_comparison_is_quiet_on_the_record_as_recorded",
+        "verdict_census.py":
+            "tests/test_census.py::test_every_item_is_accounted_for",
+    }
+
+    def test_the_gates_the_workflow_runs_out_of_tests_are_accounted_for(self):
+        """The half the derivation above cannot see.
+
+        Each is accounted for by naming the test that makes the same comparison, and
+        that test has to exist — so a `tests/` gate added to the workflow tomorrow
+        fails here until somebody names the test covering it, or writes one.
+        """
+        with open(os.path.join(ROOT, ".github", "workflows", "ci.yml"),
+                  encoding="utf-8") as stream:
+            workflow = stream.read()
+        # `run:` and not a bare path. The first draft matched any `tests/*.py` in the
+        # file and picked up `test_contract.py` and `test_specs.py` out of two
+        # comments — a derivation that reads prose reports what the prose mentions.
+        in_ci = set(re.findall(r"run:\s*python\s+tests/([a-z0-9_]+\.py)", workflow))
+        self.assertTrue(in_ci, "no tests/ gate found; this derivation is vacuous")
+
+        unaccounted = sorted(in_ci - set(self.IN_TESTS))
+        self.assertEqual(
+            unaccounted, [],
+            f"the workflow runs these out of tests/ and nothing here says which test "
+            f"makes the same comparison: {unaccounted}")
+
+        for gate, covering in sorted(self.IN_TESTS.items()):
+            with self.subTest(gate=gate):
+                self.assertIn(gate, in_ci,
+                              f"{gate} is accounted for here and the workflow no "
+                              f"longer runs it")
+                module, _, name = covering.partition("::")
+                path = os.path.join(ROOT, *module.split("/"))
+                self.assertTrue(os.path.exists(path), f"{module} does not exist")
+                with open(path, encoding="utf-8") as stream:
+                    self.assertIn(f"def {name}(", stream.read(),
+                                  f"{covering} is named as {gate}'s equivalent and "
+                                  f"does not exist")
+
     def test_every_gate_passes(self):
         for name, args in self.GATES:
             with self.subTest(gate=name):

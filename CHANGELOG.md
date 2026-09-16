@@ -10,6 +10,38 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.97.1 — the test that enumerates the CI gates could not see three of them
+
+Registry version: **`7c7b9d827179`, unchanged.** No item, rule, checker or verdict moved.
+No requirement changes class. One test, and it closes the class behind 0.97.0's CI
+failure.
+
+`EveryToolGateRunsHereToo` exists because a gate living only in `ci.yml` is invisible from
+the machine doing the work — it derives the gate list **from the workflow** so that one
+added there and not run here fails rather than going quietly unrun. It derives it with
+
+    re.findall(r"tools/([a-z0-9_]+\.py)", workflow)
+
+and the workflow runs three `--check` gates out of `tests/`: `known_issues.py`,
+`verdict_census.py` and `inert_findings.py`. **A gate outside the pattern is not exempted,
+it is invisible** — the assertion passes because the set it compares never contained the
+gate. The class has a list of exemptions, each with a written reason, and none of the three
+is in it; they were never candidates.
+
+Two of the three happened to have an equivalent test written by hand. The third did not,
+and that is 0.97.0: a green local run, a red pipeline, and the gate that noticed was the
+one nothing local ran.
+
+The `tests/` half is derived now too, and each gate is accounted for by **naming the test
+that makes the same comparison** — which must exist, so a `tests/` gate added tomorrow
+fails here until somebody names its equivalent or writes one. Probed both ways: a new gate
+in the workflow accounted for nowhere is caught, and a named equivalent that no longer
+exists is caught.
+
+The first draft of that derivation matched any `tests/*.py` in the file and picked up
+`test_contract.py` and `test_specs.py` out of two comments. It reads `run:` invocations
+now — a derivation that reads prose reports what the prose mentions.
+
 ## 0.97.0 — a caveat wearing a finding's costume, and the free pass behind it
 
 Registry version: **`7c7b9d827179`, unchanged.** No item, rule or checker moved. **One

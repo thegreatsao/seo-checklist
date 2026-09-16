@@ -4,7 +4,10 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.97.0 — see [CHANGELOG.md](CHANGELOG.md). **One check changes what it decides.**
+Version 0.97.1 — see [CHANGELOG.md](CHANGELOG.md). A test-only follow-up: the test whose
+job is to make sure every automated check also runs locally could not see three of them,
+because it looked in one folder and they live in another. Nothing about an audit changes.
+`0.97.0` is the release that matters here, and **one check changes what it decides.**
 If you hand the audit a server access log, *Analyze Logs & Manage Crawl Budget* used to
 say PASS in cases where it had not actually done the work: a log covering one day, or a
 log it could read beside a site inventory it could not, meant the "which pages has Google
