@@ -851,6 +851,30 @@ class AnswersFromAPerson(unittest.TestCase):
             self.assertEqual(n, 0, f"accepted evidence {empty!r}")
             self.assertEqual(rows["LO-199"]["status"], MANUAL)
 
+    def test_the_refusal_names_the_answer_it_dropped(self):
+        """REP-5's third clause: refused *by id*, and printed rather than swallowed.
+
+        The test above holds with the refusal silent — nothing applied, status unchanged —
+        and an operator who handed back thirty answers and saw twenty-nine applied could
+        not tell which one was dropped, or that one was. The sweep over all three merges
+        names the other two ways an answer is dropped; this is the one only the person's
+        merge has. A missing key is the case a hand-written file produces most.
+        """
+        for answer in ({"status": PASS, "evidence": ""},
+                       {"status": PASS, "evidence": "   "},
+                       {"status": PASS, "evidence": None},
+                       {"status": PASS}):
+            with self.subTest(answer=answer):
+                stream = io.StringIO()
+                with contextlib.redirect_stderr(stream):
+                    _, n, _ = self.answered({"LO-199": answer})
+                printed = stream.getvalue()
+                self.assertEqual(n, 0)
+                self.assertIn("LO-199", printed,
+                              "the answer was refused and nothing said which one")
+                self.assertIn("reason", printed,
+                              "the refusal does not say it was for want of a reason")
+
     def test_it_cannot_touch_a_verdict_a_script_reached(self):
         _, n, rows = self.answered({"CN-047": {"status": PASS, "evidence": "trust me"}})
         self.assertEqual(n, 0)
@@ -888,6 +912,60 @@ class AnswersFromAPerson(unittest.TestCase):
         for name, text in (("markdown", render_markdown(data)),
                            ("html", render_html(data))):
             self.assertIn("on their word", text, f"{name} hides the claimed verdict")
+
+
+class AModelIsAskedForARationaleAndNotRequiredOne(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-5's second half, which had no reader.
+
+    A model's answer without a rationale MAY be accepted and MUST be recorded as having
+    none. Both halves were unread: the merge could start refusing such an answer — the
+    silent drop the requirement's argument is about, a machine queue losing items rather
+    than recording a weak one — or keep accepting it and record an empty string where the
+    reader is owed the statement that nothing was given. The literal appeared twice in
+    the source and nowhere in `tests/`.
+
+    Whether a model *should* be required to give one is `openspec/specs/verdicts/` VRD-10's
+    open question and a decision about live verdicts. These tests hold the rule as written,
+    so changing it is a visible edit here rather than a quiet one in the merge.
+    """
+
+    EMPTY = ({"status": PASS, "evidence": ""},
+             {"status": PASS, "evidence": "   "},
+             {"status": PASS, "evidence": None},
+             {"status": PASS})
+
+    def test_an_answer_without_a_rationale_is_applied(self):
+        for answer in self.EMPTY:
+            with self.subTest(answer=answer):
+                data = results(item("CN-047", LLM_PENDING, source="llm"))
+                n = merge_llm_answers(data, {"CN-047": answer})
+                row = data["items"][0]
+                self.assertEqual(n, 1, "a model answer was dropped for want of a rationale")
+                self.assertEqual(row["status"], PASS)
+                self.assertEqual(row["decided_by"], "model")
+
+    def test_it_is_recorded_as_having_none_where_a_reader_sees_it(self):
+        for answer in self.EMPTY:
+            with self.subTest(answer=answer):
+                data = results(item("CN-047", LLM_PENDING, source="llm"))
+                merge_llm_answers(data, {"CN-047": answer})
+                self.assertIn("no rationale given", data["items"][0]["evidence"])
+                self.assertIn("no rationale given", render_markdown(data),
+                              "the record exists and the report does not carry it")
+
+    def test_a_second_reading_without_one_says_so_whichever_way_it_goes(self):
+        """The reviewer is a model too, and its note is folded into the first reading's
+        evidence on both branches — so an empty one has two places to disappear."""
+        for verdict, where in ((PASS, "second reading agrees"), (FAIL, "second said")):
+            with self.subTest(verdict=verdict):
+                row = item("CN-047", PASS, source="llm(answered)",
+                           evidence="LLM: looked fine", decided_by="model")
+                data = results(row)
+                data["scores"] = runner.score(data["items"])
+                apply_llm_review(data, {"CN-047": {"status": verdict, "evidence": " "}})
+                evidence = data["items"][0]["evidence"]
+                self.assertIn(where, evidence)
+                self.assertIn("no rationale given", evidence[evidence.index(where):])
 
 
 class TheSensitivityToolMeasuresTheRealScore(unittest.TestCase):

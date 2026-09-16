@@ -210,11 +210,21 @@ operator can quietly convert an inconvenient `FAIL` into a `PASS`, and requiring
 reason is the only friction available. A model's queue is machine-generated and re-runnable,
 and refusing an answer for a missing rationale would silently drop items rather than
 recording a weak one.
-**Reader:** partial, and the halves are unevenly read. `apply_llm_review` has seven test
-functions and `merge_llm_answers` four; `merge_manual_answers` — the half that carries the
-refusal, and the one an operator can abuse — has **one**. `openspec/specs/verdicts/` records the
-consequence as a live VRD-10 violation: a model verdict passes without a rationale while a
-human's identical answer is rejected, and only the second is stated as a rule.
+**Reader:** enforced. The person's half:
+`tests/test_report.py::AnswersFromAPerson::test_an_answer_with_no_reason_is_refused` holds
+the refusal, and `tests/test_report.py::AnswersFromAPerson::test_the_refusal_names_the_answer_it_dropped`
+holds that it is printed and names the id. The model's half:
+`tests/test_report.py::AModelIsAskedForARationaleAndNotRequiredOne` holds that the answer is
+applied, that "no rationale given" is recorded and reaches the report, and that a second
+reading with no note says so on both branches. Six breakages, one per clause, each against
+the whole suite before these readers existed: **five went unnoticed** — the refusal made
+silent, the refusal stripped of its id, the model's missing rationale recorded as nothing,
+the model's answer refused outright, the reviewer's missing note recorded as nothing. Only
+accepting an empty manual reason reddened anything. The line this replaces counted test
+functions per merge and read the count as coverage; A.2. Whether a model should be
+*required* to give a rationale is `openspec/specs/verdicts/` VRD-10's open question and
+A.3's disagreement, and these readers hold the rule as written so that changing it is a
+visible edit.
 
 #### Scenario: a person answers without saying why
 - **WHEN** a manual answer carries no reason
@@ -557,6 +567,23 @@ This is the asymmetry the capability inventory recorded as G18, and measuring it
 the point: the ordering is exactly inverted from the risk. The reviewer, who cannot change
 an answer, has seven readers. The person, who can, has one.
 
+**Superseded on 16 September 2026, and the count was the wrong instrument.** Re-counted
+before 0.97.2 it read ten, seven and three — the merge sweeps of 0.94.4 had been added since
+— and neither the old numbers nor the new ones said what REP-5 needed to know. Six
+breakages, one per clause of the requirement, were run against the whole suite of 1 609
+tests: **five went unnoticed.** The refusal could be made silent, or print without its id;
+the model's missing rationale could be recorded as an empty string, or the model's answer
+refused outright; the reviewer's missing note could vanish on either branch. Only accepting
+an empty manual reason reddened a test. The refusing branch was read; the three things it
+and its mirror *say* were read by nothing, and the literal `no rationale given` appeared
+twice in the source and nowhere in `tests/`.
+
+One of the five read CAUGHT and was not: refusing the model's answer reddened
+`test_runner.RateLimiting.test_pacing_off_lets_the_processes_go_together`, a timing test,
+because six suites ran at once. A breakage is answered by the name of what reddened, not by
+the exit code. The table above is kept as what was believed; the four readers REP-5 names
+now catch all six, each run against only the reader written for it.
+
 #### A.3 — the rationale rule runs the other way from the evidence rule
 
 Reading the two merges side by side:
@@ -582,7 +609,7 @@ measurement.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** REP-3, REP-4, REP-6, REP-9, REP-10, REP-11, REP-12 and REP-13, by mutation, on 6 September 2026 — deleting the cache branch
+**Probed:** REP-5 by six mutations on 16 September 2026, against the whole suite and then against its four readers (A.2); REP-3, REP-4, REP-6, REP-9, REP-10, REP-11, REP-12 and REP-13, by mutation, on 6 September 2026 — deleting the cache branch
 from `provenance_warnings` reddens the membership reader from both sides, and — setting `EFFORT_COST['high']` to 1
 reddens three readers across two documents. The rest were derived by parsing the 1 280 test
 functions and reading the bodies that name each symbol: the executor running mutation probes
@@ -594,23 +621,33 @@ summary that bound is unusually tight, because there is no plausible way to exer
 
 | | requirements |
 |---|---|
-| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-6, REP-7, REP-8, REP-9, REP-10, REP-11, REP-12, REP-13 |
-| **partial** | REP-5 |
+| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-5, REP-6, REP-7, REP-8, REP-9, REP-10, REP-11, REP-12, REP-13 |
+| **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-P2 and INV-P3 enforced; INV-P1 partial; INV-P4 unread.
 
-**Twelve enforced, one partial, nothing unread, of thirteen.**
+**Thirteen enforced, nothing partial, nothing unread, of thirteen.**
 
-The one that remains is REP-5, and it is not a missing test. The merges are asymmetric on
-purpose: a model's answer without a rationale degrades to "no rationale given" and a person's
-is refused outright, and `merge_manual_answers` argues for that in its own docstring — a
-human `PASS` with nothing beside it is indistinguishable from a tick made to clear the list,
-while a model's answer is stamped and now marked on every surface. `openspec/specs/verdicts/`
-VRD-10 says no status may be emitted without a sentence saying what was decided, and "no
-rationale given" is not that sentence. Whether to require a rationale from the model too is a
-decision about live verdicts on every audited site, not an omission to be closed by a test.
+The requirements are finished; the invariants INV-P1 and INV-P4 are not.
+
+REP-5 was the last, and this appendix used to say it was "not a missing test" — that what
+kept it `partial` was the decision below. That was half right. The decision is real and is
+still open, but it is not what kept the row partial: five of the requirement's six clauses
+could be broken with the whole suite green (A.2), and that was a missing test. Classifying a
+row by the argument around it rather than by breaking it is the mistake `history` Appendix B
+admits to, made here too.
+
+The decision stays where it was. The merges are asymmetric on purpose: a model's answer
+without a rationale degrades to "no rationale given" and a person's is refused outright, and
+`merge_manual_answers` argues for that in its own docstring — a human `PASS` with nothing
+beside it is indistinguishable from a tick made to clear the list, while a model's answer is
+stamped and marked on every surface. `openspec/specs/verdicts/` VRD-10 says no status may be
+emitted without a sentence saying what was decided, and "no rationale given" is not that
+sentence. Whether to require a rationale from the model too is a decision about live verdicts
+on every audited site. REP-5 is now held as written, so making that decision means editing a
+test that says what the rule was — not changing a merge nothing watched.
 
 REP-9 moved without a line of work in this document: its gap was a sentence about another
 one — the effort costs the ordering divides by were pinned by nothing — and closing SCR-2

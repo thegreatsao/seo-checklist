@@ -10,6 +10,33 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.97.2 — REP-5 was held by one clause of six
+
+Registry version: **`7c7b9d827179`, unchanged.** No item, rule, checker or verdict moved,
+and no line under `skills/` changed. Four readers; **REP-5 and OPR-7 `partial` →
+`enforced`**, ledger 104 → 106 of 149, `reporting` 13/13.
+
+REP-5: a person's answer without a reason is refused, by id, and the refusal printed; a
+model's answer without a rationale is accepted and recorded as having none. Six breakages,
+one per clause, each against the whole suite of 1 609 tests before anything was written:
+
+| breakage | whole suite |
+|---|---|
+| a person's empty reason is accepted | caught — `test_an_answer_with_no_reason_is_refused` |
+| the refusal prints nothing | **missed** |
+| the refusal prints without the id | **missed** |
+| a model's missing rationale is recorded as an empty string | **missed** |
+| a model's answer without a rationale is refused | **missed** — a timing test reddened, not a reader |
+| a reviewer's missing note is recorded as nothing | **missed** |
+
+The four new readers — one in `AnswersFromAPerson`, three in
+`AModelIsAskedForARationaleAndNotRequiredOne` — catch all six, each run alone, with the
+reason empty, blank, `null` and absent. OPR-7 is the same refusal from the operator's side,
+and its line named the missing half: nothing asserted the refusal is visible.
+
+Not moved: whether a model should be *required* to give a rationale is still VRD-10's open
+question, and VRD-10 stays `partial`.
+
 ## 0.97.1 — the test that enumerates the CI gates could not see three of them
 
 Registry version: **`7c7b9d827179`, unchanged.** No item, rule, checker or verdict moved.

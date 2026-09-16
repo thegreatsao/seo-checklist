@@ -80,10 +80,10 @@
     "operator-protocol": {
       "counts": {
         "bounded": 4,
-        "enforced": 1,
+        "enforced": 2,
         "none": 0,
         "opposed": 0,
-        "partial": 3
+        "partial": 2
       },
       "opposed": [],
       "requirements": 8,
@@ -104,10 +104,10 @@
     "reporting": {
       "counts": {
         "bounded": 0,
-        "enforced": 12,
+        "enforced": 13,
         "none": 0,
         "opposed": 0,
-        "partial": 1
+        "partial": 0
       },
       "opposed": [],
       "requirements": 13,
@@ -152,10 +152,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 104,
+    "enforced": 106,
     "none": 2,
     "opposed": 1,
-    "partial": 38,
+    "partial": 36,
     "requirements": 149
   }
 }

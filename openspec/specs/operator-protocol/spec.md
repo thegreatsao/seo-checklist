@@ -249,11 +249,16 @@ without one MUST be refused.
 **Why:** this is the one operator obligation the tool *can* enforce, and it does. It is
 listed here rather than only in `openspec/specs/reporting/` because from the operator's side it is
 the difference between recording a judgement and asserting one.
-**Reader:** partial. The merge does refuse an answer with no stated reason and reports the
-refusal by id — the behaviour `openspec/specs/reporting/` REP-5 specifies — so the rule is
-implemented and not merely asked for. But that merge is the least-tested of the three, with
-a single test function covering the one path in this whole capability that a person can
-abuse, and nothing asserts that the refusal is visible to the operator who caused it.
+**Reader:** enforced. `tests/test_report.py::AnswersFromAPerson::test_it_answers_a_manual_item`
+holds that the evidence travels with the verdict;
+`tests/test_report.py::AnswersFromAPerson::test_an_answer_with_no_reason_is_refused` holds
+the refusal; `tests/test_report.py::AnswersFromAPerson::test_the_refusal_names_the_answer_it_dropped`
+holds that the operator who caused it is shown which answer was dropped and why — the half
+this line used to say nothing asserted, and measured on 16 September 2026 it was true: the
+refusal could be made silent, or stripped of its id, with the whole suite green
+(`openspec/specs/reporting/` A.2). Whether the reason a person typed is *true* is not this
+requirement's: the tool can refuse an empty one and cannot tell a real one from an invented
+one, which is OPR-6's boundary.
 
 #### Scenario: an answer with its evidence
 - **WHEN** a person answers a `MANUAL` item and states what they examined
@@ -436,15 +441,15 @@ mechanical surface to probe.
 
 | | requirements |
 |---|---|
-| **enforced** | OPR-8 |
-| **partial** | OPR-1, OPR-4, OPR-7 |
+| **enforced** | OPR-7, OPR-8 |
+| **partial** | OPR-1, OPR-4 |
 | **none** | — none |
 | **opposed** | — none |
 | **bounded** | OPR-2, OPR-3, OPR-5, OPR-6 |
 
 Invariants: INV-O3 and INV-O4 enforced; INV-O2 partial; INV-O1 unread.
 
-**One enforced, three partial, none unread, four bounded, of eight.**
+**Two enforced, two partial, none unread, four bounded, of eight.**
 
 `bounded` is a fifth class, introduced here at 0.96.3 because this is where the suite runs
 out of program. A bounded requirement's subject is a sentence a person writes to a client,
@@ -469,9 +474,12 @@ see what the operator writes; OPR-6 cannot be enforced because fabrication is
 indistinguishable from work from the inside. Writing them down is the entire available
 remedy, and it is why this document exists.
 
-The two `partial` rows are the two where the tool does something and stops short. OPR-7 is
+The `partial` rows were the ones where the tool does something and stops short. OPR-7 was
 the sharpest: the one operator obligation the tool *can* enforce, guarding the one path a
-person can abuse, and it has a single test function behind it.
+person can abuse, and it had a single test function behind it. It is enforced since 0.97.2,
+and not because a second function was added: the one it had held the refusal, and the
+refusal's *visibility* — the part this appendix named — could be removed with nothing
+reddening. The count of functions was never the measure; the breakage was.
 
 Two of the six were different, and they were the ones to act on. Both are done.
 

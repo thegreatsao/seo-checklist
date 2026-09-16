@@ -4,9 +4,11 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.97.1 — see [CHANGELOG.md](CHANGELOG.md). A test-only follow-up: the test whose
-job is to make sure every automated check also runs locally could not see three of them,
-because it looked in one folder and they live in another. Nothing about an audit changes.
+Version 0.97.2 — see [CHANGELOG.md](CHANGELOG.md). Test-only: nothing about an audit
+changes. The rules for handing answers back — a person's answer needs a reason, a model's
+is marked when it gives none — were mostly unchecked: an answer could have been dropped
+without saying which, or a model's empty answer shown with nothing beside it, and the tests
+would have stayed green. Now they would not. `0.97.1` was also test-only.
 `0.97.0` is the release that matters here, and **one check changes what it decides.**
 If you hand the audit a server access log, *Analyze Logs & Manage Crawl Budget* used to
 say PASS in cases where it had not actually done the work: a log covering one day, or a
