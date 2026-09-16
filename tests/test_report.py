@@ -130,6 +130,25 @@ class Queue(unittest.TestCase):
         self.assertIn("### A", both)
         self.assertIn("### B", both)
 
+    def test_the_queue_asks_the_applicability_question(self):
+        question = "Does the site publish translated content?"
+        with_question = render_llm_queue(results(
+            item("IN-126", LLM_PENDING, source="llm", applies_if=question)))
+        # The whole instruction, not its parts: `N/A` is in every queue's header.
+        self.assertIn(f"Applies only if: {question} If not, answer `N/A`", with_question)
+
+        without_question = render_llm_queue(results(
+            item("CN-047", LLM_PENDING, source="llm")))
+        self.assertNotIn("Applies only if", without_question)
+
+    def test_the_person_is_shown_the_applicability_question(self):
+        question = "Does the business serve customers in a service area?"
+        data = results(item("LO-199", MANUAL, source="manual", applies_if=question))
+        data["scores"] = runner.score(data["items"])
+        for name, output in (("html", render_html(data)), ("markdown", render_markdown(data))):
+            with self.subTest(surface=name):
+                self.assertIn(f"Applies only if: {question}", output)
+
 
 class Localisation(unittest.TestCase):
     def test_every_shipped_translation_parses_and_declares_a_language(self):

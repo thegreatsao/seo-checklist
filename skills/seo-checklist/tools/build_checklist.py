@@ -318,6 +318,84 @@ APPLIES_WHEN = {
 # with neither where it proved neither. So an entry cannot claim protection the code
 # does not give, and the day a script stops withholding a key the entry that leaned on
 # it reddens instead of quietly becoming a free pass.
+APPLIES_IF = {
+    "CN-042": "Is any of this site's content also published on other sites?",
+    "CN-052": "Does the site show ads?",
+    "CN-053": "Does the site embed content in iframes?",
+    "CN-055": "Does the site use infinite scroll?",
+    "CN-062": "Does the site show ads?",
+    "CN-063": "Does the site show pop-ups or interstitials?",
+    "BL-089": "Has the site submitted a disavow file?",
+    "IN-124": "Does the site serve more than one language or region?",
+    "IN-125": "Does the site target audiences in more than one country or language?",
+    "IN-126": "Does the site publish translated content?",
+    "IN-129": "Does the site target markets outside its home country?",
+    "IN-130": "Does the site serve more than one language or region?",
+    "GO-140": "Does the site publish news content?",
+    "AR-157": "Does the site have tag or taxonomy pages?",
+    "AR-159": "Does the site have a navigation menu?",
+    "AR-160": "Does the site have footer navigation?",
+    "AR-161": "Does the site have a navigation menu?",
+    "AR-164": "Does the site sell products?",
+    "MB-101": "Does the site have a navigation menu?",
+    "MD-188": "Does the site use images?",
+    "TE-182": "Does the site set cookies or trackers that need consent?",
+    "TE-183": "Has the site been migrated, or does it use URL parameters?",
+    "LO-196": "Does the business serve customers at a location or in a service area?",
+    "LO-197": "Does the business serve customers at a location or in a service area?",
+    "LO-199": "Does the business serve customers at a location or in a service area?",
+}
+
+RULELESS_SUBJECT_ALWAYS_PRESENT = {
+    "CI-007": "every site can submit a sitemap; one can be generated if absent",
+    "MS-024": "every page has a title",
+    "MS-025": "every page has a title and content for it to describe",
+    "MS-027": "every page has a meta description, present or absent by choice",
+    "CN-037": "every page has primary content",
+    "CN-043": "a policy on the site's own content; every site has content",
+    "CN-045": "every site has content and competitors to compare it with",
+    "CN-046": "every page has copy",
+    "CN-047": "every page has text",
+    "CN-049": "every page targets a topic",
+    "CN-050": "Google Search Essentials apply to every site",
+    "CN-058": "a policy on the site's own content; every site has content",
+    "CN-059": "a prohibition that applies to every page",
+    "CN-060": "a prohibition that applies to every site",
+    "CN-061": "a prohibition that applies to every site",
+    "CN-064": "every site asks its visitor to do something",
+    "CN-067": "a policy on the site's own content; every site has content",
+    "KW-069": "every site has queries it wants to rank for",
+    "KW-072": "every page has a title and a primary topic",
+    "KW-073": "every page has an H1, present or absent by choice",
+    "KW-074": "every page can carry an H2; its absence is the finding",
+    "KW-075": "every page has a meta description, present or absent by choice",
+    "KW-077": "every page has an opening paragraph",
+    "BL-078": "every site has a backlink profile, even an empty one",
+    "BL-079": "every site's backlink profile can hold spammy domains",
+    "BL-080": "a restraint on disavowing that applies whether or not a file exists",
+    "BL-082": "every site's backlink profile can lose links",
+    "BL-085": "a practice that applies to every domain",
+    "BL-088": "every site's URLs can earn backlinks",
+    "BL-090": "every business can hold social profiles",
+    "BL-091": "every business can publish on LinkedIn",
+    "BL-092": "every business can pitch podcasts",
+    "MB-099": "every verified site has mobile signals in Search Console",
+    "MB-106": "every site renders on real devices",
+    "GO-133": "every site can be verified in Search Console",
+    "GO-141": "every site can receive a manual action",
+    "GO-142": "every site is crawled and indexed",
+    "AR-148": "every site has an architecture",
+    "AR-156": "every site answers unknown URLs",
+    "TE-165": "every site has a host and path structure",
+    "TE-173": "every rendered page has a console",
+    "CO-191": "every site has competitors in search results",
+    "CO-192": "every site has competitors in search results",
+    "CO-193": "every site has competitors in search results",
+    "CO-194": "every site has competitors in search results",
+    "CO-195": "every market has ranking keywords",
+    "CONT-001": "every site has key pages",
+}
+
 SUBJECT_ALWAYS_PRESENT = {
     # The page's own directives and markup. Every page has a `meta robots`, a set of
     # headings and a DOM, present or absent by the author's choice — which is the
@@ -1730,6 +1808,8 @@ def build(titles: dict[int, str] | None = None,
                     entry["check"]["cannot_fail"] = CANNOT_FAIL[item_id]
             if source == L:
                 entry["lens"] = LENS_OF.get(entry["id"], "")
+            if not entry.get("check") and item_id in APPLIES_IF:
+                entry["applies_if"] = APPLIES_IF[item_id]
             entry["effort"] = effort_for(entry)
             entry["fix"] = fix
             if entry["id"] in SCORES_WITH:
@@ -1768,6 +1848,8 @@ def build(titles: dict[int, str] | None = None,
                 entry["check"]["cannot_fail"] = CANNOT_FAIL[eid]
         if source == L:
             entry["lens"] = LENS_OF.get(entry["id"], "")
+        if not entry.get("check") and eid in APPLIES_IF:
+            entry["applies_if"] = APPLIES_IF[eid]
         entry["effort"] = effort_for(entry)
         entry["fix"] = fix
         if entry["id"] in SCORES_WITH:
@@ -1808,6 +1890,45 @@ def subject_is_declared_for_every_absence_passing_item(items: list[dict]) -> lis
     for item_id in sorted(SUBJECT_ALWAYS_PRESENT):
         if item_id not in {i["id"] for i in items}:
             complaints.append(f"{item_id} is excused and is not in the registry")
+    return complaints
+
+
+def every_ruleless_item_says_when_it_applies(items: list[dict]) -> list[str]:
+    """Every item without a check says when its subject exists, or why it always does.
+
+    The candidate set is derived from the built registry, so a rule-less item added
+    tomorrow cannot escape classification merely because a hand-kept list missed it.
+    """
+    complaints = []
+    by_id = {item["id"]: item for item in items}
+    ruleless = {item["id"] for item in items if not item.get("check")}
+    declared = set(APPLIES_IF)
+    excused = set(RULELESS_SUBJECT_ALWAYS_PRESENT)
+
+    for item in items:
+        if item["id"] in ruleless and item["id"] not in declared | excused:
+            complaints.append(
+                f"{item['id']} ({item['title']}) has no check and says nothing about "
+                f"when its subject exists: add it to APPLIES_IF or "
+                f"RULELESS_SUBJECT_ALWAYS_PRESENT")
+    for item_id in sorted(declared & excused):
+        complaints.append(
+            f"{item_id} is in both APPLIES_IF and RULELESS_SUBJECT_ALWAYS_PRESENT")
+    for table_name, table in (("APPLIES_IF", APPLIES_IF),
+                              ("RULELESS_SUBJECT_ALWAYS_PRESENT",
+                               RULELESS_SUBJECT_ALWAYS_PRESENT)):
+        for item_id, text in sorted(table.items()):
+            item = by_id.get(item_id)
+            if item is None:
+                complaints.append(f"{item_id} is in {table_name} and is not in the registry")
+            elif item.get("check"):
+                complaints.append(
+                    f"{item_id} is in {table_name} but has a check; script items use "
+                    f"applies_when")
+            if table_name == "APPLIES_IF" and not text.endswith("?"):
+                complaints.append(f"{item_id} has an applies_if question that does not end with ?")
+            if table_name == "RULELESS_SUBJECT_ALWAYS_PRESENT" and not text.strip():
+                complaints.append(f"{item_id} has an empty reason in {table_name}")
     return complaints
 
 
@@ -1919,6 +2040,11 @@ def main() -> int:
     undeclared = subject_is_declared_for_every_absence_passing_item(items)
     if undeclared:
         for line in undeclared:
+            print(line, file=sys.stderr)
+        return 1
+    ruleless_undeclared = every_ruleless_item_says_when_it_applies(items)
+    if ruleless_undeclared:
+        for line in ruleless_undeclared:
             print(line, file=sys.stderr)
         return 1
     mismatched = reason_matches_what_the_checker_emits(items)

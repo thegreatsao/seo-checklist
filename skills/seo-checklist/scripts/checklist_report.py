@@ -1210,6 +1210,9 @@ def render_markdown(data: dict, L: Lang | None = None) -> str:
         for i in sorted(manual, key=lambda x: SEVERITY_ORDER.get(x["severity"], 9)):
             out.append(f"- [ ] **{i['id']}** ({L.sev(i['severity'])}) "
                        f"{L.title(i)} — {L.fix(i)}")
+            if i.get("applies_if"):
+                out.append(f"  {L.t('applies_if', 'Applies only if:')} "
+                           f"{i['applies_if']}")
         out.append("")
 
     # Its own section, and that is the whole point of splitting the status. These
@@ -1337,6 +1340,9 @@ def render_llm_queue(data: dict, lens: str = "") -> str:
             out += [f"### {i['id']} ({i['severity']})", "",
                     f"**{i['title']}**", "",
                     f"What good looks like: {i['fix']}", ""]
+            if i.get("applies_if"):
+                out += [f"Applies only if: {i['applies_if']} If not, answer `N/A` "
+                        f"and say so.", ""]
     return "\n".join(out) + "\n"
 
 
@@ -1779,7 +1785,10 @@ def render_html(data: dict, L: Lang | None = None) -> str:
             f'<div><div class="ttl"><label class="chk">'
             f'<input type="checkbox" data-id="{i["id"]}">'
             f'<span>{html.escape(L.title(i))}</span></label></div>'
-            f'<div class="fix">{html.escape(L.fix(i))}</div></div></div>'
+            f'<div class="fix">{html.escape(L.fix(i))}</div>'
+            + (f'<div class="ev">{html.escape(L.t("applies_if", "Applies only if:"))} '
+               f'{html.escape(i["applies_if"])}</div>' if i.get("applies_if") else '')
+            + '</div></div>'
             for i in sorted(manual, key=lambda x: SEVERITY_ORDER.get(x["severity"], 9)))
         rows += (f'<div class="row"><div class="st"></div><div class="sev"></div>'
                  f'<div><button id="export-manual" type="button">'

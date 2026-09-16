@@ -323,6 +323,109 @@ class RegistryShape(unittest.TestCase):
                 self.assertIn(i["effort"], {"medium", "high"}, i["id"])
 
 
+class EveryRulelessItemSaysWhenItApplies(unittest.TestCase):
+    @staticmethod
+    def module():
+        sys.path.insert(0, TOOLS)
+        import build_checklist
+        return build_checklist
+
+    def test_the_shipped_registry_passes_the_gate(self):
+        build_checklist = self.module()
+        built = build_checklist.build()
+        self.assertEqual(
+            build_checklist.every_ruleless_item_says_when_it_applies(built), [])
+
+    def test_an_unclassified_ruleless_item_is_refused(self):
+        build_checklist = self.module()
+        invented = {"id": "ZZ-997", "title": "An invented rule-less item"}
+        complaints = build_checklist.every_ruleless_item_says_when_it_applies(
+            list(ITEMS) + [invented])
+        self.assertTrue(any("ZZ-997" in complaint for complaint in complaints), complaints)
+
+    def test_an_item_in_both_tables_is_refused(self):
+        build_checklist = self.module()
+        item_id = next(iter(build_checklist.RULELESS_SUBJECT_ALWAYS_PRESENT))
+        applies_if = dict(build_checklist.APPLIES_IF)
+        applies_if[item_id] = "Does this subject exist?"
+        with mock.patch.object(build_checklist, "APPLIES_IF", applies_if):
+            complaints = build_checklist.every_ruleless_item_says_when_it_applies(ITEMS)
+        self.assertTrue(any(item_id in complaint and "both" in complaint
+                            for complaint in complaints), complaints)
+
+    def test_a_script_item_cannot_carry_applies_if(self):
+        build_checklist = self.module()
+        item_id = next(i["id"] for i in ITEMS if i.get("check"))
+        applies_if = dict(build_checklist.APPLIES_IF)
+        applies_if[item_id] = "Does this subject exist?"
+        with mock.patch.object(build_checklist, "APPLIES_IF", applies_if):
+            complaints = build_checklist.every_ruleless_item_says_when_it_applies(ITEMS)
+        self.assertTrue(any(item_id in complaint and "has a check" in complaint
+                            for complaint in complaints), complaints)
+
+    def test_a_declaration_that_is_not_a_question_is_refused(self):
+        """The text is put to whoever answers the item, and "no" is what makes it N/A."""
+        build_checklist = self.module()
+        item_id = next(iter(build_checklist.APPLIES_IF))
+        applies_if = dict(build_checklist.APPLIES_IF)
+        applies_if[item_id] = "The site shows ads"
+        with mock.patch.object(build_checklist, "APPLIES_IF", applies_if):
+            complaints = build_checklist.every_ruleless_item_says_when_it_applies(ITEMS)
+        self.assertTrue(any(item_id in complaint and "?" in complaint
+                            for complaint in complaints), complaints)
+
+    def test_a_blank_reason_is_refused(self):
+        """A blank excuse classifies an item as surely as a real one, and says nothing."""
+        build_checklist = self.module()
+        item_id = next(iter(build_checklist.RULELESS_SUBJECT_ALWAYS_PRESENT))
+        always = dict(build_checklist.RULELESS_SUBJECT_ALWAYS_PRESENT)
+        always[item_id] = "   "
+        with mock.patch.object(build_checklist, "RULELESS_SUBJECT_ALWAYS_PRESENT", always):
+            complaints = build_checklist.every_ruleless_item_says_when_it_applies(ITEMS)
+        self.assertTrue(any(item_id in complaint and "empty" in complaint
+                            for complaint in complaints), complaints)
+
+    def test_a_beyond_plerdy_item_carries_its_question_too(self):
+        """`build()` has two loops, and no shipped `EXTRA` item declares a question today,
+        so the second loop's copy is read only through an invented row."""
+        build_checklist = self.module()
+        row = ("ZZ-998", "content", "An invented rule-less item", "low", "manual",
+               None, None, None, "")
+        applies_if = dict(build_checklist.APPLIES_IF, **{"ZZ-998": "Does it exist?"})
+        with mock.patch.object(build_checklist, "EXTRA", list(build_checklist.EXTRA) + [row]), \
+                mock.patch.object(build_checklist, "APPLIES_IF", applies_if):
+            built = {i["id"]: i for i in build_checklist.build()}
+        self.assertEqual(built["ZZ-998"].get("applies_if"), "Does it exist?")
+
+    def test_the_two_tables_partition_the_ruleless_items(self):
+        build_checklist = self.module()
+        ruleless = {item["id"] for item in ITEMS if not item.get("check")}
+        declared = set(build_checklist.APPLIES_IF)
+        always = set(build_checklist.RULELESS_SUBJECT_ALWAYS_PRESENT)
+        self.assertEqual(declared & always, set())
+        self.assertEqual(declared | always, ruleless)
+
+    def test_the_question_reaches_every_ruleless_row(self):
+        build_checklist = self.module()
+        from checklist_runner import grade
+        built = build_checklist.build()
+        rows = {row["id"]: row for row in grade(built, {}, {}, {}, False)}
+        for item_id, question in build_checklist.APPLIES_IF.items():
+            with self.subTest(item=item_id):
+                self.assertEqual(rows[item_id].get("applies_if"), question)
+
+    def test_ar164_is_out_of_scope_where_nothing_is_sold(self):
+        from checklist_runner import profile_excludes
+        with open(PROFILES, encoding="utf-8") as f:
+            profiles = json.load(f)["profiles"]
+        for name in ("saas", "blog", "media"):
+            with self.subTest(profile=name):
+                self.assertIn("AR-164", profile_excludes(ITEMS, profiles[name]))
+        for name in ("local", "ecommerce", "default"):
+            with self.subTest(profile=name):
+                self.assertNotIn("AR-164", profile_excludes(ITEMS, profiles[name]))
+
+
 class DocsPointAtThingsThatExist(unittest.TestCase):
     """Cross-references between documents rot silently.
 

@@ -60,7 +60,12 @@
         "collection_page_checker.py",
         "local_seo_checker.py"
       ],
-      "exclude_items": []
+      "exclude_items": [
+        "AR-164"
+      ],
+      "exclude_item_reasons": {
+        "AR-164": "no product catalogue, so no product can go out of stock or be discontinued"
+      }
     },
     "blog": {
       "label": "Blog or personal site",
@@ -73,7 +78,12 @@
         "collection_page_checker.py",
         "local_seo_checker.py"
       ],
-      "exclude_items": []
+      "exclude_items": [
+        "AR-164"
+      ],
+      "exclude_item_reasons": {
+        "AR-164": "no product catalogue, so no product can go out of stock or be discontinued"
+      }
     },
     "media": {
       "label": "Media or publisher",
@@ -86,7 +96,12 @@
         "collection_page_checker.py",
         "local_seo_checker.py"
       ],
-      "exclude_items": []
+      "exclude_items": [
+        "AR-164"
+      ],
+      "exclude_item_reasons": {
+        "AR-164": "no product catalogue, so no product can go out of stock or be discontinued"
+      }
     }
   }
 }

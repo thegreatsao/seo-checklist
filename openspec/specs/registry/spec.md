@@ -61,6 +61,9 @@ An item is a question asked of a site, with an id that never changes meaning.
 
 **Present when the item is judged by a model:** `lens`.
 
+**Present when the item carries no `check` and its subject may be absent from a given
+site:** `applies_if`, a yes/no question for whoever answers it (REG-9).
+
 **Present when the item is a second spelling of another item's check:** `scores_with`.
 
 ### 2.1 Closed vocabularies
@@ -374,11 +377,20 @@ reports success on a site that has none of the thing, which VRD-2 forbids.
 
 **Why:** this is the largest measured defect class in the registry — seventeen items owe
 such a declaration and two carry one.
-**Reader:** partial — enforced for the 145 items that carry a rule, and unreachable for
-the 72 that do not. That boundary is this requirement's own third scenario, and 0.96.0
-called the requirement `enforced` with the scenario already written; 0.96.2 corrected the
-label rather than the scenario, because the scenario is right. What the gate holds over
-the items it reaches is below, and A.8 measures what it does not reach.
+**Reader:** enforced. For the 145 items that carry a rule, the gate described below. For
+the 72 that do not, since 0.98.0:
+`tests/test_registry.py::EveryRulelessItemSaysWhenItApplies` holds that every rule-less
+item — derived from the built registry, not listed — either declares `applies_if`, a
+yes/no question put to whoever answers it, or records in
+`RULELESS_SUBJECT_ALWAYS_PRESENT` why its subject cannot be absent; that no item is in
+both, no script item carries a question, no question fails to be one and no reason is
+blank; that the question reaches the graded row from both of `build()`'s loops; and that
+`AR-164` is out of scope by profile where nothing is sold.
+`tests/test_report.py::Queue::test_the_queue_asks_the_applicability_question` and
+`tests/test_report.py::Queue::test_the_person_is_shown_the_applicability_question` hold
+that the model's queue and both of the person's surfaces put the question. Fourteen
+breakages, each against only its reader, all caught (A.8). 0.96.2 had marked this row
+`partial` because the third scenario named a schema gap; the field closes the gap.
 
 The gate itself arrived at 0.96.0, and the order of the repair is the requirement's own
 last scenario. The test that pinned the declaration set to exactly MB-102 and MD-190 with
@@ -444,8 +456,8 @@ found in the forty-seven a day later is A.7.
 - **WHEN** an item judging an optional entity is answered by a person or a model and
   therefore carries no rule
 - **THEN** it still owes the declaration
-- **AND** the only mechanism sits inside the rule, so the debt cannot be paid: that is
-  a schema gap, not a licence to omit it
+- **AND** it pays it with `applies_if`, a question put to whoever answers the item, since
+  `applies_when` lives inside a rule it does not have; a "no" is answered `N/A`
 
 #### Scenario: a new item quietly joins the debt
 - **WHEN** an item judging an optional entity is added with no condition
@@ -815,6 +827,39 @@ judgements of exactly the kind A.7 showed one reader is not enough for, and ever
 them moves a live verdict. It belongs in a release of its own, with a second reader, not
 in the correction of a label.
 
+**Repaired at 0.98.0, and the profile turned out to carry almost none of it.** Anton decided
+on 16 September 2026 that a profile exclusion counts as a declaration and may move the score
+like `applies_when` does. The 72 were then classified twice — by `agy`
+(`claude-opus-4-6-thinking`, calibration 3/3, all 72 rows, material in
+`local/judge-0973/`) and by me — against the rule `profiles.json` states for itself: an
+exclusion only where *no* site of the profile can have the subject.
+
+* **One item is a profile exclusion.** `AR-164` leaves `saas`, `blog` and `media`. The
+  judge kept it in `local` — a bakery can sell online — and kept `GO-140` everywhere, since
+  no profile forbids news; both were stricter than my priors, and both were right by the
+  rule.
+* **Twenty-five depend on the individual site** — ads, iframes, infinite scroll, a disavow
+  file, languages and markets, tag pages, navigation, images, consent cookies, migrations,
+  a local service area, products. No profile can say whether a given site runs ads. For
+  these the registry gained `applies_if`. The judge had classed five of them as always
+  present — `MD-188` on *"every site uses images"*, which A.6 measured false on a four-line
+  page, and four navigation items that a single-page site does not have — and those five
+  were overruled.
+* **Forty-seven always have their subject** and record why, one line each.
+
+A.8's three examples: `AR-164` is out of scope on a blog; `GO-140` asks *"Does the site
+publish news content?"*; `BL-089` asks *"Has the site submitted a disavow file?"*.
+
+What the field does not do: the merges do not read it. A person who answers "no" and then
+types `PASS` is not refused, because the tool cannot know the answer was "no". The question
+is put; the verdict is still theirs. That boundary belongs to `openspec/specs/verdicts/`
+VRD-2, which stays `partial` for it.
+
+Fourteen breakages, each against only its reader, all caught (`local/probe-0980.py`). Two
+read MISSED on the second run and were the probe's fault: mutations of equal length written
+within one second passed Python's mtime-and-size check on the bytecode cache, so each run
+executed the previous mutation. Every run now gets its own cache.
+
 #### A.3 — nine items measure something other than their title
 
 A sample of twenty items, read rule against title, found nine mismatches. They are not
@@ -881,14 +926,14 @@ five; REG-7 now says what a rule is, so the count above is taken over all three.
 
 | | requirements |
 |---|---|
-| **enforced** | REG-2, REG-5, REG-7, REG-10, REG-11, REG-12 |
-| **partial** | REG-1, REG-3, REG-4, REG-6, REG-8, REG-9, REG-13 |
+| **enforced** | REG-2, REG-5, REG-7, REG-9, REG-10, REG-11, REG-12 |
+| **partial** | REG-1, REG-3, REG-4, REG-6, REG-8, REG-13 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-R2 enforced; INV-R1, INV-R3 and INV-R4 partial.
 
-**Six enforced, seven partial, none unread, none opposed, of thirteen.**
+**Seven enforced, six partial, none unread, none opposed, of thirteen.**
 
 `opposed` is a fourth category this document introduced and its column is empty now.
 REG-9 earned it: a fixed-membership test pinning the two existing applicability

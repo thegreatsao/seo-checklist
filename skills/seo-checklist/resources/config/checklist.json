@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "7c7b9d827179",
+  "registry_version": "c26c36595d04",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1048,6 +1048,7 @@
       "severity": "medium",
       "source": "llm",
       "lens": "copy",
+      "applies_if": "Is any of this site's content also published on other sites?",
       "effort": "high",
       "fix": "Review external duplicates and syndication, agree on a canonical to the source"
     },
@@ -1203,6 +1204,7 @@
       "severity": "medium",
       "source": "llm",
       "lens": "layout",
+      "applies_if": "Does the site show ads?",
       "effort": "high",
       "fix": "Limit heavy advertising above the fold"
     },
@@ -1215,6 +1217,7 @@
       "severity": "medium",
       "source": "llm",
       "lens": "layout",
+      "applies_if": "Does the site embed content in iframes?",
       "effort": "high",
       "fix": "Keep the content this page is about in the page, not inside an embedded frame a crawler may not credit to it"
     },
@@ -1253,6 +1256,7 @@
       "severity": "medium",
       "source": "llm",
       "lens": "layout",
+      "applies_if": "Does the site use infinite scroll?",
       "effort": "high",
       "fix": "Make infinite scroll crawlable via paginated URLs"
     },
@@ -1360,6 +1364,7 @@
       "severity": "medium",
       "source": "llm",
       "lens": "layout",
+      "applies_if": "Does the site show ads?",
       "effort": "high",
       "fix": "Reduce ad density"
     },
@@ -1372,6 +1377,7 @@
       "severity": "medium",
       "source": "llm",
       "lens": "layout",
+      "applies_if": "Does the site show pop-ups or interstitials?",
       "effort": "high",
       "fix": "Do not overuse pop-ups"
     },
@@ -1825,6 +1831,7 @@
       "title": "Ensure the Disavow File Doesn’t Include Valuable Links",
       "severity": "high",
       "source": "manual",
+      "applies_if": "Has the site submitted a disavow file?",
       "effort": "high",
       "fix": "Verify the disavow file does not contain valuable links"
     },
@@ -2046,6 +2053,7 @@
       "severity": "low",
       "source": "llm",
       "lens": "layout",
+      "applies_if": "Does the site have a navigation menu?",
       "effort": "medium",
       "fix": "Keep mobile navigation within thumb reach"
     },
@@ -2616,6 +2624,7 @@
       "title": "Avoid Forced Geo/Language Redirects",
       "severity": "medium",
       "source": "manual",
+      "applies_if": "Does the site serve more than one language or region?",
       "effort": "high",
       "fix": "Do not force geo or language redirects"
     },
@@ -2627,6 +2636,7 @@
       "title": "Define International Audiences and Markets",
       "severity": "low",
       "source": "manual",
+      "applies_if": "Does the site target audiences in more than one country or language?",
       "effort": "high",
       "fix": "Define target international markets and audiences"
     },
@@ -2639,6 +2649,7 @@
       "severity": "medium",
       "source": "llm",
       "lens": "locale",
+      "applies_if": "Does the site publish translated content?",
       "effort": "high",
       "fix": "Translations must be high quality and human-reviewed"
     },
@@ -2694,6 +2705,7 @@
       "title": "Earn Local Backlinks in Target Markets",
       "severity": "low",
       "source": "manual",
+      "applies_if": "Does the site target markets outside its home country?",
       "effort": "high",
       "fix": "Earn local backlinks in target markets"
     },
@@ -2706,6 +2718,7 @@
       "severity": "low",
       "source": "llm",
       "lens": "locale",
+      "applies_if": "Does the site serve more than one language or region?",
       "effort": "high",
       "fix": "Clarify the site type: multilingual, multiregional, or both"
     },
@@ -2950,6 +2963,7 @@
       "title": "Provide a Google News Sitemap (If Eligible)",
       "severity": "low",
       "source": "manual",
+      "applies_if": "Does the site publish news content?",
       "effort": "high",
       "fix": "Add a Google News sitemap if the site qualifies"
     },
@@ -3305,6 +3319,7 @@
       "severity": "low",
       "source": "llm",
       "lens": "layout",
+      "applies_if": "Does the site have tag or taxonomy pages?",
       "effort": "high",
       "fix": "Use tag pages deliberately rather than generating duplicates"
     },
@@ -3344,6 +3359,7 @@
       "severity": "low",
       "source": "llm",
       "lens": "layout",
+      "applies_if": "Does the site have a navigation menu?",
       "effort": "high",
       "fix": "Simplify primary navigation"
     },
@@ -3356,6 +3372,7 @@
       "severity": "low",
       "source": "llm",
       "lens": "layout",
+      "applies_if": "Does the site have footer navigation?",
       "effort": "medium",
       "fix": "Optimize footer navigation"
     },
@@ -3368,6 +3385,7 @@
       "severity": "medium",
       "source": "llm",
       "lens": "layout",
+      "applies_if": "Does the site have a navigation menu?",
       "effort": "high",
       "fix": "Clear header and mobile menus"
     },
@@ -3446,6 +3464,7 @@
       "title": "Handle Out-of-Stock/Discontinued Products (301/410 + UX)",
       "severity": "medium",
       "source": "manual",
+      "applies_if": "Does the site sell products?",
       "effort": "high",
       "fix": "Handle out-of-stock products via 301/410 plus clear UX"
     },
@@ -3852,6 +3871,7 @@
       "title": "Show a Compliant Cookie Banner",
       "severity": "low",
       "source": "manual",
+      "applies_if": "Does the site set cookies or trackers that need consent?",
       "effort": "high",
       "fix": "Show a compliant cookie banner"
     },
@@ -3863,6 +3883,7 @@
       "title": "Handle Migrations, Parameters & Status Codes",
       "severity": "high",
       "source": "manual",
+      "applies_if": "Has the site been migrated, or does it use URL parameters?",
       "effort": "high",
       "fix": "Handle migrations, parameters and status codes correctly"
     },
@@ -3986,6 +4007,7 @@
       "severity": "low",
       "source": "llm",
       "lens": "copy",
+      "applies_if": "Does the site use images?",
       "effort": "medium",
       "fix": "Use original contextual images, limit stock photography"
     },
@@ -4114,6 +4136,7 @@
       "severity": "medium",
       "source": "llm",
       "lens": "market",
+      "applies_if": "Does the business serve customers at a location or in a service area?",
       "effort": "high",
       "fix": "Determine whether the site needs local traffic"
     },
@@ -4126,6 +4149,7 @@
       "severity": "medium",
       "source": "llm",
       "lens": "market",
+      "applies_if": "Does the business serve customers at a location or in a service area?",
       "effort": "high",
       "fix": "Localized title tags"
     },
@@ -4161,6 +4185,7 @@
       "title": "Set Up & Optimize Google Business Profile",
       "severity": "high",
       "source": "manual",
+      "applies_if": "Does the business serve customers at a location or in a service area?",
       "effort": "high",
       "fix": "Create and optimize the Google Business Profile — follow resources/playbooks/local-seo.md"
     },

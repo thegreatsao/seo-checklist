@@ -4,7 +4,11 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.97.3 — see [CHANGELOG.md](CHANGELOG.md). Specification only: a model's answer
+Version 0.98.0 — see [CHANGELOG.md](CHANGELOG.md). **Checks a person or the model has to
+answer now say when they apply.** "Does the site show ads?", "Has the site submitted a
+disavow file?" — 25 of them carry a question like that in the queue and in the report, and
+a "no" means answer N/A. *Handle Out-of-Stock Products* no longer applies to SaaS, blog or
+media audits; on those profiles the score moves by that one item. `0.97.3` was specification only: a model's answer
 given without a reason stays accepted and is shown as "no rationale given" — now written
 down as intended rather than listed as a defect. `0.97.2` was test-only: nothing about an audit
 changes. The rules for handing answers back — a person's answer needs a reason, a model's

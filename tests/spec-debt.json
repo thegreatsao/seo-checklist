@@ -92,10 +92,10 @@
     "registry": {
       "counts": {
         "bounded": 0,
-        "enforced": 6,
+        "enforced": 7,
         "none": 0,
         "opposed": 0,
-        "partial": 7
+        "partial": 6
       },
       "opposed": [],
       "requirements": 13,
@@ -152,10 +152,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 107,
+    "enforced": 108,
     "none": 2,
     "opposed": 1,
-    "partial": 35,
+    "partial": 34,
     "requirements": 149
   }
 }

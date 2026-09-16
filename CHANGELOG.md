@@ -10,6 +10,42 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.98.0 — every item without a rule says when it applies
+
+Registry version: **`7c7b9d827179` → `c26c36595d04`.** **REG-9 `partial` → `enforced`**,
+ledger 107 → 108 of 149.
+
+72 items are answered by a person, a model or Search Console and carry no rule, so the
+existing applicability declaration — which lives inside a rule — could not hold them. A
+blog audit asked a person whether its disavow file was clean and whether its out-of-stock
+products redirect.
+
+What changes in a run:
+
+* **`AR-164` *Handle Out-of-Stock/Discontinued Products* is `N/A` under the `saas`, `blog`
+  and `media` profiles**, with the profile as the reason. It leaves both metrics there.
+  Under `default`, `local` and `ecommerce` nothing moves.
+* **25 items now carry a question** — *Does the site show ads?*, *Has the site submitted a
+  disavow file?*, *Does the site use images?* and so on. The model's queue prints it with
+  the instruction to answer `N/A` when the answer is no; the report's "Needs a person"
+  section prints it in Markdown and HTML. Statuses do not change: these items still start
+  `MANUAL` or `LLM_PENDING`.
+* The other 47 record why their subject is always present, and the build refuses a
+  rule-less item in neither table, in both, or with a question that is not one.
+
+Classified by a judge and by me against the rule `profiles.json` states for itself —
+exclude only where no site of the profile can have the subject. That rule is why only one
+item became a profile exclusion; the judge was stricter than my priors on two, and five of
+its "always present" answers were overruled, `MD-188` among them on *"every site uses
+images"*. Details in `openspec/specs/registry/` A.8.
+
+Not changed: the merges do not read the question. A person who answers "no" and types
+`PASS` is still accepted — VRD-2 stays `partial` for that.
+
+Fourteen breakages, each against only its reader, all caught. Two first read MISSED
+because equal-length mutations written within one second reused a stale bytecode cache;
+the probe now gives every run its own.
+
 ## 0.97.3 — VRD-10 settled by decision
 
 Registry version: **`7c7b9d827179`, unchanged.** No code, test behaviour or verdict moved.

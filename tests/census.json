@@ -3586,7 +3586,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "7c7b9d827179",
+  "registry_version": "c26c36595d04",
   "sites": [
     "fixture:good",
     "fixture:broken",

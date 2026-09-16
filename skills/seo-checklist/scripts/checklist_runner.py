@@ -1409,6 +1409,9 @@ def grade(items: list[dict], plan: dict, results: dict, skipped: dict,
         # a registry test asserts every real item declares one.
         row["effort"] = it.get("effort", "medium")
         row["fix"] = it.get("fix", "")
+        # Rule-less applicability must reach the person or model answering the row.
+        if it.get("applies_if"):
+            row["applies_if"] = it["applies_if"]
         # Set on the second of two items that run the same script with the same args
         # and the same assertion — one requirement listed twice by the source
         # checklists this registry merges. It still runs and still reports; it does
