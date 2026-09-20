@@ -147,7 +147,9 @@
           "MD-187",
           "MS-022",
           "MS-023",
-          "TE-168"
+          "TE-168",
+          "TE-172",
+          "TECH-001"
         ],
         "items_covered": [
           "AR-149",
@@ -172,7 +174,9 @@
           "MS-029",
           "TE-168",
           "TE-170",
-          "TE-174"
+          "TE-172",
+          "TE-174",
+          "TECH-001"
         ],
         "scripts_that_report_a_cap": [
           "anchor_text_audit.py",
@@ -188,6 +192,7 @@
           "link_profile.py",
           "orphan_pages_from_sitemap.py",
           "redirect_checker.py",
+          "rich_results_guard.py",
           "server_log_audit.py",
           "site_crawl.py",
           "sitemap_checker.py"
@@ -661,7 +666,9 @@
           "MD-185",
           "MS-023",
           "TE-170",
-          "TE-174"
+          "TE-172",
+          "TE-174",
+          "TECH-001"
         ],
         "items_silenced_past_either_limit": [
           "AR-149",

@@ -1365,6 +1365,9 @@ sitemap URL reachable and this check vacuous.
 `issues[]` — array
 `summary.errors` — int
 `summary.warnings` — int
+`summary.invalid_blocks` — int
+`truncated` — bool
+`truncated_reason` — str
 `source` — str
 `final_url` — str
 

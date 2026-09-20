@@ -557,12 +557,13 @@ comparison was meant to read it will either crash or — far more likely — ski
 skipped comparison is indistinguishable from a passing one. That is Appendix A.2, and it
 hid whichever Appendix A.1 violations existed in each release from comparison throughout
 the `v0.41.0` to `v0.91.0` window.
-**Reader:** partial, and violated today. Answer merges reject words outside the closed
-vocabulary and report surfaces are tested against all eight statuses, but the fixture
-oracle explicitly permits and skips the ninth word. The design of the replacement — how
-a declarations manifest represents absence of expectation — belongs to
-[`openspec/specs/declarations/`](../declarations/spec.md) and is settled there by DEC-2; the
-withdrawal itself is owed by whichever release removes the word.
+**Reader:** enforced. Answer merges reject words outside the closed
+vocabulary, report surfaces are tested against all eight statuses, and the fixture oracle
+— the one layer that carried a ninth — now derives its permitted set from the vocabulary
+itself (`ALLOWED = set(STATUS_ORDER)`), so the word cannot be written back without the
+eight moving first. The twenty-seven declarations that held it became predictions;
+[`openspec/specs/declarations/`](../declarations/spec.md) DEC-2 and A.8 have what each became
+and the free pass one of them was hiding.
 
 #### Scenario: a layer invents a word
 - **WHEN** any consumer writes a status outside the eight
@@ -881,6 +882,9 @@ verdict, and a limit of the instrument belongs beside the instrument's output �
 
 #### A.2 — the violation of VRD-12, and how long it has been running
 
+**Closed at 0.99.0**, after a run of releases this section counts below. The measurement
+is kept as it was taken.
+
 The expected-verdict manifest declares `INDETERMINATE`, which no audit code emits. Its
 reader skips such declarations instead of comparing them. What the ninth word is hiding
 today — how many declarations carry it, what each of them says, and which status the
@@ -954,14 +958,15 @@ VRD-11.
 
 | | requirements |
 |---|---|
-| **enforced** | VRD-1, VRD-4, VRD-5, VRD-6, VRD-7, VRD-8, VRD-9, VRD-10, VRD-11, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
-| **partial** | VRD-2, VRD-3, VRD-12 |
+| **enforced** | VRD-1, VRD-4, VRD-5, VRD-6, VRD-7, VRD-8, VRD-9, VRD-10, VRD-11, VRD-12, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
+| **partial** | VRD-2, VRD-3 |
 | **none** | — none |
 
 Invariants: INV-1 enforced; INV-2, INV-3 and INV-4 partial; INV-2 is violated.
 
-**Fourteen enforced, three partial, none unread.** One requirement is violated by shipped
-declarations while nothing reddens: VRD-12, by the manifest.
+**Fifteen enforced, two partial, none unread.** No requirement is violated by shipped
+behaviour or declarations: VRD-12 left that list at 0.99.0, when the manifest's ninth word
+was withdrawn and the oracle's vocabulary became the audit's own.
 
 VRD-10 left that list at 0.97.3, by decision: the LLM answer merge's `no rationale given`
 is accepted as the sentence the requirement asks for, and the requirement now says so.

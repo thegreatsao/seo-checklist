@@ -3538,13 +3538,14 @@
     "TECH-001": {
       "answers": {
         "failing-shapes": "FAIL",
-        "fixture:broken": "PASS",
-        "fixture:broken_tls": "PASS",
+        "fixture:broken": "NO_DATA",
+        "fixture:broken_tls": "NO_DATA",
         "fixture:good": "PASS",
         "fixture:good_tls": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "rich_results_guard.py",

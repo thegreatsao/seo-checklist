@@ -26,9 +26,12 @@ SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
 REGISTRY = os.path.join(
     ROOT, "skills", "seo-checklist", "resources", "config", "checklist.json")
 MANIFEST = os.path.join(ROOT, "tests", "fixtures", "expectations.json")
+sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from harness import FixtureSite, spawn  # noqa: E402
+from checklist_report import STATUS_ORDER  # noqa: E402
+import checklist_runner as runner  # noqa: E402
 
 HTTP_DECLARED_IDS = {
     "AR-146", "AR-151", "AR-158", "AR-162", "BL-081", "BL-084",
@@ -63,12 +66,8 @@ HTTP_DECLARED_IDS = {
     "AR-149", "AR-154", "AR-163", "CI-018", "CN-039", "CN-068", "GEO-008",
     "GO-131", "GO-136", "MB-102", "MD-190", "MS-032", "MS-033", "SP-109",
     "SP-110", "TE-170", "TECH-002",
-    # Stage 2d. One is INDETERMINATE on purpose and it is not a shrug: MB-105
-    # compares served HTML against a rendered DOM, but both fixture artifacts omit
-    # html. The title question this raised was settled in 0.72.0; with no rendered
-    # document, there is still nothing to compare and no settled verdict to write.
-    #
-    # KW-076 was the other, until 0.48.0 gave the registry `--no-autocomplete` and
+    # Stage 2d. KW-076 had been undecidable until 0.48.0 gave the registry
+    # `--no-autocomplete` and
     # this module a keyword to pass. Its declaration was written before the first run
     # that could answer it, as every declaration here is.
     "AR-152", "CI-013", "CN-036", "GEO-002", "GEO-003", "KW-076", "MB-095",
@@ -100,7 +99,9 @@ DECLARED_IDS = {
     "good_tls": TLS_DECLARED_IDS,
     "broken_tls": TLS_DECLARED_IDS,
 }
-ALLOWED = {"PASS", "WARN", "FAIL", "N/A", "INDETERMINATE"}
+# Derive the manifest vocabulary from the report so the oracle cannot drift from
+# the eight statuses the audit can actually emit.
+ALLOWED = set(STATUS_ORDER)
 # The primary keyword handed to every origin, for KW-076. It is the site's own
 # subject rather than a word picked to produce a verdict: both trees are the same
 # bakery, and `bread` is what the good tree's <title> names and what the broken tree's
@@ -187,12 +188,9 @@ def comparison() -> tuple[dict[str, dict[str, int]], list[dict[str, str]]]:
     tally = {}
     differences = []
     for label, declarations in manifest()["fixtures"].items():
-        counts = {"matched": 0, "disagreed": 0, "indeterminate": 0}
+        counts = {"matched": 0, "disagreed": 0}
         for item_id, declared in declarations.items():
             expected = declared["expect"]
-            if expected == "INDETERMINATE":
-                counts["indeterminate"] += 1
-                continue
             actual = RESULTS[label][item_id]
             if actual == expected:
                 counts["matched"] += 1
@@ -220,7 +218,7 @@ def coverage() -> tuple[int, int, int]:
         all_settled = set()
         for label, declarations in fixtures.items():
             declared = declarations.get(item_id)
-            if not declared or declared["expect"] == "INDETERMINATE":
+            if not declared:
                 continue
             status = declared["expect"]
             all_settled.add(status)
@@ -250,15 +248,13 @@ def tearDownModule():
             declarations = len(manifest()["fixtures"][label])
             print(f"  {label}: {declarations} declarations — "
                   f"{counts['matched']} matched, "
-                  f"{counts['disagreed']} disagreed, "
-                  f"{counts['indeterminate']} indeterminate")
+                  f"{counts['disagreed']} disagreed")
         totals = {key: sum(row[key] for row in tally.values())
-                  for key in ("matched", "disagreed", "indeterminate")}
+                  for key in ("matched", "disagreed")}
         declarations = sum(len(row) for row in manifest()["fixtures"].values())
         print(f"  total: {declarations} declarations — "
               f"{totals['matched']} matched, "
-              f"{totals['disagreed']} disagreed, "
-              f"{totals['indeterminate']} indeterminate")
+              f"{totals['disagreed']} disagreed")
         items, settled_both, opposed = coverage()
         print(f"  coverage: {items} items declared, {settled_both} settled on both "
               f"sides, {opposed} opposed across fixture origins")
@@ -369,17 +365,56 @@ class ManifestContract(unittest.TestCase):
                     self.assertIn(declared["expect"], ALLOWED)
                     self.assertTrue(declared["why"].strip())
 
+    def test_the_permitted_vocabulary_is_the_audits_own_eight(self):
+        """`openspec/specs/declarations/` DEC-3, read across two modules rather than one.
+
+        `ALLOWED = set(STATUS_ORDER)` satisfies the requirement by construction, and a
+        construction is not a reader: re-listing the five words this set used to hold, or
+        adding a ninth beside the eight, changes nothing any other test asks about. So the
+        set is compared with the statuses the *runner* emits, which is the other end of
+        the comparison the manifest exists to make. A drift in either direction reddens —
+        a word the audit cannot emit, or a status a declaration is forbidden to predict.
+        """
+        emitted = {getattr(runner, name) for name in
+                   ("PASS", "WARN", "FAIL", "NA", "NO_DATA", "NEEDS_INPUT",
+                    "MANUAL", "LLM_PENDING")}
+        self.assertEqual(ALLOWED, emitted,
+                         "the manifest's vocabulary and the audit's have come apart; "
+                         "§2 of openspec/specs/verdicts/ holds the eight")
+
 
 class FixtureOracle(unittest.TestCase):
 
-    def test_every_settled_declaration_matches_the_real_runner(self):
-        """Every settled declaration agrees after the completed triage."""
+    def test_every_declaration_matches_the_real_runner(self):
+        """Every declaration agrees after the completed triage."""
         _tally, differences = comparison()
         detail = "\n".join(
             f"{row['fixture']} {row['item']}: expected {row['expected']}, "
             f"actual {row['actual']} — {row['why']}"
             for row in differences)
         self.assertEqual(differences, [], detail)
+
+    def test_the_comparison_reads_every_declaration(self):
+        """`openspec/specs/declarations/` DEC-7: no declaration is exempt from the
+        comparison that gives it its value.
+
+        The test above is satisfied by a comparison that skips the rows it would have
+        disagreed with — which is exactly what this oracle did for twenty-seven of them
+        until 0.99.0, and the skip was invisible because a skipped row produces no
+        difference. Probed by adding `if expected == "NO_DATA": continue` to
+        `comparison()`: the agreement test stays green and this one reddens.
+
+        Counted per fixture as well as in total, so a whole origin dropping out is not
+        hidden by another one's arithmetic.
+        """
+        tally, _differences = comparison()
+        declared = {label: len(rows) for label, rows in manifest()["fixtures"].items()}
+        read = {label: counts["matched"] + counts["disagreed"]
+                for label, counts in tally.items()}
+        self.assertEqual(read, declared,
+                         "the comparison read fewer declarations than the manifest "
+                         "carries; a declaration nobody compares is counted as coverage "
+                         "and checks nothing")
 
 
 if __name__ == "__main__":

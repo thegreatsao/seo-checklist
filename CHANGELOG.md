@@ -10,6 +10,45 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.99.0 — a JSON-LD block that did not parse is not an absence of misuse
+
+Registry version: **`c26c36595d04`, unchanged.** **One verdict moves**, and four
+requirements close: DEC-2, DEC-3, DEC-7 and VRD-12. Ledger 108 → 112 of 149; the
+`opposed` column is empty for the first time.
+
+**The defect.** `rich_results_guard.py` threw away the JSON-LD blocks it could not parse.
+Its neighbour `schema_required_props.py` reports them — that repair was made for MS-032 —
+and this one did not, so *Modern schema types only (no HowTo/FAQ misuse)* (`TECH-001`)
+asserted `summary.warnings == 0`, found none, and answered **PASS** on a page whose only
+`HowTo` sat inside a block it had failed to read. Measured on the fixture: `nodes 2`,
+`errors 2`, `warnings 0`, and the one unreadable block is the HowTo.
+
+The checker now reports each unreadable block as an error, counts them in
+`summary.invalid_blocks`, and sets `truncated` with a reason — the mechanism the runner
+already has for "this answer does not cover its subject". A pass-by-absence over such a
+document is withheld: `TECH-001` answers `NO_DATA` saying so, and `TE-172`, which reads
+the same script, gains the same protection. **If you audit a site whose structured data
+has a syntax error, expect these two to stop saying PASS and start saying they could not
+read it.**
+
+**How it was found.** The fixture manifest declared `INDETERMINATE` for 27 of its 250
+predictions — a ninth word the audit never emits, which the comparison skipped and the
+coverage tally counted. Writing a real prediction for each one meant finishing 27
+sentences, and 26 were already true in the reason beside them. The 27th was `TECH-001`,
+whose reason said its HowTo could not be parsed; read against the code, that sentence was
+describing this defect.
+
+So the manifest is repaired too: every declaration now predicts a status the audit can
+emit, all 250 are compared (250 matched, 0 disagreed), the permitted vocabulary is
+`set(STATUS_ORDER)` rather than a hand-written list that both invented a word and omitted
+`NO_DATA` and `NEEDS_INPUT`, and the exemption that let a declaration skip its own
+comparison is gone. `openspec/specs/declarations/` A.8.
+
+Two pinned lists moved with it and both were caught by the tree's own gates: `TECH-001`
+left `SAME_ON_BOTH` — its exemption claimed the checker emits no warnings for these types,
+which was the defect described as a property — and the record of items whose pass is
+withheld over an incomplete input gained the two.
+
 ## 0.98.0 — every item without a rule says when it applies
 
 Registry version: **`7c7b9d827179` → `c26c36595d04`.** **REG-9 `partial` → `enforced`**,

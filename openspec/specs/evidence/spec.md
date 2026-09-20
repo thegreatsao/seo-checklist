@@ -301,9 +301,13 @@ a checker for being discussed by the reader.
 
 Probed by deleting `class CollectionPage`, the only thing that judges `AR-154`: the reader
 reddens naming `collection_page_checker.py`, and it is the only single deletion that does.
-`test_the_fixture_key_indirection_is_load_bearing` pins that at least one checker is judged
-*only* through a RUNS key, so the resolution cannot be simplified away without the failure
-that follows saying why.
+`test_the_record_of_which_arms_carry_the_union_is_current` records which of the three arms
+covers a checker no other arm reaches. Until 0.99.0 that was the RUNS-key arm, pinned as a
+property so the resolution could not be simplified away; the manifest's twenty-seven
+unsettled declarations became predictions that release, the `declared` arm grew, and the
+key arm stopped being the only cover for anything. The number is recorded rather than
+asserted now, so movement in either direction reddens and gets re-read — today `named`
+carries six alone, and the other two carry none.
 
 #### Scenario: a checker with a test
 - **WHEN** a test constructs an input and asserts what the checker returns for it

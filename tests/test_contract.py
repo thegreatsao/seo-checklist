@@ -292,8 +292,6 @@ SAME_ON_BOTH = {
     "GEO-006": "sameAs targets are verified by fetching wikipedia/wikidata; an "
                "offline fixture cannot demonstrate them without egress",
     "KW-076": "no keyword is supplied to a fixture run, so neither side is measured",
-    "TECH-001": "rich_results_guard emits warnings only for schema types it has "
-                "required-property rules for; neither fixture carries one",
     "GO-143": "schema_required_props reports on schemas that are present, so a site "
               "with no WebSite block produces no issue to match — the item cannot "
               "fail on absence, only on a node present and incomplete. `SearchAction` "

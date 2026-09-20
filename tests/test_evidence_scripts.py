@@ -60,6 +60,7 @@ from checklist_runner import (  # noqa: E402
     FAIL, NEEDS_INPUT, NO_DATA, PASS, WARN, build_plan, evaluate,
     grade, input_truncated, passes_by_absence,
 )
+from rich_results_guard import guard_rich_results  # noqa: E402
 
 with open(REGISTRY, encoding="utf-8") as f:
     ITEMS = {i["id"]: i for i in json.load(f)["items"]}
@@ -4499,6 +4500,61 @@ class RichResults(unittest.TestCase):
         self.assertGreaterEqual(bad["summary"]["errors"], 1)
         self.assertEqual(verdict("TE-172", bad), FAIL)
 
+    def test_an_unparseable_howto_block_is_reported_as_incomplete_input(self):
+        snippet = '{"@context":"https://schema.org","@type":"HowTo",'
+        result = guard_rich_results(
+            [{"@context": "https://schema.org", "@type": "Article"}],
+            [{"error": "invalid_json", "snippet": snippet}],
+        )
+        self.assertEqual(result["summary"]["invalid_blocks"], 1)
+        self.assertTrue(any("invalid_json" in item["message"]
+                            for item in result["issues"]))
+        self.assertEqual(result["issues"][0]["evidence"], snippet)
+        self.assertLessEqual(len(result["issues"][0]["evidence"]), 120)
+        self.assertTrue(result["truncated"])
+        self.assertIn("block(s) did not parse", result["truncated_reason"])
+        self.assertEqual(graded_verdict("TECH-001", result), NO_DATA)
+
+    def test_complete_input_has_no_invalid_blocks_or_truncation(self):
+        result = guard_rich_results(
+            [{"@context": "https://schema.org", "@type": "Article"}])
+        self.assertEqual(result["summary"]["invalid_blocks"], 0)
+        self.assertFalse(result.get("truncated"))
+
+    def test_the_script_itself_hands_the_unreadable_blocks_to_the_guard(self):
+        """Through the command line the audit actually runs, not through the function.
+
+        The two tests above pass the invalid block in themselves, so they cover the
+        guard and say nothing about the wiring: a probe that made `main()` call
+        `guard_rich_results(documents)` without the blocks left both of them green.
+        That is the producer/consumer shape `openspec/specs/run-lifecycle/` A.13 names,
+        and this walks the whole path — an HTML file with one truncated block, the
+        script's own argument parsing, its JSON on stdout.
+        """
+        page = os.path.join(self.tmp(), "page.html")
+        with open(page, "w", encoding="utf-8") as fh:
+            fh.write('<html><head>'
+                     '<script type="application/ld+json">'
+                     '{"@context":"https://schema.org","@type":"HowTo","name":"x",'
+                     '</script>'
+                     '<script type="application/ld+json">'
+                     '{"@context":"https://schema.org","@type":"Article","name":"y"}'
+                     '</script></head><body>t</body></html>')
+        run = harness.spawn(
+            [sys.executable, os.path.join(SCRIPTS, "rich_results_guard.py"), page, "--json"])
+        self.assertEqual(run.returncode, 0, run.stderr)
+        payload = json.loads(run.stdout)
+        self.assertEqual(payload["summary"]["invalid_blocks"], 1,
+                         "the script read a page with one unparseable block and "
+                         "reported none of them")
+        self.assertTrue(payload.get("truncated"))
+        self.assertEqual(graded_verdict("TECH-001", payload), NO_DATA)
+
+    def tmp(self):
+        directory = tempfile.mkdtemp(prefix="rich-guard-")
+        self.addCleanup(shutil.rmtree, directory, True)
+        return directory
+
 
 class Entities(unittest.TestCase):
     """GEO-006 `summary.sameas_missing_critical`."""
@@ -5981,13 +6037,20 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
         — clean verdicts spelled `none_severity` — and adds BL-083, which never
         reads the inventory and caps its own link list instead. The other six
         arrived by asking the same question of every cap rather than of the crawl:
-        external links, GSC rows, a sitemap index walk and a stylesheet list."""
+        external links, GSC rows, a sitemap index walk and a stylesheet list.
+
+        Twenty-five since 0.99.0. `TE-172` and `TECH-001` joined when
+        `rich_results_guard.py` started reporting the JSON-LD blocks it could not parse:
+        both assert a count of zero, so both passed by absence over a document one of
+        whose blocks was never read. The set is derived — a pass-by-absence rule whose
+        script reports truncation — so a checker that learns to say "I did not cover my
+        subject" pulls its items in here by itself."""
         ids = sorted(i["id"] for i in self._covered())
         self.assertEqual(ids, [
             "AR-149", "AR-162", "AR-163", "BL-081", "BL-083", "CI-008", "CI-014", "CI-018",
             "CN-039", "CN-041", "GO-136", "GO-137", "GO-138", "KW-071", "MB-098",
             "MD-185", "MD-187", "MS-022", "MS-023", "MS-029", "TE-168", "TE-170",
-            "TE-174",
+            "TE-172", "TE-174", "TECH-001",
         ], "the covered set moved; say which definition gives the new one")
 
     def test_every_way_this_registry_spells_nothing_is_covered(self):
@@ -6205,11 +6268,7 @@ class EveryCheckerHasSomethingThatJudgesIt(unittest.TestCase):
 
     @staticmethod
     def settled_items():
-        """Items the oracle predicts with a word the audit can emit. `INDETERMINATE` is
-        skipped by the comparison, so it judges nothing — `openspec/specs/declarations/`
-        DEC-2.
-
-        The first version of this walked `manifest.values()`, whose members are
+        """The first version of this walked `manifest.values()`, whose members are
         `schema_version`, `registry_version`, `declared_from` and `fixtures`. Only the
         last is a dict, so the inner loop iterated origin *labels* and this returned
         `{'good', 'broken', 'good_tls', 'broken_tls'}` — four names and not one item id.
@@ -6222,7 +6281,7 @@ class EveryCheckerHasSomethingThatJudgesIt(unittest.TestCase):
         settled = set()
         for origin in manifest["fixtures"].values():
             for item_id, entry in origin.items():
-                if isinstance(entry, dict) and entry.get("expect") != "INDETERMINATE":
+                if isinstance(entry, dict):
                     settled.add(item_id)
         assert settled, "no settled declarations found; the manifest shape moved"
         return settled
@@ -6245,18 +6304,37 @@ class EveryCheckerHasSomethingThatJudgesIt(unittest.TestCase):
                          "these checkers decide items on every audit and nothing "
                          "asserts their answers are right")
 
-    def test_the_fixture_key_indirection_is_load_bearing(self):
-        """The correction, pinned as a property rather than as a sentence. At least one
-        checker is judged *only* through a RUNS key, so a future reader that searched
-        for script names would report it uncovered — which is the error the hand count
-        made. If this set ever empties, the resolution can be dropped; until then,
-        dropping it makes this reader lie in the flattering direction."""
+    def test_the_record_of_which_arms_carry_the_union_is_current(self):
+        """Which of the three arms is doing work no other arm does, measured.
+
+        This used to assert that at least one checker is judged *only* through a RUNS
+        key — the correction to a hand count that searched for script names and reported
+        a covered checker as uncovered. The assertion stopped being true at 0.99.0, and
+        not because coverage fell: the manifest's twenty-seven "cannot tell" declarations
+        became real predictions, the `declared` arm grew, and the checker that only a key
+        reached is now judged by a settled declaration too. Its own docstring said what to
+        do — "if this set ever empties, the resolution can be dropped".
+
+        Dropping it would be wrong in the other direction: the key arm costs nothing, and
+        the `declared` arm that now covers its checkers is one manifest edit away from
+        shrinking. So the fact is recorded rather than asserted, and any movement in
+        either direction reddens and gets re-read. The union itself is held by the test
+        above; this one only says where the union comes from.
+        """
         scripts, named, through_a_key, declared = self.coverage()
-        key_only = set(scripts) - named - declared
-        self.assertTrue(
-            key_only & through_a_key,
-            "no checker depends on resolving RUNS keys any more; re-read Appendix A.2 "
-            "of openspec/specs/evidence/ before simplifying this reader")
+        arms = {"named": named, "through_a_key": through_a_key, "declared": declared}
+        unique = {}
+        for label, arm in arms.items():
+            others = set().union(*(other for name, other in arms.items() if name != label))
+            unique[label] = sorted((set(scripts) & arm) - others)
+        self.assertEqual({label: len(ids) for label, ids in unique.items()},
+                         {"named": 6, "through_a_key": 0, "declared": 0},
+                         "an arm of the coverage union started or stopped carrying a "
+                         "checker alone; say which definition moved before repinning")
+        self.assertEqual(unique["named"], [
+            "domain_safety_check.py", "gsc_cannibalization.py", "gsc_checker.py",
+            "gsc_url_inspection.py", "html_validator.py", "pagespeed.py",
+        ], "these are judged only by a test naming them — the fixtures cannot run them")
 
 if __name__ == "__main__":
     unittest.main()

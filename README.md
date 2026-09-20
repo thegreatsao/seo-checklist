@@ -4,7 +4,12 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.98.0 — see [CHANGELOG.md](CHANGELOG.md). **Checks a person or the model has to
+Version 0.99.0 — see [CHANGELOG.md](CHANGELOG.md). **One check stops passing a page whose
+structured data it could not read.** If a JSON-LD block on the page has a syntax error, the
+rich-result checks used to skip it silently — so *Modern schema types only* reported a clean
+result about markup it had never parsed, including a page whose only forbidden type was
+inside the broken block. Those two checks now say they could not read it instead of passing.
+`0.98.0` added the rest of what is below: **checks a person or the model has to
 answer now say when they apply.** "Does the site show ads?", "Has the site submitted a
 disavow file?" — 25 of them carry a question like that in the queue and in the report, and
 a "no" means answer N/A. *Handle Out-of-Stock Products* no longer applies to SaaS, blog or

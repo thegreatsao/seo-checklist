@@ -34,9 +34,17 @@ RICH_RESULT_REQUIRED = {
 }
 
 
-def guard_rich_results(documents: list[Any]) -> dict[str, Any]:
+def guard_rich_results(documents: list[Any],
+                       invalid_blocks: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     rows = []
     issues = []
+    for block in (invalid_blocks or []):
+        error = block.get("error") or "unknown_error"
+        issues.append(issue(
+            "error",
+            f"JSON-LD block did not parse ({error})",
+            evidence=(block.get("snippet") or "")[:120],
+        ))
     for row in find_schema_nodes(documents):
         node = row["node"]
         type_names = schema_type_names(node.get("@type"))
@@ -51,15 +59,23 @@ def guard_rich_results(documents: list[Any]) -> dict[str, Any]:
                     row_issues.append(issue("error", f"{type_name} missing rich-result property '{prop}'", evidence=row["path"]))
         rows.append({"path": row["path"], "types": type_names, "issues": row_issues})
         issues.extend(row_issues)
-    return {
+    result = {
         "nodes": len(rows),
         "rows": rows,
         "issues": issues,
         "summary": {
             "errors": sum(1 for item in issues if item["severity"] == "error"),
             "warnings": sum(1 for item in issues if item["severity"] == "warning"),
+            "invalid_blocks": len(invalid_blocks or []),
         },
     }
+    if invalid_blocks:
+        result["truncated"] = True
+        result["truncated_reason"] = (
+            f"{len(invalid_blocks)} JSON-LD block(s) did not parse, so any type "
+            "inside them was not classified"
+        )
+    return result
 
 
 def main() -> None:
@@ -69,12 +85,14 @@ def main() -> None:
     parser.add_argument("--json", "-j", action="store_true", help="Output JSON")
     args = parser.parse_args()
     documents, meta = extract_schema_documents(args.source, timeout=args.timeout)
-    result = guard_rich_results(documents)
+    result = guard_rich_results(documents, meta.get("invalid_blocks"))
     result.update({"source": args.source, "final_url": meta["final_url"],
                    "fetch_error": (meta.get("fetch") or {}).get("error")})
     lines = [
         f"Rich results guard for {args.source}",
-        f"Nodes: {result['nodes']}  Errors: {result['summary']['errors']}  Warnings: {result['summary']['warnings']}",
+        f"Nodes: {result['nodes']}  Errors: {result['summary']['errors']}  "
+        f"Warnings: {result['summary']['warnings']}  "
+        f"Invalid blocks: {result['summary']['invalid_blocks']}",
     ] + [f"[{item['severity']}] {item['message']} {item.get('evidence') or ''}" for item in result["issues"][:30]]
     print_json_or_text(result, args.json, lines)
 

@@ -3,14 +3,12 @@
     "declarations": {
       "counts": {
         "bounded": 0,
-        "enforced": 3,
+        "enforced": 6,
         "none": 2,
-        "opposed": 1,
-        "partial": 8
+        "opposed": 0,
+        "partial": 6
       },
-      "opposed": [
-        "DEC-2"
-      ],
+      "opposed": [],
       "requirements": 14,
       "unread": [
         "DEC-1",
@@ -140,10 +138,10 @@
     "verdicts": {
       "counts": {
         "bounded": 0,
-        "enforced": 14,
+        "enforced": 15,
         "none": 0,
         "opposed": 0,
-        "partial": 3
+        "partial": 2
       },
       "opposed": [],
       "requirements": 17,
@@ -152,10 +150,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 108,
+    "enforced": 112,
     "none": 2,
-    "opposed": 1,
-    "partial": 34,
+    "opposed": 0,
+    "partial": 31,
     "requirements": 149
   }
 }

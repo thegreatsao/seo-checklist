@@ -181,25 +181,26 @@ A word that only one layer knows cannot be compared with anything, so the compar
 was meant to read it skips it — and a skipped comparison is indistinguishable from a
 passing one. Twenty-seven declarations have been carried, printed in a tally and reported
 as coverage while being compared with nothing at all.
-**Reader:** **opposed.** `ALLOWED` in `test_fixture_oracle.py` is
-`{PASS, WARN, FAIL, N/A, INDETERMINATE}`, and
-`test_every_declaration_has_a_supported_verdict_and_reason` asserts membership in it. The
-ninth word is therefore *permitted* by the reader, which on its own would make this
-requirement unread. What makes it opposed is the other half: two of the statuses an
-honest replacement needs are *forbidden*. Take `GEO-007`, whose declared reason is that
-the check reads an operator input the audit does not pass — that is the definition of
-`NEEDS_INPUT`, it is what the run answers, and writing it into the manifest fails
-`test_every_declaration_has_a_supported_verdict_and_reason` today. Probed with `NO_DATA`,
-which fails identically; `NEEDS_INPUT` is absent from the same set.
+**Reader:** enforced. Since 0.99.0 `ALLOWED` in `tests/test_fixture_oracle.py` is
+`set(STATUS_ORDER)` — the audit's own eight, imported rather than written out — so a ninth
+word fails `tests/test_fixture_oracle.py::Manifest::test_every_declaration_has_a_supported_verdict_and_reason`,
+and `NEEDS_INPUT` and `NO_DATA` are legal, which is what the repair needed.
+`tests/test_fixture_oracle.py::FixtureOracle::test_every_declaration_matches_the_real_runner`
+compares **all 250**: the skip that exempted twenty-seven of them is gone from
+`comparison()` and from `coverage()`, so a declaration that predicts nothing cannot be
+carried at all — there is no longer a value it could hold.
 
-Note what this does *not* cover, because an earlier draft of this line over-claimed it.
-For the seventeen of Appendix A.1 the honest declaration is `N/A`, which `ALLOWED` permits;
-those repairs fail the *oracle*, not the vocabulary, and an oracle failing is the
-instrument working. Removing a declaration is likewise legal, though it must also edit the
-pinned id set, which is the intended mechanism rather than an obstacle. The opposition is
-narrow — it bites on `GEO-007`'s two declarations for certain, and on `MB-105`'s two and
-`TECH-001` if their honest value turns out to be `NO_DATA` — and a reader that permits the
-violation and forbids even one form of the repair is opposed rather than merely unread.
+The twenty-seven were replaced by predictions derived from each fixture's construction:
+`N/A` where the subject is absent (AR-146, AR-154, AR-163), `NEEDS_INPUT` for `GEO-007`'s
+operator input, `NO_DATA` where the checker has nothing to read (the four `IN-` items,
+LO-200, MB-105, SE-118), and `PASS`, `WARN` or `FAIL` where the tree settles it (AR-150,
+CI-014, GO-137, MB-097). All agreed with the run. One did not, and **repairing the tree is
+what made it agree** — `TECH-001`, A.3.
+
+This line read **opposed** until 0.99.0, and the argument is worth keeping: the old
+`ALLOWED` both permitted the ninth word and forbade `NEEDS_INPUT` and `NO_DATA`, so the
+reader protected the violation and refused one form of the repair. A reader can be worse
+than absent, and the class exists for that.
 
 #### Scenario: a prediction nobody is prepared to make
 - **WHEN** no session that qualifies under DEC-1 will predict an item's status on an
@@ -236,11 +237,16 @@ fixtures happen not to produce the rest, and MUST NOT be a superset.
 checker will not be able to answer here", which is a genuine and checkable claim about a
 fixture that provides no such subject. A superset re-introduces DEC-2. Both are the same
 error: the manifest's vocabulary drifting away from the thing it is compared against.
-**Reader:** partial, and pointed the wrong way. Membership is asserted, so an arbitrary
-string fails; but the set it is asserted against is neither the audit's vocabulary nor a
-subset of it. It omits `NO_DATA`, `NEEDS_INPUT`, `MANUAL` and `LLM_PENDING`, and adds
-`INDETERMINATE`. Nothing derives `ALLOWED` from the status vocabulary, so the two can
-drift apart in either direction with the suite green — and have.
+**Reader:** enforced. Since 0.99.0 `ALLOWED = set(STATUS_ORDER)` in
+`tests/test_fixture_oracle.py`: the permitted set *is* the audit's vocabulary, imported
+from the module that defines it, so the third scenario is satisfied by construction — a
+status added to or removed from `openspec/specs/verdicts/` moves this set with it, and
+there is no literal left to drift. Membership is asserted by
+`tests/test_fixture_oracle.py::Manifest::test_every_declaration_has_a_supported_verdict_and_reason`.
+
+Until 0.99.0 this line read *partial, and pointed the wrong way*: the set omitted
+`NO_DATA`, `NEEDS_INPUT`, `MANUAL` and `LLM_PENDING`, and added `INDETERMINATE`. Both
+halves of the drift were live at once, which is what A.2 measured.
 
 #### Scenario: a status the audit can emit is refused to a declaration
 - **WHEN** a declaration states one of the eight statuses that the permitted set omits
@@ -402,15 +408,17 @@ than none, because it is counted as coverage.
 **Why:** the manifest's number is quoted as a measure of how much of the registry is
 pinned. A declaration that is carried, counted and skipped inflates that number by exactly
 the amount nobody is checking.
-**Reader:** partial, and the exemption is the defect.
-`test_every_settled_declaration_matches_the_real_runner` fails on any difference, and it
-prints the fixture, item, both statuses and the reason — proved by probe: a declaration
-edited from `PASS` to `FAIL` fails with all five of those. But *settled* is defined as
-"not the ninth word", so the twenty-seven skip themselves, and the tally printed at the
-end of the module reports them in a column of their own — visible, counted, and compared
-with nothing. A reader that holds the comparison for 223 of 250 declarations and lets the
-manifest exempt the rest holds part of the substance, not all of it. Removing the
-exemption is DEC-2's repair, not a second one.
+**Reader:** enforced.
+`tests/test_fixture_oracle.py::FixtureOracle::test_every_declaration_matches_the_real_runner`
+fails on any difference and prints the fixture, item, both statuses and the reason —
+proved by probe: a declaration edited from `PASS` to `FAIL` fails with all five of those.
+It now runs over all 250 declarations; the word *settled* is gone from its name because
+nothing is unsettled any more, and the tally's third column with it.
+
+Until 0.99.0 this read *partial, and the exemption is the defect*: `settled` meant "not the
+ninth word", so twenty-seven declarations exempted themselves from the comparison while
+being counted as coverage. That exemption was DEC-2's to remove, and removing it closed
+this row without a second repair — which is what its old line predicted.
 
 #### Scenario: the comparison declines to make a comparison
 - **WHEN** a declaration carries a value the comparison skips rather than compares
@@ -791,6 +799,10 @@ manifest `schema_version` 1, `tests/census.json` in step with a fresh census.
 
 #### A.1 — twenty-seven declarations of two hundred and fifty are compared with nothing
 
+**Closed at 0.99.0.** All twenty-seven now predict a status and are compared; the tally
+reads 250 matched, 0 disagreed. What each became, and the one that needed the tree
+repaired first, is A.3. The measurement below is kept as it was taken.
+
 `INDETERMINATE` appears in 27 declarations: 11 on `good`, 14 on `broken`, 2 on
 `broken_tls`. `comparison()` counts them into a column of their own and `continue`s. They
 have been carried, printed and counted as coverage since `v0.41.0`.
@@ -896,6 +908,9 @@ that, and DEC-13 is where it belongs — a limit of the mechanism, stated once, 
 output — rather than in a status field on 27 predictions.
 
 #### A.2 — the permitted vocabulary is neither the audit's nor a subset of it
+
+**Closed at 0.99.0:** `ALLOWED = set(STATUS_ORDER)`, derived from the audit's own
+vocabulary, so neither half of the drift below can recur silently.
 
 `ALLOWED = {"PASS", "WARN", "FAIL", "N/A", "INDETERMINATE"}`. Against the eight statuses
 of `openspec/specs/verdicts/`: four are missing — `NO_DATA`, `NEEDS_INPUT`, `MANUAL`,
@@ -1009,6 +1024,34 @@ predicted, never what was answered, so the twenty-seven rows in `census.json` st
 unaltered and need no re-recording. The two instruments come apart cleanly here, which is
 the practical form of §1's distinction: only one of them has anything to withdraw.
 
+#### A.8 — the repair, 20 September 2026, and the defect one of the twenty-seven was hiding
+
+All twenty-seven now predict. Twenty-six needed nothing but a word: the fixtures were
+always built in a way that settles them, and the reasons already said so — *"the fixture
+contains no paginated series"* is `N/A`, *"the check reads an operator input the oracle
+audit does not pass"* is `NEEDS_INPUT`, *"the shared TLS entry has no chain"* is a `PASS`
+by a rule that forbids chains. The sentence under the ninth word was a prediction in every
+case but one; what it lacked was a field it was allowed to go in.
+
+The exception is `TECH-001`, and it is the reason this appendix is worth more than the
+edit. Its declaration said the fixture's only `HowTo` sits inside JSON-LD that does not
+parse, so nothing can be predicted. Read against the code, that sentence says something
+else: `rich_results_guard.py` was **dropping** `meta["invalid_blocks"]` — the blocks it
+could not read — while its neighbour `schema_required_props.py` reports them, a repair
+made there for MS-032. Measured on the broken fixture: `nodes 2`, `errors 2`,
+`warnings 0`, `invalid_blocks 1`, and the invalid block is the `HowTo`. The item asserts
+`summary.warnings == 0` and answered **`PASS`** — *modern schema types only* — about a
+page whose only forbidden type it had failed to read.
+
+Repaired at 0.99.0 by the mechanism that already exists for this: the checker reports the
+unread blocks as errors and sets `truncated` with a reason, so the runner withholds a
+pass-by-absence and answers `NO_DATA`. `TE-172` reads the same script and gains the same
+protection. The declaration is now `NO_DATA`, and it is the only one of the twenty-seven
+whose agreement required the tree to move.
+
+**A word meaning "cannot tell" is a place where nobody has to finish a sentence.** The one
+here had a live free pass behind it, and finishing the sentence is what found it.
+
 ## Appendix B — how much of this document is enforced
 
 Every line below was measured by mutation — break the thing, run the named reader, record
@@ -1020,14 +1063,21 @@ values.
 
 | | requirements |
 |---|---|
-| **enforced** | DEC-5, DEC-11, DEC-12 |
-| **partial** | DEC-3, DEC-4, DEC-6, DEC-7, DEC-9, DEC-10, DEC-13, DEC-14 |
+| **enforced** | DEC-2, DEC-3, DEC-5, DEC-7, DEC-11, DEC-12 |
+| **partial** | DEC-4, DEC-6, DEC-9, DEC-10, DEC-13, DEC-14 |
 | **none** | DEC-1, DEC-8 |
-| **opposed** | DEC-2 |
+| **opposed** | — none |
 
 Invariants: INV-D1 and INV-D2 enforced; INV-D3 and INV-D4 unread.
 
-**Three enforced, eight partial, two unread, one opposed, of fourteen.**
+**Six enforced, six partial, two unread, none opposed, of fourteen.**
+
+DEC-2, DEC-3 and DEC-7 moved together at 0.99.0, and they had to: the ninth word, the
+vocabulary that permitted it while forbidding its replacements, and the comparison that
+exempted whatever carried it were one defect wearing three requirement numbers. The
+`opposed` column is empty for the first time since it was introduced — it held one row,
+and the row is closed rather than reclassified. A.8 has what the repair cost and what it
+found.
 
 The line between the instruments used to fall cleanly, and the sentence that stated it is
 worth keeping beside the one replacing it: **both enforced requirements belonged to the

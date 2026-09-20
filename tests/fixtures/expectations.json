@@ -72,9 +72,9 @@
         "why": "the sole GA4 measurement ID is configured once"
       },
       "GO-137": {
-        "expect": "INDETERMINATE",
+        "expect": "PASS",
         "title": "Reconcile Indexed Pages vs. Sitemaps",
-        "why": "the fixture supplies a sitemap but no search-engine index inventory to reconcile against it"
+        "why": "the sitemap exists, so the item applies, and every crawled page of the good tree is listed in it: no orphans"
       },
       "GO-138": {
         "expect": "PASS",
@@ -237,9 +237,9 @@
         "why": "every page makes its language obvious with html lang=en"
       },
       "AR-146": {
-        "expect": "INDETERMINATE",
+        "expect": "N/A",
         "title": "Check Pagination",
-        "why": "the fixture contains no paginated series; it would need linked first, middle, and last pages with pagination markup to exercise this title"
+        "why": "the tree has no paginated series, so the item has no subject and declares its applicability"
       },
       "TE-166": {
         "expect": "PASS",
@@ -357,14 +357,14 @@
         "why": "every internal link in this tree names a file the tree serves directly, so no crawled URL answers with a redirect and 'Eliminate Internal Redirects' has nothing to eliminate"
       },
       "AR-154": {
-        "expect": "INDETERMINATE",
+        "expect": "N/A",
         "title": "Optimize E-commerce Category Pages",
-        "why": "'Optimize E-commerce Category Pages' needs a category page to judge; this fixture is a five-page bakery with no collection, listing or category page anywhere, so whatever the item reports would not be about its own subject"
+        "why": "a five-page bakery with no category or collection page: the subject is absent and the item says so"
       },
       "AR-163": {
-        "expect": "INDETERMINATE",
+        "expect": "N/A",
         "title": "Control Faceted Navigation (E-commerce)",
-        "why": "'Control Faceted Navigation' needs facets; no page here exposes a filter, sort or facet URL, so the fixture cannot settle the item either way"
+        "why": "no page exposes a filter, sort or facet URL, so the faceted-navigation subject is absent"
       },
       "CI-018": {
         "expect": "PASS",
@@ -482,9 +482,9 @@
         "why": "every page in this tree declares width=device-width with an initial scale, which is the defect this item exists to find"
       },
       "MB-105": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Ensure Content, Meta & Directives Match Between Served and Rendered HTML",
-        "why": "the fixture artifact carries no html, so there is no rendered document and nothing to compare; the title question this raised was settled in 0.72.0"
+        "why": "the stored artifact carries no rendered html, so there is no rendered document to compare the served one against"
       },
       "MB-107": {
         "expect": "PASS",
@@ -537,9 +537,9 @@
         "why": "'Entity is resolvable (Wikidata / KG)' asks for identifiers that resolve. The Organization and Bakery blocks here declare a name, a logo, an address and hours and no `sameAs` at all, so nothing points at an external identity"
       },
       "GEO-007": {
-        "expect": "INDETERMINATE",
+        "expect": "NEEDS_INPUT",
         "title": "IndexNow configured",
-        "why": "the check reads {indexnow_key}, an operator input the oracle audit does not pass, so the placeholder never resolves and no verdict is reachable"
+        "why": "the check reads `{indexnow_key}`, an operator input this audit does not pass, which is what `NEEDS_INPUT` names"
       },
       "GO-143": {
         "expect": "PASS",
@@ -557,29 +557,29 @@
         "why": "twin of GEO-005 through scores_with, same script and same floor: re-read for 0.87.0 against a floor of 25, which every sampled page of this origin clears on its author and its canonical alone"
       },
       "IN-121": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Configure Geo-Targeting Signals",
-        "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
+        "why": "no page declares an alternate locale, so the checker emits no geo-targeting signal to read and the run is undecided; whether an absent international dimension should be `N/A` instead is the open class in `openspec/specs/declarations/` A.1"
       },
       "IN-122": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Implement Valid hreflang (With Return Tags)",
-        "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
+        "why": "no hreflang link exists anywhere in the tree, so the return-tag rule has no pair to read"
       },
       "IN-127": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Use a Clear International URL Structure",
-        "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
+        "why": "no language-prefixed path or locale subdomain exists, so there is no international URL structure to classify"
       },
       "IN-128": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Serve the Correct Localized Page",
-        "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
+        "why": "with no alternate locale declared anywhere, there is no localized page to request and compare"
       },
       "SE-118": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Maintain a Valid TLS Certificate (HTTPS)",
-        "why": "this origin is served over plain HTTP, so there is no certificate to call valid or invalid. The item's subject is the HTTPS pair, where it is declared"
+        "why": "this origin is served over plain HTTP, so no certificate exists to call valid or invalid; the HTTPS pair is where this item is declared"
       },
       "TE-180": {
         "expect": "PASS",
@@ -664,9 +664,9 @@
         "why": "the same GA4 measurement ID is configured twice on one page"
       },
       "GO-137": {
-        "expect": "INDETERMINATE",
+        "expect": "WARN",
         "title": "Reconcile Indexed Pages vs. Sitemaps",
-        "why": "the fixture supplies a sitemap but no search-engine index inventory to reconcile against it"
+        "why": "the sitemap exists and the broken tree reaches pages it does not list; the count is inside the warn band rather than above it"
       },
       "GO-138": {
         "expect": "FAIL",
@@ -674,9 +674,9 @@
         "why": "re-read for 0.93.0. The sitemap lists URLs that are not there, so the fetch of each returns a status at or above 400 and the count is non-zero. Under the old pattern this passed on any status but 404, because the message it matched reads 'Sitemap URL returns HTTP {status}'"
       },
       "LO-200": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Publish Complete NAP in LocalBusiness Data",
-        "why": "Publish Complete NAP in LocalBusiness Data has no subject in this fixture because the tree carries no LocalBusiness node of any subtype"
+        "why": "the tree carries no LocalBusiness node of any subtype, so the NAP fields have no node to be complete in"
       },
       "MB-096": {
         "expect": "FAIL",
@@ -684,9 +684,9 @@
         "why": "the large images have neither srcset nor sizes and provide no responsive variants"
       },
       "MB-097": {
-        "expect": "INDETERMINATE",
+        "expect": "FAIL",
         "title": "Optimize Image Formats & Compression",
-        "why": "a 54 KB PNG of simple line art may already be efficiently compressed, and no quality target or alternative encoding is supplied"
+        "why": "the tree serves a PNG of line art with no WebP or AVIF alternative, and the rule requires at least one modern format"
       },
       "MD-185": {
         "expect": "FAIL",
@@ -719,9 +719,9 @@
         "why": "the linked 21 KB stylesheet deliberately retains comments, whitespace, indentation, and repeated long-form rules"
       },
       "TECH-001": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Modern schema types only (no HowTo/FAQ misuse)",
-        "why": "the fixture needs a parseable HowTo or FAQPage block; its only HowTo appears inside unparseable JSON-LD and cannot be classified"
+        "why": "the page's only HowTo sits in a JSON-LD block that does not parse; since Half A the checker says so and the pass is withheld rather than awarded"
       },
       "CI-004": {
         "expect": "FAIL",
@@ -829,9 +829,9 @@
         "why": "the entry page and reachable thin page omit the html lang attribute"
       },
       "AR-146": {
-        "expect": "INDETERMINATE",
+        "expect": "N/A",
         "title": "Check Pagination",
-        "why": "the fixture contains no paginated series; it would need linked first, middle, and last pages with pagination defects to exercise this title"
+        "why": "the tree has no paginated series, so the item has no subject and declares its applicability"
       },
       "TE-166": {
         "expect": "FAIL",
@@ -949,14 +949,14 @@
         "why": "this tree's defects are 404s, duplicates and an orphan, not redirects; every link that resolves resolves in one hop"
       },
       "AR-154": {
-        "expect": "INDETERMINATE",
+        "expect": "N/A",
         "title": "Optimize E-commerce Category Pages",
-        "why": "'Optimize E-commerce Category Pages' needs a category page to judge, and this tree has none either — its defects are elsewhere"
+        "why": "a five-page bakery with no category or collection page: the subject is absent and the item says so"
       },
       "AR-163": {
-        "expect": "INDETERMINATE",
+        "expect": "N/A",
         "title": "Control Faceted Navigation (E-commerce)",
-        "why": "'Control Faceted Navigation' needs facets; the only form here posts nowhere and no URL carries a filter or sort parameter"
+        "why": "no page exposes a filter, sort or facet URL, so the faceted-navigation subject is absent"
       },
       "CI-018": {
         "expect": "FAIL",
@@ -1074,9 +1074,9 @@
         "why": "the entry page declares no viewport at all, which is the mobile rendering failure rather than a warning about one"
       },
       "MB-105": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Ensure Content, Meta & Directives Match Between Served and Rendered HTML",
-        "why": "the fixture artifact carries no html, so there is no rendered document and nothing to compare; the title question this raised was settled in 0.72.0"
+        "why": "the stored artifact carries no rendered html, so there is no rendered document to compare the served one against"
       },
       "MB-107": {
         "expect": "FAIL",
@@ -1129,9 +1129,9 @@
         "why": "the only parseable schema here is a Product with a name and an image; there is no organization, no identifier and no `sameAs`"
       },
       "GEO-007": {
-        "expect": "INDETERMINATE",
+        "expect": "NEEDS_INPUT",
         "title": "IndexNow configured",
-        "why": "the check reads {indexnow_key}, which the oracle audit does not pass on either origin"
+        "why": "the check reads `{indexnow_key}`, an operator input this audit does not pass, which is what `NEEDS_INPUT` names"
       },
       "GO-143": {
         "expect": "PASS",
@@ -1149,29 +1149,29 @@
         "why": "twin of GEO-005 through scores_with: nothing here is citable Re-read for 0.87.0 against the new floor of 25; unchanged."
       },
       "IN-121": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Configure Geo-Targeting Signals",
-        "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
+        "why": "same tree, same absence: nothing declares an alternate locale, so there is nothing for the checker to report"
       },
       "IN-122": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Implement Valid hreflang (With Return Tags)",
-        "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
+        "why": "no hreflang link exists anywhere in the tree, so the return-tag rule has no pair to read"
       },
       "IN-127": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Use a Clear International URL Structure",
-        "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
+        "why": "no language-prefixed path or locale subdomain exists, so there is no international URL structure to classify"
       },
       "IN-128": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Serve the Correct Localized Page",
-        "why": "no page in either tree declares an alternate locale, a hreflang link or a language-prefixed path, so the fixture has no international dimension for this item to judge. Building one is fixture work, not a decision"
+        "why": "with no alternate locale declared anywhere, there is no localized page to request and compare"
       },
       "SE-118": {
-        "expect": "INDETERMINATE",
+        "expect": "NO_DATA",
         "title": "Maintain a Valid TLS Certificate (HTTPS)",
-        "why": "plain HTTP here too, so there is no certificate to examine"
+        "why": "this origin is served over plain HTTP, so no certificate exists to call valid or invalid; the HTTPS pair is where this item is declared"
       },
       "TE-180": {
         "expect": "FAIL",
@@ -1268,14 +1268,14 @@
         "why": "the HTTPS pages use a deliberately sparse response-header policy and omit every tracked security header"
       },
       "CI-014": {
-        "expect": "INDETERMINATE",
+        "expect": "PASS",
         "title": "Use Correct Redirect Codes (No Chains/Loops)",
-        "why": "the shared TLS entry has no loop; the fixture needs a dedicated audited entry URL that loops without gating the security-header audit"
+        "why": "the audited entry does not loop, and a rule forbidding loops passes when there is none; exercising a real loop needs a dedicated entry URL, which this fixture does not have"
       },
       "AR-150": {
-        "expect": "INDETERMINATE",
+        "expect": "PASS",
         "title": "Remove Redirect Chains and Loops",
-        "why": "the shared TLS entry has no chain; the fixture needs a dedicated audited entry URL with more than one redirect hop"
+        "why": "the audited entry redirects at most once, and a rule forbidding chains passes when there is none; exercising a real chain needs a dedicated entry URL, which this fixture does not have"
       },
       "SE-118": {
         "expect": "PASS",
