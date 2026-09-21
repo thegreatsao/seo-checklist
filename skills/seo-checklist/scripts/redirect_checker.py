@@ -144,6 +144,7 @@ def check_redirects(url: str, max_redirects: int = MAX_REDIRECT_HOPS,
         # CI-014 is already NO_DATA here — but the artifact is read by people too, and
         # on its own it would say "no loop" about a chain nobody followed.
         result["error"] = str(e)
+        result["error_kind"] = "unread"
         result["truncated"] = True
         result.pop("has_loop", None)
 

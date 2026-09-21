@@ -686,7 +686,8 @@ def run_hreflang_check(url: str, verify_returns: bool = False) -> dict:
     """Run all 8 hreflang checks and return a structured report."""
     html, final_url = fetch_html(url, timeout=10, quiet=True)
     if not html:
-        return {"error": f"Failed to fetch URL: {url}", "url": url}
+        return {"error": f"Failed to fetch URL: {url}", "url": url,
+                "error_kind": "unread"}
 
     soup = BeautifulSoup(html, html_parser())
     tags = extract_hreflang_from_html(soup, final_url)

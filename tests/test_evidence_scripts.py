@@ -5933,6 +5933,87 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
                                           "reason"))]
         self.assertEqual(silent, [], f"nothing said why by: {silent}")
 
+    def test_the_scripts_that_answered_said_what_kind(self):
+        """Saying *why* is half of it. The other half is saying **what kind**, and
+        nothing asked for it until 0.102.0.
+
+        `_timed()` reads `out.get("error_kind", "crash")` from the script's own
+        output, so a script that reports its fetch failure honestly and names no kind
+        is labelled *"script failed"* — a sentence about the plugin. Measured against
+        a closed port before the repair: fourteen of the fifty-four url-taking scripts
+        did exactly that, so a site that was down, a Google quota and a missing log
+        file all reached the operator as our defect. The sixth kind, `unread`, existed
+        for the first of those and could not see them, because `grade()` checks the
+        `__error__` branch before it consults `unread_reason()` — the more honest a
+        script was about its own fetch, the worse the label it earned.
+
+        Read through the runner's door on purpose: a static reading cannot tell a
+        top-level `error` from one nested on a per-URL row, and only the top-level one
+        reaches the routing.
+        """
+        from checklist_runner import ERROR_KINDS
+        wrong = []
+        for script, payload in sorted(self.dead_output.items()):
+            if payload is None or not payload.get("error"):
+                continue
+            kind = payload.get("error_kind")
+            if kind is None:
+                wrong.append(f"{script}: error with no error_kind, so the runner "
+                             f"calls it 'script failed'")
+            elif kind not in ERROR_KINDS:
+                wrong.append(f"{script}: error_kind {kind!r} is outside ERROR_KINDS")
+        self.assertEqual(wrong, [], "\n" + "\n".join(f"  {w}" for w in wrong))
+
+
+class AServiceRefusingIsNotAScriptFailing(unittest.TestCase):
+    """The seventh kind, driven rather than waited for.
+
+    The dead-host sweep above is a floor, not a proof, for these branches: whether
+    Google rate-limits a given run is Google's business, so a mutation that strips
+    the kind off the 429 branch can pass that sweep simply because the run took a
+    different exit. Measured — one of three mutations went unnoticed there, and this
+    class is why the other two were enough to notice it. Each branch is provoked
+    directly here, so the reader does not depend on anybody's quota.
+    """
+
+    class Resp:
+        def __init__(self, status):
+            self.status_code = status
+
+        def json(self):
+            return {}
+
+    def drive(self, status):
+        import pagespeed
+        original = pagespeed.safe_get
+        pagespeed.safe_get = lambda *a, **k: self.Resp(status)
+        try:
+            return pagespeed.get_pagespeed("https://example.com/", "mobile")
+        finally:
+            pagespeed.safe_get = original
+
+    def test_a_rate_limit_is_the_service_refusing(self):
+        """The row that started this: *"script failed: Rate limited by Google API"*,
+        a label and a message contradicting each other, on the live audit of
+        20 September 2026."""
+        out = self.drive(429)
+        self.assertEqual(out["error_kind"], "service")
+        self.assertIn("Rate limited", out["error"])
+
+    def test_any_other_refusal_is_also_the_service(self):
+        out = self.drive(503)
+        self.assertEqual(out["error_kind"], "service")
+
+    def test_the_operator_reads_a_sentence_about_the_service(self):
+        """The label, not just the token. `FAILURE_LABEL.get(kind, ...crash)` was the
+        lookup until 0.102.0, so a kind outside the five borrowed *"script failed"* —
+        which is how six of them went unnoticed."""
+        from checklist_runner import kind_label
+        self.assertEqual(kind_label("service"),
+                         "a service this check depends on refused")
+        self.assertNotIn("script", kind_label("service"))
+        self.assertIn("unlabelled", kind_label("no_such_kind"))
+
 
 class IndexNow(unittest.TestCase):
     """GEO-007 `key_valid`.

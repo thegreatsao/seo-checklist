@@ -134,7 +134,10 @@ def analyze(path: str, site: str = "") -> dict:
         "error": None,
     }
     if not os.path.exists(path):
+        # The export was named and is not there: the person who named it is the
+        # one who can fix it, and "script failed" sends them to read our source.
         result["error"] = f"no such file: {path}"
+        result["error_kind"] = "input"
         return result
     try:
         found = load(path)

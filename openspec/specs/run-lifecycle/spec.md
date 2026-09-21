@@ -372,10 +372,17 @@ to find out what was actually asked had no guarantee the answer was in it. Probe
 
 ### Requirement: RUN-7 — a failed script is `NO_DATA` with a kind, and the kinds are counted apart
 
-Six kinds of undecided answer, all of which SHALL be graded `NO_DATA`, and none of which
-is interchangeable with another. The kind MUST be recorded per item and the counts
+Eight kinds of undecided answer, all of which SHALL be graded `NO_DATA`, and none of
+which is interchangeable with another. The kind MUST be recorded per item and the counts
 reported. Five of them say **the script** produced nothing usable; the sixth says the
-script ran and **the site** answered nothing, and it is not one of the failures.
+script ran and **the site** answered nothing; the seventh says a **service this check
+depends on** refused; the eighth says an **input the operator supplied** could not be
+used. Four different people can act on those, and only the first five are ours.
+
+A script that puts an `error` at the top of its output SHALL name its kind there too.
+The runner reads `out.get("error_kind", "crash")`, so a script that stays silent is not
+undecided about the kind — it is asserting `crash`, which means the plugin is at
+fault.
 
 **Why:** the status says the audit could not answer, which is what the score needs. The
 kind says whose problem it is, which is what the next release needs. A run where eleven
@@ -390,6 +397,22 @@ rather than merely be recorded, and
 `unread`. The vocabulary is derived from the runner's source in both directions by
 `tools/audit_error_kinds.py`, which runs in CI, and the count has a reader that starts
 from rows `grade()` produced rather than from a number written by the test.
+
+**Held for the seventh and eighth at 0.102.0, and the gap they closed was in this
+line's own reader.** `audit_error_kinds.py` read one file, the runner, while the kinds
+that reach an operator come from forty more: `_timed()` takes `error_kind` from the
+*script's* output. Measured against a closed port, **fourteen of the fifty-four
+url-taking scripts** emitted a top-level `error` with no kind, so the runner called each
+one *"script failed"* — a site that was down, a Google quota and a missing log file
+alike. `unread` had existed for the first of those since 0.96.4 and could not see them,
+because `grade()` tests the `__error__` branch before it consults `unread_reason()`: the
+more honest a script was about its own fetch, the worse the label it earned. The census
+now reads every source, and
+`test_the_scripts_that_answered_said_what_kind` re-runs the closed-port sweep and fails
+on any top-level `error` whose kind is missing or outside the vocabulary. That sweep is
+a floor rather than a proof for the service branches — whether Google rate-limits a
+given run is Google's business, and one mutation of three survived it — so
+`AServiceRefusingIsNotAScriptFailing` drives those branches directly.
 
 **What this line said until 0.96.4, and what it cost.** It said `partial`, and it was
 right: four kinds were asserted at the label and never graded, so a change routing

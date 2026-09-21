@@ -512,6 +512,7 @@ def audit(log_path: str, inventory_path: str = "", base_url: str = "",
 
     if not os.path.exists(os.path.expanduser(log_path)):
         result["error"] = f"no such log file: {log_path}"
+        result["error_kind"] = "input"
         return result
 
     counts: dict[str, collections.Counter] = collections.defaultdict(

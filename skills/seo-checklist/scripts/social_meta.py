@@ -104,11 +104,13 @@ def check_social_meta(url: str, timeout: int = 15) -> dict:
         resp = safe_get(url, timeout=timeout, headers=HEADERS)
         if resp.status_code != 200:
             result["error"] = f"HTTP {resp.status_code}"
+            result["error_kind"] = "unread"
             return result
 
         soup = BeautifulSoup(resp.text, html_parser())
     except requests.exceptions.RequestException as e:
         result["error"] = str(e)
+        result["error_kind"] = "unread"
         return result
 
     total_checks = 0

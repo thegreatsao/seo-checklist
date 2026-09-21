@@ -34,7 +34,8 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
-RUNNER = os.path.join(SKILL_DIR, "scripts", "checklist_runner.py")
+SCRIPTS_DIR = os.path.join(SKILL_DIR, "scripts")
+RUNNER = os.path.join(SCRIPTS_DIR, "checklist_runner.py")
 
 sys.path.insert(0, os.path.join(SKILL_DIR, "scripts"))
 from checklist_runner import ERROR_KINDS  # noqa: E402
@@ -78,14 +79,78 @@ def assigned_kinds(path: str = RUNNER) -> set[str]:
     return found
 
 
+def sources() -> list[str]:
+    """Every file that can put an `error_kind` in front of the runner.
+
+    The runner is one of them and was the only one read until 0.102.0. That was the
+    census's own blind spot, and it cost the same kind of defect it exists to catch:
+    `_timed()` reads `out.get("error_kind", "crash")` from **the script's** output, so
+    an evidence script is a source of the vocabulary — and eleven of them emitted a
+    top-level `error` with no kind, which the runner then reported as *"script
+    failed"*. A site that was down, and a Google quota, both read as the plugin's
+    defect. The census stayed green throughout, because it was reading one file and
+    the kinds were arriving from another forty.
+
+    Derived by walking `scripts/`, not listed: a list here would have the same shape
+    as the defect.
+    """
+    found = [RUNNER]
+    for name in sorted(os.listdir(SCRIPTS_DIR)):
+        if name.endswith(".py") and name != "checklist_runner.py":
+            found.append(os.path.join(SCRIPTS_DIR, name))
+    return found
+
+
+def fetch_vocabulary() -> set[str]:
+    """What `seo_common.fetch_error_kind` can return, read out of its own source.
+
+    There are **two** error-kind vocabularies in this tree and they share one word.
+    The runner's seven say what the operator should do — open the script, wait for
+    the site, wait out a quota. The fetch layer's seven (`unresolved`, `robots`,
+    `blocked`, `timeout`, `tls`, `refused`, `other`) classify one failed HTTP call,
+    and they live on per-URL rows inside a result rather than at its top level, which
+    is why the runner never sees them today.
+
+    Naming the second vocabulary is what keeps this census honest in both directions.
+    Reading only the runner's leaves a blind spot — that is the 0.102.0 defect.
+    Reading every assignment against the runner's list alone would redden on
+    `blocked` and `other`, which are correct where they are, and a gate that cries
+    without cause is a gate somebody switches off.
+
+    The seam itself is unguarded and is recorded as such: nothing stops a fetch-layer
+    kind being promoted to a top-level `error_kind`, where six of its seven values
+    would land on no label at all.
+    """
+    with open(os.path.join(SCRIPTS_DIR, "seo_common.py"), encoding="utf-8") as stream:
+        tree = ast.parse(stream.read())
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "fetch_error_kind":
+            return {n.value.value for n in ast.walk(node)
+                    if isinstance(n, ast.Return) and isinstance(n.value, ast.Constant)
+                    and isinstance(n.value.value, str)}
+    raise SystemExit("seo_common.fetch_error_kind is gone; this census assumed it")
+
+
+def assigned_everywhere() -> dict[str, list[str]]:
+    """Each assigned kind, and the basenames that assign it."""
+    out: dict[str, list[str]] = {}
+    for path in sources():
+        for kind in assigned_kinds(path):
+            out.setdefault(kind, []).append(os.path.basename(path))
+    return out
+
+
 def disagreements() -> list[str]:
-    """What the source and the vocabulary say about each other."""
-    assigned, declared = assigned_kinds(), set(ERROR_KINDS)
+    """What the sources and the vocabulary say about each other."""
+    assigned = assigned_everywhere()
+    declared = set(ERROR_KINDS)
+    known = declared | fetch_vocabulary()
     out = []
-    for kind in sorted(assigned - declared):
-        out.append(f"{kind!r} is assigned in checklist_runner.py and is not in "
-                   f"ERROR_KINDS — an unlabelled kind is also an uncounted one")
-    for kind in sorted(declared - assigned):
+    for kind in sorted(set(assigned) - known):
+        where = ", ".join(assigned[kind])
+        out.append(f"{kind!r} is assigned in {where} and belongs to neither "
+                   f"vocabulary — an unlabelled kind is also an uncounted one")
+    for kind in sorted(declared - set(assigned)):
         out.append(f"{kind!r} is in ERROR_KINDS and is assigned nowhere — a dead label "
                    f"reads as coverage")
     return out
@@ -97,9 +162,16 @@ def main() -> int:
                         help="exit 1 if the source and the vocabulary disagree")
     args = parser.parse_args()
 
-    assigned = assigned_kinds()
-    print(f"assigned in checklist_runner.py: {' '.join(sorted(assigned))}")
-    print(f"named by ERROR_KINDS:            {' '.join(sorted(ERROR_KINDS))}")
+    assigned = assigned_everywhere()
+    print(f"{len(sources())} source file(s) read: the runner and every evidence script")
+    print()
+    print(f"named by ERROR_KINDS:     {' '.join(sorted(ERROR_KINDS))}")
+    print(f"named by the fetch layer: {' '.join(sorted(fetch_vocabulary()))}")
+    print()
+    for kind in sorted(assigned):
+        where = ", ".join(sorted(assigned[kind]))
+        print(f"  {kind:<12} assigned in {where}")
+    print()
 
     problems = disagreements()
     for line in problems:

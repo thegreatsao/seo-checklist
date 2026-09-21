@@ -123,17 +123,24 @@ def validate(url: str, timeout: int = 45, rendered_json: str | None = None) -> d
             pace("validator.w3.org")
             resp = ask_nu()
     except requests.RequestException as exc:
+        # The validator is a service this check depends on. Whether it is unreachable,
+        # answers with a status, answers with something that is not JSON, or declines
+        # the page outright, the audited site is not what failed and neither is this
+        # script.
         result["error"] = f"validator unreachable: {exc}"
+        result["error_kind"] = "service"
         return result
 
     if resp.status_code != 200:
         result["error"] = f"validator returned HTTP {resp.status_code}"
+        result["error_kind"] = "service"
         return result
 
     try:
         payload = resp.json()
     except ValueError:
         result["error"] = "validator returned non-JSON output"
+        result["error_kind"] = "service"
         return result
 
     messages = payload.get("messages", [])
@@ -149,6 +156,7 @@ def validate(url: str, timeout: int = 45, rendered_json: str | None = None) -> d
         detail = (blocked[0].get("message") or blocked[0].get("subType")
                   or "no detail given")
         result["error"] = f"validator could not read the page: {detail[:160]}"
+        result["error_kind"] = "service"
         return result
 
     counts = {"error": 0, "warning": 0, "info": 0}

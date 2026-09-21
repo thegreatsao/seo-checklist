@@ -164,6 +164,7 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
 
     except requests.exceptions.RequestException as e:
         result["error"] = str(e)
+        result["error_kind"] = "unread"
 
     return result
 

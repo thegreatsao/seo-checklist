@@ -139,7 +139,17 @@ def analyze_source(source: str, timeout: int = 15) -> dict:
     if image and image.get("fetchpriority") != "high":
         notes.append("Likely LCP candidate does not use fetchpriority=high.")
 
-    return {
+    # `fetched` carries `seo_common.fetch_error_kind`'s verdict and this result used
+    # to drop it, so a site that refused the connection reached the operator as
+    # "script failed". The fetch layer's seven words are not the runner's eight:
+    # every one of them except `other` means the request never came back, which is
+    # `unread`; `other` is an exception it could not place, and that may be ours.
+    #
+    # Written as statements rather than one conditional expression because
+    # `tools/audit_error_kinds.py` reads assigned literals out of the source, and a
+    # kind it cannot read is a kind it cannot count — which is the census's own
+    # failure mode, recorded in its docstring.
+    out = {
         "source": source,
         "final_url": final_url or source,
         "mode": "static-html",
@@ -156,6 +166,11 @@ def analyze_source(source: str, timeout: int = 15) -> dict:
         "notes": notes,
         "error": error,
     }
+    if error:
+        out["error_kind"] = "crash"
+        if fetched.get("error_kind") != "other":
+            out["error_kind"] = "unread"
+    return out
 
 
 def main() -> None:

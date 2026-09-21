@@ -99,6 +99,7 @@ def check_llms_txt(url: str, timeout: int = 15) -> dict:
             )
     except requests.exceptions.RequestException as e:
         result["error"] = str(e)
+        result["error_kind"] = "unread"
 
     # Check llms-full.txt (optional extended version)
     try:

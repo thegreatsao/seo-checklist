@@ -167,11 +167,14 @@ def check_broken_links(url: str, internal_only: bool = False,
     try:
         resp = safe_get(url, timeout=15, headers=HEADERS)
         if resp.status_code != 200:
+            # The site answered, and not with the page. Not this script failing.
             result["error"] = f"Failed to fetch page: HTTP {resp.status_code}"
+            result["error_kind"] = "unread"
             return result
         html = resp.text
     except requests.exceptions.RequestException as e:
         result["error"] = f"Failed to fetch page: {e}"
+        result["error_kind"] = "unread"
         return result
 
     # Extract links

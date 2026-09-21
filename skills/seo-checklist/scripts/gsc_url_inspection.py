@@ -122,14 +122,31 @@ def analyze(inspected_url: str, site_url: str, credentials: str, lang: str) -> d
     }
     socket.setdefaulttimeout(SOCKET_TIMEOUT)
     inspection = None
+    # Two causes used to arrive as one string, and the runner called both "script
+    # failed": a credentials file that is not where it was said to be, and Search
+    # Console refusing the conversation. The first belongs to whoever supplied the
+    # path, the second to a service this check depends on, and neither is this
+    # script. Told apart by the exception rather than by a pre-flight `os.path`
+    # check, which is what the first attempt did — and it returned before
+    # `build_service` ran, so it walked straight through the stub three tests use
+    # and turned three PASSes into NO_DATA. The suite said so immediately.
     for attempt in range(RETRIES):
         try:
             service = build_service(credentials)
             inspection = inspect(service, inspected_url, site_url, lang)
             result["error"] = None
+            result.pop("error_kind", None)
             break
+        except OSError as exc:
+            # A credentials path that does not open. `OSError` and not a message
+            # match: the text of "No such file or directory" is the platform's.
+            result["error"] = str(exc)[:300]
+            result["error_kind"] = "input"
+            if attempt + 1 < RETRIES:
+                time.sleep(2)
         except Exception as exc:
             result["error"] = str(exc)[:300]
+            result["error_kind"] = "service"
             if attempt + 1 < RETRIES:
                 time.sleep(2)
     if inspection is None:

@@ -84,7 +84,10 @@ def fetch_robots_txt(url: str, timeout: int = 15) -> dict:
             return result
 
         if resp.status_code != 200:
+            # The site answered, and what it answered means robots.txt could not
+            # be read. That is a fact about the site, not about this script.
             result["error"] = f"HTTP {resp.status_code}"
+            result["error_kind"] = "unread"
             return result
 
         result["raw"] = resp.text
@@ -92,6 +95,7 @@ def fetch_robots_txt(url: str, timeout: int = 15) -> dict:
 
     except requests.exceptions.RequestException as e:
         result["error"] = str(e)
+        result["error_kind"] = "unread"
 
     return result
 

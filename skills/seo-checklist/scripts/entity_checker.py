@@ -463,7 +463,8 @@ def run_entity_check(url: str, entity_name: str = "", kg_api_key: str = "") -> d
     """Run full entity SEO check."""
     html = fetch_html(url, timeout=12)[0]
     if not html:
-        return {"error": f"Failed to fetch {url}", "url": url}
+        return {"error": f"Failed to fetch {url}", "url": url,
+                "error_kind": "unread"}
 
     soup = BeautifulSoup(html, html_parser())
 

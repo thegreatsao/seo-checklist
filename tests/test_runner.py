@@ -4283,9 +4283,23 @@ class ScriptFailureKind(unittest.TestCase):
         """
         sys.path.insert(0, TOOLS)
         import audit_error_kinds
-        assigned = audit_error_kinds.assigned_kinds()
+        # Over every source of the vocabulary from 0.102.0, not the runner alone.
+        # Reading one file was the census's own blind spot and it cost the defect it
+        # exists to catch: `_timed()` takes `error_kind` from **the script's** output,
+        # so an evidence script is a source — and fourteen of them emitted a
+        # top-level `error` with no kind, which the runner reported as "script
+        # failed". This test passed throughout.
+        assigned = audit_error_kinds.assigned_everywhere()
         self.assertTrue(assigned, "no kinds derived; this test is vacuous")
-        self.assertEqual(assigned, set(ERROR_KINDS))
+        self.assertGreater(len(audit_error_kinds.sources()), 1,
+                           "reading one file is how this went unnoticed")
+        # Not a set subtraction: `timeout` is in both vocabularies, so taking one
+        # away from the other hides it. The two claims, said separately —
+        # every assigned kind belongs to a named vocabulary, and every kind the
+        # runner names is assigned by somebody.
+        known = set(ERROR_KINDS) | audit_error_kinds.fetch_vocabulary()
+        self.assertEqual(set(assigned) - known, set())
+        self.assertEqual(set(ERROR_KINDS) - set(assigned), set())
         self.assertEqual(audit_error_kinds.disagreements(), [])
 
     def test_the_unreadable_kind_is_not_one_of_the_script_failures(self):
@@ -4301,7 +4315,20 @@ class ScriptFailureKind(unittest.TestCase):
         """
         self.assertNotIn(SITE_UNREADABLE, FAILURE_LABEL)
         self.assertIn(SITE_UNREADABLE, ERROR_KINDS)
-        self.assertEqual(set(ERROR_KINDS) - {SITE_UNREADABLE}, set(FAILURE_LABEL))
+        # The seventh and eighth joined it outside `FAILURE_LABEL` at 0.102.0, for
+        # the same reason and one step further out: `service` says a dependency
+        # refused and `input` says the operator's file could not be used. Three
+        # different places to send a reader, and none of them is our source.
+        from checklist_runner import BAD_INPUT, KIND_LABEL, SERVICE_REFUSED
+        outside = {SITE_UNREADABLE, SERVICE_REFUSED, BAD_INPUT}
+        for kind in outside:
+            self.assertNotIn(kind, FAILURE_LABEL, kind)
+            self.assertIn(kind, ERROR_KINDS, kind)
+        self.assertEqual(set(ERROR_KINDS) - outside, set(FAILURE_LABEL))
+        # Every kind has its own sentence, and no two share one: a label reused is a
+        # reader sent to the wrong place, which is what the `crash` fallback did.
+        self.assertEqual(set(KIND_LABEL), set(ERROR_KINDS))
+        self.assertEqual(len(set(KIND_LABEL.values())), len(ERROR_KINDS))
 
     def _graded_with(self, data: dict) -> dict:
         item = {"id": "CI-004", "plerdy_ref": 4, "category": "crawling_indexing",

@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.101.0 — see [CHANGELOG.md](CHANGELOG.md). **The text-contrast check measured the wrong thing, and measured it backwards.** CN-036 counted elements whose *inline* style named a colour, so a page with grey-on-white text set in a stylesheet passed at 1.16:1 while a page with black-on-white written inline failed at 21:1. It now reads a real WCAG ratio from the rendered page, like the four layout checks beside it. Expect CN-036 to say `NEEDS_INPUT` rather than `PASS` on a run with no rendered-page artifact: it never measured contrast before, and an honest absence is the correct answer until one is supplied.
+Version 0.102.0 — see [CHANGELOG.md](CHANGELOG.md). **A check that could not answer blamed the wrong thing.** Fourteen scripts reported a failed fetch honestly and the run labelled every one of them *"script failed"*, so a site that was down, a Google quota and a missing log file all read as a defect in this plugin. Each now names what actually happened, and two kinds join the vocabulary: a service this check depends on refused, and an input you supplied could not be used. Expect the same `NO_DATA` rows with different sentences beside them.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

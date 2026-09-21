@@ -95,7 +95,52 @@ FAILURE_LABEL = {
 # source by `tools/audit_error_kinds.py` in both directions.
 SITE_UNREADABLE = "unread"
 UNREADABLE_LABEL = "the site stopped answering"
-ERROR_KINDS = tuple(FAILURE_LABEL) + (SITE_UNREADABLE,)
+
+# The seventh kind, and one level up from the sixth.
+#
+# `unread` says the **site** answered nothing. This says a **service the check
+# depends on** refused: Google's PageSpeed API rate-limiting, the W3C validator
+# declining a host, Safe Browsing returning a 5xx. The site may be perfectly
+# healthy, and calling that a script failure sends the operator to open a script
+# that ran correctly — while calling it `unread` would blame their client's site
+# for a quota on ours. Measured on the live audit of 20 September 2026: a
+# rate-limited PageSpeed reported *"script failed: Rate limited by Google API"*,
+# the label and the message contradicting each other in one row.
+#
+# The remedy is the third one again: not "open the script", not "come back when the
+# site is up", but "wait out the quota, or supply a key".
+SERVICE_REFUSED = "service"
+SERVICE_LABEL = "a service this check depends on refused"
+
+# The eighth, and the population is what forced it rather than a taste for symmetry.
+# Labelling the site and the service cases left four scripts still answering "script
+# failed", and three of those four were one cause: an operator handed the check a
+# file or a credential it could not use — a log path that does not exist, a links
+# export that is not there. That is neither the plugin, nor the site, nor a service,
+# and the remedy belongs to the person who supplied it. Without this the gate below
+# would have needed a list of scripts excused from carrying a kind, which is the
+# shape of the defect it exists to catch.
+BAD_INPUT = "input"
+BAD_INPUT_LABEL = "an input this check was given could not be used"
+
+ERROR_KINDS = tuple(FAILURE_LABEL) + (SITE_UNREADABLE, SERVICE_REFUSED, BAD_INPUT)
+
+# Every kind in the vocabulary has a sentence, and a kind outside it says so rather
+# than borrowing one. `FAILURE_LABEL.get(kind, FAILURE_LABEL["crash"])` was the
+# lookup until 0.102.0, and it is how six kinds went unnoticed: an unknown kind
+# impersonated `crash` and read as "script failed", which is a sentence about the
+# plugin. A wrong label that accuses us is still a wrong label.
+KIND_LABEL = dict(FAILURE_LABEL,
+                  **{SITE_UNREADABLE: UNREADABLE_LABEL,
+                     SERVICE_REFUSED: SERVICE_LABEL,
+                     BAD_INPUT: BAD_INPUT_LABEL})
+
+
+def kind_label(kind: str | None) -> str:
+    """The operator's sentence for an error kind, or one that names the gap."""
+    if kind in KIND_LABEL:
+        return KIND_LABEL[kind]
+    return f"unlabelled failure kind {kind!r}"
 
 
 def _signal_failure(script_name: str, signal_number: int, stderr: str) -> dict:
@@ -1473,7 +1518,7 @@ def grade(items: list[dict], plan: dict, results: dict, skipped: dict,
                 if "__error__" in data:
                     kind = data.get("__error_kind__", "crash")
                     row.update(status=NO_DATA, error_kind=kind,
-                               evidence=f"{FAILURE_LABEL.get(kind, FAILURE_LABEL['crash'])}: "
+                               evidence=f"{kind_label(kind)}: "
                                         f"{data['__error__'][:160]}")
                 elif unread_reason(data):
                     # The script ran, exited 0, and read nothing. Not a crash, and not

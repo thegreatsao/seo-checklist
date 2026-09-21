@@ -10,6 +10,79 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.102.0 — the more honestly a script reported its failure, the worse the label it got
+
+Registry version: **`8ea3bf0f12ab`, unchanged.** No verdict moves. **What the operator
+reads when a check cannot answer changes for fourteen scripts**, and two error kinds join
+the vocabulary: `service` and `input`.
+
+**The defect, and it was the opposite of the one that was recorded.** The note said a
+third-party service refusing reads as *"script failed"*, which it did: a rate-limited
+PageSpeed produced `script failed: Rate limited by Google API` — a label and a message
+contradicting each other in one row. Measured against a closed port, the class was four
+times larger and mostly about the *site*:
+
+| pointed at a dead host | scripts | what the operator read |
+|---|---|---|
+| top-level `error`, no `error_kind` | **14 of 54** | *"script failed"* |
+| top-level `error` with a kind | 0 | — |
+| silent, so `unread` could see them | 36 | *"the site stopped answering"* |
+
+`_timed()` reads `out.get("error_kind", "crash")`, so a script that names no kind is not
+declining to answer — it is asserting that the plugin is at fault. And `unread`, added at
+0.96.4 for exactly the site-is-down case, could not reach any of the fourteen: `grade()`
+tests the `__error__` branch **before** it consults `unread_reason()`. So the fourteen
+scripts that reported their fetch failure honestly were labelled our defect, while the
+thirty-six that silently returned their defaults got the correct sentence. Two scripts,
+one cause, opposite labels — run side by side:
+
+```
+robots_checker.py  (reports the failure)  -> crash   "script failed: HTTPConnectionPool…"
+a11y_seo_checker.py (returns defaults)    -> unread  "the site could not be read: connection refused"
+```
+
+**The repair.** Every one of the fourteen now names its kind, and the causes turned out to
+be three rather than one: nine are the site (`unread`), two are a service this check
+depends on (`service` — PageSpeed and the W3C validator), and three are an input the
+operator supplied (`input` — a log file, a links export, a credentials path). `input` is
+the eighth kind and it is here because the population asked for it: without it the gate
+below would have needed a list of scripts excused from carrying a kind, which is the shape
+of the defect the gate exists to catch. After the repair the closed-port sweep reports
+**0 of 54** unlabelled.
+
+`KIND_LABEL` replaces `FAILURE_LABEL.get(kind, FAILURE_LABEL["crash"])`. That fallback is
+how a kind outside the five impersonated `crash`, and a wrong label that accuses the
+plugin is still a wrong label; an unknown kind now says it is unknown.
+
+**The reader that should have caught it was reading one file.**
+`tools/audit_error_kinds.py` derived the vocabulary from `checklist_runner.py` alone and
+agreed with itself in both directions throughout — while the kinds an operator actually
+sees arrive from forty other files. It reads every source now, and it names the **second**
+vocabulary as well: `seo_common.fetch_error_kind` returns seven words of its own
+(`unresolved`, `robots`, `blocked`, `timeout`, `tls`, `refused`, `other`), of which
+exactly one, `timeout`, is also the runner's. Those live on per-URL rows and do not reach
+the runner today, so reddening on them would be a gate crying without cause; both
+vocabularies are derived from their own source and a kind belonging to neither fails the
+build. The seam itself stays unguarded and is recorded as such.
+
+**Two gates, because one of them is a floor.**
+`test_the_scripts_that_answered_said_what_kind` re-runs the closed-port sweep and fails on
+any top-level `error` whose kind is missing or outside the vocabulary — through the
+runner's own door, because a static reading cannot tell a top-level `error` from one
+nested on a per-URL row. It is a floor for the service branches: whether Google
+rate-limits a given run is Google's business, and **one mutation of three survived it**.
+So `AServiceRefusingIsNotAScriptFailing` drives those branches directly, and all three
+mutations are caught after it exists.
+
+**Found by the suite, in my own work:** the first attempt at telling a missing credentials
+file from Search Console refusing used an `os.path.exists` pre-flight check. It returned
+before `build_service` ran, walked straight through the stub three tests use, and turned
+three PASSes into NO_DATA. Classified on the exception instead — `OSError` is the
+credential, everything else is the service — and the text of "No such file or directory"
+is never matched, because that sentence is the platform's.
+
+Suite: 1637 → 1641.
+
 ## 0.101.0 — a contrast check that passed 1.16:1 and failed 21:1
 
 Registry version: **`c26c36595d04` → `8ea3bf0f12ab`.** **CN-036 moves, and it can now

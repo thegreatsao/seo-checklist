@@ -315,11 +315,19 @@ def get_pagespeed(url: str, strategy: str = "mobile", api_key: str = None) -> di
                     time.sleep(wait_time)
                     continue
                 else:
+                    # `service`, not a script failure: Google refused, this script
+                    # and the audited site are both fine. The vocabulary is
+                    # `checklist_runner.ERROR_KINDS`, and it is written as a literal
+                    # here because `tools/audit_error_kinds.py` reads assignments out
+                    # of the source — a name it cannot resolve is a kind it cannot
+                    # count, which is the defect that census exists to catch.
                     result["error"] = "Rate limited by Google API. Wait a few minutes or add an API key."
+                    result["error_kind"] = "service"
                     return result
 
             if resp.status_code != 200:
                 result["error"] = f"API error: HTTP {resp.status_code}"
+                result["error_kind"] = "service"
                 return result
 
             data = resp.json()
@@ -331,11 +339,15 @@ def get_pagespeed(url: str, strategy: str = "mobile", api_key: str = None) -> di
                 time.sleep(2)
                 continue
             result["error"] = "API request timed out (60s) — try again later"
+            result["error_kind"] = "service"
             return result
         except requests.exceptions.RequestException as e:
             result["error"] = f"Request failed: {e}"
+            result["error_kind"] = "service"
             return result
         except (KeyError, ValueError, json.JSONDecodeError) as e:
+            # Not SERVICE_REFUSED: the API answered and this script could not read
+            # the answer. That is the plugin's defect and `crash` is the honest word.
             result["error"] = f"Failed to parse API response: {e}"
             return result
 
