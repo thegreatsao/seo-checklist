@@ -928,8 +928,12 @@ together** — the shape A.7 found in TE-178, where the conclusion was right and
 two tables away was false.
 
 **What could be derived, and what could not.** REG-6's second and third scenarios have a
-mechanical form and the first does not. Over the 145 rule-carrying items, thirty join
-subjects with *and* or *&* while asserting one path. Word overlap between the unread
+mechanical form and the first does not. Over the 145 rule-carrying items, **thirty** join
+subjects with *and* or *&* while asserting one path — at `c26c36595d04`, the registry this
+appendix measures. TE-179's rename in the same release takes it to **twenty-nine** at
+`8ea3bf0f12ab`, which is the shape of the whole class: the population is a property of the
+titles, so repairing one title shrinks it by one and a number written without its registry
+version is wrong by the next release. Word overlap between the unread
 conjunct and the path only says the path does not *name* the other half; the question
 that decides an item is whether its own script already publishes a leaf for the half
 nobody reads, and exactly one item answers yes under a name sharing a word with its
