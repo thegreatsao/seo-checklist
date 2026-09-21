@@ -5366,20 +5366,37 @@ class MobileRender(unittest.TestCase):
 
 
 class Accessibility(unittest.TestCase):
-    """TE-180 `score`, CN-036 `checks.inline_contrast_candidates`."""
+    """TE-180 `score`. CN-036 left this script at 0.101.0 — see below."""
 
     def test_a_page_with_landmarks_alt_text_and_labels_scores(self):
         self.assertEqual(verdict("TE-180", out("a11y")), PASS)
 
-    def test_the_contrast_check_reads_inline_styles_only_and_says_so(self):
-        """Deliberately narrow: computing the cascade would mean rendering the page,
-        and this script does not. So it counts inline styles that set both a colour
-        and a background — which means a site whose contrast problem lives in a
-        stylesheet is not covered, and `rendered_audit.py` is the answer to that."""
-        self.assertEqual(out("a11y")["checks"]["inline_contrast_candidates"], 0)
-        self.assertEqual(verdict("CN-036", out("a11y")), PASS)
-        self.assertEqual(out("a11y_bad")["checks"]["inline_contrast_candidates"], 1)
-        self.assertEqual(verdict("CN-036", out("a11y_bad")), FAIL)
+    def test_this_script_emits_no_contrast_key_for_an_item_to_misread(self):
+        """Until 0.101.0 it emitted `inline_contrast_candidates` — elements whose
+        inline style named a colour and a background — and CN-036 asserted that count
+        was zero. The previous test here called the narrowing deliberate and named
+        `rendered_audit.py` as the answer, which is exactly the repair nobody made;
+        meanwhile the assertion was anti-correlated with CN-036's title, because the
+        count rises with markup that sets colours explicitly and stays at zero for a
+        stylesheet that sets them badly.
+
+        The key is gone rather than left unread: a leaf whose name invites the
+        misreading is how the misreading happened the first time."""
+        for label in ("a11y", "a11y_bad"):
+            checks = out(label)["checks"]
+            offenders = [k for k in checks if "contrast" in k]
+            self.assertEqual(offenders, [], f"{label} still publishes {offenders}")
+
+    def test_cn_036_now_reads_the_rendered_contrast_count(self):
+        """The item's subject moved to where a browser measured it. Both directions,
+        because a reader that only sees the passing side cannot tell an assertion
+        from a constant."""
+        with open(REGISTRY, encoding="utf-8") as f:
+            registry = json.load(f)
+        item = next(i for i in registry["items"] if i["id"] == "CN-036")
+        self.assertEqual(item["check"]["script"], "rendered_audit.py")
+        self.assertEqual(item["check"]["assert"],
+                         {"path": "text_nodes_below_contrast", "eq": 0})
 
 
 class JavascriptRender(unittest.TestCase):

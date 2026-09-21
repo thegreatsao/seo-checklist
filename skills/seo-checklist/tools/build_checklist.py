@@ -406,7 +406,11 @@ SUBJECT_ALWAYS_PRESENT = {
     "TE-181": "every rendered page has a DOM for the validator to read",
     "CN-048": "every page has a heading structure, even an empty one",
     "AR-155": "every page has a URL, which is what this judges",
-    "CN-036": "every page has text; what this counts is not contrast — see REG-6",
+    # Until 0.101.0 this read "every page has text; what this counts is not
+    # contrast — see REG-6": a recorded reason admitting in its second clause that
+    # the item did not measure its own subject. The item now reads the rendered
+    # contrast count, so the subject is the same one CN-034 declares.
+    "CN-036": "every rendered page has text nodes to measure",
     # The site's own crawl and link graph. A site always has pages and a shape.
     "CI-008": "every crawled site has a link graph; orphans are a property of it",
     "AR-162": "the same link graph, judged for strength rather than for orphans",
@@ -761,8 +765,10 @@ item(33, "medium", S, "social_meta.py", PAGE,
 # --- 3. Content -------------------------------------------------------------
 # a11y_seo_checker.py checks H1 count, lang, viewport, alt text, labels,
 # landmarks and generic link text — it has never looked at font size, link styling
-# or tap targets. The three items that asked it to were matching wording it cannot
-# emit, so they passed on every site.
+# or tap targets, and the contrast key it did emit counted something else. The four
+# items that asked it to were matching wording it cannot emit, so they passed on
+# every site — CN-036 could also fail a site for correct markup, which the other
+# three could not.
 #
 # These are computed values: they depend on stylesheets, media queries and scripts
 # that HTML alone does not settle, so a model reading markup is a weaker answer
@@ -775,9 +781,18 @@ item(34, "medium", S, "rendered_audit.py", RENDERED,
 item(35, "medium", S, "rendered_audit.py", RENDERED,
      {"path": "links_indistinct", "eq": 0},
      "Links must be visually distinct from body text")
-item(36, "medium", S, "a11y_seo_checker.py", PAGE,
-     {"path": "checks.inline_contrast_candidates", "eq": 0},
-     "Text contrast at WCAG AA or better (4.5:1)")
+# CN-036 joined the three above at 0.101.0, and it is the same defect one release
+# later: it asked `a11y_seo_checker.py` for contrast, and what that script emitted
+# was `inline_contrast_candidates` — elements whose *inline* style named a colour
+# and a background at all. Read as a verdict, the count is anti-correlated with the
+# title: #eeeeee on #ffffff set in a stylesheet is 1.16:1 and scored 0, so the page
+# passed; #000000 on #ffffff written inline is 21:1 and scored 1, so the page
+# failed. Both measured. `openspec/specs/verdicts/` named this item "the
+# unclassifiable one" for the same reason, and its entry in SUBJECT_ALWAYS_PRESENT
+# said in its own words that it was not counting contrast.
+item(36, "medium", S, "rendered_audit.py", RENDERED,
+     {"path": "text_nodes_below_contrast", "eq": 0},
+     "Text contrast at WCAG AA or better: 4.5:1, or 3:1 for large text")
 item(37, "low", L, fix="Separate primary from supplementary content visually and semantically")
 item(38, "medium", S, "freshness_checker.py", PAGE,
      {"path": "score", "gte": 70},

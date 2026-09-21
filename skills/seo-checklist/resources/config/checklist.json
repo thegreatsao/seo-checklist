@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "c26c36595d04",
+  "registry_version": "8ea3bf0f12ab",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -918,18 +918,18 @@
       "severity": "medium",
       "source": "script",
       "check": {
-        "script": "a11y_seo_checker.py",
+        "script": "rendered_audit.py",
         "args": [
-          "{url}"
+          "{rendered_json}"
         ],
-        "requires": "fetch",
+        "requires": "offline",
         "assert": {
-          "path": "checks.inline_contrast_candidates",
+          "path": "text_nodes_below_contrast",
           "eq": 0
         }
       },
       "effort": "high",
-      "fix": "Text contrast at WCAG AA or better (4.5:1)"
+      "fix": "Text contrast at WCAG AA or better: 4.5:1, or 3:1 for large text"
     },
     {
       "id": "CN-037",
@@ -3792,7 +3792,7 @@
       "plerdy_ref": 179,
       "category": "technical",
       "category_label": "Technical SEO Checks",
-      "title": "Review Domain History & Reputation",
+      "title": "Review Domain Registration History",
       "severity": "low",
       "source": "script",
       "check": {

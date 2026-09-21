@@ -193,11 +193,17 @@ already withheld from a desktop trace), one owes a declaration the schema cannot
 `openspec/specs/registry/` A.6 records the eight items whose verdict moved, seven of them
 free passes and one — AR-154 — a `WARN` about a page it should never have judged.
 
-The unclassifiable one is CN-036 *Ensure Sufficient Text Contrast*, whose assertion
-counts elements carrying inline colour syntax rather than contrast violations, and which
-therefore cannot say whether zero means no violation or no text. An applicability
-declaration alone would not repair it: the field measures something other than what the
-item claims to judge, which is a registry defect of the same kind as GO-137.
+The unclassifiable one **was** CN-036 *Ensure Sufficient Text Contrast*, whose assertion
+counted elements carrying inline colour syntax rather than contrast violations, and which
+therefore could not say whether zero meant no violation or no text. An applicability
+declaration alone would not have repaired it: the field measured something other than
+what the item claimed to judge, which is a registry defect of the same kind as GO-137.
+Repaired at 0.101.0, and the sentence above had understated it — the count was not merely
+adjacent to contrast but anti-correlated with it, passing a page at 1.16:1 set in a
+stylesheet and failing one at 21:1 written inline. CN-036 now reads
+`text_nodes_below_contrast` from the rendered page, so its subject is the one CN-034
+declares — every rendered page has text nodes to measure — and it is classifiable for the
+same recorded reason.
 
 Two caveats on that census, both of which narrow it. A checker may already withhold its
 verdict field when the population is empty — `image_inventory.py` does this, so CI-016

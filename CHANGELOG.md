@@ -10,6 +10,87 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.101.0 — a contrast check that passed 1.16:1 and failed 21:1
+
+Registry version: **`c26c36595d04` → `8ea3bf0f12ab`.** **CN-036 moves, and it can now
+move a live verdict in both directions.** `TE-179` is renamed. REG-6's largest class was
+re-measured rather than re-read, and two of its nine rows had already moved.
+
+**The defect, and it was inverted rather than adjacent.** CN-036 *Ensure Sufficient Text
+Contrast* asserted `checks.inline_contrast_candidates == 0` on `a11y_seo_checker.py`.
+That key counted elements whose **inline** style named both a colour and a background —
+candidates for a contrast check the script never performs, and its own comment said so:
+*"avoids pretending to compute full CSS cascade."* Read as a verdict, the count runs
+against the title. Measured on two pages:
+
+| page | real contrast | old key | old verdict | new key | new verdict |
+|---|---|---|---|---|---|
+| `#eeeeee` on `#ffffff`, set in a stylesheet | 1.16:1 | `0` | **PASS** | `1` | **FAIL** |
+| `#000000` on `#ffffff`, written inline | 21:1 | `1` | **FAIL** | `0` | **PASS** |
+
+So the item passed a serious failure and failed correct markup. Every real site sets
+colour in a stylesheet, which is the half it could not see.
+
+**The repair.** Contrast is a computed value, like the four measures beside it, so CN-036
+joins CN-034, CN-035 and CN-051 on `rendered_audit.py` and reads
+`text_nodes_below_contrast` — elements carrying their own text whose computed colour
+against the nearest non-transparent ancestor background falls under the WCAG AA floor,
+3:1 for large text and 4.5:1 otherwise. The arithmetic is in the `SKILL.md` snippet and
+was run in a browser against both pages above before it shipped. `a11y_seo_checker.py`
+no longer emits a contrast key at all: a leaf whose name invites the misreading is how
+the misreading happened once already.
+
+**Expect CN-036 to report `NEEDS_INPUT` on a run with no `--rendered-json`**, exactly as
+the seven items around it already do. That is the breaking half of this release: a wrong
+verdict becomes an honest absence, and a site that was passing on inline-free markup will
+stop being told it passed something nobody measured.
+
+Two records that had said this out loud and were never acted on are now true rather than
+apologetic. `openspec/specs/verdicts/` called CN-036 *"the unclassifiable one"* because
+the field measured something other than what the item claimed to judge; its entry in
+`SUBJECT_ALWAYS_PRESENT` read *"every page has text; what this counts is not contrast —
+see REG-6"*, a recorded reason whose second clause admitted the first was about the wrong
+subject. And the test that pinned the old key called the narrowing deliberate while
+naming `rendered_audit.py` as the answer — the repair was written down in a docstring and
+not made.
+
+**A gate that did not exist.** Nothing held the `SKILL.md` snippet against
+`rendered_audit.py`'s metric tuples, though the snippet is the artifact's only producer
+and that script its only reader. A key added to one and forgotten in the other is an item
+reporting `NO_DATA` on every site, which reads as a site nobody measured rather than a
+contract that does not meet.
+`test_the_skill_snippet_returns_exactly_what_the_script_reads` parses the snippet's
+`return` and compares. Proven in both directions: removing the key from the snippet,
+removing it from `GENERAL_METRICS`, and adding a key the script never reads are all
+caught, and it fails rather than passes when it cannot parse the snippet at all.
+
+**TE-179 is `Review Domain Registration History`.** The inherited title named domain
+history *and* reputation over an assertion that is whois age; reputation is asserted on
+the same script by SE-114, SE-116 and TE-171, and `tools/audit_item_semantics.py` has
+recorded the item `FIXED (0.44)` on that ground ever since. Anton ruled on 21 September
+2026 that a group of items does not close one item's title — REG-6 binds the rule
+attached to an item to the question that item's own title asks, and the report prints one
+row per item. `Registration History` rather than `History`, because whois age is when the
+domain was registered and not what was served from it.
+
+**Two of REG-6's nine rows had already moved, and nothing in the tree noticed.**
+`openspec/specs/registry/` A.3 is an observation at commit `11e3899` and says so; the
+queue that rested on it did not re-measure. SP-112 is now a declared twin of SP-108 and
+carries an argued `FIXED (0.25)` ruling; TE-179 carried one too. Of the nine, seven stand
+— GO-137, CN-036 (repaired here), CI-016, MD-186, MB-096, MB-097, MD-189 — plus BL-083.
+MB-097 is two kinds rather than one: it asserts `modern_format_count >= 1`, which is both
+the weaker-question defect A.3 filed it under and a half-title defect, since
+`image_weight_audit.py` publishes nothing this item reads about compression.
+
+**Also true and worth the line:** a local pre-push gate, `tools/ci_local.py`, runs the
+workflow's own steps out of `.github/workflows/ci.yml` rather than a copy of them, so a
+push stops spending CI minutes discovering what this machine could have said first. It
+names every step it did not run — the install steps, the `uses:` steps, the 3.10 and 3.11
+legs — because a gate that quietly drops what it could not execute is worth less than no
+gate. `.githooks/pre-push` calls it, and an unchanged tree is instant.
+
+Sets read by a test: 27 → 28. Suite: 1635 → 1637.
+
 ## 0.100.0 — the work plan is the same list twice, and it includes the work a person has to do
 
 Registry version: **`c26c36595d04`, unchanged.** No verdict moves. **The report's "What to

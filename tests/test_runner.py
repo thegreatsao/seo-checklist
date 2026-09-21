@@ -47,6 +47,7 @@ from checklist_runner import (  # noqa: E402
     visible_words,
 )
 from cwv_metrics import read as cwv_read  # noqa: E402
+from rendered_audit import GENERAL_METRICS, MOBILE_METRICS  # noqa: E402
 from rendered_audit import read as rendered_read  # noqa: E402
 from detect_profile import detect  # noqa: E402
 
@@ -1166,9 +1167,12 @@ class BrowserArtifacts(unittest.TestCase):
         # document with the rendered artifact for this one URL.
         # MB-107 and MB-108 joined in 0.84.0: the two mobile-layout measures owed
         # since 0.62.0, read from the same rendered-page artifact.
+        # CN-036 joined in 0.101.0: contrast is a computed value like the four
+        # around it, and the count it used to read came from a script that never
+        # rendered anything.
         self.assertEqual(found, {"SP-214", "SP-215", "SP-216", "CN-034", "CN-035",
-                                 "CN-051", "MB-094", "MB-103", "BL-084", "BL-086",
-                                 "BL-087", "CI-018", "MB-105", "TE-181",
+                                 "CN-036", "CN-051", "MB-094", "MB-103", "BL-084",
+                                 "BL-086", "BL-087", "CI-018", "MB-105", "TE-181",
                                  "MB-107", "MB-108"})
         # What actually has to hold: an item reading an artifact measured at one URL
         # must never be run against a second page, or it would judge that page on
@@ -3912,7 +3916,7 @@ class EntityAddressesAndNap(unittest.TestCase):
 
 
 class RenderedPageMeasurements(unittest.TestCase):
-    """Seven items are measured from a rendered page rather than judged. The thing
+    """Eight items are measured from a rendered page rather than judged. The thing
     that makes that honest is refusing to answer what the render cannot: a desktop
     window says nothing about tap targets, and a window that fits its own content
     says nothing about whether a phone would have to scroll sideways."""
@@ -3924,17 +3928,18 @@ class RenderedPageMeasurements(unittest.TestCase):
         return path
 
     MOBILE = {"url": "https://e.com/", "viewport": {"width": 375, "height": 812},
-              "text_nodes_below_12px": 0, "links_indistinct": 2,
+              "text_nodes_below_12px": 0, "text_nodes_below_contrast": 0,
+              "links_indistinct": 2,
               "overlays_covering_content": 0, "tap_targets_below_48px": 3,
               "horizontal_overflow_px": 0, "text_nodes_clipped": 0}
 
     def test_a_mobile_render_answers_everything(self):
         out = rendered_read(self._file(self.MOBILE))
         self.assertEqual(out["viewport_class"], "mobile")
-        for key in ("text_nodes_below_12px", "links_indistinct",
-                    "overlays_covering_content", "tap_targets_below_48px",
-                    "mobile_overlays_covering_content", "horizontal_overflow_px",
-                    "text_nodes_clipped"):
+        for key in ("text_nodes_below_12px", "text_nodes_below_contrast",
+                    "links_indistinct", "overlays_covering_content",
+                    "tap_targets_below_48px", "mobile_overlays_covering_content",
+                    "horizontal_overflow_px", "text_nodes_clipped"):
             self.assertIn(key, out["measured"], key)
 
     def test_a_desktop_render_drops_the_mobile_metrics(self):
@@ -3953,6 +3958,10 @@ class RenderedPageMeasurements(unittest.TestCase):
 
     def test_the_desktop_metrics_still_answer_from_a_desktop_render(self):
         desktop = dict(self.MOBILE, viewport={"width": 1280}, links_indistinct=5)
+        # Contrast is not a mobile key: a desktop render answers it, and this is
+        # where that is asserted rather than assumed.
+        self.assertIn("text_nodes_below_contrast",
+                      rendered_read(self._file(desktop))["measured"])
         out = rendered_read(self._file(desktop))
         self.assertFalse(evaluate({"path": "links_indistinct", "eq": 0}, out)[0])
 
@@ -4006,11 +4015,46 @@ class RenderedPageMeasurements(unittest.TestCase):
         self.assertTrue(evaluate(clip, rendered_read(self._file(fits)))[0])
         self.assertFalse(evaluate(clip, rendered_read(self._file(clipped)))[0])
 
-    def test_the_registry_uses_it_for_the_seven_items(self):
+    # `mobile_overlays_covering_content` is derived inside rendered_audit.py from
+    # `overlays_covering_content`, so the browser never supplies it. Everything else
+    # in the two tuples has to come from the snippet or the key is dead on arrival.
+    DERIVED = {"mobile_overlays_covering_content"}
+    # Not metrics: the identity of the measurement and the payload MB-105/TE-181
+    # read. `width` and `height` are the nested keys of `viewport`, which the flat
+    # key scan below cannot tell from top-level ones — naming them here is cheaper
+    # than parsing the object, and a new metric colliding with either name would
+    # fail this test rather than slip through.
+    NON_METRIC = {"url", "viewport", "width", "height", "html"}
+
+    def _snippet_keys(self):
+        """The keys the SKILL.md snippet's `return {...}` actually names.
+
+        Parsed rather than trusted. If the parse finds nothing the test fails on the
+        emptiness check below instead of passing over a snippet it could not read —
+        a gate whose failure mode is silence is not a gate.
+        """
+        with open(os.path.join(SKILL, "SKILL.md"), encoding="utf-8") as f:
+            doc = f.read()
+        start = doc.index("return {url: location.href")
+        body = doc[start:doc.index("})()", start)]
+        return set(re.findall(r"([a-z_][a-z0-9_]*):", body))
+
+    def test_the_skill_snippet_returns_exactly_what_the_script_reads(self):
+        """Nothing held these two together until 0.101.0. The snippet in SKILL.md is
+        the only producer of the artifact and `rendered_audit.py` is its only reader,
+        so a key added to one and forgotten in the other is a metric that silently
+        never arrives — the item then reports NO_DATA on every site and looks like a
+        site that was not measured rather than a contract that does not meet."""
+        keys = self._snippet_keys()
+        self.assertGreaterEqual(len(keys), 7, f"snippet parse returned {keys}")
+        expected = (set(GENERAL_METRICS) | set(MOBILE_METRICS)) - self.DERIVED
+        self.assertEqual(keys - self.NON_METRIC, expected)
+
+    def test_the_registry_uses_it_for_the_eight_items(self):
         with open(os.path.join(SCRIPTS, "..", "resources", "config",
                                "checklist.json"), encoding="utf-8") as f:
             by_id = {i["id"]: i for i in json.load(f)["items"]}
-        for item_id in ("CN-034", "CN-035", "CN-051", "MB-094", "MB-103",
+        for item_id in ("CN-034", "CN-035", "CN-036", "CN-051", "MB-094", "MB-103",
                         "MB-107", "MB-108"):
             self.assertEqual(by_id[item_id]["source"], "script", item_id)
             self.assertEqual(by_id[item_id]["check"]["script"], "rendered_audit.py",

@@ -2032,8 +2032,15 @@ class ChecklistProvenance(unittest.TestCase):
                          # GO-143 joined in 0.89.0: the inherited title named the
                          # Sitelinks Search Box, which Google removed from Search on
                          # 21 November 2024, and sitelinks, which no markup produces.
+                         # TE-179 joined in 0.101.0: its inherited title names
+                         # domain history *and* reputation, and the assertion is
+                         # whois age. Reputation is asserted by SE-114, SE-116 and
+                         # TE-171 on the same script, and Anton ruled on 21
+                         # September 2026 that a group of items does not close one
+                         # item's title — REG-6 binds the rule attached to an item
+                         # to the question that item's own title asks.
                          {"CI-002", "GO-143", "LO-200", "MB-105", "MD-184", "TE-169",
-                          "TE-177", "TE-181"})
+                          "TE-177", "TE-179", "TE-181"})
         self.assertNotIn("_comment", overrides)
 
     def test_every_numbered_title_is_referenced_by_exactly_one_item(self):

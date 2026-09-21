@@ -646,7 +646,7 @@ class TheBrokenSiteFailsWhatItWasBuiltToFail(unittest.TestCase):
         """Including MB-094, whose count is derived rather than supplied: neither
         artifact carries `mobile_overlays_covering_content`, so this is also the
         assertion that the derivation from a phone-width viewport happens at all."""
-        for item_id in ("CN-034", "CN-035", "CN-051", "MB-094", "MB-103"):
+        for item_id in ("CN-034", "CN-035", "CN-036", "CN-051", "MB-094", "MB-103"):
             self.assertMoved(item_id, PASS, (FAIL, WARN))
 
 

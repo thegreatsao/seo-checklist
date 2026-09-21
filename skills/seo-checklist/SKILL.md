@@ -221,10 +221,12 @@ silently applied.
 
 ## Measuring the rendered page
 
-Seven items are answered from what a browser actually laid out, not from HTML: font
-size, link distinctness, overlays, and — from a mobile render — tap targets,
-horizontal scrolling and clipped text. They are computed values, so markup alone does
-not settle them.
+Eight items are answered from what a browser actually laid out, not from HTML: font
+size, text contrast, link distinctness, overlays, and — from a mobile render — tap
+targets, horizontal scrolling and clipped text. They are computed values, so markup
+alone does not settle them. Contrast joined them at 0.101.0: CN-036 had been reading
+a count of elements with inline colours, which passed a page at 1.1:1 and failed one
+at 21:1.
 
 Resize to a phone viewport first (375×812), load the page, then run one
 `evaluate_script`:
@@ -246,6 +248,43 @@ Resize to a phone viewport first (375×812), load the page, then run one
     const ownText = [...el.childNodes].some(
       n => n.nodeType === 3 && n.textContent.trim().length > 3);
     if (ownText && px(getComputedStyle(el).fontSize) < 12) small++;
+  }
+
+  const rgb = v => {
+    const m = (v || '').match(/[\d.]+/g);
+    if (!m) return null;
+    const c = m.slice(0, 3).map(Number);
+    c.push(m.length > 3 ? Number(m[3]) : 1);
+    return c;
+  };
+  const lum = c => {
+    const f = c.slice(0, 3).map(v => {
+      v /= 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+  };
+  const bgOf = el => {
+    for (let n = el; n; n = n.parentElement) {
+      const c = rgb(getComputedStyle(n).backgroundColor);
+      if (c && c[3] !== 0) return c;
+    }
+    return [255, 255, 255, 1];
+  };
+
+  let lowContrast = 0;
+  for (const el of document.querySelectorAll('body *')) {
+    if (!visible(el)) continue;
+    const ownText = [...el.childNodes].some(
+      n => n.nodeType === 3 && n.textContent.trim().length > 3);
+    if (!ownText) continue;
+    const s = getComputedStyle(el);
+    const fg = rgb(s.color);
+    if (!fg) continue;
+    const a = lum(fg), b = lum(bgOf(el));
+    const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    const size = px(s.fontSize), bold = parseInt(s.fontWeight) >= 700;
+    if (ratio < (size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5)) lowContrast++;
   }
 
   let indistinct = 0;
@@ -286,7 +325,8 @@ Resize to a phone viewport first (375×812), load the page, then run one
   }
 
   return {url: location.href, viewport: {width: vw, height: vh},
-          text_nodes_below_12px: small, links_indistinct: indistinct,
+          text_nodes_below_12px: small, text_nodes_below_contrast: lowContrast,
+          links_indistinct: indistinct,
           overlays_covering_content: overlays, tap_targets_below_48px: taps,
           horizontal_overflow_px: overflow, text_nodes_clipped: clipped,
           html: document.documentElement.outerHTML};

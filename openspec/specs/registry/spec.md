@@ -865,6 +865,10 @@ executed the previous mutation. Every run now gets its own cache.
 A sample of twenty items, read rule against title, found nine mismatches. They are not
 one defect: three kinds sit here, and only the first is a wrong answer.
 
+**Re-measured on 21 September 2026 — see A.9.** Two of the nine had moved and this
+appendix, being an observation at `11e3899`, had no way to say so. Read the rows below
+as what was true then.
+
 **The rule answers a different question.**
 
 | item | title promises | rule measures |
@@ -899,6 +903,41 @@ gate reads for a different purpose entirely — and nothing reads it as the admi
 **Not defects, though an earlier reading suspected them:** AR-146, AR-154 and AR-163 do
 measure what their titles ask. Their problem is applicability (REG-9), not aboutness, and
 conflating the two would have sent the repair to the wrong place.
+
+#### A.9 — the nine were a sample, and two of them had already moved, 21 September 2026
+
+A.3 took twenty items and found nine. Nothing derived the population and nothing re-read
+the nine afterwards, so the queue that rested on them rested on a reading of a tree three
+weeks gone. Re-measured against the registry at `c26c36595d04`, by running each item's
+rule rather than re-reading its row:
+
+| row | what a run does now | standing? |
+|---|---|---|
+| GO-137 | `orphan_pages_from_sitemap.py`, `summary.orphan_pages` with `applies_when summary.sitemap_urls > 0`. The 0.98.0 declaration closed the free pass; the title still says *Indexed* and the rule reconciles the **crawl** | **stands** |
+| CN-036 | passed a page at 1.16:1 and failed one at 21:1 | **repaired at 0.101.0** |
+| SP-112 | a declared twin of SP-108 through `scores_with`, with `tools/audit_item_semantics.py` carrying an argued `FIXED (0.25)` | **moved** |
+| CI-016, MD-186 | `missing_alt == 0`. Five images carrying `image1.jpg`, `IMG_0042`, `untitled`, `photo`, `x` measure `missing_alt = 0` and the item titled *Meaningful* passes | **stand** |
+| MB-096 | `responsive_count >= 1`. One responsive image among five passes | **stands** |
+| MB-097 | `modern_format_count >= 1` — **two kinds, not the one A.3 filed**: the weaker question, and the half-title, since nothing this item reads concerns compression | **stands, under-described** |
+| MD-189 | `responsive_count >= 1`, a twin of MB-096; `modern_format_count` is published by the same script and read by MB-097, so the unread half of this title is a leaf away | **stands** |
+| TE-179 | `whois.age_days >= 90`, with reputation asserted by SE-114, SE-116 and TE-171 on the same script and `audit_item_semantics.py` recording `FIXED (0.44)` on that ground | **decided: a group does not close one item's title; renamed at 0.101.0** |
+
+Seven of the nine stand, plus BL-083 from A.7. **Two appendices in this document
+disagreed with a CI gate in the same tree about two items, and nothing held them
+together** — the shape A.7 found in TE-178, where the conclusion was right and the reason
+two tables away was false.
+
+**What could be derived, and what could not.** REG-6's second and third scenarios have a
+mechanical form and the first does not. Over the 145 rule-carrying items, thirty join
+subjects with *and* or *&* while asserting one path. Word overlap between the unread
+conjunct and the path only says the path does not *name* the other half; the question
+that decides an item is whether its own script already publishes a leaf for the half
+nobody reads, and exactly one item answers yes under a name sharing a word with its
+title — MD-189, whose `modern_format_count` sits beside the `responsive_count` it asserts.
+That is a floor and not a count: `MB-097`'s unread half is *Compression*, and
+`large_image_count` is that half under a name no word-match reaches. Enumeration finds
+only the spellings put into it, so the derivation narrows the reading and does not
+replace it.
 
 #### A.4 — five operators are implemented and unused
 

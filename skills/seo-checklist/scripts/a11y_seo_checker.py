@@ -40,12 +40,15 @@ def checker(source: str, timeout: int = 15) -> dict:
     generic_anchors = [a.get_text(" ", strip=True) for a in soup.find_all("a", href=True) if re.fullmatch(r"(click here|read more|more|learn more)", a.get_text(" ", strip=True).lower())]
     if generic_anchors:
         issues.append({"severity": "info", "message": f"{len(generic_anchors)} generic link text instance(s)"})
-    # Static contrast check for inline style hex colors only; avoids pretending to compute full CSS cascade.
-    contrast_candidates = 0
-    for tag in soup.find_all(style=True):
-        style = tag["style"]
-        if "color" in style and "background" in style and re.search(r"#[0-9a-fA-F]{3,6}", style):
-            contrast_candidates += 1
+    # Contrast is not measured here, and the key that pretended to is gone. Until
+    # 0.101.0 this counted elements whose *inline* style named both a colour and a
+    # background, and CN-036 asserted that count was zero. The name said
+    # `inline_contrast_candidates` — candidates for a check nobody performed — but
+    # the assertion read it as a verdict, so the item was anti-correlated with its
+    # own title: #eeeeee on #ffffff set in a stylesheet is 1.1:1 and passed, while
+    # #000000 on #ffffff written inline is 21:1 and failed. Contrast is a computed
+    # value; it belongs with the other computed ones in `rendered_audit.py`, which
+    # is where CN-036 now reads it.
     return {
         "url": url or source,
         "score": max(0, 100 - 8 * len(issues)),
@@ -57,7 +60,6 @@ def checker(source: str, timeout: int = 15) -> dict:
             "form_controls": len(inputs),
             "labeled_controls": labelled,
             "landmarks": parsed["landmarks"],
-            "inline_contrast_candidates": contrast_candidates,
         },
         "issues": issues,
         "fetch_error": fetched.get("error"),

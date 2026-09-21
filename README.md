@@ -4,129 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.100.0 — see [CHANGELOG.md](CHANGELOG.md). **The "What to do first" plan now lists
-the work a person has to do, and comes out in the same order every time.** The checks that
-need a human were in the exported CSV and missing from the report itself, and items of equal
-priority came out in whatever order the results happened to be in, so the same audit could
-print two different plans. Expect the plan to be longer; the manual entries are marked
-*needs a human*. `0.99.0`: **one check stops passing a page whose
-structured data it could not read.** If a JSON-LD block on the page has a syntax error, the
-rich-result checks used to skip it silently — so *Modern schema types only* reported a clean
-result about markup it had never parsed, including a page whose only forbidden type was
-inside the broken block. Those two checks now say they could not read it instead of passing.
-`0.98.0` added the rest of what is below: **checks a person or the model has to
-answer now say when they apply.** "Does the site show ads?", "Has the site submitted a
-disavow file?" — 25 of them carry a question like that in the queue and in the report, and
-a "no" means answer N/A. *Handle Out-of-Stock Products* no longer applies to SaaS, blog or
-media audits; on those profiles the score moves by that one item. `0.97.3` was specification only: a model's answer
-given without a reason stays accepted and is shown as "no rationale given" — now written
-down as intended rather than listed as a defect. `0.97.2` was test-only: nothing about an audit
-changes. The rules for handing answers back — a person's answer needs a reason, a model's
-is marked when it gives none — were mostly unchecked: an answer could have been dropped
-without saying which, or a model's empty answer shown with nothing beside it, and the tests
-would have stayed green. Now they would not. `0.97.1` was also test-only.
-`0.97.0` is the release that matters here, and **one check changes what it decides.**
-If you hand the audit a server access log, *Analyze Logs & Manage Crawl Budget* used to
-say PASS in cases where it had not actually done the work: a log covering one day, or a
-log it could read beside a site inventory it could not, meant the "which pages has Google
-never visited" analysis never ran at all — and the item reported the same clean result as
-a site with nothing wrong. It now says it could not answer, and says which of the four
-reasons stopped it. A log with everything it needs still passes, and a real problem found
-in the part it *could* read still fails. If you have been getting a PASS on that item from
-a short log, expect it to become "no data" — that is the audit admitting it never checked.
-Before that, `0.96.7` found three rules about comparing an audit with the last one were
-recorded as half-checked; measuring them first found the record wrong about all three.
-Two were better covered than it said. The third was worse, and in a way that matters if
-you audit more than one site from one folder: nothing in the suite would have noticed a
-change that made one site's audit compare itself against **another site's** — reported, in
-a client's report, as movement on a site that never produced those numbers. The code was
-right; nothing was holding it that way. The same was true of the HTML report naming the
-run it compared against: it names it correctly today, and only the markdown version was
-checked, so the HTML one could have started printing "the run of ?" without anything
-saying so. Both are guarantees that were true and unguarded, which is the kind this
-release is about.
-Before that, `0.96.6` closed three rules about what a run *does* that were all checked by
-reading what it *writes down*. The clearest: when a site's front page will not load, the audit is
-supposed to stop asking that site for anything — and everything testing it checked that
-the list of work came out empty, which a tool that empties the list and then crawls the
-site anyway would also pass. The server itself is the only witness, and now it is the one
-asked: against a site answering "service unavailable", it receives exactly one request.
-Two more were rules about which pages get sampled — a file that is not a page, and a page
-the site's own robots.txt asks crawlers to leave alone — that *appeared* to work when
-measured, because a different part of the run was quietly handling both first.
-Before that, `0.96.5` closed a rule that keeps an audit honest about a site it only half
-read — "no problems found" over three pages of sixty is not a finding about the site —
-which was itself well tested, and *every one of those tests handed it the "I only read
-half" flag directly. Nothing checked that a real half-read crawl ever raises the flag*, so
-the crawl could have stopped raising it and the suite would have stayed quiet. That
-path is now walked end to end against a real sixty-page site read three pages deep.
-Before that, `0.96.4` made a run say so when a site starts refusing requests partway
-through, `0.96.3` gave this project's own unfinished-work ledger a category for rules
-no test could ever hold, `0.96.2` found two requirements claiming more than the
-tests held, `0.96.1` fixed two checks that passed sites with none of the thing they
-judge, and `0.96.0` closed the same class for eight others — a page with no structured data
-passed "Implement & Validate Structured Data" and a page that is not a category page got
-a warning about being a bad one — and `0.95.2` fixed auditing one category, which used to drop the
-other 210 items out of the report entirely, so the partition summed to the slice and the
-slice's score was printed where the site's goes — 100 over 10 rows next to a full run's 57
-over 217. Every item is reported now, the ones outside the selection as N/A naming it. Two
-numbers that had no denominator also stopped being printed as numbers. Before that,
-`0.95.1` fixed three ways to end the profile question
-without answering it — end of input, an interrupt, three replies naming no profile — all
-returned the *detected* profile, so an operator who pressed Ctrl-C got an audit narrowed to
-a site type nobody chose. All three run the full registry now. Writing the test the same
-requirement asked for also showed the detector reading the words on the page: an article
-about leaving WooCommerce was detected as a storefront, at high confidence, from its own
-prose. Before that, `0.95.0` made `NEEDS_INPUT` mean *waiting on you*,
-and two paths were using it for absences nobody can supply — a shared crawl that ran and
-failed, and an offline item whose HTML never existed because the entry page answered 503.
-Which of the two statuses an absence becomes now follows the table of inputs an operator
-can actually hand a run, and that derivation found a contradiction inside a single run
-that had been in a spec's shipped-violations table for eleven releases. Before that,
-`0.94.7` made a Core Web Vitals rating taken from a
-synthetic load rather than from real visitors say so in the report, which matters for
-two items whose titles do not mention field data at all. Before that, `0.94.6` made an artifact that names no page
-recorded as having named none rather than as a checked match, and the search order for a
-Search Console key is fixed rather than incidental. Before that, `0.94.5` made a supplied server log or link export
-now carries its age and can be refused for being stale; until now only the two artifacts
-that describe a single page could be. Before that, `0.94.4` made every merge that can ignore an answer
-file now says which answer it ignored, the report shows the coverage falling when a verdict
-is contested, and the evidence artifact keeps a sampled page's run apart from the site's
-even when the two collide. Before that, `0.94.3` made a category bar say how many of its
-items its score was actually computed from, which on a live run was three of the five it
-printed. Before that, `0.94.2` made it so a verdict a person asserted no longer
-renders exactly like one a script measured, and the check for what is still untranslated
-can see all 150 report strings rather than 99 — eleven of them really were English in a
-Russian report, with nothing to say so. Before that, `0.94.1` made the `robots.txt` fetch — the first
-request this tool makes to any host — used to go out with no address validation, no
-pinning and unvalidated redirects, so it could reach a link-local address the audit
-refuses to fetch pages from. It goes through the guard now, and `openspec/specs/http/` is
-the first document here with every requirement held by something that fails when it is
-violated. Before that, `0.94.0` made the score name the instrument
-that produced it. Severity weight, verdict credit and effort cost are one stamped
-instrument, every run artifact records the stamp it was scored under, and a comparison
-against a run scored under another one says the difference is not movement in the site
-rather than presenting it as such. A table could be edited in the code and the spec
-together with the whole suite green until now; three assertions fail on that edit today.
-Before that, `0.93.9` moved the last four verdicts decided by matching words in a message
-onto counted fields, and three of them moved: GO-138's `404` matched a 404 and not a 500,
-so a sitemap of URLs returning 503 passed; MB-095 counted a message its script only emits
-when told to fetch images, which the registry never told it to do, so every live run
-passed a page whose weights were never measured. `0.92.0` made the category bars fold twins the way the headline has since
-0.22 — six of the nine pairs cross categories, so 36% of `media`'s weight belongs to a
-carrier elsewhere — and `0.92.1` corrected fourteen counts stated in prose, none of which
-matched the registry, and put a gate behind each one — `0.93.1` did the same for the
-one inside `checklist.json` itself, which said the plugin adds 15 checks where it adds
-17, and which no gate could see because a constant in the generator is reproduced by the
-staleness check and compared with nothing. `0.93.4` counts the rest of them: 166 sets in
-`scripts/` and `tools/` decide what this tool does, and sixteen are read by anything, and
-`0.93.5` gives `SKILL.md` a contract table saying, per section, what the tool guarantees
-and what the operator has to supply. `0.93.6` widens the count ledger past the protocol
-and corrects sixteen more numbers about this tree, ten of them in this file and in the
-scripts' own docstrings. `0.93.7` puts a ratchet under the 77 thresholds nobody here has
-defended, and forbids one of them to argue its own number. `0.93.8` derives the assertion
-language's nineteen operators from the evaluator instead of searching its source for a
-substring, and refuses a rule that names two of them.
+Version 0.101.0 — see [CHANGELOG.md](CHANGELOG.md). **The text-contrast check measured the wrong thing, and measured it backwards.** CN-036 counted elements whose *inline* style named a colour, so a page with grey-on-white text set in a stylesheet passed at 1.16:1 while a page with black-on-white written inline failed at 21:1. It now reads a real WCAG ratio from the rendered page, like the four layout checks beside it. Expect CN-036 to say `NEEDS_INPUT` rather than `PASS` on a run with no rendered-page artifact: it never measured contrast before, and an honest absence is the correct answer until one is supplied.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -831,6 +709,24 @@ python3 -m unittest discover -s tests -v
 ```
 
 Everything runs offline — no live site, no API key, no Search Console property.
+
+**Run CI's own checks here before pushing them there.** CI is five jobs and about ten
+minutes of other people's compute, and most of what it finds this machine could have
+said first:
+
+```bash
+python3 skills/seo-checklist/tools/ci_local.py          # test + census, ~10 min
+python3 skills/seo-checklist/tools/ci_local.py --list   # what it will and will not run
+git config core.hooksPath .githooks                     # once, to arm the pre-push hook
+```
+
+The steps are **read out of `.github/workflows/ci.yml`**, so this is not a second copy
+of the check list to fall out of step with the first. It names everything it did not
+run — the `uses:` steps, the dependency installs, the 3.10 and 3.11 matrix legs — and a
+step it cannot execute is a failure rather than a skip. A tree it already verified is
+instant, keyed on the tree hash and stamped inside `.git/`, so pushing an unchanged tree
+to `main` after a fast-forward merge costs nothing. `git push --no-verify` is the way
+out; the local run does not replace the CI run, because only CI runs the Python floor.
 The suite guards the parts that fail *silently*: an assert rule using an operator
 the runner never implemented, a pattern that cannot fire, a script the registry
 names but nobody shipped, an LLM item with no lens, a profile that hides a critical

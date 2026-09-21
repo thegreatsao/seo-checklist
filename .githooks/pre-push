@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Run CI's own steps here before the push spends minutes running them there.
+#
+# The steps are read out of .github/workflows/ci.yml by tools/ci_local.py, so this
+# hook has no list of checks to fall out of step with. It lives in .githooks/ and
+# not in .git/hooks/ so that it travels with the tree; `git config core.hooksPath
+# .githooks` is what points git at it, and README says so.
+#
+# Escape hatch: `git push --no-verify`. Use it when you mean to, not when the hook
+# is slow — a first run is around ten minutes and an unchanged tree is instant,
+# because ci_local.py stamps the tree hash it verified.
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+py="$root/.venv/Scripts/python.exe"
+[ -x "$py" ] || py="$root/.venv/bin/python"
+[ -x "$py" ] || py="$(command -v python3 || command -v python)"
+
+if [ -z "${py:-}" ]; then
+  echo "pre-push: no interpreter found; run the checks yourself or --no-verify" >&2
+  exit 1
+fi
+
+# git calls pre-push with the remote's name and URL as $1 and $2, and feeds the
+# refs being pushed on stdin. None of that is ci_local.py's business, and passing
+# it through is what the first real push found: argparse refused the remote URL
+# and the push died with a usage message for a tool nobody had invoked by hand.
+echo "pre-push: running the CI steps locally. --no-verify skips this."
+"$py" "$root/skills/seo-checklist/tools/ci_local.py"

@@ -22,6 +22,7 @@ not measured:
       "viewport": {"width": 375, "height": 812},
       "source": "chrome-devtools MCP evaluate_script, 2026-08-03",
       "text_nodes_below_12px": 0,
+      "text_nodes_below_contrast": 4,
       "links_indistinct": 2,
       "overlays_covering_content": 0,
       "tap_targets_below_48px": 3,
@@ -56,6 +57,22 @@ does, including one that hides the overflow rather than fixing it — the conten
 then cut off instead of scrollable, which is the same defect wearing a different
 symptom.
 
+**Where `text_nodes_below_contrast` stops, and it is a boundary rather than a
+gap.** It counts elements carrying their own text whose computed foreground and
+effective background fall below the WCAG AA floor — 3:1 for large text (24px, or
+18.66px when bold), 4.5:1 otherwise. The effective background is the nearest
+ancestor with a non-transparent `background-color`, defaulting to white, so text
+over a background *image* or a gradient is scored against whatever colour sits
+behind it, and a foreground with partial alpha is not composited. Both are
+undercounts rather than invented failures, which is the direction this tree is
+allowed to be wrong in.
+
+This metric is why CN-036 moved off `a11y_seo_checker.py` at 0.101.0. That script
+counted elements whose inline style named a colour and a background at all — the
+key was called `inline_contrast_candidates` and the item read it as a verdict, so
+a page at 1.1:1 set in a stylesheet passed and a page at 21:1 written inline
+failed. Contrast is a computed value, like the four measures around it here.
+
 **What `text_nodes_clipped` costs, and it is not hidden:** `text-overflow: ellipsis`
 is a deliberate layout choice, and an element truncated that way has
 `scrollWidth > clientWidth` like any other clipped one. A site that truncates card
@@ -76,8 +93,8 @@ import sys
 MOBILE_MAX_WIDTH = 480
 
 # Metrics that describe the page at any viewport.
-GENERAL_METRICS = ("text_nodes_below_12px", "links_indistinct",
-                   "overlays_covering_content")
+GENERAL_METRICS = ("text_nodes_below_12px", "text_nodes_below_contrast",
+                   "links_indistinct", "overlays_covering_content")
 # Metrics that mean nothing unless the render was a phone. `horizontal_overflow_px`
 # and `text_nodes_clipped` are here rather than in the general set for the same reason
 # tap targets are: both are answers about how the layout behaved at the width it was

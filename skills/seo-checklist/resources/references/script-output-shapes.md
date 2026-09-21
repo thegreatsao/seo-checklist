@@ -101,7 +101,6 @@ for that page. Use `--no-http-cache` for an isolated timing.
 `checks.landmarks.nav` — int
 `checks.landmarks.header` — int
 `checks.landmarks.footer` — int
-`checks.inline_contrast_candidates` — int
 `issues[]` — array
   - item keys: severity, message
 `fetch_error` — NoneType
@@ -837,6 +836,15 @@ site having served no such field.
 `viewport_class` — str — `mobile` when width ≤ 480, else `desktop`
 `measured[]` / `missing[]` — arrays of str
 `text_nodes_below_12px` — int — CN-034
+`text_nodes_below_contrast` — int — CN-036; elements carrying their own text whose
+  computed colour against the nearest non-transparent ancestor background falls under
+  the WCAG AA floor — 3:1 for large text (24px, or 18.66px bold), 4.5:1 otherwise.
+  Until 0.101.0 CN-036 read `checks.inline_contrast_candidates` from
+  `a11y_seo_checker.py`, a count of elements whose *inline* style named a colour and
+  a background: a page at 1.16:1 set in a stylesheet scored 0 and passed, one at 21:1
+  written inline scored 1 and failed. Text over a background image or gradient is
+  scored against the colour behind it and a foreground alpha is not composited, so
+  this undercounts rather than inventing failures
 `links_indistinct` — int — CN-035 (neither underlined, nor bolder, nor a different
   colour from the parent)
 `overlays_covering_content` — int — CN-051 (fixed/sticky elements covering ≥25% of

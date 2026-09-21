@@ -910,17 +910,18 @@
     },
     "CN-036": {
       "answers": {
-        "failing-shapes": "PASS",
+        "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
-        "fixture:broken_tls": "FAIL",
+        "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
+        "NEEDS_INPUT",
         "PASS"
       ],
-      "script": "a11y_seo_checker.py",
+      "script": "rendered_audit.py",
       "severity": "medium",
       "source": "script",
       "title": "Ensure Sufficient Text Contrast"
@@ -3468,7 +3469,7 @@
       "script": "domain_safety_check.py",
       "severity": "low",
       "source": "script",
-      "title": "Review Domain History & Reputation"
+      "title": "Review Domain Registration History"
     },
     "TE-180": {
       "answers": {
@@ -3587,7 +3588,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "c26c36595d04",
+  "registry_version": "8ea3bf0f12ab",
   "sites": [
     "fixture:good",
     "fixture:broken",
