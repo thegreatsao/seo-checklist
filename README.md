@@ -710,9 +710,10 @@ python3 -m unittest discover -s tests -v
 
 Everything runs offline — no live site, no API key, no Search Console property.
 
-**Run CI's own checks here before pushing them there.** CI is five jobs and about ten
-minutes of other people's compute, and most of what it finds this machine could have
-said first:
+**Run CI's own checks here before pushing them there.** CI is five jobs — measured on the
+0.101.0 push at about seven minutes of wall clock and **twenty-two of runner time**,
+since four of the five run in parallel — and most of what it finds this machine could
+have said first:
 
 ```bash
 python3 skills/seo-checklist/tools/ci_local.py          # test + census, ~10 min
