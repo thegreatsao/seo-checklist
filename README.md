@@ -4,7 +4,12 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.99.0 — see [CHANGELOG.md](CHANGELOG.md). **One check stops passing a page whose
+Version 0.100.0 — see [CHANGELOG.md](CHANGELOG.md). **The "What to do first" plan now lists
+the work a person has to do, and comes out in the same order every time.** The checks that
+need a human were in the exported CSV and missing from the report itself, and items of equal
+priority came out in whatever order the results happened to be in, so the same audit could
+print two different plans. Expect the plan to be longer; the manual entries are marked
+*needs a human*. `0.99.0`: **one check stops passing a page whose
 structured data it could not read.** If a JSON-LD block on the page has a syntax error, the
 rich-result checks used to skip it silently — so *Modern schema types only* reported a clean
 result about markup it had never parsed, including a page whose only forbidden type was

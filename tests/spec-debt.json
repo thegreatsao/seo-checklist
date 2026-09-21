@@ -126,10 +126,10 @@
     "scoring": {
       "counts": {
         "bounded": 0,
-        "enforced": 8,
+        "enforced": 14,
         "none": 0,
         "opposed": 0,
-        "partial": 6
+        "partial": 0
       },
       "opposed": [],
       "requirements": 14,
@@ -150,10 +150,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 112,
+    "enforced": 118,
     "none": 2,
     "opposed": 0,
-    "partial": 31,
+    "partial": 25,
     "requirements": 149
   }
 }

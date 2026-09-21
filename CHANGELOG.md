@@ -10,6 +10,37 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.100.0 — the work plan is the same list twice, and it includes the work a person has to do
+
+Registry version: **`c26c36595d04`, unchanged.** No verdict moves. **The report's "What to
+do first" changes on both surfaces**, and `scoring` is finished: SCR-5, SCR-8, SCR-10,
+SCR-11, SCR-13 and SCR-14 all `partial` → `enforced`, ledger 112 → 118 of 149.
+
+**The defect.** `fix_rows()` — the machine export — has one membership (`FAIL`, `WARN`,
+`MANUAL`) and a deterministic order. The Markdown and HTML reports each built their own
+list instead: `FAIL` and `WARN` only, sorted by priority and severity with **no final
+tie-break**. Two consequences, both measured:
+
+* an item that needs a person never appeared in the work plan a client reads, while the
+  CSV handed to the same client carried it;
+* two runs over the same results in a different arrival order printed the plan in a
+  different order — `Z-2, A-1` one way and `A-1, Z-2` the other.
+
+One definition now serves all three consumers, with the item id as the last tie-break.
+**Expect your reports to grow**: manual items appear in the plan, marked *needs a human* so
+they are not read as measured failures, and the "{n} of the {total} are quick" sentence
+counts the plan it actually prints.
+
+**How the six rows moved.** Each was `partial` because of a sentence somebody had read off
+the tests. The breakage each sentence implies was run against the whole suite first, and
+**two of the six turned out to be enforced already** — SCR-5's denominator and SCR-14's
+normative tables both reddened. Three were missing exactly the reader their line named:
+both halves of `waiting on you` on every surface, a score decided by a model disclosing
+that it was, and priority as severity weight over effort cost for every cost rather than
+one ordering example. The sixth was SCR-13, and it was worse than its own line said.
+
+Five breakages against the five new readers, each run alone, all caught.
+
 ## 0.99.0 — a JSON-LD block that did not parse is not an absence of misuse
 
 Registry version: **`c26c36595d04`, unchanged.** **One verdict moves**, and four

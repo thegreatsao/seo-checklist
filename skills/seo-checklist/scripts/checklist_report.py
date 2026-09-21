@@ -555,6 +555,18 @@ def twins_folded(items: list[dict], keep_status: tuple = FIX_STATUSES) -> list[d
     return folded
 
 
+def plan_order(items: list[dict]) -> list[dict]:
+    """The single definition of the work plan's membership and order.
+
+    Item id is the final tie-break because arrival order is not a property of the
+    audit. `MANUAL` belongs in the plan because somebody still has to do it.
+    """
+    actionable = (i for i in twins_folded(items) if i["status"] in FIX_STATUSES)
+    return sorted(actionable,
+                  key=lambda i: (-priority_of(i),
+                                 SEVERITY_ORDER.get(i.get("severity"), 9), i["id"]))
+
+
 def fix_rows(data: dict) -> list[dict]:
     """The actionable items, flat, ordered the way the report orders them.
 
@@ -571,9 +583,7 @@ def fix_rows(data: dict) -> list[dict]:
     `url` column a reader would reasonably misread as "fix this page".
     """
     rows = []
-    for item in twins_folded(data.get("items", [])):
-        if item["status"] not in FIX_STATUSES:
-            continue
+    for item in plan_order(data.get("items", [])):
         rows.append({
             "id": item["id"],
             "status": item["status"],
@@ -586,8 +596,6 @@ def fix_rows(data: dict) -> list[dict]:
             "evidence": str(item.get("evidence") or "").replace("\n", " ").strip(),
             "audited_url": data.get("url", ""),
         })
-    rows.sort(key=lambda r: (-r["priority"], SEVERITY_ORDER.get(r["severity"], 9),
-                             r["id"]))
     return rows
 
 
@@ -1151,9 +1159,7 @@ def render_markdown(data: dict, L: Lang | None = None) -> str:
 
     # Folded, because this list asks the reader to do things and a synonym pair is one
     # thing. The full checklist below still prints both halves with their own statuses.
-    fails = sorted((i for i in twins_folded(data["items"], (FAIL, WARN))
-                    if i["status"] in (FAIL, WARN)),
-                   key=lambda i: (-priority_of(i), SEVERITY_ORDER.get(i["severity"], 9)))
+    fails = plan_order(data["items"])
     if fails:
         quick = [i for i in fails if i.get("effort") == "low"]
         out += ["", f"## {L.t('do_first', 'What to do first')}", "",
@@ -1173,8 +1179,10 @@ def render_markdown(data: dict, L: Lang | None = None) -> str:
                 if note:
                     out += [f"*{note}*", ""]
             badges = f"{L.sev(i['severity'])} · {L.effort(i.get('effort', 'medium'))}"
+            origin = (L.status(MANUAL, "needs a human") if i["status"] == MANUAL
+                      else item_provenance(i, L))
             out += [f"**{L.title(i)}**  ",
-                    f"`{badges}`  ",
+                    f"`{badges}`" + (f" ({origin})" if origin else "") + "  ",
                     f"{phrase_measure(i, L)}  ",
                     f"{L.t('what_to_do', 'What to do')}: {L.fix(i)}", ""]
 
@@ -1504,13 +1512,16 @@ def _card(item: dict, L: Lang) -> str:
     why = L.category_help(item.get("category", ""))
     tech = html.escape(item.get("evidence", ""))
     script = html.escape(str(item.get("script", "")))
+    origin = (L.status(MANUAL, "needs a human") if item["status"] == MANUAL
+              else item_provenance(item, L))
+    marker = (f'<span class="origin">{html.escape(origin)}</span>' if origin else "")
     detail = (f'<summary>{html.escape(L.t("technical_detail", "Technical detail"))}</summary>'
               f'<div class="techbody"><code>{item["id"]}</code>'
               + (f' &middot; <code>{script}</code>' if script else "")
               + f'<div>{tech}</div></div>')
     return (f'<article class="card {item["status"]}" data-st="{item["status"]}">'
             f'<div class="cardhead">{_badges(item, L)}'
-            f'<span class="cat">{html.escape(item["category_label"])}</span></div>'
+            f'{marker}<span class="cat">{html.escape(item["category_label"])}</span></div>'
             f'<h3>{html.escape(L.title(item))}</h3>'
             f'<p class="found">{html.escape(phrase_measure(item, L))}</p>'
             + (f'<p class="why">{html.escape(why)}</p>' if why else "")
@@ -1623,9 +1634,7 @@ def render_html(data: dict, L: Lang | None = None) -> str:
         parts.append("</section>")
 
     # -- Layer 3: what to do, as cards ------------------------------------------
-    todo = sorted((i for i in twins_folded(data["items"], (FAIL, WARN))
-                   if i["status"] in (FAIL, WARN)),
-                  key=lambda i: (-priority_of(i), SEVERITY_ORDER.get(i["severity"], 9)))
+    todo = plan_order(data["items"])
     if todo:
         quick = [i for i in todo if i.get("effort") == "low"]
         parts.append(f'<section><h2>{html.escape(L.t("do_first", "What to do first"))}</h2>'

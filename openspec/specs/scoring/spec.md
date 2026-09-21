@@ -263,8 +263,11 @@ absent from the score and from `weight_applicable`.
 **Why:** otherwise narrowing scope would make an audit look thinner rather than
 narrower, and the incentive would run the wrong way. This is VRD-7 applied to the number
 that replaced coverage.
-**Reader:** partial. Unit tests pin `N/A` out of the score and compare reach with and
-without `N/A`, but no assertion directly pins the returned `weight_applicable` value.
+**Reader:** enforced. The line this replaces said no assertion pins the returned
+`weight_applicable`; measured on 20 September 2026 against the whole suite, adding an `N/A`
+row back into that denominator reddens
+`tests/test_runner.py::Scoring::test_an_item_that_does_not_apply_is_out_of_both_numbers`
+and the reach comparison beside it. A `partial` classified by reading, and wrong.
 
 #### Scenario: an item that does not apply
 - **WHEN** an item is `N/A`
@@ -367,8 +370,12 @@ beneath it.
 
 **Why:** they share a bucket but require different next steps and may belong to different
 actors.
-**Reader:** partial. Tests pin the two stored subcounts, but no reader requires every
-report surface to present both halves separately beneath the bucket.
+**Reader:** enforced.
+`tests/test_report.py::WaitingOnYouKeepsItsHalvesVisible::test_both_surfaces_show_the_total_and_the_two_different_subcounts`
+requires the bucket total and both halves — the model's queue and the missing inputs, with
+their own counts — on the Markdown table row and in the HTML metric. Probed by printing the
+bucket total as each half: CAUGHT. Until 0.100.0 only the two stored subcounts were pinned,
+and a surface could show the total twice.
 
 #### Scenario: work waiting on two different people
 - **WHEN** a run has both `LLM_PENDING` items and `NEEDS_INPUT` items
@@ -422,8 +429,11 @@ not measured.
 **Why:** a score built on ticks is a different object from a score built on
 measurements, and the difference must not require reading the item list to discover.
 This is the second axis from VRD-2.1, surfaced.
-**Reader:** partial. Claimed provenance and both renderers are tested, but model
-disclosure is not; the `provenance_warnings` tests read different caveats.
+**Reader:** enforced.
+`tests/test_report.py::TheScoreDisclosesModelAnswers::test_a_model_only_decided_population_is_not_presented_as_wholly_measured`
+holds the half that had no reader: a score decided entirely by a model says so on both
+surfaces, and does not borrow the sentence written for a person's claim. Probed by treating
+a model-only population as wholly measured: CAUGHT.
 
 #### Scenario: a score built partly on judgement
 - **WHEN** any decided item was claimed by a person or answered by a model
@@ -439,9 +449,13 @@ Each fix SHALL have priority `severity weight ÷ effort cost`, highest first.
 
 **Why:** ordering by severity alone puts expensive work above cheap work of nearly equal
 value, and the list exists to be worked top-down.
-**Reader:** partial. A test pins a cheap item above an equally severe expensive item,
-but no reader pins the division or every effort cost. The sensitivity tool's order test
-uses synthetic rows and does not establish equivalence on real artifacts.
+**Reader:** enforced.
+`tests/test_report.py::Priority::test_priority_is_the_shipped_severity_weight_divided_by_every_effort_cost`
+asserts the division itself — the published priority times the effort cost equals the
+severity weight — over every severity and every effort in the shipped tables, so a cost
+nobody has ever ordered against is read too. Probed by doubling every effort cost: CAUGHT
+on twelve pairs. The ordering example that used to stand alone here remains, and is now a
+consequence rather than the whole claim.
 
 #### Scenario: cheap work of nearly equal value
 - **WHEN** two items share a severity and differ in effort
@@ -516,9 +530,18 @@ therefore produce the same fix order.
 
 **Why:** an exported list and a rendered list that disagree are two work plans, and an
 unstated tie-break makes changes in input order look like changes in priority.
-**Reader:** partial. The machine export uses this membership and tie-break and tests
-exercise parts of fix-list filtering and priority. The Markdown and HTML surfaces omit
-`MANUAL` and fall back to registry order after priority and severity.
+**Reader:** enforced, and the tree had to move first. The sentence this replaces was
+right and understated: measured on 20 September 2026, the two rendered surfaces did not
+merely *fall back* to registry order — they kept **arrival** order for tied rows, so the
+same audit rendered from rows in a different order printed a different work plan, and a
+`MANUAL` item never reached the plan at all while the machine export carried it. One
+definition now serves all three consumers (`plan_order` in `checklist_report.py`), with the
+item id as the final tie-break.
+`tests/test_report.py::TheRenderedWorkPlanHasOneMembershipAndOrder::test_both_surfaces_ignore_arrival_order_and_include_manual_work`
+renders the same rows twice in two arrival orders and requires the two plans to be
+identical and to hold the manual item;
+`…::test_manual_work_is_named_as_human_work_on_both_surfaces` requires it to be legible as
+somebody's work rather than a measured failure. Probed by restoring either half: CAUGHT.
 
 #### Scenario: the same results ordered twice
 - **WHEN** two runs are given the same result rows in a different arrival order
@@ -542,7 +565,10 @@ value. The gate covers verdict credit as well as severity weight and effort cost
 **Why:** SCR-2 states the obligation and nothing enforces it. A requirement whose
 violation is invisible is the failure mode this whole suite exists to prevent, and here
 it sits on the number the client repeats and the order they act on.
-**Reader:** partial. The three tables are
+**Reader:** enforced. The line read `partial` while describing four probes that all
+caught; re-measured on 20 September 2026 by moving `SEVERITY_WEIGHT["critical"]` from 10 to
+11 with no declaration, which reddens the normative-table reader naming the table and the
+row, and the declaration stamp gate naming the remedy. The three tables are
 pinned by `TheNormativeTablesAreReadFromTheDocument`, which parses §2 out of this document
 rather than transcribing it, so the only green path is changing the code and the document
 together — and that is the moment a reviewer has to notice a release declaration is owed.
@@ -748,14 +774,25 @@ lose the record of how narrow the readers had been.
 
 | | requirements |
 |---|---|
-| **enforced** | SCR-1, SCR-2, SCR-3, SCR-4, SCR-6, SCR-7, SCR-9, SCR-12 |
-| **partial** | SCR-5, SCR-8, SCR-10, SCR-11, SCR-13, SCR-14 |
+| **enforced** | SCR-1, SCR-2, SCR-3, SCR-4, SCR-5, SCR-6, SCR-7, SCR-8, SCR-9, SCR-10, SCR-11, SCR-12, SCR-13, SCR-14 |
+| **partial** | — none |
 | **none** | — none |
 
 Invariants: all four partial — INV-S4 is read for the single-twin case by a reversed-row
 test and unread for the rest.
 
-**Eight enforced, six partial, none unread, of fourteen.**
+**Fourteen enforced, nothing partial, nothing unread, of fourteen.** The requirements are
+finished; the four invariants are not.
+
+The last six moved together at 0.100.0, and the way they moved is the point. Each was
+`partial` on the strength of a sentence somebody had read off the tests; the six breakages
+those sentences imply were run against the whole suite before a line was written. **Two of
+the six were already enforced** — SCR-5's denominator and SCR-14's tables both reddened, so
+their lines had been understating the suite for releases. Three were missing exactly the
+reader their line named. And SCR-13 was worse than its line said: not a fallback to registry
+order but arrival order, on both surfaces a client reads, with `MANUAL` work missing from
+the plan entirely. A `partial` is a hypothesis about the tree, and four of these six were
+wrong in one direction or the other.
 
 SCR-3, SCR-6, SCR-7 and SCR-12 moved at 0.95.2, and three of the four were violated in the
 shipped tree rather than merely unread — A.3 and A.4 record two of them, and the third is

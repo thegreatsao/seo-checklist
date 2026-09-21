@@ -113,6 +113,20 @@ class Priority(unittest.TestCase):
         low = item("B", FAIL, severity="low", effort="low")
         self.assertGreaterEqual(priority_of(crit), priority_of(low))
 
+    def test_priority_is_the_shipped_severity_weight_divided_by_every_effort_cost(self):
+        """SCR-11's quotient, through the value the work plan publishes.
+
+        Multiplying the published priority back by each shipped cost must recover the
+        shipped severity weight. This holds the division without copying either table
+        or calculating an expected priority with the implementation's own expression.
+        """
+        for severity, weight in runner.SEVERITY_WEIGHT.items():
+            for effort, cost in runner.EFFORT_COST.items():
+                with self.subTest(severity=severity, effort=effort):
+                    published = priority_of(item("A", FAIL, severity=severity,
+                                                 effort=effort))
+                    self.assertEqual(published * cost, weight)
+
 
 class Queue(unittest.TestCase):
     def test_lens_split_only_takes_its_own_slice(self):
@@ -729,6 +743,52 @@ class TheFixListIsMachineReadable(unittest.TestCase):
                 raw = f.read()
         self.assertTrue(raw.startswith(b"\xef\xbb\xbf"), "no UTF-8 BOM")
         self.assertIn("Заголовок".encode(), raw)
+
+
+class TheRenderedWorkPlanHasOneMembershipAndOrder(unittest.TestCase):
+    """SCR-13 at the two surfaces a client works from, not at `fix_rows`."""
+
+    def rows(self):
+        return [item("Z-2", FAIL, title="ZULU-TIED-FIX"),
+                item("A-1", FAIL, title="ALPHA-TIED-FIX"),
+                item("M-1", MANUAL, title="MANUAL-ACTION")]
+
+    def rendered(self, rows):
+        data = results(*rows)
+        data["scores"] = runner.score(data["items"])
+        data["entry_reachable"] = True
+        markdown = render_markdown(data)
+        md_plan = markdown.split("## What to do first", 1)[1].split(
+            "## Full checklist", 1)[0]
+        html_out = render_html(data)
+        html_start = html_out.index(">What to do first</h2>")
+        html_plan = html_out[html_start:html_out.index("</section>", html_start)]
+        return markdown, md_plan, html_out, html_plan
+
+    def test_both_surfaces_ignore_arrival_order_and_include_manual_work(self):
+        first = self.rendered(self.rows())
+        second = self.rendered(list(reversed(self.rows())))
+        expected = ("ALPHA-TIED-FIX", "MANUAL-ACTION", "ZULU-TIED-FIX")
+        for index, name in ((1, "markdown"), (3, "html")):
+            with self.subTest(surface=name):
+                plan, reordered = first[index], second[index]
+                self.assertEqual(plan, reordered,
+                                 f"{name} plan retained result arrival order")
+                positions = [plan.index(title) for title in expected]
+                self.assertEqual(positions, sorted(positions),
+                                 f"{name} plan is not in id order after tied keys")
+
+    def test_manual_work_is_named_as_human_work_on_both_surfaces(self):
+        _, md_plan, _, html_plan = self.rendered(self.rows())
+        md_manual = md_plan[md_plan.index("MANUAL-ACTION"):md_plan.index("ZULU-TIED-FIX")]
+        html_title = html_plan.index("MANUAL-ACTION")
+        html_manual = html_plan[html_plan.rindex("<article", 0, html_title):
+                                html_plan.index("</article>", html_title)]
+        for name, manual in (("markdown", md_manual), ("html", html_manual)):
+            self.assertIn("needs a human", manual,
+                          f"{name} presents MANUAL work as a measured failure")
+
+
 class EveryStatusReachesEverySurface(unittest.TestCase):
     """A status is not added until every place that lists one knows about it.
 
@@ -812,6 +872,33 @@ class EveryStatusReachesEverySurface(unittest.TestCase):
             self.assertNotEqual(ru.t(key, "<english>"), "<english>",
                                 f"{key} falls back to English")
         self.assertNotEqual(ru.status(NEEDS_INPUT, "<english>"), "<english>")
+
+
+class WaitingOnYouKeepsItsHalvesVisible(unittest.TestCase):
+    """SCR-8 at the Markdown and HTML bucket a report reader sees."""
+
+    def test_both_surfaces_show_the_total_and_the_two_different_subcounts(self):
+        data = results(item("P-1", PASS),
+                       item("L-1", LLM_PENDING),
+                       item("I-1", NEEDS_INPUT), item("I-2", NEEDS_INPUT))
+        data["scores"] = runner.score(data["items"])
+        data["entry_reachable"] = True
+        self.assertEqual(data["scores"]["partition"]["waiting_on_you"], 3)
+        self.assertEqual(data["scores"]["waiting_on_you"],
+                         {"llm_pending": 1, "needs_input": 2})
+
+        markdown = render_markdown(data)
+        row = next(line for line in markdown.splitlines()
+                   if line.startswith("| Waiting on you |"))
+        self.assertIn("| Waiting on you | 3 |", row)
+        self.assertIn("1 awaiting a language-model verdict", row)
+        self.assertIn("2 awaiting an input only you can supply", row)
+
+        html_out = render_html(data)
+        start = html_out.index("<b>3</b><span>Waiting on you:")
+        metric = html_out[start:html_out.index("</div>", start)]
+        self.assertIn("1 unanswered language-model items", metric)
+        self.assertIn("2 missing inputs", metric)
 
 
 class TheQueueAsksForWhatItIsAbout(unittest.TestCase):
@@ -931,6 +1018,23 @@ class AnswersFromAPerson(unittest.TestCase):
         for name, text in (("markdown", render_markdown(data)),
                            ("html", render_html(data))):
             self.assertIn("on their word", text, f"{name} hides the claimed verdict")
+
+
+class TheScoreDisclosesModelAnswers(unittest.TestCase):
+    """SCR-10's model case, distinct from the claimed case above."""
+
+    def test_a_model_only_decided_population_is_not_presented_as_wholly_measured(self):
+        data = results(item("A-1", PASS, decided_by="model"),
+                       item("A-2", WARN, decided_by="model"))
+        data["scores"] = runner.score(data["items"])
+        data["entry_reachable"] = True
+        self.assertEqual(data["scores"]["decided_by"], {"model": 2})
+        for name, text in (("markdown", render_markdown(data)),
+                           ("html", render_html(data))):
+            self.assertIn("2 read by a language model", text,
+                          f"{name} presents model answers as measurements")
+            self.assertNotIn("on their word", text,
+                             f"{name} confuses model answers with claimed answers")
 
 
 class AModelIsAskedForARationaleAndNotRequiredOne(unittest.TestCase):
