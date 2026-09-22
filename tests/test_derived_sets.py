@@ -1,4 +1,4 @@
-"""What the tool does is decided by 166 hand-written sets, and 17 of them are read.
+"""What the tool does is decided by 173 hand-written sets, and 43 of them are read.
 
 `openspec/specs/governance/` GOV-3: where a list, tuple or mapping decides behaviour, it
 is derived from what it describes or read by something. A hand-kept list guarded only by
@@ -12,13 +12,20 @@ the omission is the same line somebody would have had to edit to avoid it.**
 `tools/audit_derived_sets.py` counts them. This module holds the count and the direction:
 the record must describe the tree, and the unread column may not grow. That is `partial`
 and is labelled `partial` — a ratchet holds "no worse", not "every set is derived or
-read", and 149 unread is not a state any test here should be read as endorsing.
+read", and 130 unread is not a state any test here should be read as endorsing.
 
 **Why the number is the flattering one.** "Read" means a test imports the name from its
-module. Importing a name is not asserting what belongs in it, so 17 is a ceiling. A bare
-word match over the test corpus would say 44, by crediting one module's constant with a
-test that mentions another module's `PAGE` or `CONFIG`; that measure was written first
-and discarded for exactly that reason.
+module. Importing a name is not asserting what belongs in it, so 43 is a ceiling. A bare
+word match over the test corpus would say more still, by crediting one module's constant
+with a test that mentions another module's `PAGE` or `CONFIG`; that measure was written
+first and discarded for exactly that reason.
+
+**The read column jumped 28 → 43 at 0.104.0 and the tree did not move.** The measure had
+only ever matched the module spelled out, so fifteen sets a test asserts through an alias
+— `import checklist_runner as r`, then `r.MODE_CAPS` — were recorded as read by nothing.
+The defect was in the instrument, in the same shape it exists to find elsewhere: a census
+reporting completeness over the spellings it was given. The floor below was lowered to the
+number that repair revealed, not to one this session earned.
 """
 from __future__ import annotations
 
@@ -33,10 +40,15 @@ sys.path.insert(0, os.path.join(ROOT, "skills", "seo-checklist", "tools"))
 
 import audit_derived_sets  # noqa: E402
 
-# The count on 6 September 2026, when this module was written. It is a ceiling, not a
-# target: every set moved out of it is one fewer place where a forgotten entry is
+# The count on 6 September 2026, when this module was written, was 149. It is a ceiling,
+# not a target: every set moved out of it is one fewer place where a forgotten entry is
 # invisible. Lower it in the same commit that earns the lower number.
-UNREAD_AT_MOST = 149
+#
+# 130 since 0.104.0, and the fifteen that moved were never unread — the measure could not
+# see an aliased import. Lowered anyway, because the ratchet's job is to hold the best
+# number the instrument can currently justify, and leaving it at 149 would bank nineteen
+# sets of slack against a future regression.
+UNREAD_AT_MOST = 130
 
 
 class TheCensusDescribesThisTree(unittest.TestCase):
@@ -92,7 +104,12 @@ class TheCensusDescribesThisTree(unittest.TestCase):
         self.assertEqual(runner["SEVERITY_WEIGHT"], 4)
         self.assertIn("SEVERITY_WEIGHT",
                       [e["name"] for e in modules["checklist_runner"]["read"]])
-        self.assertIn("MODE_CAPS",
+        # `MODE_CAPS` stood here as the unread example until 0.104.0, when the measure
+        # learned to resolve aliases and found that `test_runner.py` had been asserting
+        # it all along as `r.MODE_CAPS`. `ASSET_EXTENSIONS` is the replacement, and the
+        # swap is the point: an example of "nothing reads this" is a claim about the
+        # tree, and it goes stale like any other.
+        self.assertIn("ASSET_EXTENSIONS",
                       [e["name"] for e in modules["checklist_runner"]["unread"]])
 
     def test_read_means_the_test_named_the_module_it_came_from(self):
@@ -107,6 +124,36 @@ class TheCensusDescribesThisTree(unittest.TestCase):
             "build_checklist", "PAGE", corpus))
         self.assertTrue(audit_derived_sets.read_by_a_test(
             "build_checklist", "PAGE", "build_checklist.PAGE\n"))
+
+    def test_a_module_the_test_renamed_still_credits_the_module(self):
+        """The arm added at 0.104.0, and the reason the read column was 28 not 43.
+
+        Both older patterns spell the module out, so the fifteen sets a test asserts
+        through an alias were recorded as read by nothing — a census reporting
+        completeness over the spellings it was given, which is this suite's most
+        frequent defect and was in its own instrument.
+        """
+        aliased = ("import checklist_runner as r\n"
+                   "assert r.MODE_CAPS\n")
+        self.assertTrue(audit_derived_sets.read_by_a_test(
+            "checklist_runner", "MODE_CAPS", aliased))
+
+    def test_an_alias_bound_in_another_file_credits_nothing(self):
+        """The direction that flatters, refused.
+
+        `sh` is `lib.safe_http` in one test module and `security_headers` in another.
+        Resolving aliases against a corpus flattened into one string would let either
+        file's `sh.SOMETHING` credit either module, which is precisely the
+        cross-attribution the original measure was narrowed to avoid. Aliases are
+        resolved per file, and this is what says so.
+        """
+        corpus = [("binds_it.py", "import security_headers as sh\n"),
+                  ("uses_it.py", "assert sh.HEADERS\n")]
+        self.assertFalse(audit_derived_sets.read_by_a_test(
+            "security_headers", "HEADERS", corpus))
+        self.assertTrue(audit_derived_sets.read_by_a_test(
+            "security_headers", "HEADERS",
+            [("both.py", "import security_headers as sh\nassert sh.HEADERS\n")]))
 
 
 if __name__ == "__main__":

@@ -88,10 +88,41 @@ def resolve(binary: str) -> str:
 
 
 def tree_hash() -> str | None:
-    """The content of the working tree as git sees it, including staged state."""
-    r = subprocess.run([resolve("git"), "-C", ROOT, "write-tree"],
-                       capture_output=True, text=True, close_fds=False)
-    return r.stdout.strip() if r.returncode == 0 else None
+    """The content of the **working tree**, including files not yet added.
+
+    This read `git write-tree` against the real index until 0.104.0, and that hashes
+    the *index* — so with fifteen modified and two new files on disk it returned HEAD's
+    tree and the stamp from the previous session matched. `ci_local.py` printed
+    *"this exact tree already ran green here. Nothing changed, so nothing is rerun"*
+    over a release it had never seen, which is the failure shape this whole file is
+    built to refuse: a check whose failure is indistinguishable from its success.
+
+    It was invisible because the hook's own moment is the one moment the two agree.
+    At `git push` everything is committed, so index and working tree are the same
+    tree and the answer is right. The README documents running this by hand, and
+    every such run mid-edit was answering about the last commit.
+
+    A throwaway index keeps the real one untouched: `git add -A` into it stages the
+    working tree as it stands, `.gitignore` still applies, and `write-tree` then names
+    the content on disk. An unchanged tree is still instant, because committing does
+    not change the bytes the hash is taken over.
+    """
+    git = resolve("git")
+    scratch = os.path.join(ROOT, ".git", "ci-local-index")
+    env = dict(os.environ, GIT_INDEX_FILE=scratch)
+    try:
+        if os.path.exists(scratch):
+            os.remove(scratch)
+        staged = subprocess.run([git, "-C", ROOT, "add", "-A"], capture_output=True,
+                                text=True, close_fds=False, env=env)
+        if staged.returncode != 0:
+            return None
+        r = subprocess.run([git, "-C", ROOT, "write-tree"], capture_output=True,
+                           text=True, close_fds=False, env=env)
+        return r.stdout.strip() if r.returncode == 0 else None
+    finally:
+        if os.path.exists(scratch):
+            os.remove(scratch)
 
 
 def run_step(name: str, script: str, env: dict) -> tuple[bool, float, str]:

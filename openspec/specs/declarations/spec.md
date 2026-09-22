@@ -478,11 +478,25 @@ being written down.
 **Why:** the cheapest way to make this test pass is always to edit the declaration, and
 it is available at the exact moment somebody is trying to get a release out. The whole
 value of the manifest is spent the first time that happens quietly.
-**Reader:** **none.** A declaration edited to match a run is a two-line diff that looks
-like every other declaration. `git log -S` finds it afterwards if somebody suspects it;
-nothing surfaces it at the time. Fixture pages are under the same rule and the same
-absence — the release ritual states that a page is not edited to pass a check, and that
-proving a verdict did not move is a separate act.
+**Reader:** partial — two of the three subjects, since 0.104.0.
+`tests/test_declaration_revisions.py` walks this repository's own history from a named
+epoch and compares every move it finds with the manifest's `triage` log:
+`EveryMoveCarriesItsDecision.test_no_declaration_or_fixture_moved_without_a_recorded_decision`
+refuses an unrecorded move **and** a recorded move that never happened, and
+`TheStampIsRecomputedNotReadBack.test_the_recorded_digest_is_what_the_material_hashes_to`
+re-derives a digest of every file the harness serves rather than reading a stamp back,
+so a fixture page edited under a prediction reddens too. `TheRecordHasAShape` refuses a
+record that does not name which side was wrong, and `HistoryIsReadableAtAll` refuses to
+run at all where the history is not there — the failure this gate has that would
+otherwise look exactly like its success.
+
+**The third subject is the checker, and it is not held.** Where triage decides the code
+was defective, the declaration stands and the fixture stands, so the walk sees no move
+and asks for no record; that half still lives in the release ritual and in a CHANGELOG
+entry. What the gate buys is that the two *cheap* resolutions — rewrite the prediction,
+edit the page — are no longer the silent ones, and the expensive honest one was never
+the risk. What it cannot do in any of the three is judge whether a recorded argument is
+a good one: it binds the record, exactly as the scenario below says the rule does.
 
 #### Scenario: the declaration is edited to match the run
 - **WHEN** a failing comparison is resolved by rewriting `expect` to whatever the audit
@@ -1103,6 +1117,49 @@ whose agreement required the tree to move.
 **A word meaning "cannot tell" is a place where nobody has to finish a sentence.** The one
 here had a live free pass behind it, and finishing the sentence is what found it.
 
+#### A.10 — the three doors, counted in this repository's own history, 22 September 2026
+
+Observation, not specification. Measured at `9b84102`, registry `8ea3bf0f12ab`, manifest
+`schema_version` 1, by replaying every one of the fifty-six commits that has ever touched
+`tests/fixtures/expectations.json` and diffing consecutive states
+(`local/dec8/expect-moves.txt`).
+
+**Seventy-nine `expect` values moved, across eighteen commits.** Eight of those commits
+name a triage in their subject — *"Triage MD-189: the one disagreement names a defect in
+its neighbour"*, *"Triage three disagreements, and repair a reason that named the wrong
+item"* — which is the discipline DEC-8 describes, kept by hand, in a place no reader
+looks. The other ten say nothing about a decision, and reading them now cannot tell a
+triage from an edit.
+
+**The door the requirement's own scenarios do not name was used.** `8ce2b9b`,
+*"Withdraw three declarations the sampled run answered differently"*, removed six
+declarations rather than editing them. A gate watching `expect` sees a key vanish and, if
+it only compares the keys both states have, sees nothing at all — so the first design of
+this gate, written from the requirement's text, would have reported full coverage over a
+door history shows was taken. The scenarios below say *rewriting `expect`* and *changing
+a fixture page*; withdrawal is neither, and it settles a disagreement just as completely.
+
+**Thirteen commits have touched the served trees**, and two of them — `ce4446b`,
+`df7d9bd` — moved declarations in the same commit as the pages under them. That is
+scenario two and scenario one arriving together, which is also the arrangement under
+which a digest alone can be walked through: edit the page, re-run the digest, commit both.
+The gate holds the history walk behind the digest for exactly that case, and the probe
+that proves it is the one worth copying (`local/dec8/probe-0104.py`, the row named
+*fixture edited, then restamped*).
+
+**The epoch is `9b84102` and the record does not claim anything before it.** Back-filling
+seventy-nine rows out of commit subjects would be writing down decisions this session did
+not take, in the file whose whole value is that its entries were.
+
+**Two of the eight probes were defective before they were correct, and both read as a
+pass.** The restamp row patched the digest for `good` and not for `good_tls`, which serves
+the same tree, so the stamp check stayed red for the wrong reason and the row printed
+INCONCLUSIVE. Worse, the shallow-clone row cloned *this* tree to depth 1 while nothing was
+yet committed on top of the epoch — so the epoch was still present, the refusal was never
+asked to fire, and the row printed a pass for a mechanism it had not exercised. It is now
+staged through a full clone with the pending release committed into it, and the probe
+asserts the epoch is absent before it draws any conclusion.
+
 ## Appendix B — how much of this document is enforced
 
 Every line below was measured by mutation — break the thing, run the named reader, record
@@ -1115,13 +1172,13 @@ values.
 | | requirements |
 |---|---|
 | **enforced** | DEC-2, DEC-3, DEC-5, DEC-6, DEC-7, DEC-10, DEC-11, DEC-12, DEC-14 |
-| **partial** | DEC-4, DEC-9, DEC-13 |
-| **none** | DEC-1, DEC-8 |
+| **partial** | DEC-4, DEC-8, DEC-9, DEC-13 |
+| **none** | DEC-1 |
 | **opposed** | — none |
 
 Invariants: INV-D1 and INV-D2 enforced; INV-D3 and INV-D4 unread.
 
-**Nine enforced, three partial, two unread, none opposed, of fourteen.**
+**Nine enforced, four partial, one unread, none opposed, of fourteen.**
 
 DEC-2, DEC-3 and DEC-7 moved together at 0.99.0, and they had to: the ninth word, the
 vocabulary that permitted it while forbidding its replacements, and the comparison that
@@ -1140,8 +1197,14 @@ reader arrived later still.
 
 DEC-5 is the manifest's first, and it was the reachable one for the reason the asymmetry
 below predicts. Recording a basis is a recording, and a recording can be checked by
-re-taking it. DEC-1 and DEC-8 remain, and both ask about the order in which a person did
-something — which nothing here can re-take.
+re-taking it. **This paragraph used to end "DEC-1 and DEC-8 remain, and both ask about
+the order in which a person did something — which nothing here can re-take", and half of
+that was wrong.** DEC-8 does not ask about an order. It asks whether a decision was
+recorded, and a record's absence is a fact about the tree rather than about a person's
+morning: the edit is in the history whether or not anybody remembers making it. A.10 has
+what that cost and what the measurement found. DEC-1 remains, and its line was narrowed
+at 0.103.0 for a related reason — half of it is genuinely outside the program and the
+other half is an instrument nobody has built.
 
 The asymmetry is structural rather than an accident of effort. A recording can be checked
 by re-taking it, which is why DEC-12 is the cheapest enforced requirement here and the

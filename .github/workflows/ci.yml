@@ -17,6 +17,15 @@ jobs:
         python-version: ["3.10", "3.11", "3.13"]
     steps:
       - uses: actions/checkout@v5
+        with:
+          # tests/test_declaration_revisions.py walks this repository's own
+          # history to hold DEC-8: a declaration or a fixture that moved with no
+          # recorded decision behind it. Over the default depth-1 clone that walk
+          # finds no commits, agrees with an empty record and prints a pass, so
+          # the one arrangement under which the check is worthless is the one it
+          # would report as clean. The suite refuses to run rather than skip, and
+          # this is what keeps it from having to.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v6
         with:
@@ -27,6 +36,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install ruff
+          # tests/test_ci_local.py reads ci.yml through
+          # ci_local.load_jobs(), which needs a YAML reader. Not in
+          # requirements.txt because nothing shipped parses YAML.
+          pip install pyyaml
 
 
       # ruff was listed as a development dependency and never ran. Running it found
@@ -497,6 +510,15 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # tests/test_declaration_revisions.py walks this repository's own
+          # history to hold DEC-8: a declaration or a fixture that moved with no
+          # recorded decision behind it. Over the default depth-1 clone that walk
+          # finds no commits, agrees with an empty record and prints a pass, so
+          # the one arrangement under which the check is worthless is the one it
+          # would report as clean. The suite refuses to run rather than skip, and
+          # this is what keeps it from having to.
+          fetch-depth: 0
 
       # This job answers a platform question, not the Python-floor syntax question
       # already covered by the Linux matrix, so one current Python version is enough.
@@ -509,6 +531,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install ruff
+          # tests/test_ci_local.py reads ci.yml through
+          # ci_local.load_jobs(), which needs a YAML reader. Not in
+          # requirements.txt because nothing shipped parses YAML.
+          pip install pyyaml
 
 
       - name: Lint

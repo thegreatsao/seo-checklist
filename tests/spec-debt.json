@@ -4,15 +4,14 @@
       "counts": {
         "bounded": 0,
         "enforced": 9,
-        "none": 2,
+        "none": 1,
         "opposed": 0,
-        "partial": 3
+        "partial": 4
       },
       "opposed": [],
       "requirements": 14,
       "unread": [
-        "DEC-1",
-        "DEC-8"
+        "DEC-1"
       ]
     },
     "evidence": {
@@ -151,9 +150,9 @@
   "totals": {
     "bounded": 4,
     "enforced": 121,
-    "none": 2,
+    "none": 1,
     "opposed": 0,
-    "partial": 22,
+    "partial": 23,
     "requirements": 149
   }
 }

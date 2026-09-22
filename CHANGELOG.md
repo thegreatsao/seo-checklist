@@ -10,6 +10,150 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.104.0 — the door the requirement did not name was the one that had been used
+
+Registry version: **`8ea3bf0f12ab`, unchanged.** No verdict moves and no source under
+`scripts/` changes. `declarations` DEC-8 goes **none → partial**; the ledger's `enforced`
+stays 121 of 149, `partial` 22 → 23, and **unread 2 → 1 — DEC-1 is now the only
+requirement in the whole specification with no reader at all.** Suite 1647 → 1669.
+
+**DEC-8 said a disagreement must be triaged rather than edited away, and nothing held
+it.** The cheapest way to make the fixture oracle pass is to rewrite the prediction, and
+it is available at the exact moment somebody is trying to get a release out. `git log -S`
+finds that afterwards if somebody suspects it; nothing surfaced it at the time.
+
+**Measured first, out of this repository's own history.** Every one of the fifty-six
+commits that has ever touched `tests/fixtures/expectations.json` was replayed and diffed
+against its predecessor (`local/dec8/expect-moves.txt`):
+
+| door | history |
+|---|---|
+| `expect` rewritten | **79 values, across 18 commits** |
+| a declaration withdrawn | `8ce2b9b` removed six rather than editing them |
+| a fixture page edited | 13 commits, two of them moving declarations in the same commit |
+
+**Two of those three doors are not in the requirement's scenarios.** DEC-8 names
+*rewriting `expect`* and *changing a fixture page*; withdrawal is neither, and it settles
+a disagreement just as completely. A gate built from the requirement's text — which is
+what the plan asked for — would have reported full coverage with a door open that history
+shows was taken.
+
+**The gate reads history, not intent.** `tools/audit_declaration_revisions.py` walks every
+commit from a named epoch to the working tree, derives each transition, and compares it
+with the manifest's new `triage` log. Both directions: an unrecorded move is the edit the
+requirement is about, and a *recorded move that never happened* is the record somebody
+writes ahead of the edit. A record must name which side was wrong — `prediction`,
+`checker` or `fixture` — because DEC-8 says both outcomes are legitimate and only the
+unrecorded edit is not.
+
+**The fixture door needed a digest that is not a stamp.** `fixture_digest` is re-derived
+from the bytes of every file the harness serves, line endings normalised so it identifies
+the material rather than the checkout, and the directories it covers come from
+`FixtureSite.material()` rather than a list beside it. DEC-9's disease — a version a hand
+can set while the content stays put — is deliberately not repeated here.
+
+**The third subject is the checker, and it is not held.** Where triage decides the code was
+defective, the declaration stands and the fixture stands, so the walk sees no move and asks
+for no record. That is why DEC-8 is `partial` and not `enforced`. What the gate buys is
+that the two *cheap* resolutions are no longer the silent ones.
+
+**Probed, 8 of 8** (`local/dec8/probe-0104.py`), each run against only the class meant to
+catch it: `expect` rewritten, a declaration withdrawn, a page edited, the digest stamped by
+hand, a record written for a move that never happened, the workflow losing the history the
+walk needs, **a page edited and then restamped** — the obvious next move after the digest
+refuses, which the history walk catches with the stamp green — and the suite run over a
+real depth-1 clone.
+
+**Two of the eight probes were defective before they were correct, and both read as a
+pass.** One restamped `good` and not `good_tls`, which serves the same tree. The other
+cloned this tree to depth 1 while nothing was yet committed on top of the epoch, so the
+epoch was still present, the refusal was never asked to fire, and the row printed a pass
+for a mechanism it had not exercised. It now stages a full clone with the pending release
+committed into it and asserts the epoch is absent before drawing any conclusion.
+
+**`fetch-depth: 0` on both jobs that run the suite.** `actions/checkout@v5` clones to depth
+1, and over a shallow clone the walk finds no commits, agrees with an empty record and
+prints a pass — the one arrangement under which the check is worthless is the one it would
+have reported as clean. So an unreachable epoch is a **failure with a named reason**, never
+a skip, and `test_the_workflow_gives_the_suite_the_history_it_needs` reads the setting out
+of `ci.yml` rather than recalling it.
+
+**The tree's own gates caught two things in this work.** The new module started three git
+children with `subprocess.run(["git", ...])`, breaking two of the three rules
+`AScriptTheOperatingSystemKilled` holds — the same rule that caught a test of mine at
+0.99.0. And `audit_derived_sets.py` recorded both of the gate's new sets as read by
+nothing, which is how the second finding arrived.
+
+### The derived-sets census was under-reporting its read column by more than a third
+
+**28 read became 43, and the tree did not move.** `read_by_a_test` matched
+`from <module> import <NAME>` and `<module>.<NAME>`, both anchored on the module spelled
+out. A test that writes `import checklist_runner as r` and then `r.MODE_CAPS` asserts the
+membership just as hard and was invisible to both. Fifteen sets of forty-three — measured
+with the AST in `local/dec8/measure-alias-blindness.py` before anything was changed.
+
+The defect is the one this census exists to find, in the census: **a reader reporting
+completeness over the spellings it was given.** It is the third instrument in this
+repository to have it, after `tests/inert_findings.py` at 0.97.0 and
+`EveryToolGateRunsHereToo` at 0.97.1.
+
+Aliases are resolved **per file** and not over a flattened corpus, because `sh` is
+`lib.safe_http` in one test module and `security_headers` in another, and crediting
+either's `sh.SOMETHING` to either module is exactly the cross-attribution the original
+measure was narrowed to avoid. `test_an_alias_bound_in_another_file_credits_nothing` is
+what says so. The alias map is cached: asked once per set over 173 sets, the uncached
+version turned a one-second census into a two-minute one, and a gate nobody will wait for
+is a gate somebody takes out of CI.
+
+`UNREAD_AT_MOST` falls 149 → 130. The fifteen were never unread, so the number was not
+earned by this session; it is lowered anyway, because leaving the floor at 149 banks
+nineteen sets of slack against a future regression. `MODE_CAPS` stood in
+`test_the_scan_finds_the_sets_this_suite_already_knows_about` as *the* example of an unread
+set and had been asserted all along; `ASSET_EXTENSIONS` replaces it, and the swap is the
+point — an example of "nothing reads this" is a claim about the tree, and it goes stale
+like any other.
+
+### The release gate was verifying the wrong tree, and nothing read it
+
+**`ci_local.py` printed "this exact tree already ran green here. Nothing changed, so
+nothing is rerun" over a release it had never seen.** `tree_hash()` called
+`git write-tree`, which hashes the **index**; its docstring said "the working tree". With
+fifteen modified and two new files on disk it returned HEAD's tree and matched a stamp
+written in the previous session.
+
+It survived a release because the hook's own moment is the one moment the two agree: at
+`git push` everything is committed, so index and working tree are the same tree and the
+answer is right. The README documents running it by hand, and every such run mid-edit was
+answering about the last commit. It now stages the working tree into a throwaway index —
+`.gitignore` still applies, the real index is untouched, 0.2s — so an unchanged tree is
+still instant, because committing does not change the bytes the hash is taken over.
+
+**The reason a defect this plain lasted a release: nothing in the tree read
+`ci_local.py`.** No test, no CI step. It is the one mechanism whose failure could not
+surface as a red build, because it *is* the build's local stand-in — and
+`openspec/specs/governance/` GOV-3 asks that a mechanism deciding behaviour be read by
+something. `tests/test_ci_local.py` is that something: seven tests over the stamp, the
+throwaway index, the workflow parse and the resolved binary. Probed in both directions
+against the 0.102.0 behaviour (`local/dec8/probe-ci-local.py`, 2 of 2 caught).
+
+`pip install pyyaml` joins the two jobs that run the suite, because those tests parse
+`ci.yml` and PyYAML is deliberately not a shipped dependency —
+`test_the_workflow_parser_is_installed_where_this_module_runs` reads that out of the
+workflow rather than discovering it as a `SystemExit` from a helper three files away.
+
+### Recorded rather than repaired
+
+**The epoch is `9b84102` and the record claims nothing before it.** Eight of the eighteen
+commits that moved an `expect` name a triage in their subject; the other ten say nothing
+about a decision, and reading them now cannot tell a triage from an edit. Back-filling
+seventy-nine rows out of commit subjects would be writing down decisions this session did
+not take, in the file whose whole value is that its entries were.
+
+**There is no release tag to compare against, and there has not been for 41 releases.**
+Tagging stopped at `v0.91.0` on 25 August. The gate therefore walks from a commit rather
+than from a tag, which costs nothing and depends on nothing anybody has to remember; the
+question of whether the ritual should tag again is Anton's and is open.
+
 ## 0.103.0 — four holes the declarations document had described in its own words
 
 Registry version: **`8ea3bf0f12ab`, unchanged.** No verdict moves and no source outside

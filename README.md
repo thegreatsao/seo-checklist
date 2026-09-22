@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.103.0 — see [CHANGELOG.md](CHANGELOG.md). **Nothing you run changes.** This release is about the records the suite keeps about itself: four things the declarations document said were unchecked turned out to be unchecked, measured by breaking each one against the whole suite first, and now have readers. An appendix that claimed the fixture manifest overstated its coverage by ten items had been repaired four releases earlier and went on saying otherwise.
+Version 0.104.0 — see [CHANGELOG.md](CHANGELOG.md). **Nothing you run changes.** This release closes the last easy way to make this project's own test oracle agree with itself: editing the prediction. The suite now walks its own git history and refuses any release where a declared verdict, or a page the declaration was made against, moved with no decision recorded beside it — and refuses to run at all where the history is not there to walk, because that failure would otherwise look exactly like a pass. Measuring it found a second thing: the census that counts which internal lists anything checks was under-reporting by more than a third, because a test that renames a module on import was invisible to it. Before that, `0.103.0` gave readers to four things the declarations document said were unchecked.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

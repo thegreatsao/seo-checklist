@@ -346,7 +346,10 @@ class ManifestContract(unittest.TestCase):
         declared = manifest()
         with open(REGISTRY, encoding="utf-8") as stream:
             registry_version = json.load(stream)["registry_version"]
-        self.assertEqual(declared["schema_version"], 1)
+        # 2 since 0.104.0, when the manifest gained `fixture_digest` and `triage`.
+        # DEC-8 asks that neither side of a disagreement move without a recorded
+        # decision, and both fields are read by `tests/test_declaration_revisions.py`.
+        self.assertEqual(declared["schema_version"], 2)
         self.assertEqual(declared["registry_version"], registry_version)
         self.assertEqual(
             declared["declared_from"],

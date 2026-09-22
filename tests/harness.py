@@ -311,20 +311,51 @@ class FixtureSite:
         self._sites: dict[str, _Site] = {}
         self._artifacts: dict[str, str] = {}
 
-    def start(self) -> "FixtureSite":
-        self.dir = tempfile.mkdtemp(prefix="seo-fixture-")
-        # The fourth column is compression, and it belongs to the good tree for the
-        # same reason the hardened header set does: half this registry asks about
-        # server behaviour, and a pair that answers identically on a server question
-        # cannot tell a good site from a bad one. Both good origins serve gzip to a
-        # client that asks; neither broken origin does.
-        origins = (
+    @classmethod
+    def origins(cls) -> tuple[tuple, ...]:
+        """The four origins, as `(label, tree, tls, headers, gzip_text)`.
+
+        Lifted out of `start()` at 0.104.0 so that the thing which decides what an
+        origin serves is also the thing a digest of that material is derived from.
+        `openspec/specs/declarations/` DEC-8 asks that a fixture edit not be an
+        invisible way to settle a disagreement, and the gate that holds it has to
+        know which files reach which origin. A hand-written list beside this one
+        would answer for a mapping that had moved — the defect this repository keeps
+        finding in its own censuses.
+
+        The fourth column is compression, and it belongs to the good tree for the
+        same reason the hardened header set does: half this registry asks about
+        server behaviour, and a pair that answers identically on a server question
+        cannot tell a good site from a bad one. Both good origins serve gzip to a
+        client that asks; neither broken origin does.
+        """
+        return (
             ("good", "good", False, {}, True),
             ("broken", "broken", False, {}, False),
-            ("good_tls", "good", True, self.GOOD_TLS_HEADERS, True),
+            ("good_tls", "good", True, cls.GOOD_TLS_HEADERS, True),
             ("broken_tls", "broken", True, {}, False),
         )
-        for name, source_name, tls, headers, gzip_text in origins:
+
+    @classmethod
+    def material(cls) -> dict[str, tuple[str, ...]]:
+        """Per origin, the fixture directories it is built from, relative to `FIXTURES`.
+
+        Read off `origins()` rather than listed, including the rule that decides
+        whether an origin gets artifacts at all: `start()` stages them only for the
+        origins that are not TLS, so a TLS origin serves its tree and nothing else.
+        Both halves move together or neither does.
+        """
+        served = {}
+        for name, tree, tls, _headers, _gzip in cls.origins():
+            dirs = [tree]
+            if not tls:
+                dirs.append(f"{ARTIFACTS}/{name}")
+            served[name] = tuple(dirs)
+        return served
+
+    def start(self) -> "FixtureSite":
+        self.dir = tempfile.mkdtemp(prefix="seo-fixture-")
+        for name, source_name, tls, headers, gzip_text in self.origins():
             src = os.path.join(self.source, source_name)
             if os.path.isdir(src):
                 self._sites[name] = _Site(src, os.path.join(self.dir, name), tls=tls,

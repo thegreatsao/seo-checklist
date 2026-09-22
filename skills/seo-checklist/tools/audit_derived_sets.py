@@ -20,7 +20,8 @@ whole point: a collection built by a comprehension or a function call is derived
 something, which is what the requirement asks for, so it is out of scope by construction.
 
 **What "read" means here, exactly.** That a test file imports the name from its module —
-`from <module> import <NAME>` or `<module>.<NAME>`. That is the strictest of the three
+`from <module> import <NAME>` or `<module>.<NAME>`, including where that test bound the
+module to an alias. That is the strictest of the three
 measures available and the only honest one. A bare word match over the test corpus counts
 44 rather than 14, because names like `PAGE`, `CONFIG` and `CLASSES` occur in tests that
 have nothing to do with them; and even the strict measure is an **upper bound** on being
@@ -32,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import functools
 import glob
 import json
 import os
@@ -69,24 +71,78 @@ def literal_sets(path: str) -> list[tuple[str, int]]:
     return out
 
 
-def test_corpus() -> str:
-    return "\n".join(
-        open(path, encoding="utf-8").read()
-        for path in sorted(glob.glob(os.path.join(TESTS, "*.py"))))
+def test_corpus() -> list[tuple[str, str]]:
+    """`(path, source)` per test module, not one joined string.
+
+    Per file on purpose: aliases are resolved below, and an alias is only meaningful
+    inside the file that bound it. `sh` means `lib.safe_http` in one test module and
+    `security_headers` in another, so a corpus flattened into a single string cannot
+    tell which module `sh.SOMETHING` credits — and guessing would credit one module's
+    coverage to another's constant, the direction this census is careful not to flatter.
+    """
+    out = []
+    for path in sorted(glob.glob(os.path.join(TESTS, "*.py"))):
+        with open(path, encoding="utf-8") as stream:
+            out.append((path, stream.read()))
+    return out
 
 
-def read_by_a_test(module: str, name: str, corpus: str) -> bool:
-    """`from <module> import <NAME>` or `<module>.<NAME>`, and nothing looser.
+@functools.lru_cache(maxsize=None)
+def aliases_in(source: str) -> dict[str, frozenset[str]]:
+    """`{real module name: {alias bound in this file}}`, read with the AST.
+
+    `import lib.safe_http as sh` binds the alias to the last component, which is how
+    the census names its modules, so the key is the basename.
+
+    Cached because the question is asked once per set and there are 173 of them: the
+    uncached version re-parsed forty test modules for each, and turned a census that
+    ran in a second into one that ran for two minutes. A gate nobody will wait for is
+    a gate somebody will take out of CI.
+    """
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return {}
+    found: dict[str, set[str]] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.asname:
+                    found.setdefault(alias.name.split(".")[-1], set()).add(alias.asname)
+    return {module: frozenset(names) for module, names in found.items()}
+
+
+def read_by_a_test(module: str, name: str,
+                   corpus: list[tuple[str, str]] | str) -> bool:
+    """`from <module> import <NAME>`, `<module>.<NAME>`, or the same under an alias.
 
     A bare word match is what the first draft used, and it counted `PAGE` as read
     because some other module's `PAGE` appears in a test. Attributing one module's
     coverage to another's constant is the direction that flatters, so the match is
     anchored on the module.
+
+    **The alias arm was added at 0.104.0, and it moved the read column from 28 to 43.**
+    Both older patterns spell the module out, so `import checklist_runner as r` followed
+    by `r.MODE_CAPS` asserted the membership and was recorded as unread — fifteen sets
+    of forty-three, more than a third of the column, invisible for the usual reason: a
+    census finds only the spellings it was given. Measured before the repair in
+    `local/dec8/measure-alias-blindness.py`, which resolves the aliases with the AST and
+    re-asks the same question of the record this tool had already written.
     """
-    qualified = re.escape(module) + r"\." + re.escape(name) + r"\b"
+    if isinstance(corpus, str):
+        # One test module's worth of source, which is how `test_derived_sets.py` asks
+        # this question about a hand-written example. The per-file shape is what the
+        # census itself passes.
+        corpus = [("<given>", corpus)]
     imported = (r"from\s+" + re.escape(module) + r"\s+import[^\n]*\b"
                 + re.escape(name) + r"\b")
-    return bool(re.search(qualified, corpus) or re.search(imported, corpus))
+    for _path, source in corpus:
+        for spelling in {module, *aliases_in(source).get(module, set())}:
+            if re.search(re.escape(spelling) + r"\." + re.escape(name) + r"\b", source):
+                return True
+        if re.search(imported, source):
+            return True
+    return False
 
 
 def census() -> dict:
@@ -104,8 +160,9 @@ def census() -> dict:
     return {
         "measured": "module-level upper-case names bound to a list, tuple, set or dict "
                     "literal in scripts/ or tools/",
-        "read_means": "a test imports the name from its module, which is an upper bound "
-                      "on the membership being asserted",
+        "read_means": "a test imports the name from its module, under its own name or "
+                      "an alias the test bound, which is an upper bound on the "
+                      "membership being asserted",
         "total": total,
         "read": total - unread,
         "unread": unread,

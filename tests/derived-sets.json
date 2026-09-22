@@ -1,18 +1,18 @@
 {
   "measured": "module-level upper-case names bound to a list, tuple, set or dict literal in scripts/ or tools/",
-  "read_means": "a test imports the name from its module, which is an upper bound on the membership being asserted",
-  "total": 171,
-  "read": 28,
-  "unread": 143,
+  "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
+  "total": 173,
+  "read": 43,
+  "unread": 130,
   "modules": {
     "ai_crawler_policy_matrix": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "AI_CRAWLERS",
           "entries": 15
         }
-      ]
+      ],
+      "unread": []
     },
     "anchor_text_audit": {
       "read": [],
@@ -76,6 +76,19 @@
         }
       ]
     },
+    "audit_declaration_revisions": {
+      "read": [
+        {
+          "name": "SIDES",
+          "entries": 3
+        },
+        {
+          "name": "KINDS",
+          "entries": 3
+        }
+      ],
+      "unread": []
+    },
     "audit_derived_sets": {
       "read": [
         {
@@ -108,12 +121,13 @@
       ]
     },
     "audit_reachability": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "MECHANISMS",
           "entries": 4
-        },
+        }
+      ],
+      "unread": [
         {
           "name": "COMPLEMENTS",
           "entries": 4
@@ -125,7 +139,12 @@
       ]
     },
     "audit_score_sensitivity": {
-      "read": [],
+      "read": [
+        {
+          "name": "CANDIDATE_WEIGHTS",
+          "entries": 5
+        }
+      ],
       "unread": [
         {
           "name": "DECIDED",
@@ -134,10 +153,6 @@
         {
           "name": "SEVERITIES",
           "entries": 4
-        },
-        {
-          "name": "CANDIDATE_WEIGHTS",
-          "entries": 5
         },
         {
           "name": "CANDIDATE_EFFORTS",
@@ -407,11 +422,31 @@
           "entries": 3
         },
         {
+          "name": "GSC_UNAVAILABLE",
+          "entries": 3
+        },
+        {
+          "name": "MODE_CAPS",
+          "entries": 3
+        },
+        {
+          "name": "MODE_HELP",
+          "entries": 3
+        },
+        {
+          "name": "HOW_TO_SUPPLY",
+          "entries": 8
+        },
+        {
           "name": "SECRET_CTX_KEYS",
           "entries": 2
         },
         {
           "name": "SAFE_BROWSING_ENV_KEYS",
+          "entries": 2
+        },
+        {
+          "name": "GSC_FALLBACKS",
           "entries": 2
         },
         {
@@ -441,28 +476,12 @@
           "entries": 5
         },
         {
-          "name": "GSC_UNAVAILABLE",
-          "entries": 3
-        },
-        {
-          "name": "MODE_CAPS",
-          "entries": 3
-        },
-        {
-          "name": "MODE_HELP",
-          "entries": 3
-        },
-        {
           "name": "SLOW_FIRST",
           "entries": 8
         },
         {
           "name": "THRESHOLD_OPS",
           "entries": 15
-        },
-        {
-          "name": "HOW_TO_SUPPLY",
-          "entries": 8
         },
         {
           "name": "UNREAD_KEYS",
@@ -483,10 +502,6 @@
         {
           "name": "VERDICT_RANK",
           "entries": 3
-        },
-        {
-          "name": "GSC_FALLBACKS",
-          "entries": 2
         },
         {
           "name": "SITEMAP_PATHS",
@@ -726,15 +741,16 @@
       ]
     },
     "notebook_sync": {
-      "read": [],
+      "read": [
+        {
+          "name": "CONFIG",
+          "entries": 2
+        }
+      ],
       "unread": [
         {
           "name": "FIXED",
           "entries": 8
-        },
-        {
-          "name": "CONFIG",
-          "entries": 2
         }
       ]
     },
@@ -883,8 +899,7 @@
       ]
     },
     "server_log_audit": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "SEARCH_BOTS",
           "entries": 9
@@ -900,7 +915,9 @@
         {
           "name": "CRAWLER_DOMAINS",
           "entries": 6
-        },
+        }
+      ],
+      "unread": [
         {
           "name": "JSON_KEYS",
           "entries": 6

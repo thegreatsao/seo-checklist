@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "registry_version": "8ea3bf0f12ab",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
@@ -24,6 +24,13 @@
       "/orphan.html"
     ]
   },
+  "fixture_digest": {
+    "good": "4752e66a64f7",
+    "broken": "4db7e0f5f545",
+    "good_tls": "964355d7ab44",
+    "broken_tls": "dafa07b8008f"
+  },
+  "triage": [],
   "fixtures": {
     "good": {
       "AR-151": {
