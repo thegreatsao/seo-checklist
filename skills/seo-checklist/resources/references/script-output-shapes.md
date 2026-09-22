@@ -891,13 +891,24 @@ one — the script refuses the file instead.
 `url` — str
 `count` — int — **absent on a page with no images**
 `missing_alt` — int — **absent on a page with no images**
+`placeholder_alt` — int — **absent on a page with no images**. Images whose alt is
+  present and non-empty and still describes nothing: a filename, a camera or
+  asset stub (`IMG_0042`, `untitled`, `banner`), fewer than three characters, or
+  not one letter anywhere. `alt=""` is never counted here — an empty alt is the
+  correct markup for a decorative image and is `empty_alt`.
+`alt_not_meaningful` — int — **absent on a page with no images**. `missing_alt + placeholder_alt`,
+  and what CI-016 and MD-186 assert since 0.105.0. Both halves fail the question
+  those items are titled for, and a rule gets one operator over one path, so the
+  sum is the leaf rather than two asserts. It can only be greater than or equal
+  to `missing_alt`.
 `summary.images` — int
 `summary.lazy_lcp_candidates` — int — CN-054's compatibility path: JS-deferred images
   with `data-src`/`data-srcset` but no native `src`, `srcset`, or `<picture>` source.
   Native `loading=lazy` remains discoverable and does not increment this count.
   **Absent on a page with no images.**
 
-Those three are the fields the registry reads as a verdict, and since 0.49.0 a page
+`alt_not_meaningful` is the field the registry reads as a verdict for the alt-text
+pair, alongside `count` and `summary.lazy_lcp_candidates`, and since 0.49.0 a page
 with no images emits none of them, so the four items over this script report `NO_DATA`
 there rather than a FAIL for MD-184 and a free PASS for CI-016, MD-186 and CN-054. The
 descriptive counts stay: `summary.images` is 0 because the page has none, which is a

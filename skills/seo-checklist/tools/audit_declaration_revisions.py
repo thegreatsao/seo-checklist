@@ -75,10 +75,27 @@ from harness import FixtureSite  # noqa: E402
 # makes the claim honest — the ledger is complete from here, and says so.
 EPOCH = "9b841021c8f930b10b4015b9925f281fd3d5404e"
 
-# A decision names the side that was wrong. DEC-8 says both outcomes are legitimate and
-# only the unrecorded edit is not, so the vocabulary has to be able to say "the checker
-# was defective" as easily as "the prediction was".
-SIDES = ("prediction", "checker", "fixture")
+# What the decision was. DEC-8 says both triage outcomes are legitimate and only the
+# unrecorded edit is not, so the vocabulary has to say "the checker was defective" as
+# easily as "the prediction was".
+#
+# `new-material` is the fourth, added at 0.105.0 the first time this gate met real work.
+# Giving the broken fixture an alt of `huge.png`, so that CI-016's new placeholder
+# signal is exercised by a served page, moves the digest on both origins built from
+# that tree — and no side was wrong. The field was called `side` and the three values
+# above were all it had, so the only way to record that edit was to claim the fixture
+# had been in error, which is a false entry in the one file whose value is that its
+# entries are true. A vocabulary that cannot say what happened produces a record that
+# lies, and the gate would still have gone green.
+#
+# What did NOT change is that the move must be recorded. The requirement is that no
+# edit to either side is silent; it was never that every edit is somebody's mistake.
+DECISIONS = (
+    "prediction-was-wrong",
+    "checker-was-wrong",
+    "fixture-was-wrong",
+    "new-material",
+)
 
 KINDS = ("expect", "withdrawal", "fixture")
 
@@ -300,9 +317,9 @@ def malformed(rows: list[dict]) -> list[str]:
         if row.get("kind") not in KINDS:
             problems.append(f"{where}: kind {row.get('kind')!r} is not one of "
                             f"{', '.join(KINDS)}")
-        if row.get("side") not in SIDES:
-            problems.append(f"{where}: side {row.get('side')!r} does not name which "
-                            f"side was wrong; one of {', '.join(SIDES)}")
+        if row.get("decided") not in DECISIONS:
+            problems.append(f"{where}: decided {row.get('decided')!r} does not say what "
+                            f"the decision was; one of {', '.join(DECISIONS)}")
         why = (row.get("why") or "").strip()
         if len(why) < MIN_ARGUMENT:
             problems.append(f"{where}: the argument is {len(why)} characters. A record "
@@ -336,9 +353,10 @@ def disagreements() -> list[str]:
                 else f"the {move['origin']} fixture material")
         problems.append(
             f"unrecorded {move['kind']}: {what} went {move['from']} -> {move['to']} "
-            f"and the manifest's `triage` does not say who decided it or why. Both "
-            f"outcomes are legitimate — the prediction may have been wrong, or the "
-            f"checker may have been; record which, and the argument")
+            f"and the manifest's `triage` does not say what was decided or why. "
+            f"Every outcome is legitimate — the prediction may have been wrong, the "
+            f"checker may have been, or this may be new material for a check that did "
+            f"not exist ({', '.join(DECISIONS)}); record which, and the argument")
 
     for key, leftovers in sorted(pending.items(), key=lambda pair: str(pair[0])):
         for _row in leftovers:

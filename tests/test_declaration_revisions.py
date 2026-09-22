@@ -188,30 +188,60 @@ class TheRecordHasAShape(unittest.TestCase):
     and does not claim to.
     """
 
-    def test_a_record_names_which_side_was_wrong(self):
-        self.assertEqual(set(revisions.SIDES), {"prediction", "checker", "fixture"})
+    def test_the_vocabulary_can_say_what_actually_happened(self):
+        """Four values, and the fourth was added the first time this gate met real work.
+
+        It had three — the prediction was wrong, the checker was wrong, the fixture was
+        wrong — which assumes every move is somebody's mistake. At 0.105.0 the broken
+        fixture's alt became `huge.png` so that a signal added in the same release is
+        exercised by a served page, and no side was wrong. With three values the only
+        way to record that edit was to claim the fixture had been in error: **a
+        vocabulary that cannot say what happened produces a record that lies, and the
+        gate goes green over it.**
+
+        What did not change is that the move must be recorded. DEC-8 asks that no edit
+        to either side be silent, never that every edit is a mistake.
+        """
+        self.assertEqual(
+            set(revisions.DECISIONS),
+            {"prediction-was-wrong", "checker-was-wrong", "fixture-was-wrong",
+             "new-material"})
 
     def test_the_records_in_the_tree_are_all_readable(self):
         problems = revisions.malformed(revisions.recorded())
         self.assertEqual(problems, [], "\n".join(["a record that cannot be read:",
                                                   *problems]))
 
-    def test_a_record_missing_its_side_is_refused(self):
+    def test_a_record_not_saying_what_was_decided_is_refused(self):
         rows = [{"kind": "expect", "origin": "good", "item": "AR-151",
                  "from": "PASS", "to": "FAIL",
                  "why": "a sentence long enough to clear the floor this gate sets"}]
-        self.assertTrue(any("side" in line for line in revisions.malformed(rows)))
+        self.assertTrue(any("decided" in line for line in revisions.malformed(rows)))
 
     def test_a_record_with_an_empty_argument_is_refused(self):
         rows = [{"kind": "expect", "origin": "good", "item": "AR-151",
-                 "from": "PASS", "to": "FAIL", "side": "prediction", "why": "fixed"}]
+                 "from": "PASS", "to": "FAIL",
+                 "decided": "prediction-was-wrong", "why": "fixed"}]
         self.assertTrue(any("argument" in line for line in revisions.malformed(rows)))
 
     def test_a_record_naming_a_kind_the_gate_cannot_observe_is_refused(self):
         rows = [{"kind": "reconsidered", "origin": "good", "item": "AR-151",
-                 "from": "PASS", "to": "FAIL", "side": "prediction",
+                 "from": "PASS", "to": "FAIL", "decided": "prediction-was-wrong",
                  "why": "a sentence long enough to clear the floor this gate sets"}]
         self.assertTrue(any("kind" in line for line in revisions.malformed(rows)))
+
+    def test_new_material_is_a_decision_the_record_accepts(self):
+        """The 0.105.0 case, pinned as a row rather than only as a vocabulary entry.
+
+        A fixture move recorded as `new-material` must pass `malformed`; if it did not,
+        the only readable record of that edit would be a false one.
+        """
+        rows = [{"kind": "fixture", "origin": "broken", "item": None,
+                 "from": "aaaaaaaaaaaa", "to": "bbbbbbbbbbbb",
+                 "decided": "new-material",
+                 "why": "the page was given a case a new check needs, and no side "
+                        "was wrong"}]
+        self.assertEqual(revisions.malformed(rows), [])
 
 
 if __name__ == "__main__":

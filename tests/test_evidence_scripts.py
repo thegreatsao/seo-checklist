@@ -4341,12 +4341,13 @@ class CollectionPage(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class ImageInventory(unittest.TestCase):
-    """CI-016 and MD-186 `missing_alt`, CN-054 `summary.lazy_lcp_candidates`,
+    """CI-016 and MD-186 `alt_not_meaningful`, CN-054 `summary.lazy_lcp_candidates`,
     MD-184 `count`."""
 
     def test_images_with_alt_text_pass_both_alt_items(self):
         good = out("images")
         self.assertEqual(good["missing_alt"], 0)
+        self.assertEqual(good["alt_not_meaningful"], 0)
         for item_id in ("CI-016", "MD-186"):
             self.assertEqual(verdict(item_id, good), PASS, item_id)
 
@@ -4356,6 +4357,116 @@ class ImageInventory(unittest.TestCase):
         self.assertEqual(bad["empty_alt"], 1)
         for item_id in ("CI-016", "MD-186"):
             self.assertEqual(verdict(item_id, bad), FAIL, item_id)
+
+
+class AnAltThatExistsAndDescribesNothing(unittest.TestCase):
+    """`openspec/specs/registry/` REG-6, A.3 and A.9: the third alt case.
+
+    CI-016 and MD-186 are titled *Provide Meaningful Alt Text* and asserted
+    `missing_alt == 0` until 0.105.0, which is a different question. Measured before the
+    repair (`local/reg6b/measure-alt.py`): a page whose five images read `image1.jpg`,
+    `IMG_0042`, `untitled`, `photo` and `x` scored **exactly the same as one carrying
+    five real descriptions** — both PASS on both items. A.3 had asserted this in prose
+    since it was written and nothing in the tree had ever run it.
+
+    Three cases, and only two are defects: no alt at all, an alt that describes nothing,
+    and `alt=""` — which is the *correct* markup for a decorative image and is what
+    CI-016's own `fix` text asks for. The third must never be flagged, which is why it
+    is asserted here rather than left to the patterns to get right by accident.
+    """
+
+    def inventory(self, alts):
+        import tempfile
+
+        import image_inventory
+        rows = "\n".join(
+            f'<img src="/img/photo-{i}.jpg" alt="{alt}" width="800" height="600">'
+            if alt is not None
+            else f'<img src="/img/photo-{i}.jpg" width="800" height="600">'
+            for i, alt in enumerate(alts))
+        html = ('<!doctype html><html lang="en"><head><title>Alt</title></head>'
+                f"<body><h1>Alt</h1>{rows}</body></html>")
+        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
+                                         encoding="utf-8") as fh:
+            fh.write(html)
+            path = fh.name
+        try:
+            return image_inventory.inventory(path)
+        finally:
+            os.unlink(path)
+
+    def test_the_five_alts_that_measured_zero_now_fail_both_items(self):
+        result = self.inventory(["image1.jpg", "IMG_0042", "untitled", "photo", "x"])
+        self.assertEqual(result["missing_alt"], 0,
+                         "every image here has an alt; that was always the problem")
+        self.assertEqual(result["placeholder_alt"], 5)
+        self.assertEqual(result["alt_not_meaningful"], 5)
+        for item_id in ("CI-016", "MD-186"):
+            self.assertEqual(verdict(item_id, result), FAIL, item_id)
+
+    def test_real_descriptions_still_pass(self):
+        """The direction that matters more. A checker that accuses a site which has done
+        the work teaches its operator to stop reading the report, and there is no way
+        back from that."""
+        result = self.inventory([
+            "A barber trimming a client's beard",
+            "The shop front on Ermou street",
+            "Price list for beard and hair services",
+            "Banner advertising the spring sale",
+            "Screenshot of the booking form",
+        ])
+        flagged = [r["alt"] for r in result["images"] if r["placeholder_alt"]]
+        self.assertEqual(result["placeholder_alt"], 0,
+                         f"a real description was called a placeholder: {flagged}")
+        for item_id in ("CI-016", "MD-186"):
+            self.assertEqual(verdict(item_id, result), PASS, item_id)
+
+    def test_an_empty_alt_is_decorative_markup_and_never_a_placeholder(self):
+        result = self.inventory(["", "", ""])
+        self.assertEqual(result["empty_alt"], 3)
+        self.assertEqual(result["placeholder_alt"], 0,
+                         'alt="" is what CI-016\'s own fix text asks for on a '
+                         "decorative image; counting it would make the repair a worse "
+                         "defect than the one it replaces")
+        self.assertEqual(result["alt_not_meaningful"], 0)
+
+    def test_the_new_leaf_can_only_exceed_the_old_one(self):
+        """So nothing that failed before passes now — the property that makes this a
+        widening rather than a change of subject."""
+        for alts in (["image1.jpg", "A real description here", None],
+                     ["", "x", "Another real description here"],
+                     [None, None]):
+            with self.subTest(alts=alts):
+                result = self.inventory(alts)
+                self.assertGreaterEqual(result["alt_not_meaningful"],
+                                        result["missing_alt"])
+                self.assertEqual(result["alt_not_meaningful"],
+                                 result["missing_alt"] + result["placeholder_alt"])
+
+    def test_an_alt_repeating_its_own_filename_is_a_placeholder(self):
+        """A comparison rather than a shape, so it is asserted apart from the patterns:
+        `alt="photo-0.jpg"` on `src="/img/photo-0.jpg"` names the file and describes
+        nothing, and it is caught whatever the extension list holds."""
+        import image_inventory
+        self.assertTrue(image_inventory.alt_is_placeholder("photo-0.jpg",
+                                                           "/img/photo-0.jpg"))
+        self.assertTrue(image_inventory.alt_is_placeholder("photo-0",
+                                                           "/img/photo-0.jpg"))
+        self.assertFalse(image_inventory.alt_is_placeholder("A loaf of sourdough",
+                                                            "/img/photo-0.jpg"))
+
+    def test_the_patterns_are_read_here_rather_than_only_consumed(self):
+        """`openspec/specs/governance/` GOV-3. A hand-written set guarded only by the
+        code that runs it is a set nothing reads, and the census counts it as such. The
+        membership is asserted, not only the behaviour, because a pattern quietly
+        dropped from the tuple would leave every behavioural test above green on the
+        cases that remain."""
+        import image_inventory
+        self.assertEqual(len(image_inventory.PLACEHOLDER_ALT_PATTERNS), 3)
+        self.assertEqual(image_inventory.MIN_MEANINGFUL_ALT, 3)
+        shapes = "\n".join(image_inventory.PLACEHOLDER_ALT_PATTERNS)
+        for required in ("jpe?g", "untitled", "screenshot", "banner"):
+            self.assertIn(required, shapes)
 
     def test_an_img_without_src_is_skipped_and_reported(self):
         import tempfile

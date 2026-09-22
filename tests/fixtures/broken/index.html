@@ -87,8 +87,15 @@ check does not have to resolve a stylesheet to find it.</p>
 <img src="/assets/huge.png">
 <img src="/assets/huge.png" alt="">
 <!-- No width/height, so the layout-shift and dimension checks have something; and a
-     src that 404s, so the broken-image count is not zero. -->
-<img src="/assets/huge.png" alt="A loaf, undeclared dimensions">
+     src that 404s, so the broken-image count is not zero.
+     The alt below is the filename, which is the third alt case and the one CI-016 and
+     MD-186 could not see until 0.105.0: it is present and non-empty, so `missing_alt`
+     counts it as done, and it describes nothing. The image above with no alt at all is
+     the first case and the one with `alt=""` is the second — and `alt=""` is correct
+     markup for a decorative image rather than a defect, which is why it is counted as
+     `empty_alt` and never as a placeholder. Changing this alt moves no image count, so
+     what it adds to this page is exactly the one signal. -->
+<img src="/assets/huge.png" alt="huge.png">
 <img src="/assets/no-such-image.png" alt="An image that is not there">
 <form><input type="text" name="q"><button>Go</button></form>
 </body>

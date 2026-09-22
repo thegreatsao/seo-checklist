@@ -10,6 +10,83 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.105.0 — an item titled *Meaningful* could not tell a description from a filename
+
+Registry version: **`8ea3bf0f12ab` → `5f9de5a6dee3`.** CI-016 and MD-186 change what they
+assert, so a verdict can move on a real site: a page whose images all carry alt text that
+describes nothing used to pass both and now fails both. The ledger does not move — REG-6
+stays `partial`, because repairing two items is not building the reader that would notice
+the next one drifting. Suite 1669 → 1676.
+
+**Measured before anything was written** (`local/reg6b/measure-alt.py`). A page whose five
+images read `image1.jpg`, `IMG_0042`, `untitled`, `photo` and `x`, and a page carrying
+five real descriptions, scored **exactly the same** — `missing_alt = 0`, both items PASS.
+`openspec/specs/registry/` A.3 had asserted this in prose since it was written, and
+nothing in the tree had ever run it.
+
+**Three alt cases, and only two are defects.** No alt at all; an alt that is present and
+describes nothing; and `alt=""`, which is the **correct** markup for a decorative image
+and is what CI-016's own `fix` text asks for. The second had no name in this tool. It has
+one now — `placeholder_alt` — and `alt_not_meaningful` is that plus `missing_alt`, which
+is what the two items assert. It can only be greater than or equal to the old path, so
+nothing that failed before passes now.
+
+**The patterns are deliberately conservative**, and the direction that matters is the one
+with no way back: a checker that accuses a site which has done the work teaches its
+operator to stop reading the report. A filename with or without its extension; a camera or
+asset stub (`IMG_0042`, `untitled`, `banner`, `screenshot`), optionally numbered; fewer
+than three characters; not one letter anywhere; or the alt repeating its own `src`.
+`test_real_descriptions_still_pass` and
+`test_an_empty_alt_is_decorative_markup_and_never_a_placeholder` hold that side.
+
+**No corpus calibration was needed, and the plan said there would be.** §6 carried these
+two behind *"a meaningfulness signal for alt text… needs a corpus calibration, not a
+number out of my head"*. That is true of a **share threshold** and false here: one alt
+reading `IMG_0042` is a defect on its own rather than a statistic, so the assertion is
+`== 0` exactly as `missing_alt` was and there is no share to calibrate. The one number
+this does introduce — three characters — carries a `# basis: convention` line saying that
+nothing external sets it. The three items that genuinely need a sampled threshold
+(MB-096, MD-189, MB-097) stay queued.
+
+**Probed 5 of 5** (`local/reg6b/probe-0105.py`), each against only the class meant to
+catch it: the registry asking the old question, a pattern dropped from the tuple, the
+length floor raised until it swallows real words, `alt=""` treated as a placeholder, and
+the fixture edit reverted.
+
+### 0.104.0's gate met real work on its second day, and its vocabulary was wrong
+
+The broken fixture's `alt="A loaf, undeclared dimensions"` became `alt="huge.png"`, so
+that the new signal is exercised by a **served page** and not only by a unit test.
+Changing an existing alt rather than adding an image moves no image count, so what the
+edit adds to that page is exactly the one signal.
+
+DEC-8's gate refused it, correctly, on both origins built from that tree. Then it asked
+for something that could not be said truthfully. The record's field was `side`, with
+`prediction`, `checker` and `fixture` — **a vocabulary that assumes every move is
+somebody's mistake.** No side was wrong here, and the only available record would have
+claimed the fixture had been in error: a false entry in the one file whose whole value is
+that its entries are true, with the gate green over it.
+
+The field is now `decided`, with four values — `prediction-was-wrong`,
+`checker-was-wrong`, `fixture-was-wrong`, `new-material`. **What did not change is that
+the move must be recorded.** DEC-8 asks that no edit to either side be silent; it never
+asked that every edit be a mistake. The manifest carries the first two `triage` entries in
+its history, both `new-material`, and `test_new_material_is_a_decision_the_record_accepts`
+pins the case as a row rather than only as a vocabulary entry.
+
+### A count in a document is a fact about a registry version
+
+**A.9 said "seven of the nine stand" and four do.** The sentence was true at
+`c26c36595d04`, the registry that appendix measures; CN-036 was repaired in the same
+release that wrote the table, and CI-016 and MD-186 here. A handoff then carried *"the
+remaining seven plus BL-083"* forward into a queue where the answer was six.
+
+This is the disease A.9 exists to document, caught in A.9. The appendix was written
+because A.3's nine were a reading of a tree three weeks gone; its own replacement went one
+release stale as it was written. The cure is not vigilance — it is naming the registry
+version in the same sentence as the count, which that paragraph now does. The standing
+four are GO-137, MB-096, MB-097 and MD-189, plus BL-083.
+
 ## 0.104.0 — the door the requirement did not name was the one that had been used
 
 Registry version: **`8ea3bf0f12ab`, unchanged.** No verdict moves and no source under

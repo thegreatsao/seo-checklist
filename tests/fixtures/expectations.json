@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "registry_version": "8ea3bf0f12ab",
+  "registry_version": "5f9de5a6dee3",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -26,11 +26,30 @@
   },
   "fixture_digest": {
     "good": "4752e66a64f7",
-    "broken": "4db7e0f5f545",
+    "broken": "5150888f2255",
     "good_tls": "964355d7ab44",
-    "broken_tls": "dafa07b8008f"
+    "broken_tls": "6485c04753d8"
   },
-  "triage": [],
+  "triage": [
+    {
+      "kind": "fixture",
+      "origin": "broken",
+      "item": null,
+      "from": "4db7e0f5f545",
+      "to": "5150888f2255",
+      "decided": "new-material",
+      "why": "the broken entry page's `alt=\"A loaf, undeclared dimensions\"` became `alt=\"huge.png\"`, so that the placeholder-alt signal CI-016 and MD-186 started asserting in 0.105.0 is exercised by a served page and not only by a unit test. No side was wrong: changing the text of one alt moves no image count, both items were already declared FAIL on this origin for the image carrying no alt at all, and no declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "broken_tls",
+      "item": null,
+      "from": "dafa07b8008f",
+      "to": "6485c04753d8",
+      "decided": "new-material",
+      "why": "the broken entry page's `alt=\"A loaf, undeclared dimensions\"` became `alt=\"huge.png\"`, so that the placeholder-alt signal CI-016 and MD-186 started asserting in 0.105.0 is exercised by a served page and not only by a unit test. No side was wrong: changing the text of one alt moves no image count, both items were already declared FAIL on this origin for the image carrying no alt at all, and no declared verdict moves."
+    }
+  ],
   "fixtures": {
     "good": {
       "AR-151": {

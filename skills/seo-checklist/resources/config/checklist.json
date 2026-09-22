@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "8ea3bf0f12ab",
+  "registry_version": "5f9de5a6dee3",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -456,7 +456,7 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "missing_alt",
+          "path": "alt_not_meaningful",
           "eq": 0
         },
         "applies_when": {
@@ -3962,7 +3962,7 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "missing_alt",
+          "path": "alt_not_meaningful",
           "eq": 0
         },
         "applies_when": {

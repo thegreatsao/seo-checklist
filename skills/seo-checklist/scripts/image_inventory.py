@@ -6,10 +6,76 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from urllib.parse import urlparse
 
 from seo_common import (fetch_url, likely_lcp_candidate, load_html,
                         parse_html)
+
+# `openspec/specs/registry/` REG-6, A.3 and A.9. CI-016 and MD-186 are titled
+# *Provide Meaningful Alt Text* and asserted `missing_alt == 0`, which is a different
+# question: measured at 0.105.0, a page whose five images read `image1.jpg`,
+# `IMG_0042`, `untitled`, `photo` and `x` scored exactly the same as one carrying five
+# real descriptions — both PASS. The item could not tell them apart, and A.3 had said
+# so in prose since the appendix was written.
+#
+# These patterns are deliberately conservative. A checker that accuses a site which has
+# done the work is worse than one that misses a bad alt, because the first teaches an
+# operator to stop reading the report. Each rule below is a form that cannot describe
+# an image whatever the image is.
+#
+# `alt=""` is NOT here and must never be: an empty alt is the *correct* markup for a
+# decorative image, which is what CI-016's own `fix` text asks for. It is counted
+# separately as `empty_alt` and is not a defect.
+PLACEHOLDER_ALT_PATTERNS = (
+    # A filename, with or without its extension: "photo-3.jpg", "hero_02.png".
+    r"^[\w %()\-]+\.(?:jpe?g|png|gif|webp|avif|svg|bmp|tiff?|ico)$",
+    # A camera or asset-pipeline stub, optionally numbered: "IMG_0042", "DSC00123",
+    # "untitled", "image 3", "screenshot", "banner".
+    r"^(?:img|image|images|photo|photos|pic|picture|pictures|dsc|dscn|scan|"
+    r"screenshot|screen[\s_-]?shot|untitled|unnamed|file|asset|banner|thumb|"
+    r"thumbnail|placeholder|default|temp|test)[\s_\-]*\d*$",
+    # Nothing a reader could read: not one letter anywhere. Covers "123", "--", "1 / 4".
+    r"^[\W\d_]+$",
+)
+
+# basis: convention — three characters. Below it an alt cannot be a description: "x"
+# and "ok" are the measured cases, and three is the shortest string that could
+# plausibly be a word at all. Nothing external sets this and no corpus was sampled for
+# it, so it is a convention and says so rather than borrowing a standard's authority.
+# It is a floor on *length only*: a three-character alt is not thereby meaningful, it
+# is merely not refused on this ground.
+MIN_MEANINGFUL_ALT = 3
+
+_PLACEHOLDER_ALT = tuple(re.compile(pattern, re.IGNORECASE)
+                         for pattern in PLACEHOLDER_ALT_PATTERNS)
+
+
+def alt_is_placeholder(alt, src: str = "") -> bool:
+    """True when `alt` is present and non-empty but describes nothing.
+
+    `None` is a missing alt and `""` is a correct decorative one; neither is this
+    script's business here, and both are counted elsewhere. What this names is the
+    third case the registry had no word for — an alt that satisfies *"has an alt"*
+    and fails *"meaningful"*.
+    """
+    if not isinstance(alt, str):
+        return False
+    text = alt.strip()
+    if not text:
+        return False
+    if len(text) < MIN_MEANINGFUL_ALT:
+        return True
+    if any(pattern.match(text) for pattern in _PLACEHOLDER_ALT):
+        return True
+    # The alt repeats the file it points at, with or without the extension. Kept
+    # apart from the patterns above because it is a comparison, not a shape.
+    name = os.path.basename(urlparse(src or "").path)
+    if name:
+        stem = os.path.splitext(name)[0]
+        if text.casefold() in {name.casefold(), stem.casefold()}:
+            return True
+    return False
 
 
 def inventory(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
@@ -30,6 +96,7 @@ def inventory(source: str, fetch_images: bool = False, timeout: int = 15) -> dic
             "alt": alt,
             "has_alt": alt is not None,
             "empty_alt": alt == "",
+            "placeholder_alt": alt_is_placeholder(alt, src),
             "width": img.get("width"),
             "height": img.get("height"),
             "is_responsive_fill": bool(img.get("is_responsive_fill")),
@@ -62,6 +129,7 @@ def inventory(source: str, fetch_images: bool = False, timeout: int = 15) -> dic
                               if r["deferred_source"] and not r["discoverable"])
     missing_alt = sum(1 for r in rows if not r["has_alt"])
     empty_alt = sum(1 for r in rows if r["empty_alt"])
+    placeholder_alt = sum(1 for r in rows if r["placeholder_alt"])
     out = {"url": url or source,
            "empty_alt": empty_alt, "skipped_no_src": skipped_no_src,
            "summary": {"images": len(rows),
@@ -83,6 +151,13 @@ def inventory(source: str, fetch_images: bool = False, timeout: int = 15) -> dic
     if rows:
         out["count"] = len(rows)
         out["missing_alt"] = missing_alt
+        out["placeholder_alt"] = placeholder_alt
+        # What CI-016 and MD-186 ask, in one leaf, because the registry gives a rule
+        # one operator over one path. An image with no alt and an image whose alt reads
+        # `IMG_0042` both fail *Provide Meaningful Alt Text*, and the two used to be
+        # one number and one blind spot. This can only be greater than or equal to
+        # `missing_alt`, so nothing that failed before passes now.
+        out["alt_not_meaningful"] = missing_alt + placeholder_alt
         out["summary"]["lazy_lcp_candidates"] = undiscoverable_lazy
     return out
 

@@ -652,8 +652,15 @@ item(14, "high", S, "redirect_checker.py", PAGE,
 item(15, "critical", S, "indexability_matrix.py", PAGE,
      {"path": "rows.0.status", "lt": 500},
      "Set up uptime and log alerts, resolve 5xx errors reported in GSC")
+# `alt_not_meaningful`, not `missing_alt`, since 0.105.0. The title asks whether
+# the alt text means anything and the old path asked only whether it existed:
+# measured, a page whose five images read `image1.jpg`, `IMG_0042`, `untitled`,
+# `photo` and `x` scored identically to one carrying five real descriptions.
+# `openspec/specs/registry/` REG-6, A.3 and A.9. The new leaf is missing plus
+# placeholder, so it can only be greater than or equal to the old one and
+# nothing that failed before passes now.
 item(16, "high", S, "image_inventory.py", PAGE,
-     {"path": "missing_alt", "eq": 0},
+     {"path": "alt_not_meaningful", "eq": 0},
      "Descriptive alt on informative images, empty alt on decorative ones")
 item(17, "medium", S, "html_validator.py", PAGE,
      {"path": "summary.errors", "eq": 0},
@@ -1510,8 +1517,10 @@ item(184, "medium", S, "image_inventory.py", PAGE,
 item(185, "medium", S, "image_weight_audit.py", ["{url}", "--fetch-images"],
      ISSUES_ANY(),
      "Optimize images", warn=NOTHING_SERIOUS())
+# CI-016's declared twin through `scores_with`; same script, same rule, and it
+# moved to `alt_not_meaningful` with it.
 item(186, "high", S, "image_inventory.py", PAGE,
-     {"path": "missing_alt", "eq": 0},
+     {"path": "alt_not_meaningful", "eq": 0},
      "Meaningful alt text on informative images")
 item(187, "high", S, "image_weight_audit.py",
      # Broken images cannot be found without asking for each distinct URL, so this

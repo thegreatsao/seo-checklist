@@ -486,9 +486,20 @@ refuses an unrecorded move **and** a recorded move that never happened, and
 `TheStampIsRecomputedNotReadBack.test_the_recorded_digest_is_what_the_material_hashes_to`
 re-derives a digest of every file the harness serves rather than reading a stamp back,
 so a fixture page edited under a prediction reddens too. `TheRecordHasAShape` refuses a
-record that does not name which side was wrong, and `HistoryIsReadableAtAll` refuses to
-run at all where the history is not there — the failure this gate has that would
-otherwise look exactly like its success.
+record that does not say what was decided, and `HistoryIsReadableAtAll` refuses to run at
+all where the history is not there — the failure this gate has that would otherwise look
+exactly like its success.
+
+**The vocabulary gained a fourth value at 0.105.0, the first time the gate met real
+work.** It had three — the prediction was wrong, the checker was wrong, the fixture was
+wrong — which assumes every move is somebody's mistake. Giving a fixture page an alt of
+`huge.png`, so that a signal added in the same release is exercised by a served page, is
+none of those: no side was wrong, and with three values the only way to record that edit
+was to claim the fixture had been in error. A vocabulary that cannot say what happened
+produces a record that lies, in the one file whose value is that its entries are true, and
+the gate goes green over it. `new-material` is the fourth. **What did not change is that
+the move must be recorded** — this requirement asks that no edit to either side be silent,
+never that every edit is a mistake.
 
 **The third subject is the checker, and it is not held.** Where triage decides the code
 was defective, the declaration stands and the fixture stands, so the walk sees no move

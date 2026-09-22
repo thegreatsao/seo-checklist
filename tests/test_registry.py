@@ -576,15 +576,21 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # verdict that this inventory could not see at all. Naming it is what made it
         # countable, and `inherited` does not move: `EFFORT_COST` changed module, not
         # basis.
+        #
+        # 0.105.0 adds one `convention`: `MIN_MEANINGFUL_ALT` in `image_inventory.py`,
+        # the length below which an alt cannot be a description. It is a convention and
+        # not a `standard` on purpose — nothing external sets it and no corpus was
+        # sampled for it, and borrowing a standard's authority for a number out of my
+        # head is the thing this inventory exists to make visible.
         self.assertEqual(by_kind, {
             "standard": 11,
             "measured": 11,
-            "convention": 48,
+            "convention": 49,
             "inherited": 77,
             "presentation": 13,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 147)
-        self.assertEqual(len(named), 160)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 148)
+        self.assertEqual(len(named), 161)
         self.assertEqual(len(uncounted), 13)
         # 169 -> 170: `external_link_quality.py`'s link cap was a default argument
         # value, which is a place no instrument here can see. Promoting it to a
@@ -593,8 +599,11 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # constant inventory until they were given names.
         # 172 -> 173: `VERDICT_CREDIT`, for the same reason one line down — a number that
         # decides a verdict is only countable once it has a name.
+        # 173 -> 174: `MIN_MEANINGFUL_ALT` at 0.105.0, the length below which an alt
+        # cannot be a description. New number, new row; the inventory grows when the
+        # tree does, which is the only way it can stay a census rather than a memory.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 173)
+                             for path in at._script_paths()), 174)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
