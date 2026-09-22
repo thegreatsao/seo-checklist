@@ -17,9 +17,12 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "skills", "seo-checklist", "scripts"))
+from checklist_report import STATUS_ORDER  # noqa: E402
 CENSUS = os.path.join(ROOT, "tests", "census.json")
 REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
                         "checklist.json")
@@ -102,6 +105,61 @@ class RecordedCensus(unittest.TestCase):
         for item_id, row in self.census["items"].items():
             self.assertEqual(set(row["answers"]), sites, item_id)
             self.assertNotIn("MISSING", row["distinct"], item_id)
+
+    def test_distinct_is_the_set_of_answers_and_not_a_second_opinion(self):
+        """`openspec/specs/declarations/` DEC-10, and the hole the `distinct` line
+        above left open.
+
+        Forbidding the `MISSING` sentinel in `distinct` and saying nothing about
+        `answers` lets a row carry `"fixture:broken": "MISSING"` under a `distinct`
+        that omits it, and every census test passes. Measured before this existed:
+        the sentinel was put on `CI-004`'s broken answer with `distinct` left saying
+        `FAIL, PASS`, and the **whole suite** was green. The expensive gate would
+        still have caught it — a fresh recording does not say `MISSING`, so
+        `--check` differs — but that gate is DEC-12's, it runs in a job of its own,
+        and between recordings the file is read by people whom nothing warned.
+
+        Derived rather than a second list: `distinct` is a summary of `answers`, so
+        it is asserted to be exactly that.
+        """
+        for item_id, row in self.census["items"].items():
+            self.assertEqual(sorted(set(row["answers"].values())),
+                             sorted(row["distinct"]), item_id)
+
+    def test_every_answer_is_a_status_the_audit_can_emit(self):
+        """DEC-10 again, from the other side. Nothing required an answer to be one
+        of the eight, so `"BANANA"` passed the whole suite when `distinct` was kept
+        in step with it — measured, on `CI-004`.
+
+        The eight come from `checklist_report.STATUS_ORDER`, the runner's own order,
+        so a status added or renamed there moves this reader with it. `MISSING` is
+        deliberately not among them: `verdict_census.py` writes it when an item was
+        not run at all, and DEC-10's whole point is that an unrun item is not an
+        unanswered one — so it has to fail here rather than sit in a field nobody
+        reads.
+        """
+        allowed = set(STATUS_ORDER)
+        self.assertEqual(len(allowed), 8, "the vocabulary moved; read DEC-3")
+        for item_id, row in self.census["items"].items():
+            for site, answer in row["answers"].items():
+                self.assertIn(answer, allowed, f"{item_id} on {site}")
+
+    def test_no_item_is_recorded_twice(self):
+        """DEC-10's third: `json.load` keeps the last of two identical keys and says
+        nothing, so a record can hold two rows for one item while the program sees
+        one. Read from the raw text, because the defect cannot survive being parsed
+        — which is exactly why nothing had noticed it.
+        """
+        def reject_duplicates(pairs):
+            seen = set()
+            for key, _ in pairs:
+                if key in seen:
+                    raise AssertionError(f"{key} is recorded twice")
+                seen.add(key)
+            return dict(pairs)
+
+        with open(CENSUS, encoding="utf-8") as stream:
+            json.load(stream, object_pairs_hook=reject_duplicates)
 
 
 class TheHarnessSaysWhatItCannotExercise(unittest.TestCase):

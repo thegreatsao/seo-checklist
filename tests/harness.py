@@ -380,6 +380,18 @@ class FixtureSite:
         return self._sites["broken"].base + "/"
 
     @property
+    def labels(self) -> tuple[str, ...]:
+        """The origins this harness actually served, in the order it built them.
+
+        `openspec/specs/declarations/` DEC-14 asks that a declared origin be a
+        fixture origin, and until 0.103.0 the only thing standing between a corpus
+        tree and a declaration was a `KeyError` from `RESULTS[label]` — a crash that
+        sends a reader to repair the harness rather than to remove the declaration.
+        Naming the set here is what lets that be an argued refusal instead.
+        """
+        return tuple(self._sites)
+
+    @property
     def good_tls(self) -> str:
         return self._sites["good_tls"].base + "/"
 

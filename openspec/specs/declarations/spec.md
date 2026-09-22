@@ -135,7 +135,20 @@ artifact here into a second copy of the output. It is not thereby useless — it
 detects a checker that changes later — but a regression pin is not an oracle, and the two
 are indistinguishable in the file. The cost is invisible afterwards: the commit proves
 when a declaration was written, never from what.
-**Reader:** **none**, and unenforceable in principle. `test_metadata_matches_the_registry`
+**Reader:** **none.** *Unenforceable in principle* is what this line said until 0.103.0,
+and it overstates the limit in the flattering direction. No reader can establish that a
+person had not seen the answer — that half is genuinely outside the program. But the
+requirement above does not rest there: it says the obligation is discharged by
+*arranging* a blind session, and that **the batch records what it was given**. A record
+of inputs is an artifact, and an artifact can be read — a gate could require one per
+batch and refuse a batch whose input list contains the results. No such record exists
+here: `declared_from` is a single sentence about the whole file, not a ledger per batch.
+So this is `none` because the instrument the requirement itself names was never built,
+which is a different thing from impossible, and the distinction is the one
+`openspec/specs/operator-protocol/` drew when it introduced `bounded` — nothing removes
+the limit there, and something removes half of it here.
+
+`test_metadata_matches_the_registry`
 pins the sentence `declared_from: "item title plus fixture construction; never from a
 run"`, which stops the *claim* being changed quietly and says nothing about whether it is
 true. That is a literal compared with a literal — the shape REG-12 forbids the registry —
@@ -273,10 +286,23 @@ restatement of the status, and MUST NOT be a note about the run.
 **Why:** the reason is what a triage reads when the declaration and the run disagree.
 "expected PASS because it passes" leaves the reader with two claims and no argument, and
 the natural resolution of a disagreement without an argument is to edit the declaration.
-**Reader:** partial. `test_every_declaration_has_a_supported_verdict_and_reason` requires
-`why` to be a non-empty string after stripping. Nothing reads what it says, and nothing
-could mechanically; what a reader *could* check — that it names something in the fixture
-tree — nothing does.
+**Reader:** partial, and narrower than it was.
+`test_every_declaration_has_a_supported_verdict_and_reason` requires `why` to be a
+non-empty string after stripping. Whether the prose is *true* is not mechanically
+checkable and this document does not pretend otherwise.
+
+One consequence of arguing from the fixture is, and is read since 0.103.0:
+`test_a_reason_that_argues_from_the_fixture_moves_when_the_fixture_does` refuses a reason
+that merely restates the title, and refuses one sentence offered for two origins that are
+predicted differently — a reason arguing from a fixture cannot describe two fixtures that
+disagree. Both were zero across 250 declarations when written, so the reader pins a
+property the manifest already had rather than one it was edited to acquire. The cheapest
+way to declare an item on two origins is to write one reason and paste it, and that is
+exactly the shape this refuses.
+
+Still unread: that the reason names something the fixture tree contains. Measured before
+the above existed — a reason reading *"because it felt about right on the day"* passed the
+whole suite.
 
 #### Scenario: a reason that restates the status
 - **WHEN** `why` says "expected PASS because it passes"
@@ -368,11 +394,17 @@ written down, with its reason.
 `requires: fetch` item to the registry and the manifest simply does not mention it — no
 gate objects, and the coverage line keeps reporting a number that is now a smaller fraction
 of a larger registry.
-**Reader:** partial. `test_both_fixtures_declare_all_items` asserts the manifest's id sets
-equal `HTTP_DECLARED_IDS` and `TLS_DECLARED_IDS`, two literals in the test file. That
-catches a declaration added or dropped without a deliberate edit, which is real and worth
-keeping. It cannot catch the set being wrong: the two literals happen to equal the
-offline-reachable script set exactly today (Appendix A.3), and nothing says they must.
+**Reader:** enforced, at 0.103.0.
+`test_the_declared_set_is_what_the_harness_can_reach` says what A.3 only observed: the
+union of the two literals equals the script items whose `requires` is not `gsc`, `api` or
+`safe_browsing`. A new `requires: fetch` item now fails on the day it is added, which is
+the day somebody can still declare it.
+
+`test_both_fixtures_declare_all_items` keeps the per-origin split, which is a fact about
+how each fixture was built and is not derivable. Measured before the rule existed: an
+offline-reachable item was dropped from the manifest *and* from the literal, and the
+whole suite stayed green — the reader that would have noticed was the literal somebody
+would have had to edit.
 
 #### Scenario: a reachable item is added and nobody notices it is owed
 - **WHEN** an item the offline harness can answer is added to the registry and no
@@ -517,7 +549,12 @@ absent from one tree shrinks its range, and a shrunken range is exactly the sign
 census exists to raise — so a failure of the instrument would be read as a finding about
 the registry. The summary is what every reader actually reads, so a summary that can
 disagree with the answers under it is the same defect one layer up.
-**Reader:** partial, and thinner than the shape of the record suggests.
+**Reader:** enforced, at 0.103.0, and the three assertions this line asked for in its
+own words are the three that were written. What follows is what it said while they were
+missing, kept because the measurement is the argument.
+
+Before them, `test_every_item_was_asked_on_every_site` required each row's answer *keys*
+to equal the site set, and
 `test_every_item_was_asked_on_every_site` requires each row's answer *keys* to equal the
 site set, and `test_every_item_is_accounted_for` pins the item set and the count. What is
 unheld is everything about the values: the `MISSING` sentinel is forbidden only in
@@ -688,10 +725,16 @@ moves declared verdicts and costs a review; adding a corpus tree costs a re-reco
 **Why:** the two instruments have different marginal costs and that is the point of having
 both. Declaring the corpus would make the cheap instrument as expensive as the dear one,
 and the coverage the corpus exists to buy would stop being bought.
-**Reader:** partial. `test_both_fixtures_declare_all_items` asserts the manifest's origin
-set equals the four fixture labels, so a corpus tree cannot acquire a declaration without
-a deliberate edit. As in DEC-6 the reader is a literal: it pins today's four rather than
-the rule that a declared origin is a fixture origin.
+**Reader:** enforced, at 0.103.0.
+`test_a_declared_origin_is_an_origin_the_harness_serves` compares the manifest's origins
+with `FixtureSite.labels` — the origins the harness actually built — rather than with
+today's four written down again.
+
+What stood there before was not the literal but a crash. Measured: the corpus tree was
+given the 118 declarations it already answers, and the run reddened with
+`KeyError: 'failing-shapes'` in three places and an error in `tearDownModule`. The build
+goes red either way, and that is the whole difference a reader makes — a `KeyError` sends
+somebody to repair the harness, and this says a corpus tree carries no declarations.
 
 #### Scenario: a corpus tree acquires a declaration
 - **WHEN** a prediction is written for a tree that exists to buy coverage
@@ -930,19 +973,27 @@ The union of declared ids is 123. The registry holds 145 script items, of which 
 sets are equal — every offline-reachable script item is declared on at least one origin,
 and nothing else is. Broken out: `requires` of `offline` 28, `fetch` 74, `crawl` 21.
 
-That equality is held by two literals in a test file. A new `requires: fetch` item would
-be undeclared, and the reader that would notice is the same literal that would have to be
-edited to add it. Per origin: 118 on each HTTP origin, 7 on each TLS origin, overlapping in
-`SE-117` and `SE-118`.
+That equality was held by two literals in a test file. A new `requires: fetch` item would
+be undeclared, and the reader that would notice was the same literal that would have to be
+edited to add it — measured, and the whole suite stayed green. **Closed at 0.103.0**: the
+paragraph above is now the assertion, in
+`test_the_declared_set_is_what_the_harness_can_reach`, and re-measured against
+`8ea3bf0f12ab` it still holds exactly — 145 script items, 22 credentialed, 123 declared.
+Per origin: 118 on each HTTP origin, 7 on each TLS origin, overlapping in `SE-117` and
+`SE-118`, and that split stays hand-kept because it is a fact about how each fixture was
+built.
 
-Coverage as the module prints it: 123 items declared, 108 settled on both sides, 84 opposed
-across origins. The last two exclude the twenty-seven; **the first does not.** `coverage()`
-counts an item as declared if any origin mentions it at all, and ten of the 123 —
-`AR-146`, `AR-154`, `AR-163`, `GEO-007`, `GO-137`, `IN-121`, `IN-122`, `IN-127`, `IN-128`,
-`MB-105` — carry nothing but the ninth word on every origin that mentions them. 113 items
-have at least one declaration that is ever compared. The headline number of this instrument
-overstates its own coverage by ten items, and it is the number quoted when anyone asks how
-much of the registry is pinned.
+**The coverage paragraph that stood here was repaired underneath it and went on saying
+otherwise.** It read: *123 items declared, 108 settled on both sides, 84 opposed*, and
+that ten of the 123 — `AR-146`, `AR-154`, `AR-163`, `GEO-007`, `GO-137`, `IN-121`,
+`IN-122`, `IN-127`, `IN-128`, `MB-105` — carried nothing but the ninth word, so the
+headline overstated coverage by ten. The ninth word is what DEC-2 and DEC-3 removed at
+0.99.0. Re-read on 22 September: none of the ten carries it, each carries a prediction
+that is compared — three `N/A`, one `NEEDS_INPUT`, five `NO_DATA`, and `GO-137` at `PASS`
+against `WARN` — and the module prints **123 items declared, 123 settled on both sides,
+89 opposed**. The instrument no longer overstates itself; the appendix did, for four
+releases, in the direction that flatters nothing and discourages the next reader from
+trusting the number at all.
 
 #### A.4 — the manifest keeps no record of what it was reasoned from
 
@@ -1063,14 +1114,14 @@ values.
 
 | | requirements |
 |---|---|
-| **enforced** | DEC-2, DEC-3, DEC-5, DEC-7, DEC-11, DEC-12 |
-| **partial** | DEC-4, DEC-6, DEC-9, DEC-10, DEC-13, DEC-14 |
+| **enforced** | DEC-2, DEC-3, DEC-5, DEC-6, DEC-7, DEC-10, DEC-11, DEC-12, DEC-14 |
+| **partial** | DEC-4, DEC-9, DEC-13 |
 | **none** | DEC-1, DEC-8 |
 | **opposed** | — none |
 
 Invariants: INV-D1 and INV-D2 enforced; INV-D3 and INV-D4 unread.
 
-**Six enforced, six partial, two unread, none opposed, of fourteen.**
+**Nine enforced, three partial, two unread, none opposed, of fourteen.**
 
 DEC-2, DEC-3 and DEC-7 moved together at 0.99.0, and they had to: the ninth word, the
 vocabulary that permitted it while forbidding its replacements, and the comparison that

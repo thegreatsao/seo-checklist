@@ -365,6 +365,79 @@ class ManifestContract(unittest.TestCase):
                     self.assertIn(declared["expect"], ALLOWED)
                     self.assertTrue(declared["why"].strip())
 
+    def test_the_declared_set_is_what_the_harness_can_reach(self):
+        """`openspec/specs/declarations/` DEC-6: the set is derived, not listed.
+
+        `HTTP_DECLARED_IDS` and `TLS_DECLARED_IDS` are two literals, and the reader
+        that would notice an item missing from them is the same literal somebody
+        would edit to add it. Measured before this existed: an offline-reachable
+        item was dropped from the manifest and from the literal, and the **whole
+        suite** stayed green.
+
+        The rule the literals happen to satisfy is in Appendix A.3 — every script
+        item the harness can answer without a credential is declared somewhere, and
+        nothing else is. A new `requires: fetch` item now fails here on the day it
+        is added, which is the day somebody can still declare it.
+        """
+        credentialed = {"gsc", "api", "safe_browsing"}
+        with open(REGISTRY, encoding="utf-8") as stream:
+            items = json.load(stream)["items"]
+        reachable = {item["id"] for item in items
+                     if item.get("check")
+                     and (item["check"].get("requires") or "offline") not in credentialed}
+        self.assertTrue(reachable, "no reachable item derived; this test is vacuous")
+        self.assertEqual(HTTP_DECLARED_IDS | TLS_DECLARED_IDS, reachable,
+                         "the declared set and the offline-reachable set have come "
+                         "apart — declare the new items or say why they are exempt")
+
+    def test_a_declared_origin_is_an_origin_the_harness_serves(self):
+        """DEC-14: a corpus tree carries no declarations, and that is what lets it
+        grow — a tree nobody has to predict can gain pages freely.
+
+        Until 0.103.0 the only thing enforcing it was `RESULTS[label]` raising
+        `KeyError` deep in the comparison, which reddens the build and tells nobody
+        what the rule is. Measured: the corpus tree was given the 118 declarations
+        it already answers, and three tests failed with `KeyError: 'failing-shapes'`
+        and a `tearDownModule` error. A crash is not a reader.
+        """
+        served = set(SITE.labels)
+        self.assertEqual(len(served), 4, f"the harness served {served}")
+        self.assertEqual(set(manifest()["fixtures"]), served,
+                         "a declaration names an origin this harness does not serve; "
+                         "a corpus tree carries no declarations (DEC-14)")
+
+    def test_a_reason_that_argues_from_the_fixture_moves_when_the_fixture_does(self):
+        """DEC-4: the reason argues from the fixture, and nothing read what it said.
+
+        What a reader cannot check is whether prose is *true*. What it can check is
+        one consequence: if an item is predicted differently on two origins, the two
+        reasons cannot be the same sentence — one of them is then arguing from a
+        fixture it is not describing. The cheapest way to add a declaration to both
+        origins is to write one reason and paste it, and this is what that looks
+        like.
+
+        Zero violations when it was written, on 250 declarations, so it pins a
+        property the manifest already has rather than one it was edited to acquire.
+        The tautology it also refuses — a reason that merely restates the title —
+        was likewise zero.
+        """
+        by_item = {}
+        for label, declarations in manifest()["fixtures"].items():
+            for item_id, declared in declarations.items():
+                by_item.setdefault(item_id, {})[label] = declared
+                self.assertNotEqual(declared["why"].strip().lower(),
+                                    declared["title"].strip().lower(),
+                                    f"{item_id} on {label}: the reason restates the "
+                                    f"title and argues nothing")
+        for item_id, per_origin in by_item.items():
+            expects = {d["expect"] for d in per_origin.values()}
+            whys = {d["why"].strip() for d in per_origin.values()}
+            if len(expects) > 1:
+                self.assertGreater(
+                    len(whys), 1,
+                    f"{item_id} is predicted {sorted(expects)} across origins and "
+                    f"gives one reason for both, so it argues from neither")
+
     def test_the_permitted_vocabulary_is_the_audits_own_eight(self):
         """`openspec/specs/declarations/` DEC-3, read across two modules rather than one.
 

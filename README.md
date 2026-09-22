@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.102.0 — see [CHANGELOG.md](CHANGELOG.md). **A check that could not answer blamed the wrong thing.** Fourteen scripts reported a failed fetch honestly and the run labelled every one of them *"script failed"*, so a site that was down, a Google quota and a missing log file all read as a defect in this plugin. Each now names what actually happened, and two kinds join the vocabulary: a service this check depends on refused, and an input you supplied could not be used. Expect the same `NO_DATA` rows with different sentences beside them.
+Version 0.103.0 — see [CHANGELOG.md](CHANGELOG.md). **Nothing you run changes.** This release is about the records the suite keeps about itself: four things the declarations document said were unchecked turned out to be unchecked, measured by breaking each one against the whole suite first, and now have readers. An appendix that claimed the fixture manifest overstated its coverage by ten items had been repaired four releases earlier and went on saying otherwise.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

@@ -10,6 +10,88 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.103.0 — four holes the declarations document had described in its own words
+
+Registry version: **`8ea3bf0f12ab`, unchanged.** No verdict moves and no source outside
+`tests/` changes. `declarations` goes **6/14 → 9/14 enforced**; the ledger 118 → 121 of
+149, `partial` 25 → 22. Suite 1641 → 1647.
+
+**Measured before anything was written.** Each `partial` row's implied breakage was run
+against the whole suite, which is the method that found four already-enforced rows and two
+live defects across 0.97.2, 0.99.0 and 0.100.0. Seven breakages, eight suite runs, control
+green on both ends:
+
+| breakage | before |
+|---|---|
+| the `MISSING` sentinel in `answers` while `distinct` omits it | **MISSED** |
+| an answer outside the eight statuses | **MISSED** |
+| a duplicate item key whose losing copy lies | **MISSED** |
+| a reason naming nothing in the fixture tree | **MISSED** |
+| an offline-reachable item dropped from the declared set | **MISSED** |
+| a corpus tree given the declarations it already answers | caught — by `KeyError` |
+
+**Two of the probes were defective, and only the names said so.** The first duplicate-key
+probe made the twin differ by `title`, which is one of the four fields DEC-11 re-reads from
+the registry, so the suite caught the title and not the key. The first corpus-tree probe
+anchored a replacement on `DECLARED_IDS = {`, which is a **suffix of**
+`HTTP_DECLARED_IDS = {`; the edit landed inside a set literal, the module stopped parsing,
+and seven structural tests reddened about syntax. Read as verdicts, both would have gone
+into the record as coverage. Re-probed in the shape of the violation, the duplicate key is
+`MISSED` and the corpus tree is caught only by a crash.
+
+**DEC-10 — three assertions, and the requirement had already written them.** Its Reader
+line said, in these words, *"the three are required by the paragraph above and unheld by
+any reader… Each is one assertion in `test_census.py` and none needs a run."* They are:
+`distinct` is the set of `answers` and not a second opinion; every answer is one of the
+eight the runner can emit, taken from `checklist_report.STATUS_ORDER` rather than listed
+again; no item is recorded twice, read from the raw text through an `object_pairs_hook`,
+because the defect cannot survive being parsed — which is precisely why nothing had seen
+it.
+
+**DEC-6 — the rule instead of the literal.** Appendix A.3 had *observed* that the two
+declared-id literals equal the offline-reachable script set; nothing said they must. They
+do, exactly, re-measured: 145 script items, 22 requiring `gsc`/`api`/`safe_browsing`, 123
+declared, sets equal. A new `requires: fetch` item now fails on the day it is added, which
+is the day somebody can still declare it. The per-origin split stays hand-kept: which
+fixture declares what is a fact about how each was built, not a derivation.
+
+**DEC-14 — a crash is not a reader.** Giving the corpus tree declarations reddened the
+build with `KeyError: 'failing-shapes'` and an error in `tearDownModule`. The build goes
+red either way and that is the whole difference a reader makes: a `KeyError` sends somebody
+to repair the harness, and `test_a_declared_origin_is_an_origin_the_harness_serves` says a
+corpus tree carries no declarations. `FixtureSite` gained a `labels` property so the
+comparison is against the origins the harness actually built.
+
+**DEC-4 stays `partial`, and the line is narrower.** Whether the prose is true is not
+mechanically checkable and this document does not pretend otherwise. One consequence is
+now read: a reason may not restate the title, and one sentence may not serve two origins
+that are predicted differently — a reason arguing from a fixture cannot describe two
+fixtures that disagree. Both were zero across 250 declarations when written, so the reader
+pins a property the manifest already had. Still unread, and measured: *"because it felt
+about right on the day"* passes.
+
+**DEC-1's line overstated its own limit.** It said *unenforceable in principle*. Half of it
+is — no reader can establish that a person had not seen the answer. The other half is the
+instrument the requirement itself names: the obligation is discharged by *arranging* a
+blind session, and **the batch records what it was given**. A record of inputs is an
+artifact and an artifact can be read. None exists here — `declared_from` is one sentence
+about the whole file, not a ledger per batch — so DEC-1 is `none` because the instrument
+was never built, which is not the same as impossible. That distinction is the one
+`operator-protocol` drew when it introduced `bounded`.
+
+**Appendix A.3's coverage paragraph had been repaired underneath it.** It claimed ten items
+carried nothing but the ninth word and that the headline overstated coverage by ten. DEC-2
+and DEC-3 removed the ninth word at 0.99.0. Re-read: none of the ten carries it, each
+carries a compared prediction, and the module prints 123 declared, **123** settled on both
+sides, 89 opposed — against the 108 the appendix still named, for four releases.
+
+**My own process error, recorded because the result would have been circular.** I began
+writing readers before the re-probe finished, and the background probe ran its suite with
+my new test in it — which caught the probe's own mutation. Noticed only because the new
+test failed on a tree I believed was clean, with `CI-004 is recorded twice`. The re-probe
+was re-run against the tree as shipped, through a wrapper that puts the new readers aside
+first.
+
 ## 0.102.0 — the more honestly a script reported its failure, the worse the label it got
 
 Registry version: **`8ea3bf0f12ab`, unchanged.** No verdict moves. **What the operator
