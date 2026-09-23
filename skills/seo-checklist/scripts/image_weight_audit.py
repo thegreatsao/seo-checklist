@@ -149,14 +149,30 @@ def _classify_image(url: str, result: dict, timeout: int) -> tuple[str, dict | N
     return "unchecked", None
 
 
-def _intrinsic_size(url: str, timeout: int) -> tuple[tuple | None, int | None]:
+def _intrinsic_size(url: str, timeout: int,
+                    known_length: int | None = None) -> tuple[tuple | None, int | None]:
     """((format, width, height) or None, total bytes or None) from the first bytes.
 
-    Streamed and closed after `IMAGE_HEADER_BYTES`, rather than capped: `safe_http`
-    raises when a body passes `max_response_bytes`, and a server that ignores `Range`
-    — Python's own `http.server` does — sends the whole file. A streamed response is
-    never cached, so a prefix cannot later be served as the image to another caller.
+    A file the HEAD already said fits in `IMAGE_HEADER_BYTES` is read whole, by the
+    ordinary cached GET: its prefix *is* the file, and the cache lets the favicon
+    check and anyone else asking for the same icon share one request. The live smoke
+    in `ci.yml` refuses a URL requested more than twice, and a streamed read of the
+    page's logo was the third.
+
+    Anything larger is streamed and closed after `IMAGE_HEADER_BYTES`, rather than
+    capped: `safe_http` raises when a body passes `max_response_bytes`, and a server
+    that ignores `Range` — Python's own `http.server` does — sends the whole file. A
+    streamed response is never cached, so a prefix cannot later be served as the image
+    to another caller.
     """
+    if known_length is not None and known_length <= IMAGE_HEADER_BYTES:
+        try:
+            whole = safe_get(url, timeout=timeout)
+        except requests.exceptions.RequestException:
+            return None, None
+        if whole.status_code != 200:
+            return None, None
+        return image_header(whole.content), len(whole.content)
     try:
         response = safe_get(url, timeout=timeout, stream=True,
                             headers={"Range": f"bytes=0-{IMAGE_HEADER_BYTES - 1}"})
@@ -273,7 +289,7 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
             row["content_type"] = headers.get("content-type")
             if state != "broken":
                 if src not in sizes:
-                    sizes[src] = _intrinsic_size(src, timeout)
+                    sizes[src] = _intrinsic_size(src, timeout, row["content_length"])
                 header, total = sizes[src]
                 if header:
                     row["intrinsic_width"], row["intrinsic_height"] = header[1], header[2]

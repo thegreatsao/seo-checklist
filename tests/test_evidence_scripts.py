@@ -4575,6 +4575,15 @@ def deep_jpeg(width: int, height: int) -> bytes:
             + sof + b"\xff\xd9")
 
 
+def heavy_png(width: int, height: int, padding: int = 100_000) -> bytes:
+    """A valid PNG past the 64 KB prefix: an ancillary chunk after IHDR carries the
+    weight, so the dimensions are still in the first bytes and the file is not."""
+    small = valid_png(width, height)
+    body = b"skIP" + os.urandom(padding)
+    extra = struct.pack(">I", padding) + body + struct.pack(">I", zlib.crc32(body))
+    return small[:33] + extra + small[33:]
+
+
 class ImagesJudgedOneByOne(unittest.TestCase):
     """MB-096, MB-097 and MD-189 count large images one by one (0.108.0).
 
@@ -4585,13 +4594,15 @@ class ImagesJudgedOneByOne(unittest.TestCase):
     """
 
     WIDE = valid_png(2000, 1)
+    HEAVY_WIDE = heavy_png(2000, 1)
     SMALL = valid_png(64, 64)
 
     @classmethod
     def setUpClass(cls):
         files = {
             "/wide.png": ("image/png", cls.WIDE),
-            "/wide-ranged.png": ("image/png", cls.WIDE),
+            "/wide-ranged.png": ("image/png", cls.HEAVY_WIDE),
+            "/wide-heavy.png": ("image/png", cls.HEAVY_WIDE),
             "/small.png": ("image/png", cls.SMALL),
             "/small2.png": ("image/png", cls.SMALL),
             "/wide.webp": ("image/webp", valid_webp(2000, 10, "VP8X")),
@@ -4711,10 +4722,17 @@ class ImagesJudgedOneByOne(unittest.TestCase):
         self.assertTrue(out["truncated"])
         self.assertEqual(graded_verdict("MB-096", out), FAIL)
 
-    def test_a_server_honouring_range_answers_the_same(self):
-        out = self.audit('<img src="/wide-ranged.png" alt="w">')
-        self.assertEqual(out["images"][0]["intrinsic_width"], 2000)
-        self.assertEqual(graded_verdict("MB-096", out), FAIL)
+    def test_a_file_past_the_prefix_is_read_in_part_whether_or_not_range_is_honoured(
+            self):
+        """Both servers, the streamed path: a CDN answering 206 with the prefix, and
+        `http.server` ignoring Range and sending the whole file, which is closed after
+        the prefix rather than refused for passing a byte cap."""
+        for path in ("/wide-ranged.png", "/wide-heavy.png"):
+            with self.subTest(path=path):
+                out = self.audit(f'<img src="{path}" alt="w">')
+                self.assertGreater(len(self.HEAVY_WIDE), 65_536)
+                self.assertEqual(out["images"][0]["intrinsic_width"], 2000)
+                self.assertEqual(graded_verdict("MB-096", out), FAIL)
 
     def test_without_fetched_images_nothing_is_decided(self):
         out = self.audit('<img src="/wide.png" alt="w">', fetch=False)
@@ -4736,15 +4754,15 @@ class ImagesJudgedOneByOne(unittest.TestCase):
         os.environ["SEO_ALLOW_PRIVATE"] = "1"
         try:
             header, _total = image_weight_audit._intrinsic_size(
-                self.base + "/wide.png", 10)
-            full = safe_get(self.base + "/wide.png", timeout=10)
+                self.base + "/wide-heavy.png", 10, len(self.HEAVY_WIDE))
+            full = safe_get(self.base + "/wide-heavy.png", timeout=10)
         finally:
             if saved is None:
                 os.environ.pop("SEO_ALLOW_PRIVATE", None)
             else:
                 os.environ["SEO_ALLOW_PRIVATE"] = saved
         self.assertEqual(header[1], 2000)
-        self.assertEqual(full.content, self.WIDE)
+        self.assertEqual(full.content, self.HEAVY_WIDE)
 
     def test_a_lossy_webp_larger_than_the_prefix_still_reports_its_width(self):
         """Moving the reader out of `favicon_check.py` found this: it wanted the whole
