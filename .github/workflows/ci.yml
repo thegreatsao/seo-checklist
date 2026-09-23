@@ -112,6 +112,11 @@ jobs:
       - name: Every item asserts what its title says
         run: python skills/seo-checklist/tools/audit_item_semantics.py
 
+      # 0.114.0: REG-6's reader of record. A person's reading of every rule against its
+      # title, with the title and rule copied; a change under a reading fails here.
+      - name: Every rule has a current reading against its title
+        run: python skills/seo-checklist/tools/audit_item_readings.py --check
+
       # 0.19.0 translated all 214 items and 0.20 changed one item's English fix text
       # without touching the Russian. Every i18n test stayed green: the translation
       # existed, was not blank and was in Cyrillic. Presence is not parity, so each
@@ -567,6 +572,11 @@ jobs:
 
       - name: Every item asserts what its title says
         run: python skills/seo-checklist/tools/audit_item_semantics.py
+
+      # 0.114.0: REG-6's reader of record. A person's reading of every rule against its
+      # title, with the title and rule copied; a change under a reading fails here.
+      - name: Every rule has a current reading against its title
+        run: python skills/seo-checklist/tools/audit_item_readings.py --check
 
       - name: No translation has drifted from its English
         run: python skills/seo-checklist/tools/i18n_digest.py --check

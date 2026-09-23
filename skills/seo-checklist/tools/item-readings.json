@@ -1,0 +1,3188 @@
+{
+  "_comment": [
+    "One reading per rule-carrying item: the item's title and check copied literally, the",
+    "verdict, the reading, and an answer for every shape tools/audit_item_readings.py detects.",
+    "Edited by hand only. A copy that no longer matches the registry is a pair nobody has re-read."
+  ],
+  "items": {
+    "CI-001": {
+      "title": "Ensure URL Is Indexed",
+      "check": {
+        "script": "indexability_matrix.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "rows",
+          "field": "verdict",
+          "value_map": {
+            "indexable": "pass",
+            "not_indexable": "fail"
+          }
+        }
+      },
+      "verdict": "measures",
+      "reading": "The title asks whether the URL is indexed, which only Google knows; `rows` carries indexability_matrix's verdict, which lists what would stop indexing — robots.txt, status, noindex in meta or header, a canonical elsewhere. CI-002 asks Google.",
+      "shapes": {
+        "external": "Indexing is Search Console's to report; this rule reads the page's own blockers, and `measures` says so."
+      }
+    },
+    "CI-002": {
+      "title": "Confirm Google Has Indexed the Audited URL",
+      "check": {
+        "script": "gsc_url_inspection.py",
+        "args": [
+          "{url}",
+          "--property",
+          "{gsc_property}",
+          "--credentials",
+          "{gsc_credentials}"
+        ],
+        "requires": "gsc",
+        "assert": {
+          "path": "indexed",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`indexed` is URL Inspection's own coverage verdict for the audited URL, from Search Console.",
+      "shapes": {}
+    },
+    "CI-003": {
+      "title": "Page Returns 200 (OK) Status Code",
+      "check": {
+        "script": "indexability_matrix.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "rows.0.status",
+          "eq": 200
+        }
+      },
+      "verdict": "answers",
+      "reading": "`rows.0.status` is the entry URL's final status, asserted equal to 200.",
+      "shapes": {
+        "conjunction": "The parenthetical is the status name, not a second subject."
+      }
+    },
+    "CI-004": {
+      "title": "Allow Indexing via Meta Robots",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "meta_robots",
+          "none_matching": "noindex",
+          "missing_is": "pass"
+        }
+      },
+      "verdict": "answers",
+      "reading": "`meta_robots` is the page's robots meta content; the rule passes when no directive says noindex and when the tag is absent.",
+      "shapes": {
+        "external": "The word is *Indexing*, but the title's subject is the meta tag, which the page itself carries; no search engine data is needed."
+      }
+    },
+    "CI-005": {
+      "title": "Do Not Block the URL in robots.txt",
+      "check": {
+        "script": "indexability_matrix.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "rows.0.robots_allowed",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`rows.0.robots_allowed` is the RFC 9309 answer for Googlebot on the entry URL, from lib/robots_rules.",
+      "shapes": {}
+    },
+    "CI-006": {
+      "title": "Declare Sitemap Location in robots.txt",
+      "check": {
+        "script": "robots_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "sitemaps",
+          "len_gte": 1
+        }
+      },
+      "verdict": "answers",
+      "reading": "`sitemaps` lists the Sitemap: lines robots.txt declares; one is what the title asks.",
+      "shapes": {
+        "existential": "The title asks that the location be declared; one declaration satisfies it."
+      }
+    },
+    "CI-008": {
+      "title": "Make the URL Discoverable via Internal Links/Navigation",
+      "check": {
+        "script": "link_profile.py",
+        "args": [
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "orphan_pages.count",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`orphan_pages.count` is sitemap URLs the crawl found no internal link to, robots refusals excluded.",
+      "shapes": {
+        "conjunction": "Links/Navigation names one subject: an inbound internal link, navigation included."
+      }
+    },
+    "CI-009": {
+      "title": "Serve Content at a Single Canonical URL",
+      "check": {
+        "script": "canonical_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "rows",
+          "field": "verdict",
+          "value_map": {
+            "self_canonical": "pass",
+            "canonicalized": "pass",
+            "cross_host": "fail",
+            "missing": "fail"
+          }
+        }
+      },
+      "verdict": "answers",
+      "reading": "`rows` maps canonical_checker's verdict: self-canonical or canonicalised passes, cross-host or missing fails.",
+      "shapes": {}
+    },
+    "CI-010": {
+      "title": "Align Google-Selected and Declared Canonical",
+      "check": {
+        "script": "gsc_url_inspection.py",
+        "args": [
+          "{url}",
+          "--property",
+          "{gsc_property}",
+          "--credentials",
+          "{gsc_credentials}"
+        ],
+        "requires": "gsc",
+        "assert": {
+          "path": "canonical_match",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`canonical_match` compares URL Inspection's Google-selected canonical with the declared one.",
+      "shapes": {
+        "conjunction": "Google-selected and Declared are the two sides of the one comparison the rule makes."
+      }
+    },
+    "CI-011": {
+      "title": "Avoid Canonical/Indexing Mixed Signals",
+      "check": {
+        "script": "canonical_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "rows",
+          "field": "verdict",
+          "value_map": {
+            "self_canonical": "pass",
+            "missing": "pass",
+            "canonicalized": "pass",
+            "cross_host": "fail"
+          }
+        }
+      },
+      "verdict": "answers",
+      "reading": "`rows` fails a cross-host canonical, the mixed signal a page can send about which URL to index; a missing canonical is CI-009's.",
+      "shapes": {
+        "conjunction": "Canonical/Indexing names the conflict between the two, which is what a cross-host canonical is.",
+        "external": "The page's own signals are the subject, not Google's index."
+      }
+    },
+    "CI-012": {
+      "title": "Use a Friendly URL Structure",
+      "check": {
+        "script": "url_quality.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "rows.0.score",
+          "gte": 70
+        }
+      },
+      "verdict": "answers",
+      "reading": "`rows.0.score` is 100 less 12 per url_quality flag; 70 allows two flags.",
+      "shapes": {}
+    },
+    "CI-013": {
+      "title": "Do Not Block Critical CSS/JS/Images in robots.txt",
+      "check": {
+        "script": "robots_path_tester.py",
+        "args": [
+          "{url}",
+          "--discover-assets",
+          "--agent",
+          "Googlebot"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "blocked_urls",
+          "len_eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`blocked_urls` lists same-origin CSS, JS and image URLs the page references that robots.txt blocks for Googlebot.",
+      "shapes": {
+        "conjunction": "CSS/JS/Images is one class of resource, all three read."
+      }
+    },
+    "CI-014": {
+      "title": "Use Correct Redirect Codes (No Chains/Loops)",
+      "check": {
+        "script": "redirect_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "redirect_issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        },
+        "warn": {
+          "path": "redirect_issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`redirect_issues` fails a loop, a missing Location or a chain past Google's 10-hop limit, and warns on any chain or 302/303/307 (0.112.0).",
+      "shapes": {
+        "conjunction": "Codes, chains and loops are each an issue type the rule reads.",
+        "qualifier": "*Correct* is read as permanent codes: a temporary code warns, since Google treats it as a weak signal."
+      }
+    },
+    "CI-015": {
+      "title": "Eliminate 5xx Server Errors",
+      "check": {
+        "script": "indexability_matrix.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "rows.0.status",
+          "lt": 500
+        }
+      },
+      "verdict": "answers",
+      "reading": "`rows.0.status` below 500 on the entry URL.",
+      "shapes": {}
+    },
+    "CI-016": {
+      "title": "Provide Meaningful Image Alt Text",
+      "check": {
+        "script": "image_inventory.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "alt_not_meaningful",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "summary.images",
+          "gt": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`alt_not_meaningful` counts images with no alt or a placeholder alt; empty alt, the correct markup for decoration, passes (0.105.0).",
+      "shapes": {
+        "qualifier": "*Meaningful* is the placeholder signal: filenames, `image1`, `untitled` and the like do not count as descriptions."
+      }
+    },
+    "CI-017": {
+      "title": "Validate HTML (W3C)",
+      "check": {
+        "script": "html_validator.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "api",
+        "assert": {
+          "path": "summary.errors",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.errors` is the W3C validator's error count for the served HTML.",
+      "shapes": {
+        "conjunction": "W3C names the validator, not a second subject."
+      }
+    },
+    "CI-018": {
+      "title": "Analyze Logs & Manage Crawl Budget",
+      "check": {
+        "script": "server_log_audit.py",
+        "args": [
+          "{server_log}",
+          "--url",
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        },
+        "warn": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries server_log_audit's findings over the supplied log: crawl waste, non-indexable hits, bot share.",
+      "shapes": {
+        "conjunction": "Analysing the log is the means; crawl-budget findings are what the rule grades."
+      }
+    },
+    "CI-019": {
+      "title": "Noindex System & Search Pages (/search, /cart, /checkout, /login)",
+      "check": {
+        "script": "robots_path_tester.py",
+        "args": [
+          "{url}",
+          "/search",
+          "/cart",
+          "/checkout",
+          "/login",
+          "--probe"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "indexable_urls",
+          "len_lte": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`indexable_urls` lists which of /search, /cart, /checkout, /login exist and are indexable when fetched (0.20 repair).",
+      "shapes": {
+        "conjunction": "The parenthetical lists the paths the rule requests."
+      }
+    },
+    "MS-020": {
+      "title": "Keep Page Titles Concise (Avoid SERP Truncation)",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "title",
+          "len_lte": 60
+        }
+      },
+      "verdict": "answers",
+      "reading": "`title` length at most 60 characters, the character proxy for SERP truncation.",
+      "shapes": {
+        "conjunction": "The parenthetical is the reason for the limit."
+      }
+    },
+    "MS-021": {
+      "title": "Avoid Overly Short Titles (<30 Characters)",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "title",
+          "len_gte": 30
+        }
+      },
+      "verdict": "answers",
+      "reading": "`title` length at least 30 characters, the number the title states.",
+      "shapes": {
+        "conjunction": "The parenthetical is the threshold."
+      }
+    },
+    "MS-022": {
+      "title": "Remove Duplicate Page Titles (Handle Canonical/Pagination Correctly)",
+      "check": {
+        "script": "duplicate_content.py",
+        "args": [
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "summary.duplicate_title_groups",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.duplicate_title_groups` counts titles shared by indexable, self-canonical pages (0.112.0).",
+      "shapes": {
+        "conjunction": "Canonical is handled by exclusion; pagination is not recorded by the crawl, which the script says."
+      }
+    },
+    "MS-023": {
+      "title": "Detect & Resolve Keyword Cannibalization",
+      "check": {
+        "script": "gsc_cannibalization.py",
+        "args": [
+          "{gsc_property}",
+          "--credentials",
+          "{gsc_credentials}"
+        ],
+        "requires": "gsc",
+        "assert": {
+          "path": "summary.cannibalized_queries",
+          "eq": 0
+        },
+        "warn": {
+          "path": "summary.cannibalized_queries",
+          "lte": 3
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.cannibalized_queries` counts Search Console queries classified cannibalised or contested between two or more of the site's pages.",
+      "shapes": {
+        "conjunction": "Detecting is what the rule does; resolving is the fix."
+      }
+    },
+    "MS-026": {
+      "title": "Ensure Every Page Has a Title",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "title",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`title` present and non-empty.",
+      "shapes": {}
+    },
+    "MS-028": {
+      "title": "Fill Missing Meta Descriptions (High-Value Pages First)",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "meta_description",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`meta_description` present and non-empty.",
+      "shapes": {
+        "conjunction": "*High-value pages first* is an order of work, not a second subject."
+      }
+    },
+    "MS-029": {
+      "title": "Eliminate Duplicate Meta Descriptions",
+      "check": {
+        "script": "duplicate_content.py",
+        "args": [
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "summary.duplicate_description_groups",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.duplicate_description_groups` counts descriptions shared by indexable, self-canonical pages.",
+      "shapes": {}
+    },
+    "MS-030": {
+      "title": "Keep Meta Descriptions ~150–160 Characters (Clear & Relevant)",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "meta_description",
+          "len_between": [
+            120,
+            165
+          ]
+        }
+      },
+      "verdict": "owed",
+      "reading": "`meta_description` length between 120 and 165: the title says about 150–160, and *Clear & Relevant* is not read. A rule repair is owed (A.10).",
+      "shapes": {
+        "conjunction": "Owed: *Clear & Relevant* has no reader.",
+        "qualifier": "Owed: clarity and relevance are unmeasured."
+      }
+    },
+    "MS-031": {
+      "title": "Do Not Use Meta Keywords",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "meta_keywords",
+          "falsy": true,
+          "missing_is": "pass"
+        }
+      },
+      "verdict": "answers",
+      "reading": "`meta_keywords` absent or empty.",
+      "shapes": {}
+    },
+    "MS-032": {
+      "title": "Implement & Validate Structured Data (Where Relevant)",
+      "check": {
+        "script": "schema_required_props.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "summary.errors",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "schema_nodes",
+          "gt": 0
+        },
+        "warn": {
+          "path": "summary.warnings",
+          "lte": 3
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.errors` is schema_required_props' count of missing required properties, applicable where nodes exist.",
+      "shapes": {
+        "conjunction": "Implemented is the applicability gate; validated is the assertion.",
+        "qualifier": "*Where relevant* is `applies_when schema_nodes > 0`."
+      }
+    },
+    "MS-033": {
+      "title": "Add Social Preview Tags (Open Graph & Twitter Cards)",
+      "check": {
+        "script": "social_meta.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "score",
+          "gte": 80
+        }
+      },
+      "verdict": "answers",
+      "reading": "`score` is the share of Open Graph and Twitter Card checks the page passes; 80 is four in five.",
+      "shapes": {
+        "conjunction": "Both tag families feed the score."
+      }
+    },
+    "CN-034": {
+      "title": "Ensure Readable Font Sizes",
+      "check": {
+        "script": "rendered_audit.py",
+        "args": [
+          "{rendered_json}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "text_nodes_below_12px",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`text_nodes_below_12px` counts rendered text nodes under 12px.",
+      "shapes": {
+        "qualifier": "*Readable* is operationalised as the 12px floor."
+      }
+    },
+    "CN-035": {
+      "title": "Make Hyperlinks Clear and Distinct",
+      "check": {
+        "script": "rendered_audit.py",
+        "args": [
+          "{rendered_json}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "links_indistinct",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`links_indistinct` counts rendered links neither underlined, nor bolder, nor a different colour from the text around them.",
+      "shapes": {
+        "conjunction": "Clear and distinct are one property: a link must look like a link.",
+        "qualifier": "Read as visual distinctness from body text."
+      }
+    },
+    "CN-036": {
+      "title": "Ensure Sufficient Text Contrast",
+      "check": {
+        "script": "rendered_audit.py",
+        "args": [
+          "{rendered_json}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "text_nodes_below_contrast",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`text_nodes_below_contrast` counts rendered text below the WCAG contrast ratio, computed from styles (0.101.0).",
+      "shapes": {
+        "qualifier": "*Sufficient* is WCAG AA's ratio."
+      }
+    },
+    "CN-038": {
+      "title": "Balance Evergreen and Fresh Content",
+      "check": {
+        "script": "freshness_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "score",
+          "gte": 70
+        }
+      },
+      "verdict": "measures",
+      "reading": "`score` is freshness_checker's recency of this page's dates and statistics; the site-level balance the title asks about is not measured.",
+      "shapes": {
+        "conjunction": "Evergreen and fresh across a site is out of reach for a one-page script; `measures` says so."
+      }
+    },
+    "CN-039": {
+      "title": "Eliminate Low-Value/Thin Pages",
+      "check": {
+        "script": "duplicate_content.py",
+        "args": [
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "summary.thin_pages",
+          "eq": 0
+        },
+        "warn": {
+          "path": "summary.thin_pages",
+          "lte": 5
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.thin_pages` counts crawled indexable pages under the word threshold.",
+      "shapes": {
+        "conjunction": "Low-value and thin are one subject, measured by length."
+      }
+    },
+    "CN-040": {
+      "title": "Publish an Up-to-Date Privacy Policy",
+      "check": {
+        "script": "eeat_signal_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "signals.privacy_links",
+          "len_gte": 1
+        }
+      },
+      "verdict": "measures",
+      "reading": "`signals.privacy_links` lists links to a privacy policy; whether the policy is current is not read.",
+      "shapes": {
+        "existential": "One link to the policy is what publishing it looks like from the page."
+      }
+    },
+    "CN-041": {
+      "title": "Eliminate Internal Duplicate Content",
+      "check": {
+        "script": "duplicate_content.py",
+        "args": [
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "summary.exact_duplicate_groups",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.exact_duplicate_groups` counts crawled pages serving the same body text.",
+      "shapes": {}
+    },
+    "CN-044": {
+      "title": "Provide a Clear, Easy-to-Find Contact Page",
+      "check": {
+        "script": "eeat_signal_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "signals.trust_links",
+          "len_gte": 1
+        }
+      },
+      "verdict": "owed",
+      "reading": "`signals.trust_links` includes About pages and tel/mailto links, so a page with no contact route beyond an About link passes. A rule repair is owed (A.10).",
+      "shapes": {
+        "existential": "Owed: one institutional link of any kind satisfies it.",
+        "qualifier": "Owed: *clear, easy-to-find* is not read."
+      }
+    },
+    "CN-048": {
+      "title": "Use Hierarchical Headings and Semantic HTML",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries heading-level skips and a missing <main>; nav and footer absence are deliberately not faults.",
+      "shapes": {
+        "conjunction": "Both halves are read: the heading hierarchy and the one landmark every page needs."
+      }
+    },
+    "CN-051": {
+      "title": "Avoid Intrusive Interstitials (Especially on Mobile)",
+      "check": {
+        "script": "rendered_audit.py",
+        "args": [
+          "{rendered_json}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "overlays_covering_content",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`overlays_covering_content` counts rendered overlays that cover content at load.",
+      "shapes": {
+        "conjunction": "*Especially on mobile* is MB-094's own item; this one reads the rendered page."
+      }
+    },
+    "CN-054": {
+      "title": "Ensure Lazy-Loaded Content Is Discoverable",
+      "check": {
+        "script": "image_inventory.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "summary.lazy_lcp_candidates",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "summary.images",
+          "gt": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.lazy_lcp_candidates` counts lazy-loaded images that are likely LCP candidates.",
+      "shapes": {}
+    },
+    "CN-056": {
+      "title": "Show Publication and Updated Dates",
+      "check": {
+        "script": "freshness_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "date_signals.shown",
+          "eq": {
+            "published": true,
+            "updated": true
+          }
+        },
+        "warn": {
+          "path": "date_signals.shown.published",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`date_signals.shown` requires a publication and an update date from declared sources; publication alone warns (0.112.0).",
+      "shapes": {
+        "conjunction": "Both halves are read."
+      }
+    },
+    "CN-057": {
+      "title": "Show Author and Publisher Clearly",
+      "check": {
+        "script": "eeat_signal_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "signals.authorship",
+          "eq": {
+            "author": true,
+            "publisher": true
+          }
+        }
+      },
+      "verdict": "answers",
+      "reading": "`signals.authorship` requires both an author and a publisher signal.",
+      "shapes": {
+        "conjunction": "Both halves are read, as a two-key object."
+      }
+    },
+    "CN-065": {
+      "title": "Use a Clear H1 Per Page",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "h1",
+          "len_eq": 1
+        }
+      },
+      "verdict": "measures",
+      "reading": "`h1` must hold exactly one non-empty heading; *clear* is read as that and nothing more.",
+      "shapes": {
+        "qualifier": "Exactly one non-empty H1; `measures` says the word means no more here."
+      }
+    },
+    "CN-066": {
+      "title": "Use H2 Subheadings for Structure",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "h2",
+          "len_gte": 2
+        }
+      },
+      "verdict": "answers",
+      "reading": "`h2` holds at least two subheadings.",
+      "shapes": {}
+    },
+    "CN-068": {
+      "title": "Strengthen Authorship & E-E-A-T Signals",
+      "check": {
+        "script": "eeat_signal_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "score",
+          "gte": 35
+        }
+      },
+      "verdict": "answers",
+      "reading": "`score` is eeat_signal_checker's weighted sum of an author, credentials, first-hand experience, policy and trust links, and external citations.",
+      "shapes": {
+        "conjunction": "Authorship is part of the E-E-A-T score, not a separate subject."
+      }
+    },
+    "KW-070": {
+      "title": "Own Your Branded Query (Homepage Ranks #1)",
+      "check": {
+        "script": "gsc_cannibalization.py",
+        "args": [
+          "{gsc_property}",
+          "--credentials",
+          "{gsc_credentials}"
+        ],
+        "requires": "gsc",
+        "assert": {
+          "path": "branded.owns_homepage",
+          "truthy": true
+        }
+      },
+      "verdict": "owed",
+      "reading": "`branded.owns_homepage` treats the highest-click query as the brand, so a site whose head term is generic is judged on a query that is not its brand. The identification is Anton's open decision (KNOWN-ISSUES, branded query).",
+      "shapes": {
+        "conjunction": "Owed: *branded* is not identified, so the ranks-first half is read about the wrong query."
+      }
+    },
+    "KW-071": {
+      "title": "Is there evidence of keyword duplication or overuse?",
+      "check": {
+        "script": "gsc_cannibalization.py",
+        "args": [
+          "{gsc_property}",
+          "--credentials",
+          "{gsc_credentials}"
+        ],
+        "requires": "gsc",
+        "assert": {
+          "path": "summary.contested_queries",
+          "eq": 0
+        },
+        "warn": {
+          "path": "summary.contested_queries",
+          "lte": 3
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.contested_queries` counts Search Console queries in the contested bucket: two or more of the site's pages ranking for one query.",
+      "shapes": {}
+    },
+    "KW-076": {
+      "title": "Include the Primary Keyword in Body Copy",
+      "check": {
+        "script": "article_seo.py",
+        "args": [
+          "{url}",
+          "--keyword",
+          "{keyword}",
+          "--no-autocomplete"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "keyword_usage.in_body",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`keyword_usage.in_body` is whether the supplied primary keyword occurs in the body copy.",
+      "shapes": {}
+    },
+    "BL-081": {
+      "title": "Keep Anchor Text Natural and Varied",
+      "check": {
+        "script": "anchor_text_audit.py",
+        "args": [
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "summary.overused_exact_match_targets",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "links_analyzed",
+          "gt": 0
+        },
+        "warn": {
+          "path": "summary.overused_exact_match_targets",
+          "lte": 10
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.overused_exact_match_targets` counts internal link targets whose anchors are dominated by one exact-match phrase.",
+      "shapes": {
+        "conjunction": "Natural and varied are one property, read as anchor diversity per target."
+      }
+    },
+    "BL-083": {
+      "title": "Fix Broken Backlinks (Redirect or Update Link)",
+      "check": {
+        "script": "gsc_links_csv.py",
+        "args": [
+          "{links_csv}",
+          "--site",
+          "{url}",
+          "--check-targets"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "targets.broken_count",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "targets.linked_pages",
+          "gt": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`targets.broken_count` counts pages other sites link to (the Links export's top linked pages) that now answer 4xx or not at all (0.107.0).",
+      "shapes": {
+        "conjunction": "The parenthetical is the fix; a redirected target is not counted as broken."
+      }
+    },
+    "BL-084": {
+      "title": "Check for Unnatural Link Concentration from Single Domains",
+      "check": {
+        "script": "gsc_links_csv.py",
+        "args": [
+          "{links_csv}",
+          "--site",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "concentration.top1_share_pct",
+          "lte": 50
+        },
+        "warn": {
+          "path": "concentration.top1_share_pct",
+          "lte": 65
+        }
+      },
+      "verdict": "answers",
+      "reading": "`concentration.top1_share_pct` is the share of links from the single largest linking domain.",
+      "shapes": {}
+    },
+    "BL-086": {
+      "title": "Track Total Backlinks (Quality Over Quantity)",
+      "check": {
+        "script": "gsc_links_csv.py",
+        "args": [
+          "{links_csv}",
+          "--site",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "total_links",
+          "gte": 1
+        }
+      },
+      "verdict": "measures",
+      "reading": "`total_links` is the link count in the Links export; the rule can only say there are none, since tracking happens over time and quality is BL-084's and BL-087's.",
+      "shapes": {
+        "conjunction": "*Quality over quantity* is advice about reading the number; `measures` says what is read.",
+        "existential": "At least one backlink; the count itself is reported, not judged.",
+        "qualifier": "Quality is not read here; `measures` says so."
+      }
+    },
+    "BL-087": {
+      "title": "Track Total Linking Root Domains",
+      "check": {
+        "script": "gsc_links_csv.py",
+        "args": [
+          "{links_csv}",
+          "--site",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "linking_domains",
+          "gte": 5
+        }
+      },
+      "verdict": "answers",
+      "reading": "`linking_domains` counts distinct linking root domains in the export, at least 5.",
+      "shapes": {}
+    },
+    "MB-093": {
+      "title": "Ensure Responsive Layout (Mobile-First)",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "viewport",
+          "truthy": true
+        }
+      },
+      "verdict": "measures",
+      "reading": "`viewport` is the declared viewport meta; whether the layout fits a phone is MB-107's, which renders it.",
+      "shapes": {
+        "conjunction": "Mobile-first is the reason; the declared viewport is what is read."
+      }
+    },
+    "MB-094": {
+      "title": "Avoid Intrusive Interstitials on Mobile",
+      "check": {
+        "script": "rendered_audit.py",
+        "args": [
+          "{rendered_json}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "mobile_overlays_covering_content",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`mobile_overlays_covering_content` counts overlays covering content in the phone-width render.",
+      "shapes": {}
+    },
+    "MB-095": {
+      "title": "Keep Mobile Page Weight Light",
+      "check": {
+        "script": "image_weight_audit.py",
+        "args": [
+          "{url}",
+          "--fetch-images"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "large_image_count",
+          "lte": 5
+        }
+      },
+      "verdict": "owed",
+      "reading": "`large_image_count` counts images over 250 KB, at most 5; page weight — the bytes a phone downloads — is not totalled. A rule repair is owed (A.10).",
+      "shapes": {}
+    },
+    "MB-096": {
+      "title": "Use Responsive Images",
+      "check": {
+        "script": "image_weight_audit.py",
+        "args": [
+          "{url}",
+          "--fetch-images"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "large_without_srcset_count",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "image_count",
+          "gt": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`large_without_srcset_count` counts images wider than 1280px, read from their own bytes, sent without srcset (0.108.0).",
+      "shapes": {}
+    },
+    "MB-097": {
+      "title": "Optimize Image Formats & Compression",
+      "check": {
+        "script": "image_weight_audit.py",
+        "args": [
+          "{url}",
+          "--fetch-images"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "legacy_or_heavy_count",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "image_count",
+          "gt": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`legacy_or_heavy_count` counts large images with no WebP/AVIF offer plus any image over 250 KB (0.108.0).",
+      "shapes": {
+        "conjunction": "Formats and compression are each a half of the count.",
+        "qualifier": "*Optimize* is read as those two halves."
+      }
+    },
+    "MB-098": {
+      "title": "Serve Properly Sized Images",
+      "check": {
+        "script": "image_weight_audit.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "srcset_without_sizes_count",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "image_count",
+          "gt": 0
+        }
+      },
+      "verdict": "measures",
+      "reading": "`srcset_without_sizes_count` counts images whose srcset has no sizes; an oversized image with no srcset is MB-096's.",
+      "shapes": {}
+    },
+    "MB-100": {
+      "title": "Fix Mobile UX Issues (see UX)",
+      "check": {
+        "script": "mobile_render_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries mobile_render_checker's mobile usability findings.",
+      "shapes": {
+        "conjunction": "*(see UX)* points at the UX items; it is not a subject."
+      }
+    },
+    "MB-102": {
+      "title": "Optimize Video for Mobile",
+      "check": {
+        "script": "video_schema_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        },
+        "applies_when": {
+          "path": "videos",
+          "gt": 0
+        },
+        "warn": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries video_schema_checker's mobile-relevant video findings, applicable only where videos exist.",
+      "shapes": {
+        "qualifier": "*Optimize* is read as the script's issue set."
+      }
+    },
+    "MB-103": {
+      "title": "Make Tap Targets Easy to Click",
+      "check": {
+        "script": "rendered_audit.py",
+        "args": [
+          "{rendered_json}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "tap_targets_below_48px",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`tap_targets_below_48px` counts rendered tap targets under 48px.",
+      "shapes": {
+        "external": "*Click* is the user's click, not search clicks; nothing external is asked."
+      }
+    },
+    "MB-104": {
+      "title": "Ensure Favicon Displays in Mobile SERPs",
+      "check": {
+        "script": "favicon_check.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "favicon.displays_at_48px",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`favicon.displays_at_48px` fetches the declared icon and checks it can render at 48px, Google's minimum for search results.",
+      "shapes": {}
+    },
+    "MB-105": {
+      "title": "Ensure Content, Meta & Directives Match Between Served and Rendered HTML",
+      "check": {
+        "script": "javascript_render_audit.py",
+        "args": [
+          "{url}",
+          "--rendered-json",
+          "{rendered_json}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "diffs",
+          "len_eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`diffs` lists differences in content, meta and directives between the served and the rendered HTML.",
+      "shapes": {
+        "conjunction": "Content, meta and directives are each compared."
+      }
+    },
+    "SP-107": {
+      "title": "Load Content Fast (Prioritize Above-the-Fold)",
+      "check": {
+        "script": "pagespeed.py",
+        "args": [
+          "{url}",
+          "--strategy",
+          "mobile"
+        ],
+        "requires": "api",
+        "assert": {
+          "path": "metrics.FCP.rating",
+          "value_map": {
+            "good": "pass",
+            "needs-improvement": "fail",
+            "poor": "fail"
+          }
+        },
+        "warn": {
+          "path": "metrics.FCP.rating",
+          "value_map": {
+            "good": "pass",
+            "needs-improvement": "pass",
+            "poor": "fail"
+          }
+        }
+      },
+      "verdict": "answers",
+      "reading": "`metrics.FCP.rating` is First Contentful Paint's rating, field data when CrUX has it and lab otherwise, with the source recorded.",
+      "shapes": {
+        "conjunction": "Above-the-fold priority is what FCP times.",
+        "qualifier": "*Fast* is the FCP band."
+      }
+    },
+    "SP-108": {
+      "title": "Pass Core Web Vitals (Field Data)",
+      "check": {
+        "script": "pagespeed.py",
+        "args": [
+          "{url}",
+          "--strategy",
+          "mobile"
+        ],
+        "requires": "api",
+        "assert": {
+          "path": "field_cwv.verdict",
+          "value_map": {
+            "pass": "pass",
+            "fail": "fail"
+          }
+        }
+      },
+      "verdict": "answers",
+      "reading": "`field_cwv.verdict` passes only when every graded Core Web Vital is good in CrUX field data, and is absent when there is none.",
+      "shapes": {
+        "conjunction": "The parenthetical names the data source the rule requires."
+      }
+    },
+    "SP-109": {
+      "title": "Fix Common Speed Traps",
+      "check": {
+        "script": "third_party_script_audit.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "blocking_third_party_count",
+          "eq": 0
+        },
+        "warn": {
+          "path": "blocking_third_party_count",
+          "lte": 2
+        }
+      },
+      "verdict": "measures",
+      "reading": "`blocking_third_party_count` counts render-blocking third-party scripts, one common trap among several.",
+      "shapes": {}
+    },
+    "SP-110": {
+      "title": "Run a Comprehensive Speed Audit",
+      "check": {
+        "script": "critical_request_chain.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        },
+        "warn": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "measures",
+      "reading": "`issues` carries render-blocking resources and critical request chains read from the HTML; the other speed checks are separate items.",
+      "shapes": {}
+    },
+    "SP-111": {
+      "title": "Check Core Web Vitals (Desktop) in Search Console",
+      "check": {
+        "script": "pagespeed.py",
+        "args": [
+          "{url}",
+          "--strategy",
+          "desktop"
+        ],
+        "requires": "api",
+        "assert": {
+          "path": "field_cwv.verdict",
+          "value_map": {
+            "pass": "pass",
+            "fail": "fail"
+          }
+        }
+      },
+      "verdict": "measures",
+      "reading": "`field_cwv.verdict` for the desktop strategy, from CrUX through PageSpeed Insights — the dataset the Search Console report is built from.",
+      "shapes": {
+        "conjunction": "Desktop is the strategy passed; Search Console is the report the same data feeds."
+      }
+    },
+    "SP-112": {
+      "title": "Check Core Web Vitals (Mobile) in Search Console",
+      "check": {
+        "script": "pagespeed.py",
+        "args": [
+          "{url}",
+          "--strategy",
+          "mobile"
+        ],
+        "requires": "api",
+        "assert": {
+          "path": "field_cwv.verdict",
+          "value_map": {
+            "pass": "pass",
+            "fail": "fail"
+          }
+        }
+      },
+      "verdict": "measures",
+      "reading": "`field_cwv.verdict` for the mobile strategy, from CrUX through PageSpeed Insights — the dataset the Search Console report is built from.",
+      "shapes": {
+        "conjunction": "Mobile is the strategy passed; Search Console is the report the same data feeds."
+      }
+    },
+    "SP-113": {
+      "title": "Meet Core Web Vitals Thresholds",
+      "check": {
+        "script": "pagespeed.py",
+        "args": [
+          "{url}",
+          "--strategy",
+          "mobile"
+        ],
+        "requires": "api",
+        "assert": {
+          "path": "field_cwv.verdict",
+          "value_map": {
+            "pass": "pass",
+            "fail": "fail"
+          }
+        }
+      },
+      "verdict": "answers",
+      "reading": "`field_cwv.verdict` on mobile field data: every graded Core Web Vital within Google's good thresholds.",
+      "shapes": {}
+    },
+    "SE-114": {
+      "title": "Run Malware & Security Checks",
+      "check": {
+        "script": "domain_safety_check.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "safe_browsing",
+        "assert": {
+          "path": "safe_browsing.threats",
+          "len_eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`safe_browsing.threats` is Google Safe Browsing's threat list for the URL, required empty.",
+      "shapes": {
+        "conjunction": "Malware and security are both what Safe Browsing reports."
+      }
+    },
+    "SE-115": {
+      "title": "Enable HSTS (HTTP Strict Transport Security)",
+      "check": {
+        "script": "security_headers.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "hsts_enabled",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`hsts_enabled` needs HTTPS and a positive max-age (0.112.0).",
+      "shapes": {
+        "conjunction": "The parenthetical expands the acronym."
+      }
+    },
+    "SE-116": {
+      "title": "Ensure No Hacked Content or Malware",
+      "check": {
+        "script": "domain_safety_check.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "safe_browsing",
+        "assert": {
+          "path": "safe_browsing.threats",
+          "len_eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`safe_browsing.threats` required empty.",
+      "shapes": {}
+    },
+    "SE-117": {
+      "title": "Force HTTPS Across the Site (Single Canonical Protocol)",
+      "check": {
+        "script": "security_headers.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "https",
+          "truthy": true
+        }
+      },
+      "verdict": "owed",
+      "reading": "`https` is whether the audited URL ended on https; whether the http:// version redirects there — what *force* means — is never requested. A rule repair is owed (A.10).",
+      "shapes": {
+        "conjunction": "Owed: the single canonical protocol needs the http variant read."
+      }
+    },
+    "SE-118": {
+      "title": "Maintain a Valid TLS Certificate (HTTPS)",
+      "check": {
+        "script": "tls_certificate.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "valid",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`valid` is True only after a verifying TLS handshake: unexpired, trusted, issued for the hostname.",
+      "shapes": {
+        "conjunction": "The parenthetical names the protocol.",
+        "qualifier": "*Valid* is the handshake's own verdict."
+      }
+    },
+    "SE-119": {
+      "title": "Make Cookie Banners Lightweight (No CLS)",
+      "check": {
+        "script": "pagespeed.py",
+        "args": [
+          "{url}",
+          "--strategy",
+          "mobile"
+        ],
+        "requires": "api",
+        "assert": {
+          "path": "metrics.CLS.rating",
+          "value_map": {
+            "good": "pass",
+            "needs-improvement": "fail",
+            "poor": "fail"
+          }
+        },
+        "warn": {
+          "path": "metrics.CLS.rating",
+          "value_map": {
+            "good": "pass",
+            "needs-improvement": "pass",
+            "poor": "fail"
+          }
+        }
+      },
+      "verdict": "measures",
+      "reading": "`metrics.CLS.rating` is the page's layout shift as a whole; the cookie banner is not identified.",
+      "shapes": {
+        "conjunction": "*(No CLS)* names the metric read; the banner is what `measures` says is not isolated."
+      }
+    },
+    "SE-120": {
+      "title": "Harden Security Headers (CSP, Permissions-Policy, Referrer-Policy)",
+      "check": {
+        "script": "security_headers.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "hardening_missing",
+          "len_eq": 0
+        },
+        "warn": {
+          "path": "hardening_missing",
+          "len_lte": 1
+        }
+      },
+      "verdict": "answers",
+      "reading": "`hardening_missing` lists which of CSP, Permissions-Policy and Referrer-Policy are absent (0.112.0).",
+      "shapes": {
+        "conjunction": "The three headers the title names are exactly the three read."
+      }
+    },
+    "IN-121": {
+      "title": "Configure Geo-Targeting Signals",
+      "check": {
+        "script": "hreflang_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "checks.x_default.passed",
+          "truthy": true
+        }
+      },
+      "verdict": "measures",
+      "reading": "`checks.x_default.passed` is whether the hreflang set carries exactly one x-default; region codes and country domains are not read.",
+      "shapes": {}
+    },
+    "IN-122": {
+      "title": "Implement Valid hreflang (With Return Tags)",
+      "check": {
+        "script": "hreflang_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "checks.return_tags.verified_and_valid",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`checks.return_tags.verified_and_valid` requires every alternate to link back, fetched and checked.",
+      "shapes": {
+        "conjunction": "Return tags are the validity condition the rule reads.",
+        "qualifier": "*Valid* is return tags verified and codes valid."
+      }
+    },
+    "IN-123": {
+      "title": "Make Page Language Obvious",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "lang",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`lang` is the html lang attribute, required present.",
+      "shapes": {}
+    },
+    "IN-127": {
+      "title": "Use a Clear International URL Structure",
+      "check": {
+        "script": "hreflang_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "checks.url_structure.passed",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`checks.url_structure.passed` requires locale URLs to use one of Google's supported structures — ccTLD, subdomain or subdirectory (0.26).",
+      "shapes": {
+        "qualifier": "*Clear* is one supported structure, not parameters."
+      }
+    },
+    "IN-128": {
+      "title": "Serve the Correct Localized Page",
+      "check": {
+        "script": "hreflang_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "checks.self_reference.passed",
+          "truthy": true
+        }
+      },
+      "verdict": "measures",
+      "reading": "`checks.self_reference.passed` is whether the page lists itself in its hreflang set; which version a visitor is served is not tested.",
+      "shapes": {
+        "qualifier": "*Correct* is not tested; `measures` says what is."
+      }
+    },
+    "GO-131": {
+      "title": "Install & Configure Google Analytics 4",
+      "check": {
+        "script": "ga4_tag_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "measurement_ids",
+          "len_gte": 1
+        }
+      },
+      "verdict": "answers",
+      "reading": "`measurement_ids` lists GA4 measurement IDs configured on the page.",
+      "shapes": {
+        "conjunction": "Install and configure are both read as a configured ID.",
+        "existential": "One configured property is an installed GA4."
+      }
+    },
+    "GO-132": {
+      "title": "Prevent GA4 Tag Duplication",
+      "check": {
+        "script": "ga4_tag_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "duplicates",
+          "len_eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`duplicates` lists GA4 IDs configured more than once.",
+      "shapes": {}
+    },
+    "GO-134": {
+      "title": "Resolve Search Console Issues",
+      "check": {
+        "script": "gsc_checker.py",
+        "args": [
+          "{gsc_property}",
+          "--credentials",
+          "{gsc_credentials}"
+        ],
+        "requires": "gsc",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        },
+        "warn": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries errors and warnings Search Console reports against submitted sitemaps (0.23).",
+      "shapes": {}
+    },
+    "GO-135": {
+      "title": "Use URL Inspection & Rendered HTML",
+      "check": {
+        "script": "gsc_url_inspection.py",
+        "args": [
+          "{url}",
+          "--property",
+          "{gsc_property}",
+          "--credentials",
+          "{gsc_credentials}"
+        ],
+        "requires": "gsc",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "owed",
+      "reading": "`issues` carries URL Inspection's findings for the audited URL — coverage, canonical, robots, indexing state; the API returns no rendered HTML, so that half of the title is unread. A `measures` sentence is owed.",
+      "shapes": {
+        "conjunction": "Owed: URL Inspection is read, rendered HTML is not."
+      }
+    },
+    "GO-136": {
+      "title": "Provide Clean XML Sitemaps",
+      "check": {
+        "script": "sitemap_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        },
+        "warn": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries sitemap_checker's hygiene findings, robots conflicts included since 0.110.0.",
+      "shapes": {
+        "qualifier": "*Clean* is no finding at medium or above."
+      }
+    },
+    "GO-137": {
+      "title": "Reconcile Indexed Pages vs. Sitemaps",
+      "check": {
+        "script": "gsc_sitemap_reconcile.py",
+        "args": [
+          "{url}",
+          "--property",
+          "{gsc_property}",
+          "--credentials",
+          "{gsc_credentials}"
+        ],
+        "requires": "gsc",
+        "assert": {
+          "path": "summary.unreconciled",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "summary.sitemap_urls",
+          "gt": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.unreconciled` counts sitemap URLs Google has not indexed plus indexed pages no sitemap lists (0.106.0).",
+      "shapes": {
+        "conjunction": "Indexed pages and sitemaps are the two sets compared."
+      }
+    },
+    "GO-138": {
+      "title": "Remove Invalid URLs from Sitemaps",
+      "check": {
+        "script": "sitemap_checker.py",
+        "args": [
+          "{url}",
+          "--fetch-urls",
+          "--max-urls",
+          "25"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "invalid_url_count",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`invalid_url_count` counts listed URLs answering 400 or more, redirecting, noindex, or disallowed for Googlebot (0.110.0).",
+      "shapes": {}
+    },
+    "GO-139": {
+      "title": "Monitor & Improve Brand SERPs",
+      "check": {
+        "script": "gsc_cannibalization.py",
+        "args": [
+          "{gsc_property}",
+          "--credentials",
+          "{gsc_credentials}"
+        ],
+        "requires": "gsc",
+        "assert": {
+          "path": "branded.ranks_first",
+          "truthy": true
+        }
+      },
+      "verdict": "owed",
+      "reading": "`branded.ranks_first` shares KW-070's identification of the brand as the highest-click query — Anton's open decision.",
+      "shapes": {
+        "conjunction": "Owed: monitor and improve are both read as one ranking, about a query that may not be the brand."
+      }
+    },
+    "GO-143": {
+      "title": "Complete Every WebSite Node Google Reads for the Site Name",
+      "check": {
+        "script": "schema_required_props.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "incomplete_nodes_by_type.WebSite",
+          "eq": 0,
+          "missing_is": "pass"
+        },
+        "applies_when": {
+          "path": "schema_nodes",
+          "gt": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`incomplete_nodes_by_type.WebSite` counts WebSite nodes missing a property Google reads for the site name.",
+      "shapes": {
+        "qualifier": "*Complete* is every property Google documents for the site name."
+      }
+    },
+    "GO-144": {
+      "title": "Optimize for Featured Snippets",
+      "check": {
+        "script": "answer_block_scanner.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "score",
+          "gte": 32
+        }
+      },
+      "verdict": "answers",
+      "reading": "`score` is answer_block_scanner's measure of question-and-answer blocks a snippet can lift.",
+      "shapes": {
+        "qualifier": "*Optimize* is read as answer-block readiness."
+      }
+    },
+    "GO-145": {
+      "title": "Optimize for AI Overviews & Zero-Click SERPs",
+      "check": {
+        "script": "citation_readiness.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "score",
+          "gte": 25
+        }
+      },
+      "verdict": "owed",
+      "reading": "`score` is citation_readiness for this one page — GEO-005's twin — while the title names AI Overviews and zero-click results, which no input here observes. A `measures` sentence is owed.",
+      "shapes": {
+        "conjunction": "Owed: neither surface is observed.",
+        "external": "Owed: AI Overview presence is not observable offline.",
+        "qualifier": "Owed: read as citation readiness only."
+      }
+    },
+    "AR-146": {
+      "title": "Check Pagination",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "pagination.issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        },
+        "applies_when": {
+          "path": "pagination.paginated",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`pagination.issues` carries rel=prev/next pointing off-host or at the page itself, applicable only to a paginated page.",
+      "shapes": {}
+    },
+    "AR-147": {
+      "title": "Use Short, Descriptive URLs",
+      "check": {
+        "script": "url_quality.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "rows.0.param_count",
+          "lte": 2
+        }
+      },
+      "verdict": "owed",
+      "reading": "`rows.0.param_count` counts query parameters, at most two; a 300-character URL with none passes, and the `long_url` flag url_quality already raises is unread here. A rule repair is owed (A.10).",
+      "shapes": {
+        "qualifier": "Owed: *short* is not read, *descriptive* cannot be."
+      }
+    },
+    "AR-149": {
+      "title": "Eliminate Internal Redirects",
+      "check": {
+        "script": "internal_links.py",
+        "args": [
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "summary.internal_redirects",
+          "eq": 0
+        },
+        "warn": {
+          "path": "summary.internal_redirects",
+          "lte": 3
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.internal_redirects` counts internal links that answer with a redirect in the crawl.",
+      "shapes": {}
+    },
+    "AR-150": {
+      "title": "Remove Redirect Chains and Loops",
+      "check": {
+        "script": "redirect_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "total_hops",
+          "lte": 1
+        }
+      },
+      "verdict": "answers",
+      "reading": "`total_hops` at most one on the entry URL's redirect walk.",
+      "shapes": {
+        "conjunction": "A loop is a chain with no end; both exceed one hop."
+      }
+    },
+    "AR-151": {
+      "title": "Provide a Correct robots.txt",
+      "check": {
+        "script": "robots_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "status",
+          "eq": 200
+        }
+      },
+      "verdict": "owed",
+      "reading": "`status` is robots.txt's HTTP status; a file answering 200 with `Disallow: /` is *correct* by this rule. A rule repair is owed (A.10).",
+      "shapes": {
+        "qualifier": "Owed: correctness of the content is not read."
+      }
+    },
+    "AR-152": {
+      "title": "Block Crawl Strategically with robots.txt",
+      "check": {
+        "script": "robots_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "user_agents",
+          "truthy": true
+        }
+      },
+      "verdict": "measures",
+      "reading": "`user_agents` is truthy when robots.txt declares any user-agent group; whether its rules are strategic is a judgement the audit does not make.",
+      "shapes": {}
+    },
+    "AR-153": {
+      "title": "Design Clear Topic Hubs (Silos)",
+      "check": {
+        "script": "topical_cluster_mapper.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "score",
+          "gte": 70
+        }
+      },
+      "verdict": "answers",
+      "reading": "`score` is topical_cluster_mapper's score over topical clusters and their internal-link coverage.",
+      "shapes": {
+        "conjunction": "*(Silos)* is another name for the hubs.",
+        "qualifier": "*Clear* is read as the cluster score."
+      }
+    },
+    "AR-154": {
+      "title": "Optimize E-commerce Category Pages",
+      "check": {
+        "script": "collection_page_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        },
+        "applies_when": {
+          "path": "product_links_detected",
+          "gt": 0
+        },
+        "warn": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries collection_page_checker's category-page findings, applicable only where product links are detected.",
+      "shapes": {
+        "qualifier": "*Optimize* is read as the script's issue set."
+      }
+    },
+    "AR-155": {
+      "title": "Use Consistent, Descriptive URL Slugs",
+      "check": {
+        "script": "url_quality.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "rows.0.flags",
+          "len_eq": 0
+        }
+      },
+      "verdict": "measures",
+      "reading": "`rows.0.flags` must be empty: no uppercase, underscore, archive pattern, deep path, parameters or excess length; whether the words describe the page is not read.",
+      "shapes": {
+        "qualifier": "*Consistent* is the flag set; *descriptive* is what `measures` says is not read."
+      }
+    },
+    "AR-158": {
+      "title": "Implement Breadcrumbs (UI + Schema)",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "breadcrumbs",
+          "eq": {
+            "schema": true,
+            "ui": true
+          }
+        }
+      },
+      "verdict": "answers",
+      "reading": "`breadcrumbs` requires both a BreadcrumbList schema and a detectable breadcrumb UI.",
+      "shapes": {
+        "conjunction": "Both halves are read, as a two-key object."
+      }
+    },
+    "AR-162": {
+      "title": "Strengthen Internal Links and Remove Orphans",
+      "check": {
+        "script": "link_profile.py",
+        "args": [
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries link_profile's internal-link findings over the crawl, orphans included.",
+      "shapes": {
+        "conjunction": "Strengthening links and removing orphans are both issue types in the set."
+      }
+    },
+    "AR-163": {
+      "title": "Control Faceted Navigation (E-commerce)",
+      "check": {
+        "script": "faceted_nav_audit.py",
+        "args": [
+          "{url}",
+          "--from-page",
+          "--fetch"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        },
+        "applies_when": {
+          "path": "faceted_count",
+          "gt": 0
+        },
+        "warn": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries faceted_nav_audit's findings on facet URLs that are neither canonicalised nor noindexed, applicable only where facets exist.",
+      "shapes": {
+        "conjunction": "*(E-commerce)* scopes the item; the applicability gate is facet presence."
+      }
+    },
+    "TE-166": {
+      "title": "Add a Favicon",
+      "check": {
+        "script": "parse_html.py",
+        "args": [
+          "{html}",
+          "--url",
+          "{url}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "favicon",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`favicon` is the first declared icon link.",
+      "shapes": {}
+    },
+    "TE-167": {
+      "title": "Monitor Site Uptime",
+      "check": {
+        "script": "domain_safety_check.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "api",
+        "assert": {
+          "path": "uptime.reachable",
+          "truthy": true
+        }
+      },
+      "verdict": "measures",
+      "reading": "`uptime.reachable` is one request during the audit answered below 500; monitoring over time needs a service.",
+      "shapes": {}
+    },
+    "TE-168": {
+      "title": "Fix Broken & Redirected Links",
+      "check": {
+        "script": "broken_links.py",
+        "args": [
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "summary.broken_or_redirected",
+          "eq": 0
+        },
+        "warn": {
+          "path": "summary.broken",
+          "lte": 3
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.broken_or_redirected` counts internal links that fail or redirect and external links that fail, site-wide over the crawl (0.107.0).",
+      "shapes": {
+        "conjunction": "Broken and redirected are both counted — an external redirect is not a defect; broken alone is the warn band."
+      }
+    },
+    "TE-169": {
+      "title": "Provide Internal Links in the Served HTML",
+      "check": {
+        "script": "javascript_render_audit.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "raw.internal_link_count",
+          "gte": 1
+        }
+      },
+      "verdict": "answers",
+      "reading": "`raw.internal_link_count` counts internal links in the served HTML, before JavaScript (renamed 0.53.0).",
+      "shapes": {
+        "existential": "The title asks that the served HTML carry internal links; one is the floor, and MB-105 compares served with rendered."
+      }
+    },
+    "TE-170": {
+      "title": "Configure Server Rewrites & Headers",
+      "check": {
+        "script": "cache_compression_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        },
+        "warn": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "measures",
+      "reading": "`issues` carries caching, compression and Vary findings on the page response; URL rewrite rules are not read.",
+      "shapes": {
+        "conjunction": "Headers are read; rewrites are what `measures` says are not."
+      }
+    },
+    "TE-171": {
+      "title": "Run Blocklist & Safe-Browsing Checks",
+      "check": {
+        "script": "domain_safety_check.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "safe_browsing",
+        "assert": {
+          "path": "safe_browsing.threats",
+          "len_eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`safe_browsing.threats` required empty.",
+      "shapes": {
+        "conjunction": "Blocklist and Safe Browsing are the same lookup."
+      }
+    },
+    "TE-172": {
+      "title": "Implement Structured Data Correctly",
+      "check": {
+        "script": "rich_results_guard.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "summary.errors",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "nodes",
+          "gt": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.errors` counts rich-results guard errors in the page's structured data, applicable where nodes exist.",
+      "shapes": {}
+    },
+    "TE-174": {
+      "title": "Minify & Optimize CSS",
+      "check": {
+        "script": "css_minify_check.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "unminified_count",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "checked",
+          "gt": 0
+        }
+      },
+      "verdict": "owed",
+      "reading": "`unminified_count` counts stylesheets that are not minified; the rest of *optimize* — unused rules, critical CSS — is not read. A `measures` sentence is owed.",
+      "shapes": {
+        "conjunction": "Owed: minify is read, optimize is not.",
+        "qualifier": "Owed: as above."
+      }
+    },
+    "TE-175": {
+      "title": "Secure Pages & Eliminate Errors",
+      "check": {
+        "script": "security_headers.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "headers_missing",
+          "len_lte": 3
+        }
+      },
+      "verdict": "owed",
+      "reading": "`headers_missing` counts absent security headers, at most three; *Eliminate Errors* is not read. A rule repair is owed (A.10).",
+      "shapes": {
+        "conjunction": "Owed: the errors half has no reader.",
+        "qualifier": "Owed: *secure* is read as header coverage only."
+      }
+    },
+    "TE-176": {
+      "title": "Fix Canonicalization Issues",
+      "check": {
+        "script": "canonical_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "issues",
+          "len_eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries canonical_checker's canonicalisation findings.",
+      "shapes": {}
+    },
+    "TE-177": {
+      "title": "Provide a Title Element in the Served HTML",
+      "check": {
+        "script": "javascript_render_audit.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "raw.title",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`raw.title` is the title in the served HTML, before JavaScript (renamed 0.53.0).",
+      "shapes": {}
+    },
+    "TE-178": {
+      "title": "Audit Neighboring Sites on the Server",
+      "check": {
+        "script": "domain_safety_check.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "api",
+        "assert": {
+          "path": "neighbors.suspicious",
+          "len_eq": 0
+        },
+        "cannot_fail": {
+          "mechanism": "path_never_emitted",
+          "why": "check_neighbors() resolves the hosting IP and stops there. Judging the neighbours needs a paid reverse-IP service this project does not buy, and a fabricated `suspicious` would be worse than no answer, so the field is deliberately never written and the item is NO_DATA everywhere until that input exists."
+        }
+      },
+      "verdict": "answers",
+      "reading": "`neighbors.suspicious` is never fabricated: enumerating co-hosted sites needs a reverse-IP service, so the item is NO_DATA until one is wired in.",
+      "shapes": {}
+    },
+    "TE-179": {
+      "title": "Review Domain Registration History",
+      "check": {
+        "script": "domain_safety_check.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "api",
+        "assert": {
+          "path": "whois.age_days",
+          "gte": 90
+        },
+        "warn": {
+          "path": "whois.age_days",
+          "lt": 90
+        },
+        "cannot_fail": {
+          "mechanism": "warn_complement",
+          "why": "0.44.0 gave this item the domain-history half of its title through whois age: established passes, younger than 90 days warns, an absent age is NO_DATA. The warn band is the assertion's exact complement on purpose — a young domain is worth pricing, not a defect to fix — and the ruling that no 'worth knowing' status exists still stands. ROADMAP.md records the reasoning."
+        }
+      },
+      "verdict": "answers",
+      "reading": "`whois.age_days` at least 90, a younger domain warning (renamed and ruled 0.101.0).",
+      "shapes": {}
+    },
+    "TE-180": {
+      "title": "Meet Accessibility (WCAG) Basics",
+      "check": {
+        "script": "a11y_seo_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "score",
+          "gte": 80
+        }
+      },
+      "verdict": "owed",
+      "reading": "`score` is 100 less 8 per issue, at least 80: two WCAG-A failures — two images without alt, say — pass, while an H1 count other than one, not a WCAG requirement, costs the same. A rule repair is owed (A.10).",
+      "shapes": {
+        "conjunction": "Owed: *(WCAG)* names a standard the score only partly reads."
+      }
+    },
+    "TE-181": {
+      "title": "Validate the Rendered DOM (W3C)",
+      "check": {
+        "script": "html_validator.py",
+        "args": [
+          "{url}",
+          "--rendered-json",
+          "{rendered_json}"
+        ],
+        "requires": "api",
+        "assert": {
+          "path": "summary.errors",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.errors` is the W3C validator's error count for the rendered DOM from the supplied artifact.",
+      "shapes": {
+        "conjunction": "W3C names the validator."
+      }
+    },
+    "MD-184": {
+      "title": "Confirm the Page References at Least One Image",
+      "check": {
+        "script": "image_inventory.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "count",
+          "gte": 1
+        }
+      },
+      "verdict": "answers",
+      "reading": "`count` is the number of images the page references by src, at least one (title narrowed 0.85.0).",
+      "shapes": {
+        "existential": "The title itself says at least one."
+      }
+    },
+    "MD-185": {
+      "title": "Optimize Images",
+      "check": {
+        "script": "image_weight_audit.py",
+        "args": [
+          "{url}",
+          "--fetch-images"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        },
+        "applies_when": {
+          "path": "image_count",
+          "gt": 0
+        },
+        "warn": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries image_weight_audit's image findings, applicable where the page has images.",
+      "shapes": {
+        "qualifier": "*Optimize* is read as the script's issue set."
+      }
+    },
+    "MD-186": {
+      "title": "Provide Meaningful Alt Text",
+      "check": {
+        "script": "image_inventory.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "alt_not_meaningful",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "summary.images",
+          "gt": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`alt_not_meaningful` counts images with no alt or a placeholder alt (0.105.0).",
+      "shapes": {
+        "qualifier": "*Meaningful* is the placeholder signal."
+      }
+    },
+    "MD-187": {
+      "title": "Fix Broken Images",
+      "check": {
+        "script": "image_weight_audit.py",
+        "args": [
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "broken_image_count",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`broken_image_count` counts image URLs in the crawl that fail to load.",
+      "shapes": {}
+    },
+    "MD-189": {
+      "title": "Use Modern Formats & Responsive Images",
+      "check": {
+        "script": "image_weight_audit.py",
+        "args": [
+          "{url}",
+          "--fetch-images"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "large_without_srcset_count",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "image_count",
+          "gt": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`large_without_srcset_count` reads the responsive half; the formats half is MB-097's field, and the registry records why the conjunction was rejected (0.108.0).",
+      "shapes": {
+        "conjunction": "Half by recorded ruling: joining the halves would weigh one defect twice."
+      }
+    },
+    "MD-190": {
+      "title": "Implement Video SEO Essentials",
+      "check": {
+        "script": "video_schema_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        },
+        "applies_when": {
+          "path": "videos",
+          "gt": 0
+        },
+        "warn": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries video_schema_checker's VideoObject findings, applicable only where videos exist.",
+      "shapes": {}
+    },
+    "LO-198": {
+      "title": "Implement Local Business Structured Data",
+      "check": {
+        "script": "local_seo_checker.py",
+        "args": [
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "local_business_nodes",
+          "gte": 1
+        }
+      },
+      "verdict": "answers",
+      "reading": "`local_business_nodes` counts LocalBusiness nodes across the crawl.",
+      "shapes": {
+        "existential": "Implementing the data is one node carrying it."
+      }
+    },
+    "LO-200": {
+      "title": "Publish Complete NAP in LocalBusiness Data",
+      "check": {
+        "script": "local_seo_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "nap_complete",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`nap_complete` requires name, address and telephone in the LocalBusiness data.",
+      "shapes": {
+        "qualifier": "*Complete* is all three."
+      }
+    },
+    "GEO-001": {
+      "title": "llms.txt present and well-formed",
+      "check": {
+        "script": "llms_txt_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "exists",
+          "truthy": true
+        }
+      },
+      "verdict": "owed",
+      "reading": "`exists` is llms.txt answering 200; *well-formed* is not read here (GEO-002 scores quality). A rule repair is owed (A.10).",
+      "shapes": {
+        "conjunction": "Owed: present is read, well-formed is not."
+      }
+    },
+    "GEO-002": {
+      "title": "llms.txt quality score",
+      "check": {
+        "script": "llms_txt_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "quality.score",
+          "gte": 60
+        }
+      },
+      "verdict": "answers",
+      "reading": "`quality.score` is llms_txt_checker's structure and content score, at least 60.",
+      "shapes": {
+        "qualifier": "*Quality* is the score."
+      }
+    },
+    "GEO-003": {
+      "title": "AI crawler policy is explicit",
+      "check": {
+        "script": "ai_crawler_policy_matrix.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "rows",
+          "field": "alignment",
+          "value_map": {
+            "documented": "pass",
+            "robots_only": "pass",
+            "allowed_without_llms_txt": "fail"
+          }
+        }
+      },
+      "verdict": "answers",
+      "reading": "`rows` maps each AI crawler's alignment between robots.txt and llms.txt; allowed without llms.txt fails.",
+      "shapes": {}
+    },
+    "GEO-004": {
+      "title": "Answer blocks present for AEO",
+      "check": {
+        "script": "answer_block_scanner.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "score",
+          "gte": 32
+        }
+      },
+      "verdict": "answers",
+      "reading": "`score` is answer_block_scanner's answer-block readiness, GO-144's twin.",
+      "shapes": {}
+    },
+    "GEO-005": {
+      "title": "Content is citation-ready for AI search",
+      "check": {
+        "script": "citation_readiness.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "score",
+          "gte": 25
+        }
+      },
+      "verdict": "answers",
+      "reading": "`score` is citation_readiness for the page.",
+      "shapes": {}
+    },
+    "GEO-006": {
+      "title": "Entity is resolvable (Wikidata / KG)",
+      "check": {
+        "script": "entity_checker.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "summary.sameas_missing_critical",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.sameas_missing_critical` counts critical entities with no sameAs to a knowledge base.",
+      "shapes": {
+        "conjunction": "Wikidata and the Knowledge Graph are the targets sameAs may name."
+      }
+    },
+    "GEO-007": {
+      "title": "IndexNow configured",
+      "check": {
+        "script": "indexnow_checker.py",
+        "args": [
+          "{url}",
+          "--key",
+          "{indexnow_key}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "key_valid",
+          "truthy": true
+        }
+      },
+      "verdict": "answers",
+      "reading": "`key_valid` is whether the supplied IndexNow key file is served and matches.",
+      "shapes": {}
+    },
+    "GEO-008": {
+      "title": "Snippet directives leave the page usable in AI answers and result snippets",
+      "check": {
+        "script": "indexability_matrix.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "crawl",
+        "assert": {
+          "path": "rows.0.snippet_controls.snippet_availability",
+          "value_map": {
+            "full": "pass",
+            "limited": "fail",
+            "suppressed": "fail"
+          }
+        },
+        "warn": {
+          "path": "rows.0.snippet_controls.snippet_availability",
+          "value_map": {
+            "full": "pass",
+            "limited": "pass",
+            "suppressed": "fail"
+          }
+        }
+      },
+      "verdict": "answers",
+      "reading": "`rows.0.snippet_controls.snippet_availability` is full, limited or suppressed from meta and header snippet directives.",
+      "shapes": {
+        "conjunction": "AI answers and result snippets obey the same directives."
+      }
+    },
+    "TECH-001": {
+      "title": "Modern schema types only (no HowTo/FAQ misuse)",
+      "check": {
+        "script": "rich_results_guard.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "summary.warnings",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "nodes",
+          "gt": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`summary.warnings` counts deprecated or restricted schema types such as HowTo and FAQ outside their permitted sites.",
+      "shapes": {
+        "conjunction": "The parenthetical names the types."
+      }
+    },
+    "TECH-002": {
+      "title": "Font loading does not block render",
+      "check": {
+        "script": "font_audit.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        },
+        "warn": {
+          "path": "issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
+        }
+      },
+      "verdict": "answers",
+      "reading": "`issues` carries font_audit's render-blocking font findings.",
+      "shapes": {}
+    },
+    "TECH-003": {
+      "title": "LCP subparts within budget",
+      "check": {
+        "script": "lcp_subparts.py",
+        "args": [
+          "{url}"
+        ],
+        "requires": "fetch",
+        "assert": {
+          "path": "subparts.ttfb_ms",
+          "lte": 800
+        }
+      },
+      "verdict": "measures",
+      "reading": "`subparts.ttfb_ms` is time to first byte, the first of four LCP subparts; the rest need a browser trace.",
+      "shapes": {}
+    },
+    "SP-214": {
+      "title": "LCP within budget in a local trace (lab)",
+      "check": {
+        "script": "cwv_metrics.py",
+        "args": [
+          "{cwv_json}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "lcp_ms",
+          "lte": 2500
+        }
+      },
+      "verdict": "answers",
+      "reading": "`lcp_ms` from the supplied local trace, at most 2500.",
+      "shapes": {
+        "conjunction": "*(lab)* names the source."
+      }
+    },
+    "SP-215": {
+      "title": "CLS within budget in a local trace (lab)",
+      "check": {
+        "script": "cwv_metrics.py",
+        "args": [
+          "{cwv_json}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "cls",
+          "lte": 0.1
+        }
+      },
+      "verdict": "answers",
+      "reading": "`cls` from the supplied local trace, at most 0.1.",
+      "shapes": {
+        "conjunction": "*(lab)* names the source."
+      }
+    },
+    "SP-216": {
+      "title": "Main thread not blocked in a local trace (TBT, lab proxy for INP)",
+      "check": {
+        "script": "cwv_metrics.py",
+        "args": [
+          "{cwv_json}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "tbt_ms",
+          "lte": 200
+        }
+      },
+      "verdict": "answers",
+      "reading": "`tbt_ms` from the supplied local trace, at most 200, standing in for INP as the title says.",
+      "shapes": {
+        "conjunction": "The parenthetical states the proxy."
+      }
+    },
+    "MB-107": {
+      "title": "Page fits the phone viewport without horizontal scrolling",
+      "check": {
+        "script": "rendered_audit.py",
+        "args": [
+          "{rendered_json}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "horizontal_overflow_px",
+          "lte": 1
+        }
+      },
+      "verdict": "answers",
+      "reading": "`horizontal_overflow_px` at most 1 at phone width in the rendered artifact.",
+      "shapes": {}
+    },
+    "MB-108": {
+      "title": "Text is not clipped or cut off at a phone width",
+      "check": {
+        "script": "rendered_audit.py",
+        "args": [
+          "{rendered_json}"
+        ],
+        "requires": "offline",
+        "assert": {
+          "path": "text_nodes_clipped",
+          "eq": 0
+        }
+      },
+      "verdict": "answers",
+      "reading": "`text_nodes_clipped` counts text cut off at phone width in the rendered artifact.",
+      "shapes": {}
+    }
+  }
+}

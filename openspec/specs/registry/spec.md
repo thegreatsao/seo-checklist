@@ -251,22 +251,25 @@ the rule must, or the item must declare what it actually settles.
 argues with. An item measuring something adjacent gives a true answer to a question
 nobody asked, and it is unfalsifiable from the outside: the verdict looks right because
 the measurement is right.
-**Reader:** partial. `tools/audit_item_semantics.py` in CI asks whether the rule asserts
-what the title says, and `test_mb_105_names_the_comparison_it_asserts` pins one item's
-wording to its comparison. The audit reads the assertion's shape, not the meaning of the
-subject. Every item it has been shown to pass while measuring something else — GO-137,
-BL-083, and MB-096, MB-097 and MD-189 — was repaired by 0.108.0, and each was found by a
-person reading rule against title. A reading of all 145 on 23 September (A.10) found
-thirty-three more; five were repaired at 0.112.0, nineteen carry `measures` since
-0.113.0, and nine rule repairs are owed. The
-requirement stays `partial` because nothing in the tree would notice the next one.
+**Reader:** partial. `tools/audit_item_readings.py`, in CI and through
+`tests/test_item_readings.py`, holds a person's reading of every rule-carrying item with
+its title and rule copied literally: a new item, a changed rule or a changed title fails
+the build, naming the item, until someone reads it again, and four shapes — an outside
+subject the script cannot reach, *at least one*, a compound title, a quality word — must
+each be answered in the reading. `TheShapesWouldHaveExposedEveryItemRepairedByHand` holds
+that they fire on GO-137, BL-083, MB-096, MB-097, MD-189, CI-016 and MD-186 as those stood
+at `v0.104.0`, which `tools/audit_item_semantics.py`'s word overlap passed. It stays
+`partial` for two reasons: fourteen readings are `owed` (A.10), and whether a reading is
+true is still a person's judgement — the reader guarantees that nothing changes under one
+unnoticed, not that it was right.
 
 **Repairing an item does not move this line, and 0.105.0 is the test of that.** CI-016
 and MD-186 stopped measuring something other than their title in that release, and
 `AnAltThatExistsAndDescribesNothing` holds the repair in both directions — but the reader
 that would notice the *next* item drifting is still the shape audit, which passed all
 three of the items repaired so far while they were defective. Four of the nine remain,
-and what this requirement owes is an instrument, not a queue.
+and what this requirement owes is an instrument, not a queue. The instrument arrived at
+0.114.0, above.
 
 **The third outcome has a carrier since 0.113.0.** "Declare what it actually settles" had
 nowhere to go: an operator sees a title, a fix and evidence, and a declaration in a tool's
@@ -987,7 +990,7 @@ conjunction, a quality adjective — together reach 92 of the 145 at `8ea3bf0f12
 catch all seven items this document had repaired by hand; they
 narrow a reading and do not replace it, and they fire on most of the registry.
 
-**Thirty-three items fall short of their titles** — counted by listing them below, not by the notes' line count, which said twenty-seven. They split along Anton's ruling of the
+**Thirty-three items fall short of their titles** — counted by listing them below, not by the notes' line count, which said twenty-seven — and the reading of record at 0.114.0 added five more, listed last, for thirty-eight. They split along Anton's ruling of the
 same day: where the tool can measure what the title says, the rule is repaired; where it
 cannot, the item will carry an operator-visible statement of what it checked, and titles
 stay as the Plerdy checklist has them.
@@ -1006,6 +1009,12 @@ length), CN-044 (any institutional link counts as a contact page), GEO-001
 (*well-formed* unread), TE-175 (*Eliminate Errors* unread), AR-151 (a `Disallow: /`
 robots.txt is *correct*), MB-095 (image count, not page weight), TE-180 (two WCAG-A
 failures pass).
+
+*Found by the reading of record at 0.114.0*, all `owed`: GO-135 *Use URL Inspection &
+Rendered HTML* (the API returns no rendered HTML), GO-145 *Optimize for AI Overviews &
+Zero-Click SERPs* (a one-page citation score) and TE-174 *Minify & Optimize CSS*
+(minification only) each owe a `measures` sentence; KW-070 and GO-139 read the
+highest-click query as the brand, which waits on Anton's decision about the branded query.
 
 *Carrying `measures` since 0.113.0* — one sentence, printed under the title in every
 report and translated, saying what the rule checks and naming what it does not: CI-001, TE-167, IN-121, IN-128, SE-119, CN-038,

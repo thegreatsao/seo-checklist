@@ -10,6 +10,44 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.114.0 — every rule now has a reading, and a change reopens it
+
+Registry version: **`11a22b13470b`, unchanged.** No rule and no verdict moves. REG-6
+**stays `partial`**: fourteen items are recorded as owing a repair. Suite 1783 → 1797.
+
+**REG-6's reader could not have caught what it was there to catch.**
+`audit_item_semantics.py` compared the words of a title with the words of its rule, and
+all seven items this repository later repaired by hand — GO-137, BL-083, MB-096, MB-097,
+MD-189, CI-016, MD-186 — shared a word with their rule while measuring something else.
+Every one was found by a person reading the rule against the title.
+
+`tools/item-readings.json` is that reading, written down for all 145 rule-carrying items:
+each entry copies its item's title and rule literally, gives a verdict — *answers*,
+*measures* (the rule covers part of the title and the item says so, 0.113.0), or *owed* —
+and a reading that names the path the rule asserts. `tools/audit_item_readings.py` fails
+the build when an item has no reading, when its title or rule no longer matches the copy,
+when the reading stops naming the rule's path, when *measures* and the item's field
+disagree, or when one of four shapes fires without an answer:
+
+* a title naming a subject only an outside source holds, read by a script that cannot
+  reach it (GO-137, BL-083);
+* an *at least one* assertion (MB-096, MB-097, MD-189);
+* a compound title (MB-097, MD-189, GO-137 — and MS-022's parenthetical was the condition
+  it broke);
+* a quality adjective (CI-016, MD-186).
+
+It does not judge meaning: a person still decides whether a reading is true. What it
+guarantees is that nothing changes under a reading unnoticed — there is no command that
+stamps the file, so a changed rule is re-read by hand or the build stays red. A test holds
+that the four shapes fire on all seven historical pairs, as they stood at `v0.104.0`.
+
+**The reading found three more short titles than 0.112.0's count**, so A.10 grows: GO-135
+*Use URL Inspection & Rendered HTML* (the API returns no rendered HTML), GO-145 *Optimize
+for AI Overviews & Zero-Click SERPs* (a one-page citation score), and TE-174 *Minify &
+Optimize CSS* (minification only). KW-070 and GO-139 are recorded as owed against Anton's
+open decision on how a branded query is identified. Fourteen owed: nine rule
+repairs, two awaiting that decision, three `measures` sentences.
+
 ## 0.113.0 — an item that checks part of its title now says which part
 
 Registry version: **`cc7ceff0b0f6` → `11a22b13470b`.** Nineteen items gain a `measures`

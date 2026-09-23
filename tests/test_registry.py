@@ -1487,6 +1487,7 @@ class EveryToolGateRunsHereToo(unittest.TestCase):
         ("audit_reachability.py", []),
         ("audit_error_kinds.py", ["--check"]),
         ("audit_item_semantics.py", []),
+        ("audit_item_readings.py", ["--check"]),
         ("audit_catalogue.py", ["--check"]),
         ("audit_derived_sets.py", ["--check",
                                    os.path.join(ROOT, "tests", "derived-sets.json")]),

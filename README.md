@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.113.0 — see [CHANGELOG.md](CHANGELOG.md). No verdict moves. Nineteen items whose titles promise more than the tool can measure — *Monitor Site Uptime* is one request, *Ensure URL Is Indexed* is whether anything blocks indexing — now say under the title, in the report, what they actually checked. Before that, `0.112.0` repaired five items that contradicted their own titles, among them a redirect loop that was only a warning.
+Version 0.114.0 — see [CHANGELOG.md](CHANGELOG.md). No verdict moves. Every one of the 145 checks that runs a script now has a written reading against its title, and a change to either one fails the build until somebody reads the pair again; fourteen are recorded as still owing a repair. Before that, `0.113.0` made nineteen items say under their titles what they actually check.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

@@ -19,6 +19,10 @@ disallows exactly the four paths CI-019 tests, with a comment saying so.
    REVIEWED below is where a human's answer goes so the list does not have to be
    re-read every run.
 
+REG-6's reader of record is `audit_item_readings.py` since 0.114.0: word overlap passed
+all seven items later repaired by hand, each of which shared a word with its rule while
+measuring something else. The vocabulary heuristic stays as a reading list.
+
 Exit 1 on any duplicate, or on an unreviewed vocabulary miss. Reviewing an item is
 writing down which of the three is wrong, or that none of them is.
 
