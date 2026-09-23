@@ -1918,6 +1918,40 @@ class VersionAndChangelog(unittest.TestCase):
         self.assertTrue(stated, "README.md no longer states a version")
         self.assertEqual(stated.group(1), self.manifest["version"])
 
+    # Released before the ritual had a tag step; nothing will ever tag it.
+    RELEASED_BEFORE_TAGGING = frozenset({"0.1.0"})
+
+    def test_every_shipped_release_but_the_newest_is_tagged(self):
+        """Tagging stopped at v0.91.0 on 25 August and 43 releases shipped without a
+        tag before anyone noticed — the ritual had the step, nothing read it, and a
+        step nobody performs teaches that the rest are optional too. Back-filled on
+        23 September.
+
+        The newest entry is exempt because its tag is set after the merge this suite
+        gates. The walk borrows DEC-8's `git`, which obeys the child-process rules
+        and turns a missing history into a failure rather than a pass.
+        """
+        sys.path.insert(0, os.path.join(ROOT, "skills", "seo-checklist", "tools"))
+        import audit_declaration_revisions as revisions
+
+        shipped = re.findall(r"^## (\d+\.\d+\.\d+)", self.changelog, re.M)[1:]
+        tags = set(revisions.git("tag", "--list", "v*").split())
+        untagged = [v for v in shipped
+                    if f"v{v}" not in tags and v not in self.RELEASED_BEFORE_TAGGING]
+        self.assertEqual(untagged, [],
+                         f"{len(untagged)} released version(s) carry no tag, newest "
+                         f"first: {', '.join(untagged[:5])}")
+        for version in shipped:
+            if version in self.RELEASED_BEFORE_TAGGING:
+                continue
+            with self.subTest(version=version):
+                try:
+                    revisions.git("merge-base", "--is-ancestor", f"v{version}", "HEAD")
+                except revisions.Unreadable:
+                    self.fail(f"v{version} is not an ancestor of HEAD, so it tags some "
+                              f"other line of history than the one this CHANGELOG "
+                              f"describes")
+
 
 def pyproject_value(pattern: str) -> str:
     """One value out of pyproject.toml, by regex.
