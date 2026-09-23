@@ -29,7 +29,7 @@ class EveryTextFileIsStoredWithLF(unittest.TestCase):
     def test_no_tracked_text_file_is_stored_as_crlf_or_as_binary(self):
         listed = subprocess.run(
             [ci_local.resolve("git"), "-C", ROOT, "ls-files", "--eol"],
-            capture_output=True, text=True, encoding="utf-8")
+            capture_output=True, text=True, encoding="utf-8", close_fds=False)
         self.assertEqual(listed.returncode, 0, listed.stderr)
         rows = [line.split("\t", 1) for line in listed.stdout.splitlines() if line]
         self.assertTrue(rows, "git listed no files, so nothing here was checked")
