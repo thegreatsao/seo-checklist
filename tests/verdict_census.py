@@ -48,7 +48,7 @@ from harness import FixtureSite, _Site, offline_env, spawn  # noqa: E402
 # measures its own harness.
 ARTIFACT_FLAGS = (("--rendered-json", "rendered.json"),
                   ("--cwv-json", "cwv.json"),
-                  ("--links-csv", "top-linking-sites.csv"),
+                  ("--links-csv", "links"),
                   ("--server-log", "access.log"))
 
 # Every tree this repository can serve. The two fixture trees are here for the same

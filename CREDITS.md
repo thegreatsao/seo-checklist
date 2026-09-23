@@ -31,7 +31,9 @@ Written here, twelve of that sixty: `checklist_runner.py`, `checklist_report.py`
 `rendered_audit.py`, plus the registry, its generator, the tools in `tools/`, the
 four judgement agents and the adversarial reviewer.
 
-The registry calls 58 of the 64 files directly in `scripts/`; the other six are the
+<!-- 0.107.0: registry-script count 58 -> 57 because BL-083 moved to the existing
+gsc_links_csv.py reader and the outbound-only checker was removed. -->
+The registry calls 57 of the 63 files directly in `scripts/`; the other six are the
 runner, the report, profile detection, the shared crawl, and two shared helpers. Two of
 those six are documented in
 [script-output-shapes.md](skills/seo-checklist/resources/references/script-output-shapes.md)

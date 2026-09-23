@@ -70,7 +70,7 @@ PLACEHOLDER = "http://127.0.0.1:8000"
 # Each site's neighbour is external by host and still on loopback.
 PLACEHOLDER_EXTERNAL = "http://127.0.0.1:8001"
 
-TEXTUAL = (".html", ".xml", ".txt", ".css", ".json", ".md")
+TEXTUAL = (".html", ".xml", ".txt", ".css", ".json", ".md", ".csv")
 
 # Files the operator measures in a browser and hands to the run, rather than
 # anything the tool fetches: a performance trace and a rendered-page measurement.

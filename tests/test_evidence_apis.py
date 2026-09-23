@@ -99,8 +99,7 @@ def tmpfile(name: str, content) -> str:
 # ---------------------------------------------------------------------------
 
 class LinksExport(unittest.TestCase):
-    """BL-084 `concentration.top1_share_pct`, BL-086 `total_links`,
-    BL-087 `linking_domains`.
+    """BL-083 `targets.broken_count`, BL-084 concentration, and BL-086/087.
 
     The Links report has no API — a human clicks Export in the UI — which is why
     these three items are `NO_DATA` on every run that does not supply the file, and
@@ -115,9 +114,77 @@ class LinksExport(unittest.TestCase):
              "blog.example,4\n"
              "news.example,3\n")
 
-    def analyze(self, name="top-linking-sites.csv", content=None, site=""):
+    def setUp(self):
         import gsc_links_csv
-        return gsc_links_csv.analyze(tmpfile(name, content or self.SITES), site)
+        self.mod = gsc_links_csv
+        self.saved_fetch = gsc_links_csv.seo_common.fetch_url
+        self.calls = []
+
+        def fetch(url, **kwargs):
+            self.calls.append((url, kwargs))
+            return {"status": 200, "url": url, "redirect_chain": [],
+                    "error": None, "error_kind": None}
+
+        gsc_links_csv.seo_common.fetch_url = fetch
+
+    def tearDown(self):
+        self.mod.seo_common.fetch_url = self.saved_fetch
+
+    def analyze(self, name="top-linking-sites.csv", content=None, site=""):
+        return self.mod.analyze(tmpfile(name, content or self.SITES), site)
+
+    def directory(self, pages: str | None = None) -> str:
+        folder = tempfile.mkdtemp()
+        self.addCleanup(__import__("shutil").rmtree, folder, True)
+        with open(os.path.join(folder, "top-linking-sites.csv"), "w",
+                  encoding="utf-8") as stream:
+            stream.write(self.SITES)
+        if pages is not None:
+            with open(os.path.join(folder, "top-linked-pages.csv"), "w",
+                      encoding="utf-8") as stream:
+                stream.write("Target page,Incoming links,Linking sites\n" + pages)
+        return folder
+
+    def check(self, pages: str, site="https://example.test/") -> dict:
+        return self.mod.analyze(self.directory(pages), site, check_targets=True)
+
+    def responses(self, mapping):
+        def fetch(url, **kwargs):
+            self.calls.append((url, kwargs))
+            return mapping[url]
+        self.mod.seo_common.fetch_url = fetch
+
+    def test_a_page_that_refuses_head_and_serves_get_is_not_a_broken_backlink(self):
+        """`fetch_url` sets no error on a response it received, so the fallback
+        inherited from `external_link_quality.py` — GET only when a 403/405 *also*
+        carried an error — never fired, and a live page behind a server that refuses
+        HEAD was a dead backlink. Each refusal status, then the GET that settles it."""
+        for refused in (403, 405, 501):
+            with self.subTest(head=refused):
+                methods = []
+
+                def fetch(url, method="GET", methods=methods, refused=refused,
+                          **kwargs):
+                    methods.append(method)
+                    return {"status": refused if method == "HEAD" else 200,
+                            "url": url, "redirect_chain": [],
+                            "error": None, "error_kind": None}
+
+                self.mod.seo_common.fetch_url = fetch
+                out = self.check("https://example.test/live,5,2\n")
+                self.assertEqual(methods, ["HEAD", "GET"])
+                self.assertEqual(out["targets"]["broken_count"], 0)
+                self.assertEqual(verdict("BL-083", out), PASS)
+
+    def test_a_page_that_refuses_head_and_answers_get_with_404_is_broken(self):
+        def fetch(url, method="GET", **kwargs):
+            return {"status": 405 if method == "HEAD" else 404, "url": url,
+                    "redirect_chain": [], "error": None, "error_kind": None}
+
+        self.mod.seo_common.fetch_url = fetch
+        out = self.check("https://example.test/gone,5,2\n")
+        self.assertEqual(out["targets"]["broken"][0]["status"], 404)
+        self.assertEqual(verdict("BL-083", out), FAIL)
 
     def test_a_spread_link_profile_passes_all_three(self):
         out = self.analyze()
@@ -162,6 +229,106 @@ class LinksExport(unittest.TestCase):
         self.assertEqual(verdict("BL-086", out), FAIL)
         self.assertIsNone(out["concentration"]["top1_share_pct"])
         self.assertEqual(verdict("BL-084", out), NO_DATA)
+
+    def test_directory_targets_that_all_answer_are_a_backlink_pass(self):
+        out = self.check("https://example.test/,9,4\n"
+                         "https://example.test/about,3,2\n")
+        self.assertEqual(out["targets"]["checked"], 2)
+        self.assertEqual(verdict("BL-083", out), PASS)
+
+    def test_a_404_target_fails_with_its_incoming_link_count(self):
+        target = "https://example.test/gone"
+        self.responses({target: {"status": 404, "url": target,
+                                 "redirect_chain": [], "error": None,
+                                 "error_kind": None}})
+        out = self.check(f"{target},17,4\n")
+        self.assertEqual(verdict("BL-083", out), FAIL)
+        self.assertEqual(out["targets"]["broken"], [{
+            "url": target, "status": 404, "error_kind": None,
+            "incoming_links": 17,
+        }])
+
+    def test_a_redirect_is_the_fix_not_a_failure(self):
+        target = "https://example.test/old"
+        final = "https://example.test/new"
+        self.responses({target: {"status": 200, "url": final,
+                                 "redirect_chain": [final], "error": None,
+                                 "error_kind": None}})
+        out = self.check(f"{target},8,3\n")
+        self.assertEqual(verdict("BL-083", out), PASS)
+        self.assertEqual(out["targets"]["redirected"],
+                         [{"url": target, "final_url": final}])
+
+    def test_a_timeout_is_unchecked_and_withholds_only_a_clean_pass(self):
+        slow = "https://example.test/slow"
+        gone = "https://example.test/gone"
+        timeout = {"status": None, "url": slow, "redirect_chain": [],
+                   "error": "late", "error_kind": "timeout"}
+        self.responses({slow: timeout})
+        out = self.check(f"{slow},8,3\n")
+        self.assertEqual(out["targets"]["broken_count"], 0)
+        self.assertEqual(len(out["targets"]["unchecked"]), 1)
+        self.assertTrue(out["truncated"])
+        self.assertEqual(verdict("BL-083", out), NO_DATA)
+
+        self.calls.clear()
+        self.responses({slow: timeout,
+                        gone: {"status": 404, "url": gone,
+                               "redirect_chain": [], "error": None,
+                               "error_kind": None}})
+        out = self.check(f"{slow},8,3\n{gone},4,1\n")
+        self.assertEqual(verdict("BL-083", out), FAIL)
+
+    def test_dead_dns_is_broken(self):
+        target = "https://example.test/dead"
+        self.responses({target: {"status": None, "url": target,
+                                 "redirect_chain": [], "error": "no address",
+                                 "error_kind": "unresolved"}})
+        out = self.check(f"{target},5,2\n")
+        self.assertEqual(out["targets"]["broken_count"], 1)
+        self.assertEqual(verdict("BL-083", out), FAIL)
+
+    def test_off_host_rows_are_not_requested(self):
+        out = self.check("https://elsewhere.test/page,9,4\n"
+                         "https://example.test/about,3,2\n")
+        self.assertEqual(out["targets"]["off_host"], 1)
+        self.assertEqual(out["targets"]["checked"], 1)
+        self.assertEqual([call[0] for call in self.calls],
+                         ["https://example.test/about"])
+
+    def test_only_the_first_hundred_targets_are_requested(self):
+        rows = "".join(
+            f"https://example.test/{index},{200-index},1\n"
+            for index in range(self.mod.MAX_TARGETS + 2))
+        out = self.check(rows)
+        self.assertEqual(len(self.calls), self.mod.MAX_TARGETS)
+        self.assertEqual(self.calls[0][0], "https://example.test/0")
+        self.assertEqual(self.calls[-1][0], "https://example.test/99")
+        self.assertTrue(out["truncated"])
+        self.assertIn("per-run cap", out["truncated_reason"])
+
+    def test_no_pages_sheet_is_not_applicable_and_missing_input_is_no_data(self):
+        out = self.mod.analyze(self.directory(), "https://example.test/",
+                               check_targets=True)
+        self.assertEqual(out["targets"]["linked_pages"], 0)
+        self.assertEqual(verdict("BL-083", out), NA)
+
+        missing = self.mod.analyze(os.path.join(tempfile.gettempdir(),
+                                                "absent-links-export.csv"),
+                                   "https://example.test/", check_targets=True)
+        self.assertNotIn("targets", missing)
+        self.assertEqual(missing["error_kind"], "input")
+        self.assertEqual(verdict("BL-083", missing), NO_DATA)
+
+    def test_without_the_flag_nothing_is_requested_and_old_verdicts_hold(self):
+        out = self.mod.analyze(
+            self.directory("https://example.test/,9,4\n"),
+            "https://example.test/")
+        self.assertNotIn("targets", out)
+        self.assertEqual(self.calls, [])
+        self.assertEqual(verdicts(
+            [ITEMS[item] for item in ("BL-084", "BL-086", "BL-087")], out),
+            {"BL-084": PASS, "BL-086": PASS, "BL-087": PASS})
 
 
 # ---------------------------------------------------------------------------

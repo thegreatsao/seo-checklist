@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "registry_version": "6705382549b9",
+  "registry_version": "f07a03292d84",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -25,9 +25,9 @@
     ]
   },
   "fixture_digest": {
-    "good": "4752e66a64f7",
-    "broken": "5150888f2255",
-    "good_tls": "964355d7ab44",
+    "good": "ab72d1bb1550",
+    "broken": "62974eb27f54",
+    "good_tls": "5d2ae8e1ef42",
     "broken_tls": "6485c04753d8"
   },
   "triage": [
@@ -66,6 +66,33 @@
       "to": null,
       "decided": "checker-was-wrong",
       "why": "GO-137 is titled Reconcile Indexed Pages vs. Sitemaps and measured sitemap URLs no crawled page links to, which is CI-008's and AR-162's subject through link_profile.py. It now asks Search Console, and no fixture carries Search Console credentials, so the item is NEEDS_INPUT on every fixture and has nothing left to declare."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good",
+      "item": null,
+      "from": "4752e66a64f7",
+      "to": "ab72d1bb1550",
+      "decided": "new-material",
+      "why": "blog/first-post.html linked to the real example.com, which nothing requested until TE-168 started checking the site's outbound links in 0.107.0; it now links to the neighbouring fixture origin, which is served for the length of the run, so the suite does not depend on the internet. The Links export also became a directory holding a top-linked-pages sheet, which BL-083 now reads. No declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good_tls",
+      "item": null,
+      "from": "964355d7ab44",
+      "to": "5d2ae8e1ef42",
+      "decided": "new-material",
+      "why": "blog/first-post.html linked to the real example.com, which nothing requested until TE-168 started checking the site's outbound links in 0.107.0; it now links to the neighbouring fixture origin, which is served for the length of the run, so the suite does not depend on the internet. No declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "broken",
+      "item": null,
+      "from": "5150888f2255",
+      "to": "62974eb27f54",
+      "decided": "new-material",
+      "why": "the Links export became a directory holding the same top-linking-sites sheet plus a top-linked-pages sheet, whose /old-offer.html is not in the tree, so BL-083 — which now reads backlink targets — is exercised by a served 404. No declared verdict moves."
     }
   ],
   "fixtures": {
@@ -153,7 +180,7 @@
       "TE-168": {
         "expect": "PASS",
         "title": "Fix Broken & Redirected Links",
-        "why": "the fixture deliberately removed its planted dead link and its internal links resolve"
+        "why": "the fixture removed its planted dead link, its internal links resolve, and its outbound links point at the neighbouring fixture origin, which is served for the length of the run"
       },
       "TE-172": {
         "expect": "PASS",
@@ -328,7 +355,7 @@
       "BL-083": {
         "expect": "PASS",
         "title": "Fix Broken Backlinks (Redirect or Update Link)",
-        "why": "the entry page's outbound links point at the neighbouring fixture origin, which is served for the length of the run"
+        "why": "the Links export's top linked pages are the home page and /about.html, and both are served"
       },
       "LO-198": {
         "expect": "PASS",
@@ -740,7 +767,7 @@
       "TE-168": {
         "expect": "WARN",
         "title": "Fix Broken & Redirected Links",
-        "why": "'Fix Broken & Redirected Links' finds one broken internal target and no redirecting target; one broken link remains inside the preserved up-to-three warning band"
+        "why": "three broken targets — /gone.html, which is not in the tree, and outbound links to dead.invalid and insecure.invalid, under a TLD reserved never to resolve — and no redirecting internal target: inside the up-to-three warning band"
       },
       "TE-172": {
         "expect": "FAIL",
@@ -915,7 +942,7 @@
       "BL-083": {
         "expect": "FAIL",
         "title": "Fix Broken Backlinks (Redirect or Update Link)",
-        "why": "the entry page links to dead.invalid and insecure.invalid, hosts under a TLD reserved never to resolve, and to /gone.html, which is not in the tree"
+        "why": "the Links export's top linked pages include /old-offer.html, which is not in the tree: a page other sites link to answers 404"
       },
       "LO-198": {
         "expect": "FAIL",

@@ -392,18 +392,18 @@
     },
     "BL-083": {
       "answers": {
-        "failing-shapes": "N/A",
+        "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
-        "fixture:broken_tls": "FAIL",
+        "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
-        "N/A",
+        "NEEDS_INPUT",
         "PASS"
       ],
-      "script": "external_link_quality.py",
+      "script": "gsc_links_csv.py",
       "severity": "medium",
       "source": "script",
       "title": "Fix Broken Backlinks (Redirect or Update Link)"
@@ -3587,7 +3587,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "6705382549b9",
+  "registry_version": "f07a03292d84",
   "sites": [
     "fixture:good",
     "fixture:broken",

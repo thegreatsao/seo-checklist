@@ -7,8 +7,8 @@ finding text at severities the assertion does not refuse. A finding that changes
 verdict is otherwise a finding nobody has had reason to check.
 
 That has mattered three releases running. In 0.59.0,
-``external_link_quality`` called a link dead after matching six phrases in urllib3's
-own error prose, and ``BL-083`` turned green. In 0.61.0, letting ``MB-100`` act on its
+the former outbound-link checker called a link dead after matching six phrases in
+urllib3's own error prose, and ``BL-083`` turned green. In 0.61.0, letting ``MB-100`` act on its
 medium fixed-width finding exposed a detector that matched ``width`` inside
 ``max-width``. In 0.62.0, ``AR-162``'s dead-end finding was audited before the rule
 was allowed to read it and was found sound. Each one was checked only because that

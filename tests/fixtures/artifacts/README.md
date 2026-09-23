@@ -1,6 +1,6 @@
 # Supplied-by-the-operator inputs, for the fixture pair
 
-Fourteen registry items are decided from a file rather than from a request:
+Eighteen registry items are decided from a file rather than from a request:
 `cwv_metrics.py` reads Core Web Vitals from a browser performance trace,
 `rendered_audit.py` reads font size, link distinctness, overlays, tap targets,
 horizontal overflow and clipped text from a rendered page, `server_log_audit.py`
@@ -40,13 +40,21 @@ MB-094, MB-103, MB-107 and MB-108 NO_DATA and four of the ten unexercised. 390px
 also the width the deleted Playwright branch measured at, which is where MB-107's and
 MB-108's definitions come from.
 
-## top-linking-sites.csv
+## links/
 
-Plausible single-sheet Search Console Links exports, with a non-numeric header and
-one linking domain per row. The good fixture distributes 12 backlinks over five
-domains, with a 33.3% top-domain share. The broken fixture puts eight of ten links
-on one domain and has only two linking domains. These files exercise total links,
-root-domain count, and concentration; they make no claim about link quality.
+A Search Console Links export as people keep it once unzipped: a directory of sheets,
+each with a non-numeric header row. `top-linking-sites.csv` has one linking domain per
+row; the good fixture distributes 12 backlinks over five domains, with a 33.3%
+top-domain share, and the broken fixture puts eight of ten links on one domain and has
+only two linking domains. Those exercise total links, root-domain count and
+concentration, and make no claim about link quality.
+
+`top-linked-pages.csv`, added at 0.107.0, lists pages *of this site* that other sites
+link to, and BL-083 requests each one. Its URLs carry the `127.0.0.1:8000` placeholder,
+which is why `.csv` is in `harness.TEXTUAL`: the export has to name the port the origin
+actually bound. The good sheet lists the home page and `/about.html`, both served. The
+broken sheet lists `/old-offer.html`, which is not in the tree and which no page links
+to, so the backlink lands on a 404 and moves nothing but BL-083.
 
 ## access.log
 

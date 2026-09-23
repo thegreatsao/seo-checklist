@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "6705382549b9",
+  "registry_version": "f07a03292d84",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1708,22 +1708,25 @@
       "severity": "medium",
       "source": "script",
       "check": {
-        "script": "external_link_quality.py",
+        "script": "gsc_links_csv.py",
         "args": [
-          "{url}"
+          "{links_csv}",
+          "--site",
+          "{url}",
+          "--check-targets"
         ],
-        "requires": "crawl",
+        "requires": "fetch",
         "assert": {
-          "path": "summary.broken_links",
+          "path": "targets.broken_count",
           "eq": 0
         },
         "applies_when": {
-          "path": "summary.unique_external_links",
+          "path": "targets.linked_pages",
           "gt": 0
         }
       },
       "effort": "high",
-      "fix": "Fix broken links: update the URL or add a redirect"
+      "fix": "Redirect or restore pages that other sites still link to: 301 each dead URL to its closest live equivalent, or ask the linking site to update the link"
     },
     {
       "id": "BL-084",

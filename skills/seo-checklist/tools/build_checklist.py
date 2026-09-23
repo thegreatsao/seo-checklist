@@ -192,7 +192,6 @@ REQUIRES = {
     # inventory, so it can only run where a crawl happened.
     "server_log_audit.py": "crawl",
     "link_profile.py": "crawl",
-    "external_link_quality.py": "crawl",
     "broken_links.py": "crawl",
     "sitemap_checker.py": "crawl",
     "indexability_matrix.py": "crawl",
@@ -215,6 +214,9 @@ ITEM_REQUIRES = {
     # script-wide default.
     "LO-198": "crawl",
     "MD-187": "crawl",
+    # gsc_links_csv.py is offline for the three report-only items, but BL-083 asks
+    # it to request the exported target pages.
+    "BL-083": "fetch",
     "SE-114": "safe_browsing",
     "SE-116": "safe_browsing",
     "TE-171": "safe_browsing",
@@ -278,13 +280,9 @@ APPLIES_WHEN = {
     # Stylesheets. A page linking none has no CSS to minify, and `unminified_count`
     # was 0 out of `checked` 0.
     "TE-174": {"path": "checked", "gt": 0},
-    # Outbound links. Found at 0.96.1 by a second reader over the table below, and
-    # measured: a page whose only links are internal gives `summary.broken_links` 0
-    # out of `unique_external_links` 0, and BL-083 passed "Fix Broken Backlinks" on a
-    # site with nothing to break. The entry that stood here claimed a backlink export
-    # had been supplied and read — this item runs `external_link_quality.py {url}`,
-    # takes no export, and measures *outbound* links. The aboutness half is REG-6.
-    "BL-083": {"path": "summary.unique_external_links", "gt": 0},
+    # Backlink targets. The item applies when the export names at least one page on
+    # this host that other sites link to; without one there is no target to verify.
+    "BL-083": {"path": "targets.linked_pages", "gt": 0},
     # The subject is a sitemap with URLs. With no sitemap there is nothing to
     # reconcile against Google's index, so the item does not apply.
     "GO-137": {"path": "summary.sitemap_urls", "gt": 0},
@@ -410,7 +408,7 @@ SUBJECT_ALWAYS_PRESENT = {
     "CI-008": "every crawled site has a link graph; orphans are a property of it",
     "AR-162": "the same link graph, judged for strength rather than for orphans",
     "AR-149": "every crawled site has internal links, redirecting or not",
-    "TE-168": "every crawled site has links to check",
+    "TE-168": "every crawled site has internal and external links to check",
     "CI-013": "withheld_key: `blocked_urls` is written only where assets were "
               "discovered, so a page linking none gets no key rather than an empty one",
     "CI-019": "withheld_key: `indexable_urls` is written only where the paths were "
@@ -982,9 +980,13 @@ item(81, "medium", S, "anchor_text_audit.py", CRAWLARG,
      "Diversify anchors, remove exact-match over-optimization",
      {"path": "summary.overused_exact_match_targets", "lte": 10})
 item(82, "medium", M, fix="Monitor and reclaim lost backlinks")
-item(83, "medium", S, "external_link_quality.py", PAGE,
-     {"path": "summary.broken_links", "eq": 0},
-     "Fix broken links: update the URL or add a redirect")
+# BL-083 used to check dead outbound links on the entry page. Backlinks point in the
+# other direction, so it now verifies this site's targets from the Links export;
+# outbound link rot belongs to direction-neutral TE-168.
+item(83, "medium", S, "gsc_links_csv.py", LINKSARG + ["--check-targets"],
+     {"path": "targets.broken_count", "eq": 0},
+     "Redirect or restore pages that other sites still link to: 301 each dead URL "
+     "to its closest live equivalent, or ask the linking site to update the link")
 item(84, "medium", S, "gsc_links_csv.py", LINKSARG,
      {"path": "concentration.top1_share_pct", "lte": 50},
      "Diversify referrers: one domain supplying most links makes rankings hostage "

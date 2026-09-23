@@ -2,9 +2,9 @@
 # Script output shapes
 
 <!-- derived: tools/audit_catalogue.py -->
-This catalogue documents 60 checkers: the 58 the registry runs, plus 2 it does not name — `detect_profile.py`, `site_crawl.py` — which the runner runs itself before building the plan and whose output the rest of the audit reads.
+This catalogue documents 59 checkers: the 57 the registry runs, plus 2 it does not name — `detect_profile.py`, `site_crawl.py` — which the runner runs itself before building the plan and whose output the rest of the audit reads.
 
-Only 17 of them are documented as carrying an `issues[]` whose elements have both `severity` and `message` — the convention a rule can rely on. **Check the section before writing a rule.** The other ways this file describes an `issues[]`, counting a script once per way, come to 50 entries:
+Only 16 of them are documented as carrying an `issues[]` whose elements have both `severity` and `message` — the convention a rule can rely on. **Check the section before writing a rule.** The other ways this file describes an `issues[]`, counting a script once per way, come to 50 entries:
 
 * **15 emit no root `issues[]`**: `ai_crawler_policy_matrix.py`, `article_seo.py`, `cwv_metrics.py`, `detect_profile.py`, `duplicate_content.py`, `hreflang_checker.py`, `indexability_matrix.py`, `javascript_render_audit.py`, `lcp_subparts.py`, `llms_txt_checker.py`, `pagespeed.py`, `rendered_audit.py`, `robots_path_tester.py`, `site_crawl.py`, `url_quality.py`. A `none_severity` or `len_eq: 0` rule over one of these reads a key that is never there, which is `NO_DATA` forever.
 * **22 record an `issues[]` and never say what is in one**: `broken_links.py`, `cache_compression_checker.py`, `canonical_checker.py`, `css_minify_check.py`, `domain_safety_check.py`, `faceted_nav_audit.py`, `font_audit.py`, `ga4_tag_checker.py`, `gsc_cannibalization.py`, `gsc_links_csv.py`, `gsc_url_inspection.py`, `html_validator.py`, `internal_links.py`, `redirect_checker.py`, `rich_results_guard.py`, `robots_checker.py`, `security_headers.py`, `server_log_audit.py`, `social_meta.py`, `tls_certificate.py`, `topical_cluster_mapper.py`, `video_schema_checker.py`. That is a gap in this file rather than a fact about the script — the probe saw the key and captured no element — and a rule naming a field inside one of these is a guess.
@@ -59,8 +59,7 @@ add up to the audit's wall time.
 | `gsc_sitemap_reconcile.py` | up to 120s — URL Inspection for a bounded sitemap sample, plus one Search Analytics query |
 | `pagespeed.py` | ~19s — external PageSpeed API |
 | `anchor_text_audit.py` | fast with `--inventory` |
-| `external_link_quality.py` | ~10s — checks every outbound link |
-| `indexability_matrix.py`, `sitemap_checker.py`, `broken_links.py` | ~6-8s |
+| `indexability_matrix.py`, `sitemap_checker.py`, `broken_links.py` | ~6-8s; the link check also requests bounded external targets from the crawl |
 | everything else | < 1.5s |
 
 Slow scripts must run first in the pool so they overlap the fast ones.
@@ -214,31 +213,42 @@ a third party.
 
 ### broken_links.py
 
-With `--inventory` the scope is the whole site's **internal** links, read out of the
-shared crawl with no requests; `scope` says which path produced the answer. Without
-one it fetches a single page and checks every link on it, internal and external.
+With `--inventory` the scope is the whole site's internal and external links. Internal
+status is read out of the shared crawl; distinct external targets are requested here.
+Without one it fetches a single page and checks every link on it.
 
 `page_url` — str (the site with `--inventory`, the page without)
-`scope` — str: `internal` (inventory) — absent on the single-page path
+`scope` — str: `site` (inventory) — absent on the single-page path
 `total_links` — int
 `checked` — int
 `truncated` — bool — the answer rests on less than the whole input: the
   `--max-links` cap bit, or a link answered nothing (`summary.unchecked`,
-  `summary.timeout`) and so was neither cleared nor found broken
+  `summary.timeout`, `summary.external_unchecked`) and so was neither cleared nor
+  found broken; in inventory mode the external cap also sets it
+`truncated_reason` — str — present when inventory input or external checking was
+  incomplete
 `broken[]` — array
   - item keys: url, anchor_text, is_internal, status, error, error_kind, redirect, response_time_ms, linked_from
 `redirected[]` — array
 `timeout[]` — array
 `unchecked[]` — array (targets the crawl did not reach or policy/robots declined;
 counted in neither direction)
+`external[]` — array, first 50 requested external targets (counts cover all)
+  - item keys: url, linked_from, status, final_url, error, error_kind, redirected, broken, unchecked
 `healthy` — int
 `summary.total` — int
 `summary.healthy` — int
-`summary.broken` — int
+`summary.broken` — int — internal plus external broken targets
 `summary.redirected` — int
-`summary.broken_or_redirected` — int — read by TE-168 for its clean PASS band
+`summary.broken_or_redirected` — int — internal broken + internal redirected +
+  external broken; read by TE-168 for its clean PASS band
 `summary.timeout` — int
 `summary.unchecked` — int
+`summary.external_checked` — int
+`summary.external_broken` — int
+`summary.external_unchecked` — int
+`summary.external_redirected` — int — evidence only, not counted by TE-168
+`summary.external_links` — int — distinct external targets found
 `issues[]` — array
 `error` — NoneType
 `fetch_error` — NoneType or str
@@ -509,28 +519,6 @@ than fetching them.
 `summary.google_kg_found` — bool
 `summary.total_issues` — int
 
-### external_link_quality.py
-
-`sources[]` — array
-`pages[]` — array
-  - item keys: url, status, error, error_kind
-`summary.external_links_found` — int
-`summary.unique_external_links` — int
-`summary.checked_links` — int
-`summary.broken_links` — int
-`summary.unreachable_links` — int
-`summary.unchecked_links` — int
-`summary.redirecting_links` — int
-`summary.low_trust_pattern_links` — int
-`summary.commercial_rel_review` — int
-`top_external_hosts[]` — array
-  - item keys: host, count
-`links[]` — array
-  - item keys: source, url, anchor, rel, nofollow, sponsored, ugc, host, low_trust_pattern, status, final_url, redirect_chain, error, error_kind
-`issues[]` — array
-  - item keys: severity, type, count, message
-`errors[]` — array — item keys: url, status, error, error_kind
-
 ### faceted_nav_audit.py
 
 `count` — int — every internal URL this page led to, which is what `rows` describes.
@@ -698,8 +686,9 @@ raw string comparison would silently never fire on one of them.
 
 ### gsc_links_csv.py
 
-Requires `offline` — it reads a file you exported, so even `archive` mode can use
-it. Probed against a two-sheet export (top linking sites, top linking text).
+Requires `offline` by default — it reads a file you exported, so even `archive` mode
+can use it. BL-083 adds `--check-targets` and therefore requires `fetch`. Probed
+against a two-sheet export (top linking sites, top linking text).
 
 `source` — str, absolute path of the export
 `site` — str, whatever was passed as `--site`
@@ -713,6 +702,20 @@ it. Probed against a two-sheet export (top linking sites, top linking text).
 `note` — str | null, set when a single unnamed CSV had to be guessed at
 `issues[]` — array
 `error` — str | null
+`error_kind` — str (`input`) when the named export is missing
+`targets.linked_pages` — int — same-host page rows; read by BL-083 (applies_when)
+`targets.off_host` — int
+`targets.checked` — int
+`targets.broken_count` — int — read by BL-083
+`targets.broken[]` — array
+  - item keys: url, status, error_kind, incoming_links
+`targets.unchecked[]` — array
+  - item keys: url, error, error_kind
+`targets.redirected[]` — array
+  - item keys: url, final_url
+`truncated` — bool — present with `--check-targets`; true when the 100-target cap
+  bites or any requested target is unchecked
+`truncated_reason` — str — present when `truncated` is true
 
 The Links report has **no API** — not in v3, not in v1. This parses the UI export
 and nothing else, which is why the incoming-link items report `NO_DATA` until

@@ -707,8 +707,6 @@ RUNS = [
     ("eeat", "eeat_signal_checker.py", ["{good}"]),
     ("eeat_bad", "eeat_signal_checker.py", ["{bad}"]),
     ("entity", "entity_checker.py", ["{good}"]),
-    ("extlinks", "external_link_quality.py", ["{good}"]),
-    ("extlinks_bad", "external_link_quality.py", ["{bad}"]),
     ("favicon", "favicon_check.py", ["{good}"]),
     ("favicon_bad", "favicon_check.py", ["{bad}"]),
     ("facets", "faceted_nav_audit.py", ["{good}", "--from-page"]),
@@ -4741,12 +4739,107 @@ class BrokenLinks(unittest.TestCase):
             "redirected": [{"url": "https://outside.test/go",
                             "to": "https://outside.test/there", "hops": 1}],
         }
-        result = broken_links.links_from_inventory(inventory)
+        external = {
+            "status": 200,
+            "url": "https://outside.test/there",
+            "redirect_chain": ["https://outside.test/there"],
+            "error": None,
+            "error_kind": None,
+        }
+        with mock.patch("seo_common.fetch_url", return_value=external):
+            result = broken_links.links_from_inventory(inventory)
         self.assertEqual(result["summary"]["redirected"], 1)
+        self.assertEqual(result["summary"]["external_redirected"], 1)
         self.assertEqual(result["summary"]["broken_or_redirected"], 1)
         self.assertEqual([row["url"] for row in result["redirected"]],
                          ["https://example.test/go"])
         self.assertTrue(all(row["is_internal"] for row in result["redirected"]))
+
+    @staticmethod
+    def external_inventory(*targets):
+        return {
+            "site": "https://example.test/",
+            "fetch_error": None,
+            "summary": {"unique_internal_targets": 0, "truncated": False},
+            "pages": {
+                "https://example.test/": {
+                    "links": [
+                        {"target": target, "internal": False,
+                         "anchor": target, "nofollow": False}
+                        for target in targets
+                    ],
+                },
+            },
+        }
+
+    def external_result(self, responses, *targets, max_external=200):
+        import broken_links
+        calls = []
+
+        def fetch(url, **kwargs):
+            calls.append((url, kwargs))
+            return responses[url]
+
+        with mock.patch("seo_common.fetch_url", side_effect=fetch):
+            result = broken_links.links_from_inventory(
+                self.external_inventory(*targets), max_workers=1,
+                max_external=max_external)
+        return result, calls
+
+    def test_a_dead_external_host_counts_in_both_te_168_totals(self):
+        target = "https://dead.example/"
+        result, _ = self.external_result({target: {
+            "status": None, "url": target, "redirect_chain": [],
+            "error": "no address", "error_kind": "unresolved",
+        }}, target)
+        self.assertEqual(result["summary"]["external_broken"], 1)
+        self.assertEqual(result["summary"]["broken"], 1)
+        self.assertEqual(result["summary"]["broken_or_redirected"], 1)
+
+    def test_an_external_404_is_broken(self):
+        target = "https://outside.example/gone"
+        result, _ = self.external_result({target: {
+            "status": 404, "url": target, "redirect_chain": [],
+            "error": None, "error_kind": None,
+        }}, target)
+        self.assertEqual(result["summary"]["external_broken"], 1)
+        self.assertTrue(result["external"][0]["broken"])
+
+    def test_an_external_redirect_is_reported_but_counted_in_neither_total(self):
+        target = "https://outside.example/old"
+        final = "https://outside.example/new"
+        result, _ = self.external_result({target: {
+            "status": 200, "url": final, "redirect_chain": [final],
+            "error": None, "error_kind": None,
+        }}, target)
+        self.assertEqual(result["summary"]["external_redirected"], 1)
+        self.assertEqual(result["summary"]["broken"], 0)
+        self.assertEqual(result["summary"]["broken_or_redirected"], 0)
+
+    def test_an_external_timeout_is_unchecked_and_truncated(self):
+        target = "https://slow.example/"
+        result, _ = self.external_result({target: {
+            "status": None, "url": target, "redirect_chain": [],
+            "error": "late", "error_kind": "timeout",
+        }}, target)
+        self.assertEqual(result["summary"]["external_broken"], 0)
+        self.assertEqual(result["summary"]["external_unchecked"], 1)
+        self.assertTrue(result["truncated"])
+        self.assertIn("external link(s) were unchecked",
+                      result["truncated_reason"])
+
+    def test_the_external_cap_requests_only_the_first_targets_and_truncates(self):
+        targets = tuple(f"https://outside.example/{i}" for i in range(3))
+        responses = {target: {
+            "status": 200, "url": target, "redirect_chain": [],
+            "error": None, "error_kind": None,
+        } for target in targets}
+        result, calls = self.external_result(responses, *targets, max_external=2)
+        self.assertEqual([url for url, _ in calls], list(targets[:2]))
+        self.assertEqual(result["summary"]["external_links"], 3)
+        self.assertEqual(result["summary"]["external_checked"], 2)
+        self.assertTrue(result["truncated"])
+        self.assertIn("per-run cap", result["truncated_reason"])
 
 
 class LocalSeoNap(unittest.TestCase):
@@ -4881,28 +4974,6 @@ class LocalBusinessInventory(unittest.TestCase):
         from checklist_runner import is_page_level
         self.assertFalse(is_page_level({"check": check}))
         self.assertEqual(ITEMS["LO-200"]["check"]["requires"], "fetch")
-
-
-class ExternalLinks(unittest.TestCase):
-    """BL-083 `summary.broken_links`."""
-
-    def test_links_that_resolve_are_not_broken(self):
-        self.assertEqual(verdict("BL-083", out("extlinks")), PASS)
-
-    def test_a_host_that_does_not_resolve_counts_as_broken(self):
-        """The gap this closed. The test was `status >= 400`, and a dead domain
-        produces no status at all — so the *ordinary* form of external link rot was
-        the one form this check could not see, and a page of links to expired domains
-        reported zero broken links.
-        """
-        bad = out("extlinks_bad")
-        self.assertGreaterEqual(bad["summary"]["unreachable_links"], 1)
-        self.assertEqual(verdict("BL-083", bad), FAIL)
-
-    def test_a_timeout_is_not_called_broken(self):
-        """It is a fact about this run, not about the link. Kept in its own count so
-        a slow host does not arrive in a fix list as a dead one."""
-        self.assertIn("unchecked_links", out("extlinks")["summary"])
 
 
 class AnchorText(unittest.TestCase):

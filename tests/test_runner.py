@@ -1104,9 +1104,11 @@ class BrowserArtifacts(unittest.TestCase):
         # CN-036 joined in 0.101.0: contrast is a computed value like the four
         # around it, and the count it used to read came from a script that never
         # rendered anything.
+        # BL-083 joined in 0.107.0: it reads the top-linked-pages sheet from the
+        # same Links export as BL-084/086/087 and checks those backlink targets.
         self.assertEqual(found, {"SP-214", "SP-215", "SP-216", "CN-034", "CN-035",
-                                 "CN-036", "CN-051", "MB-094", "MB-103", "BL-084",
-                                 "BL-086", "BL-087", "CI-018", "MB-105", "TE-181",
+                                 "CN-036", "CN-051", "MB-094", "MB-103", "BL-083",
+                                 "BL-084", "BL-086", "BL-087", "CI-018", "MB-105", "TE-181",
                                  "MB-107", "MB-108"})
         # What actually has to hold: an item reading an artifact measured at one URL
         # must never be run against a second page, or it would judge that page on

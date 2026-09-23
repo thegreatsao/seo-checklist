@@ -2,12 +2,10 @@
 """
 Check for broken links.
 
-With `--inventory` the whole site's **internal** links are read out of the shared
-crawl (`site_crawl.py`), which already has a status for every URL it fetched: no
-requests, and TE-168 covers the site rather than one page. External link rot is
-`external_link_quality.py`'s finding (BL-083) and is not counted twice — a second
-script requesting the same third-party URLs is the duplication this shared crawl
-exists to remove.
+With `--inventory` the whole site's internal links are read out of the shared crawl
+(`site_crawl.py`), which already has a status for every URL it fetched. Distinct
+external targets recorded by that crawl are requested here too, so TE-168 covers
+broken internal and outbound links across the site.
 
 Without an inventory it does what it always did: fetch one page and check every link
 on it, internal and external, up to `--max-links`.
@@ -25,7 +23,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urljoin, urlparse
 
 import site_crawl
-from seo_common import DEAD_FETCH_ERROR_KINDS, fetch_error_kind, html_parser
+from seo_common import (DEAD_FETCH_ERROR_KINDS, check_link_status,
+                        fetch_error_kind, html_parser)
 
 try:
     import requests
@@ -127,6 +126,12 @@ def check_link(link: dict, timeout: int = 10) -> dict:
 #  a runtime; the comment above says the truncation is reported, and `truncated` is
 #  now read rather than only printed.
 DEFAULT_MAX_LINKS = 200
+
+# basis: inherited — 200 distinct external links, present at import as a default
+# argument in its former checker. TE-168 passes when
+# `summary.broken_or_redirected` is 0, and that is now a site-wide count over these
+# 200; links past them are not requested, so the output reports truncation.
+DEFAULT_MAX_EXTERNAL = 200
 
 
 def check_broken_links(url: str, internal_only: bool = False,
@@ -263,8 +268,10 @@ def check_broken_links(url: str, internal_only: bool = False,
     return result
 
 
-def links_from_inventory(inventory: dict) -> dict:
-    """Every internal link in the crawl, with the status the crawl already saw.
+def links_from_inventory(inventory: dict, timeout: int = 10,
+                         max_external: int = DEFAULT_MAX_EXTERNAL,
+                         max_workers: int = 10) -> dict:
+    """Every link in the crawl, reusing internal status and checking external URLs.
 
     Same output shape as `check_broken_links`, so the item reading it does not have
     to know which path produced the answer — `scope` says which one did.
@@ -273,7 +280,7 @@ def links_from_inventory(inventory: dict) -> dict:
     inbound = site_crawl.inbound_map(inventory)
     result = {
         "page_url": inventory.get("site") or "",
-        "scope": "internal",
+        "scope": "site",
         "total_links": inventory.get("summary", {}).get("unique_internal_targets", 0),
         "checked": 0,
         "truncated": bool(inventory.get("summary", {}).get("truncated")),
@@ -281,6 +288,7 @@ def links_from_inventory(inventory: dict) -> dict:
         "redirected": [],
         "timeout": [],
         "unchecked": [],
+        "external": [],
         "healthy": 0,
         "summary": {},
         "issues": [],
@@ -335,19 +343,87 @@ def links_from_inventory(inventory: dict) -> dict:
         else:
             result["healthy"] += 1
 
+    internal_broken = len(result["broken"])
+    internal_redirected = len(result["redirected"])
+
+    external_targets: dict[str, dict] = {}
+    for source, page in pages.items():
+        for link in page.get("links") or []:
+            target = link.get("target") or ""
+            if (link.get("internal")
+                    or urlparse(target).scheme not in ("http", "https")):
+                continue
+            external_targets.setdefault(
+                target, {"url": target, "linked_from": set()})[
+                    "linked_from"].add(source)
+
+    requested = (list(external_targets.values())[:max_external]
+                 if max_external else list(external_targets.values()))
+    checked_external = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(check_link_status, row["url"], timeout): row
+            for row in requested
+        }
+        for future in as_completed(futures):
+            source = futures[future]
+            fetched = future.result()
+            status = fetched.get("status")
+            error_kind = fetched.get("error_kind")
+            checked_external.append({
+                "url": source["url"],
+                "linked_from": sorted(source["linked_from"]),
+                "status": status,
+                "final_url": fetched.get("url"),
+                "error": fetched.get("error"),
+                "error_kind": error_kind,
+                "redirected": bool(fetched.get("redirect_chain")),
+                "broken": ((status is not None and status >= 400)
+                           or (status is None
+                               and error_kind in DEAD_FETCH_ERROR_KINDS)),
+                "unchecked": (status is None
+                              and error_kind not in DEAD_FETCH_ERROR_KINDS),
+            })
+
+    # Requests finish concurrently; evidence retains the crawl's deterministic order.
+    order = {row["url"]: index for index, row in enumerate(requested)}
+    checked_external.sort(key=lambda row: order[row["url"]])
+    external_broken = [row for row in checked_external if row["broken"]]
+    external_unchecked = [row for row in checked_external if row["unchecked"]]
+    external_redirected = [row for row in checked_external if row["redirected"]]
+    result["external"] = checked_external[:50]
+
     result["summary"] = {
         "total": result["total_links"],
         "healthy": result["healthy"],
-        "broken": len(result["broken"]),
-        "redirected": len(result["redirected"]),
-        "broken_or_redirected": len(result["broken"]) + len(result["redirected"]),
+        "broken": internal_broken + len(external_broken),
+        "redirected": internal_redirected,
+        "broken_or_redirected": (internal_broken + internal_redirected
+                                 + len(external_broken)),
         "timeout": 0,
         "unchecked": len(result["unchecked"]),
+        "external_checked": len(checked_external),
+        "external_broken": len(external_broken),
+        "external_unchecked": len(external_unchecked),
+        "external_redirected": len(external_redirected),
+        "external_links": len(external_targets),
     }
-    # Same rule on the whole-site path: a link target the crawl never reached is a
-    # target nobody looked at, and TE-168 is `high`.
+    reasons = []
+    if inventory.get("summary", {}).get("truncated"):
+        reasons.append("the shared crawl was truncated")
     if result["unchecked"]:
         result["truncated"] = True
+        reasons.append(f"{len(result['unchecked'])} internal target(s) were unchecked")
+    if len(requested) < len(external_targets):
+        result["truncated"] = True
+        reasons.append(
+            f"checked the first {len(requested)} of {len(external_targets)} external "
+            "links (the per-run cap)")
+    if external_unchecked:
+        result["truncated"] = True
+        reasons.append(f"{len(external_unchecked)} external link(s) were unchecked")
+    if reasons:
+        result["truncated_reason"] = "; ".join(reasons)
     if result["broken"]:
         result["issues"].append(f"🔴 {len(result['broken'])} broken internal link(s) "
                                 f"found across {result['checked']} checked")
@@ -358,6 +434,18 @@ def links_from_inventory(inventory: dict) -> dict:
         result["issues"].append(f"⚠️ {len(result['unchecked'])} internal link "
                                 f"target(s) were not reached by the crawl and are "
                                 f"not counted either way")
+    if external_broken:
+        result["issues"].append(
+            f"🔴 {len(external_broken)} broken external link(s) found across "
+            f"{len(checked_external)} checked")
+    if external_unchecked:
+        result["issues"].append(
+            f"⚠️ {len(external_unchecked)} external link target(s) could not be "
+            "classified and are not counted either way")
+    if external_redirected:
+        result["issues"].append(
+            f"⚠️ {len(external_redirected)} external link(s) redirect; reported "
+            "as evidence but not counted")
     return result
 
 
@@ -381,7 +469,9 @@ def main():
     args = parser.parse_args()
     if args.inventory:
         result = links_from_inventory(site_crawl.inventory_for(args.url,
-                                                               args.inventory))
+                                                               args.inventory),
+                                      timeout=args.timeout,
+                                      max_workers=args.workers)
     else:
         result = check_broken_links(args.url, internal_only=args.internal_only,
                                     max_workers=args.workers, timeout=args.timeout,

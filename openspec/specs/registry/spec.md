@@ -254,8 +254,9 @@ the measurement is right.
 **Reader:** partial. `tools/audit_item_semantics.py` in CI asks whether the rule asserts
 what the title says, and `test_mb_105_names_the_comparison_it_asserts` pins one item's
 wording to its comparison. The audit reads the assertion's shape, not the meaning of the
-subject: BL-083 passes it while counting broken **outbound** links under a title about
-backlinks. GO-137 was the example here until 0.106.0, when it moved to Search Console.
+subject: MB-096 passes it while asserting that one image of any number is responsive,
+under a title about responsive images as a property of the page. GO-137 was the
+example here until 0.106.0 and BL-083 until 0.107.0; both had their rules moved.
 
 **Repairing an item does not move this line, and 0.105.0 is the test of that.** CI-016
 and MD-186 stopped measuring something other than their title in that release, and
@@ -422,7 +423,7 @@ of those refuses a claim in both directions.
 
 **Recording a reason is a judgement, and 0.96.1 measured what a wrong one costs.** Two
 of the forty-seven were free passes and read exactly like the forty-five that were not:
-`BL-083` claimed a backlink export the item does not take — it runs
+`BL-083` claimed a backlink export the item did not then take — it ran
 `external_link_quality.py {url}` over *outbound* links — and passed "Fix Broken
 Backlinks" on a site with none; `GO-137` claimed a sitemap that a site is free not to
 have, and passed "Reconcile Indexed Pages vs. Sitemaps" where `sitemap - reachable` is
@@ -774,7 +775,9 @@ claim measured afterwards against the tree:
 
 The first two are the defect A.6 set out to close, surviving inside its own repair.
 BL-083's is also an aboutness defect — the title says backlinks and the rule reads
-outbound links — which belongs to REG-6 and is not repaired here.
+outbound links — which belongs to REG-6 and is not repaired here. Repaired at 0.107.0:
+BL-083 now reads the targets of the Search Console Links export and asks whether they
+still answer, and outbound link rot moved to TE-168.
 
 TE-178 awarded nothing, and is the more instructive entry: the conclusion was right and
 the reason was false, so a change to `check_neighbors()` would have turned a sentence
@@ -932,8 +935,8 @@ rule rather than re-reading its row:
 Seven of the nine stand, plus BL-083 from A.7 — **at `c26c36595d04`, which is the
 registry this appendix measures and not the one shipping.** At `5f9de5a6dee3` it is four:
 CN-036 was repaired in the same release that wrote this table, and CI-016 and MD-186 at
-0.105.0, and three at `6705382549b9` after GO-137 at 0.106.0. The standing three are MB-096,
-MB-097 and MD-189, plus BL-083.
+0.105.0, three at `6705382549b9` after GO-137 at 0.106.0, and at `f07a03292d84` BL-083
+is repaired too (0.107.0). The standing three are MB-096, MB-097 and MD-189.
 
 **That subtraction is the appendix's own disease, caught a second time.** A.9 exists
 because A.3's nine were a reading of a tree three weeks gone; this sentence then went one

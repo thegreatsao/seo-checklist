@@ -9,8 +9,9 @@ for a third-party index is to export the ZIP once a period and point this script
 at it.
 
 Export path: Search Console -> Links -> Export (top right) -> Download CSV. The
-ZIP contains several sheets; the ones this reads are the top linking sites and
-the top linking text (anchors). Either the ZIP or an unpacked CSV works.
+ZIP contains several sheets; the ones this reads are the top linking sites, top
+linking text (anchors), and top linked pages. The ZIP, an unpacked directory, or
+one CSV all work.
 
 What this can and cannot answer: it reports who links to you and with what
 anchors, because that is what Google shows. It says nothing about link quality,
@@ -29,8 +30,11 @@ import json
 import os
 import re
 import zipfile
+from urllib.parse import urlparse
 
 import sys
+
+import seo_common
 
 # Not every caller is the runner. This script prints `ensure_ascii=False` JSON, and a
 # bare `python <script> …` on Windows encodes stdout with the ANSI codepage — so a
@@ -50,6 +54,10 @@ _utf8_stdout()
 # Google localises the export, so match on shape rather than on English headers.
 # basis: inherited — half the backlinks from one domain, present at import. Blocker: backlink concentration is not a search-analytics number, so no volume of Search Console performance data can calibrate it.
 TOP1_SHARE_PCT = 50
+
+# basis: convention — the hundred most-linked pages; the export's own ordering
+# puts the pages whose loss costs most first.
+MAX_TARGETS = 100
 
 SITE_SHEETS = ("linking sites", "linking-sites", "ссылающиеся сайты", "sites")
 ANCHOR_SHEETS = ("linking text", "linking-text", "anchor", "текст ссылок")
@@ -88,7 +96,14 @@ def parse_sheet(rows: list[list[str]]) -> list[dict]:
 def load(path: str) -> dict:
     """Return {kind: rows} for whatever sheets the export actually contained."""
     sheets: dict[str, list[list[str]]] = {}
-    if zipfile.is_zipfile(path):
+    if os.path.isdir(path):
+        for name in os.listdir(path):
+            full = os.path.join(path, name)
+            if not os.path.isfile(full) or not name.lower().endswith(".csv"):
+                continue
+            with open(full, encoding="utf-8-sig", errors="replace") as f:
+                sheets[name.lower()] = _rows(f.read())
+    elif zipfile.is_zipfile(path):
         with zipfile.ZipFile(path) as z:
             for name in z.namelist():
                 if not name.lower().endswith(".csv"):
@@ -118,7 +133,57 @@ def load(path: str) -> dict:
     return found
 
 
-def analyze(path: str, site: str = "") -> dict:
+def _check_linked_pages(rows: list[dict], site: str) -> dict:
+    targets = []
+    off_host = 0
+    for row in rows:
+        url = row["name"]
+        parsed = urlparse(url)
+        if (parsed.scheme in ("http", "https") and parsed.netloc
+                and seo_common.same_host(site, url)):
+            targets.append(row)
+        else:
+            off_host += 1
+
+    requested = targets[:MAX_TARGETS]
+    broken = []
+    unchecked = []
+    redirected = []
+    for row in requested:
+        url = row["name"]
+        fetched = seo_common.check_link_status(url)
+        status = fetched.get("status")
+        error_kind = fetched.get("error_kind")
+        if (status is not None and status >= 400) or (
+                status is None
+                and error_kind in seo_common.DEAD_FETCH_ERROR_KINDS):
+            broken.append({
+                "url": url,
+                "status": status,
+                "error_kind": error_kind,
+                "incoming_links": row["count"],
+            })
+        elif status is None:
+            unchecked.append({
+                "url": url,
+                "error": fetched.get("error"),
+                "error_kind": error_kind,
+            })
+        if fetched.get("redirect_chain"):
+            redirected.append({"url": url, "final_url": fetched.get("url")})
+
+    return {
+        "linked_pages": len(targets),
+        "off_host": off_host,
+        "checked": len(requested),
+        "broken_count": len(broken),
+        "broken": broken,
+        "unchecked": unchecked,
+        "redirected": redirected,
+    }
+
+
+def analyze(path: str, site: str = "", check_targets: bool = False) -> dict:
     result = {
         "source": os.path.abspath(path),
         "site": site,
@@ -204,18 +269,34 @@ def analyze(path: str, site: str = "") -> dict:
             "message": "could not derive a brand token from --site; anchor "
                        "classification counts everything as 'other'",
         })
+    if check_targets:
+        result["targets"] = _check_linked_pages(found.get("pages") or [], site)
+        reasons = []
+        if result["targets"]["linked_pages"] > MAX_TARGETS:
+            reasons.append(
+                f"checked the first {MAX_TARGETS} of "
+                f"{result['targets']['linked_pages']} linked pages (the per-run cap)")
+        if result["targets"]["unchecked"]:
+            reasons.append(
+                f"{len(result['targets']['unchecked'])} linked page target(s) "
+                "could not be checked")
+        result["truncated"] = bool(reasons)
+        if reasons:
+            result["truncated_reason"] = "; ".join(reasons)
     return result
 
 
 def main():
     ap = argparse.ArgumentParser(
         description="Parse a Search Console Links report export (ZIP or CSV)")
-    ap.add_argument("path", help="the exported ZIP, or one CSV from it")
+    ap.add_argument("path", help="the exported ZIP, unpacked directory, or one CSV")
     ap.add_argument("--site", default="", help="site domain, used to spot branded anchors")
+    ap.add_argument("--check-targets", action="store_true",
+                    help="request same-host top-linked pages and report dead targets")
     ap.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     args = ap.parse_args()
 
-    result = analyze(args.path, args.site)
+    result = analyze(args.path, args.site, check_targets=args.check_targets)
     if args.json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return

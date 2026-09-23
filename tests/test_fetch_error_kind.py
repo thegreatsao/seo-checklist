@@ -18,7 +18,6 @@ SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
 sys.path.insert(0, SCRIPTS)
 
 import broken_links  # noqa: E402
-import external_link_quality  # noqa: E402
 import seo_common  # noqa: E402
 from lib import safe_http  # noqa: E402
 
@@ -73,39 +72,6 @@ def requests_error(name: str, message: str):
     return getattr(seo_common.requests.exceptions, name)(message)
 
 
-class ExternalLinkKinds(unittest.TestCase):
-
-    def audit_one(self, error_kind: str) -> dict:
-        source = {
-            "status": 200,
-            "text": '<a href="https://target.example/path">target</a>',
-            "url": "https://source.example/",
-            "error": None,
-            "error_kind": None,
-        }
-        failed = {
-            "status": None,
-            "url": "https://target.example/path",
-            "redirect_chain": [],
-            "error": "the wording is deliberately identical",
-            "error_kind": error_kind,
-        }
-        # A failed HEAD takes the script's existing GET fallback, so both attempts
-        # carry the same typed outcome.
-        with mock.patch.object(external_link_quality, "fetch_url",
-                               side_effect=(source, failed, failed)):
-            return external_link_quality.audit_external_links(
-                ["https://source.example/"], timeout=1)
-
-    def test_unresolved_is_broken_and_blocked_is_unchecked(self):
-        unresolved = self.audit_one("unresolved")
-        blocked = self.audit_one("blocked")
-        self.assertEqual(unresolved["summary"]["broken_links"], 1)
-        self.assertEqual(unresolved["summary"]["unreachable_links"], 1)
-        self.assertEqual(blocked["summary"]["broken_links"], 0)
-        self.assertEqual(blocked["summary"]["unchecked_links"], 1)
-
-
 class BrokenLinkKinds(unittest.TestCase):
 
     def check_one(self, exc) -> dict:
@@ -127,6 +93,40 @@ class BrokenLinkKinds(unittest.TestCase):
         self.assertEqual(robots["summary"]["broken"], 0)
         self.assertEqual(robots["summary"]["unchecked"], 1)
         self.assertEqual(robots["unchecked"][0]["error_kind"], "robots")
+
+    def external_one(self, error_kind: str) -> dict:
+        target = "https://target.example/path"
+        failed = {
+            "status": None,
+            "url": target,
+            "redirect_chain": [],
+            "error": "the wording is deliberately identical",
+            "error_kind": error_kind,
+        }
+        inventory = {
+            "site": "https://source.example/",
+            "fetch_error": None,
+            "summary": {"unique_internal_targets": 0, "truncated": False},
+            "pages": {
+                "https://source.example/": {
+                    "links": [{"target": target, "internal": False,
+                               "anchor": "target", "nofollow": False}],
+                },
+            },
+        }
+        # A failed HEAD takes the GET fallback, and both attempts retain the typed
+        # outcome. This is the former outbound check's classification test, ported
+        # to TE-168's inventory external path in 0.107.0.
+        with mock.patch("seo_common.fetch_url", return_value=failed):
+            return broken_links.links_from_inventory(inventory, max_workers=1)
+
+    def test_unresolved_is_broken_and_blocked_is_unchecked(self):
+        unresolved = self.external_one("unresolved")
+        blocked = self.external_one("blocked")
+        self.assertEqual(unresolved["summary"]["external_broken"], 1)
+        self.assertEqual(unresolved["summary"]["broken"], 1)
+        self.assertEqual(blocked["summary"]["external_broken"], 0)
+        self.assertEqual(blocked["summary"]["external_unchecked"], 1)
 
 
 if __name__ == "__main__":

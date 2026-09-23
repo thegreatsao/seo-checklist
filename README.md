@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.106.0 — see [CHANGELOG.md](CHANGELOG.md). **A verdict can move on your site, and one check now needs Search Console.** *Reconcile Indexed Pages vs. Sitemaps* used to count sitemap pages that nothing links to — a real question, but one two other checks already ask. It now asks Google: which sitemap URLs are not in the index, and which indexed pages no sitemap lists. Without Search Console credentials it says so instead of answering. Before that, `0.105.0` stopped accepting alt text such as `IMG_0042` or a file name as a description of an image.
+Version 0.107.0 — see [CHANGELOG.md](CHANGELOG.md). **Two verdicts can move on your site.** *Fix Broken Backlinks* used to check the links your page makes to other sites. It now checks the pages other sites link to — read from the Search Console Links export — and fails when one of them no longer answers. Broken links to other sites moved to *Fix Broken & Redirected Links*, which now checks them across the whole site rather than on one page; a third party's redirect is reported but not held against you. Before that, `0.106.0` moved *Reconcile Indexed Pages vs. Sitemaps* to Search Console.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -734,7 +734,7 @@ names but nobody shipped, an LLM item with no lens, a profile that hides a criti
 check, and the boundary between "failed", "could not be decided" and "out of scope"
 that every metric here depends on.
 
-Every one of the 58 evidence scripts has tests, and each asserts *the field the
+Every one of the 57 evidence scripts has tests, and each asserts *the field the
 registry actually reads*, named in the test. That is how three releases running found
 defects at about one per three tests: 0.5.0's eighteen assertions that had never
 fired, 0.7.0's two items that failed a site for serving images the recommended way,

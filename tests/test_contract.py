@@ -63,9 +63,9 @@ def tearDownModule():
 def audit(url: str, label: str) -> dict:
     """One full audit, through the runner, as an operator would get it.
 
-    The operator-supplied inputs are supplied, so the nine items that read them are
-    exercised in both directions rather than reporting NO_DATA on both. All three
-    are hand-written and say so — see tests/fixtures/artifacts/README.md for what
+    The operator-supplied inputs are supplied, so the items that read them are
+    exercised in both directions rather than reporting NO_DATA on both. The fixture
+    artifacts say how they were constructed — see tests/fixtures/artifacts/README.md for what
     that does and does not verify.
 
     The access log is the one whose two versions differ on purpose rather than
@@ -77,6 +77,9 @@ def audit(url: str, label: str) -> dict:
     artifacts = []
     for flag, filename in (("--cwv-json", "cwv.json"),
                            ("--rendered-json", "rendered.json"),
+                           # 0.107.0: BL-083 joined the three existing Links-export
+                           # readers and needs the new top-linked-pages sheet.
+                           ("--links-csv", "links"),
                            ("--server-log", "access.log")):
         path = SITE.artifact(label, filename)
         if path:
@@ -218,11 +221,10 @@ SAME_ON_BOTH = {
     "BL-080": "backlink items need a link index this tool does not have",
     "BL-082": "backlink items need a link index this tool does not have",
     # BL-083 was here until 0.8.0 with the same reason, and the reason was wrong: it
-    # reads `external_link_quality.summary.broken_links`, which is measurable without
-    # any link index. It answered the same on both sites because a dead host produces
+    # read an outbound-link check, which is measurable without any link index. It
+    # answered the same on both sites because a dead host produces
     # no status code and the count only looked for 4xx — so the ordinary form of link
     # rot was invisible. The exemption outlived a defect rather than a limitation.
-    "BL-084": "backlink items need a link index this tool does not have",
     "BL-085": "backlink items need a link index this tool does not have",
 
     # --- The entry page has to stay readable on both sites -------------------
@@ -273,15 +275,13 @@ SAME_ON_BOTH = {
     "CN-054": "both fixtures expose native image sources, so both are crawlable; "
               "the data-src-only failure direction is covered in test_evidence_scripts",
 
-    # --- Needs an artifact this audit does not produce -----------------------
-    # The `--cwv-json` and `--rendered-json` exemptions used to live here and are
-    # gone: both files are supplied now (see `audit()` above), so the eight items
-    # that read them differ. What is left is the export a human clicks in the
-    # Search Console UI, which cannot be reduced to a file in this repository
-    # without inventing somebody's backlink profile — a fabricated link graph is
-    # the one thing worse than NO_DATA — and the IndexNow key, which is a secret.
-    "BL-086": "needs --links-csv, a Search Console UI export",
-    "BL-087": "needs --links-csv, a Search Console UI export",
+    # --- Supplied artifacts that legitimately land in the same band ----------
+    # 0.107.0 hands the fixture's Links export to this audit. Its concentration and
+    # referring-domain rows separate BL-084/087; both constructed exports still
+    # contain links, so BL-086's minimum-one assertion passes on both by design.
+    "BL-086": "both fixture Links exports contain at least one incoming link",
+
+    # --- Needs an input this audit cannot produce ----------------------------
     "GEO-007": "needs an IndexNow key, which is a secret and not a fixture",
 
     # --- Would take the suite online ----------------------------------------
@@ -314,6 +314,12 @@ SAME_ON_BOTH = {
 # record. What is left is the item the fixtures *do* exercise, past the band and
 # into FAIL.
 BAND_UNSEEN = {
+    # 0.107.0 supplies the Links export to both fixture audits. The good profile's
+    # top-domain share is 33.3% (PASS) and the broken profile's is 80% (FAIL), so
+    # neither lands in BL-084's 50%-65% warning interval.
+    "BL-084": "the good Links export passes at 33.3% top-domain share and the "
+              "broken export skips the warning band at 80%; neither constructed "
+              "profile falls between 50% and 65%",
     "SP-110": "the band needs a medium with no high, and since 0.87.0 the only "
               "medium this script emits is a parser-blocking script outside the "
               "head. Neither fixture has one: the good origin's single head script "
@@ -696,7 +702,8 @@ class ArtifactsMustDescribeTheAuditedPage(unittest.TestCase):
         for label in ("good", "broken"):
             recorded = RESULTS[label]["artifacts"] or {}
             self.assertEqual(sorted(recorded),
-                             ["cwv_json", "rendered_json", "server_log"], label)
+                             ["cwv_json", "links_csv", "rendered_json", "server_log"],
+                             label)
             for key, entry in recorded.items():
                 self.assertIsNotNone(entry["age_days"],
                                      f"{label} {key} has no age, so no limit can refuse it")

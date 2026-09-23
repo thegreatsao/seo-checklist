@@ -157,7 +157,7 @@ def audit(label: str, url: str) -> dict[str, str]:
     artifacts = []
     for flag, filename in (("--rendered-json", "rendered.json"),
                            ("--cwv-json", "cwv.json"),
-                           ("--links-csv", "top-linking-sites.csv"),
+                           ("--links-csv", "links"),
                            ("--server-log", "access.log")):
         path = SITE.artifact(label, filename)
         if path:

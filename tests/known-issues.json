@@ -185,9 +185,9 @@
           "cache_compression_checker.py",
           "css_minify_check.py",
           "duplicate_content.py",
-          "external_link_quality.py",
           "faceted_nav_audit.py",
           "gsc_cannibalization.py",
+          "gsc_links_csv.py",
           "gsc_sitemap_reconcile.py",
           "image_weight_audit.py",
           "internal_links.py",
@@ -661,6 +661,7 @@
         "depth": 3,
         "items_silenced_by_a_cap_other_than_these_two": [
           "AR-163",
+          "BL-083",
           "CI-014",
           "GO-137",
           "KW-071",
@@ -676,7 +677,6 @@
           "AR-149",
           "AR-162",
           "BL-081",
-          "BL-083",
           "CI-008",
           "CI-018",
           "CN-039",
@@ -865,13 +865,13 @@
       "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants and the three detect_profile tables as inherited, DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and twenty module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
         "basis": {
-          "convention": 52,
+          "convention": 53,
           "inherited": 77,
           "measured": 11,
           "presentation": 13,
-          "standard": 12
+          "standard": 13
         },
-        "counted": 152,
+        "counted": 154,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:31"
         ],

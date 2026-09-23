@@ -364,6 +364,32 @@ def fetch_url(
     return result
 
 
+# basis: standard — RFC 9110 §15.5.6 and §15.6.2: 405 and 501 refuse the method, not
+#  the resource; 403 is how a firewall refuses HEAD from an unfamiliar client. A link
+#  answering one of these to HEAD has not said it is dead, so GET decides.
+HEAD_REFUSED_STATUSES = (403, 405, 501)
+
+
+def check_link_status(url: str, timeout: int = 15) -> dict:
+    """One link's status, HEAD first and GET when HEAD cannot be trusted.
+
+    Two readers — BL-083's backlink targets and TE-168's outbound links — call a
+    link broken at status >= 400, so a HEAD refusal must not reach them as the
+    link's answer. The copy both inherited from `external_link_quality.py` fell
+    back to GET only when a refusal *also* carried an error, and `fetch_url` sets
+    no error on a response it received: a page that serves GET and refuses HEAD
+    with 405 was a broken link. A request that answered nothing is retried as GET
+    too, as before; a dead host answers the same either way.
+    """
+    head = fetch_url(url, method="HEAD", timeout=timeout, allow_redirects=True,
+                     max_bytes=0)
+    status = head.get("status")
+    if status in HEAD_REFUSED_STATUSES or (status is None and head.get("error")):
+        return fetch_url(url, method="GET", timeout=timeout, allow_redirects=True,
+                         max_bytes=200_000)
+    return head
+
+
 def read_urls(values: list[str] | None = None, file_path: str | None = None) -> list[str]:
     urls: list[str] = []
     for value in values or []:

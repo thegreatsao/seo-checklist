@@ -589,19 +589,27 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # URL Inspection quota; `TIME_BUDGET_S`, inside the runner's default timeout;
         # `INSPECT_WORKERS`, well under the per-minute quota. The script it replaced
         # carried no named number, and its socket bound is imported, not copied.
+        #
+        # 0.107.0 adds one `convention`: `MAX_TARGETS` in `gsc_links_csv.py`, the
+        # hundred most-linked pages whose loss would cost the most backlinks. The
+        # outbound-link cap moved into `broken_links.py` with its basis unchanged.
+        # And one `standard`: `HEAD_REFUSED_STATUSES` in `seo_common.py`, the three
+        # statuses RFC 9110 gives a refused method, after which GET decides whether a
+        # link is dead. It was an inline tuple before, and wrong — see its comment.
         self.assertEqual(by_kind, {
-            "standard": 12,
+            "standard": 13,
             "measured": 11,
-            "convention": 52,
+            "convention": 53,
             "inherited": 77,
             "presentation": 13,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 152)
-        self.assertEqual(len(named), 165)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 154)
+        self.assertEqual(len(named), 167)
         self.assertEqual(len(uncounted), 13)
-        # 169 -> 170: `external_link_quality.py`'s link cap was a default argument
-        # value, which is a place no instrument here can see. Promoting it to a
-        # module constant is what made it countable at all.
+        # 169 -> 170: the outbound-link check's cap was a default argument value,
+        # which is a place no instrument here can see. Promoting it to a module
+        # constant is what made it countable at all; 0.107.0 moved that definition
+        # into `broken_links.py` with the same basis.
         # 170 -> 172: the two caps above were also invisible to the module-level
         # constant inventory until they were given names.
         # 172 -> 173: `VERDICT_CREDIT`, for the same reason one line down — a number that
@@ -610,8 +618,11 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # cannot be a description. New number, new row; the inventory grows when the
         # tree does, which is the only way it can stay a census rather than a memory.
         # 174 -> 178: the four named numbers of `gsc_sitemap_reconcile.py` at 0.106.0.
+        # 178 -> 179: `MAX_TARGETS` at 0.107.0; the external cap moved rather than
+        # multiplying, so it contributes no other new row.
+        # 179 -> 180: `HEAD_REFUSED_STATUSES` at 0.107.0, named when it was repaired.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 178)
+                             for path in at._script_paths()), 180)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()

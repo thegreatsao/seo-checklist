@@ -10,6 +10,46 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.107.0 — an item titled *Backlinks* checked the links going the other way
+
+Registry version: **`6705382549b9` → `f07a03292d84`.** Two items change what they
+measure, so verdicts can move on a real site: BL-083 now needs the Search Console Links
+export (`--links-csv`), and TE-168 now also fails on dead outbound links. The ledger does
+not move — REG-6 stays `partial`, with MB-096, MB-097 and MD-189 standing. Suite 1690 →
+1703.
+
+**BL-083 *Fix Broken Backlinks (Redirect or Update Link)* asserted that the entry page's
+outbound links were alive.** Backlinks point the other way, and the fix its title names —
+redirect the dead URL, or have the link updated — is the fix for a link from another site
+landing on a page that no longer exists. The tool already took the Links export for
+BL-084/086/087, and `gsc_links_csv.py` already parsed its *top linked pages* sheet; Google's
+help says that report keeps links whose target "may no longer exist". With
+`--check-targets` the script requests the hundred most-linked same-host targets and BL-083
+asserts `targets.broken_count == 0`. A redirect is not broken — it is the fix. The count is
+a floor: Google omits some URLs from the report.
+
+**Outbound link rot moved to TE-168 *Fix Broken & Redirected Links*,** whose title has no
+direction, and it is now site-wide rather than one page: `broken_links.py` requests the
+crawl's distinct external targets (the first 200) beside the internal ones it already had.
+A third party's redirect is reported and not counted. `external_link_quality.py`, read by
+nothing afterwards, is removed; its dead-host-versus-timeout classification moved with its
+tests.
+
+**A HEAD refusal was a broken link, in both checks, and had been since before this
+release.** The copied fallback retried as GET only when a 403 or 405 *also* carried an
+error, and `fetch_url` sets none on a response it received — so a live page behind a
+server that refuses HEAD counted as dead. Found in review; the check is now one function,
+`seo_common.check_link_status`, retrying 403, 405 and 501 as GET, and
+`test_a_page_that_refuses_head_and_serves_get_is_not_a_broken_backlink` reddens on the old
+condition for all three.
+
+| | before | after |
+|---|---|---|
+| BL-083 | `external_link_quality.py {url}`, outbound links on one page | `gsc_links_csv.py --check-targets`: backlink targets that answer ≥ 400 or not at all |
+| TE-168 | internal links, site-wide | internal and outbound, site-wide; outbound redirects reported, not counted |
+| fixtures | a single `top-linking-sites.csv`; `good` linked the real `example.com` | a `links/` directory with a *top linked pages* sheet (`broken` lists a 404); `good` links the neighbouring fixture origin, so the suite asks nothing of the internet |
+| declarations | — | no `expect` moved; three `new-material` records for the digests; 248 of 248 matched |
+
 ## 0.106.0 — an item titled *Indexed* now asks the only thing that knows
 
 Registry version: **`5f9de5a6dee3` → `6705382549b9`.** GO-137 *Reconcile Indexed Pages vs.

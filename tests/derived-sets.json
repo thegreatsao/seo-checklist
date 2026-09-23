@@ -228,11 +228,11 @@
         },
         {
           "name": "REQUIRES",
-          "entries": 22
+          "entries": 21
         },
         {
           "name": "ITEM_REQUIRES",
-          "entries": 5
+          "entries": 6
         },
         {
           "name": "APPLIES_WHEN",
@@ -477,7 +477,7 @@
         },
         {
           "name": "SLOW_FIRST",
-          "entries": 8
+          "entries": 7
         },
         {
           "name": "THRESHOLD_OPS",
@@ -606,15 +606,6 @@
         {
           "name": "_LOADED_FROM",
           "entries": 0
-        }
-      ]
-    },
-    "external_link_quality": {
-      "read": [],
-      "unread": [
-        {
-          "name": "LOW_TRUST_HOST_HINTS",
-          "entries": 9
         }
       ]
     },
@@ -899,6 +890,10 @@
         },
         {
           "name": "XML_CTYPES",
+          "entries": 3
+        },
+        {
+          "name": "HEAD_REFUSED_STATUSES",
           "entries": 3
         },
         {
