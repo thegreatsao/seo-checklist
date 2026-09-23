@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.110.0 — see [CHANGELOG.md](CHANGELOG.md). **Two verdicts can move on your site.** *Provide Clean XML Sitemaps* warns, and *Remove Invalid URLs from Sitemaps* fails, when the sitemap lists a page robots.txt forbids Google to fetch — the error Search Console calls *Submitted URL blocked by robots.txt*. If robots.txt itself cannot be read, neither item passes. Before that, `0.109.0` made robots.txt read the same way on every Python version and the way Google reads it.
+Version 0.111.0 — see [CHANGELOG.md](CHANGELOG.md). No verdict moves. The counts this repository states about itself — in this file, the plugin description, the known-issues header, the roadmap — are now derived from the tree on every build, and a stale one fails it; four had drifted. `ROADMAP.md` is rewritten against the tree. Before that, `0.110.0` made a sitemap listing a page robots.txt forbids a finding again.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -592,8 +592,8 @@ declared, a declaration nothing proves any more, and a declaration naming a
 mechanism other than the one proved. The third is the one an exemption list can
 never catch, and this repository has watched one rot in exactly that spot.
 
-It proves rather than surveys. Of 145 script-backed assertions, two are proved
-unable to fail and the other 141 are **not claimed either way** — the summary line
+It proves rather than surveys. Of 145 script-backed assertions, 2 are proved
+unable to fail and the other 143 are **not claimed either way** — the summary line
 prints that count instead of implying coverage it does not have.
 
 The same tool audits the other unreachable verdict. A `warn` band fires only when

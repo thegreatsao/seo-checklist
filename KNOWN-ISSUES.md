@@ -1,6 +1,6 @@
 # Known issues
 
-What is wrong with this plugin as of **0.90.1**, ranked by consequence, with the
+What is wrong with this plugin, ranked by consequence, with the
 evidence for each. Nothing here is a suspicion: every entry was measured against
 the tree.
 
@@ -10,14 +10,15 @@ open this file. Section 6 therefore carries a marker per entry, and
 `tests/known-issues.json` records against each marker what the entry claims and — where
 the claim can be re-run — a probe that re-runs it.
 `python tests/known_issues.py --check` executes every probe and
-fails when the tree stops answering what its entry says it answers. Thirty-two of the
-forty-nine entries carry a probe; the other seventeen carry a written reason for having
+fails when the tree stops answering what its entry says it answers. 34 of the 51
+entries carry a probe; the other 17 carry a written reason for having
 none, and that count is printed, because a ledger where everything is exempt is a
 ledger that has stopped working.
 
-**The count in that sentence is the one thing here a probe cannot check**, and it was
-wrong by one release for as long as this header said 0.80.0. Both numbers now come from
-`python tests/known_issues.py`, which prints them.
+**The counts in that sentence were the one thing here a probe could not check**, and
+they drifted twice: they were a release behind while this header said 0.80.0, and 2
+entries behind by 0.110.0. `tests/test_prose_counts.py` now derives them from
+`tests/known-issues.json` on every build.
 
 This file exists because the audit's one promise — that "we could not check this"
 never reads as a verdict — applies to the plugin's own description of itself. A

@@ -25,9 +25,9 @@
     ]
   },
   "fixture_digest": {
-    "good": "ab72d1bb1550",
+    "good": "4ab32c7a5c8e",
     "broken": "62974eb27f54",
-    "good_tls": "5d2ae8e1ef42",
+    "good_tls": "c22606b1d3ea",
     "broken_tls": "6485c04753d8"
   },
   "triage": [
@@ -111,6 +111,24 @@
       "to": "FAIL",
       "decided": "checker-was-wrong",
       "why": "the same listed and disallowed /private/secret.html. The previous declaration said a robots conflict is not an invalid URL; Anton (23 September) decided otherwise on Search Console's own classification, which lists Submitted URL blocked by robots.txt beside Submitted URL marked noindex, a case this item already counted. The fixture is unchanged"
+    },
+    {
+      "kind": "fixture",
+      "origin": "good",
+      "item": null,
+      "from": "ab72d1bb1550",
+      "to": "4ab32c7a5c8e",
+      "decided": "new-material",
+      "why": "two comments in sitemap.xml were false — one named a test that no longer exists, one said GO-137 still passes, which has asked Search Console since 0.106.0 — and are rewritten; no URL changes and no declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good_tls",
+      "item": null,
+      "from": "5d2ae8e1ef42",
+      "to": "c22606b1d3ea",
+      "decided": "new-material",
+      "why": "two comments in sitemap.xml were false — one named a test that no longer exists, one said GO-137 still passes, which has asked Search Console since 0.106.0 — and are rewritten; no URL changes and no declared verdict moves."
     }
   ],
   "fixtures": {

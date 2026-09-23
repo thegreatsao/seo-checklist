@@ -2,9 +2,9 @@
 """What every item actually reports, across every site we can serve.
 
 Not a test and not an oracle. The fixture oracle answers "is this verdict right",
-one declaration at a time, and it took a year to declare 121 of 215 items. This
-answers a different and cheaper question — **what range of answers does this item
-have at all** — and it answers it for all 215 at once.
+one declaration at a time, and it has declared 122 of 217 items. This answers a
+different and cheaper question — **what range of answers does this item have at all**
+— and it answers it for all 217 at once.
 
 The question matters because a rule that cannot fail looks exactly like a rule that
 always holds, and both look like a green suite. `KW-076` asserted a field its script
@@ -153,6 +153,25 @@ def census(extra_sites) -> dict:
 VERDICTS = {"PASS", "FAIL", "WARN"}
 
 
+def verdict_groups(record: dict) -> tuple[set[str], set[str], set[str]]:
+    """Script-backed ids that never fail, never pass, or never answer."""
+    scripted = {k: v for k, v in record["items"].items()
+                if v["source"] == "script"}
+    never_failed = {
+        k for k, row in scripted.items()
+        if "FAIL" not in row["distinct"] and set(row["distinct"]) & VERDICTS
+    }
+    never_passed = {
+        k for k, row in scripted.items()
+        if "PASS" not in row["distinct"] and set(row["distinct"]) & VERDICTS
+    }
+    silent = {
+        k for k, row in scripted.items()
+        if not (set(row["distinct"]) & VERDICTS)
+    }
+    return never_failed, never_passed, silent
+
+
 def report(record: dict) -> list[str]:
     lines = []
     rows = record["items"]
@@ -162,8 +181,8 @@ def report(record: dict) -> list[str]:
     lines.append(f"{len(scripted)} are script-backed; the rest are answered by a "
                  f"human, an agent or Search Console and cannot be censused this way.")
 
-    def group(predicate, heading):
-        hits = {k: v for k, v in scripted.items() if predicate(v)}
+    def group(ids, heading):
+        hits = {k: v for k, v in scripted.items() if k in ids}
         lines.append("")
         lines.append(f"== {heading}: {len(hits)}")
         for item_id, row in sorted(hits.items()):
@@ -172,15 +191,10 @@ def report(record: dict) -> list[str]:
                          f"{', '.join(row['distinct'])}")
         return set(hits)
 
-    never_failed = group(
-        lambda r: "FAIL" not in r["distinct"] and set(r["distinct"]) & VERDICTS,
-        "answered somewhere and never FAIL")
-    never_passed = group(
-        lambda r: "PASS" not in r["distinct"] and set(r["distinct"]) & VERDICTS,
-        "answered somewhere and never PASS")
-    silent = group(
-        lambda r: not (set(r["distinct"]) & VERDICTS),
-        "never answered on any site")
+    never_failed_ids, never_passed_ids, silent_ids = verdict_groups(record)
+    never_failed = group(never_failed_ids, "answered somewhere and never FAIL")
+    never_passed = group(never_passed_ids, "answered somewhere and never PASS")
+    silent = group(silent_ids, "never answered on any site")
     lines.append("")
     lines.append(f"{len(never_failed)} could not be seen failing, "
                  f"{len(never_passed)} could not be seen passing, "

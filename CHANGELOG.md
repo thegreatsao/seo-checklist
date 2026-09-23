@@ -10,6 +10,42 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.111.0 — the numbers in the prose are read now
+
+Registry version: **`bfddc84f11b4`, unchanged.** No script changes and no verdict moves;
+this release is about what the repository says about itself. Suite 1749 → 1751.
+
+**Counts written beside the thing they count had drifted in every file whose subject is
+measurement.** `KNOWN-ISSUES.md` said it was current as of 0.90.1 and that 32 of its 49
+entries carried a probe — 34 of 51 by 0.110.0; the header had already explained,
+in its own words, that this count was the one thing a probe could not check. The corpus
+README and the census's docstring said 121 of 215 items were declared (122 of 217), a
+defect `openspec/specs/declarations/` A.6 had recorded and deferred to the release that
+closed DEC-6 — which closed without it. `ROADMAP.md` still described the tree at 0.87.1.
+0.110.0 had already corrected `pyproject.toml`'s 215 items and `README.md`'s and
+`plugin.json`'s 58 scripts.
+
+`tests/test_prose_counts.py` binds each such sentence to the function that computes its
+number — the registry, the known-issues record, the oracle's own `coverage()`, the
+census's three sets, `audit_thresholds`, `audit_reachability`, `spec_debt` — and asserts
+first that the sentence is still there, so rewording one does not quietly bind nothing.
+Probed both ways before shipping: six mutations — a README count, the KNOWN-ISSUES header, a ROADMAP census row, a number deleted outright, a wrong id in the ROADMAP's never-passing sentence, the corpus README's declarations — and each reddened naming its claim (`local/robots9309/probe-prose.py`). The one it found while being built: `README.md` said 141 assertions were unclaimed, and the tool prints 143.
+
+**`ROADMAP.md` is rewritten against the tree.** It now leads with the specification's
+ledger (121 of 149 requirements held), which it predates, and every count in it is bound,
+so its heading carries no version to go stale. Two of its numbers moved the wrong way since
+it was last written: `inherited` thresholds went from 75 of 144 to 77 of 157, and the
+census's *never seen passing* row from 2 to 3 — the third is GO-138, since 0.110.0.
+
+**The good fixture's sitemap carried two false comments.** One named a test that no longer
+exists; the other said GO-137 still passes, which has asked Search Console since 0.106.0.
+Both are rewritten; no URL changes and no verdict moves (`new-material` records).
+
+**Also since 0.110.0:** `CHANGELOG.md` had gone into the repository as CRLF throughout —
+two lines ending `\r\r\n`, written by that release's own script, made git read it as
+binary and skip normalisation. It is LF again, and `tests/test_line_endings.py` reads
+`git ls-files --eol` so the next such file reddens.
+
 ## 0.110.0 — the good fixture had been listing a forbidden page all along
 
 Registry version: **`bfddc84f11b4`, unchanged.** GO-136 *Provide Clean XML Sitemaps* and

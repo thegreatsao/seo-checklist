@@ -2,11 +2,11 @@
 
 Trees served by `tests/verdict_census.py` alongside the fixture pair. They carry **no
 declarations**: the fixture oracle answers "is this verdict right", one hand-written
-declaration at a time, and it has reached 121 of 215 items in a year. The corpus answers
+declaration at a time, and it has reached 122 of 217 items. The corpus answers
 the cheaper question — *what range of answers does this item have at all* — and it can
 therefore grow for coverage alone, without an oracle round per page.
 
-That separation is the point. `tests/fixtures/broken` carries 116 declarations, so every
+That separation is the point. `tests/fixtures/broken` carries 117 declarations, so every
 page added to it moves declared verdicts and costs a review. A corpus tree costs a
 census re-record.
 

@@ -1059,6 +1059,16 @@ recorded here rather than fixed in passing because the fix belongs with whicheve
 closes DEC-6 — the same derivation that computes who owes a declaration computes both
 numbers.
 
+**Closed at 0.111.0, one release-cycle late and with the table itself stale.** DEC-6 closed
+without anyone reopening this row, which is the defect's own shape one level up: the
+deferral was a literal beside the thing it waited for. By the time it was picked up the
+"tree says" column was wrong too — 0.106.0 withdrew GO-137 from both fixtures, so 123 had
+become 122 and 118 had become 117. `tests/test_prose_counts.py` now derives both from the
+functions the oracle prints them with (`coverage()` and the manifest), and binds the same
+sentences in `README.md`, `plugin.json`, `pyproject.toml`, `SKILL.md`, `KNOWN-ISSUES.md`'s
+header and `ROADMAP.md`. A sentence it binds that is reworded or deleted reddens too: each
+claim asserts how many times it matches before it asserts what it says.
+
 #### A.7 — this appendix spent the blindness it describes
 
 A.1's table is per item and per origin. Writing it required reading what the audit answers

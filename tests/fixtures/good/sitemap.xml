@@ -21,28 +21,19 @@
     <loc>http://127.0.0.1:8000/blog/second-post.html</loc>
     <lastmod>2026-07-11</lastmod>
   </url>
-  <!-- Disallowed in robots.txt, and deliberately still listed here. This is the one
-       "defect" the good site keeps, because it is the case the orphan arithmetic gets
-       wrong if nobody watches it: a URL robots.txt forbids can never enter
-       `reachable`, so subtracting it is the only thing standing between our own
-       politeness and a fabricated orphan. Keeping it here means the good site must
-       report zero orphans *and* one robots conflict — the subtraction is asserted
-       rather than assumed, and GO-137 still passes. -->
+  <!-- Disallowed in robots.txt, and deliberately still listed here. The crawl meets it
+       through this sitemap and refuses it, and the live-path step in ci.yml asserts the
+       refusal is recorded and that link_profile does not count it as an orphan (CI-008,
+       AR-162) — our own politeness must not become the site's defect. It is also a real
+       sitemap defect: since 0.110.0 it makes GO-136 WARN and GO-138 FAIL on this site,
+       declared in expectations.json. -->
   <url>
     <loc>http://127.0.0.1:8000/private/secret.html</loc>
     <lastmod>2026-05-30</lastmod>
   </url>
 </urlset>
 <!--
-  Nothing defective is listed here, on purpose. An orphan entry and a
-  robots-disallowed entry used to live in this file, and they made the *good* site
-  fail CI-008, AR-162, GO-137 and GO-138 — so those four checks were never once
-  observed passing anything. A fixture cannot demonstrate the defect and the
-  agreement in the same place.
-
-  The orphan moved to the broken site, where a check that finds it is doing its job.
-  The sitemap/robots conflict is covered by a unit test instead
-  (Robots.test_a_robots_skipped_sitemap_url_is_not_an_orphan): it needs a robots.txt
-  that disallows a listed URL, and the broken site's own defect is having no
-  robots.txt at all. One origin cannot be both.
+  One entry here is a defect on purpose: /private/secret.html, above. Everything else
+  is clean. The orphan the orphan checks need lives in ../broken/, because a page
+  nothing links to would fail CI-008 and AR-162 here.
 -->
