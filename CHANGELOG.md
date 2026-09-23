@@ -41,8 +41,8 @@ answer — that is argued in HTTP-5 and is a different question.
 
 **The fixture's two comments disagree, and neither is edited here.** The comment beside
 `/private/secret.html` in `good/sitemap.xml` says it is listed on purpose; the comment at
-the foot of the file says nothing defective is listed. The first is true.
-
+the foot of the file says nothing defective is listed. The first is true.
+
 **What the pair no longer shows.** With `good` now WARN on GO-136 and FAIL on GO-138, and `broken` already both, no served fixture passes either item: `test_a_sitemap_full_of_problems_is_reported` holds that each origin's planted defect is reported, not that the two origins differ. The passing path is held by unit tests over stubbed responses (a 404 robots.txt, a Googlebot group that permits what `*` forbids). Restoring the contrast means taking `/private/secret.html` out of `good/sitemap.xml`, which the live-path robots arithmetic in CI also stands on — a fixture decision, not taken here.
 
 **Two counts that had drifted.** `pyproject.toml` still described a 215-item registry, and `README.md` and `plugin.json` counted 58 evidence scripts where the registry now names 57 (0.106.0 and 0.107.0 removed two and added one); the README's own test section already said 57.
