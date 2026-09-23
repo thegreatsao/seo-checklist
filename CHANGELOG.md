@@ -10,6 +10,33 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.116.0 — a contact page, not any institutional link
+
+Registry version: **`e972b3b363d4` → `ba813d8f630e`.** CN-044 changes what it counts, so it
+can move on a real site. No fixture verdict moves. Suite 1803 → 1808.
+
+**CN-044 *Provide a Clear, Easy-to-Find Contact Page* read `trust_links`**, a list that
+takes About, Privacy, Terms, Team and Author links, so a page whose footer held an About
+and a Privacy link and no way to reach anyone passed it. It now reads
+`signals.contact_links`: a link named or addressed as contact in the page's own languages,
+or a phone or email link. `trust_links` is unchanged and still feeds CN-068's score.
+
+`eeat_signal_checker.py` named its five signal families in four places; they are one
+`CONCEPTS` tuple now, and `contact` is the sixth. Its vocabulary is only terms the `trust`
+family already carried — `contact` and `/contact`, the Russian and Lithuanian `kontakt`
+stems and `/kontakt` — so the file's statement that its vocabularies were reviewed by a
+person stays true; a new word would have needed that review first.
+
+*Clear* is not something a rule reads, and the item says so in its `measures` line. Eight
+readings stay owed.
+
+**Four hand-written sets had no reader, and two of them were 0.114.0's.** That release added
+`SHAPES` and `EXTERNAL_SUBJECTS` and nothing asserted their membership; it passed only because
+the unread-sets ratchet had two sets of slack. This one added `CONCEPTS` and `HREF_CONCEPTS`,
+and the ratchet refused. Tests now hold all four — the shapes are the four REG-6 names, each
+outside subject fires off its source and not on it, and the families are exactly the ones the
+vocabulary file carries — and the ratchet comes down to the 128 it earned.
+
 ## 0.115.0 — five of the fourteen owed
 
 Registry version: **`11a22b13470b` → `e972b3b363d4`.** GEO-001 and AR-147 change what they

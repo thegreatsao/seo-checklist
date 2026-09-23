@@ -40,7 +40,8 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         # 0.115.0: GEO-001 repaired (owed -> answers); AR-147 repaired for length and
         # given a statement for the rest, GO-135, GO-145, TE-174 given statements
         # (owed -> measures). Nine owed remain.
-        self.assertEqual(counts, {"answers": 113, "measures": 23, "owed": 9})
+        # 0.116.0: CN-044 repaired to contact routes, with a statement (owed -> measures).
+        self.assertEqual(counts, {"answers": 113, "measures": 24, "owed": 8})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
         """Line endings are normalised first: a Windows checkout writes CRLF, and how
@@ -100,6 +101,31 @@ class EachWayAReadingFallsOutOfStep(unittest.TestCase):
     def test_an_unknown_verdict(self):
         self.readings["items"]["CI-005"]["verdict"] = "fine"
         self.assertTrue(named(self.found(), "CI-005", "is not one of"))
+
+
+class TheShapesAreTheFourTheRequirementNames(unittest.TestCase):
+    """REG-6's scenarios name an adjacent subject, a weaker question and half a title;
+    the four shapes are how a reading is made to answer each. Held here so a fifth, or a
+    lost one, is a decision rather than a drift."""
+
+    def test_the_four_shapes(self):
+        self.assertEqual(set(R.SHAPES),
+                         {"external", "existential", "conjunction", "qualifier"})
+
+    def test_each_outside_subject_fires_off_its_source_and_not_on_it(self):
+        cases = (
+            ("Ensure URL Is Indexed", "indexability_matrix.py", "gsc_url_inspection.py"),
+            ("Fix Broken Backlinks", "broken_links.py", "gsc_links_csv.py"),
+            ("Own Your Branded Query", "parse_html.py", "gsc_cannibalization.py"),
+            ("Monitor Site Uptime", "indexability_matrix.py", "domain_safety_check.py"),
+        )
+        self.assertEqual(len(cases), len(R.EXTERNAL_SUBJECTS))
+        for title, elsewhere, source in cases:
+            with self.subTest(title):
+                item = {"title": title, "check": {"script": elsewhere, "assert": {}}}
+                self.assertIn("external", R.fired(item))
+                item["check"]["script"] = source
+                self.assertNotIn("external", R.fired(item))
 
 
 class TheShapesWouldHaveExposedEveryItemRepairedByHand(unittest.TestCase):

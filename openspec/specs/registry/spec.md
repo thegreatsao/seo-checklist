@@ -259,7 +259,7 @@ subject the script cannot reach, *at least one*, a compound title, a quality wor
 each be answered in the reading. `TheShapesWouldHaveExposedEveryItemRepairedByHand` holds
 that they fire on GO-137, BL-083, MB-096, MB-097, MD-189, CI-016 and MD-186 as those stood
 at `v0.104.0`, which `tools/audit_item_semantics.py`'s word overlap passed. It stays
-`partial` for two reasons: nine readings are `owed` (A.10), and whether a reading is
+`partial` for two reasons: eight readings are `owed` (A.10), and whether a reading is
 true is still a person's judgement — the reader guarantees that nothing changes under one
 unnoticed, not that it was right.
 
@@ -1020,8 +1020,14 @@ about the branded query.
 *Repaired at 0.115.0 (`e972b3b363d4`):* GEO-001 reads `well_formed` — a 200 at /llms.txt
 that is an HTML page, the shell many sites serve for every unknown path, passed `exists`;
 AR-147 reads `short` — length, depth and parameters together — and carries `measures` for
-the *descriptive* half no rule can read. Nine owed remain: AR-151, CN-044, MB-095,
-MS-030, SE-117, TE-175, TE-180, and KW-070 and GO-139 on the branded-query decision.
+the *descriptive* half no rule can read.
+
+*Repaired at 0.116.0 (`ba813d8f630e`):* CN-044 reads `signals.contact_links` — a link named
+or addressed as contact, or a phone or email link — where it read `trust_links`, in which an
+About, Privacy or Terms link counted; it carries `measures` for *clear*. The vocabulary is
+the terms `trust` already held, so the reviewed-by-a-person claim on `eeat-terms.json` still
+holds. Eight owed remain: AR-151, MB-095, MS-030, SE-117, TE-175, TE-180, and KW-070 and
+GO-139 on the branded-query decision.
 
 *Carrying `measures` since 0.113.0* — one sentence, printed under the title in every
 report and translated, saying what the rule checks and naming what it does not: CI-001, TE-167, IN-121, IN-128, SE-119, CN-038,

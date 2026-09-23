@@ -2257,6 +2257,8 @@ class MeasuresQualifications(unittest.TestCase):
         "GO-135": "URL Inspection's verdict on the audited URL: coverage, canonical, robots and indexing state. The API returns no rendered HTML, so that half is not read.",
         "GO-145": "How citation-ready this page's content is. Whether it appears in AI Overviews or zero-click results is not observable here.",
         "TE-174": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
+        # 0.116.0: CN-044 repaired to contact routes, with a statement for *clear*.
+        "CN-044": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
     }
 
     @staticmethod
@@ -2265,7 +2267,7 @@ class MeasuresQualifications(unittest.TestCase):
         import build_checklist
         return build_checklist
 
-    def test_the_registry_carries_exactly_the_twenty_three_qualifications_verbatim(self):
+    def test_the_registry_carries_exactly_the_twenty_four_qualifications_verbatim(self):
         build_checklist = self.module()
         self.assertEqual(build_checklist.MEASURES, self.EXPECTED)
         shipped = {item["id"]: item["measures"] for item in ITEMS

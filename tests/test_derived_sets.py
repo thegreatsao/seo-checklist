@@ -48,7 +48,10 @@ import audit_derived_sets  # noqa: E402
 # see an aliased import. Lowered anyway, because the ratchet's job is to hold the best
 # number the instrument can currently justify, and leaving it at 149 would bank nineteen
 # sets of slack against a future regression.
-UNREAD_AT_MOST = 130
+# 128 at 0.116.0: 0.114.0 and 0.116.0 added four sets (`SHAPES`, `EXTERNAL_SUBJECTS`,
+# `CONCEPTS`, `HREF_CONCEPTS`), and the tests that now assert their membership read
+# them, taking the column back to where 0.113.0 left it.
+UNREAD_AT_MOST = 128
 
 
 class TheCensusDescribesThisTree(unittest.TestCase):

@@ -566,6 +566,7 @@ MEASURES = {
     "GO-135": "URL Inspection's verdict on the audited URL: coverage, canonical, robots and indexing state. The API returns no rendered HTML, so that half is not read.",
     "GO-145": "How citation-ready this page's content is. Whether it appears in AI Overviews or zero-click results is not observable here.",
     "TE-174": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
+    "CN-044": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
 }
 
 
@@ -853,7 +854,7 @@ item(41, "high", S, "duplicate_content.py", CRAWLARG,
 item(42, "medium", L, fix="Review external duplicates and syndication, agree on a canonical to the source")
 item(43, "high", L, fix="Remove scraped or lightly-rewritten third-party content")
 item(44, "medium", S, "eeat_signal_checker.py", PAGE,
-     {"path": "signals.trust_links", "len_gte": 1},
+     {"path": "signals.contact_links", "len_gte": 1},
      "Provide a clear, easy-to-find contact page")
 item(45, "medium", M, fix="Run a content gap analysis against competitors")
 item(46, "medium", L, fix="Review copy quality and content classification")

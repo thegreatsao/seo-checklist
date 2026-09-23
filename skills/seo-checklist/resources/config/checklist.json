@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "e972b3b363d4",
+  "registry_version": "ba813d8f630e",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1089,10 +1089,11 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "signals.trust_links",
+          "path": "signals.contact_links",
           "len_gte": 1
         }
       },
+      "measures": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
       "effort": "high",
       "fix": "Provide a clear, easy-to-find contact page"
     },

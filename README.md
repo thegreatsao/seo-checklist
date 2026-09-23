@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.115.0 — see [CHANGELOG.md](CHANGELOG.md). **Two verdicts can move on your site.** *llms.txt present and well-formed* no longer passes an HTML page served at /llms.txt, and *Use Short, Descriptive URLs* now fails a long URL even with no query string. Before that, `0.114.0` gave every check that runs a script a written reading against its title that any change reopens.
+Version 0.116.0 — see [CHANGELOG.md](CHANGELOG.md). **One verdict can move on your site.** *Provide a Clear, Easy-to-Find Contact Page* now needs a contact link, a phone or an email — an About or Privacy link no longer counts. Before that, `0.115.0` stopped *llms.txt present and well-formed* passing an HTML page served at /llms.txt.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

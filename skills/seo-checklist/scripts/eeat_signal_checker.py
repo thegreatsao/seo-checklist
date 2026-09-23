@@ -25,6 +25,14 @@ from seo_common import (
 _TERMS_PATH = (Path(__file__).resolve().parent.parent / "resources" / "config" /
                "eeat-terms.json")
 
+# The signal families the vocabulary file carries, named once. It was spelled out in four
+# places until 0.116.0 added `contact`: CN-044 asks for a contact page and read
+# `trust_links`, where an About, Privacy or Terms link counts, so a page with no contact
+# route at all passed it.
+CONCEPTS = ("credential", "first_hand", "policy", "trust", "privacy", "contact")
+# The families a link can satisfy by its href as well as its text.
+HREF_CONCEPTS = ("policy", "trust", "privacy", "contact")
+
 
 def _load_terms() -> dict:
     """Load and validate the maintained vocabulary once, failing loudly on drift."""
@@ -42,7 +50,7 @@ def _load_terms() -> dict:
             if not isinstance(locale, str) or not isinstance(concepts, dict):
                 raise ValueError("each language must map to an object")
             for concept, fields in concepts.items():
-                if concept not in {"credential", "first_hand", "policy", "trust", "privacy"}:
+                if concept not in CONCEPTS:
                     raise ValueError(f"unknown concept {concept!r} in {locale}")
                 if not isinstance(fields, dict) or not fields:
                     raise ValueError(f"{locale}.{concept} must be a non-empty object")
@@ -52,10 +60,10 @@ def _load_terms() -> dict:
                     if (not isinstance(terms, list) or not terms
                             or not all(isinstance(term, str) and term for term in terms)):
                         raise ValueError(f"{locale}.{concept}.{field} must be non-empty strings")
-        for concept in ("credential", "first_hand", "policy", "trust", "privacy"):
+        for concept in CONCEPTS:
             if not languages["en"].get(concept, {}).get("text"):
                 raise ValueError(f"en.{concept}.text is required")
-        for concept in ("policy", "trust", "privacy"):
+        for concept in HREF_CONCEPTS:
             if not languages["en"][concept].get("href"):
                 raise ValueError(f"en.{concept}.href is required")
         return data
@@ -90,10 +98,10 @@ def _literal_pattern(terms: list[str], *, boundary: str) -> re.Pattern:
 
 @lru_cache(maxsize=None)
 def _patterns_for(locales: frozenset[str]) -> dict[str, dict[str, re.Pattern]]:
-    """Compile the five signal families once for each site language set."""
+    """Compile the signal families in CONCEPTS once for each site language set."""
     patterns = {}
     languages = _TERMS["languages"]
-    for concept in ("credential", "first_hand", "policy", "trust", "privacy"):
+    for concept in CONCEPTS:
         terms_by_field = {"text": [], "stem": [], "href": []}
         for locale in sorted(locales):
             fields = languages[locale].get(concept, {})
@@ -250,6 +258,15 @@ def check_eeat(source: str, timeout: int = 15) -> dict:
     # `policy_links`, which answered a different question in both directions: a site
     # with a proper privacy policy failed unless it also published editorial
     # standards, and a site with an ethics page and no privacy policy passed.
+    # A route to the people behind the page: a link named or addressed as contact, or a
+    # phone or email link. Not an About, Privacy or Terms link, which `trust_links` keeps
+    # counting for CN-068's score.
+    contact_links = [
+        link for link in links
+        if (_text_matches(patterns["contact"], link.get("text", ""))
+            or patterns["contact"]["href"].search(link.get("href", "")))
+        and not link["foreign_credit"]
+    ] + contact_routes
     privacy_links = [
         link for link in links
         if (_text_matches(patterns["privacy"], link.get("text", ""))
@@ -313,6 +330,7 @@ def check_eeat(source: str, timeout: int = 15) -> dict:
             "policy_links": policy_links[:20],
             "privacy_links": privacy_links[:20],
             "trust_links": trust_links[:20],
+            "contact_links": contact_links[:20],
             "external_citations": len(external_citations),
         },
         "issues": issues,

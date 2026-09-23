@@ -794,15 +794,15 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "signals.trust_links",
+          "path": "signals.contact_links",
           "len_gte": 1
         }
       },
-      "verdict": "owed",
-      "reading": "`signals.trust_links` includes About pages and tel/mailto links, so a page with no contact route beyond an About link passes. A rule repair is owed (A.10).",
+      "verdict": "measures",
+      "reading": "`signals.contact_links` lists links named or addressed as contact, in the page's languages, plus phone and email links (0.116.0; it read `trust_links`, where an About, Privacy or Terms link counted, so a page with no contact route passed). How clear the contact page is, is not read, and `measures` says so.",
       "shapes": {
-        "existential": "Owed: one institutional link of any kind satisfies it.",
-        "qualifier": "Owed: *clear, easy-to-find* is not read."
+        "existential": "One route to the people behind the page is what providing one looks like from the page.",
+        "qualifier": "*Easy-to-find* is read as linked from the audited page; *clear* is what `measures` says is not read."
       }
     },
     "CN-048": {

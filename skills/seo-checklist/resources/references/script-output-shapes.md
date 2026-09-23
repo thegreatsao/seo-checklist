@@ -484,6 +484,9 @@ than fetching them.
     CN-040 reads this; it used to read `policy_links`, which answered a different
     question in both directions.
 `signals.trust_links[]` — array
+`signals.contact_links[]` — array — CN-044 (0.116.0): links named or addressed as
+  contact in the page's languages, plus tel: and mailto: links. Not About, Privacy or
+  Terms, which `trust_links` keeps for CN-068
   - the loosest of the three: locale-aware institutional links, an "About" page
     included, plus language-neutral `tel:` and `mailto:` routes.
   - these three arrays hold the page's own links; a credit written inside somebody

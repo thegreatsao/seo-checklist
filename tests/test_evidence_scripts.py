@@ -2299,8 +2299,40 @@ class DuplicateAndThinContent(unittest.TestCase):
 
 
 class EeatSignals(unittest.TestCase):
-    """CN-040 `signals.privacy_links`, CN-044 `signals.trust_links`,
-    CN-057 `signals.authorship`, CN-068 `score`."""
+    """CN-040 `signals.privacy_links`, CN-044 `signals.contact_links` (it read
+    `signals.trust_links` until 0.116.0), CN-057 `signals.authorship`, CN-068 `score`."""
+
+    def test_the_families_are_the_ones_the_vocabulary_file_carries(self):
+        """`CONCEPTS` is named once in the script and once in the file; a family added to
+        one and not the other would load, and match nothing."""
+        import eeat_signal_checker as E
+        english = E._TERMS["languages"]["en"]
+        self.assertEqual(set(E.CONCEPTS), set(english))
+        for concept in E.HREF_CONCEPTS:
+            self.assertIn(concept, E.CONCEPTS)
+            self.assertTrue(english[concept].get("href"), concept)
+
+    def test_about_and_privacy_links_are_not_a_contact_page(self):
+        """The defect 0.116.0 repairs: `trust_links` counts About, Privacy and Terms, so
+        this page passed *Provide a Clear, Easy-to-Find Contact Page* with no way to
+        reach anyone."""
+        result = self._check_html(
+            '<html lang="en"><body><footer><a href="/about">About</a>'
+            '<a href="/privacy">Privacy</a><a href="/terms">Terms</a></footer>'
+            '</body></html>')
+        self.assertEqual(len(result["signals"]["trust_links"]), 3)
+        self.assertEqual(result["signals"]["contact_links"], [])
+        self.assertEqual(verdict("CN-044", result), FAIL)
+
+    def test_a_contact_link_in_the_pages_language_is_found(self):
+        for lang, markup in (("ru", '<a href="/o-nas">О нас</a><a href="/k">Контакты</a>'),
+                             ("lt", '<a href="/apie">Apie</a><a href="/k">Kontaktai</a>'),
+                             ("en", '<a href="/contact-us">Get in touch</a>')):
+            with self.subTest(lang):
+                result = self._check_html(
+                    f'<html lang="{lang}"><body><footer>{markup}</footer></body></html>')
+                self.assertEqual(len(result["signals"]["contact_links"]), 1)
+                self.assertEqual(verdict("CN-044", result), PASS)
 
     @staticmethod
     def _check_html(html):

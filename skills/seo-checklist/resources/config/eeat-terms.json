@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "_comment": "English is the existing vocabulary and the lingua franca of institutional labels; Lithuanian and Russian are included because they are the languages this plugin's operator audits and reports in. Those three vocabularies have been reviewed by a person. The /datenschutz href fragment is an inherited ad-hoc entry, kept in en because removing it would change behaviour; it should move when German is added properly. Credential and first_hand terms match body prose, so a page that merely quotes an expert can receive the same credit that English expert has always given; the non-English lists mirror that weakness, and fixing it requires grading where a credential appears as separate work. Adding another language is data rather than code, but its terms must be reviewed before inclusion.",
+  "_comment": "English is the existing vocabulary and the lingua franca of institutional labels; Lithuanian and Russian are included because they are the languages this plugin's operator audits and reports in. Those three vocabularies have been reviewed by a person. The /datenschutz href fragment is an inherited ad-hoc entry, kept in en because removing it would change behaviour; it should move when German is added properly. Credential and first_hand terms match body prose, so a page that merely quotes an expert can receive the same credit that English expert has always given; the non-English lists mirror that weakness, and fixing it requires grading where a credential appears as separate work. Adding another language is data rather than code, but its terms must be reviewed before inclusion. The `contact` family (0.116.0) holds only terms `trust` already carried, so it adds no word that review has not seen.",
   "languages": {
     "en": {
       "credential": {
@@ -91,6 +91,14 @@
           "/gdpr",
           "/cookie-policy"
         ]
+      },
+      "contact": {
+        "text": [
+          "contact"
+        ],
+        "href": [
+          "/contact"
+        ]
       }
     },
     "lt": {
@@ -179,6 +187,14 @@
           "/duomenu-apsauga",
           "/bdar",
           "/slapuku-politika"
+        ]
+      },
+      "contact": {
+        "stem": [
+          "kontakt"
+        ],
+        "href": [
+          "/kontakt"
         ]
       }
     },
@@ -276,6 +292,14 @@
           "/personalnyh-dannyh",
           "/cookie-policy",
           "/politika-cookie"
+        ]
+      },
+      "contact": {
+        "stem": [
+          "контакт"
+        ],
+        "href": [
+          "/kontakt"
         ]
       }
     }
