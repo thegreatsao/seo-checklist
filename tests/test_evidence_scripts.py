@@ -729,8 +729,6 @@ RUNS = [
     ("images_bad", "image_inventory.py", ["{bad}"]),
     ("images_lazy", "image_inventory.py", ["{good}lazy.html"]),
     ("intlinks", "internal_links.py", ["{good}"]),
-    ("orphans", "orphan_pages_from_sitemap.py", ["{good}"]),
-    ("orphans_bad", "orphan_pages_from_sitemap.py", ["{bad}"]),
     ("crawl", "site_crawl.py", ["{good}"]),
     ("crawl_bad", "site_crawl.py", ["{bad}"]),
     ("jsrender", "javascript_render_audit.py", ["{good}"]),
@@ -5689,7 +5687,7 @@ class SocialMeta(unittest.TestCase):
 
 
 class OneCrawlForEveryoneWhoNeedsTheWholeSite(unittest.TestCase):
-    """`site_crawl.py`, and GO-137 which reads it through the orphan check.
+    """`site_crawl.py` and the evidence readers that share its link graph.
 
     The inventory is the one artifact this tool produces for itself rather than being
     handed, so unlike the browser traces it can be verified by re-running the thing
@@ -5723,18 +5721,15 @@ class OneCrawlForEveryoneWhoNeedsTheWholeSite(unittest.TestCase):
         self.assertTrue(dead["linked_from"])
 
     def test_a_page_only_the_sitemap_mentions_is_not_reachable(self):
-        """The distinction GO-137 is made of. The shared crawl *fetches* sitemap URLs,
-        so "we got a status for it" cannot be what reachable means, or seeding from
-        the sitemap would satisfy the orphan check by construction."""
+        """The distinction link_profile's orphan arithmetic is made of. The shared
+        crawl *fetches* sitemap URLs, so "we got a status for it" cannot be what
+        reachable means, or sitemap seeding would satisfy the check by construction."""
         crawl = out("crawl_bad")
         orphan = f"{BAD.base}/unlinked-a.html"
         self.assertIn(orphan, crawl["pages"], "the sitemap URL was never fetched")
         self.assertNotIn(orphan, crawl["reachable"])
-        self.assertGreaterEqual(out("orphans_bad")["summary"]["orphan_pages"], 1)
-        self.assertEqual(verdict("GO-137", out("orphans_bad")), WARN)
-
-    def test_a_site_whose_sitemap_matches_its_links_has_no_orphans(self):
-        self.assertEqual(verdict("GO-137", out("orphans")), PASS)
+        self.assertIn(orphan, out("profile_bad")["orphan_pages"]["urls"])
+        self.assertEqual(verdict("AR-162", out("profile_bad")), FAIL)
 
 
 class CrawlKeysAreNotFetchTargets(unittest.TestCase):
@@ -5893,9 +5888,9 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
     directions.
 
     **The script list comes from the registry, not from `RUNS`.** It came from `RUNS`
-    for a release, and that is how it missed `orphan_pages_from_sitemap.py`: the one
+    for a release, and that is how it missed the former sitemap-orphan reader: the
     crawler with no entry in that hand-maintained table, and therefore the one script
-    this sweep could not see. GO-137 reported "no orphan pages" about a host that
+    this sweep could not see. That reader reported "no orphan pages" about a host that
     refused every connection — `sitemap(∅) - reachable(∅)` is no orphans, and no
     orphans is a PASS. A sweep whose coverage is a list somebody maintains has the
     same blind spot as the thing it is checking.
@@ -6537,13 +6532,17 @@ class EveryCheckerHasSomethingThatJudgesIt(unittest.TestCase):
             others = set().union(*(other for name, other in arms.items() if name != label))
             unique[label] = sorted((set(scripts) & arm) - others)
         self.assertEqual({label: len(ids) for label, ids in unique.items()},
-                         {"named": 6, "through_a_key": 0, "declared": 0},
+                         {"named": 7, "through_a_key": 0, "declared": 0},
                          "an arm of the coverage union started or stopped carrying a "
                          "checker alone; say which definition moved before repinning")
         self.assertEqual(unique["named"], [
             "domain_safety_check.py", "gsc_cannibalization.py", "gsc_checker.py",
-            "gsc_url_inspection.py", "html_validator.py", "pagespeed.py",
+            "gsc_sitemap_reconcile.py", "gsc_url_inspection.py", "html_validator.py",
+            "pagespeed.py",
         ], "these are judged only by a test naming them — the fixtures cannot run them")
+        # 6 -> 7 at 0.106.0: `gsc_sitemap_reconcile.py`, GO-137's new checker. Same
+        # definition, new member — a Search Console script is judged by the tests that
+        # stub the service, because no fixture carries credentials.
 
 if __name__ == "__main__":
     unittest.main()

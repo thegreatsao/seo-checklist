@@ -582,15 +582,22 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # not a `standard` on purpose — nothing external sets it and no corpus was
         # sampled for it, and borrowing a standard's authority for a number out of my
         # head is the thing this inventory exists to make visible.
+        #
+        # 0.106.0 adds one `standard` and three `convention`s, all in
+        # `gsc_sitemap_reconcile.py`, which GO-137 moved to: `ROW_LIMIT`, Search
+        # Analytics' own per-request maximum; `MAX_URLS`, 5% of the property's daily
+        # URL Inspection quota; `TIME_BUDGET_S`, inside the runner's default timeout;
+        # `INSPECT_WORKERS`, well under the per-minute quota. The script it replaced
+        # carried no named number, and its socket bound is imported, not copied.
         self.assertEqual(by_kind, {
-            "standard": 11,
+            "standard": 12,
             "measured": 11,
-            "convention": 49,
+            "convention": 52,
             "inherited": 77,
             "presentation": 13,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 148)
-        self.assertEqual(len(named), 161)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 152)
+        self.assertEqual(len(named), 165)
         self.assertEqual(len(uncounted), 13)
         # 169 -> 170: `external_link_quality.py`'s link cap was a default argument
         # value, which is a place no instrument here can see. Promoting it to a
@@ -602,8 +609,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 173 -> 174: `MIN_MEANINGFUL_ALT` at 0.105.0, the length below which an alt
         # cannot be a description. New number, new row; the inventory grows when the
         # tree does, which is the only way it can stay a census rather than a memory.
+        # 174 -> 178: the four named numbers of `gsc_sitemap_reconcile.py` at 0.106.0.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 174)
+                             for path in at._script_paths()), 178)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -2282,6 +2290,11 @@ class NetworkAccessGoesThroughTheGuard(unittest.TestCase):
             "talks to Search Console through google-api-client, which owns its own "
             "transport and trust. The socket import sets a global timeout so a hung "
             "API call cannot stall the run.",
+        "gsc_sitemap_reconcile.py":
+            "the same Search Console transport and the same timeout as "
+            "gsc_url_inspection.py. The site's own sitemaps are the one thing it "
+            "fetches from a host, and those go through site_crawl.load_sitemap_urls "
+            "and seo_common.fetch_url, which is safe_http.safe_request.",
     }
 
     def _scripts(self):

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "5f9de5a6dee3",
+  "registry_version": "6705382549b9",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -2883,28 +2883,26 @@
       "severity": "medium",
       "source": "script",
       "check": {
-        "script": "orphan_pages_from_sitemap.py",
+        "script": "gsc_sitemap_reconcile.py",
         "args": [
           "{url}",
-          "--inventory",
-          "{inventory_json}"
+          "--property",
+          "{gsc_property}",
+          "--credentials",
+          "{gsc_credentials}"
         ],
-        "requires": "crawl",
+        "requires": "gsc",
         "assert": {
-          "path": "summary.orphan_pages",
+          "path": "summary.unreconciled",
           "eq": 0
         },
         "applies_when": {
           "path": "summary.sitemap_urls",
           "gt": 0
-        },
-        "warn": {
-          "path": "summary.orphan_pages",
-          "lte": 50
         }
       },
       "effort": "low",
-      "fix": "Reconcile indexed pages against sitemap contents"
+      "fix": "Reconcile the sitemap with Google's index: fix or remove sitemap URLs Google has not indexed, and list the indexed pages that are missing from it"
     },
     {
       "id": "GO-138",

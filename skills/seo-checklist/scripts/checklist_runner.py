@@ -684,7 +684,7 @@ MODE_HELP = {
 
 # Scripts that dominate wall-clock; scheduled first so they overlap the rest.
 SLOW_FIRST = [
-    "duplicate_content.py", "orphan_pages_from_sitemap.py", "pagespeed.py",
+    "duplicate_content.py", "gsc_sitemap_reconcile.py", "pagespeed.py",
     "anchor_text_audit.py", "external_link_quality.py", "sitemap_checker.py",
     "indexability_matrix.py", "broken_links.py",
 ]

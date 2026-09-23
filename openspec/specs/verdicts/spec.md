@@ -197,7 +197,8 @@ The unclassifiable one **was** CN-036 *Ensure Sufficient Text Contrast*, whose a
 counted elements carrying inline colour syntax rather than contrast violations, and which
 therefore could not say whether zero meant no violation or no text. An applicability
 declaration alone would not have repaired it: the field measured something other than
-what the item claimed to judge, which is a registry defect of the same kind as GO-137.
+what the item claimed to judge, which is a registry defect of the same kind as GO-137's
+(repaired at 0.106.0, when GO-137 moved to Search Console).
 Repaired at 0.101.0, and the sentence above had understated it — the count was not merely
 adjacent to contrast but anti-correlated with it, passing a page at 1.16:1 set in a
 stylesheet and failing one at 21:1 written inline. CN-036 now reads
@@ -878,7 +879,8 @@ for want of a search-engine index inventory. That was wrong: the item's `invento
 is produced by the run's own crawl, not supplied by an operator, so VRD-4 does not reach
 it. What the item actually shows is a title that names one measurement and a rule that
 performs another — a registry defect, held by
-[`openspec/specs/registry/`](../registry/spec.md) REG-6.
+[`openspec/specs/registry/`](../registry/spec.md) REG-6, and repaired at 0.106.0: the rule
+now asks Search Console, so the item is `NEEDS_INPUT` on the fixtures and answers neither.
 
 **Also not in this table.** AR-150 and CI-014 answer `PASS` on `broken_tls`, and that is
 correct under VRD-3: their rules forbid redirect chains and loops, and the origin has
@@ -914,8 +916,8 @@ AR-146, AR-150, AR-154, AR-163, CI-014 and GO-137 all sit in the census class
 *answered somewhere, never FAIL* — a count kept by `tests/census.json` and reported
 against clause 1 of `ROADMAP.md`, which is where its current value lives. Under this
 document those six split three ways: AR-146, AR-154 and AR-163 are rules handed no subject that answered success;
-AR-150 and CI-014 are correct verdicts over a thin corpus; GO-137 measures something
-other than its title. One census row, three meanings — and only a document like this
+AR-150 and CI-014 are correct verdicts over a thin corpus; GO-137 measured something
+other than its title until 0.106.0, and now asks Search Console, so no fixture decides it. One census row, three meanings — and only a document like this
 one separates them.
 
 Note what that implies about the census as an instrument. Three of the seventeen items

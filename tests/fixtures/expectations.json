@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "registry_version": "5f9de5a6dee3",
+  "registry_version": "6705382549b9",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -48,6 +48,24 @@
       "to": "6485c04753d8",
       "decided": "new-material",
       "why": "the broken entry page's `alt=\"A loaf, undeclared dimensions\"` became `alt=\"huge.png\"`, so that the placeholder-alt signal CI-016 and MD-186 started asserting in 0.105.0 is exercised by a served page and not only by a unit test. No side was wrong: changing the text of one alt moves no image count, both items were already declared FAIL on this origin for the image carrying no alt at all, and no declared verdict moves."
+    },
+    {
+      "kind": "withdrawal",
+      "origin": "good",
+      "item": "GO-137",
+      "from": "PASS",
+      "to": null,
+      "decided": "checker-was-wrong",
+      "why": "GO-137 is titled Reconcile Indexed Pages vs. Sitemaps and measured sitemap URLs no crawled page links to, which is CI-008's and AR-162's subject through link_profile.py. It now asks Search Console, and no fixture carries Search Console credentials, so the item is NEEDS_INPUT on every fixture and has nothing left to declare."
+    },
+    {
+      "kind": "withdrawal",
+      "origin": "broken",
+      "item": "GO-137",
+      "from": "WARN",
+      "to": null,
+      "decided": "checker-was-wrong",
+      "why": "GO-137 is titled Reconcile Indexed Pages vs. Sitemaps and measured sitemap URLs no crawled page links to, which is CI-008's and AR-162's subject through link_profile.py. It now asks Search Console, and no fixture carries Search Console credentials, so the item is NEEDS_INPUT on every fixture and has nothing left to declare."
     }
   ],
   "fixtures": {
@@ -96,11 +114,6 @@
         "expect": "PASS",
         "title": "Prevent GA4 Tag Duplication",
         "why": "the sole GA4 measurement ID is configured once"
-      },
-      "GO-137": {
-        "expect": "PASS",
-        "title": "Reconcile Indexed Pages vs. Sitemaps",
-        "why": "the sitemap exists, so the item applies, and every crawled page of the good tree is listed in it: no orphans"
       },
       "GO-138": {
         "expect": "PASS",
@@ -688,11 +701,6 @@
         "expect": "FAIL",
         "title": "Prevent GA4 Tag Duplication",
         "why": "the same GA4 measurement ID is configured twice on one page"
-      },
-      "GO-137": {
-        "expect": "WARN",
-        "title": "Reconcile Indexed Pages vs. Sitemaps",
-        "why": "the sitemap exists and the broken tree reaches pages it does not list; the count is inside the warn band rather than above it"
       },
       "GO-138": {
         "expect": "FAIL",

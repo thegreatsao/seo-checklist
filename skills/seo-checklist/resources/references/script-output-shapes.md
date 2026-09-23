@@ -4,11 +4,11 @@
 <!-- derived: tools/audit_catalogue.py -->
 This catalogue documents 60 checkers: the 58 the registry runs, plus 2 it does not name — `detect_profile.py`, `site_crawl.py` — which the runner runs itself before building the plan and whose output the rest of the audit reads.
 
-Only 18 of them are documented as carrying an `issues[]` whose elements have both `severity` and `message` — the convention a rule can rely on. **Check the section before writing a rule.** The other ways this file describes an `issues[]`, counting a script once per way, come to 49 entries:
+Only 17 of them are documented as carrying an `issues[]` whose elements have both `severity` and `message` — the convention a rule can rely on. **Check the section before writing a rule.** The other ways this file describes an `issues[]`, counting a script once per way, come to 50 entries:
 
 * **15 emit no root `issues[]`**: `ai_crawler_policy_matrix.py`, `article_seo.py`, `cwv_metrics.py`, `detect_profile.py`, `duplicate_content.py`, `hreflang_checker.py`, `indexability_matrix.py`, `javascript_render_audit.py`, `lcp_subparts.py`, `llms_txt_checker.py`, `pagespeed.py`, `rendered_audit.py`, `robots_path_tester.py`, `site_crawl.py`, `url_quality.py`. A `none_severity` or `len_eq: 0` rule over one of these reads a key that is never there, which is `NO_DATA` forever.
 * **22 record an `issues[]` and never say what is in one**: `broken_links.py`, `cache_compression_checker.py`, `canonical_checker.py`, `css_minify_check.py`, `domain_safety_check.py`, `faceted_nav_audit.py`, `font_audit.py`, `ga4_tag_checker.py`, `gsc_cannibalization.py`, `gsc_links_csv.py`, `gsc_url_inspection.py`, `html_validator.py`, `internal_links.py`, `redirect_checker.py`, `rich_results_guard.py`, `robots_checker.py`, `security_headers.py`, `server_log_audit.py`, `social_meta.py`, `tls_certificate.py`, `topical_cluster_mapper.py`, `video_schema_checker.py`. That is a gap in this file rather than a fact about the script — the probe saw the key and captured no element — and a rule naming a field inside one of these is a guess.
-* **5 carry the human text under another key**: `entity_checker.py` (`finding`), `gsc_checker.py` (`finding`), `indexnow_checker.py` (`finding`), `link_profile.py` (`finding`), `mobile_render_checker.py` (`finding`). `none_matching` with `field: message` matches nothing on these.
+* **6 carry the human text under another key**: `entity_checker.py` (`finding`), `gsc_checker.py` (`finding`), `gsc_sitemap_reconcile.py` (`finding`), `indexnow_checker.py` (`finding`), `link_profile.py` (`finding`), `mobile_render_checker.py` (`finding`). `none_matching` with `field: message` matches nothing on these.
 * **7 can put a capitalised severity in a dict**: `article_seo.py`, `duplicate_content.py`, `entity_checker.py`, `gsc_checker.py`, `hreflang_checker.py`, `indexnow_checker.py`, `link_profile.py`. `none_severity` compares lowercase, and `SEVERITY_ALIAS` in `tools/audit_assertions.py` is what keeps that from silently clearing a rule.
 <!-- /derived -->
 
@@ -56,7 +56,7 @@ add up to the audit's wall time.
 |---|---|
 | `site_crawl.py` | one crawl for all site-wide checks; the budget is `--crawl-max-pages` (100) |
 | `duplicate_content.py` | fast with `--inventory`: it compares hashes the crawl computed |
-| `orphan_pages_from_sitemap.py` | fast with `--inventory`: sitemap membership against the crawl's link graph |
+| `gsc_sitemap_reconcile.py` | up to 120s — URL Inspection for a bounded sitemap sample, plus one Search Analytics query |
 | `pagespeed.py` | ~19s — external PageSpeed API |
 | `anchor_text_audit.py` | fast with `--inventory` |
 | `external_link_quality.py` | ~10s — checks every outbound link |
@@ -1239,34 +1239,46 @@ remain present, and the site path additionally emits `scope`, `pages_checked`, a
   - item keys: severity, finding, fix
 `summary.issues` — int
 
-### orphan_pages_from_sitemap.py
+### gsc_sitemap_reconcile.py
 
-Reads `--inventory` (see `site_crawl.py`). **Reachable means linked-to**, not fetched:
-the shared crawl seeds from the sitemap, so "we got a status for it" would make every
-sitemap URL reachable and this check vacuous.
+Requires `gsc` capability. URL Inspection checks a deterministic, quota-bounded
+prefix of sitemap URLs; Search Analytics supplies the reverse set of pages known to
+have received impressions. A clean result over truncated input is `NO_DATA`. When a
+sitemap read is incomplete, reverse-direction evidence is published but not counted;
+a not-indexed finding in the sitemap URLs that were read remains a failure.
 
 `site` — str
-`truncated` — bool — the crawl behind this stopped at `--max-pages`, so
-  `summary.orphan_pages` is over the pages it read
-`fetch_error` — NoneType or str
-`summary.sitemaps_checked` — int
-`summary.sitemap_urls` — int
-`summary.reachable_pages` — int
-`summary.orphan_pages` — int — read by GO-137
-`summary.discovered_not_in_sitemap` — int
-`summary.robots_skipped` — int
-`summary.sitemap_urls_blocked_by_robots` — int
-`sitemaps_checked[]` — array
-`orphan_pages[]` — array
-`discovered_not_in_sitemap[]` — array
-`robots_skipped[]` — array
-`sitemap_urls_blocked_by_robots[]` — array
-`reachable_pages[]` — array
-  - item keys: url, status, final_url, depth, in_sitemap
+`property` — str
+`sitemap_source` — str (`submitted` / `discovered`) | null
+`sitemaps_checked[]` — array of str
+`sitemap_errors[]` — array
+  - item keys: url, status, error, error_kind
+`period.start` / `period.end` — str (`YYYY-MM-DD`) | null
+`not_indexed[]` — array, not capped
+  - item keys: url, coverage_state
+`undecided[]` — array, not capped
+  - item keys: url, plus coverage_state or error
+`indexed_not_in_sitemap[]` — array of str, capped at 50 after counting
+`summary.sitemap_urls` — int — read by GO-137 (applies_when)
+`summary.inspected` — int
+`summary.indexed` — int
+`summary.not_indexed` — int
+`summary.undecided` — int
+`summary.pages_with_impressions` — int
+`summary.indexed_not_in_sitemap` — int
+`summary.indexed_not_in_sitemap_counted` — bool — false when sitemap errors or the
+  sitemap-walk cap make the reverse comparison incomplete
+`summary.unreconciled` — int — read by GO-137
+`summary` — absent when a required service call fails, every inspection errors, or
+  submitted/discovered sitemaps exist but none can be read
+`truncated` — bool — true for the per-run inspection cap, time budget, undecided
+  inspections, a full Search Analytics result page, or an incomplete sitemap read
+`truncated_reason` — str, absent when `truncated` is false
 `issues[]` — array
-  - item keys: severity, type, count, message
-`errors.sitemap[]` — array
-`errors.crawl[]` — array
+  - item keys: severity, type, count, finding, fix, urls[]
+`issues` — absent whenever `summary` is absent
+`error` — str | null
+`error_kind` — str (`input` / `service` / `unread`), present only with an error
 
 ### pagespeed.py
 
@@ -1598,8 +1610,9 @@ output contracts derive from it, so a change here moves them at once.
 `reachable[]` — array of page keys
 `unchecked_internal_targets[]` — array
 `robots_blocked.<key>` — str
-`sitemap.urls[]` / `.off_host[]` / `.sitemaps_checked[]` / `.errors[]` — a fetch
-error item retains `error_kind` beside `error`
+`sitemap.urls[]` / `.off_host[]` / `.sitemaps_checked[]` / `.unvisited[]` /
+`.errors[]` — `unvisited` contains normalised sitemap URLs left unread when the
+sitemap-walk cap is reached; a fetch error item retains `error_kind` beside `error`
 `broken[]` — array — item keys: url, status, error, error_kind, linked_from
 `redirected[]` — array — item keys: url, to, hops, linked_from
 `external_targets.<url>[]` — array — item keys: source, anchor, nofollow

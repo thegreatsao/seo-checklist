@@ -461,8 +461,12 @@ class EveryWarnBandTheFixturesReachHasBeenSeen(unittest.TestCase):
         a category page, so losing that WARN is the repair rather than a regression.
         A floor is a number and not a requirement — it says where the line is, not what
         the corpus owes — so it moves when the population does, with the move recorded.
+
+        Four at 0.106.0: GO-137 reached its band on `broken` by counting sitemap URLs no
+        page links to, which was not its title's question. It now asks Search Console,
+        carries no band, and no fixture has credentials — the band left with the defect.
         """
-        self.assertGreater(len(self.seen()), 4)
+        self.assertGreater(len(self.seen()), 3)
 
     def test_every_band_the_fixtures_exercise_is_seen_or_explained(self):
         unexplained = []

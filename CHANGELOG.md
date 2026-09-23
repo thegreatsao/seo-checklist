@@ -10,6 +10,56 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.106.0 — an item titled *Indexed* now asks the only thing that knows
+
+Registry version: **`5f9de5a6dee3` → `6705382549b9`.** GO-137 *Reconcile Indexed Pages vs.
+Sitemaps* changes script and question, so its verdict can move on any site that supplies
+Search Console credentials, and it becomes `NEEDS_INPUT` on every site that does not. The
+ledger does not move — REG-6 stays `partial`. Suite 1676 → 1690.
+
+**What it measured was already measured twice.** The rule asserted
+`orphan_pages_from_sitemap.py`'s `summary.orphan_pages == 0`: sitemap URLs no crawled page
+links to. That is internal linking, and CI-008 and AR-162 already ask it through
+`link_profile.py`, whose orphans are the same pages because the crawl seeds from the
+sitemap — on the `broken` fixture AR-162 is declared `FAIL` for exactly `orphan.html`. So
+the title could move to its own question without the old one losing a reader, and
+`orphan_pages_from_sitemap.py`, read by nothing afterwards, is removed.
+
+**"Indexed" exists only in Search Console, and not where one would look first.** The
+Sitemaps API's `contents[].indexed` is documented *"Deprecated; do not use"*, so there is
+no aggregate. `gsc_sitemap_reconcile.py` reconciles in both directions instead: every
+sitemap URL (the first 100, 5% of the property's 2000-a-day URL Inspection quota) that
+Google does not have indexed, and every same-host page with Search Analytics impressions —
+indexed by definition — that no sitemap lists. `summary.unreconciled` is their sum and
+GO-137 asserts it is zero. A cap, a time budget, an unrecognised coverage state or a full
+page of Search Analytics rows sets `truncated` with the reason named, so a zero read off
+part of a sitemap is `NO_DATA` rather than a pass.
+
+**Two ways the new check would have accused a site for our failure, caught in review
+before it shipped.** Both were in the specification the code was written from, and every
+test written to it was green. *A sitemap read in part:* "indexed pages minus sitemap URLs"
+counts the pages of any sitemap that failed to load, or that sat past the 25-sitemap walk
+cap — which `load_sitemap_urls` hit silently — as missing from the sitemap. `truncated`
+does not help there, because the runner withholds only a PASS. The reverse direction is
+now left out of `summary.unreconciled` unless every sitemap was read
+(`indexed_not_in_sitemap_counted`), and the loader reports what it left queued
+(`unvisited`). *A guessed sitemap name:* with nothing submitted, discovery also tries
+conventional names, and their 404s were counted as unreadable sitemaps — so a site with no
+sitemap came back `NO_DATA` instead of N/A. A probed name that does not exist is absence
+now, as `discover_sitemap_urls`' own docstring has always said.
+
+| | before | after |
+|---|---|---|
+| GO-137 script | `orphan_pages_from_sitemap.py` (crawl) | `gsc_sitemap_reconcile.py` (Search Console) |
+| GO-137 on the fixtures | `good` PASS, `broken` WARN | withdrawn — no fixture has credentials; two `checker-was-wrong` triage records |
+| sitemap orphans | GO-137, CI-008, AR-162 | CI-008, AR-162 |
+| tags | none since `v0.91.0` | 43 back-filled; `test_every_shipped_release_but_the_newest_is_tagged` reads the ritual |
+
+**One inert finding loses its producer.** `sitemap_robots_conflict` — a sitemap listing a
+URL robots.txt disallows — was emitted only by the removed script and read by no item, so
+no verdict moves with it. Its home is `sitemap_checker.py`, which GO-136 reads; that is
+queued rather than folded in here, and said so rather than lost.
+
 ## 0.105.0 — an item titled *Meaningful* could not tell a description from a filename
 
 Registry version: **`8ea3bf0f12ab` → `5f9de5a6dee3`.** CI-016 and MD-186 change what they

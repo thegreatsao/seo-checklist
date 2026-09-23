@@ -1782,17 +1782,16 @@
     },
     "GO-137": {
       "answers": {
-        "failing-shapes": "PASS",
-        "fixture:broken": "WARN",
-        "fixture:broken_tls": "WARN",
-        "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "failing-shapes": "NO_DATA",
+        "fixture:broken": "NO_DATA",
+        "fixture:broken_tls": "NO_DATA",
+        "fixture:good": "NO_DATA",
+        "fixture:good_tls": "NO_DATA"
       },
       "distinct": [
-        "PASS",
-        "WARN"
+        "NO_DATA"
       ],
-      "script": "orphan_pages_from_sitemap.py",
+      "script": "gsc_sitemap_reconcile.py",
       "severity": "medium",
       "source": "script",
       "title": "Reconcile Indexed Pages vs. Sitemaps"
@@ -3588,7 +3587,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "5f9de5a6dee3",
+  "registry_version": "6705382549b9",
   "sites": [
     "fixture:good",
     "fixture:broken",

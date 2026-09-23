@@ -32,7 +32,19 @@ REGISTRY = os.path.join(SKILL, "resources", "config", "checklist.json")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from checklist_runner import NO_DATA, PASS, FAIL, WARN, evaluate  # noqa: E402
+from checklist_runner import (  # noqa: E402
+    FAIL,
+    GSC_CREDENTIALS_ABSENT,
+    NA,
+    NEEDS_INPUT,
+    NO_DATA,
+    PASS,
+    WARN,
+    build_plan,
+    evaluate,
+    input_truncated,
+    passes_by_absence,
+)
 
 with open(REGISTRY, encoding="utf-8") as f:
     ITEMS = {i["id"]: i for i in json.load(f)["items"]}
@@ -40,8 +52,17 @@ with open(REGISTRY, encoding="utf-8") as f:
 
 def verdict(item_id: str, output: dict) -> str:
     check = ITEMS[item_id]["check"]
+    applies = check.get("applies_when")
+    if applies:
+        applies_ok, _ = evaluate(applies, output)
+        if applies_ok is None:
+            return NO_DATA
+        if not applies_ok:
+            return NA
     ok, _ = evaluate(check["assert"], output)
     if ok is None:
+        return NO_DATA
+    if ok and passes_by_absence(check["assert"]) and input_truncated(output):
         return NO_DATA
     if ok:
         return PASS
@@ -369,9 +390,10 @@ class _Query:
     instead of being absorbed by an auto-generated attribute.
     """
 
-    def __init__(self, rows=None, inspection=None, sitemaps=None):
+    def __init__(self, rows=None, inspection=None, sitemaps=None, inspections=None):
         self._rows = rows or []
         self._inspection = inspection or {}
+        self._inspections = inspections
         self._sitemaps = sitemaps or {}
         self.calls = []
 
@@ -392,7 +414,9 @@ class _Query:
 
     def inspect(self, body=None):
         self.calls.append(("inspect", body))
-        return _Executable(self._inspection)
+        payload = (self._inspections.get(body["inspectionUrl"], {})
+                   if self._inspections is not None else self._inspection)
+        return _Executable(payload)
 
     # sitemaps
     def sitemaps(self):
@@ -407,7 +431,278 @@ class _Executable:
         self.payload = payload
 
     def execute(self):
+        if isinstance(self.payload, Exception):
+            raise self.payload
         return self.payload
+
+
+class SitemapReconciliation(unittest.TestCase):
+    """GO-137's two-way Search Console reconciliation and runner routing."""
+
+    SITE = "https://example.com/"
+    PROP = "sc-domain:example.com"
+
+    def setUp(self):
+        import gsc_sitemap_reconcile
+        self.mod = gsc_sitemap_reconcile
+        self.saved_service = self.mod.build_service
+        self.saved_load = self.mod.load_sitemap_urls
+        self.saved_discover = self.mod.discover_sitemap_urls
+
+    def tearDown(self):
+        self.mod.build_service = self.saved_service
+        self.mod.load_sitemap_urls = self.saved_load
+        self.mod.discover_sitemap_urls = self.saved_discover
+
+    @staticmethod
+    def inspection(state):
+        return {"inspectionResult": {"indexStatusResult": {
+            "coverageState": state,
+        }}}
+
+    @staticmethod
+    def rows(*pages):
+        return [{"keys": [page], "clicks": 1, "impressions": 2,
+                 "ctr": 0.5, "position": 1.0} for page in pages]
+
+    def reconcile(self, urls, states=None, rows=None, submitted=True,
+                  errors=None, discovered=None, unvisited=None, max_urls=100):
+        inspections = {
+            url: (state if isinstance(state, Exception)
+                  else self.inspection(state))
+            for url, state in (states or {}).items()
+        }
+        service = _Query(
+            rows=rows or [],
+            inspections=inspections,
+            sitemaps={"sitemap": ([{"path": "https://example.com/sitemap.xml"}]
+                                   if submitted else [])},
+        )
+        self.mod.build_service = lambda *a, **k: service
+        self.mod.discover_sitemap_urls = lambda *a, **k: list(discovered or [])
+        self.mod.load_sitemap_urls = lambda *a, **k: {
+            "urls": list(urls),
+            "sitemaps_checked": list(k.get("sitemap_urls") or []),
+            "errors": list(errors or []),
+            "unvisited": list(unvisited or []),
+        }
+        out = self.mod.analyze(self.SITE, self.PROP, "/dev/null", max_urls, 28)
+        return out, service
+
+    def test_indexed_sitemap_matching_impression_pages_passes(self):
+        urls = [self.SITE, self.SITE + "about"]
+        out, _ = self.reconcile(
+            urls,
+            states={url: "Submitted and indexed" for url in urls},
+            rows=self.rows(*urls),
+        )
+        self.assertEqual(out["summary"]["unreconciled"], 0)
+        self.assertEqual(verdict("GO-137", out), PASS)
+
+    def test_a_sitemap_url_google_has_not_indexed_fails(self):
+        urls = [self.SITE, self.SITE + "waiting"]
+        out, _ = self.reconcile(urls, states={
+            urls[0]: "Submitted and indexed",
+            urls[1]: "Crawled - currently not indexed",
+        }, rows=self.rows(*urls))
+        self.assertEqual(out["summary"]["not_indexed"], 1)
+        self.assertEqual(out["not_indexed"][0]["url"], urls[1])
+        self.assertEqual(verdict("GO-137", out), FAIL)
+
+    def test_an_indexed_same_host_page_missing_from_the_sitemap_fails(self):
+        urls = [self.SITE]
+        missing = self.SITE + "missing"
+        out, _ = self.reconcile(
+            urls,
+            states={urls[0]: "Submitted and indexed"},
+            rows=self.rows(urls[0], missing, "https://other.example/page"),
+        )
+        self.assertEqual(out["summary"]["indexed_not_in_sitemap"], 1)
+        self.assertEqual(out["indexed_not_in_sitemap"], [missing])
+        self.assertEqual(verdict("GO-137", out), FAIL)
+
+    def test_no_submitted_or_discovered_sitemap_is_not_applicable(self):
+        out, _ = self.reconcile([], submitted=False, discovered=[])
+        self.assertEqual(out["summary"]["sitemap_urls"], 0)
+        self.assertEqual(verdict("GO-137", out), NA)
+
+    def test_probed_names_that_are_absent_are_not_sitemap_errors(self):
+        candidates = [
+            (self.SITE + "sitemap.xml", "probed"),
+            (self.SITE + "sitemap_index.xml", "probed"),
+        ]
+        out, _ = self.reconcile(
+            [], submitted=False, discovered=candidates,
+            errors=[{"url": url, "status": 404} for url, _ in candidates],
+        )
+        self.assertEqual(out["sitemap_errors"], [])
+        self.assertEqual(out["summary"]["sitemap_urls"], 0)
+        self.assertEqual(verdict("GO-137", out), NA)
+
+    def test_probed_misses_do_not_disable_the_reverse_comparison(self):
+        sitemap = self.SITE + "sitemap.xml"
+        probes = [(sitemap, "probed"),
+                  (self.SITE + "sitemap_index.xml", "probed"),
+                  (self.SITE + "sitemap-index.xml", "probed")]
+        listed = self.SITE + "listed"
+        missing = self.SITE + "missing"
+        out, _ = self.reconcile(
+            [listed], submitted=False, discovered=probes,
+            states={listed: "Submitted and indexed"},
+            rows=self.rows(listed, missing),
+            errors=[{"url": url, "status": 404} for url, _ in probes[1:]],
+        )
+        self.assertEqual(out["sitemap_errors"], [])
+        self.assertTrue(out["summary"]["indexed_not_in_sitemap_counted"])
+        self.assertEqual(out["summary"]["unreconciled"], 1)
+        self.assertEqual(verdict("GO-137", out), FAIL)
+
+    def test_an_unreadable_submitted_sitemap_is_no_data(self):
+        sitemap = "https://example.com/sitemap.xml"
+        out, _ = self.reconcile(
+            [], errors=[{"url": sitemap, "error": "connection reset"}])
+        self.assertNotIn("summary", out)
+        self.assertEqual(out["error_kind"], "unread")
+        self.assertEqual(verdict("GO-137", out), NO_DATA)
+
+    def test_a_partial_sitemap_read_withholds_a_reverse_direction_failure(self):
+        listed = self.SITE + "listed"
+        missing = self.SITE + "missing"
+        out, _ = self.reconcile(
+            [listed], states={listed: "Submitted and indexed"},
+            rows=self.rows(listed, missing),
+            errors=[{"url": self.SITE + "second.xml", "status": 503}],
+        )
+        self.assertEqual(out["summary"]["indexed_not_in_sitemap"], 1)
+        self.assertFalse(out["summary"]["indexed_not_in_sitemap_counted"])
+        self.assertEqual(out["summary"]["unreconciled"], 0)
+        self.assertTrue(out["truncated"])
+        self.assertIn("could not be read", out["truncated_reason"])
+        self.assertEqual(verdict("GO-137", out), NO_DATA)
+
+    def test_a_partial_sitemap_read_still_counts_not_indexed_urls(self):
+        listed = self.SITE + "listed"
+        missing = self.SITE + "missing"
+        out, _ = self.reconcile(
+            [listed], states={listed: "Crawled - currently not indexed"},
+            rows=self.rows(listed, missing),
+            errors=[{"url": self.SITE + "second.xml", "status": 503}],
+        )
+        self.assertEqual(out["summary"]["unreconciled"], 1)
+        self.assertFalse(out["summary"]["indexed_not_in_sitemap_counted"])
+        self.assertEqual(verdict("GO-137", out), FAIL)
+
+    def test_an_unvisited_sitemap_withholds_the_reverse_direction(self):
+        listed = self.SITE + "listed"
+        missing = self.SITE + "missing"
+        unread = [self.SITE + "child-a.xml", self.SITE + "child-b.xml"]
+        out, _ = self.reconcile(
+            [listed], states={listed: "Submitted and indexed"},
+            rows=self.rows(listed, missing), unvisited=unread,
+        )
+        self.assertEqual(out["summary"]["indexed_not_in_sitemap"], 1)
+        self.assertFalse(out["summary"]["indexed_not_in_sitemap_counted"])
+        self.assertEqual(out["summary"]["unreconciled"], 0)
+        self.assertTrue(out["truncated"])
+        self.assertIn("reached its cap with 2 sitemaps unread",
+                      out["truncated_reason"])
+        self.assertEqual(verdict("GO-137", out), NO_DATA)
+
+    def test_sitemap_loader_names_children_left_unread_at_its_cap(self):
+        import site_crawl
+
+        root = self.SITE + "index.xml"
+        children = [self.SITE + "child-a.xml", self.SITE + "child-b.xml"]
+        xml = ("<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/"
+               "sitemap/0.9\">" + "".join(
+                   f"<sitemap><loc>{url}</loc></sitemap>" for url in children
+               ) + "</sitemapindex>")
+
+        def fetch(url, **_kwargs):
+            self.assertEqual(url, root)
+            return {"status": 200, "text": xml}
+
+        sitemap = site_crawl.load_sitemap_urls(
+            self.SITE, sitemap_urls=[root], max_sitemaps=1, fetch=fetch)
+        self.assertEqual(sitemap["unvisited"], children)
+
+    def test_service_and_input_failures_are_not_verdicts(self):
+        for exception, kind in ((RuntimeError("denied"), "service"),
+                                (OSError("missing key"), "input")):
+            with self.subTest(kind):
+                def refuse(*a, error=exception, **k):
+                    raise error
+                self.mod.build_service = refuse
+                out = self.mod.analyze(self.SITE, self.PROP, "/missing.json")
+                self.assertNotIn("summary", out)
+                self.assertNotIn("issues", out)
+                self.assertEqual(out["error_kind"], kind)
+                self.assertEqual(verdict("GO-137", out), NO_DATA)
+
+    def test_the_per_run_cap_blocks_only_a_clean_pass(self):
+        urls = [self.SITE + str(i) for i in range(3)]
+        clean, _ = self.reconcile(
+            urls,
+            states={url: "Submitted and indexed" for url in urls},
+            rows=self.rows(*urls),
+            max_urls=2,
+        )
+        self.assertTrue(clean["truncated"])
+        self.assertIn("per-run cap", clean["truncated_reason"])
+        self.assertEqual(verdict("GO-137", clean), NO_DATA)
+
+        broken, _ = self.reconcile(
+            urls,
+            states={urls[0]: "Crawled - currently not indexed",
+                    urls[1]: "Submitted and indexed",
+                    urls[2]: "Submitted and indexed"},
+            rows=self.rows(*urls),
+            max_urls=2,
+        )
+        self.assertEqual(verdict("GO-137", broken), FAIL)
+
+    def test_one_inspection_error_is_undecided_and_truncated(self):
+        urls = [self.SITE, self.SITE + "error"]
+        out, _ = self.reconcile(
+            urls,
+            states={urls[0]: "Submitted and indexed",
+                    urls[1]: RuntimeError("quota")},
+            rows=self.rows(*urls),
+        )
+        self.assertEqual(out["summary"]["undecided"], 1)
+        self.assertTrue(out["truncated"])
+        self.assertIn("inspection errored", out["truncated_reason"])
+        self.assertEqual(verdict("GO-137", out), NO_DATA)
+
+    def test_only_the_sitemap_prefix_is_inspected_and_pages_are_the_dimension(self):
+        urls = [self.SITE + str(i) for i in range(4)]
+        out, service = self.reconcile(
+            urls,
+            states={url: "Submitted and indexed" for url in urls},
+            rows=self.rows(*urls),
+            max_urls=2,
+        )
+        inspected = {call[1]["inspectionUrl"] for call in service.calls
+                     if call[0] == "inspect"}
+        self.assertEqual(inspected, set(urls[:2]))
+        query = next(call for call in service.calls if call[0] == "query")
+        self.assertEqual(query[2]["dimensions"], ["page"])
+        self.assertEqual(verdict("GO-137", out), NO_DATA)
+
+    def test_runner_routes_missing_credentials_and_archive_mode(self):
+        item = ITEMS["GO-137"]
+        context = {"url": self.SITE, "gsc_property": self.PROP,
+                   "gsc_credentials": "/missing.json"}
+        plan, skipped = build_plan([item], context, {"api"}, "live",
+                                   has_gsc=False)
+        self.assertEqual(plan, {})
+        self.assertEqual(skipped["GO-137"],
+                         (NEEDS_INPUT, GSC_CREDENTIALS_ABSENT))
+
+        plan, skipped = build_plan([item], context, {"offline"}, "archive",
+                                   has_gsc=True)
+        self.assertEqual(plan, {})
+        self.assertEqual(skipped["GO-137"][0], NA)
 
 
 class Cannibalization(unittest.TestCase):

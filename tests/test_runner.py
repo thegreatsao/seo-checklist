@@ -876,9 +876,9 @@ class Robots(unittest.TestCase):
             False)
 
     def test_a_refusal_is_flagged_apart_from_a_failure(self):
-        """`orphan_pages_from_sitemap` counts unreachable sitemap URLs as orphans and
-        GO-137 fails on one. A robots refusal arriving as a plain error would have
-        manufactured that failure out of our own politeness."""
+        """`link_profile` supplies AR-162 and CI-008 from orphan arithmetic that
+        excludes robots refusals. A refusal arriving as a plain error would have
+        manufactured their failure out of our own politeness."""
         import seo_common
         saved = seo_common.safe_request
 
@@ -892,72 +892,6 @@ class Robots(unittest.TestCase):
         self.assertTrue(out["robots_blocked"])
         self.assertIn("robots.txt", out["error"])
         self.assertEqual(out["error_kind"], "robots")
-
-    def inventory(self, sitemap_urls, pages, robots_blocked=()):
-        """A crawl inventory in the shape `site_crawl.py` writes one.
-
-        Hand-built rather than crawled, and for the same reason these two tests used
-        to stub the per-script crawl: what they are about is the *arithmetic* that
-        turns a page set into a list of orphans, which is where the mistake keeps
-        being made. `pages` maps a page key to whatever it needs beyond the defaults.
-        """
-        return {
-            "inventory_version": 1,
-            "site": "https://e.com/",
-            "entry": "https://e.com/",
-            "fetch_error": None,
-            "pages": {key: dict({"url": key, "status": 200, "html": True,
-                                 "final_url": key, "depth": 0, "links": [],
-                                 "in_sitemap": key in sitemap_urls}, **extra)
-                      for key, extra in pages.items()},
-            "robots_blocked": {key: "robots.txt" for key in robots_blocked},
-            "sitemap": {"urls": list(sitemap_urls), "off_host": [],
-                        "sitemaps_checked": ["https://e.com/sitemap.xml"],
-                        "errors": []},
-            "summary": {},
-        }
-
-    def test_a_robots_skipped_sitemap_url_is_not_an_orphan(self):
-        import orphan_pages_from_sitemap as ops
-        # The entry is reachable without an inbound link — a visitor and a crawler
-        # both start there.
-        inv = self.inventory(["https://e.com/", "https://e.com/blocked"],
-                             {"https://e.com/": {}},
-                             robots_blocked=["https://e.com/blocked"])
-        out = ops.find_orphan_pages("https://e.com", inventory=inv)
-        self.assertEqual(out["summary"]["orphan_pages"], 0)
-        self.assertEqual(out["sitemap_urls_blocked_by_robots"],
-                         ["https://e.com/blocked"])
-        self.assertIn("sitemap_robots_conflict",
-                      [i["type"] for i in out["issues"]])
-
-    def test_an_unlinked_disallowed_sitemap_url_is_not_an_orphan_either(self):
-        """The same failure by a different road, and the road that gets travelled.
-
-        The crawl can only record a refusal for a URL it tried, and it tries what the
-        site links to — so a disallowed sitemap URL that nothing links to arrived with
-        no refusal attached and was counted as an orphan. That is the ordinary case,
-        not an edge one: a page is usually unlinked *because* it is blocked. Caught
-        against the fixture site the first time the live path could be run at all.
-        """
-        import orphan_pages_from_sitemap as ops
-        # Both `/private/x` and `/real-orphan` are in the sitemap and nothing links
-        # to either. The crawl never refused them because it never tried them, so the
-        # refusal has to be established here, against robots.txt, or the disallowed
-        # one arrives in a client's report as a page the site forgot to link.
-        inv = self.inventory(["https://e.com/", "https://e.com/private/x",
-                              "https://e.com/real-orphan"],
-                             {"https://e.com/": {}})
-        saved = ops.robots_allows
-        ops.robots_allows = lambda url: ("/private/" not in url, 0.0)
-        try:
-            out = ops.find_orphan_pages("https://e.com", inventory=inv)
-        finally:
-            ops.robots_allows = saved
-        self.assertEqual(out["orphan_pages"], ["https://e.com/real-orphan"])
-        self.assertEqual(out["sitemap_urls_blocked_by_robots"],
-                         ["https://e.com/private/x"])
-
 
 class AggregationKeepsVerdictAndMeasureTogether(unittest.TestCase):
     """The worst sampled page decides the verdict, so it has to supply the numbers

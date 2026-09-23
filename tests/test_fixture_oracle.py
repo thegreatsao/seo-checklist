@@ -37,7 +37,8 @@ HTTP_DECLARED_IDS = {
     "AR-146", "AR-151", "AR-158", "AR-162", "BL-081", "BL-084",
     "BL-086", "BL-087", "CI-004", "CI-008", "CI-019", "CN-034",
     "CN-035", "CN-041", "CN-048", "CN-051", "CN-054", "CN-065",
-    "CN-066", "GO-132", "GO-137", "GO-138", "IN-123", "LO-200",
+    # GO-137 was withdrawn at 0.106.0: it now needs Search Console credentials.
+    "CN-066", "GO-132", "GO-138", "IN-123", "LO-200",
     "MB-093", "MB-094", "MB-096", "MB-097", "MB-103", "MB-104",
     "MD-185", "MS-020", "MS-021", "MS-022", "MS-026", "MS-028",
     "MS-029", "MS-030", "MS-031", "SP-214", "SP-215", "SP-216",

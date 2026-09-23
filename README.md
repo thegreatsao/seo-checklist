@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.105.0 — see [CHANGELOG.md](CHANGELOG.md). **A verdict can move on your site.** Two checks are titled *Provide Meaningful Alt Text* and, until this release, asked only whether an `alt` attribute was there at all: a page whose every image read `IMG_0042` or `untitled` or the name of its own file scored exactly the same as one written for a reader. It no longer does. An empty `alt=""` is still correct markup on a decorative image and is never counted against you, and the patterns are deliberately narrow — a check that accuses a site which has done the work is worse than one that misses a bad alt. Before that, `0.104.0` made this project's own test oracle refuse any release where a declared verdict, or a page it was declared against, moved with no decision recorded beside it.
+Version 0.106.0 — see [CHANGELOG.md](CHANGELOG.md). **A verdict can move on your site, and one check now needs Search Console.** *Reconcile Indexed Pages vs. Sitemaps* used to count sitemap pages that nothing links to — a real question, but one two other checks already ask. It now asks Google: which sitemap URLs are not in the index, and which indexed pages no sitemap lists. Without Search Console credentials it says so instead of answering. Before that, `0.105.0` stopped accepting alt text such as `IMG_0042` or a file name as a description of an image.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -484,8 +484,8 @@ before it is handed over, so the cache cannot become the way around the rule bel
 A `Crawl-delay` is honoured when it asks for more patience than `--max-rps`
 allows. A `Crawl-delay` that would make us faster is ignored: a site can ask us to
 slow down, not to be less careful than we chose to be. Refusals are visible —
-`orphan_pages_from_sitemap.py` reports them as `robots_skipped` rather than letting
-them count as unreachable pages, because that would turn our own restraint into the
+`link_profile.py` reports them as `robots_refused` rather than letting
+them count as orphan pages, because that would turn our own restraint into the
 site's defect. `broken_links.py` checks at most 200 links (internal first) and says
 when it truncated.
 

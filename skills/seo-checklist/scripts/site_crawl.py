@@ -2,8 +2,8 @@
 """One crawl of a site, written down once, for every check that needs the whole site.
 
 Six scripts used to walk the same pages independently — `duplicate_content.py` at 50
-pages, `link_profile.py` at 50, `internal_links.py` at 50,
-`orphan_pages_from_sitemap.py` at 100, `anchor_text_audit.py` at 25, and
+pages, `link_profile.py` at 50, `internal_links.py` at 50, GO-137's former
+sitemap-orphan reader at 100, `anchor_text_audit.py` at 25, and
 `broken_links.py` over one page's links — each with its own budget, its own robots
 handling and its own idea of what the site is, and each throwing the result away.
 That is ~275 fetches of the same pages per audit, measured at 181 on a seven-page
@@ -29,8 +29,8 @@ what makes `?page=2` not a duplicate of `?page=3` — the item that cares about 
 variants (`faceted_nav_audit.py`, AR-163) reads URLs, not this inventory.
 
 **What "reachable" means.** A page reached by following a link from another crawled
-page. Fetching a URL out of a sitemap does not make it reachable — that distinction
-is the whole of GO-137, so seeding from the sitemap must not quietly satisfy it.
+page. Fetching a URL out of a sitemap does not make it reachable — `link_profile.py`
+uses that distinction, so seeding from the sitemap must not quietly satisfy it.
 """
 
 from __future__ import annotations
@@ -280,8 +280,8 @@ def load_sitemap_urls(site_url: str, sitemap_urls: list[str] | None = None,
     # `sitemap_checker.py`'s to report. Here they are only kept out of the way: a
     # crawl that followed them would leave the site it was asked about, and leaving
     # them in `urls` would make each one look like an orphan — an off-host URL is
-    # unreachable by internal link by definition, so GO-137 would fail every site
-    # whose sitemap has one, for the wrong reason.
+    # unreachable by internal link by definition, so link-profile readers would
+    # fault every site whose sitemap has one, for the wrong reason.
     deduped, off_host, seen = [], [], set()
     fetch_targets: dict[str, str] = {}
     for url in urls:
@@ -295,8 +295,15 @@ def load_sitemap_urls(site_url: str, sitemap_urls: list[str] | None = None,
             fetch_targets[key] = discovered
         else:
             off_host.append(key)
+    unvisited, queued = [], set()
+    for candidate in queue:
+        sitemap_url = normalize_url(candidate, site_url)
+        if sitemap_url not in seen_sitemaps and sitemap_url not in queued:
+            queued.add(sitemap_url)
+            unvisited.append(sitemap_url)
     result = {"sitemaps_checked": sorted(seen_sitemaps), "urls": deduped,
-              "off_host": off_host, "errors": errors}
+              "off_host": off_host, "errors": errors,
+              "unvisited": unvisited}
     if include_fetch_targets:
         # Crawl-only transport detail, removed before the inventory is written.
         # The first sitemap spelling wins when `/about` and `/about/` share a
@@ -485,7 +492,7 @@ def crawl(site_url: str, depth: int = DEFAULT_DEPTH,
         return fetch_url(url, **kw)
 
     sitemap = ({"sitemaps_checked": [], "urls": [], "off_host": [], "errors": [],
-                "_fetch_targets": {}}
+                "unvisited": [], "_fetch_targets": {}}
                if not use_sitemap
                else load_sitemap_urls(site_url, sitemap_urls=sitemap_urls,
                                       timeout=timeout, fetch=_fetch,
@@ -658,7 +665,7 @@ def inventory_for(site_url: str, path: str = "", **kw) -> dict:
 
     Two entry points, one implementation. The artifact is checked against the site
     it is supposed to describe, for the same reason the browser artifacts are: a
-    crawl of some other host decides thirteen items — eight of them `high` — from
+    crawl of some other host decides twelve items — eight of them `high` — from
     observations nobody made about this one. A mismatch is `fetch_error`, which
     every reader propagates, so it lands as NO_DATA with the reason rather than as a
     verdict.
@@ -704,7 +711,7 @@ def html_pages(inventory: dict) -> dict[str, dict]:
 # every reader. Three scripts subtract robots-refused URLs from a set, and getting
 # the key wrong does not raise: it reads as an empty set, the subtraction quietly
 # does nothing, and the tool reports **its own politeness as the site's defect**.
-# That bug shipped once, in `orphan_pages_from_sitemap.py` before 0.4.0, and it was
+# That bug shipped once in the former sitemap-orphan reader before 0.4.0, and it was
 # written again in `server_log_audit.py`, which looked for `sitemap.robots_blocked`
 # for something that lives at the top level. A shared accessor can only be
 # misspelled in every caller at once, which is a failure somebody notices.

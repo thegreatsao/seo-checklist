@@ -187,7 +187,7 @@ REQUIRES = {
     "duplicate_content.py": "crawl",
     "internal_links.py": "crawl",
     "anchor_text_audit.py": "crawl",
-    "orphan_pages_from_sitemap.py": "crawl",
+    "gsc_sitemap_reconcile.py": "gsc",
     # Reads two files and fetches nothing, but one of them is the shared crawl's
     # inventory, so it can only run where a crawl happened.
     "server_log_audit.py": "crawl",
@@ -285,13 +285,8 @@ APPLIES_WHEN = {
     # had been supplied and read — this item runs `external_link_quality.py {url}`,
     # takes no export, and measures *outbound* links. The aboutness half is REG-6.
     "BL-083": {"path": "summary.unique_external_links", "gt": 0},
-    # A sitemap with URLs in it. `orphan_pages` is `sitemap - reachable`, so a live
-    # site with no sitemap gave `∅ - reachable` = no orphans = a pass for "Reconcile
-    # Indexed Pages vs. Sitemaps". The script's own comment names this arithmetic and
-    # closes only the dead-host case, through `fetch_error`; a site that answered
-    # every request and simply has no sitemap walked through it. `sitemaps_checked`
-    # counts locations *tried*, so it is not the condition — reconciliation needs
-    # URLs to reconcile.
+    # The subject is a sitemap with URLs. With no sitemap there is nothing to
+    # reconcile against Google's index, so the item does not apply.
     "GO-137": {"path": "summary.sitemap_urls", "gt": 0},
 }
 
@@ -1234,10 +1229,14 @@ item(135, "medium", S, "gsc_url_inspection.py", INSPECTARG,
 item(136, "high", S, "sitemap_checker.py", PAGE,
      ISSUES_ANY(),
      "Keep XML sitemaps clean", warn=NOTHING_SERIOUS())
-item(137, "medium", S, "orphan_pages_from_sitemap.py", CRAWLARG,
-     {"path": "summary.orphan_pages", "eq": 0},
-     "Reconcile indexed pages against sitemap contents",
-     {"path": "summary.orphan_pages", "lte": 50})
+# The former crawl rule measured internal-link orphans, not indexing; Search Console
+# is the only indexing source, its sitemap `indexed` count is deprecated, and URL
+# Inspection is quota-bound, so this checker samples deterministically in both directions.
+item(137, "medium", S, "gsc_sitemap_reconcile.py",
+     ["{url}", "--property", "{gsc_property}", "--credentials", "{gsc_credentials}"],
+     {"path": "summary.unreconciled", "eq": 0},
+     "Reconcile the sitemap with Google's index: fix or remove sitemap URLs Google "
+     "has not indexed, and list the indexed pages that are missing from it")
 # `--fetch-urls`, without which this item could only ever pass. The 404, redirect and
 # noindex issues its pattern looks for are emitted only when sitemap_checker actually
 # requests the URLs it found, and nothing asked it to — so "remove invalid URLs from

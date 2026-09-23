@@ -254,8 +254,8 @@ the measurement is right.
 **Reader:** partial. `tools/audit_item_semantics.py` in CI asks whether the rule asserts
 what the title says, and `test_mb_105_names_the_comparison_it_asserts` pins one item's
 wording to its comparison. The audit reads the assertion's shape, not the meaning of the
-subject: GO-137 passes it while reconciling against the audit's own crawl rather than the
-search-engine index its title names.
+subject: BL-083 passes it while counting broken **outbound** links under a title about
+backlinks. GO-137 was the example here until 0.106.0, when it moved to Search Console.
 
 **Repairing an item does not move this line, and 0.105.0 is the test of that.** CI-016
 and MD-186 stopped measuring something other than their title in that release, and
@@ -920,7 +920,7 @@ rule rather than re-reading its row:
 
 | row | what a run does now | standing? |
 |---|---|---|
-| GO-137 | `orphan_pages_from_sitemap.py`, `summary.orphan_pages` with `applies_when summary.sitemap_urls > 0`. The 0.98.0 declaration closed the free pass; the title still says *Indexed* and the rule reconciles the **crawl** | **stands** |
+| GO-137 | `orphan_pages_from_sitemap.py`, `summary.orphan_pages` with `applies_when summary.sitemap_urls > 0`. The 0.98.0 declaration closed the free pass; the title still says *Indexed* and the rule reconciles the **crawl** | **repaired at 0.106.0** — `gsc_sitemap_reconcile.py`, `summary.unreconciled`: sitemap URLs Google has not indexed plus indexed pages no sitemap lists. The crawl question it used to answer is CI-008's and AR-162's |
 | CN-036 | passed a page at 1.16:1 and failed one at 21:1 | **repaired at 0.101.0** |
 | SP-112 | a declared twin of SP-108 through `scores_with`, with `tools/audit_item_semantics.py` carrying an argued `FIXED (0.25)` | **moved** |
 | CI-016, MD-186 | `missing_alt == 0`. Five images carrying `image1.jpg`, `IMG_0042`, `untitled`, `photo`, `x` measure `missing_alt = 0` and the item titled *Meaningful* passes | **repaired at 0.105.0** |
@@ -932,7 +932,8 @@ rule rather than re-reading its row:
 Seven of the nine stand, plus BL-083 from A.7 — **at `c26c36595d04`, which is the
 registry this appendix measures and not the one shipping.** At `5f9de5a6dee3` it is four:
 CN-036 was repaired in the same release that wrote this table, and CI-016 and MD-186 at
-0.105.0. The standing four are GO-137, MB-096, MB-097 and MD-189, plus BL-083.
+0.105.0, and three at `6705382549b9` after GO-137 at 0.106.0. The standing three are MB-096,
+MB-097 and MD-189, plus BL-083.
 
 **That subtraction is the appendix's own disease, caught a second time.** A.9 exists
 because A.3's nine were a reading of a tree three weeks gone; this sentence then went one

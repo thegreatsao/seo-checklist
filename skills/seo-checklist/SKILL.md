@@ -707,10 +707,12 @@ python3 <SKILL_DIR>/scripts/checklist_runner.py https://example.com/page \
     --gsc-property sc-domain:example.com
 ```
 
-Eight items are answered from live GSC data: MS-023 and KW-071 (cannibalization),
-KW-070 and GO-139 (branded-query ownership), GO-134 (reported opportunities), and
+Nine items are answered from live GSC data: MS-023 and KW-071 (cannibalization),
+KW-070 and GO-139 (branded-query ownership), GO-134 (reported opportunities),
 CI-002, CI-010 and GO-135 through the URL Inspection API — whether Google has the page
-at all, Google's chosen canonical, and the page's indexing state. CI-010 is the one worth the setup: a page can declare
+at all, Google's chosen canonical, and the page's indexing state — and GO-137, which
+reconciles the sitemaps against the index in both directions: sitemap URLs Google has
+not indexed, and pages with impressions that no sitemap lists. CI-010 is the one worth the setup: a page can declare
 `rel=canonical` to itself and still have Google pick another URL, and nothing in
 the page reveals the disagreement.
 

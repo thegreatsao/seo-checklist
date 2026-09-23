@@ -350,7 +350,7 @@ jobs:
               + "\n".join(f"  {k}: {v['error']}" for k, v in d["runs"].items()
                           if v.get("error")))
 
-          # One crawl, and the ten site-wide checks read it. Before this the same
+          # One crawl, and the nine site-wide checks read it. Before this the same
           # pages were walked six times over and no item could name a broken URL.
           crawl = d.get("crawl")
           assert crawl and not crawl.get("error"), f"the shared crawl did not run: {crawl}"
@@ -359,7 +359,7 @@ jobs:
               f"the crawl made requests it does not account for: {crawl['summary']}")
           undecided = [i["id"] for i in d["items"]
                        if i["id"] in {"CI-008", "MS-022", "MS-029", "CN-039", "CN-041",
-                                      "BL-081", "GO-137", "AR-149", "AR-162", "TE-168"}
+                                      "BL-081", "AR-149", "AR-162", "TE-168"}
                        and i["status"] == "NO_DATA"]
           assert not undecided, (
               f"items reading the shared crawl came back NO_DATA: {undecided}")
@@ -393,30 +393,28 @@ jobs:
           # directly. A run that finds nothing wrong with a site built to be wrong
           # has stopped measuring and nobody would notice from the score alone.
           SEO_ALLOW_PRIVATE=1 SEO_MAX_RPS=50 python \
-              skills/seo-checklist/scripts/orphan_pages_from_sitemap.py \
-              http://127.0.0.1:8000/ --json > orphans.json
+              skills/seo-checklist/scripts/link_profile.py \
+              http://127.0.0.1:8000/ --json > profile.json
           python - <<'PY'
           import json
-          d = json.load(open("orphans.json"))
-          # This is the subtraction, asserted rather than assumed.
+          d = json.load(open("profile.json"))
+          # This is the refusal exclusion, asserted rather than assumed.
           #
           # /private/secret.html is listed in the sitemap and disallowed in
-          # robots.txt, so the crawl refuses it and it can never enter `reachable`.
-          # Orphans are `sitemap - reachable`, so without subtracting the refusals it
-          # is reported as an orphan — our own politeness rendered as the site's
-          # defect, on a critical-adjacent item that fails on a single orphan. It is
-          # also the ordinary case rather than an edge one: a page is usually
-          # unlinked precisely because it is blocked.
+          # robots.txt, so the crawl refuses it and it cannot acquire inbound links.
+          # `link_profile` must exclude refusals from its orphan arithmetic or our
+          # own politeness becomes the site's defect for CI-008 and AR-162.
           #
-          # The good fixture has no real orphans, so both halves are checked at once:
-          # zero orphans, one conflict. The orphan-detection direction is covered on
-          # the broken fixture by tests/test_contract.py.
-          assert d["orphan_pages"] == [], d["orphan_pages"]
-          assert d["sitemap_urls_blocked_by_robots"] == [
-              "http://127.0.0.1:8000/private/secret.html"], d["sitemap_urls_blocked_by_robots"]
-          assert "sitemap_robots_conflict" in [i["type"] for i in d["issues"]]
-          assert d["summary"]["orphan_pages"] == 0, d["summary"]
-          print("orphan and robots arithmetic OK")
+          # The good fixture has no real orphans, so the excluded URL must not be
+          # listed and the whole orphan count remains zero.
+          blocked = "http://127.0.0.1:8000/private/secret.html"
+          # Not being an orphan alone proves nothing: the graph holds only pages with
+          # HTML, so a refused URL could never be one. That the refusal was *recorded*
+          # is what shows the crawl met it and set it aside rather than never seeing it.
+          assert blocked in d["robots_refused"], d["robots_refused"]
+          assert blocked not in d["orphan_pages"]["urls"], d["orphan_pages"]
+          assert d["orphan_pages"]["count"] == 0, d["orphan_pages"]
+          print("link-profile orphan and robots arithmetic OK")
           PY
 
       # robots.txt governs what the tool discovers, never what it was handed. Both

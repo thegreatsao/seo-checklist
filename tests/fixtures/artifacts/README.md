@@ -59,7 +59,7 @@ on purpose rather than incidentally:
   `robots.txt`, and it is **deliberately absent from the log**: a crawler obeying
   the rule never asks for it, and the audit must not count our own `Disallow` as a
   page nobody crawled. That subtraction is the one that shipped broken once
-  already, in `orphan_pages_from_sitemap.py` before 0.4.0, and was written wrong a
+already, in the former sitemap-orphan reader before 0.4.0, and was written wrong a
   second time here before a real inventory caught it.
 - **broken** — a crawl budget going nowhere: a deleted section still being
   requested, a permanent redirect, a 5xx served to Googlebot, and a `?sort=`

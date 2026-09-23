@@ -50,6 +50,7 @@
           "detect_profile.py",
           "gsc_cannibalization.py",
           "gsc_links_csv.py",
+          "gsc_sitemap_reconcile.py",
           "gsc_url_inspection.py",
           "site_crawl.py"
         ]
@@ -187,10 +188,10 @@
           "external_link_quality.py",
           "faceted_nav_audit.py",
           "gsc_cannibalization.py",
+          "gsc_sitemap_reconcile.py",
           "image_weight_audit.py",
           "internal_links.py",
           "link_profile.py",
-          "orphan_pages_from_sitemap.py",
           "redirect_checker.py",
           "rich_results_guard.py",
           "server_log_audit.py",
@@ -661,6 +662,7 @@
         "items_silenced_by_a_cap_other_than_these_two": [
           "AR-163",
           "CI-014",
+          "GO-137",
           "KW-071",
           "MB-098",
           "MD-185",
@@ -680,7 +682,6 @@
           "CN-039",
           "CN-041",
           "GO-136",
-          "GO-137",
           "GO-138",
           "MD-187",
           "MS-022",
@@ -864,13 +865,13 @@
       "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants and the three detect_profile tables as inherited, DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and twenty module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
         "basis": {
-          "convention": 49,
+          "convention": 52,
           "inherited": 77,
           "measured": 11,
           "presentation": 13,
-          "standard": 11
+          "standard": 12
         },
-        "counted": 148,
+        "counted": 152,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:31"
         ],
