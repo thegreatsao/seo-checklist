@@ -157,6 +157,11 @@ REVIEWED: dict[str, str] = {
               "a responsive layout and nowhere near sufficient — a fixed-width page "
               "with the tag passes. The full check needs rendering at two widths.",
     "MB-098": "OK. The pattern counts size and dimension issues, which is the title.",
+    "MD-189": "OK, the responsive half (0.108.0). Large images without a srcset, "
+              "counted per image — the same measurement as MB-096, which MD-189 "
+              "scores with. The modern-format half is MB-097's per-image count, and "
+              "asserting it here too was rejected in the registry: it raises the "
+              "theme from 6 to 9 weight points and fails two items for one defect.",
     "MB-105": "SUPERSEDED (0.72). The ruling this replaces read `diffs` is the "
               "parity between raw and rendered, which is the item — true about "
               "the script and silent about the title, which said Match Desktop. "

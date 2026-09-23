@@ -10,6 +10,46 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.108.0 — one responsive image out of a hundred was enough
+
+Registry version: **`f07a03292d84` → `bfddc84f11b4`.** MB-096, MB-097 and MD-189 change
+what they count, so verdicts can move on a real site, and all three now need
+`--fetch-images` (the same run MB-095 and MD-185 already make). REG-6 has no known
+standing item left and stays `partial`: nothing would notice the next one. Suite 1703 →
+1715.
+
+**`responsive_count >= 1` and `modern_format_count >= 1` passed a page whose hundred
+images included one responsive one, or one WebP.** Anton's decision (23 September): the
+defect is an image, not a proportion, so there is no share to calibrate. Each image's
+intrinsic width is read from its own first 64 KB, streamed and closed; one wider than
+`LARGE_IMAGE_WIDTH_PX` (1280 — a 430-px phone at 3x is 1290) is *large*. MB-096 and MD-189
+count large images with no `srcset`; MB-097 counts large images with no WebP/AVIF offer
+**and** any image over `LARGE_IMAGE_BYTES`, the two halves of its title. An SVG is never
+large. A width nobody learned sets `truncated`, which withholds a pass and never undoes a
+fault found beside it. A page with no images is N/A, where it used to be NO_DATA.
+
+**MD-189 still counts only the responsive half, deliberately.** The registry records why a
+conjunction was rejected — the theme would weigh 9 points instead of 6 and one format
+defect would fail two items — and the ruling in `audit_item_semantics.py` now says so.
+
+**Moving the header reader found a defect in it.** `image_header` lived in
+`favicon_check.py` and is now `lib/image_header.py`, shared. Its WebP branch wanted the
+whole chunk before reading the ten bytes that hold the width: always true of a favicon,
+never of a 64 KB prefix of a large photo. Fixed, and
+`test_a_lossy_webp_larger_than_the_prefix_still_reports_its_width` reddens on the old order.
+
+**Probed 4 of 4** (`local/reg6c/probe.py`): each item reverted to `gte: 1`, and the WebP
+order — each caught by `ImagesJudgedOneByOne` alone. Written by me, not by an executor:
+Codex's workspace ran out of credits at the start of this release.
+
+| | before | after |
+|---|---|---|
+| MB-096 | `responsive_count >= 1` | `large_without_srcset_count == 0` |
+| MD-189 | `responsive_count >= 1` | the same count; scores with MB-096 |
+| MB-097 | `modern_format_count >= 1` | `legacy_or_heavy_count == 0` |
+| no images | NO_DATA | N/A |
+| fixtures | — | no `expect` moved: `huge.png` is 1400 px, the good page's largest image 64 px |
+
 ## 0.107.0 — an item titled *Backlinks* checked the links going the other way
 
 Registry version: **`6705382549b9` → `f07a03292d84`.** Two items change what they

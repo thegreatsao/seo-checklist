@@ -57,7 +57,7 @@ import harness  # noqa: E402
 from harness import served  # noqa: E402
 
 from checklist_runner import (  # noqa: E402
-    FAIL, NEEDS_INPUT, NO_DATA, PASS, WARN, build_plan, evaluate,
+    FAIL, NA, NEEDS_INPUT, NO_DATA, PASS, WARN, build_plan, evaluate,
     grade, input_truncated, passes_by_absence,
 )
 from rich_results_guard import guard_rich_results  # noqa: E402
@@ -4567,6 +4567,195 @@ class AnAltThatExistsAndDescribesNothing(unittest.TestCase):
         self.assertEqual(result["issues"], [])
 
 
+def deep_jpeg(width: int, height: int) -> bytes:
+    """A JPEG whose frame header sits past the 64 KB prefix, behind one APP1."""
+    sof = (b"\xff\xc0" + (17).to_bytes(2, "big") + b"\x08"
+           + height.to_bytes(2, "big") + width.to_bytes(2, "big") + b"\x03" + b"\0" * 9)
+    return (b"\xff\xd8\xff\xe1" + (65535).to_bytes(2, "big") + b"\0" * 65533
+            + sof + b"\xff\xd9")
+
+
+class ImagesJudgedOneByOne(unittest.TestCase):
+    """MB-096, MB-097 and MD-189 count large images one by one (0.108.0).
+
+    `responsive_count >= 1` passed a page with one responsive image among a hundred.
+    Anton's decision of 23 September 2026: the defect is an image — one wider than a
+    phone can use, sent without a srcset — not a share of a page's images. Served for
+    real, because the width is read from the image's own first bytes.
+    """
+
+    WIDE = valid_png(2000, 1)
+    SMALL = valid_png(64, 64)
+
+    @classmethod
+    def setUpClass(cls):
+        files = {
+            "/wide.png": ("image/png", cls.WIDE),
+            "/wide-ranged.png": ("image/png", cls.WIDE),
+            "/small.png": ("image/png", cls.SMALL),
+            "/small2.png": ("image/png", cls.SMALL),
+            "/wide.webp": ("image/webp", valid_webp(2000, 10, "VP8X")),
+            "/deep.jpg": ("image/jpeg", deep_jpeg(2000, 10)),
+            "/big.svg": ("image/svg+xml",
+                         b'<svg xmlns="http://www.w3.org/2000/svg" '
+                         b'viewBox="0 0 5000 5000"></svg>'),
+        }
+        pages = cls.pages = {}
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def _respond(self, body_too):
+                if self.path in pages:
+                    ctype, body = "text/html", pages[self.path].encode("utf-8")
+                elif self.path in files:
+                    ctype, body = files[self.path]
+                else:
+                    self.send_error(404)
+                    return
+                status, headers = 200, {}
+                # One route honours Range, as a CDN would; the rest ignore it, as
+                # Python's own `http.server` — the fixture server — does.
+                wanted = self.headers.get("Range", "")
+                if self.path == "/wide-ranged.png" and wanted.startswith("bytes=0-"):
+                    end = min(int(wanted[len("bytes=0-"):]), len(body) - 1)
+                    headers["Content-Range"] = f"bytes 0-{end}/{len(body)}"
+                    status, body = 206, body[:end + 1]
+                self.send_response(status)
+                self.send_header("Content-Type", ctype)
+                self.send_header("Content-Length", str(len(body)))
+                for key, value in headers.items():
+                    self.send_header(key, value)
+                self.end_headers()
+                if body_too:
+                    self.wfile.write(body)
+
+            def do_GET(self):
+                self._respond(True)
+
+            def do_HEAD(self):
+                self._respond(False)
+
+            def log_message(self, *args):
+                pass
+
+        cls.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+        cls.base = f"http://127.0.0.1:{cls.server.server_address[1]}"
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        cls.thread.join(timeout=5)
+
+    def audit(self, body: str, fetch: bool = True) -> dict:
+        path = f"/page-{len(self.pages)}.html"
+        self.pages[path] = f"<!doctype html><html><body>{body}</body></html>"
+        proc = harness.spawn(
+            [sys.executable, os.path.join(SCRIPTS, "image_weight_audit.py"),
+             self.base + path, "--json", *(["--fetch-images"] if fetch else [])],
+            env=script_env(), timeout=120)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return json.loads(proc.stdout)
+
+    def verdicts(self, out: dict) -> dict:
+        return {item_id: graded_verdict(item_id, out)
+                for item_id in ("MB-096", "MB-097", "MD-189")}
+
+    SMALLS = "".join(f'<img src="/small.png" alt="mark {i}">' for i in range(9))
+
+    def test_one_wide_image_without_srcset_fails_whatever_else_is_responsive(self):
+        """The case the old rule passed: one responsive image on the page was enough."""
+        out = self.audit(self.SMALLS
+                         + '<img src="/small2.png" srcset="/small2.png 1x" alt="r">'
+                         + '<img src="/wide.png" alt="a wide banner">')
+        self.assertGreaterEqual(out["responsive_count"], 1)
+        self.assertEqual(out["large_without_srcset_count"], 1)
+        self.assertEqual(graded_verdict("MB-096", out), FAIL)
+        self.assertEqual(graded_verdict("MD-189", out), FAIL)
+
+    def test_the_wide_image_with_a_srcset_and_a_webp_source_passes_all_three(self):
+        out = self.audit('<picture><source type="image/webp" srcset="/wide.webp 1x">'
+                         '<img src="/wide.png" srcset="/wide.png 1x" alt="w"></picture>')
+        self.assertEqual(out["images"][0]["intrinsic_width"], 2000)
+        self.assertEqual(self.verdicts(out),
+                         {"MB-096": PASS, "MB-097": PASS, "MD-189": PASS})
+
+    def test_a_wide_png_with_a_srcset_but_no_modern_offer_fails_only_the_format(self):
+        out = self.audit('<img src="/wide.png" srcset="/wide.png 1x" alt="w">')
+        self.assertEqual(self.verdicts(out),
+                         {"MB-096": PASS, "MB-097": FAIL, "MD-189": PASS})
+
+    def test_small_images_accuse_nothing(self):
+        out = self.audit(self.SMALLS)
+        self.assertEqual(out["image_width_unknown_count"], 0)
+        self.assertFalse(out["truncated"])
+        self.assertEqual(self.verdicts(out),
+                         {"MB-096": PASS, "MB-097": PASS, "MD-189": PASS})
+
+    def test_a_vector_image_is_never_large(self):
+        out = self.audit('<img src="/big.svg" alt="a mark">')
+        self.assertIs(out["images"][0]["large"], False)
+        self.assertEqual(graded_verdict("MB-096", out), PASS)
+
+    def test_a_width_nobody_learned_withholds_the_pass(self):
+        out = self.audit('<img src="/deep.jpg" alt="a photo">')
+        self.assertIsNone(out["images"][0]["large"])
+        self.assertTrue(out["truncated"])
+        self.assertIn("could not be learned", out["truncated_reason"])
+        self.assertEqual(self.verdicts(out),
+                         {"MB-096": NO_DATA, "MB-097": NO_DATA, "MD-189": NO_DATA})
+
+    def test_an_unlearned_width_does_not_undo_a_found_defect(self):
+        out = self.audit('<img src="/deep.jpg" alt="p"><img src="/wide.png" alt="w">')
+        self.assertTrue(out["truncated"])
+        self.assertEqual(graded_verdict("MB-096", out), FAIL)
+
+    def test_a_server_honouring_range_answers_the_same(self):
+        out = self.audit('<img src="/wide-ranged.png" alt="w">')
+        self.assertEqual(out["images"][0]["intrinsic_width"], 2000)
+        self.assertEqual(graded_verdict("MB-096", out), FAIL)
+
+    def test_without_fetched_images_nothing_is_decided(self):
+        out = self.audit('<img src="/wide.png" alt="w">', fetch=False)
+        for key in ("large_without_srcset_count", "legacy_or_heavy_count"):
+            self.assertNotIn(key, out)
+        self.assertEqual(self.verdicts(out),
+                         {"MB-096": NO_DATA, "MB-097": NO_DATA, "MD-189": NO_DATA})
+
+    def test_an_image_free_page_is_not_applicable(self):
+        out = self.audit("<p>No images here.</p>")
+        self.assertEqual(self.verdicts(out), {"MB-096": NA, "MB-097": NA, "MD-189": NA})
+
+    def test_the_width_read_is_not_cached_as_the_image(self):
+        """The prefix is streamed, and a streamed response is never cached, so a
+        later full fetch of the same URL gets the whole file."""
+        import image_weight_audit
+        from lib.safe_http import safe_get
+        saved = os.environ.get("SEO_ALLOW_PRIVATE")
+        os.environ["SEO_ALLOW_PRIVATE"] = "1"
+        try:
+            header, _total = image_weight_audit._intrinsic_size(
+                self.base + "/wide.png", 10)
+            full = safe_get(self.base + "/wide.png", timeout=10)
+        finally:
+            if saved is None:
+                os.environ.pop("SEO_ALLOW_PRIVATE", None)
+            else:
+                os.environ["SEO_ALLOW_PRIVATE"] = saved
+        self.assertEqual(header[1], 2000)
+        self.assertEqual(full.content, self.WIDE)
+
+    def test_a_lossy_webp_larger_than_the_prefix_still_reports_its_width(self):
+        """Moving the reader out of `favicon_check.py` found this: it wanted the whole
+        chunk before reading the ten bytes that hold the width, which a favicon always
+        has and a 64 KB prefix of a large photo never does."""
+        from lib.image_header import image_header
+        whole = valid_webp(3000, 2000, "VP8 ")
+        declared = whole[:16] + (10_000_000).to_bytes(4, "little") + whole[20:]
+        self.assertEqual(image_header(declared[:64]), ("webp", 3000, 2000))
+
+
 class VideoSchema(unittest.TestCase):
     """MD-188, MD-190 and MB-102, all `issues` by severity."""
 
@@ -6319,13 +6508,17 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
         both assert a count of zero, so both passed by absence over a document one of
         whose blocks was never read. The set is derived — a pass-by-absence rule whose
         script reports truncation — so a checker that learns to say "I did not cover my
-        subject" pulls its items in here by itself."""
+        subject" pulls its items in here by itself.
+
+        Twenty-eight at 0.108.0: MB-096, MB-097 and MD-189 left `gte: 1` for a per-image
+        `eq: 0`, over a script that sets `truncated` when an image's width or size went
+        unlearned — the same definition, three new members."""
         ids = sorted(i["id"] for i in self._covered())
         self.assertEqual(ids, [
             "AR-149", "AR-162", "AR-163", "BL-081", "BL-083", "CI-008", "CI-014", "CI-018",
-            "CN-039", "CN-041", "GO-136", "GO-137", "GO-138", "KW-071", "MB-098",
-            "MD-185", "MD-187", "MS-022", "MS-023", "MS-029", "TE-168", "TE-170",
-            "TE-172", "TE-174", "TECH-001",
+            "CN-039", "CN-041", "GO-136", "GO-137", "GO-138", "KW-071", "MB-096",
+            "MB-097", "MB-098", "MD-185", "MD-187", "MD-189", "MS-022", "MS-023",
+            "MS-029", "TE-168", "TE-170", "TE-172", "TE-174", "TECH-001",
         ], "the covered set moved; say which definition gives the new one")
 
     def test_every_way_this_registry_spells_nothing_is_covered(self):

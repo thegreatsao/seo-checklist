@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.107.0 — see [CHANGELOG.md](CHANGELOG.md). **Two verdicts can move on your site.** *Fix Broken Backlinks* used to check the links your page makes to other sites. It now checks the pages other sites link to — read from the Search Console Links export — and fails when one of them no longer answers. Broken links to other sites moved to *Fix Broken & Redirected Links*, which now checks them across the whole site rather than on one page; a third party's redirect is reported but not held against you. Before that, `0.106.0` moved *Reconcile Indexed Pages vs. Sitemaps* to Search Console.
+Version 0.108.0 — see [CHANGELOG.md](CHANGELOG.md). **Three verdicts can move on your site.** *Use Responsive Images*, *Use Modern Formats & Responsive Images* and *Optimize Image Formats & Compression* used to pass if one image on the page, out of any number, was responsive or in WebP. They now look at every image: one wider than a phone can use (over 1280 px, read from the file itself) sent without a `srcset`, or without a WebP/AVIF version, fails them; small icons never count. Before that, `0.107.0` moved *Fix Broken Backlinks* to the pages other sites actually link to.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

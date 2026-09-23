@@ -14,8 +14,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 from urllib.parse import urlparse
+
+import requests
 
 import site_crawl
 from seo_common import (
@@ -26,6 +29,13 @@ from seo_common import (
     parse_html,
     same_host,
 )
+
+try:
+    from lib.image_header import image_header
+    from lib.safe_http import safe_get
+except ImportError:
+    from scripts.lib.image_header import image_header
+    from scripts.lib.safe_http import safe_get
 
 
 MODERN_FORMATS = {"avif", "webp"}
@@ -40,6 +50,18 @@ MODERN_MIME = {f"image/{fmt}" for fmt in MODERN_FORMATS}
 #  `> 250_000` in the middle of a loop, which is why no inventory of thresholds could
 #  find it. A number nothing can name is a number nobody can argue with
 LARGE_IMAGE_BYTES = 250_000
+
+# basis: convention — no common phone needs more than about 1280 device pixels across
+#  (430 CSS px at 3x is 1290). An image wider than this, sent without a srcset, reaches
+#  every phone at a size none of them can use; narrower ones cost too little to accuse.
+#  MB-096, MB-097 and MD-189 count images past this line, on Anton's decision of
+#  23 September 2026 that the defect is an image and not a share of a page's images.
+LARGE_IMAGE_WIDTH_PX = 1280
+# basis: convention — the prefix read for an image's dimensions. PNG, GIF and WebP
+#  declare them in their first few dozen bytes; a JPEG's frame header follows its
+#  metadata and can sit later. A width not found here is unknown, which withholds a
+#  pass instead of inventing one.
+IMAGE_HEADER_BYTES = 65_536
 
 
 def _needs_sizes(srcset: str | None) -> bool:
@@ -127,6 +149,52 @@ def _classify_image(url: str, result: dict, timeout: int) -> tuple[str, dict | N
     return "unchecked", None
 
 
+def _intrinsic_size(url: str, timeout: int) -> tuple[tuple | None, int | None]:
+    """((format, width, height) or None, total bytes or None) from the first bytes.
+
+    Streamed and closed after `IMAGE_HEADER_BYTES`, rather than capped: `safe_http`
+    raises when a body passes `max_response_bytes`, and a server that ignores `Range`
+    — Python's own `http.server` does — sends the whole file. A streamed response is
+    never cached, so a prefix cannot later be served as the image to another caller.
+    """
+    try:
+        response = safe_get(url, timeout=timeout, stream=True,
+                            headers={"Range": f"bytes=0-{IMAGE_HEADER_BYTES - 1}"})
+    except requests.exceptions.RequestException:
+        return None, None
+    try:
+        if response.status_code not in (200, 206):
+            return None, None
+        data = b""
+        for chunk in response.iter_content(8192):
+            data += chunk
+            if len(data) >= IMAGE_HEADER_BYTES:
+                break
+        total = re.fullmatch(r"bytes \d+-\d+/(\d+)",
+                             response.headers.get("Content-Range", "").strip())
+        return image_header(data[:IMAGE_HEADER_BYTES]), (int(total.group(1))
+                                                         if total else None)
+    except requests.exceptions.RequestException:
+        return None, None
+    finally:
+        response.close()
+
+
+def _is_large(row: dict, header: tuple | None) -> bool | None:
+    """Past `LARGE_IMAGE_WIDTH_PX`, not past it, or unknown.
+
+    A vector image is never large: it has no pixels to send a phone too many of.
+    """
+    if row["format"] == "svg" or "svg" in (row.get("content_type") or ""):
+        return False
+    if header is None:
+        return None
+    fmt, width, _height = header
+    if fmt == "svg":
+        return False
+    return width > LARGE_IMAGE_WIDTH_PX if width else None
+
+
 def _check_image(url: str, timeout: int) -> tuple[str, dict, dict | None]:
     head = fetch_url(url, method="HEAD", timeout=timeout)
     state, confirmation = _classify_image(url, head, timeout)
@@ -140,6 +208,8 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
     issues = []
     checks = []
     skipped_no_source = 0
+    # One read per image URL: a page repeating an image asks for its width once.
+    sizes: dict[str, tuple] = {}
 
     for index, img in enumerate(parsed["images"]):
         src = img.get("src") or ""
@@ -185,6 +255,9 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
             "status": None,
             "content_length": _local_size(src, source),
             "content_type": None,
+            "intrinsic_width": None,
+            "intrinsic_height": None,
+            "large": False if ext == "svg" or src.startswith("data:") else None,
         }
         # What the browser can actually end up with, which is what both items are
         # about. The `img` is the fallback in a `<picture>`, not the answer.
@@ -198,6 +271,15 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
             length = headers.get("content-length")
             row["content_length"] = int(length) if length and length.isdigit() else None
             row["content_type"] = headers.get("content-type")
+            if state != "broken":
+                if src not in sizes:
+                    sizes[src] = _intrinsic_size(src, timeout)
+                header, total = sizes[src]
+                if header:
+                    row["intrinsic_width"], row["intrinsic_height"] = header[1], header[2]
+                if row["content_length"] is None and total is not None:
+                    row["content_length"] = total
+                row["large"] = _is_large(row, header)
 
         # Deferring the largest paint is the one finding in this file that is a defect
         # on every site and in every layout: the browser is told to wait for the image
@@ -270,6 +352,31 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
         # alone, so it is emitted whenever there are images at all.
         out["srcset_without_sizes_count"] = sum(
             1 for row in images if row["sizes_required_and_absent"])
+    # Per image, and only where widths were asked for. Each counts images known to be
+    # past `LARGE_IMAGE_WIDTH_PX`; one whose width nobody learned is in none of them,
+    # and sets `truncated` below, so it can withhold a clean answer but never make one.
+    # A broken image is MD-187's and is not asked for its width.
+    if fetch_images and images:
+        large = [row for row in images if row["large"]]
+        out["large_without_srcset_count"] = sum(
+            1 for row in large if not row["responsive"])
+        out["legacy_or_heavy_count"] = sum(
+            1 for row in images
+            if (row["large"] and not row["modern_format"])
+            or (row["content_length"] or 0) > LARGE_IMAGE_BYTES)
+        broken_srcs = {row["src"] for row in broken}
+        unknown = [row for row in images
+                   if row["src"] not in broken_srcs
+                   and (row["large"] is None or row["content_length"] is None)]
+        out["image_width_unknown_count"] = sum(
+            1 for row in images
+            if row["src"] not in broken_srcs and row["large"] is None)
+        if unknown:
+            out["truncated"] = True
+            reasons = [out.get("truncated_reason")] if out.get("truncated_reason") else []
+            reasons.append(f"{len(unknown)} image(s) whose width or byte size could not "
+                           f"be learned, so a clean count covers only the rest")
+            out["truncated_reason"] = "; ".join(reasons)
     # Emitted only when transfer sizes were actually learned. A page nobody fetched
     # has `content_length: None` on every row, and counting those as "not large"
     # would report a clean weight for a page nothing was measured on — the same

@@ -255,6 +255,11 @@ APPLIES_WHEN = {
     # on a page with no images; MD-185 reads `issues` and passed on an empty list.
     "MB-098": {"path": "image_count", "gt": 0},
     "MD-185": {"path": "image_count", "gt": 0},
+    # 0.108.0: the three per-image counts. A page with no images has nothing too wide
+    # for a phone, and saying N/A is truer than the NO_DATA the withheld key gave.
+    "MB-096": {"path": "image_count", "gt": 0},
+    "MB-097": {"path": "image_count", "gt": 0},
+    "MD-189": {"path": "image_count", "gt": 0},
     # Structured data. A page that declares no schema has nothing for either of these
     # to validate, and both returned `summary.errors` 0 — a pass for "implement
     # structured data" awarded to a page that implements none.
@@ -1029,11 +1034,20 @@ item(95, "medium", S, "image_weight_audit.py", ["{url}", "--fetch-images"],
      # (script, args). The old pattern hid this by answering PASS instead.
      {"path": "large_image_count", "lte": 5},
      "Reduce mobile page weight")
-item(96, "medium", S, "image_weight_audit.py", PAGE,
-     {"path": "responsive_count", "gte": 1},
+# 0.108.0: per image, on Anton's decision of 23 September 2026. `responsive_count
+# >= 1` passed a page with one responsive image among a hundred; the defect is an
+# image too wide for a phone sent without a srcset, and a 64-px icon is not one.
+# `LARGE_IMAGE_WIDTH_PX` draws the line, read from each image's own header, which is
+# why these moved onto `--fetch-images` beside MB-095 and MD-185 (one launch, one
+# set of requests). A width nobody learned sets `truncated` and withholds a PASS.
+item(96, "medium", S, "image_weight_audit.py", ["{url}", "--fetch-images"],
+     {"path": "large_without_srcset_count", "eq": 0},
      "Use srcset/sizes for responsive images")
-item(97, "medium", S, "image_weight_audit.py", PAGE,
-     {"path": "modern_format_count", "gte": 1},
+# Both halves of the title, per image: a large image with no WebP/AVIF offer, or any
+# image over `LARGE_IMAGE_BYTES` — the format half and the compression half. The
+# second is MB-095's measurement too; MB-095 tolerates five, this one asks for none.
+item(97, "medium", S, "image_weight_audit.py", ["{url}", "--fetch-images"],
+     {"path": "legacy_or_heavy_count", "eq": 0},
      "Move to WebP/AVIF and compress images")
 item(98, "medium", S, "image_weight_audit.py", PAGE,
      # `(?i)size|dimension` over issue messages caught two unrelated findings —
@@ -1536,8 +1550,11 @@ item(188, "low", L, fix="Use original contextual images, limit stock photography
 # the responsive half and defers to MB-096 so that one fact is charged once. A
 # conjunction was rejected: it would raise this theme from 6 to 9 weight points
 # and make one missing-modern-format defect fail both MD-189 and MB-097.
-item(189, "medium", S, "image_weight_audit.py", PAGE,
-     {"path": "responsive_count", "gte": 1},
+# 0.108.0 moved it with MB-096 to the per-image count, and the reason above still
+# holds: the modern-format half is MB-097's, and charging it here twice is what was
+# rejected.
+item(189, "medium", S, "image_weight_audit.py", ["{url}", "--fetch-images"],
+     {"path": "large_without_srcset_count", "eq": 0},
      "Modern formats and responsive images")
 item(190, "medium", S, "video_schema_checker.py", PAGE,
      ISSUES_ANY(),

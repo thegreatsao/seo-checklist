@@ -596,15 +596,19 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # And one `standard`: `HEAD_REFUSED_STATUSES` in `seo_common.py`, the three
         # statuses RFC 9110 gives a refused method, after which GET decides whether a
         # link is dead. It was an inline tuple before, and wrong — see its comment.
+        #
+        # 0.108.0 adds two `convention`s in `image_weight_audit.py`:
+        # `LARGE_IMAGE_WIDTH_PX`, the width past which an image needs a srcset, and
+        # `IMAGE_HEADER_BYTES`, the prefix read to learn that width.
         self.assertEqual(by_kind, {
             "standard": 13,
             "measured": 11,
-            "convention": 53,
+            "convention": 55,
             "inherited": 77,
             "presentation": 13,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 154)
-        self.assertEqual(len(named), 167)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 156)
+        self.assertEqual(len(named), 169)
         self.assertEqual(len(uncounted), 13)
         # 169 -> 170: the outbound-link check's cap was a default argument value,
         # which is a place no instrument here can see. Promoting it to a module
@@ -621,8 +625,10 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 178 -> 179: `MAX_TARGETS` at 0.107.0; the external cap moved rather than
         # multiplying, so it contributes no other new row.
         # 179 -> 180: `HEAD_REFUSED_STATUSES` at 0.107.0, named when it was repaired.
+        # 180 -> 182: the two image numbers above at 0.108.0. `JPEG_SOF_MARKERS` moved
+        # module with the header reader and counts once, as before.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 180)
+                             for path in at._script_paths()), 182)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -2754,14 +2760,19 @@ class OneCheckCarriesWeightOnce(unittest.TestCase):
 
     def test_md_189_uses_responsive_measurement_and_defers_to_mb_096(self):
         by_id = {item["id"]: item for item in ITEMS}
+        # 0.108.0: per image, the same count as MB-096, still deferring to it.
         self.assertEqual(by_id["MD-189"]["check"]["assert"],
-                         {"path": "responsive_count", "gte": 1})
+                         {"path": "large_without_srcset_count", "eq": 0})
+        self.assertEqual(by_id["MD-189"]["check"]["assert"],
+                         by_id["MB-096"]["check"]["assert"])
         self.assertEqual(by_id["MD-189"].get("scores_with"), "MB-096")
 
     def test_mb_097_carries_the_modern_format_measurement(self):
         by_id = {item["id"]: item for item in ITEMS}
+        # 0.108.0: per image — a large image with no modern format, or any image
+        # over the byte line — so both halves of its title are measured here.
         self.assertEqual(by_id["MB-097"]["check"]["assert"],
-                         {"path": "modern_format_count", "gte": 1})
+                         {"path": "legacy_or_heavy_count", "eq": 0})
         self.assertIsNone(by_id["MB-097"].get("scores_with"))
 
     def test_image_format_and_responsive_theme_keeps_six_weight_points(self):

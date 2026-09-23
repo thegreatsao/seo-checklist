@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "f07a03292d84",
+  "registry_version": "bfddc84f11b4",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1951,12 +1951,17 @@
       "check": {
         "script": "image_weight_audit.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--fetch-images"
         ],
         "requires": "fetch",
         "assert": {
-          "path": "responsive_count",
-          "gte": 1
+          "path": "large_without_srcset_count",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "image_count",
+          "gt": 0
         }
       },
       "effort": "medium",
@@ -1973,12 +1978,17 @@
       "check": {
         "script": "image_weight_audit.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--fetch-images"
         ],
         "requires": "fetch",
         "assert": {
-          "path": "modern_format_count",
-          "gte": 1
+          "path": "legacy_or_heavy_count",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "image_count",
+          "gt": 0
         }
       },
       "effort": "medium",
@@ -4023,12 +4033,17 @@
       "check": {
         "script": "image_weight_audit.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--fetch-images"
         ],
         "requires": "fetch",
         "assert": {
-          "path": "responsive_count",
-          "gte": 1
+          "path": "large_without_srcset_count",
+          "eq": 0
+        },
+        "applies_when": {
+          "path": "image_count",
+          "gt": 0
         }
       },
       "effort": "medium",

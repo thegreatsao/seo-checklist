@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "registry_version": "f07a03292d84",
+  "registry_version": "bfddc84f11b4",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -155,12 +155,12 @@
       "MB-096": {
         "expect": "PASS",
         "title": "Use Responsive Images",
-        "why": "the picture source declares srcset candidates and sizes for responsive selection"
+        "why": "no image on the page is wider than 1280 px: the picture's fallback is a 64-px PNG, so nothing needs a srcset"
       },
       "MB-097": {
         "expect": "PASS",
         "title": "Optimize Image Formats & Compression",
-        "why": "the picture offers a WebP source and its tiny PNG fallback is compressed"
+        "why": "no image is wider than 1280 px and none is heavier than 250,000 bytes"
       },
       "MD-185": {
         "expect": "PASS",
@@ -570,7 +570,7 @@
       "MD-189": {
         "expect": "PASS",
         "title": "Use Modern Formats & Responsive Images",
-        "why": "corrected from FAIL after the run, and the disagreement is itself the finding: image_weight_audit.py omits responsive_count entirely on a page carrying no images, so /about.html and /privacy.html report nothing rather than zero and the entry page's picture/source pair decides. That is what 'empty input must not emit zero' asks for. Its neighbour image_inventory.py did the opposite on the same two pages until 0.49.0, which is what MD-184 above used to record"
+        "why": "no image on the page is wider than 1280 px, so none needs a srcset"
       },
       "TE-169": {
         "expect": "PASS",
@@ -742,12 +742,12 @@
       "MB-096": {
         "expect": "FAIL",
         "title": "Use Responsive Images",
-        "why": "the large images have neither srcset nor sizes and provide no responsive variants"
+        "why": "/assets/huge.png is 1400 px wide, over the 1280-px line, and is served with no srcset"
       },
       "MB-097": {
         "expect": "FAIL",
         "title": "Optimize Image Formats & Compression",
-        "why": "the tree serves a PNG of line art with no WebP or AVIF alternative, and the rule requires at least one modern format"
+        "why": "/assets/huge.png is a 1400-px PNG with no WebP or AVIF alternative"
       },
       "MD-185": {
         "expect": "FAIL",
@@ -1157,7 +1157,7 @@
       "MD-189": {
         "expect": "FAIL",
         "title": "Use Modern Formats & Responsive Images",
-        "why": "no image in this tree offers a srcset, a modern format or a picture/source pair, and the two other sampled pages carry no images at all"
+        "why": "/assets/huge.png is 1400 px wide and served with no srcset; MD-189 counts what MB-096 counts and scores with it"
       },
       "TE-169": {
         "expect": "FAIL",

@@ -1351,7 +1351,11 @@ class FaviconDisplayRule(unittest.TestCase):
 
 
 class ImageWeightAudit(unittest.TestCase):
-    """MB-096 (`responsive_count`) and MB-097 (`modern_format_count`).
+    """`responsive_count` and `modern_format_count`, which MB-096 and MB-097 read
+    until 0.108.0 and which stay as evidence. The items now count large images one
+    by one and need each image's width, so a page read from a file — no image
+    fetched — decides none of them; `ImagesJudgedOneByOne` in
+    `test_evidence_scripts.py` holds the verdicts.
 
     Neither is critical, and both were wrong in the same direction, which is the
     interesting part: they failed sites for using the pattern the documentation
@@ -1378,12 +1382,12 @@ class ImageWeightAudit(unittest.TestCase):
         out = self.audit(self.PICTURE)
         self.assertEqual(out["modern_format_count"], 1,
                          "MB-097 fails a site doing exactly what it asks for")
-        self.assertEqual(verdict("MB-097", out), PASS)
+        self.assertEqual(out["images"][0]["modern_format"], True)
 
     def test_a_source_srcset_counts_as_responsive(self):
         out = self.audit(self.PICTURE)
         self.assertEqual(out["responsive_count"], 1)
-        self.assertEqual(verdict("MB-096", out), PASS)
+        self.assertEqual(out["images"][0]["responsive"], True)
 
     def test_the_fallback_is_still_reported_as_a_png(self):
         """Both facts, kept apart. The browser gets webp and the `img` is a png,
@@ -1401,8 +1405,9 @@ class ImageWeightAudit(unittest.TestCase):
         out = self.audit('<img src="/i/logo.png" alt="a mark">')
         self.assertEqual(out["modern_format_count"], 0)
         self.assertEqual(out["responsive_count"], 0)
-        self.assertEqual(verdict("MB-097", out), FAIL)
-        self.assertEqual(verdict("MB-096", out), FAIL)
+        # No image was fetched, so no width is known: undecided, never a pass.
+        for item_id in ("MB-096", "MB-097", "MD-189"):
+            self.assertEqual(verdict(item_id, out), NO_DATA, item_id)
 
     def test_an_image_free_page_does_not_fail_responsive_images(self):
         out = self.audit("<p>This page has no images.</p>")

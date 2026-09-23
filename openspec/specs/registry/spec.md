@@ -254,9 +254,10 @@ the measurement is right.
 **Reader:** partial. `tools/audit_item_semantics.py` in CI asks whether the rule asserts
 what the title says, and `test_mb_105_names_the_comparison_it_asserts` pins one item's
 wording to its comparison. The audit reads the assertion's shape, not the meaning of the
-subject: MB-096 passes it while asserting that one image of any number is responsive,
-under a title about responsive images as a property of the page. GO-137 was the
-example here until 0.106.0 and BL-083 until 0.107.0; both had their rules moved.
+subject. Every item it has been shown to pass while measuring something else — GO-137,
+BL-083, and MB-096, MB-097 and MD-189 — was repaired by 0.108.0, and each was found by a
+person reading rule against title. No known item stands at `bfddc84f11b4`; the
+requirement stays `partial` because nothing in the tree would notice the next one.
 
 **Repairing an item does not move this line, and 0.105.0 is the test of that.** CI-016
 and MD-186 stopped measuring something other than their title in that release, and
@@ -927,16 +928,17 @@ rule rather than re-reading its row:
 | CN-036 | passed a page at 1.16:1 and failed one at 21:1 | **repaired at 0.101.0** |
 | SP-112 | a declared twin of SP-108 through `scores_with`, with `tools/audit_item_semantics.py` carrying an argued `FIXED (0.25)` | **moved** |
 | CI-016, MD-186 | `missing_alt == 0`. Five images carrying `image1.jpg`, `IMG_0042`, `untitled`, `photo`, `x` measure `missing_alt = 0` and the item titled *Meaningful* passes | **repaired at 0.105.0** |
-| MB-096 | `responsive_count >= 1`. One responsive image among five passes | **stands** |
-| MB-097 | `modern_format_count >= 1` — **two kinds, not the one A.3 filed**: the weaker question, and the half-title, since nothing this item reads concerns compression | **stands, under-described** |
-| MD-189 | `responsive_count >= 1`, a twin of MB-096; `modern_format_count` is published by the same script and read by MB-097, so the unread half of this title is a leaf away | **stands** |
+| MB-096 | `responsive_count >= 1`. One responsive image among five passes | **repaired at 0.108.0** — a per-image count over widths read from each image, on Anton's decision that the defect is an image and not a share |
+| MB-097 | `modern_format_count >= 1` — **two kinds, not the one A.3 filed**: the weaker question, and the half-title, since nothing this item reads concerns compression | **repaired at 0.108.0** — a per-image count over widths read from each image, on Anton's decision that the defect is an image and not a share |
+| MD-189 | `responsive_count >= 1`, a twin of MB-096; `modern_format_count` is published by the same script and read by MB-097, so the unread half of this title is a leaf away | **repaired at 0.108.0** — a per-image count over widths read from each image, on Anton's decision that the defect is an image and not a share |
 | TE-179 | `whois.age_days >= 90`, with reputation asserted by SE-114, SE-116 and TE-171 on the same script and `audit_item_semantics.py` recording `FIXED (0.44)` on that ground | **decided: a group does not close one item's title; renamed at 0.101.0** |
 
 Seven of the nine stand, plus BL-083 from A.7 — **at `c26c36595d04`, which is the
 registry this appendix measures and not the one shipping.** At `5f9de5a6dee3` it is four:
 CN-036 was repaired in the same release that wrote this table, and CI-016 and MD-186 at
 0.105.0, three at `6705382549b9` after GO-137 at 0.106.0, and at `f07a03292d84` BL-083
-is repaired too (0.107.0). The standing three are MB-096, MB-097 and MD-189.
+is repaired too (0.107.0). At `bfddc84f11b4` none stands: MB-096, MB-097 and MD-189
+count large images one by one (0.108.0).
 
 **That subtraction is the appendix's own disease, caught a second time.** A.9 exists
 because A.3's nine were a reading of a tree three weeks gone; this sentence then went one

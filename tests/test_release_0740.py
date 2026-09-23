@@ -358,6 +358,10 @@ class PageModeCompatibility(unittest.TestCase):
                 # would also be False — only width descriptors need one.
                 "sizes_required_and_absent": False,
                 "responsive": False, "modern_format": False,
+                # Added in 0.108.0, for MB-096, MB-097 and MD-189. Nothing was fetched
+                # in page mode without `--fetch-images`, so the width is unknown and
+                # `large` says so rather than guessing either way.
+                "intrinsic_width": None, "intrinsic_height": None, "large": None,
             }],
             # Added in 0.88.0. The page path had two halves of one rule and was
             # doing only one: it withheld `broken_image_count` when something went

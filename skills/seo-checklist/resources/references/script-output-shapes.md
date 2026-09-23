@@ -952,8 +952,8 @@ Without one it audits one page's image markup and optional fetched bytes.
   format at all and failed the item it exists to satisfy.
 `responsive_count` — int — absent when the page has no images; otherwise, images
   with a `srcset`, on the `img` or on a `<source>`
-  beside it. MB-096 and MD-189 read this; MD-189 defers to MB-096 so the shared
-  responsive-image fact carries weight once. The count was wrong in the same direction.
+  beside it. Read by nothing since 0.108.0, when MB-096 and MD-189 moved to the
+  per-image count below; kept as evidence. The count was wrong in the same direction.
 `modern_format_on_img_count` — int — the narrow count: `img` src only
 `srcset_on_img_count` — int — the narrow count: `img` attribute only
 `srcset_without_sizes_count` — int — absent when the page has no images; otherwise,
@@ -965,9 +965,20 @@ Without one it audits one page's image markup and optional fetched bytes.
   page nobody fetched is every image. MB-095 asserts `lte: 5` and is invoked with
   `--fetch-images` for exactly this reason: without it the key never appears and the
   item is NO_DATA. Emitting 0 instead would report a light page from zero readings
+`large_without_srcset_count` — int — emitted only with `--fetch-images` on a page with
+  images: images wider than `LARGE_IMAGE_WIDTH_PX` (1280), read from each image's own
+  header, offering no `srcset`. MB-096 and MD-189 assert `eq: 0` (MD-189 scores with
+  MB-096). An image whose width was not learned is in no count and sets `truncated`
+`legacy_or_heavy_count` — int — same conditions: images wider than 1280 px with no
+  WebP/AVIF offer, or any image over `LARGE_IMAGE_BYTES`. MB-097 asserts `eq: 0` — its
+  title's format half and compression half
+`image_width_unknown_count` — int — same conditions: images, not broken, whose width
+  could not be learned (not an image format this reads, or a JPEG whose frame header
+  lies past `IMAGE_HEADER_BYTES`)
 `picture_count` — int — images wrapped in a `<picture>` carrying a `<source>`
-`truncated` — bool — an image on this page answered nothing, so the counts above are
-  over the images that did. `broken_image_count` is withheld outright when nothing
+`truncated` — bool — an image on this page answered nothing, or (with
+  `--fetch-images`) an image's width or byte size went unlearned, so the counts above
+  are over the images that did. `broken_image_count` is withheld outright when nothing
   broken was found; this is the other half, said beside a count that *was* emitted
   because something broken was found and is therefore a floor
 `issues[]` — array
@@ -976,7 +987,8 @@ Without one it audits one page's image markup and optional fetched bytes.
   - item keys: src, format, width, height, loading, fetchpriority, srcset, sizes,
     sizes_required_and_absent, picture_source_count, picture_srcset,
     picture_modern_formats, responsive, modern_format, likely_lcp_candidate, status,
-    content_length, content_type
+    content_length, content_type, intrinsic_width, intrinsic_height, large
+`truncated_reason` — str — present when `truncated` came from an unlearned width or size
 `fetch_error` — NoneType
 
 Inventory mode:
