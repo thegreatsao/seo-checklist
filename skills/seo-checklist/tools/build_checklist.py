@@ -539,6 +539,31 @@ EFFORT_OVERRIDES = {
 EFFORT_FLOOR_BY_SOURCE = {"manual": "high", "llm": "medium"}
 EFFORT_RANK = {"low": 0, "medium": 1, "high": 2}
 
+# Some borrowed titles cover more than the evidence layer can honestly answer.
+# Keep the title for traceability, and tell the operator exactly which part the
+# attached rule measures. Items absent from this table need no qualification.
+MEASURES = {
+    "CI-001": "Whether anything on the page or server stops Google from indexing it: robots.txt, the status code, noindex, or a canonical pointing elsewhere. Whether Google has indexed it is CI-002, which asks Search Console.",
+    "TE-167": "One request made during this audit, and whether it was answered below 500. Uptime over time needs a monitoring service.",
+    "IN-121": "That the hreflang set carries exactly one x-default. Region codes, country domains and Search Console settings are not read.",
+    "IN-128": "That the page lists itself in its own hreflang set. Which version a visitor is actually served is not tested.",
+    "SE-119": "The Cumulative Layout Shift of the whole page. The cookie banner is not identified, so a shift caused by anything else counts too.",
+    "CN-038": "How recent this page's own dates and statistics are. The balance of fresh and evergreen content across the site is not measured.",
+    "SP-110": "Render-blocking resources and critical request chains read from the page's HTML. The other speed checks are separate items.",
+    "TE-170": "Caching, compression and Vary headers on the page's response. URL rewrite rules are not read.",
+    "TECH-003": "Time to first byte, the first of the four LCP subparts. The other three need a browser trace.",
+    "MB-093": "That the page declares a viewport. Whether the layout fits a phone is MB-107, which renders it.",
+    "MB-098": "That every image with a srcset also carries sizes. A large image sent without srcset is MB-096.",
+    "AR-152": "That robots.txt declares at least one user-agent group. Whether its rules are the right ones is a judgement the audit does not make.",
+    "CN-040": "That the page links to a privacy policy. Whether the policy is current is not read.",
+    "SP-109": "Third-party scripts that block rendering. The other common speed traps are separate items.",
+    "BL-086": "That the Links export lists at least one linking site. Tracking the count over time happens outside the audit.",
+    "SP-111": "Chrome UX Report field data for desktop, read through PageSpeed Insights: the data the Search Console report is built from.",
+    "SP-112": "Chrome UX Report field data for mobile, read through PageSpeed Insights: the data the Search Console report is built from.",
+    "AR-155": "That the URL has no uppercase letters, underscores, archive pattern, deep path, parameters or excess length. Whether the words describe the page is not read.",
+    "CN-065": "That the page has exactly one non-empty H1.",
+}
+
 
 def effort_for(entry: dict) -> str:
     e = EFFORT_OVERRIDES.get(entry["id"]) or EFFORT_BY_CATEGORY.get(entry["category"], "medium")
@@ -1747,6 +1772,29 @@ def title_override_problems(items: list[dict], titles: dict[int, str],
     return problems
 
 
+def measures_problems(items: list[dict], measures: dict[str, str] | None = None) -> list[str]:
+    """Name every qualification that cannot describe a rule-backed registry item."""
+    measures = MEASURES if measures is None else measures
+    known = {item["id"]: item for item in items}
+    problems = []
+    for item_id, sentence in measures.items():
+        item = known.get(item_id)
+        if item is None:
+            problems.append(f"{item_id}: no registry item has this id")
+            continue
+        if not item.get("check"):
+            problems.append(f"{item_id}: item has no rule (check)")
+        text = sentence if isinstance(sentence, str) else ""
+        if not text.strip():
+            problems.append(f"{item_id}: measures sentence is empty")
+        elif len(text) > 240:
+            problems.append(
+                f"{item_id}: measures sentence is {len(text)} characters (maximum 240)")
+        if text and not text.endswith("."):
+            problems.append(f"{item_id}: measures sentence does not end with a full stop")
+    return problems
+
+
 # Which evidence answers an LLM item, which is not the same question as which
 # checklist category it sits in. Grouping by lens lets one agent read one slice
 # of the page once; grouping by category would make four agents re-read the same
@@ -1854,6 +1902,8 @@ def build(titles: dict[int, str] | None = None,
                     entry["check"]["cannot_fail"] = CANNOT_FAIL[item_id]
             if source == L:
                 entry["lens"] = LENS_OF.get(entry["id"], "")
+            if item_id in MEASURES:
+                entry["measures"] = MEASURES[item_id]
             if not entry.get("check") and item_id in APPLIES_IF:
                 entry["applies_if"] = APPLIES_IF[item_id]
             entry["effort"] = effort_for(entry)
@@ -1894,6 +1944,8 @@ def build(titles: dict[int, str] | None = None,
                 entry["check"]["cannot_fail"] = CANNOT_FAIL[eid]
         if source == L:
             entry["lens"] = LENS_OF.get(entry["id"], "")
+        if eid in MEASURES:
+            entry["measures"] = MEASURES[eid]
         if not entry.get("check") and eid in APPLIES_IF:
             entry["applies_if"] = APPLIES_IF[eid]
         entry["effort"] = effort_for(entry)
@@ -2076,6 +2128,11 @@ def main() -> int:
     if override_problems:
         for problem in override_problems:
             print(f"Invalid title override: {problem}", file=sys.stderr)
+        return 1
+    invalid_measures = measures_problems(items)
+    if invalid_measures:
+        for problem in invalid_measures:
+            print(f"Invalid measures: {problem}", file=sys.stderr)
         return 1
     unlensed = [i["id"] for i in items if i["source"] == L and not i.get("lens")]
     if unlensed:

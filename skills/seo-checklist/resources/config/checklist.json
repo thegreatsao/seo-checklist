@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "cc7ceff0b0f6",
+  "registry_version": "11a22b13470b",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -109,6 +109,7 @@
           }
         }
       },
+      "measures": "Whether anything on the page or server stops Google from indexing it: robots.txt, the status code, noindex, or a canonical pointing elsewhere. Whether Google has indexed it is CI-002, which asks Search Console.",
       "effort": "low",
       "fix": "Remove noindex, allow crawling in robots.txt, add internal links, submit the URL in GSC"
     },
@@ -969,6 +970,7 @@
           "gte": 70
         }
       },
+      "measures": "How recent this page's own dates and statistics are. The balance of fresh and evergreen content across the site is not measured.",
       "effort": "high",
       "fix": "Refresh evergreen material and balance it with new content"
     },
@@ -1019,6 +1021,7 @@
           "len_gte": 1
         }
       },
+      "measures": "That the page links to a privacy policy. Whether the policy is current is not read.",
       "effort": "high",
       "fix": "Publish an up-to-date privacy policy and link to it"
     },
@@ -1428,6 +1431,7 @@
           "len_eq": 1
         }
       },
+      "measures": "That the page has exactly one non-empty H1.",
       "effort": "high",
       "fix": "Exactly one H1 per page"
     },
@@ -1802,6 +1806,7 @@
           "gte": 1
         }
       },
+      "measures": "That the Links export lists at least one linking site. Tracking the count over time happens outside the audit.",
       "effort": "high",
       "fix": "Export Search Console -> Links periodically so the trend is visible; the count matters far less than who the links come from"
     },
@@ -1906,6 +1911,7 @@
           "truthy": true
         }
       },
+      "measures": "That the page declares a viewport. Whether the layout fits a phone is MB-107, which renders it.",
       "effort": "medium",
       "fix": "Responsive, mobile-first layout"
     },
@@ -2031,6 +2037,7 @@
           "gt": 0
         }
       },
+      "measures": "That every image with a srcset also carries sizes. A large image sent without srcset is MB-096.",
       "effort": "medium",
       "fix": "Serve properly sized images"
     },
@@ -2287,6 +2294,7 @@
           "lte": 2
         }
       },
+      "measures": "Third-party scripts that block rendering. The other common speed traps are separate items.",
       "effort": "high",
       "fix": "Remove render-blocking third-party scripts"
     },
@@ -2320,6 +2328,7 @@
           ]
         }
       },
+      "measures": "Render-blocking resources and critical request chains read from the page's HTML. The other speed checks are separate items.",
       "effort": "medium",
       "fix": "Shorten the critical request chain"
     },
@@ -2347,6 +2356,7 @@
           }
         }
       },
+      "measures": "Chrome UX Report field data for desktop, read through PageSpeed Insights: the data the Search Console report is built from.",
       "effort": "medium",
       "fix": "Bring desktop Core Web Vitals into the green"
     },
@@ -2374,6 +2384,7 @@
           }
         }
       },
+      "measures": "Chrome UX Report field data for mobile, read through PageSpeed Insights: the data the Search Console report is built from.",
       "effort": "medium",
       "fix": "Bring mobile Core Web Vitals into the green",
       "scores_with": "SP-108"
@@ -2550,6 +2561,7 @@
           }
         }
       },
+      "measures": "The Cumulative Layout Shift of the whole page. The cookie banner is not identified, so a shift caused by anything else counts too.",
       "effort": "low",
       "fix": "The cookie banner must not cause layout shift"
     },
@@ -2598,6 +2610,7 @@
           "truthy": true
         }
       },
+      "measures": "That the hreflang set carries exactly one x-default. Region codes, country domains and Search Console settings are not read.",
       "effort": "high",
       "fix": "Configure geo-targeting signals, including x-default"
     },
@@ -2725,6 +2738,7 @@
           "truthy": true
         }
       },
+      "measures": "That the page lists itself in its own hreflang set. Which version a visitor is actually served is not tested.",
       "effort": "high",
       "fix": "Serve the correct localized page"
     },
@@ -3244,6 +3258,7 @@
           "truthy": true
         }
       },
+      "measures": "That robots.txt declares at least one user-agent group. Whether its rules are the right ones is a judgement the audit does not make.",
       "effort": "high",
       "fix": "Block low-value sections from crawling deliberately"
     },
@@ -3325,6 +3340,7 @@
           "len_eq": 0
         }
       },
+      "measures": "That the URL has no uppercase letters, underscores, archive pattern, deep path, parameters or excess length. Whether the words describe the page is not read.",
       "effort": "high",
       "fix": "Consistent, descriptive URL slugs"
     },
@@ -3552,6 +3568,7 @@
           "truthy": true
         }
       },
+      "measures": "One request made during this audit, and whether it was answered below 500. Uptime over time needs a monitoring service.",
       "effort": "low",
       "fix": "Set up uptime monitoring"
     },
@@ -3635,6 +3652,7 @@
           ]
         }
       },
+      "measures": "Caching, compression and Vary headers on the page's response. URL rewrite rules are not read.",
       "effort": "low",
       "fix": "Configure server rewrites and cache/compression headers"
     },
@@ -4520,6 +4538,7 @@
           "lte": 800
         }
       },
+      "measures": "Time to first byte, the first of the four LCP subparts. The other three need a browser trace.",
       "effort": "low",
       "fix": "Reduce TTFB and LCP resource load delay"
     },

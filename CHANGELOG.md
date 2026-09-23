@@ -10,6 +10,27 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.113.0 — an item that checks part of its title now says which part
+
+Registry version: **`cc7ceff0b0f6` → `11a22b13470b`.** Nineteen items gain a `measures`
+sentence; no rule changes and no verdict moves. Suite 1775 → 1783.
+
+**A title can promise more than the tool can measure, and until now nothing told the
+operator.** 0.112.0's reading of all 145 rule-carrying items found nineteen that measure
+an honest part of their titles and cannot reach the rest: *Monitor Site Uptime* is one
+request during the audit; *Ensure URL Is Indexed* is whether anything stops Google from
+indexing it, while whether Google has is CI-002; *Configure Geo-Targeting Signals* is one
+x-default. Anton's ruling (23 September) keeps the Plerdy titles, so each of these now
+carries one sentence — printed under the title in the Markdown and HTML reports, in
+Russian from `item_measures` — saying what the rule checks and naming what it does not.
+
+`build_checklist.py` refuses a sentence on an item with no rule, an empty one, one over
+240 characters or one without a full stop. The i18n digest covers the sentence, so a
+changed English line reopens its translation; the other 198 digests did not move.
+
+REG-6 stays `partial`: `openspec/specs/registry/` A.10 still owes nine rule repairs,
+and the reader that would notice the next item drifting is not built yet.
+
 ## 0.112.0 — five items that contradicted their own titles
 
 Registry version: **`bfddc84f11b4` → `cc7ceff0b0f6`.** CI-014, CN-056, SE-115 and SE-120

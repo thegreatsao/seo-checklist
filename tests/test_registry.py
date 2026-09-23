@@ -2225,6 +2225,63 @@ class DeliberateTitleOverrides(unittest.TestCase):
                                 problems)
 
 
+class MeasuresQualifications(unittest.TestCase):
+    EXPECTED = {
+        "CI-001": "Whether anything on the page or server stops Google from indexing it: robots.txt, the status code, noindex, or a canonical pointing elsewhere. Whether Google has indexed it is CI-002, which asks Search Console.",
+        "TE-167": "One request made during this audit, and whether it was answered below 500. Uptime over time needs a monitoring service.",
+        "IN-121": "That the hreflang set carries exactly one x-default. Region codes, country domains and Search Console settings are not read.",
+        "IN-128": "That the page lists itself in its own hreflang set. Which version a visitor is actually served is not tested.",
+        "SE-119": "The Cumulative Layout Shift of the whole page. The cookie banner is not identified, so a shift caused by anything else counts too.",
+        "CN-038": "How recent this page's own dates and statistics are. The balance of fresh and evergreen content across the site is not measured.",
+        "SP-110": "Render-blocking resources and critical request chains read from the page's HTML. The other speed checks are separate items.",
+        "TE-170": "Caching, compression and Vary headers on the page's response. URL rewrite rules are not read.",
+        "TECH-003": "Time to first byte, the first of the four LCP subparts. The other three need a browser trace.",
+        "MB-093": "That the page declares a viewport. Whether the layout fits a phone is MB-107, which renders it.",
+        "MB-098": "That every image with a srcset also carries sizes. A large image sent without srcset is MB-096.",
+        "AR-152": "That robots.txt declares at least one user-agent group. Whether its rules are the right ones is a judgement the audit does not make.",
+        "CN-040": "That the page links to a privacy policy. Whether the policy is current is not read.",
+        "SP-109": "Third-party scripts that block rendering. The other common speed traps are separate items.",
+        "BL-086": "That the Links export lists at least one linking site. Tracking the count over time happens outside the audit.",
+        "SP-111": "Chrome UX Report field data for desktop, read through PageSpeed Insights: the data the Search Console report is built from.",
+        "SP-112": "Chrome UX Report field data for mobile, read through PageSpeed Insights: the data the Search Console report is built from.",
+        "AR-155": "That the URL has no uppercase letters, underscores, archive pattern, deep path, parameters or excess length. Whether the words describe the page is not read.",
+        "CN-065": "That the page has exactly one non-empty H1.",
+    }
+
+    @staticmethod
+    def module():
+        sys.path.insert(0, os.path.join(SKILL, "tools"))
+        import build_checklist
+        return build_checklist
+
+    def test_the_registry_carries_exactly_the_nineteen_qualifications_verbatim(self):
+        build_checklist = self.module()
+        self.assertEqual(build_checklist.MEASURES, self.EXPECTED)
+        shipped = {item["id"]: item["measures"] for item in ITEMS
+                   if "measures" in item}
+        self.assertEqual(shipped, self.EXPECTED)
+
+    def test_the_builder_refuses_every_invalid_measures_shape_and_names_its_id(self):
+        build_checklist = self.module()
+        items = build_checklist.build()
+        cases = {
+            "unknown id": ({"NO-999": "A measured boundary."},
+                           "NO-999: no registry item"),
+            "rule-less item": ({"CN-037": "A measured boundary."},
+                               "CN-037: item has no rule (check)"),
+            "empty sentence": ({"CI-001": " "},
+                               "CI-001: measures sentence is empty"),
+            "over 240 characters": ({"CI-001": "x" * 240 + "."},
+                                    "CI-001: measures sentence is 241 characters"),
+            "no full stop": ({"CI-001": "A measured boundary"},
+                             "CI-001: measures sentence does not end with a full stop"),
+        }
+        for label, (measures, expected) in cases.items():
+            with self.subTest(label):
+                problems = build_checklist.measures_problems(items, measures)
+                self.assertTrue(any(expected in problem for problem in problems), problems)
+
+
 class RegistryDocs(unittest.TestCase):
     def test_every_script_the_registry_runs_is_documented(self):
         """Assert rules must be written against observed output, and the shapes

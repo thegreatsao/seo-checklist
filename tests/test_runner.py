@@ -126,6 +126,15 @@ class ApplicabilityRules(unittest.TestCase):
         row = self.graded([item], {"videos": 0, "issues": []})[0]
         self.assertEqual(row["status"], PASS)
 
+    def test_a_measures_qualification_travels_to_the_graded_artifact_only_when_present(self):
+        qualified = self.item()
+        qualified["measures"] = "What this rule checks."
+        self.assertEqual(
+            self.graded([qualified], {"videos": 1, "issues": []})[0]["measures"],
+            "What this rule checks.")
+        self.assertNotIn(
+            "measures", self.graded([self.item()], {"videos": 1, "issues": []})[0])
+
     def test_a_twin_pair_becomes_not_applicable_together_and_scores_once(self):
         primary = self.item("MD-190")
         twin = self.item("MB-102", scores_with="MD-190")

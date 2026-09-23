@@ -1454,6 +1454,8 @@ def grade(items: list[dict], plan: dict, results: dict, skipped: dict,
         # a registry test asserts every real item declares one.
         row["effort"] = it.get("effort", "medium")
         row["fix"] = it.get("fix", "")
+        if it.get("measures"):
+            row["measures"] = it["measures"]
         # Rule-less applicability must reach the person or model answering the row.
         if it.get("applies_if"):
             row["applies_if"] = it["applies_if"]

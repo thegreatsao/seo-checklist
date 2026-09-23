@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.112.0 — see [CHANGELOG.md](CHANGELOG.md). **Five verdicts can move on your site.** A redirect loop now fails *Use Correct Redirect Codes* (it was a warning); a date mentioned in body text no longer counts as a publication date; `max-age=0` no longer counts as HSTS; all three headers *Harden Security Headers* names must be present; and pages that canonicalise elsewhere or are noindex are no longer duplicate titles. Before that, `0.111.0` made the counts in this repository's own prose checked on every build.
+Version 0.113.0 — see [CHANGELOG.md](CHANGELOG.md). No verdict moves. Nineteen items whose titles promise more than the tool can measure — *Monitor Site Uptime* is one request, *Ensure URL Is Indexed* is whether anything blocks indexing — now say under the title, in the report, what they actually checked. Before that, `0.112.0` repaired five items that contradicted their own titles, among them a redirect loop that was only a warning.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

@@ -10,7 +10,8 @@ docstring had predicted it — *"a second copy drifts the moment either side
 changes"* — and then tested for presence.
 
 What that test could not see, this makes visible: a digest of the English `(title,
-fix)` pair stored beside the translation. Change the English and the digest no
+fix)` pair, or `(title, fix, measures)` triple for an item that qualifies what its
+rule checks, stored beside the translation. Change the English and the digest no
 longer matches, so the build fails and names the item. Re-run without `--check` once
 the translation has actually been revisited.
 
@@ -39,20 +40,24 @@ I18N = SKILL / "resources/i18n"
 KEY = "_source_digests"
 
 
-def digest(title: str, fix: str) -> str:
-    """12 hex chars over the English pair, unit-separated.
+def digest(title: str, fix: str, measures: str | None = None) -> str:
+    """12 hex chars over the English pair or measures-bearing triple, unit-separated.
 
     Separated rather than concatenated: without it, moving a word from the end of a
     title to the start of a fix would leave the digest unchanged, which is exactly
     the kind of edit that makes a translation wrong.
     """
-    raw = f"{title}\x1f{fix}".encode("utf-8")
+    parts = [title, fix]
+    if measures is not None:
+        parts.append(measures)
+    raw = "\x1f".join(parts).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()[:12]
 
 
 def english() -> dict[str, str]:
     items = json.loads(REGISTRY.read_text(encoding="utf-8"))["items"]
-    return {i["id"]: digest(i.get("title", ""), i.get("fix", "")) for i in items}
+    return {i["id"]: digest(i.get("title", ""), i.get("fix", ""), i.get("measures"))
+            for i in items}
 
 
 def catalogues() -> list[Path]:

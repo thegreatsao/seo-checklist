@@ -174,6 +174,11 @@ class Lang:
         registry, which is the same trap the per-item explanations avoid."""
         return self.data.get("item_fixes", {}).get(item["id"], item.get("fix", ""))
 
+    def measures(self, item: dict) -> str:
+        """What the attached rule checks, translated when that qualification exists."""
+        return self.data.get("item_measures", {}).get(
+            item["id"], item.get("measures", ""))
+
     def category_help(self, key: str) -> str:
         """The plain-language explanation for a category, translated if available.
 
@@ -1181,8 +1186,11 @@ def render_markdown(data: dict, L: Lang | None = None) -> str:
             badges = f"{L.sev(i['severity'])} · {L.effort(i.get('effort', 'medium'))}"
             origin = (L.status(MANUAL, "needs a human") if i["status"] == MANUAL
                       else item_provenance(i, L))
-            out += [f"**{L.title(i)}**  ",
-                    f"`{badges}`" + (f" ({origin})" if origin else "") + "  ",
+            out += [f"**{L.title(i)}**  "]
+            if i.get("measures"):
+                out += [f"{L.t('measures_label', 'What this checks:')} "
+                        f"{L.measures(i)}  "]
+            out += [f"`{badges}`" + (f" ({origin})" if origin else "") + "  ",
                     f"{phrase_measure(i, L)}  ",
                     f"{L.t('what_to_do', 'What to do')}: {L.fix(i)}", ""]
 
@@ -1523,7 +1531,10 @@ def _card(item: dict, L: Lang) -> str:
             f'<div class="cardhead">{_badges(item, L)}'
             f'{marker}<span class="cat">{html.escape(item["category_label"])}</span></div>'
             f'<h3>{html.escape(L.title(item))}</h3>'
-            f'<p class="found">{html.escape(phrase_measure(item, L))}</p>'
+            + (f'<p class="measures"><b>'
+               f'{html.escape(L.t("measures_label", "What this checks:"))}</b> '
+               f'{html.escape(L.measures(item))}</p>' if item.get("measures") else "")
+            + f'<p class="found">{html.escape(phrase_measure(item, L))}</p>'
             + (f'<p class="why">{html.escape(why)}</p>' if why else "")
             + (f'<p class="do"><b>{html.escape(L.t("what_to_do", "What to do"))}:</b> '
                f'{html.escape(L.fix(item))}</p>' if item.get("fix") else "")

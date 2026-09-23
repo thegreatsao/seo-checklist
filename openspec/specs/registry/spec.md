@@ -257,7 +257,8 @@ wording to its comparison. The audit reads the assertion's shape, not the meanin
 subject. Every item it has been shown to pass while measuring something else — GO-137,
 BL-083, and MB-096, MB-097 and MD-189 — was repaired by 0.108.0, and each was found by a
 person reading rule against title. A reading of all 145 on 23 September (A.10) found
-thirty-three more; five were repaired at 0.112.0 and twenty-eight are owed. The
+thirty-three more; five were repaired at 0.112.0, nineteen carry `measures` since
+0.113.0, and nine rule repairs are owed. The
 requirement stays `partial` because nothing in the tree would notice the next one.
 
 **Repairing an item does not move this line, and 0.105.0 is the test of that.** CI-016
@@ -266,6 +267,13 @@ and MD-186 stopped measuring something other than their title in that release, a
 that would notice the *next* item drifting is still the shape audit, which passed all
 three of the items repaired so far while they were defective. Four of the nine remain,
 and what this requirement owes is an instrument, not a queue.
+
+**The third outcome has a carrier since 0.113.0.** "Declare what it actually settles" had
+nowhere to go: an operator sees a title, a fix and evidence, and a declaration in a tool's
+file reaches none of them. `measures` is that declaration — an item field, printed under the
+title in the Markdown and HTML reports, translated through `item_measures` and bound to the
+English by the i18n digest. The build refuses one on an item with no rule, and
+`test_registry` holds the nineteen it carries.
 
 #### Scenario: the rule answers an adjacent question
 - **WHEN** a title promises a reconciliation against a search engine's index and the
@@ -999,7 +1007,8 @@ length), CN-044 (any institutional link counts as a contact page), GEO-001
 robots.txt is *correct*), MB-095 (image count, not page weight), TE-180 (two WCAG-A
 failures pass).
 
-*An operator-visible statement owed:* CI-001, TE-167, IN-121, IN-128, SE-119, CN-038,
+*Carrying `measures` since 0.113.0* — one sentence, printed under the title in every
+report and translated, saying what the rule checks and naming what it does not: CI-001, TE-167, IN-121, IN-128, SE-119, CN-038,
 SP-110, TE-170, TECH-003, MB-093, MB-098, AR-152, CN-040, SP-109, BL-086, SP-111, SP-112,
 AR-155, CN-065.
 

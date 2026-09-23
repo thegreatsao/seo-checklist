@@ -272,6 +272,46 @@ class Localisation(unittest.TestCase):
             self.assertEqual(missing, [], f"{name} is missing: {missing}")
 
 
+class MeasuresDisclosure(unittest.TestCase):
+    ENGLISH = (
+        "Whether anything on the page or server stops Google from indexing it: "
+        "robots.txt, the status code, noindex, or a canonical pointing elsewhere. "
+        "Whether Google has indexed it is CI-002, which asks Search Console.")
+    RUSSIAN = (
+        "Мешает ли что-то на странице или сервере индексации в Google: robots.txt, "
+        "код ответа, noindex или canonical на другой адрес. Проиндексирована ли "
+        "страница, проверяет CI-002 через Search Console.")
+
+    @staticmethod
+    def rendered(row, lang=None):
+        data = results(row)
+        data["scores"] = runner.score(data["items"])
+        L = Lang(lang) if lang else Lang()
+        return render_markdown(data, L), render_html(data, L)
+
+    def test_the_fix_list_renders_the_label_and_sentence_in_english_and_russian(self):
+        row = item("CI-001", FAIL, measures=self.ENGLISH)
+        for language, label, sentence in (
+                (None, "What this checks:", self.ENGLISH),
+                ("ru", "Что проверяет пункт:", self.RUSSIAN)):
+            for surface in self.rendered(row, language):
+                with self.subTest(language=language or "en",
+                                  surface="html" if surface.startswith("<!") else "markdown"):
+                    self.assertIn(label, surface)
+                    self.assertIn(sentence, html_escape.unescape(surface))
+
+    def test_an_unqualified_item_renders_neither_label_nor_sentence(self):
+        for language, label in ((None, "What this checks:"),
+                                ("ru", "Что проверяет пункт:")):
+            for surface in self.rendered(item("A", FAIL), language):
+                with self.subTest(language=language or "en"):
+                    self.assertNotIn(label, surface)
+
+    def test_the_translator_falls_back_to_english_when_the_item_has_no_translation(self):
+        row = {"id": "A", "measures": "English boundary."}
+        self.assertEqual(Lang("ru").measures(row), "English boundary.")
+
+
 class SecondReading(unittest.TestCase):
     """An unopposed judgement reported with the confidence of a measured status is
     the LLM queue's weak point. The reviewer's power is deliberately asymmetric:
@@ -1167,7 +1207,9 @@ class TheRegistryIsTranslatedOrTheGapIsCounted(unittest.TestCase):
     def setUp(self):
         with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
                   encoding="utf-8") as f:
-            self.ids = {i["id"] for i in json.load(f)["items"]}
+            items = json.load(f)["items"]
+            self.ids = {i["id"] for i in items}
+            self.measured_ids = {i["id"] for i in items if i.get("measures")}
         with open(os.path.join(I18N, "ru.json"), encoding="utf-8") as f:
             self.ru = json.load(f)
 
@@ -1192,12 +1234,23 @@ class TheRegistryIsTranslatedOrTheGapIsCounted(unittest.TestCase):
                 self.assertRegex(str(text), "[а-яА-ЯёЁ]",
                                  f"{key}[{item_id}] has no Russian in it: {text!r}")
 
+    def test_every_measures_qualification_has_russian_and_no_other_id_does(self):
+        translated = self.ru.get("item_measures") or {}
+        self.assertEqual(set(translated), self.measured_ids)
+        for item_id, text in translated.items():
+            self.assertTrue(str(text).strip(), f"item_measures[{item_id}] is blank")
+            self.assertRegex(str(text), "[а-яА-ЯёЁ]",
+                             f"item_measures[{item_id}] has no Russian: {text!r}")
+
     def test_the_report_uses_them(self):
         ru = Lang("ru")
         first = sorted(self.ids)[0]
         row = {"id": first, "title": "Ensure URL Is Indexed", "fix": "Remove noindex"}
         self.assertNotEqual(ru.title(row), row["title"])
         self.assertNotEqual(ru.fix(row), row["fix"])
+        measured = next(iter(self.measured_ids))
+        measure_row = {"id": measured, "measures": "English boundary."}
+        self.assertNotEqual(ru.measures(measure_row), measure_row["measures"])
 
 
 class ATranslationIsBoundToTheEnglishItTranslates(unittest.TestCase):
@@ -1241,6 +1294,40 @@ class ATranslationIsBoundToTheEnglishItTranslates(unittest.TestCase):
         self.assertNotEqual(base, self.mod.digest("Add a Favicon",
                                                   "Serve a favicon at the root"))
         self.assertNotEqual(self.mod.digest("ab", "c"), self.mod.digest("a", "bc"))
+        self.assertNotEqual(base, self.mod.digest(
+            "Add a Favicon", "Serve a favicon at the site root", "Checks the icon."))
+
+    def test_changing_one_measures_sentence_moves_only_that_digest_and_check_names_it(self):
+        import shutil
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+
+        baseline = self.mod.english()
+        registry = json.loads(self.mod.REGISTRY.read_text(encoding="utf-8"))
+        target = "CI-001"
+        next(item for item in registry["items"] if item["id"] == target)[
+            "measures"] += " Changed."
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            changed_registry = root / "checklist.json"
+            changed_registry.write_text(json.dumps(registry, ensure_ascii=False),
+                                        encoding="utf-8")
+            i18n = root / "i18n"
+            i18n.mkdir()
+            shutil.copyfile(os.path.join(I18N, "ru.json"), i18n / "ru.json")
+            with mock.patch.object(self.mod, "REGISTRY", changed_registry), \
+                    mock.patch.object(self.mod, "I18N", i18n):
+                changed = self.mod.english()
+                moved = sorted(item_id for item_id in baseline
+                               if baseline[item_id] != changed[item_id])
+                self.assertEqual(moved, [target])
+                stdout = io.StringIO()
+                with mock.patch.object(sys, "argv", ["i18n_digest.py", "--check"]), \
+                        contextlib.redirect_stdout(stdout):
+                    self.assertEqual(self.mod.main(), 1)
+                self.assertIn(f"ru/{target}", stdout.getvalue())
 
     def test_an_unstamped_item_is_drift_and_not_a_fresh_start(self):
         """A translation added without recording what it translated is the same
