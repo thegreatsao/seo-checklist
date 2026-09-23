@@ -1942,6 +1942,22 @@ class UrlQuality(unittest.TestCase):
         self.assertEqual(verdict("AR-155", bad), FAIL)
         self.assertIn(verdict("CI-012", bad), (FAIL, WARN))
 
+    def test_a_long_url_with_no_parameters_is_not_short(self):
+        """AR-147 read `param_count` alone until 0.115.0, so this passed."""
+        import url_quality
+        url = "https://example.com/" + "/".join(["a-very-long-descriptive-segment"] * 4)
+        row = url_quality.analyze_urls([url + "-and-more-words-to-pass-the-limit"])["rows"][0]
+        self.assertEqual(row["param_count"], 0)
+        self.assertGreater(len(row["url"]), 115)
+        self.assertIs(row["short"], False)
+        self.assertEqual(verdict("AR-147", {"rows": [row]}), FAIL)
+
+    def test_a_deep_path_is_not_short_either(self):
+        import url_quality
+        row = url_quality.analyze_urls(["https://example.com/a/b/c/d/e/f"])["rows"][0]
+        self.assertIs(row["short"], False)
+        self.assertEqual(verdict("AR-147", {"rows": [row]}), FAIL)
+
 
 class Indexability(unittest.TestCase):
     """AI crawler alignment, GEO-003 `rows` with a `field`-scoped value map."""
@@ -2041,6 +2057,38 @@ class LlmsTxt(unittest.TestCase):
         self.assertIs(bad["exists"], False)
         self.assertEqual(verdict("GEO-001", bad), FAIL)
         self.assertEqual(verdict("GEO-002", bad), FAIL)
+
+    def check(self, body, content_type="text/plain; charset=utf-8", status=200):
+        import llms_txt_checker
+        routes = {"/": "<html><body>home</body></html>",
+                  "/llms.txt": (status, {"Content-Type": content_type}, body)}
+        with harness.allow_loopback(), served(routes) as site:
+            return llms_txt_checker.check_llms_txt(site.url)
+
+    def test_an_html_page_served_at_the_path_is_not_an_llms_txt(self):
+        """The defect 0.115.0 repairs: many sites answer every unknown path with their
+        HTML shell and a 200, and `exists` passed GEO-001 on it."""
+        result = self.check("<!doctype html><html><body>Not found</body></html>",
+                            content_type="text/html; charset=utf-8")
+        self.assertIs(result["exists"], True)
+        self.assertIs(result["well_formed"], False)
+        self.assertIn("HTML", result["well_formed_reason"])
+        self.assertEqual(verdict("GEO-001", result), FAIL)
+
+    def test_a_text_file_without_its_title_line_is_not_well_formed(self):
+        result = self.check("Some notes about the site\n- [Home](/)\n")
+        self.assertIs(result["well_formed"], False)
+        self.assertEqual(verdict("GEO-001", result), FAIL)
+
+    def test_a_title_line_is_all_the_format_requires(self):
+        result = self.check("# Fixture Bakery\n")
+        self.assertIs(result["well_formed"], True)
+        self.assertEqual(verdict("GEO-001", result), PASS)
+
+    def test_a_server_error_answers_nothing_either_way(self):
+        result = self.check("oops", status=503)
+        self.assertNotIn("well_formed", result)
+        self.assertEqual(verdict("GEO-001", result), NO_DATA)
 
 
 # ---------------------------------------------------------------------------

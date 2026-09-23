@@ -1907,10 +1907,10 @@
           ]
         }
       },
-      "verdict": "owed",
-      "reading": "`issues` carries URL Inspection's findings for the audited URL — coverage, canonical, robots, indexing state; the API returns no rendered HTML, so that half of the title is unread. A `measures` sentence is owed.",
+      "verdict": "measures",
+      "reading": "`issues` carries URL Inspection's findings for the audited URL — coverage, canonical, robots, indexing state. The API returns no rendered HTML, and `measures` says that half is not read.",
       "shapes": {
-        "conjunction": "Owed: URL Inspection is read, rendered HTML is not."
+        "conjunction": "URL Inspection is read; rendered HTML is what `measures` says is not."
       }
     },
     "GO-136": {
@@ -2067,12 +2067,12 @@
           "gte": 25
         }
       },
-      "verdict": "owed",
-      "reading": "`score` is citation_readiness for this one page — GEO-005's twin — while the title names AI Overviews and zero-click results, which no input here observes. A `measures` sentence is owed.",
+      "verdict": "measures",
+      "reading": "`score` is citation_readiness for this one page — GEO-005's twin. Presence in AI Overviews or zero-click results is not observable here, and `measures` says so.",
       "shapes": {
-        "conjunction": "Owed: neither surface is observed.",
-        "external": "Owed: AI Overview presence is not observable offline.",
-        "qualifier": "Owed: read as citation readiness only."
+        "conjunction": "Neither surface is observed; `measures` names both.",
+        "external": "AI Overview presence needs a source this audit does not have; `measures` says so.",
+        "qualifier": "*Optimize* is read as citation readiness, and `measures` says that is all."
       }
     },
     "AR-146": {
@@ -2110,14 +2110,14 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "rows.0.param_count",
-          "lte": 2
+          "path": "rows.0.short",
+          "truthy": true
         }
       },
-      "verdict": "owed",
-      "reading": "`rows.0.param_count` counts query parameters, at most two; a 300-character URL with none passes, and the `long_url` flag url_quality already raises is unread here. A rule repair is owed (A.10).",
+      "verdict": "measures",
+      "reading": "`rows.0.short` requires at most 115 characters, five path segments and two query parameters (0.115.0; it read `param_count` alone before, so a 300-character URL with no query passed). Whether the words describe the page is not read, and `measures` says so.",
       "shapes": {
-        "qualifier": "Owed: *short* is not read, *descriptive* cannot be."
+        "qualifier": "*Short* is the three bounds; *descriptive* is what `measures` says is not read."
       }
     },
     "AR-149": {
@@ -2523,11 +2523,11 @@
           "gt": 0
         }
       },
-      "verdict": "owed",
-      "reading": "`unminified_count` counts stylesheets that are not minified; the rest of *optimize* — unused rules, critical CSS — is not read. A `measures` sentence is owed.",
+      "verdict": "measures",
+      "reading": "`unminified_count` counts stylesheets the page loads that are not minified. Unused rules and critical-path CSS are not read, and `measures` says so.",
       "shapes": {
-        "conjunction": "Owed: minify is read, optimize is not.",
-        "qualifier": "Owed: as above."
+        "conjunction": "Minify is read; the rest of optimize is what `measures` says is not.",
+        "qualifier": "*Optimize* beyond minification is not read; `measures` says so."
       }
     },
     "TE-175": {
@@ -2871,14 +2871,14 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "exists",
+          "path": "well_formed",
           "truthy": true
         }
       },
-      "verdict": "owed",
-      "reading": "`exists` is llms.txt answering 200; *well-formed* is not read here (GEO-002 scores quality). A rule repair is owed (A.10).",
+      "verdict": "answers",
+      "reading": "`well_formed` is true when /llms.txt answers 200 with a `# ` title as its first line and is not an HTML page — the one element the format requires (0.115.0; it read `exists`, which any 200 satisfied). A 404 is false; any other status leaves it unset.",
       "shapes": {
-        "conjunction": "Owed: present is read, well-formed is not."
+        "conjunction": "Present and well-formed are both read: a 404 fails, and so does a 200 that is not an llms.txt file."
       }
     },
     "GEO-002": {

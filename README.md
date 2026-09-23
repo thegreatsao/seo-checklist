@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.114.0 — see [CHANGELOG.md](CHANGELOG.md). No verdict moves. Every one of the 145 checks that runs a script now has a written reading against its title, and a change to either one fails the build until somebody reads the pair again; fourteen are recorded as still owing a repair. Before that, `0.113.0` made nineteen items say under their titles what they actually check.
+Version 0.115.0 — see [CHANGELOG.md](CHANGELOG.md). **Two verdicts can move on your site.** *llms.txt present and well-formed* no longer passes an HTML page served at /llms.txt, and *Use Short, Descriptive URLs* now fails a long URL even with no query string. Before that, `0.114.0` gave every check that runs a script a written reading against its title that any change reopens.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

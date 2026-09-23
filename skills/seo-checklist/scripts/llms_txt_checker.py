@@ -92,7 +92,13 @@ def check_llms_txt(url: str, timeout: int = 15) -> dict:
             result["content"] = resp.text
             _parse_llms_txt(resp.text, result)
             _score_quality(result)
+            result["well_formed"], result["well_formed_reason"] = _well_formed(
+                resp.text, (resp.headers or {}).get("content-type", ""), result)
         elif resp.status_code == 404:
+            # Absent is an answer: GEO-001 fails. Any other status is not, and the key
+            # stays unset so the item reads NO_DATA rather than a guess.
+            result["well_formed"] = False
+            result["well_formed_reason"] = "no llms.txt at this origin"
             result["quality"]["issues"].append("🔴 No llms.txt found")
             result["quality"]["suggestions"].append(
                 "Create /llms.txt with site name, description, and key page links"
@@ -110,6 +116,23 @@ def check_llms_txt(url: str, timeout: int = 15) -> dict:
         pass
 
     return result
+
+
+def _well_formed(text: str, content_type: str, result: dict) -> tuple[bool, str | None]:
+    """Whether a 200 at /llms.txt is an llms.txt file, in the format's own terms.
+
+    GEO-001 is titled *present and well-formed* and asserted `exists`, which is true of
+    any 200 — including the HTML page many sites serve for every unknown path. The
+    format (llmstxt.org) requires one thing: an H1 with the site's name as the first
+    line. Everything past that is optional, and GEO-002 scores it.
+    """
+    head = text.lstrip()[:200].lower()
+    if "html" in content_type.lower() or head.startswith(("<!doctype", "<html")):
+        return False, "the response is an HTML page, not an llms.txt file"
+    if not result["parsed"]["title"]:
+        return False, ("the first line is not a `# ` title, the one element the "
+                       "llms.txt format requires")
+    return True, None
 
 
 def _parse_llms_txt(content: str, result: dict):

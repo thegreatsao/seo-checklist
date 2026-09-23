@@ -562,6 +562,10 @@ MEASURES = {
     "SP-112": "Chrome UX Report field data for mobile, read through PageSpeed Insights: the data the Search Console report is built from.",
     "AR-155": "That the URL has no uppercase letters, underscores, archive pattern, deep path, parameters or excess length. Whether the words describe the page is not read.",
     "CN-065": "That the page has exactly one non-empty H1.",
+    "AR-147": "That the URL is at most 115 characters, five path segments and two query parameters. Whether its words describe the page is not read.",
+    "GO-135": "URL Inspection's verdict on the audited URL: coverage, canonical, robots and indexing state. The API returns no rendered HTML, so that half is not read.",
+    "GO-145": "How citation-ready this page's content is. Whether it appears in AI Overviews or zero-click results is not observable here.",
+    "TE-174": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
 }
 
 
@@ -1381,7 +1385,7 @@ item(146, "medium", S, "parse_html.py", HTMLARG,
      NOTHING_SERIOUS("pagination.issues"),
      "Fix rel=next/prev: same host, and never pointing at the page itself")
 item(147, "medium", S, "url_quality.py", PAGE,
-     {"path": "rows.0.param_count", "lte": 2},
+     {"path": "rows.0.short", "truthy": True},
      "Short descriptive URLs without excess parameters")
 item(148, "low", M, fix="Visualize the site architecture")
 # This asserted `pages` was non-empty — satisfied by any site that answers at all,
@@ -1616,7 +1620,7 @@ item(200, "high", S, "local_seo_checker.py", PAGE,
 
 EXTRA = [
     ("GEO-001", "geo_ai", "llms.txt present and well-formed", "high", S,
-     "llms_txt_checker.py", PAGE, {"path": "exists", "truthy": True},
+     "llms_txt_checker.py", PAGE, {"path": "well_formed", "truthy": True},
      "Publish /llms.txt describing the site and mapping its key sections"),
     ("GEO-002", "geo_ai", "llms.txt quality score", "medium", S,
      "llms_txt_checker.py", PAGE, {"path": "quality.score", "gte": 60},

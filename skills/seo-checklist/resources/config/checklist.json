@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "11a22b13470b",
+  "registry_version": "e972b3b363d4",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -2883,6 +2883,7 @@
           ]
         }
       },
+      "measures": "URL Inspection's verdict on the audited URL: coverage, canonical, robots and indexing state. The API returns no rendered HTML, so that half is not read.",
       "effort": "low",
       "fix": "Resolve what URL Inspection reports: blocked indexing, failed fetch, or a coverage state that keeps the page out of the index"
     },
@@ -3100,6 +3101,7 @@
           "gte": 25
         }
       },
+      "measures": "How citation-ready this page's content is. Whether it appears in AI Overviews or zero-click results is not observable here.",
       "effort": "low",
       "fix": "Optimize for AI Overviews and zero-click: citability, facts, sources"
     },
@@ -3149,10 +3151,11 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "rows.0.param_count",
-          "lte": 2
+          "path": "rows.0.short",
+          "truthy": true
         }
       },
+      "measures": "That the URL is at most 115 characters, five path segments and two query parameters. Whether its words describe the page is not read.",
       "effort": "high",
       "fix": "Short descriptive URLs without excess parameters"
     },
@@ -3739,6 +3742,7 @@
           "gt": 0
         }
       },
+      "measures": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
       "effort": "low",
       "fix": "Minify and optimize CSS"
     },
@@ -4278,7 +4282,7 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "exists",
+          "path": "well_formed",
           "truthy": true
         }
       },

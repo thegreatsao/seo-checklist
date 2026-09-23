@@ -1193,6 +1193,10 @@ not distinct targets — link equity divides among links.
 `url` — str
 `full_url` — str
 `exists` — bool
+`well_formed` — bool — GEO-001: a 200 whose first line is a `# ` title and
+  which is not an HTML page, the one element the llms.txt format requires. False on a
+  404; **absent** on any other status, so the item reads NO_DATA (0.115.0)
+`well_formed_reason` — str | null — why it is false
 `full_exists` — bool
 `status` — int
 `full_status` — int
@@ -1784,7 +1788,9 @@ the scheme. Three shapes, and the difference between them is the whole contract:
 
 `count` — int
 `rows[]` — array
-  - item keys: url, path, param_count, params, flags, score
+  - item keys: url, path, param_count, params, flags, short, score
+  - `short` — bool — AR-147: at most `MAX_URL_CHARS` characters, `MAX_PATH_SEGMENTS`
+    path segments and `MAX_SHORT_PARAMS` query parameters (0.115.0)
 
 ### video_schema_checker.py
 

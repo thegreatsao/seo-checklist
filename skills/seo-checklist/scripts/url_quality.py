@@ -23,6 +23,10 @@ MAX_URL_CHARS = 115
 # basis: inherited — more than five path segments, present at import: a proxy for how
 #  deep a page sits, which is not the same thing as click depth from the home page.
 MAX_PATH_SEGMENTS = 5
+# basis: inherited — at most two query parameters, the number AR-147's rule asserted on
+#  `param_count` from import until 0.115.0. It moved here when the rule started reading
+#  length and depth as well, so the number is the same and now lives beside the others.
+MAX_SHORT_PARAMS = 2
 
 def analyze_urls(urls: list[str]) -> dict:
     rows = []
@@ -50,7 +54,12 @@ def analyze_urls(urls: list[str]) -> dict:
             flags.append("facet_parameters")
         normalized_key = (parsed.netloc.lower().removeprefix("www."), path.lower().rstrip("/") or "/", tuple(sorted(params)))
         path_variants[normalized_key].append(url)
-        rows.append({"url": url, "path": path, "param_count": len(params), "params": sorted(params), "flags": flags, "score": max(0, 100 - 12 * len(flags))})
+        # AR-147 is titled *Short*, and until 0.115.0 read only `param_count`, so a
+        # 300-character URL with no query string passed it. Short is all three bounds.
+        short = (len(url) <= MAX_URL_CHARS
+                 and len([seg for seg in path.split("/") if seg]) <= MAX_PATH_SEGMENTS
+                 and len(params) <= MAX_SHORT_PARAMS)
+        rows.append({"url": url, "path": path, "param_count": len(params), "params": sorted(params), "flags": flags, "short": short, "score": max(0, 100 - 12 * len(flags))})
 
     variants = {str(key): vals for key, vals in path_variants.items() if len(vals) > 1}
     flag_counts = Counter(flag for row in rows for flag in row["flags"])

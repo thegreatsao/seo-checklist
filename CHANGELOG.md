@@ -10,6 +10,32 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.115.0 — five of the fourteen owed
+
+Registry version: **`11a22b13470b` → `e972b3b363d4`.** GEO-001 and AR-147 change what they
+assert, so both can move on a real site. No fixture verdict moves. Suite 1797 → 1803.
+
+**GEO-001 *llms.txt present and well-formed* passed any 200.** Many sites answer every
+unknown path with their HTML shell and a 200, and `exists` read that as an llms.txt. It
+now reads `well_formed`: the response is not an HTML page and its first line is a `# `
+title — the one element the llms.txt format (llmstxt.org) requires; GEO-002 still scores
+the rest. A 404 fails; any other status is NO_DATA rather than a guess.
+
+**AR-147 *Use Short, Descriptive URLs* read the parameter count alone**, so a
+300-character URL with no query string passed. It now reads `short`: at most 115
+characters, five path segments and two parameters. The two parameters were the registry's
+own number since import and now sit in `url_quality.py` as `MAX_SHORT_PARAMS`, where the
+threshold inventory can see them — which is why `inherited` goes from 76 to 77: a number
+that was always there, counted for the first time. *Descriptive* cannot be measured, and
+the item says so in its `measures` line.
+
+**Three more items say what they check:** GO-135 (URL Inspection's verdict; the API
+returns no rendered HTML), GO-145 (a one-page citation score; AI Overview presence is not
+observable here), TE-174 (minification; unused and critical-path CSS are not read).
+
+The reader of 0.114.0 did its job while this was written: changing two rules turned the
+build red on exactly those two readings until they were re-read. Nine owed remain.
+
 ## 0.114.0 — every rule now has a reading, and a change reopens it
 
 Registry version: **`11a22b13470b`, unchanged.** No rule and no verdict moves. REG-6

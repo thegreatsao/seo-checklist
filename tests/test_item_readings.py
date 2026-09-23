@@ -37,7 +37,10 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         counts = {v: 0 for v in R.VERDICTS}
         for entry in READINGS["items"].values():
             counts[entry["verdict"]] += 1
-        self.assertEqual(counts, {"answers": 112, "measures": 19, "owed": 14})
+        # 0.115.0: GEO-001 repaired (owed -> answers); AR-147 repaired for length and
+        # given a statement for the rest, GO-135, GO-145, TE-174 given statements
+        # (owed -> measures). Nine owed remain.
+        self.assertEqual(counts, {"answers": 113, "measures": 23, "owed": 9})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
         """Line endings are normalised first: a Windows checkout writes CRLF, and how

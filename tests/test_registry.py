@@ -608,15 +608,19 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 0.112.0 moves `MAX_REDIRECT_HOPS` from `inherited` to `standard`: ten is
         # Google's documented default redirect limit, rather than an unexplained
         # number this project inherited.
+        #
+        # 0.115.0 adds one `inherited`: `MAX_SHORT_PARAMS` in `url_quality.py`, the two
+        # query parameters AR-147 asserted in the registry since import. A floor in the
+        # registry is invisible to this scan; as a constant it is counted.
         self.assertEqual(by_kind, {
             "standard": 15,
             "measured": 11,
             "convention": 55,
-            "inherited": 76,
+            "inherited": 77,
             "presentation": 13,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 157)
-        self.assertEqual(len(named), 170)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 158)
+        self.assertEqual(len(named), 171)
         self.assertEqual(len(uncounted), 13)
         # 169 -> 170: the outbound-link check's cap was a default argument value,
         # which is a place no instrument here can see. Promoting it to a module
@@ -636,8 +640,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 180 -> 182: the two image numbers above at 0.108.0. `JPEG_SOF_MARKERS` moved
         # module with the header reader and counts once, as before.
         # 182 -> 183: the 4xx lower bound above at 0.110.0.
+        # 183 -> 184: `MAX_SHORT_PARAMS` at 0.115.0, moved out of the registry.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 183)
+                             for path in at._script_paths()), 184)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -2247,6 +2252,11 @@ class MeasuresQualifications(unittest.TestCase):
         "SP-112": "Chrome UX Report field data for mobile, read through PageSpeed Insights: the data the Search Console report is built from.",
         "AR-155": "That the URL has no uppercase letters, underscores, archive pattern, deep path, parameters or excess length. Whether the words describe the page is not read.",
         "CN-065": "That the page has exactly one non-empty H1.",
+        # 0.115.0: the four A.10 owed as statements rather than repairs.
+        "AR-147": "That the URL is at most 115 characters, five path segments and two query parameters. Whether its words describe the page is not read.",
+        "GO-135": "URL Inspection's verdict on the audited URL: coverage, canonical, robots and indexing state. The API returns no rendered HTML, so that half is not read.",
+        "GO-145": "How citation-ready this page's content is. Whether it appears in AI Overviews or zero-click results is not observable here.",
+        "TE-174": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
     }
 
     @staticmethod
@@ -2255,7 +2265,7 @@ class MeasuresQualifications(unittest.TestCase):
         import build_checklist
         return build_checklist
 
-    def test_the_registry_carries_exactly_the_nineteen_qualifications_verbatim(self):
+    def test_the_registry_carries_exactly_the_twenty_three_qualifications_verbatim(self):
         build_checklist = self.module()
         self.assertEqual(build_checklist.MEASURES, self.EXPECTED)
         shipped = {item["id"]: item["measures"] for item in ITEMS
