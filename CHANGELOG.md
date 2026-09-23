@@ -10,6 +10,48 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.109.0 — robots.txt meant one thing on Python 3.13 and another on 3.10
+
+Registry version: **`bfddc84f11b4`, unchanged.** No item changes what it asserts; what
+changes is the answer to "does robots.txt let this agent fetch this URL", which four
+scripts ask and which decides CI-005, CI-013, CI-019 and GEO-003 — so those verdicts can
+move on a real site whose robots.txt uses groups per crawler, query rules or `Allow`
+exceptions. No fixture verdict moves. Suite 1715 → 1740.
+
+**The question was answered in two places, and both were wrong.** Measured before
+anything was written:
+
+* `seo_common.robots_allowed`, read by `indexability_matrix`, `ai_crawler_policy_matrix`
+  and `robots_path_tester`, got five RFC 9309 cases of five wrong. It merged the `*` group
+  into a crawler's own group, so `Disallow: /private/` for `*` blocked Googlebot from a
+  path its own group permitted; it compared the path without the query, so
+  `Disallow: /*?` — the commonest faceted-navigation rule there is — never matched
+  anything; and it matched agents by substring, so Googlebot obeyed a `Googlebot-News`
+  group and an empty `User-agent:` line bound every crawler.
+* The audit's own politeness went through `urllib.robotparser`, **whose answer depends on
+  the interpreter.** On 3.10.21 and 3.11.16 — two of the three versions CI runs — it ignores
+  `/*?`, lets the first matching line win instead of the longest, and cannot see an `Allow`
+  exception inside a disallowed directory. On 3.13.15 it gets all three right. Two audits
+  of one site did not check the same things, which is the one promise this skill makes.
+
+`lib/robots_rules.py` is now the only place a rule is matched: RFC 9309 group selection
+(a crawler's own groups, combined; `*` only when it has none; Google's
+`Googlebot-Image`/`Googlebot-News` → `googlebot` fallback), path **and** query, `*` and `$`,
+percent-normalisation on both sides, longest match with `allow` winning a tie, and
+`/robots.txt` always allowed. `seo_common.robots_allowed` and `safe_http.robots_allows`
+both delegate to it. `robots_checker.py`, which had a third parser, reads its groups too:
+consecutive `User-agent` lines share their rules (it had kept only the last), and AI
+crawlers are looked up by product token, so `user-agent: gptbot` manages GPTBot. No item
+reads that part; it is what the report prints.
+
+Held by `tests/test_robots_rules.py`: the five cases, the three that differed by
+interpreter (meaningful on CI's 3.10 and 3.11 jobs, which is where they were wrong), and
+a reader that fails if any script imports `urllib.robotparser` again.
+
+**Unchanged on purpose:** an unreadable robots.txt still fails open for the audit's own
+crawl. That is argued in `_fetch_robots` and HTTP-5, and it is a different question from
+what Google does with one — which 0.110.0 needs.
+
 ## 0.108.0 — one responsive image out of a hundred was enough
 
 Registry version: **`f07a03292d84` → `bfddc84f11b4`.** MB-096, MB-097 and MD-189 change

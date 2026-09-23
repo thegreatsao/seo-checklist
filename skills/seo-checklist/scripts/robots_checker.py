@@ -20,8 +20,10 @@ except ImportError:
 
 try:
     from lib.safe_http import default_headers, safe_get
+    from lib import robots_rules
 except ImportError:
     from scripts.lib.safe_http import default_headers, safe_get
+    from scripts.lib import robots_rules
 
 
 # AI crawlers to check for explicit management
@@ -102,57 +104,37 @@ def fetch_robots_txt(url: str, timeout: int = 15) -> dict:
 
 def _parse_robots(content: str, result: dict):
     """Parse robots.txt content into structured data."""
-    current_agents = []
-
-    for line in content.splitlines():
-        line = line.strip()
-
-        # Skip comments and empty lines
-        if not line or line.startswith("#"):
-            continue
-
-        # Split on first colon
-        if ":" not in line:
-            continue
-
-        directive, _, value = line.partition(":")
-        directive = directive.strip().lower()
-        value = value.strip()
-
-        if directive == "user-agent":
-            current_agents = [value]
-            if value not in result["user_agents"]:
-                result["user_agents"][value] = {"allow": [], "disallow": []}
-
-        elif directive == "disallow" and current_agents:
-            for agent in current_agents:
-                if agent not in result["user_agents"]:
-                    result["user_agents"][agent] = {"allow": [], "disallow": []}
-                if value:
-                    result["user_agents"][agent]["disallow"].append(value)
-
-        elif directive == "allow" and current_agents:
-            for agent in current_agents:
-                if agent not in result["user_agents"]:
-                    result["user_agents"][agent] = {"allow": [], "disallow": []}
-                result["user_agents"][agent]["allow"].append(value)
-
-        elif directive == "sitemap":
-            result["sitemaps"].append(value)
-
-        elif directive == "crawl-delay" and current_agents:
-            for agent in current_agents:
-                try:
-                    result["crawl_delays"][agent] = float(value)
-                except ValueError:
-                    pass
+    parsed = robots_rules.parse(content)
+    result["sitemaps"].extend(parsed["sitemaps"])
+    token_rules: dict[str, dict[str, list[str]]] = {}
+    for group in parsed["groups"]:
+        allow = [value for directive, value in group["rules"]
+                 if directive == "allow"]
+        disallow = [value for directive, value in group["rules"]
+                    if directive == "disallow" and value]
+        for agent in group["lines"]:
+            rules = result["user_agents"].setdefault(
+                agent, {"allow": [], "disallow": []}
+            )
+            rules["allow"].extend(allow)
+            rules["disallow"].extend(disallow)
+            if group["crawl_delay"] is not None:
+                result["crawl_delays"][agent] = group["crawl_delay"]
+            token = robots_rules.product_token(agent)
+            if token:
+                combined = token_rules.setdefault(
+                    token, {"allow": [], "disallow": []}
+                )
+                combined["allow"].extend(allow)
+                combined["disallow"].extend(disallow)
 
     # Analyze AI crawler management
-    managed_agents = set(result["user_agents"].keys())
+    managed_agents = set(token_rules)
 
     for crawler in AI_CRAWLERS:
-        if crawler in managed_agents:
-            rules = result["user_agents"][crawler]
+        crawler_token = robots_rules.product_token(crawler)
+        if crawler_token in managed_agents:
+            rules = token_rules[crawler_token]
             if rules["disallow"] and "/" in rules["disallow"]:
                 result["ai_crawler_status"][crawler] = "fully blocked"
             elif rules["disallow"]:
@@ -164,7 +146,7 @@ def _parse_robots(content: str, result: dict):
         else:
             # Check wildcard rules
             if "*" in managed_agents:
-                wildcard = result["user_agents"]["*"]
+                wildcard = token_rules["*"]
                 if wildcard["disallow"] and "/" in wildcard["disallow"]:
                     result["ai_crawler_status"][crawler] = "blocked by wildcard (*)"
                 else:

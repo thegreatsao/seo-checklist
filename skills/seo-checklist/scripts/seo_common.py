@@ -56,10 +56,12 @@ try:
     from lib.safe_http import (AGENTIC_SEO_USER_AGENT, HostResolutionError,
                                RobotsDisallowed, SafeHTTPError, safe_get,
                                safe_request)
+    from lib import robots_rules
 except ImportError:
     from scripts.lib.safe_http import (AGENTIC_SEO_USER_AGENT,
                                        HostResolutionError, RobotsDisallowed,
                                        SafeHTTPError, safe_get, safe_request)
+    from scripts.lib import robots_rules
 
 try:
     from urllib3.exceptions import NameResolutionError as _NameResolutionError
@@ -1064,63 +1066,18 @@ def issue(severity: str, message: str, url: str | None = None, evidence: str | N
 
 
 def parse_robots_txt(content: str) -> dict:
-    groups: list[dict] = []
-    current: dict | None = None
-    sitemaps: list[str] = []
+    parsed = robots_rules.parse(content)
     crawl_delays: dict[str, float] = {}
-    for raw_line in (content or "").splitlines():
-        line = raw_line.split("#", 1)[0].strip()
-        if not line or ":" not in line:
-            continue
-        name, value = line.split(":", 1)
-        name = name.strip().lower()
-        value = value.strip()
-        if name == "user-agent":
-            if current is None or current.get("rules"):
-                current = {"agents": [], "rules": []}
-                groups.append(current)
-            current["agents"].append(value.lower())
-        elif name in ("allow", "disallow") and current is not None:
-            current["rules"].append((name, value))
-        elif name == "sitemap":
-            sitemaps.append(value)
-        elif name == "crawl-delay" and current is not None:
-            try:
-                delay = float(value)
-            except ValueError:
-                continue
-            for agent in current["agents"]:
-                crawl_delays[agent] = delay
-    return {"groups": groups, "sitemaps": sitemaps, "crawl_delays": crawl_delays}
-
-
-def _robots_pattern_to_regex(pattern: str) -> re.Pattern:
-    escaped = re.escape(pattern).replace("\\*", ".*")
-    if escaped.endswith("\\$"):
-        escaped = escaped[:-2] + "$"
-    return re.compile("^" + escaped)
+    for group in parsed["groups"]:
+        if group["crawl_delay"] is not None:
+            for agent in group["agents"]:
+                crawl_delays[agent] = group["crawl_delay"]
+    parsed["crawl_delays"] = crawl_delays
+    return parsed
 
 
 def robots_allowed(parsed_robots: dict | None, url: str, user_agent: str = "*") -> tuple[bool, str]:
-    if not parsed_robots:
-        return True, "no robots.txt"
-    path = urlparse(normalize_url(url)).path or "/"
-    ua = user_agent.lower()
-    matches: list[tuple[int, str, str]] = []
-    for group in parsed_robots.get("groups", []):
-        agents = group.get("agents", [])
-        if not any(agent == "*" or agent in ua or ua in agent for agent in agents):
-            continue
-        for directive, pattern in group.get("rules", []):
-            if directive == "disallow" and pattern == "":
-                continue
-            if _robots_pattern_to_regex(pattern).search(path):
-                matches.append((len(pattern), directive, pattern))
-    if not matches:
-        return True, "no matching rule"
-    matches.sort(key=lambda item: (item[0], item[1] == "allow"), reverse=True)
-    _, directive, pattern = matches[0]
-    return directive == "allow", f"{directive}: {pattern}"
+    return robots_rules.allowed(parsed_robots, url, user_agent)
 
 
 def fetch_robots(site_url: str, timeout: int = 15) -> dict:

@@ -483,7 +483,7 @@ jobs:
               assert d is False, f"{fn.__qualname__} opts in by default ({d!r})"
 
           assert "/" not in sh.ROBOTS_TOKEN, (
-              "the token must be bare: RobotFileParser splits the agent at '/', so a "
+              "the token must be bare: robots_rules.product_token stops at '/', so a "
               "full User-Agent makes rules naming us silently inapplicable")
 
           sh._fetch_robots = lambda origin: (_ for _ in ()).throw(RuntimeError("down"))

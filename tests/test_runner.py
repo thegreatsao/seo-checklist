@@ -824,8 +824,8 @@ class Robots(unittest.TestCase):
         self.assertTrue(self.sh.robots_allows("https://example.com/public")[0])
 
     def test_rules_naming_our_token_are_obeyed(self):
-        """The trap this guards: RobotFileParser splits the agent at the first "/"
-        and lowercases it, so passing our full User-Agent —
+        """The trap this guards: robots_rules.product_token reads only the leading
+        product token, so passing our full User-Agent —
         "Mozilla/5.0 (compatible; AgenticSEOSkill/1.0; ...)" — yields "mozilla" and
         a site's rules for us are silently ignored while `*` applies instead."""
         self.serve(f"User-agent: {self.sh.ROBOTS_TOKEN}\nDisallow: /ours\n\n"

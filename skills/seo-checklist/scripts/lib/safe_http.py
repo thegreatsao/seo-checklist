@@ -18,6 +18,11 @@ from email.utils import parsedate_to_datetime
 from urllib.parse import urljoin, urlparse, urlunparse
 
 try:
+    from lib import robots_rules
+except ImportError:
+    from scripts.lib import robots_rules
+
+try:
     import fcntl
 except ImportError:  # pragma: no cover - Windows
     fcntl = None
@@ -342,12 +347,10 @@ def pace(host: str, rps: float | None = None) -> float:
 # robots.txt
 # ---------------------------------------------------------------------------
 
-# The bare product token, never the full User-Agent string. `RobotFileParser`
-# matches by splitting the agent at the first "/" and lowercasing it, so passing
-# our full UA — "Mozilla/5.0 (compatible; AgenticSEOSkill/1.0; ...)" — yields
-# "mozilla", and a site that names AgenticSEOSkill explicitly would be silently
-# ignored while `*` rules applied instead. Verified against CPython's
-# Entry.applies_to; there is a test.
+# The bare product token, never the full User-Agent string. `robots_rules.product_token`
+# reduces a full UA such as "Mozilla/5.0 (compatible; AgenticSEOSkill/1.0; ...)" to
+# "mozilla", so a site that names AgenticSEOSkill explicitly would be silently
+# ignored while `*` rules applied instead. There is a test.
 ROBOTS_TOKEN = "AgenticSEOSkill"
 
 # basis: convention — one hour. An operational bound, not a verdict: a pacing slot older
@@ -528,9 +531,7 @@ def _robots_text_once(origin: str, host: str, path: str) -> str:
 
 
 def robots_policy(url: str):
-    """`(RobotFileParser, crawl_delay)` for a URL's origin. Never raises."""
-    from urllib.robotparser import RobotFileParser
-
+    """`(parsed robots.txt, crawl_delay)` for a URL's origin. Never raises."""
     parsed = urlparse(url)
     if not parsed.hostname:
         return None, 0.0
@@ -542,26 +543,25 @@ def robots_policy(url: str):
         text = _robots_text_once(origin, parsed.hostname, path)
     if not text.strip():
         return None, 0.0
-    parser = RobotFileParser()
     try:
-        parser.parse(text.splitlines())
-        delay = parser.crawl_delay(ROBOTS_TOKEN)
+        policy = robots_rules.parse(text)
+        delay = robots_rules.group_for(policy, ROBOTS_TOKEN)["crawl_delay"]
     except Exception:  # noqa: BLE001
         # A robots.txt we cannot parse is not a disallow.
         return None, 0.0
-    return parser, float(delay or 0.0)
+    return policy, float(delay or 0.0)
 
 
 def robots_allows(url: str) -> tuple[bool, float]:
     """`(allowed, crawl_delay)`. Unreadable or absent robots.txt allows."""
     try:
-        parser, delay = robots_policy(url)
+        policy, delay = robots_policy(url)
     except Exception:  # noqa: BLE001
         return True, 0.0
-    if parser is None:
+    if policy is None:
         return True, 0.0
     try:
-        return bool(parser.can_fetch(ROBOTS_TOKEN, url)), delay
+        return robots_rules.allowed(policy, url, ROBOTS_TOKEN)[0], delay
     except Exception:  # noqa: BLE001
         return True, delay
 

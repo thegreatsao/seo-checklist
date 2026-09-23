@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.108.0 — see [CHANGELOG.md](CHANGELOG.md). **Three verdicts can move on your site.** *Use Responsive Images*, *Use Modern Formats & Responsive Images* and *Optimize Image Formats & Compression* used to pass if one image on the page, out of any number, was responsive or in WebP. They now look at every image: one wider than a phone can use (over 1280 px, read from the file itself) sent without a `srcset`, or without a WebP/AVIF version, fails them; small icons never count. Before that, `0.107.0` moved *Fix Broken Backlinks* to the pages other sites actually link to.
+Version 0.109.0 — see [CHANGELOG.md](CHANGELOG.md). **Four verdicts can move on your site if its robots.txt has a group for one crawler, a rule with a `?` in it, or an `Allow` inside a blocked folder.** *Do Not Block the URL in robots.txt*, *Do Not Block Critical CSS/JS/Images*, the system-pages check and the AI-crawler policy read robots.txt the way Google does now: a crawler follows its own group, `*` only when it has none, and rules match the query too. The audit's own crawler reads it the same way on every Python version — before, Python 3.10 and 3.11 ignored `Disallow: /*?`. Before that, `0.108.0` started judging images one by one.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

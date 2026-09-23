@@ -320,6 +320,19 @@ Probed 6 September 2026 by reversing the default, which produces the third scena
 measurement: 0 decided items against 15 undecided, and the entry page unreachable — the
 collapse the requirement says an operator cannot tell from a crash.
 
+**"Allows" had no single meaning until 0.109.0.** The politeness check went through
+`urllib.robotparser`, and on 3.10.21 and 3.11.16 — two of CI's three interpreters — it
+ignored `Disallow: /*?`, let the first matching line win instead of the longest, and could
+not see an `Allow` exception inside a disallowed directory; 3.13.15 got all three right.
+The evidence scripts used a second matcher with its own five defects. Both now delegate to
+`lib/robots_rules.py` (RFC 9309: a crawler's own groups combined, `*` only as a fallback,
+path and query, longest match, `allow` on a tie). `test_query_wildcard_is_stable_across_python_versions`,
+`test_longer_disallow_beats_shorter_allow` and `test_longer_allow_beats_shorter_disallow`
+go through `robots_allows`; probed 23 September 2026 by running them on 3.10 against the
+0.108.0 tree, where all three fail and on 3.13 all three pass.
+`test_scripts_do_not_import_the_version_dependent_parser` fails if any script imports that
+parser again.
+
 #### Scenario: a URL the audit found for itself
 - **WHEN** a sitemap, a link or a crawl yields a URL a robots rule disallows
 - **THEN** it is not fetched
@@ -341,6 +354,12 @@ collapse the requirement says an operator cannot tell from a crash.
 - **WHEN** a discovered URL that robots allows redirects onto a path robots forbids
 - **THEN** the second hop is refused, so a site that redirects cannot make the rule
   trivially avoidable
+
+#### Scenario: the same file on another interpreter
+- **WHEN** one `robots.txt` carrying `Disallow: /*?`, or an `Allow` longer than the
+  `Disallow` it sits inside, is read by the audit on each Python version CI supports
+- **THEN** every version refuses and permits the same URLs, because one matcher in this
+  tree decides and the standard library's parser is not consulted
 
 #### Scenario: there is nothing readable to obey
 - **WHEN** `robots.txt` is absent, blank, unparseable, or the fetch for it raises
@@ -370,8 +389,8 @@ by accident — which reddens the third test.
 
 #### Scenario: the token is not a User-Agent string
 - **WHEN** the full user agent is offered to the robots matcher instead of the bare token
-- **THEN** the matcher splits it at the first `/`, reads it as the browser name at the
-  front, and the site's rule for us is silently ignored while the wildcard applies
+- **THEN** the matcher reads only the leading product token, which is the browser name
+  at the front, and the site's rule for us is silently ignored while the wildcard applies
 - **AND** that is the failure the bare token exists to prevent, so the token carries no
   slash
 
