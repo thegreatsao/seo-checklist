@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.111.0 — see [CHANGELOG.md](CHANGELOG.md). No verdict moves. The counts this repository states about itself — in this file, the plugin description, the known-issues header, the roadmap — are now derived from the tree on every build, and a stale one fails it; four had drifted. `ROADMAP.md` is rewritten against the tree. Before that, `0.110.0` made a sitemap listing a page robots.txt forbids a finding again.
+Version 0.112.0 — see [CHANGELOG.md](CHANGELOG.md). **Five verdicts can move on your site.** A redirect loop now fails *Use Correct Redirect Codes* (it was a warning); a date mentioned in body text no longer counts as a publication date; `max-age=0` no longer counts as HSTS; all three headers *Harden Security Headers* names must be present; and pages that canonicalise elsewhere or are noindex are no longer duplicate titles. Before that, `0.111.0` made the counts in this repository's own prose checked on every build.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

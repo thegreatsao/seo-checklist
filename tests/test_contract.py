@@ -321,6 +321,12 @@ SAME_ON_BOTH = {
 # record. What is left is the item the fixtures *do* exercise, past the band and
 # into FAIL.
 BAND_UNSEEN = {
+    # 0.112.0 gave CN-056 its band: a publication date with no update date is half the
+    # title. Both fixtures sit at the ends of it.
+    "CN-056": "the band needs a publication date and no update date. The good pages "
+              "carry both as two <time> values and pass; the broken pages carry "
+              "neither and fail. Freshness.test_one_time_is_half_the_title and "
+              "test_a_future_roled_date_stays_in_dates_but_not_in_latest reach WARN",
     # 0.107.0 supplies the Links export to both fixture audits. The good profile's
     # top-domain share is 33.3% (PASS) and the broken profile's is 80% (FAIL), so
     # neither lands in BL-084's 50%-65% warning interval.

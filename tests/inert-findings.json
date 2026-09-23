@@ -79,6 +79,21 @@
       ],
       "title": "Control Faceted Navigation (E-commerce)"
     },
+    "CI-014": {
+      "inert_findings": [],
+      "path": "redirect_issues",
+      "refuses": [
+        "critical",
+        "high",
+        "medium"
+      ],
+      "script": "redirect_checker.py",
+      "script_severities": [
+        "high",
+        "medium"
+      ],
+      "title": "Use Correct Redirect Codes (No Chains/Loops)"
+    },
     "CI-018": {
       "inert_findings": [
         {
@@ -376,6 +391,6 @@
       "title": "Font loading does not block render"
     }
   },
-  "none_severity_item_count": 16,
-  "registry_version": "bfddc84f11b4"
+  "none_severity_item_count": 17,
+  "registry_version": "cc7ceff0b0f6"
 }

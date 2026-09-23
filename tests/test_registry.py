@@ -604,11 +604,15 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 0.110.0 adds one `standard`: `ROBOTS_NO_RULES_STATUS_MIN` in
         # `sitemap_checker.py`, the lower bound of the 4xx response class Google reads
         # as no robots restrictions (with 429 excluded by the branch itself).
+        #
+        # 0.112.0 moves `MAX_REDIRECT_HOPS` from `inherited` to `standard`: ten is
+        # Google's documented default redirect limit, rather than an unexplained
+        # number this project inherited.
         self.assertEqual(by_kind, {
-            "standard": 14,
+            "standard": 15,
             "measured": 11,
             "convention": 55,
-            "inherited": 77,
+            "inherited": 76,
             "presentation": 13,
         })
         self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 157)

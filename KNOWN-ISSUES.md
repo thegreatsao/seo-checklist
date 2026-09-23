@@ -691,15 +691,20 @@ name. A column called `url` would be read as "fix this page".
   and it sits with the other two of those in the entry immediately below.
   <!-- ki: image-inventory-count-on-a-page-with-no-images -->
 
-- **Two items assert a thinner thing than their titles promise.** Collected rather
-  than filed separately, because the shape is the
-  point: the assertion is satisfied by markup that does not deliver what the title says.
+- **One item asserts a thinner thing than its title promises; the second of the pair was
+  repaired in 0.112.0.** The shape is the point: the assertion is satisfied by markup that
+  does not deliver what the title says.
 
   | item | title promises | assertion actually requires |
   |---|---|---|
   | `AR-152` | *Block Crawl Strategically with robots.txt* | that `robots.txt` has any
   user-agent group at all |
-  | `CN-056` | *Show Publication **and** Updated Dates* | one date of any kind |
+
+  `CN-056` *Show Publication **and** Updated Dates* was the second row: it asserted one
+  date of any kind, and a date the body-text regex found in prose counted — a page whose
+  only date was "the 2020-03-14 report" passed, measured on 23 September. It now reads
+  `date_signals.shown`, from declared sources only, and a page with a publication date
+  but no update date is WARN.
 
   `AR-152` was found on the live audit of 2026-08-14. That sentence pointed at a
   `FINDINGS-REVIEW.md` for the write-up, and there is no such file and never has been
@@ -717,7 +722,7 @@ name. A column called `url` would be read as "fix this page".
   over it can be sitewide, and what an image-usage item should assert instead of
   `count gte 1` is open.
 
-  Neither of the two in the table is acted on here, and nor is the question `MD-184`
+  `AR-152` is not acted on here, and nor is the question `MD-184`
   left behind: each changes what a live audit reports and the registry. They are
   collected so that the next person deciding what a registry version is worth
   spending can see them together.

@@ -434,6 +434,12 @@ than fetching them.
   item read `exact_duplicate_groups` until 0.22, which counts duplicate page *content*
   — CN-041's verdict — so a site running one description across forty distinct pages
   passed it.
+`summary.title_group_exclusions.noindex` — int — pages excluded from title and
+  description grouping because they are not indexable
+`summary.title_group_exclusions.canonicalized` — int — pages excluded from title and
+  description grouping because their normalized canonical names a different normalized
+  URL. Pagination remains included because the inventory carries no signal that can
+  distinguish a series from a duplicate.
 `summary.avg_word_count` — int
 
 ### eeat_signal_checker.py
@@ -583,6 +589,13 @@ than fetching them.
   - schema and `<time>` dates come from the page's own nodes; contributions and subjects
     are excluded whether nested under their key or, for schema dates, hoisted into
     `@graph`
+`date_signals.shown.published` — bool — a parseable publication date is declared by
+  page-owned publication meta, schema `datePublished`, or a page-owned `<time>`
+`date_signals.shown.updated` — bool — a parseable update date is declared by modification
+  meta, schema `dateModified`, or a second page-owned `<time>` later than the earliest
+`date_signals.sources.published` / `.updated` — str | null — `meta`, `schema`, or `time`,
+  naming the declared source that established each signal. Body-text regex dates never
+  set either signal.
 `old_years[]` — array
 `stale_stat_sentences` — int
 `schema_date_mismatch` — bool
@@ -1401,6 +1414,11 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
 `truncated` — bool
 `has_mixed_protocol` — bool
 `issues[]` — array
+`redirect_issues[]` — array — present whenever the walk completes, including a capped
+  walk; absent only when `error` is set
+  - item keys: severity, type, message, url
+  - errors report loops, the documented ten-hop cap, and redirects without `Location`;
+    warnings report multi-hop chains and each 302/303/307 temporary redirect
 `error` — NoneType
 
 ### rich_results_guard.py
@@ -1531,6 +1549,12 @@ to walk `rows[].decisions` directly; there is no aggregate to assert against.
 `header_values.x-content-type-options` — str — empty when absent
 `header_values.referrer-policy` — str — empty when absent
 `header_values.permissions-policy` — str — empty when absent
+`hsts_enabled` — bool — true only when the final URL is HTTPS and a present HSTS header
+  has an integer `max-age` greater than zero
+`hsts_disabled_reason` — str | null — why a present HSTS header did not enable HSTS;
+  null when enabled or when the header is absent
+`hardening_missing[]` — sorted array of missing `content-security-policy`,
+  `permissions-policy`, and `referrer-policy` header names
 `issues[]` — array
 `recommendations[]` — array
 `error` — NoneType

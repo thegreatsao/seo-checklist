@@ -112,6 +112,49 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
     schema_dates = _schema_dates(parsed.get("page_schema", []), protected=parsed.get("page_own_ids", frozenset()))
     publication_dates = declared_publication_dates_by_source(parsed)
 
+    def parsed_values(values):
+        return [parsed_date for value in values if (parsed_date := _parse_date(value))]
+
+    published_by_source = {
+        "meta": parsed_values([
+            meta_dates.get(key)
+            for key in ("article:published_time", "date", "dc.date")
+        ]),
+        "schema": parsed_values(
+            publication_dates["schema"] + publication_dates["microdata"]),
+        "time": parsed_values(time_dates),
+    }
+    updated_by_source = {
+        "meta": parsed_values([
+            meta_dates.get(key)
+            for key in ("article:modified_time", "last-modified")
+        ]),
+        "schema": parsed_values(schema_dates["dateModified"]),
+    }
+    parsed_time_dates = published_by_source["time"]
+    if parsed_time_dates and any(value > min(parsed_time_dates)
+                                 for value in parsed_time_dates):
+        updated_by_source["time"] = parsed_time_dates
+
+    published_source = next(
+        (name for name in ("meta", "schema", "time") if published_by_source[name]),
+        None,
+    )
+    updated_source = next(
+        (name for name in ("meta", "schema", "time") if updated_by_source.get(name)),
+        None,
+    )
+    date_signals = {
+        "shown": {
+            "published": published_source is not None,
+            "updated": updated_source is not None,
+        },
+        "sources": {
+            "published": published_source,
+            "updated": updated_source,
+        },
+    }
+
     parsed_dates = []
     for source_name, values in {
         "meta": list(meta_dates.values()),
@@ -177,6 +220,7 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
         "latest_date": latest.isoformat() if latest else None,
         "age_days": age_days,
         "dates": parsed_dates[:50],
+        "date_signals": date_signals,
         "old_years": old_years,
         "stale_stat_sentences": stale_stat_count,
         "schema_date_mismatch": mismatch,

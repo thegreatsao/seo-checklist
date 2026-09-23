@@ -10,6 +10,49 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.112.0 — five items that contradicted their own titles
+
+Registry version: **`bfddc84f11b4` → `cc7ceff0b0f6`.** CI-014, CN-056, SE-115 and SE-120
+assert new fields, and MS-022's script changes what it counts, so all five can move on a
+real site. No fixture verdict moves. REG-6 stays `partial`. Suite 1751 → 1775.
+
+**Every rule-carrying item was read against its title** — all 145, each asserted path
+traced into the script that writes it. Thirty-three fall short; `openspec/specs/registry/`
+A.10 lists them. Anton's ruling (23 September): where the tool can measure what the title
+says, the rule is repaired; where it cannot, the item will say what it checked, beside
+the title; the Plerdy titles stay. These five contradicted their titles' own words and
+needed no new input:
+
+* **CI-014** *Use Correct Redirect Codes (No Chains/Loops)*, `high`. A redirect loop failed
+  its assertion (`has_loop`) and then passed its warn band (`total_hops <= 2`, and A→B→A
+  is one hop), so a page that never loads was WARN — and a test asserted that. Chains
+  never failed and the codes were never read. It now reads `redirect_issues`: a loop, a
+  missing `Location`, or a chain longer than ten hops — the limit Google documents for its
+  crawlers — so `MAX_REDIRECT_HOPS` moves from `inherited` to `standard`) fails; a chain or
+  a 302/303/307, which Google calls a weak signal, warns.
+* **CN-056** *Show Publication and Updated Dates*. Any date counted, including one the
+  body-text regex found in prose: a page whose only date was "the 2020-03-14 report"
+  passed, measured before the repair. It reads `date_signals.shown` from declared sources
+  only — meta, the page's own JSON-LD, its `<time>` elements, with a second, later
+  `<time>` standing for the update so no language is assumed. Publication without an
+  update date is WARN. Closes half of the KNOWN-ISSUES entry it shared with AR-152.
+* **SE-115** *Enable HSTS*. `max-age=0` — which disables HSTS — passed, and so did a header
+  sent over plain HTTP, which RFC 6797 tells browsers to ignore. `hsts_enabled` needs
+  HTTPS and a positive `max-age`, quoted or not.
+* **SE-120** *Harden Security Headers (CSP, Permissions-Policy, Referrer-Policy)*. A
+  weighted score of 80 was reachable with two of the three named headers absent. It now
+  counts exactly those three: all present passes, one missing warns.
+* **MS-022** *Remove Duplicate Page Titles (Handle Canonical/Pagination Correctly)*. Pages
+  that canonicalise elsewhere or are noindex were counted as duplicates — the handling the
+  title names was the case it got wrong. They are excluded and counted
+  (`title_group_exclusions`); MS-029 inherits the exclusion, because a canonicalised
+  variant's description cannot compete either. Pagination is not excluded: the crawl
+  records no `rel=prev/next`, so that half is unmeasured and A.10 says so.
+
+**Twenty-eight are owed**, nine as rule repairs and nineteen as a statement of what the
+item checked. REG-6 stays `partial`: this was a person reading, and the reader that would
+notice the next one is the next release's work.
+
 ## 0.111.0 — the numbers in the prose are read now
 
 Registry version: **`bfddc84f11b4`, unchanged.** No script changes and no verdict moves;

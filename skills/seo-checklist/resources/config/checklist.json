@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "bfddc84f11b4",
+  "registry_version": "cc7ceff0b0f6",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -408,12 +408,19 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "has_loop",
-          "falsy": true
+          "path": "redirect_issues",
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ]
         },
         "warn": {
-          "path": "total_hops",
-          "lte": 2
+          "path": "redirect_issues",
+          "none_severity": [
+            "critical",
+            "high"
+          ]
         }
       },
       "effort": "low",
@@ -1275,8 +1282,15 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "dates",
-          "len_gte": 1
+          "path": "date_signals.shown",
+          "eq": {
+            "published": true,
+            "updated": true
+          }
+        },
+        "warn": {
+          "path": "date_signals.shown.published",
+          "truthy": true
         }
       },
       "effort": "high",
@@ -2429,7 +2443,7 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "header_values.strict-transport-security",
+          "path": "hsts_enabled",
           "truthy": true
         }
       },
@@ -2554,8 +2568,12 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
-          "gte": 80
+          "path": "hardening_missing",
+          "len_eq": 0
+        },
+        "warn": {
+          "path": "hardening_missing",
+          "len_lte": 1
         }
       },
       "effort": "low",

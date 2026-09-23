@@ -430,6 +430,8 @@ SUBJECT_ALWAYS_PRESENT = {
     "CI-014": "every requested URL has a redirect chain, possibly of length zero",
     # The response, and the server behind it. A run that got here got a response.
     "TE-170": "every response carries headers, and their absence is the finding",
+    "SE-120": "every response carries the three hardening headers or omits them; "
+              "their absence is the finding",
     "SP-109": "every page loads some set of third-party scripts, possibly empty",
     "SP-110": "every page has a request chain; its shape is the finding",
     "TECH-002": "every page loads fonts or does not, and either is a finding here",
@@ -644,9 +646,9 @@ item(13, "critical", S, "robots_path_tester.py",
      {"path": "blocked_urls", "len_eq": 0},
      "Do not block critical CSS/JS/images in robots.txt - Google must be able to render the page")
 item(14, "high", S, "redirect_checker.py", PAGE,
-     {"path": "has_loop", "falsy": True},
+     {"path": "redirect_issues", "none_severity": ["critical", "high", "medium"]},
      "Use 301/308 for permanent and 302/307 for temporary; remove chains and loops",
-     {"path": "total_hops", "lte": 2})
+     {"path": "redirect_issues", "none_severity": ["critical", "high"]})
 item(15, "critical", S, "indexability_matrix.py", PAGE,
      {"path": "rows.0.status", "lt": 500},
      "Set up uptime and log alerts, resolve 5xx errors reported in GSC")
@@ -883,8 +885,9 @@ item(54, "high", S, "image_inventory.py", PAGE,
 item(55, "medium", L,
      fix="Make infinite scroll crawlable via paginated URLs")
 item(56, "medium", S, "freshness_checker.py", PAGE,
-     {"path": "dates", "len_gte": 1},
-     "Show publication and updated dates")
+     {"path": "date_signals.shown", "eq": {"published": True, "updated": True}},
+     "Show publication and updated dates",
+     {"path": "date_signals.shown.published", "truthy": True})
 # This asserted `signals.authors len_gte 1`, so the "and Publisher" half of the title
 # was never required — and `eeat_signal_checker.py` made that weaker rule worse by
 # putting publisher names in the author list. Read the pair whole so neither half can
@@ -1154,7 +1157,7 @@ item(114, "critical", S, "domain_safety_check.py", PAGE,
      {"path": "safe_browsing.threats", "len_eq": 0},
      "Scan the site for malicious code via Safe Browsing")
 item(115, "medium", S, "security_headers.py", PAGE,
-     {"path": "header_values.strict-transport-security", "truthy": True},
+     {"path": "hsts_enabled", "truthy": True},
      "Enable HSTS")
 item(116, "critical", S, "domain_safety_check.py", PAGE,
      {"path": "safe_browsing.threats", "len_eq": 0},
@@ -1175,8 +1178,9 @@ item(119, "medium", S, "pagespeed.py", ["{url}", "--strategy", "mobile"],
      RATING("CLS"),
      "The cookie banner must not cause layout shift", warn=RATING_WARN("CLS"))
 item(120, "medium", S, "security_headers.py", PAGE,
-     {"path": "score", "gte": 80},
-     "Configure CSP, Permissions-Policy and Referrer-Policy")
+     {"path": "hardening_missing", "len_eq": 0},
+     "Configure CSP, Permissions-Policy and Referrer-Policy",
+     {"path": "hardening_missing", "len_lte": 1})
 
 # --- 9. International -------------------------------------------------------
 item(121, "medium", S, "hreflang_checker.py", PAGE,

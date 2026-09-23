@@ -78,15 +78,15 @@ tests; restoring a served one is a fixture decision.
 
 | basis | count |
 |---|---|
-| standard | 14 |
+| standard | 15 |
 | measured | 11 |
 | convention | 55 |
-| inherited | 77 |
+| inherited | 76 |
 | no basis | 0 |
 | **numbers a verdict depends on** | **157** |
 
-**`inherited` at 77 of 157 is the largest single gap between this tree and 1.0,** and it
-has grown: it was 75 of 144 at 0.87.1. Nothing is unnamed — that took a gate — but half
+**`inherited` at 76 of 157 is the largest single gap between this tree and 1.0,** and it
+has barely moved: it was 75 of 144 at 0.87.1. Nothing is unnamed — that took a gate — but half
 the numbers a verdict rests on are still numbers nobody here decided. The calibrations so
 far show what closing one costs: each took a corpus, a method and a stated limitation.
 
@@ -106,7 +106,7 @@ derived and compared. It is narrower than the ask it answers. A sentence of the 
 
 ## What 1.0 requires, in the order the numbers should move
 
-1. **`inherited` 77 → 0**, by calibration or by an honest relabel to `convention` with
+1. **`inherited` 76 → 0**, by calibration or by an honest relabel to `convention` with
    the judgement written out.
 2. **REG-6's reader** — something that would have noticed any of the five items that
    measured the wrong thing. Until it exists, `partial` there is the honest word.

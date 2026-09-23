@@ -12,6 +12,7 @@ Usage:
 
 import argparse
 import json
+import re
 import sys
 from urllib.parse import urlparse
 
@@ -102,6 +103,9 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
         "headers_present": {},
         "headers_missing": {},
         "header_values": {},
+        "hsts_enabled": False,
+        "hsts_disabled_reason": None,
+        "hardening_missing": [],
         "issues": [],
         "recommendations": [],
         "error": None,
@@ -120,6 +124,36 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
 
         # Check each security header
         response_headers = {k.lower(): v for k, v in resp.headers.items()}
+        hsts_value = response_headers.get("strict-transport-security")
+        if hsts_value:
+            if not result["https"]:
+                result["hsts_disabled_reason"] = (
+                    "Strict-Transport-Security is ignored when delivered over HTTP"
+                )
+            else:
+                match = re.search(r"(?:^|;)\s*max-age\s*=\s*([^;\s]+)",
+                                  hsts_value, re.I)
+                if not match:
+                    result["hsts_disabled_reason"] = "HSTS has no max-age directive"
+                else:
+                    try:
+                        # RFC 6797 section 6.1 lets a directive value be a
+                        # quoted-string: `max-age="31536000"` is as valid as the bare form.
+                        max_age = int(match.group(1).strip('"'))
+                    except ValueError:
+                        result["hsts_disabled_reason"] = "HSTS max-age is not an integer"
+                    else:
+                        if max_age > 0:
+                            result["hsts_enabled"] = True
+                        else:
+                            result["hsts_disabled_reason"] = (
+                                "HSTS max-age must be greater than zero"
+                            )
+
+        hardening_headers = {
+            "content-security-policy", "permissions-policy", "referrer-policy"
+        }
+        result["hardening_missing"] = sorted(hardening_headers - response_headers.keys())
 
         for header_key, header_info in SECURITY_HEADERS.items():
             if header_key in response_headers:

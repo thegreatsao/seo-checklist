@@ -1769,12 +1769,34 @@ class SitemapRobots(unittest.TestCase):
 
 
 class Redirects(unittest.TestCase):
-    """CI-014 `has_loop`, AR-150 `total_hops`.
+    """CI-014 `redirect_issues`, AR-150 `total_hops`.
 
     A static file server cannot express a redirect, which is why the contract pair
     exempts both items — `served()` can, so this is the only place either is
     exercised against a real 301.
     """
+
+    def setUp(self):
+        import redirect_checker
+        self.redirect_checker = redirect_checker
+        self.saved_safe_head = redirect_checker.safe_head
+
+    def tearDown(self):
+        self.redirect_checker.safe_head = self.saved_safe_head
+
+    def _stub_redirects(self, answers):
+        class Elapsed:
+            @staticmethod
+            def total_seconds():
+                return 0.001
+
+        class Response:
+            def __init__(self, status, location=None):
+                self.status_code = status
+                self.headers = {} if location is None else {"Location": location}
+                self.elapsed = Elapsed()
+
+        self.redirect_checker.safe_head = lambda url, **_kwargs: Response(*answers[url])
 
     def test_no_redirect_is_no_hops_and_no_loop(self):
         direct = out("redirect")
@@ -1788,38 +1810,85 @@ class Redirects(unittest.TestCase):
         self.assertEqual(verdict("AR-150", hops), FAIL)
 
     def test_a_loop_is_reported_as_a_loop(self):
+        """A loop is a structured high issue, so the high item fails outright."""
         loop = out("redirect_loop")
         self.assertIs(loop["has_loop"], True)
-        self.assertEqual(verdict("CI-014", loop), WARN)
+        self.assertEqual(verdict("CI-014", loop), FAIL)
 
     def test_a_loop_past_the_cap_is_not_answered_as_no_loop(self):
         """The walk stops at ten hops; `/deep1` loops back at the twelfth.
 
         Before 0.81.0 this served `has_loop: False` and CI-014 — `high`, and the item
-        whose whole subject is loops — reported PASS on a site that loops. The field is
-        now absent, which the runner reads as NO_DATA. Absent and not `None`: `falsy`
-        is satisfied by a null, so a null here would be the same false PASS with a
-        different spelling.
+        whose whole subject is loops — reported PASS on a site that loops. The field
+        stays absent because the unseen suffix still cannot answer the loop question;
+        the documented ten-hop cap is now its own structured high issue, so CI-014
+        fails on the chain length the crawler will not follow.
         """
         deep = out("redirect_deep_loop")
         self.assertNotIn("has_loop", deep)
         self.assertIs(deep["truncated"], True)
         self.assertEqual(deep["total_hops"], 10)
-        self.assertEqual(verdict("CI-014", deep), NO_DATA)
+        self.assertEqual(verdict("CI-014", deep), FAIL)
 
     def test_a_chain_that_ends_on_the_last_allowed_hop_is_still_answered(self):
         """Ten redirects and a page: the walk uses its last hop and the chain ends.
 
-        `total_hops` is 10 here and 10 on the truncated walk as well, so a repair that
-        withheld on the number would withhold on a chain it had followed to the end.
-        The two are told apart by *why* the walk stopped, which is what `for ... else`
-        answers and a count cannot.
+        `total_hops` is 10 here and 10 on the truncated walk as well. This completed
+        walk carries a chain warning rather than the capped walk's high issue, so the
+        item warns instead of failing while still distinguishing *why* the walk stopped.
         """
         edge = out("redirect_at_the_cap")
         self.assertEqual(edge["total_hops"], 10)
         self.assertIs(edge["truncated"], False)
         self.assertIs(edge["has_loop"], False)
-        self.assertEqual(verdict("CI-014", edge), PASS)
+        self.assertEqual(verdict("CI-014", edge), WARN)
+
+    def test_a_single_302_warns(self):
+        """Google reads a temporary redirect as a weak signal even without a chain."""
+        start, end = "https://example.test/a", "https://example.test/b"
+        self._stub_redirects({start: (302, end), end: (200, None)})
+        result = self.redirect_checker.check_redirects(start)
+        self.assertEqual(verdict("CI-014", result), WARN)
+        self.assertEqual([issue["type"] for issue in result["redirect_issues"]],
+                         ["temporary_redirect"])
+
+    def test_a_single_301_passes(self):
+        """One permanent redirect is neither a chain nor a weak temporary signal."""
+        start, end = "https://example.test/a", "https://example.test/b"
+        self._stub_redirects({start: (301, end), end: (200, None)})
+        result = self.redirect_checker.check_redirects(start)
+        self.assertEqual(result["redirect_issues"], [])
+        self.assertEqual(verdict("CI-014", result), PASS)
+
+    def test_two_301_hops_warn(self):
+        """Two permanent redirects form the chain named by CI-014."""
+        a = "https://example.test/a"
+        b = "https://example.test/b"
+        c = "https://example.test/c"
+        self._stub_redirects({a: (301, b), b: (301, c), c: (200, None)})
+        result = self.redirect_checker.check_redirects(a)
+        self.assertEqual(verdict("CI-014", result), WARN)
+        self.assertEqual([issue["type"] for issue in result["redirect_issues"]],
+                         ["redirect_chain"])
+
+    def test_a_stubbed_loop_fails(self):
+        """A→B→A emits the high structured loop issue the assertion reads."""
+        a = "https://example.test/a"
+        b = "https://example.test/b"
+        self._stub_redirects({a: (301, b), b: (301, a)})
+        result = self.redirect_checker.check_redirects(a)
+        self.assertEqual(verdict("CI-014", result), FAIL)
+        self.assertIn("redirect_loop",
+                      [issue["type"] for issue in result["redirect_issues"]])
+
+    def test_a_redirect_without_location_fails(self):
+        """A redirect response with nowhere to go is a high structured defect."""
+        start = "https://example.test/a"
+        self._stub_redirects({start: (301, None)})
+        result = self.redirect_checker.check_redirects(start)
+        self.assertEqual(verdict("CI-014", result), FAIL)
+        self.assertEqual(result["redirect_issues"][0]["type"],
+                         "redirect_without_location")
 
     def test_a_walk_stopped_by_a_network_error_withholds_the_same_field(self):
         """No verdict rests on this: the runner replaces a result carrying `error`
@@ -1989,6 +2058,23 @@ class DuplicateAndThinContent(unittest.TestCase):
     read it.
     """
 
+    @staticmethod
+    def _grouping_report(rows):
+        import duplicate_content
+        pages = {}
+        for index, row in enumerate(rows):
+            url = row["url"]
+            pages[url] = {
+                "word_count": 500,
+                "text_hash": f"hash-{index}",
+                "signature": [],
+                "noindex": row.get("noindex", False),
+                "canonical": row.get("canonical", url),
+                "title": row.get("title", f"Title {index}"),
+                "meta_description": row.get("meta_description", f"Description {index}"),
+            }
+        return duplicate_content.detect_duplicates(pages)
+
     def test_four_distinct_pages_are_not_duplicates_of_each_other(self):
         good = out("dupes")
         self.assertEqual(good["exact_duplicates"], [])
@@ -2007,11 +2093,15 @@ class DuplicateAndThinContent(unittest.TestCase):
         self.assertEqual(home, [])
 
     def test_two_paths_serving_one_document_are_found(self):
+        """The body is duplicated and CN-041 says so. The title is not a competing
+        duplicate: the document is noindex and canonicalises to another host, which is
+        the handling MS-022's title names. Until 0.112.0 MS-022 failed here too."""
         bad = out("dupes_bad")
         self.assertEqual(bad["summary"]["exact_duplicate_groups"], 1)
-        self.assertEqual(bad["summary"]["duplicate_title_groups"], 1)
-        for item_id in ("MS-022", "CN-041"):
-            self.assertEqual(verdict(item_id, bad), FAIL, item_id)
+        self.assertEqual(bad["summary"]["duplicate_title_groups"], 0)
+        self.assertGreaterEqual(bad["summary"]["title_group_exclusions"]["noindex"], 2)
+        self.assertEqual(verdict("CN-041", bad), FAIL)
+        self.assertEqual(verdict("MS-022", bad), PASS)
 
     def test_missing_titles_are_not_duplicates_but_case_and_spacing_are(self):
         import duplicate_content
@@ -2077,6 +2167,63 @@ class DuplicateAndThinContent(unittest.TestCase):
         groups = duplicate_content.duplicate_descriptions(pages)
         self.assertEqual(len(groups), 1)
         self.assertEqual(groups[0]["urls"], ["/a", "/b"])
+
+    def test_ms_022_excludes_a_canonicalized_title_variant(self):
+        """A variant canonicalized to the other page is not indexed as a competitor."""
+        target = "https://example.test/target"
+        report = self._grouping_report([
+            {"url": target, "title": "Shared"},
+            {"url": "https://example.test/variant", "canonical": target,
+             "title": "Shared"},
+        ])
+        self.assertEqual(report["summary"]["title_group_exclusions"]["canonicalized"], 1)
+        self.assertEqual(verdict("MS-022", report), PASS)
+
+    def test_ms_022_excludes_a_noindex_title_variant(self):
+        """A noindex page cannot create a duplicate-title search result."""
+        report = self._grouping_report([
+            {"url": "https://example.test/a", "title": "Shared"},
+            {"url": "https://example.test/b", "title": "Shared", "noindex": True},
+        ])
+        self.assertEqual(report["summary"]["title_group_exclusions"]["noindex"], 1)
+        self.assertEqual(verdict("MS-022", report), PASS)
+
+    def test_ms_022_keeps_two_indexable_self_canonical_titles(self):
+        """Two separately indexable pages sharing a title still fail MS-022."""
+        report = self._grouping_report([
+            {"url": "https://example.test/a", "title": "Shared"},
+            {"url": "https://example.test/b", "title": "Shared"},
+        ])
+        self.assertEqual(verdict("MS-022", report), FAIL)
+
+    def test_ms_029_excludes_a_canonicalized_description_variant(self):
+        """A canonicalized variant's description cannot compete separately either."""
+        target = "https://example.test/target"
+        report = self._grouping_report([
+            {"url": target, "meta_description": "Shared"},
+            {"url": "https://example.test/variant", "canonical": target,
+             "meta_description": "Shared"},
+        ])
+        self.assertEqual(report["summary"]["title_group_exclusions"]["canonicalized"], 1)
+        self.assertEqual(verdict("MS-029", report), PASS)
+
+    def test_ms_029_excludes_a_noindex_description_variant(self):
+        """A noindex page's description cannot create a duplicate SERP snippet."""
+        report = self._grouping_report([
+            {"url": "https://example.test/a", "meta_description": "Shared"},
+            {"url": "https://example.test/b", "meta_description": "Shared",
+             "noindex": True},
+        ])
+        self.assertEqual(report["summary"]["title_group_exclusions"]["noindex"], 1)
+        self.assertEqual(verdict("MS-029", report), PASS)
+
+    def test_ms_029_keeps_two_indexable_self_canonical_descriptions(self):
+        """Two separately indexable pages sharing a description still fail MS-029."""
+        report = self._grouping_report([
+            {"url": "https://example.test/a", "meta_description": "Shared"},
+            {"url": "https://example.test/b", "meta_description": "Shared"},
+        ])
+        self.assertEqual(verdict("MS-029", report), FAIL)
 
     def test_an_indexable_thin_page_is_counted(self):
         thin = {p["url"]: p for p in out("dupes_bad").get("thin_content") or []}
@@ -3016,7 +3163,7 @@ class EeatSignals(unittest.TestCase):
 
 
 class Freshness(unittest.TestCase):
-    """CN-038 `score`, CN-056 `dates`."""
+    """CN-038 `score`, CN-056 `date_signals.shown`."""
 
     PUBLISHED_2020 = '<meta property="article:published_time" content="2020-01-01">'
 
@@ -3108,6 +3255,58 @@ class Freshness(unittest.TestCase):
         self.assertEqual(result["dates"], [])
         self.assertEqual(verdict("CN-056", result), FAIL)
 
+    def test_a_body_date_does_not_pass_cn_056(self):
+        """A regex hit in prose is not a declared publication or update date."""
+        result = self._check_html(
+            "<p>Our prices were set in the 2020-03-14 report.</p>",
+            today=date(2026, 9, 23),
+        )
+        self.assertEqual(len(result["dates"]), 1)
+        self.assertEqual(result["dates"][0]["source"], "body")
+        self.assertEqual(verdict("CN-056", result), FAIL)
+
+    def test_one_time_is_half_the_title(self):
+        """One page-owned `<time>` shows publication but no later update."""
+        result = self._check_html(
+            '<time datetime="2020-03-14">14 March 2020</time>',
+            today=date(2026, 9, 23),
+        )
+        self.assertEqual(result["date_signals"]["shown"],
+                         {"published": True, "updated": False})
+        self.assertEqual(verdict("CN-056", result), WARN)
+
+    def test_two_ordered_times_pass_cn_056(self):
+        """A second page-owned `<time>` later than the earliest is an update signal."""
+        result = self._check_html(
+            '<time datetime="2020-03-14">Published</time>'
+            '<time datetime="2021-04-20">Updated</time>',
+            today=date(2026, 9, 23),
+        )
+        self.assertEqual(result["date_signals"]["shown"],
+                         {"published": True, "updated": True})
+        self.assertEqual(verdict("CN-056", result), PASS)
+
+    def test_json_ld_publication_and_modification_pass_cn_056(self):
+        """The page's own datePublished and dateModified satisfy both title halves."""
+        result = self._check_document({
+            "@type": "Article",
+            "datePublished": "2020-03-14",
+            "dateModified": "2021-04-20",
+        }, today=date(2026, 9, 23))
+        self.assertEqual(result["date_signals"]["shown"],
+                         {"published": True, "updated": True})
+        self.assertEqual(verdict("CN-056", result), PASS)
+
+    def test_a_foreign_credit_time_does_not_pass_cn_056(self):
+        """A comment's `<time>` belongs to the commenter, not to the page."""
+        result = self._check_html(
+            '<div itemprop="comment"><time datetime="2020-03-14">Commented</time></div>',
+            today=date(2026, 9, 23),
+        )
+        self.assertEqual(result["date_signals"]["shown"],
+                         {"published": False, "updated": False})
+        self.assertEqual(verdict("CN-056", result), FAIL)
+
     def test_a_reviewed_works_date_is_not_the_page_date(self):
         result = self._check_document({
             "@type": "Review", "datePublished": "2026-07-01",
@@ -3178,12 +3377,13 @@ class Freshness(unittest.TestCase):
         }])
 
     def test_a_future_roled_date_stays_in_dates_but_not_in_latest(self):
+        """A declared publication date without an update is only half CN-056."""
         today = date(2026, 8, 17)
         result = self._check_document(
             {"@type": "Article", "datePublished": "2027-03-14"}, today=today)
         self.assertEqual(len(result["dates"]), 1)
         self.assertEqual(result["dates"][0]["source"], "schema_published")
-        self.assertEqual(verdict("CN-056", result), PASS)
+        self.assertEqual(verdict("CN-056", result), WARN)
         self.assertIsNone(result["latest_date"])
         self.assertEqual(result["score"], 65)
 

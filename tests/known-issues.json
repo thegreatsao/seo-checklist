@@ -15,7 +15,7 @@
         ],
         "census_rows": 217,
         "census_rows_that_disagree": [],
-        "inert_rows": 16,
+        "inert_rows": 17,
         "inert_rows_that_disagree": [],
         "the_reading_sees_each_field_move": {
           "script": [
@@ -67,11 +67,15 @@
         },
         "branches_that_withhold_has_loop": 2,
         "cap": 10,
-        "cap_basis": "inherited",
+        "cap_basis": "standard",
         "cap_is_a_named_constant": true,
         "ci_014_assert": {
-          "falsy": true,
-          "path": "has_loop"
+          "none_severity": [
+            "critical",
+            "high",
+            "medium"
+          ],
+          "path": "redirect_issues"
         }
       },
       "probe": "redirect_walk_cap",
@@ -726,7 +730,11 @@
           "url_quality.py": "no cap; its constants are the rule, not a limit on input",
           "video_schema_checker.py": "slices the printed lines, not `issues`"
         },
-        "not_yet_read": {}
+        "not_yet_read": {
+          "security_headers.py": [
+            "SE-120"
+          ]
+        }
       },
       "probe": "the_other_caps_have_not_been_read",
       "state": "closed"
@@ -872,10 +880,10 @@
       "measured": {
         "basis": {
           "convention": 55,
-          "inherited": 77,
+          "inherited": 76,
           "measured": 11,
           "presentation": 13,
-          "standard": 14
+          "standard": 15
         },
         "counted": 157,
         "non_numeric_basis": [
@@ -906,7 +914,7 @@
       "claim": "Seventy-six of 217 items pass only when a path is absent or bounded, over nine spellings; whether a title states the side of its subject that its assertion means is read by a person, and the entry says why no check can.",
       "measured": {
         "items": 217,
-        "negative_polarity": 79
+        "negative_polarity": 80
       },
       "probe": "negative_polarity_share",
       "state": "open"
@@ -920,13 +928,6 @@
             "truthy": true
           },
           "title": "Block Crawl Strategically with robots.txt"
-        },
-        "CN-056": {
-          "assert": {
-            "len_gte": 1,
-            "path": "dates"
-          },
-          "title": "Show Publication and Updated Dates"
         }
       },
       "probe": "thin_assertions",

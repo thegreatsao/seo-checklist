@@ -256,7 +256,8 @@ what the title says, and `test_mb_105_names_the_comparison_it_asserts` pins one 
 wording to its comparison. The audit reads the assertion's shape, not the meaning of the
 subject. Every item it has been shown to pass while measuring something else — GO-137,
 BL-083, and MB-096, MB-097 and MD-189 — was repaired by 0.108.0, and each was found by a
-person reading rule against title. No known item stands at `bfddc84f11b4`; the
+person reading rule against title. A reading of all 145 on 23 September (A.10) found
+thirty-three more; five were repaired at 0.112.0 and twenty-eight are owed. The
 requirement stays `partial` because nothing in the tree would notice the next one.
 
 **Repairing an item does not move this line, and 0.105.0 is the test of that.** CI-016
@@ -967,6 +968,40 @@ That is a floor and not a count: `MB-097`'s unread half is *Compression*, and
 `large_image_count` is that half under a name no word-match reaches. Enumeration finds
 only the spellings put into it, so the derivation narrows the reading and does not
 replace it.
+
+#### A.10 — every rule-carrying item read against its title, 23 September 2026
+
+A.9 re-measured a sample; this reads the population. All 145 items that carry a rule were
+read at `bfddc84f11b4` against their own titles, with each asserted path traced into the
+script that writes it (`local/reg6d/notes.md` holds the reading). Four mechanical probes —
+a title naming a subject only an external source holds, an *at least one* quantifier, a
+conjunction, a quality adjective — together reach 92 of the 145 at `8ea3bf0f12ab` (v0.104.0) and
+catch all seven items this document had repaired by hand; they
+narrow a reading and do not replace it, and they fire on most of the registry.
+
+**Thirty-three items fall short of their titles** — counted by listing them below, not by the notes' line count, which said twenty-seven. They split along Anton's ruling of the
+same day: where the tool can measure what the title says, the rule is repaired; where it
+cannot, the item will carry an operator-visible statement of what it checked, and titles
+stay as the Plerdy checklist has them.
+
+*Repaired at 0.112.0 (`cc7ceff0b0f6`), each a rule contradicting its own title's words:*
+CI-014 (a redirect loop was WARN — the loop failed the assertion and then passed a warn
+band on `total_hops` — and a test asserted it); CN-056 (a body-text date satisfied
+*Publication and Updated*); SE-115 (`max-age=0`, which disables HSTS, passed *Enable
+HSTS*); SE-120 (a weighted score passed with two of the three headers the title names
+absent); MS-022 (the canonicalised and noindex pages the title says to handle were
+counted as duplicates).
+
+*Rule repairs still owed:* SE-117 (never requests the `http://` variant), MS-030 (title
+~150–160, rule 120–165, *Clear & Relevant* unread), AR-147 (reads parameters, not
+length), CN-044 (any institutional link counts as a contact page), GEO-001
+(*well-formed* unread), TE-175 (*Eliminate Errors* unread), AR-151 (a `Disallow: /`
+robots.txt is *correct*), MB-095 (image count, not page weight), TE-180 (two WCAG-A
+failures pass).
+
+*An operator-visible statement owed:* CI-001, TE-167, IN-121, IN-128, SE-119, CN-038,
+SP-110, TE-170, TECH-003, MB-093, MB-098, AR-152, CN-040, SP-109, BL-086, SP-111, SP-112,
+AR-155, CN-065.
 
 #### A.4 — five operators are implemented and unused
 

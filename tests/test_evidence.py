@@ -919,7 +919,8 @@ class SystemPagesAreNotIndexable(unittest.TestCase):
 
 
 class SecurityHeaders(unittest.TestCase):
-    """SE-117 (critical) reads `https`; TE-175 (high) reads `headers_missing`.
+    """SE-115 reads `hsts_enabled`, SE-117 reads `https`, SE-120 reads
+    `hardening_missing`, and TE-175 reads `headers_missing`.
 
     SE-118 read `https` too until 0.20, from this same script — two critical items
     sharing one field, so SE-118 could not fail independently on any site and a
@@ -974,6 +975,93 @@ class SecurityHeaders(unittest.TestCase):
         self.assertIn("strict-transport-security", out["header_values"])
         self.assertEqual(out["header_values"]["strict-transport-security"], "")
         self.assertEqual(verdict("SE-115", out), FAIL)
+
+    def test_hsts_max_age_zero_fails_se_115(self):
+        """`max-age=0` disables HSTS even though the header is present."""
+        self.serve("https://example.com/", {
+            "Strict-Transport-Security": "max-age=0; includeSubDomains",
+        })
+        out = self.sh.check_security_headers("https://example.com/")
+        self.assertIs(out["hsts_enabled"], False)
+        self.assertIn("greater than zero", out["hsts_disabled_reason"])
+        self.assertEqual(verdict("SE-115", out), FAIL)
+
+    def test_hsts_delivered_over_http_fails_se_115(self):
+        """RFC 6797 says browsers ignore an HSTS header delivered over HTTP."""
+        self.serve("http://example.com/", {
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        })
+        out = self.sh.check_security_headers("http://example.com/")
+        self.assertIs(out["hsts_enabled"], False)
+        self.assertIn("ignored", out["hsts_disabled_reason"])
+        self.assertEqual(verdict("SE-115", out), FAIL)
+
+    def test_positive_short_hsts_passes_but_keeps_the_one_year_issue(self):
+        """Positive max-age enables HSTS; the separate one-year advice stays a warning."""
+        self.serve("https://example.com/", {
+            "Strict-Transport-Security": "max-age=300; includeSubDomains",
+        })
+        out = self.sh.check_security_headers("https://example.com/")
+        self.assertIs(out["hsts_enabled"], True)
+        self.assertEqual(verdict("SE-115", out), PASS)
+        self.assertTrue(any("recommend at least 31536000" in issue
+                            for issue in out["issues"]), out["issues"])
+
+    def test_a_quoted_max_age_is_a_valid_hsts_header(self):
+        """RFC 6797 section 6.1: a directive value may be a quoted-string. The first
+        version of the 0.112.0 parser read `"31536000"` as not an integer."""
+        self.serve("https://example.com/", {
+            "Strict-Transport-Security": 'max-age="31536000"; includeSubDomains',
+        })
+        out = self.sh.check_security_headers("https://example.com/")
+        self.assertIs(out["hsts_enabled"], True, out["hsts_disabled_reason"])
+        self.assertEqual(verdict("SE-115", out), PASS)
+
+    def test_all_three_named_hardening_headers_pass_se_120(self):
+        """SE-120 passes when CSP, Permissions-Policy and Referrer-Policy are present."""
+        headers = {
+            "Content-Security-Policy": "default-src 'self'",
+            "Permissions-Policy": "camera=()",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+        }
+        self.serve("https://example.com/", headers)
+        out = self.sh.check_security_headers("https://example.com/")
+        self.assertEqual(out["hardening_missing"], [])
+        self.assertEqual(verdict("SE-120", out), PASS)
+
+    def test_csp_alone_fails_se_120(self):
+        """One of the three named headers is not enough to satisfy the title."""
+        self.serve("https://example.com/", {
+            "Content-Security-Policy": "default-src 'self'",
+        })
+        out = self.sh.check_security_headers("https://example.com/")
+        self.assertEqual(len(out["hardening_missing"]), 2)
+        self.assertEqual(verdict("SE-120", out), FAIL)
+
+    def test_two_named_hardening_headers_warn_se_120(self):
+        """Two of the three named headers carry the title far enough for WARN."""
+        self.serve("https://example.com/", {
+            "Content-Security-Policy": "default-src 'self'",
+            "Permissions-Policy": "camera=()",
+        })
+        out = self.sh.check_security_headers("https://example.com/")
+        self.assertEqual(out["hardening_missing"], ["referrer-policy"])
+        self.assertEqual(verdict("SE-120", out), WARN)
+
+    def test_a_score_of_80_with_two_named_headers_absent_fails_se_120(self):
+        """HTTPS, HSTS, CSP, XFO and XCTO score 80 but omit two headers in the title."""
+        headers = {
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+            "Content-Security-Policy": "default-src 'self'",
+            "X-Frame-Options": "SAMEORIGIN",
+            "X-Content-Type-Options": "nosniff",
+        }
+        self.serve("https://example.com/", headers)
+        out = self.sh.check_security_headers("https://example.com/")
+        self.assertGreaterEqual(out["score"], 80)
+        self.assertEqual(out["hardening_missing"],
+                         ["permissions-policy", "referrer-policy"])
+        self.assertEqual(verdict("SE-120", out), FAIL)
 
     def test_this_script_cannot_decide_se_118_in_either_direction(self):
         """The regression guard for the 0.20 fix, and the reason it is two asserts.

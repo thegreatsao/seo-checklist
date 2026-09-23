@@ -29,10 +29,10 @@ except ImportError:
 
 HEADERS = default_headers()
 
-# basis: inherited — present at import as a default argument, `max_redirects: int = 10`,
-#  which is where the threshold inventory could not see it: that scan reads module-level
-#  assignments. It is a threshold and not a budget, because `CI-014` asserts `has_loop`
-#  falsy and this number decides how far the walk looks for one. Measured for 0.81.0: a
+# basis: standard — Google's crawlers follow up to 10 redirect hops by default ("HTTP
+#  status codes, network and DNS errors", Google Search Central). A walk that reaches it
+#  has gone as far as Googlebot will. It is a threshold and not a budget, because
+#  `CI-014` asserts the result of this walk. Measured for 0.81.0: a
 #  loop closing at hop 3 gives `has_loop True`; before this release the same loop closing
 #  at hop 12 gave `has_loop False`, indistinguishable from a chain of twelve hops that
 #  never loops, and the item passed. Raising it would move the line rather than remove it,
@@ -67,6 +67,7 @@ def check_redirects(url: str, max_redirects: int = MAX_REDIRECT_HOPS,
         "truncated": False,
         "has_mixed_protocol": False,
         "issues": [],
+        "redirect_issues": [],
         "error": None,
     }
 
@@ -78,6 +79,12 @@ def check_redirects(url: str, max_redirects: int = MAX_REDIRECT_HOPS,
             if current in seen:
                 result["has_loop"] = True
                 result["issues"].append(f"🔴 Redirect loop detected at: {current}")
+                result["redirect_issues"].append({
+                    "severity": "error",
+                    "type": "redirect_loop",
+                    "message": f"Redirect loop detected at {current}",
+                    "url": current,
+                })
                 break
             seen.add(current)
 
@@ -97,6 +104,12 @@ def check_redirects(url: str, max_redirects: int = MAX_REDIRECT_HOPS,
                     hop["error"] = "Redirect with no Location header"
                     result["chain"].append(hop)
                     result["issues"].append(f"🔴 Redirect at step {i+1} has no Location header")
+                    result["redirect_issues"].append({
+                        "severity": "error",
+                        "type": "redirect_without_location",
+                        "message": f"Redirect status {resp.status_code} has no Location header",
+                        "url": current,
+                    })
                     break
 
                 # Resolve relative URLs
@@ -136,6 +149,15 @@ def check_redirects(url: str, max_redirects: int = MAX_REDIRECT_HOPS,
                 f"🔴 Too many redirects (>{max_redirects}) — the walk stopped before "
                 f"the chain ended, so whether it loops is unknown"
             )
+            result["redirect_issues"].append({
+                "severity": "error",
+                "type": "too_many_redirects",
+                "message": (
+                    f"The redirect walk reached the {max_redirects}-hop limit "
+                    "documented for Googlebot"
+                ),
+                "url": current,
+            })
 
     except requests.exceptions.RequestException as e:
         # The same withholding as at the cap, for the same reason: the walk stopped in
@@ -147,6 +169,9 @@ def check_redirects(url: str, max_redirects: int = MAX_REDIRECT_HOPS,
         result["error_kind"] = "unread"
         result["truncated"] = True
         result.pop("has_loop", None)
+        # The runner replaces any result carrying `error` with NO_DATA, so a partial
+        # issue list must not look like the walk completed and found its answer.
+        result.pop("redirect_issues", None)
 
     result["total_hops"] = max(0, len(result["chain"]) - 1)
 
@@ -168,8 +193,28 @@ def check_redirects(url: str, max_redirects: int = MAX_REDIRECT_HOPS,
             f"⚠️ Redirect chain has {result['total_hops']} hops — aim for max 1"
         )
 
-    # Check for 302 where 301 should be used
+    if ("redirect_issues" in result and result["total_hops"] > 1
+            and not result.get("has_loop")):
+        result["redirect_issues"].append({
+            "severity": "warning",
+            "type": "redirect_chain",
+            "message": f"Redirect chain has {result['total_hops']} hops",
+            "url": url,
+        })
+
+    # Google treats these temporary redirect codes as weak canonical signals. Preserve
+    # the older human-readable 302 advice while giving CI-014 one structured issue per
+    # temporary hop, including 303 and 307.
     for hop in result["chain"]:
+        if "redirect_issues" in result and hop["status"] in (302, 303, 307):
+            result["redirect_issues"].append({
+                "severity": "warning",
+                "type": "temporary_redirect",
+                "message": (
+                    f"Temporary redirect status {hop['status']} is a weak signal to Google"
+                ),
+                "url": hop["url"],
+            })
         if hop["status"] == 302:
             result["issues"].append(
                 f"⚠️ Temporary redirect (302) at step {hop['step']} — "

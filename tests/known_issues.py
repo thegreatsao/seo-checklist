@@ -223,7 +223,7 @@ def _thin_assertions() -> dict:
     items = _items_by_id()
     return {item_id: {"title": items[item_id]["title"],
                       "assert": (items[item_id]["check"] or {}).get("assert")}
-            for item_id in ("AR-152", "CN-056")}
+            for item_id in ("AR-152",)}
 
 
 @probe("entity_checker_reads_the_graph_unbounded")

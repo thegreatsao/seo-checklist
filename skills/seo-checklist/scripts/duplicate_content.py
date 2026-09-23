@@ -22,7 +22,7 @@ import sys
 from collections import defaultdict
 
 import site_crawl
-from seo_common import THIN_CONTENT_WORDS
+from seo_common import THIN_CONTENT_WORDS, normalize_url
 
 # basis: inherited — 100 words, present at import. Splits a thin page into two
 #  severities: under a hundred words the page is closer to empty than to short, which is
@@ -48,7 +48,7 @@ THIN_CONTENT_THRESHOLDS = {
 # ---------------------------------------------------------------------------
 
 def pages_from_inventory(inventory: dict) -> dict:
-    """{page key: {word_count, text_hash, signature, noindex}} for pages with content.
+    """Page evidence projected from inventory rows with readable content.
 
     Non-200 responses are left out. An error page is HTML and is not content: a 404
     body was being analysed like any other page, so a site with one dead internal
@@ -70,6 +70,7 @@ def pages_from_inventory(inventory: dict) -> dict:
             # meta tag. The header was invisible to this script before, so a page
             # kept out of the index by a header was still asked for 300 more words.
             "noindex": bool(row.get("noindex")),
+            "canonical": row.get("canonical"),
             # Carried for MS-022 and MS-029. Both fields have been in the crawl
             # inventory all along; the old rules borrowed the duplicate-body count
             # instead of measuring duplicate titles and descriptions themselves.
@@ -87,7 +88,7 @@ def duplicate_titles(pages: dict) -> list:
     title was duplicated.
     """
     groups = {}
-    for key, page in pages.items():
+    for key, page in _snippet_grouping_pages(pages)[0].items():
         text = " ".join(page.get("title", "").split()).lower()
         if not text:
             continue
@@ -110,7 +111,7 @@ def duplicate_descriptions(pages: dict) -> list:
     — that is MS-028's finding, and counting it here would report one defect twice.
     """
     groups = {}
-    for key, page in pages.items():
+    for key, page in _snippet_grouping_pages(pages)[0].items():
         text = " ".join(page.get("meta_description", "").split()).lower()
         if not text:
             continue
@@ -120,6 +121,28 @@ def duplicate_descriptions(pages: dict) -> list:
              "finding": f"{len(urls)} pages share one meta description",
              "fix": "Write a distinct description for each page"}
             for text, urls in sorted(groups.items()) if len(urls) > 1]
+
+
+def _snippet_grouping_pages(pages: dict) -> tuple[dict, dict]:
+    """Indexable canonical pages and the reasons other pages cannot compete.
+
+    MS-029 inherits the same boundary because a canonicalized or noindex variant is
+    not indexed separately, so its description cannot compete either. Pagination is
+    deliberately still included: the inventory records neither rel=prev/next nor a
+    page number, so this script cannot distinguish a series from a duplicate.
+    """
+    included = {}
+    exclusions = {"noindex": 0, "canonicalized": 0}
+    for key, page in pages.items():
+        if page.get("noindex"):
+            exclusions["noindex"] += 1
+            continue
+        canonical = page.get("canonical")
+        if canonical and normalize_url(canonical, key) != normalize_url(key):
+            exclusions["canonicalized"] += 1
+            continue
+        included[key] = page
+    return included, exclusions
 
 
 # ---------------------------------------------------------------------------
@@ -234,8 +257,9 @@ def detect_duplicates(pages: dict, similarity_threshold: float = 0.85,
                 "fix": f"Expand content to at least {threshold} words of substantive, unique content, or noindex if low-value.",
             })
 
-    title_groups = duplicate_titles(pages)
-    description_groups = duplicate_descriptions(pages)
+    grouping_pages, title_group_exclusions = _snippet_grouping_pages(pages)
+    title_groups = duplicate_titles(grouping_pages)
+    description_groups = duplicate_descriptions(grouping_pages)
     return {
         # An empty crawl is not a site with no duplicates. Without this the runner
         # cannot tell "nothing is wrong" from "nothing was read", and four items —
@@ -262,6 +286,7 @@ def detect_duplicates(pages: dict, similarity_threshold: float = 0.85,
             # for a different kind of site.
             "thin_words_threshold": thin_words or THIN_CONTENT_THRESHOLDS["default"],
             "duplicate_description_groups": len(description_groups),
+            "title_group_exclusions": title_group_exclusions,
             "avg_word_count": round(
                 sum(p["word_count"] for p in pages.values()) / max(1, len(pages))
             ),
