@@ -40,12 +40,12 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         self.assertEqual(counts, {"answers": 112, "measures": 19, "owed": 14})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
+        """Line endings are normalised first: a Windows checkout writes CRLF, and how
+        the file is *stored* is `test_line_endings`' question, not this one."""
         with open(R.READINGS, "rb") as f:
-            raw = f.read()
-        self.assertNotIn(b"\r", raw)
-        again = json.dumps(json.loads(raw.decode("utf-8")), ensure_ascii=False,
-                           indent=2) + "\n"
-        self.assertEqual(again.encode("utf-8"), raw)
+            text = f.read().decode("utf-8").replace("\r\n", "\n")
+        again = json.dumps(json.loads(text), ensure_ascii=False, indent=2) + "\n"
+        self.assertEqual(again, text)
 
 
 class EachWayAReadingFallsOutOfStep(unittest.TestCase):
