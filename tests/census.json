@@ -1768,8 +1768,8 @@
         "failing-shapes": "PASS",
         "fixture:broken": "WARN",
         "fixture:broken_tls": "WARN",
-        "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good": "WARN",
+        "fixture:good_tls": "WARN"
       },
       "distinct": [
         "PASS",
@@ -1801,12 +1801,11 @@
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
-        "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good": "FAIL",
+        "fixture:good_tls": "FAIL"
       },
       "distinct": [
-        "FAIL",
-        "PASS"
+        "FAIL"
       ],
       "script": "sitemap_checker.py",
       "severity": "medium",

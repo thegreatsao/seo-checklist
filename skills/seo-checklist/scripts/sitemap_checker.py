@@ -9,9 +9,11 @@ from datetime import datetime, timezone
 
 from seo_common import (
     discover_sitemap_urls,
+    fetch_robots,
     fetch_url,
     issue,
     normalize_url,
+    origin,
     parse_html,
     parse_sitemap_xml,
     print_json_or_text,
@@ -19,8 +21,10 @@ from seo_common import (
 )
 
 try:
+    from lib import robots_rules
     from lib.safe_http import is_private_host
 except ImportError:
+    from scripts.lib import robots_rules
     from scripts.lib.safe_http import is_private_host
 
 
@@ -34,8 +38,11 @@ MAX_URLS_PER_SITEMAP = 50_000
 #  files the walk stopped, said nothing, and the item read a clean sitemap set off the
 #  first 25. `truncated` below is the half that was missing, not a new cap.
 MAX_SITEMAPS_FOLLOWED = 25
+# basis: standard — Google reads a 4xx robots.txt, 429 aside, as no restrictions.
+ROBOTS_NO_RULES_STATUS_MIN = 400
 
 def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_urls: bool = False, timeout: int = 15, max_urls: int = 100) -> dict:
+    robots = fetch_robots(site_url, timeout=timeout)
     # A URL the caller supplied, or one robots.txt declares, is one the site claims
     # exists — failing to load it is a defect. A conventional filename we merely
     # guessed at is not: `/sitemap_index.xml` is an alternative to `/sitemap.xml`,
@@ -45,7 +52,8 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
     if sitemap_urls:
         probed = set()
     else:
-        pairs = discover_sitemap_urls(site_url, timeout=timeout, with_source=True)
+        pairs = discover_sitemap_urls(site_url, timeout=timeout, with_source=True,
+                                      robots=robots)
         sitemap_urls = [url for url, _ in pairs]
         probed = {url for url, source in pairs if source == "probed"}
     result = {
@@ -149,10 +157,61 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
             result["urls"].append(url_entry)
         result["sitemaps_checked"].append(entry)
 
+    site_origin = origin(site_url)
+    urls_by_origin: dict[str, list[dict]] = {site_origin: []}
+    for row in result["urls"]:
+        if same_host(site_url, row["url"]):
+            urls_by_origin.setdefault(origin(row["url"]), []).append(row)
+
+    robots_by_origin = {site_origin: robots}
+    for url_origin in urls_by_origin:
+        if url_origin != site_origin:
+            robots_by_origin[url_origin] = fetch_robots(url_origin, timeout=timeout)
+
+    unread_robots = []
+    blocked_by_robots = []
+    robots_rows = []
+    for url_origin in sorted(robots_by_origin):
+        answer = robots_by_origin[url_origin]
+        status = (answer.get("fetch") or {}).get("status")
+        read = (status == 200
+                or (isinstance(status, int)
+                    and ROBOTS_NO_RULES_STATUS_MIN <= status < 500
+                    and status != 429))
+        robots_url = answer.get("url") or url_origin + "/robots.txt"
+        robots_rows.append({"url": robots_url, "status": status, "read": read})
+        if not read:
+            unread_robots.append({"url": robots_url, "status": status})
+            continue
+        rules = answer.get("parsed") if status == 200 else None
+        for row in urls_by_origin[url_origin]:
+            allowed, rule = robots_rules.allowed(rules, row["url"], "Googlebot")
+            if not allowed:
+                result["issues"].append(issue(
+                    "warning", "Sitemap URL is disallowed by robots.txt",
+                    row["url"], rule))
+                blocked_by_robots.append({"url": row["url"], "rule": rule})
+
+    result["robots"] = robots_rows
+    result["blocked_by_robots"] = sorted(blocked_by_robots,
+                                          key=lambda row: row["url"])
+    result["summary"]["blocked_by_robots"] = len(blocked_by_robots)
+
     # A queue with anything still in it means the walk stopped at the cap rather
-    # than at the end of the index. Read by the runner, which withholds GO-136's
-    # and GO-138's clean verdict rather than reading it off the files that fit.
-    result["truncated"] = bool(queue)
+    # than at the end of the index. An unread robots.txt likewise leaves the
+    # sitemap's hygiene unanswered. Read by the runner, which withholds GO-136's
+    # and GO-138's clean verdict rather than reading it off incomplete evidence.
+    result["truncated"] = bool(queue) or bool(unread_robots)
+    if unread_robots:
+        reasons = [
+            f"robots.txt at {row['url']} answered "
+            f"{row['status'] if row['status'] is not None else 'nothing'}, so whether "
+            "the sitemap lists URLs it disallows is unknown"
+            for row in unread_robots
+        ]
+        if queue:
+            reasons.append("the sitemap walk also stopped at MAX_SITEMAPS_FOLLOWED")
+        result["truncated_reason"] = "; ".join(reasons)
     result["summary"]["sitemaps"] = len(result["sitemaps_checked"])
     result["summary"]["loaded"] = sum(1 for e in result["sitemaps_checked"]
                                       if e.get("status") == 200)
@@ -176,10 +235,12 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
             f"tried {len(result['sitemaps_checked'])} location(s): "
             + ", ".join(e["url"] for e in result["sitemaps_checked"][:5])))
     result["summary"]["issues"] = len(result["issues"])
-    # The structured form of "is there an invalid URL in the sitemap". Present only
-    # when URLs were actually probed: without `--fetch-urls` no `status` is
-    # collected, and a count of zero over URLs nobody requested says the sitemap is
-    # clean when nothing about it was read.
+    # The structured form of "is there an invalid URL in the sitemap". A URL that
+    # robots.txt disallows for Googlebot counts too, because Search Console classifies
+    # it as "Submitted URL blocked by robots.txt". Otherwise this is present only
+    # when URLs were actually probed: without `--fetch-urls` no `status` is collected,
+    # and a count of zero over URLs nobody requested says the sitemap is clean when
+    # nothing about it was read.
     #
     # This replaced a regex over issue messages, `(?i)404|redirect|noindex`, which
     # asked a narrower question than anyone intended — the message for a bad status
@@ -193,12 +254,15 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
     read = [row for row in result["urls"] if row["checks"].get("status") is not None]
     unread = [row for row in result["urls"]
               if row["checks"].get("status") is None and row["checks"].get("error")]
-    invalid = sum(1 for row in read
-                  if row["checks"]["status"] >= 400
-                  or row["checks"].get("redirects")
-                  or "noindex" in (row["checks"].get("meta_robots") or "").lower())
-    if invalid or (read and not unread):
-        result["invalid_url_count"] = invalid
+    invalid_urls = {
+        row["url"] for row in read
+        if row["checks"]["status"] >= 400
+        or row["checks"].get("redirects")
+        or "noindex" in (row["checks"].get("meta_robots") or "").lower()
+    }
+    invalid_urls.update(row["url"] for row in blocked_by_robots)
+    if invalid_urls or (read and not unread and not unread_robots):
+        result["invalid_url_count"] = len(invalid_urls)
     return result
 
 

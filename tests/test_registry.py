@@ -600,15 +600,19 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 0.108.0 adds two `convention`s in `image_weight_audit.py`:
         # `LARGE_IMAGE_WIDTH_PX`, the width past which an image needs a srcset, and
         # `IMAGE_HEADER_BYTES`, the prefix read to learn that width.
+        #
+        # 0.110.0 adds one `standard`: `ROBOTS_NO_RULES_STATUS_MIN` in
+        # `sitemap_checker.py`, the lower bound of the 4xx response class Google reads
+        # as no robots restrictions (with 429 excluded by the branch itself).
         self.assertEqual(by_kind, {
-            "standard": 13,
+            "standard": 14,
             "measured": 11,
             "convention": 55,
             "inherited": 77,
             "presentation": 13,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 156)
-        self.assertEqual(len(named), 169)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 157)
+        self.assertEqual(len(named), 170)
         self.assertEqual(len(uncounted), 13)
         # 169 -> 170: the outbound-link check's cap was a default argument value,
         # which is a place no instrument here can see. Promoting it to a module
@@ -627,8 +631,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 179 -> 180: `HEAD_REFUSED_STATUSES` at 0.107.0, named when it was repaired.
         # 180 -> 182: the two image numbers above at 0.108.0. `JPEG_SOF_MARKERS` moved
         # module with the header reader and counts once, as before.
+        # 182 -> 183: the 4xx lower bound above at 0.110.0.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 182)
+                             for path in at._script_paths()), 183)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()

@@ -875,9 +875,9 @@
           "inherited": 77,
           "measured": 11,
           "presentation": 13,
-          "standard": 13
+          "standard": 14
         },
-        "counted": 156,
+        "counted": 157,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:31"
         ],

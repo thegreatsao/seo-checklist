@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.109.0 — see [CHANGELOG.md](CHANGELOG.md). **Four verdicts can move on your site if its robots.txt has a group for one crawler, a rule with a `?` in it, or an `Allow` inside a blocked folder.** *Do Not Block the URL in robots.txt*, *Do Not Block Critical CSS/JS/Images*, the system-pages check and the AI-crawler policy read robots.txt the way Google does now: a crawler follows its own group, `*` only when it has none, and rules match the query too. The audit's own crawler reads it the same way on every Python version — before, Python 3.10 and 3.11 ignored `Disallow: /*?`. Before that, `0.108.0` started judging images one by one.
+Version 0.110.0 — see [CHANGELOG.md](CHANGELOG.md). **Two verdicts can move on your site.** *Provide Clean XML Sitemaps* warns, and *Remove Invalid URLs from Sitemaps* fails, when the sitemap lists a page robots.txt forbids Google to fetch — the error Search Console calls *Submitted URL blocked by robots.txt*. If robots.txt itself cannot be read, neither item passes. Before that, `0.109.0` made robots.txt read the same way on every Python version and the way Google reads it.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -72,7 +72,7 @@ measures read from a rendered page.
 | a human | 31 |
 | Search Console, with no API to answer it, so a person opens the UI | 3 |
 
-Those 145 items collapse to **66 unique process launches** over 58 distinct scripts —
+Those 145 items collapse to **66 unique process launches** over 57 distinct scripts —
 the runner deduplicates by script *and* arguments, so `pagespeed.py` runs once, not
 six times, and `MB-107` and `MB-108` cost no launch at all: they read the artifact
 five other items already read.

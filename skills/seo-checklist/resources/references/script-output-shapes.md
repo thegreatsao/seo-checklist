@@ -1643,16 +1643,28 @@ root. `--out PATH` writes the inventory to a file and prints the summary instead
 `urls[]` — array
   - item keys: url, lastmod, changefreq, priority, checks (status, final_url, redirects,
     error and error_kind when `--fetch-urls` requests the URL)
+`robots[]` — array, one per consulted origin, sorted by origin
+  - item keys: url, status, read
+  - `read` is false when robots.txt answered nothing, 429, or 5xx; a 4xx other than
+    429 is read as no restrictions
+`blocked_by_robots[]` — array, sorted by URL
+  - item keys: url, rule
 `summary.sitemaps` — int
 `summary.urls` — int
 `summary.indexes` — int
 `summary.issues` — int
+`summary.blocked_by_robots` — int
+`truncated` — bool — the sitemap walk stopped at `MAX_SITEMAPS_FOLLOWED`, or at
+  least one consulted robots.txt could not be read
+`truncated_reason` — str — present when robots.txt could not be read; names every
+  unread robots response and also says when the sitemap walk hit its cap
 `invalid_url_count` — int — **absent** unless URLs were read, and absent again when any
-  probe failed and none of the ones that answered was invalid. A URL is invalid at a
-  status of 400 or above, on a redirect chain, or on a meta noindex. GO-138 asserts
-  `eq: 0`; before 0.93.0 it matched `(?i)404|redirect|noindex` against the messages,
-  and since the message reads "Sitemap URL returns HTTP {status}", a sitemap of URLs
-  answering 500 passed
+  probe failed and none of the ones that answered was invalid. An unread robots.txt
+  also withholds the key unless another invalid URL was found. A URL is invalid at a
+  status of 400 or above, on a redirect chain, on a meta noindex, or when robots.txt
+  disallows it for Googlebot. GO-138 asserts `eq: 0`; before 0.93.0 it matched
+  `(?i)404|redirect|noindex` against the messages, and since the message reads
+  "Sitemap URL returns HTTP {status}", a sitemap of URLs answering 500 passed
 `issues[]` — array
   - item keys: severity, message, url, evidence
 

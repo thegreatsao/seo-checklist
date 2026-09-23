@@ -1095,7 +1095,8 @@ CONVENTIONAL_SITEMAP_PATHS = ("/sitemap.xml", "/sitemap_index.xml",
 
 
 def discover_sitemap_urls(site_url: str, timeout: int = 15,
-                          with_source: bool = False):
+                          with_source: bool = False,
+                          robots: dict | None = None):
     """Sitemap URLs to try, declared ones first.
 
     With `with_source=True`, yields `(url, source)` where source is `"declared"`
@@ -1112,7 +1113,8 @@ def discover_sitemap_urls(site_url: str, timeout: int = 15,
     sitemap could not pass either item.
     """
     base = origin(site_url)
-    robots = fetch_robots(site_url, timeout=timeout)
+    if robots is None:
+        robots = fetch_robots(site_url, timeout=timeout)
     declared = list((robots.get("parsed") or {}).get("sitemaps", []))
     pairs, seen = [], set()
     for candidate, source in ([(c, "declared") for c in declared]

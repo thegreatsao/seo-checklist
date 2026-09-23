@@ -242,6 +242,13 @@ SAME_ON_BOTH = {
               "deliberately does not have",
     "CI-002": "the broken sitemap is defective but not empty — an empty one would "
               "leave GO-136 and GO-138 with nothing to find",
+    # 0.110.0 makes the good fixture's deliberate sitemap/robots conflict visible.
+    # The broken fixture still has its older sitemap defects, so both items now
+    # answer in their defective band on both sides for different planted facts.
+    "GO-136": "good lists one robots-disallowed URL; broken carries its cross-host "
+              "and malformed-lastmod warnings",
+    "GO-138": "good lists one robots-disallowed URL; broken lists URLs that answer "
+              "404, so each sitemap has an invalid URL for a different reason",
 
     # --- Both audits enter at the origin root --------------------------------
     # url_quality judges the URL it was given. Both runs are handed `http://host/`,
@@ -526,6 +533,12 @@ class NothingAccusesTheGoodSiteWithoutAReason(unittest.TestCase):
     ACCUSED_ON_PURPOSE = {
         "AR-158": "the good fixture has BreadcrumbList schema but deliberately no "
                   "breadcrumb-named UI trail",
+        # 0.110.0: one URL is deliberately both listed and robots-disallowed so the
+        # orphan arithmetic and this conflict can be exercised on the same origin.
+        "GO-136": "the good sitemap deliberately lists /private/secret.html, which "
+                  "robots.txt disallows",
+        "GO-138": "the same robots-disallowed URL is invalid under Search Console's "
+                  "Submitted URL blocked by robots.txt classification",
         "SE-115": "served over plain HTTP, where the fixture cannot enable HSTS",
         "SE-117": "served over plain HTTP by http.server: HSTS cannot be present",
         # SE-118 was here until 0.20, when it stopped reading `https` off
@@ -638,7 +651,11 @@ class TheBrokenSiteFailsWhatItWasBuiltToFail(unittest.TestCase):
         self.assertMoved("CN-041", PASS, (FAIL, WARN))
 
     def test_a_sitemap_full_of_problems_is_reported(self):
-        self.assertMoved("GO-136", PASS, (FAIL, WARN))
+        # 0.110.0: the good side deliberately carries its own, different sitemap
+        # defect, so these prove both planted cases are reported rather than proving
+        # the two origins differ on these items.
+        self.assertMoved("GO-136", WARN, (WARN,))
+        self.assertMoved("GO-138", FAIL, (FAIL,))
 
     def test_the_lab_vitals_face_the_right_way(self):
         """820ms passes LCP and 5200ms fails it.

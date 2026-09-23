@@ -10,6 +10,43 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.110.0 — the good fixture had been listing a forbidden page all along
+
+Registry version: **`bfddc84f11b4`, unchanged.** GO-136 *Provide Clean XML Sitemaps* and
+GO-138 *Remove Invalid URLs from Sitemaps* keep their rules; `sitemap_checker.py`, which
+both read, now reports what they were missing, so both can move on a real site. On the
+`good` fixture GO-136 goes PASS → WARN and GO-138 PASS → FAIL, each with a
+`checker-was-wrong` record. Suite 1740 → 1748.
+
+**A sitemap listing a URL robots.txt forbids had no producer since 0.106.0.** The finding
+lived in `orphan_pages_from_sitemap.py`, which no item read, and went with it. It is a
+real defect — the site asks Google to index a page it forbids Google to fetch — and
+Search Console reports it as an error, *Submitted URL blocked by robots.txt*, in the same
+list as *Submitted URL marked 'noindex'*, which GO-138 already counted. Anton's decisions
+(23 September): GO-136 carries it at **medium**; GO-138 **counts it as an invalid URL**;
+the fixture is not edited.
+
+`sitemap_checker.py` reads robots.txt once per origin of the sitemap's own-host URLs —
+the site's own copy is the one discovery already fetched — and asks 0.109.0's matcher on
+**Googlebot**'s behalf, because the question is what Google is told, not what this tool
+may fetch. Each forbidden URL is a `warning` naming the rule that forbids it, is listed
+in `blocked_by_robots`, and joins `invalid_url_count`. A cross-host URL is not checked:
+it already carries its own warning, and another host's robots.txt is that host's.
+
+**An unreadable robots.txt is not a clean one.** A 404 means no rules, as Google reads
+it. A 5xx, a 429 or no answer at all leaves the question open, so the clean verdict of
+both items is withheld with a reason naming the status (`truncated_reason`), and a defect
+found elsewhere still stands. The audit's own crawl keeps failing open on the same
+answer — that is argued in HTTP-5 and is a different question.
+
+**The fixture's two comments disagree, and neither is edited here.** The comment beside
+`/private/secret.html` in `good/sitemap.xml` says it is listed on purpose; the comment at
+the foot of the file says nothing defective is listed. The first is true.
+
+**What the pair no longer shows.** With `good` now WARN on GO-136 and FAIL on GO-138, and `broken` already both, no served fixture passes either item: `test_a_sitemap_full_of_problems_is_reported` holds that each origin's planted defect is reported, not that the two origins differ. The passing path is held by unit tests over stubbed responses (a 404 robots.txt, a Googlebot group that permits what `*` forbids). Restoring the contrast means taking `/private/secret.html` out of `good/sitemap.xml`, which the live-path robots arithmetic in CI also stands on — a fixture decision, not taken here.
+
+**Two counts that had drifted.** `pyproject.toml` still described a 215-item registry, and `README.md` and `plugin.json` counted 58 evidence scripts where the registry now names 57 (0.106.0 and 0.107.0 removed two and added one); the README's own test section already said 57.
+
 ## 0.109.0 — robots.txt meant one thing on Python 3.13 and another on 3.10
 
 Registry version: **`bfddc84f11b4`, unchanged.** No item changes what it asserts; what

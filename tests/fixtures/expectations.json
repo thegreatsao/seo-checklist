@@ -93,6 +93,24 @@
       "to": "62974eb27f54",
       "decided": "new-material",
       "why": "the Links export became a directory holding the same top-linking-sites sheet plus a top-linked-pages sheet, whose /old-offer.html is not in the tree, so BL-083 — which now reads backlink targets — is exercised by a served 404. No declared verdict moves."
+    },
+    {
+      "kind": "expect",
+      "origin": "good",
+      "item": "GO-136",
+      "from": "PASS",
+      "to": "WARN",
+      "decided": "checker-was-wrong",
+      "why": "/private/secret.html has been listed in the sitemap and disallowed by robots.txt since the fixture was written; the conflict was reported only by orphan_pages_from_sitemap.py, which no item read, and by nothing after 0.106.0 removed it. Anton (23 September) placed it in GO-136 at medium; the fixture is unchanged"
+    },
+    {
+      "kind": "expect",
+      "origin": "good",
+      "item": "GO-138",
+      "from": "PASS",
+      "to": "FAIL",
+      "decided": "checker-was-wrong",
+      "why": "the same listed and disallowed /private/secret.html. The previous declaration said a robots conflict is not an invalid URL; Anton (23 September) decided otherwise on Search Console's own classification, which lists Submitted URL blocked by robots.txt beside Submitted URL marked noindex, a case this item already counted. The fixture is unchanged"
     }
   ],
   "fixtures": {
@@ -143,9 +161,9 @@
         "why": "the sole GA4 measurement ID is configured once"
       },
       "GO-138": {
-        "expect": "PASS",
+        "expect": "FAIL",
         "title": "Remove Invalid URLs from Sitemaps",
-        "why": "re-read for 0.93.0, which replaced `(?i)404|redirect|noindex` over issue messages with `invalid_url_count`. Every URL the sitemap lists is fetched, answers 200, redirects nowhere and carries no meta noindex; a robots Disallow conflict is not an invalid URL and never was"
+        "why": "every listed URL answers 200 and none redirects or carries noindex, but /private/secret.html is disallowed by robots.txt, which Search Console reports as Submitted URL blocked by robots.txt; it is the one invalid URL"
       },
       "LO-200": {
         "expect": "PASS",
@@ -458,9 +476,9 @@
         "why": "declared with the repair that makes it true, in the same commit: /about.html and /privacy.html now carry the same GA4 snippet and the single measurement ID the entry page configures, so the sample no longer finds a page with no analytics. Flipped from FAIL, which described the tree before this commit"
       },
       "GO-136": {
-        "expect": "PASS",
+        "expect": "WARN",
         "title": "Provide Clean XML Sitemaps",
-        "why": "the sitemap is well-formed, lists only URLs this origin serves, every one of which answers 200, and each lastmod is a real date. Its one deliberate oddity, the robots-disallowed /private/secret.html, is orphan arithmetic by the fixture's own note rather than sitemap hygiene"
+        "why": "the sitemap is well-formed, lists only URLs this origin serves, every one of which answers 200, and each lastmod is a real date; it also lists /private/secret.html, which robots.txt disallows for every agent, so it carries one medium issue, while everything else about the sitemap is clean"
       },
       "MB-102": {
         "expect": "N/A",

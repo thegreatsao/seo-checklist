@@ -1540,6 +1540,234 @@ class Sitemap(unittest.TestCase):
                                               or "").lower()))
 
 
+class SitemapRobots(unittest.TestCase):
+    """Robots policy over sitemap URLs, isolated from the live fixture runs."""
+
+    SITE = "https://example.test"
+    SITEMAP = SITE + "/sitemap.xml"
+
+    def setUp(self):
+        import seo_common
+        import sitemap_checker
+
+        self.common = seo_common
+        self.checker = sitemap_checker
+        self.original_fetch_url = sitemap_checker.fetch_url
+        self.original_fetch_robots = sitemap_checker.fetch_robots
+        self.original_discovery_fetch_robots = seo_common.fetch_robots
+        self.robot_answers = {}
+        self.robot_calls = []
+        self.sitemap_documents = {}
+        self.page_answers = {}
+        sitemap_checker.fetch_url = self._fetch_url
+        sitemap_checker.fetch_robots = self._fetch_robots
+        seo_common.fetch_robots = self._unexpected_discovery_fetch
+
+    def tearDown(self):
+        self.checker.fetch_url = self.original_fetch_url
+        self.checker.fetch_robots = self.original_fetch_robots
+        self.common.fetch_robots = self.original_discovery_fetch_robots
+
+    @staticmethod
+    def _xml(*urls):
+        rows = "".join(
+            f"<url><loc>{url}</loc><lastmod>2026-01-01</lastmod></url>"
+            for url in urls
+        )
+        return ("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
+                + rows + "</urlset>")
+
+    def _set_robots(self, site, status, text=""):
+        self.robot_answers[self.checker.origin(site)] = (status, text)
+
+    def _fetch_robots(self, site_url, timeout=15):
+        url_origin = self.checker.origin(site_url)
+        robots_url = url_origin + "/robots.txt"
+        self.robot_calls.append(robots_url)
+        status, body = self.robot_answers.get(url_origin, (404, ""))
+        parsed = self.checker.robots_rules.parse(body) if status == 200 else None
+        return {
+            "url": robots_url,
+            "fetch": {"status": status, "url": robots_url},
+            "parsed": parsed,
+        }
+
+    def _unexpected_discovery_fetch(self, *args, **kwargs):
+        self.fail("discover_sitemap_urls fetched robots.txt instead of reusing it")
+
+    def _fetch_url(self, url, **kwargs):
+        if url in self.sitemap_documents:
+            return {
+                "status": 200,
+                "url": url,
+                "redirect_chain": [],
+                "headers": {"content-type": "application/xml"},
+                "text": self.sitemap_documents[url],
+                "error": None,
+                "error_kind": None,
+            }
+        if "sitemap" in urlsplit(url).path:
+            return {
+                "status": 404,
+                "url": url,
+                "redirect_chain": [],
+                "headers": {},
+                "text": "",
+                "error": None,
+                "error_kind": None,
+            }
+        status, error, error_kind = self.page_answers.get(url, (200, None, None))
+        return {
+            "status": status,
+            "url": url,
+            "redirect_chain": [],
+            "headers": {"content-type": "text/html"},
+            "text": "<html></html>" if status == 200 else "",
+            "error": error,
+            "error_kind": error_kind,
+        }
+
+    def _run(self, *urls, fetch_urls=True, explicit=True):
+        self.sitemap_documents[self.SITEMAP] = self._xml(*urls)
+        supplied = [self.SITEMAP] if explicit else None
+        return self.checker.check_sitemaps(
+            self.SITE, supplied, fetch_urls=fetch_urls)
+
+    def test_a_disallowed_sitemap_url_is_reported_and_invalid(self):
+        """A Googlebot disallow is both a medium issue and an invalid sitemap URL."""
+        blocked = self.SITE + "/private/secret.html"
+        self._set_robots(self.SITE, 200,
+                         "User-agent: *\nDisallow: /private/\n")
+
+        result = self._run(self.SITE + "/", blocked)
+
+        conflicts = [row for row in result["issues"]
+                     if row["message"] ==
+                     "Sitemap URL is disallowed by robots.txt"]
+        self.assertEqual(conflicts, [{
+            "severity": "warning",
+            "message": "Sitemap URL is disallowed by robots.txt",
+            "url": blocked,
+            "evidence": "disallow: /private/",
+        }])
+        self.assertEqual(result["blocked_by_robots"], [
+            {"url": blocked, "rule": "disallow: /private/"}
+        ])
+        self.assertEqual(result["invalid_url_count"], 1)
+        self.assertEqual(graded_verdict("GO-136", result), WARN)
+        self.assertEqual(graded_verdict("GO-138", result), FAIL)
+
+    def test_googlebot_group_overrides_the_wildcard_group(self):
+        """Googlebot's own group can allow a URL the wildcard group disallows."""
+        private = self.SITE + "/private/a.html"
+        self._set_robots(
+            self.SITE, 200,
+            "User-agent: *\nDisallow: /private/\n"
+            "User-agent: Googlebot\nAllow: /private/\n")
+
+        result = self._run(private)
+
+        self.assertEqual(result["blocked_by_robots"], [])
+        self.assertFalse(any("disallowed by robots.txt" in row["message"]
+                             for row in result["issues"]))
+
+    def test_a_404_robots_file_means_no_restrictions(self):
+        """A non-429 4xx robots response is read as an unrestricted policy."""
+        self._set_robots(self.SITE, 404)
+
+        result = self._run(self.SITE + "/page.html")
+
+        self.assertEqual(result["robots"], [{
+            "url": self.SITE + "/robots.txt", "status": 404, "read": True,
+        }])
+        self.assertEqual(result["blocked_by_robots"], [])
+        self.assertEqual(graded_verdict("GO-136", result), PASS)
+        self.assertEqual(graded_verdict("GO-138", result), PASS)
+
+    def test_a_503_robots_file_withholds_only_clean_verdicts(self):
+        """An unread robots policy withholds clean answers but not a found defect."""
+        self._set_robots(self.SITE, 503)
+        page = self.SITE + "/page.html"
+
+        clean = self._run(page)
+
+        self.assertIs(clean["robots"][0]["read"], False)
+        self.assertIs(clean["truncated"], True)
+        self.assertIn("answered 503", clean["truncated_reason"])
+        self.assertEqual(graded_verdict("GO-136", clean), NO_DATA)
+        self.assertNotIn("invalid_url_count", clean)
+        self.assertEqual(graded_verdict("GO-138", clean), NO_DATA)
+
+        self.page_answers[page] = (404, None, None)
+        broken = self._run(page)
+        self.assertEqual(broken["invalid_url_count"], 1)
+        self.assertEqual(graded_verdict("GO-138", broken), FAIL)
+
+    def test_no_robots_answer_withholds_clean_verdicts(self):
+        """No robots response has the same unknown-policy semantics as a 5xx."""
+        self._set_robots(self.SITE, None)
+
+        result = self._run(self.SITE + "/page.html")
+
+        self.assertIs(result["robots"][0]["read"], False)
+        self.assertIs(result["truncated"], True)
+        self.assertIn("answered nothing", result["truncated_reason"])
+        self.assertEqual(graded_verdict("GO-136", result), NO_DATA)
+        self.assertNotIn("invalid_url_count", result)
+        self.assertEqual(graded_verdict("GO-138", result), NO_DATA)
+
+        page = self.SITE + "/page.html"
+        self.page_answers[page] = (404, None, None)
+        broken = self._run(page)
+        self.assertEqual(broken["invalid_url_count"], 1)
+        self.assertEqual(graded_verdict("GO-138", broken), FAIL)
+
+    def test_cross_host_is_ignored_and_same_host_twin_has_one_policy(self):
+        """Only same-host origins are checked, once each, against their own policy."""
+        cross_host = "https://other.test/a.html"
+        twin_a = "https://www.example.test/private/a.html"
+        twin_b = "https://www.example.test/private/b.html"
+        self._set_robots(self.SITE, 200, "User-agent: *\nAllow: /\n")
+        self._set_robots("https://www.example.test", 200,
+                         "User-agent: *\nDisallow: /private/\n")
+
+        result = self._run(cross_host, twin_a, twin_b)
+
+        self.assertNotIn("https://other.test/robots.txt", self.robot_calls)
+        self.assertEqual(self.robot_calls.count(
+            "https://www.example.test/robots.txt"), 1)
+        self.assertEqual([row["url"] for row in result["blocked_by_robots"]],
+                         [twin_a, twin_b])
+        self.assertEqual([row["url"] for row in result["robots"]], [
+            self.SITE + "/robots.txt",
+            "https://www.example.test/robots.txt",
+        ])
+
+    def test_discovery_reuses_the_site_robots_fetch(self):
+        """Discovery and conflict checking share one site-origin robots request."""
+        self._set_robots(
+            self.SITE, 200,
+            "User-agent: *\nAllow: /\nSitemap: " + self.SITEMAP + "\n")
+        self.sitemap_documents[self.SITEMAP] = self._xml(self.SITE + "/page.html")
+
+        self.checker.check_sitemaps(self.SITE, fetch_urls=True)
+
+        self.assertEqual(self.robot_calls, [self.SITE + "/robots.txt"])
+
+    def test_an_explicit_sitemap_still_checks_robots_once(self):
+        """The --sitemap path still fetches policy once and reports a conflict."""
+        blocked = self.SITE + "/private/a.html"
+        self._set_robots(self.SITE, 200,
+                         "User-agent: *\nDisallow: /private/\n")
+
+        result = self._run(blocked, explicit=True)
+
+        self.assertEqual(self.robot_calls, [self.SITE + "/robots.txt"])
+        self.assertEqual(result["blocked_by_robots"], [
+            {"url": blocked, "rule": "disallow: /private/"}
+        ])
+
+
 class Redirects(unittest.TestCase):
     """CI-014 `has_loop`, AR-150 `total_hops`.
 
