@@ -10,6 +10,31 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.120.0 — one length for a meta description, the measured one
+
+Registry version: **`01b63b6dfafd` → `d9d576746b80`.** MS-030 changes what it asserts, so
+it can move on a real site. No fixture verdict moves; three fixture descriptions were
+trimmed, recorded in the manifest's triage log. Suite 1837 → 1843.
+
+**MS-030 *Keep Meta Descriptions ~150–160 Characters* asked for 120–165**, written into the
+registry, while `article_seo.py` said 100–144 — two answers to one question in one tree, and
+only 144 measured: `tools/calibration/serp-length.json` fits ordinary text in Arial at 14 px
+into the 920 px desktop snippet at 144 characters, and 155 overshoots it by 7 %, 165 by
+14 %. The old ceiling passed descriptions the tool itself measured as cut, and so does the
+title's own 150–160. MS-030 now reads `meta_description_band`, computed by `parse_html.py`
+from `article_seo`'s two constants with whitespace collapsed the way a snippet shows it:
+under 100 fails, 100–144 passes, longer fails. The registry holds no number, and its fix
+text no longer advises the length that fails. A missing or empty description is MS-028's,
+and gives this item no band. *Clear & Relevant* is not read; `measures` says so.
+
+The good fixture's entry and About descriptions, at 145 and 151 characters, were cut by its
+own tool's calibration and are trimmed to 134 and 143. The broken fixture's `/orphan.html`
+failed only because the old floor was 120; it is shortened to 63 so the broken tree still
+carries a too-short description in the sample. `len_between` has no user left and joins
+the registry specification's list of implemented, unused operators.
+
+Three readings stay owed: TE-175, and KW-070 and GO-139 on the branded-query decision.
+
 ## 0.119.0 — the page's weight, not its heavy images
 
 Registry version: **`835d527f8f95` → `01b63b6dfafd`.** MB-095 changes what it asserts and

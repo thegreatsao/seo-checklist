@@ -1372,6 +1372,11 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
 
 `title` — str
 `meta_description` — str
+`meta_description_chars` — int — its length with whitespace collapsed; absent when the
+  description is missing or empty (MS-028's subject). From 0.120.0
+`meta_description_band` — str — `short` (under `article_seo.META_MIN_CHARS`, 100),
+  `fits` (up to `META_MAX_CHARS`, 144, the calibrated desktop snippet), `long`; absent
+  with `meta_description_chars`. MS-030 reads it
 `meta_robots` — str
 `meta_keywords` — NoneType
 `x_robots_tag` — NoneType

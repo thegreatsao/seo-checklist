@@ -564,18 +564,19 @@
         ],
         "requires": "offline",
         "assert": {
-          "path": "meta_description",
-          "len_between": [
-            120,
-            165
-          ]
+          "path": "meta_description_band",
+          "value_map": {
+            "short": "fail",
+            "fits": "pass",
+            "long": "fail"
+          }
         }
       },
-      "verdict": "owed",
-      "reading": "`meta_description` length between 120 and 165: the title says about 150–160, and *Clear & Relevant* is not read. A rule repair is owed (A.10).",
+      "verdict": "measures",
+      "reading": "`meta_description_band` is the description's length, whitespace collapsed, against article_seo's 100 and 144: 144 is what the calibration fits into the desktop snippet, so the title's 150–160 is cut and fails; under 100 fails; no description is MS-028's (0.120.0; it read 120–165 written into the registry). *Clear & Relevant* is not read, and `measures` says so.",
       "shapes": {
-        "conjunction": "Owed: *Clear & Relevant* has no reader.",
-        "qualifier": "Owed: clarity and relevance are unmeasured."
+        "conjunction": "*Characters* is the band; *Clear & Relevant* has no reader, which `measures` states.",
+        "qualifier": "*Clear* and *relevant* are judgements about the text, which the rule does not make; `measures` states it."
       }
     },
     "MS-031": {

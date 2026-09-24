@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "01b63b6dfafd",
+  "registry_version": "d9d576746b80",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -786,15 +786,17 @@
         ],
         "requires": "offline",
         "assert": {
-          "path": "meta_description",
-          "len_between": [
-            120,
-            165
-          ]
+          "path": "meta_description_band",
+          "value_map": {
+            "short": "fail",
+            "fits": "pass",
+            "long": "fail"
+          }
         }
       },
+      "measures": "That the description runs 100 to 144 characters, what the desktop snippet shows of ordinary text by this tool's calibration; the title's 150–160 is cut. Whether it is clear and relevant is not read.",
       "effort": "low",
-      "fix": "Keep meta descriptions around 150-160 characters"
+      "fix": "Keep meta descriptions to 100-144 characters, what the desktop snippet shows"
     },
     {
       "id": "MS-031",

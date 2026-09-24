@@ -259,7 +259,7 @@ subject the script cannot reach, *at least one*, a compound title, a quality wor
 each be answered in the reading. `TheShapesWouldHaveExposedEveryItemRepairedByHand` holds
 that they fire on GO-137, BL-083, MB-096, MB-097, MD-189, CI-016 and MD-186 as those stood
 at `v0.104.0`, which `tools/audit_item_semantics.py`'s word overlap passed. It stays
-`partial` for two reasons: four readings are `owed` (A.10), and whether a reading is
+`partial` for two reasons: three readings are `owed` (A.10), and whether a reading is
 true is still a person's judgement — the reader guarantees that nothing changes under one
 unnoticed, not that it was right.
 
@@ -1044,7 +1044,12 @@ URL ended on, and never asked `http://`. It carries `measures` for the rest of t
 *Repaired at 0.119.0 (`01b63b6dfafd`):* MB-095 reads `page_weight` — Lighthouse's
 `total-byte-weight` from the mobile PageSpeed run, banded at the 1,600 KiB target and
 5,000 KiB flag its documentation publishes — where it counted images over 250 KB and
-allowed five. Four owed remain: MS-030, TE-175, and KW-070 and GO-139 on the
+allowed five.
+
+*Repaired at 0.120.0 (`d9d576746b80`):* MS-030 reads `meta_description_band` — the
+length against `article_seo`'s 100 and the calibrated 144 — where it read 120–165 written
+into the registry, a ceiling the tree's own calibration measured as cut; it carries
+`measures` for *Clear & Relevant*. Three owed remain: TE-175, and KW-070 and GO-139 on the
 branded-query decision.
 
 *Carrying `measures` since 0.113.0* — one sentence, printed under the title in every
@@ -1052,7 +1057,7 @@ report and translated, saying what the rule checks and naming what it does not: 
 SP-110, TE-170, TECH-003, MB-093, MB-098, AR-152, CN-040, SP-109, BL-086, SP-111, SP-112,
 AR-155, CN-065.
 
-#### A.4 — five operators are implemented and unused
+#### A.4 — six operators are implemented and unused
 
 The evaluator implements nineteen. These are named by no `assert`, `warn` or
 `applies_when` in the registry, and the list is read from these bullets by
@@ -1066,8 +1071,11 @@ the tree cannot drift past each other:
 - `count_matching_lte` — left the used set in 0.93.0, when MB-095 and MB-098 stopped
   deciding from `issues` prose. It was four here until then, and nothing noticed for
   seven releases
+- `len_between` — left the used set in 0.120.0, when MS-030 stopped writing a length range
+  into the registry and read the band `parse_html.py` computes from the two calibrated
+  constants
 
-The word "gt" reads as a sixth and is not one. MB-102 and MD-190 use it, in their
+The word "gt" reads as a seventh and is not one. MB-102 and MD-190 use it, in their
 `applies_when` conditions rather than in an `assert` — the same vocabulary, the same
 evaluator, the same test. Removing it as unused would take with it the only two
 applicability declarations in the registry, which is the thing REG-9 wants seventeen more

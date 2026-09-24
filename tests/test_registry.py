@@ -2283,6 +2283,8 @@ class MeasuresQualifications(unittest.TestCase):
         "TE-180": "The WCAG level-A failures the HTML shows: images without alt, form fields without an accessible name, no page language. Contrast is CN-036; keyboard use is not tested.",
         # 0.118.0: SE-117 asks the http:// address, of the page and a sample of its links.
         "SE-117": "That the audited page and up to three same-site pages it links to answer their http:// address with a permanent redirect to HTTPS. Other pages are not requested.",
+        # 0.120.0: MS-030 reads the calibrated length band.
+        "MS-030": "That the description runs 100 to 144 characters, what the desktop snippet shows of ordinary text by this tool's calibration; the title's 150–160 is cut. Whether it is clear and relevant is not read.",
     }
 
     @staticmethod
@@ -2291,7 +2293,7 @@ class MeasuresQualifications(unittest.TestCase):
         import build_checklist
         return build_checklist
 
-    def test_the_registry_carries_exactly_the_twenty_six_qualifications_verbatim(self):
+    def test_the_registry_carries_exactly_the_twenty_seven_qualifications_verbatim(self):
         build_checklist = self.module()
         self.assertEqual(build_checklist.MEASURES, self.EXPECTED)
         shipped = {item["id"]: item["measures"] for item in ITEMS

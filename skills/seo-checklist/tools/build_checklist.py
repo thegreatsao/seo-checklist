@@ -552,6 +552,7 @@ MEASURES = {
     "TE-167": "One request made during this audit, and whether it was answered below 500. Uptime over time needs a monitoring service.",
     "IN-121": "That the hreflang set carries exactly one x-default. Region codes, country domains and Search Console settings are not read.",
     "IN-128": "That the page lists itself in its own hreflang set. Which version a visitor is actually served is not tested.",
+    "MS-030": "That the description runs 100 to 144 characters, what the desktop snippet shows of ordinary text by this tool's calibration; the title's 150–160 is cut. Whether it is clear and relevant is not read.",
     "SE-117": "That the audited page and up to three same-site pages it links to answer their http:// address with a permanent redirect to HTTPS. Other pages are not requested.",
     "SE-119": "The Cumulative Layout Shift of the whole page. The cookie banner is not identified, so a shift caused by anything else counts too.",
     "CN-038": "How recent this page's own dates and statistics are. The balance of fresh and evergreen content across the site is not measured.",
@@ -792,9 +793,15 @@ item(28, "medium", S, "parse_html.py", HTMLARG,
 item(29, "medium", S, "duplicate_content.py", CRAWLARG,
      {"path": "summary.duplicate_description_groups", "eq": 0},
      "Give each page its own meta description — these are shared across pages")
+# Until 0.120.0 the registry wrote 120–165 while article_seo.py said 100–144, and only
+# 144 is measured: tools/calibration/serp-length.json shows ordinary text in Arial at
+# 14 px filling the 920 px desktop snippet at 144; 155 overshoots by 7 %, 165 by 14 %.
+# The title's own 150–160 is therefore cut. The band is computed from those constants so
+# the registry holds no number.
 item(30, "low", S, "parse_html.py", HTMLARG,
-     {"path": "meta_description", "len_between": [120, 165]},
-     "Keep meta descriptions around 150-160 characters")
+     {"path": "meta_description_band",
+      "value_map": {"short": "fail", "fits": "pass", "long": "fail"}},
+     "Keep meta descriptions to 100-144 characters, what the desktop snippet shows")
 item(31, "low", S, "parse_html.py", HTMLARG,
      {"path": "meta_keywords", "falsy": True, "missing_is": "pass"},
      "Remove meta keywords - search engines ignore it")

@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "registry_version": "01b63b6dfafd",
+  "registry_version": "d9d576746b80",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -25,10 +25,10 @@
     ]
   },
   "fixture_digest": {
-    "good": "4ab32c7a5c8e",
-    "broken": "62974eb27f54",
-    "good_tls": "c22606b1d3ea",
-    "broken_tls": "6485c04753d8"
+    "good": "1b811e0d3859",
+    "broken": "f35c3695bf5d",
+    "good_tls": "a6ab3c1eb2d0",
+    "broken_tls": "44c01c9b01a1"
   },
   "triage": [
     {
@@ -156,6 +156,42 @@
       "to": null,
       "decided": "checker-was-wrong",
       "why": "MB-095 is titled Keep Mobile Page Weight Light and counted images over 250 KB, allowing five, so a page of megabytes of script passed and no page weight was ever totalled. It now reads the total-byte-weight of PageSpeed's mobile Lighthouse run, which needs the PageSpeed API; no fixture run reaches it, so the item has nothing left to declare here."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good",
+      "item": null,
+      "from": "4ab32c7a5c8e",
+      "to": "1b811e0d3859",
+      "decided": "new-material",
+      "why": "MS-030 now reads the length the tree calibrated, 100 to 144 characters. The good tree's entry and About descriptions were 145 and 151 — cut on desktop by that calibration — and are trimmed to 134 and 143 by removing words, their og: and twitter: copies untouched; the broken tree's /orphan.html description, which failed only because the old floor was 120, is shortened to 63 so the tree still carries a too-short description in the sample. No declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good_tls",
+      "item": null,
+      "from": "c22606b1d3ea",
+      "to": "a6ab3c1eb2d0",
+      "decided": "new-material",
+      "why": "MS-030 now reads the length the tree calibrated, 100 to 144 characters. The good tree's entry and About descriptions were 145 and 151 — cut on desktop by that calibration — and are trimmed to 134 and 143 by removing words, their og: and twitter: copies untouched; the broken tree's /orphan.html description, which failed only because the old floor was 120, is shortened to 63 so the tree still carries a too-short description in the sample. No declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "broken",
+      "item": null,
+      "from": "62974eb27f54",
+      "to": "f35c3695bf5d",
+      "decided": "new-material",
+      "why": "MS-030 now reads the length the tree calibrated, 100 to 144 characters. The good tree's entry and About descriptions were 145 and 151 — cut on desktop by that calibration — and are trimmed to 134 and 143 by removing words, their og: and twitter: copies untouched; the broken tree's /orphan.html description, which failed only because the old floor was 120, is shortened to 63 so the tree still carries a too-short description in the sample. No declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "broken_tls",
+      "item": null,
+      "from": "6485c04753d8",
+      "to": "44c01c9b01a1",
+      "decided": "new-material",
+      "why": "MS-030 now reads the length the tree calibrated, 100 to 144 characters. The good tree's entry and About descriptions were 145 and 151 — cut on desktop by that calibration — and are trimmed to 134 and 143 by removing words, their og: and twitter: copies untouched; the broken tree's /orphan.html description, which failed only because the old floor was 120, is shortened to 63 so the tree still carries a too-short description in the sample. No declared verdict moves."
     }
   ],
   "fixtures": {
@@ -288,7 +324,7 @@
       "MS-030": {
         "expect": "PASS",
         "title": "Keep Meta Descriptions ~150–160 Characters (Clear & Relevant)",
-        "why": "the sampled high-value pages carry clear meta descriptions in the fixture's intended 120–160-character range"
+        "why": "the three sampled pages carry descriptions of 134, 143 and 120 characters, inside the 100–144 that fits the desktop snippet by the tree's own calibration"
       },
       "MS-031": {
         "expect": "PASS",
@@ -870,7 +906,7 @@
       "MS-030": {
         "expect": "FAIL",
         "title": "Keep Meta Descriptions ~150–160 Characters (Clear & Relevant)",
-        "why": "the search page description is only 'Search results.' and other reachable pages have no description"
+        "why": "the sampled /orphan.html describes itself in 63 characters, under the 100 the band starts at; the entry page has no description at all, which is MS-028's and gives no band here"
       },
       "MS-031": {
         "expect": "FAIL",

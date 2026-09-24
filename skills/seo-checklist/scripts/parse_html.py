@@ -23,11 +23,17 @@ except ImportError:
     sys.exit(1)
 
 try:
+    from article_seo import META_MAX_CHARS, META_MIN_CHARS
     from lib.safe_http import safe_get
 except ImportError:
+    from scripts.article_seo import META_MAX_CHARS, META_MIN_CHARS
     from scripts.lib.safe_http import safe_get
 
 from seo_common import favicon_href, html_parser, issue
+
+
+# The band MS-030 reads, in order of length.
+META_DESCRIPTION_BANDS = ("short", "fits", "long")
 
 
 def _fetch_url(url: str, timeout: int = 20) -> dict[str, Any]:
@@ -261,6 +267,16 @@ def parse_html(
         # Twitter Card
         if name.startswith("twitter:"):
             result["twitter_card"][name] = content
+
+    text = " ".join((result["meta_description"] or "").split())
+    if text:
+        result["meta_description_chars"] = len(text)
+        if len(text) < META_MIN_CHARS:
+            result["meta_description_band"] = "short"
+        elif len(text) <= META_MAX_CHARS:
+            result["meta_description_band"] = "fits"
+        else:
+            result["meta_description_band"] = "long"
 
     # Canonical
     canonical = soup.find("link", rel="canonical")
