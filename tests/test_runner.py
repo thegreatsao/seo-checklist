@@ -3156,6 +3156,32 @@ class NetworkOptIns(unittest.TestCase):
         self.assertEqual(runner.opt_in_flags("live", True)["server_log_audit.py"],
                          ["--verify-bots"])
 
+    def test_a_brand_reaches_the_script_that_reads_it_and_only_that_one(self):
+        """`--brand` travels as argv to `gsc_cannibalization.py`, one pair per name,
+        and lands on the launch its four items share; with none given the script is
+        launched as the registry says and reads the homepage's own names."""
+        self.assertNotIn("gsc_cannibalization.py", runner.opt_in_flags("live", False))
+        self.assertNotIn("gsc_cannibalization.py",
+                         runner.opt_in_flags("live", False, ["  "]))
+        flags = runner.opt_in_flags("live", False, ["Marino Barbero", "Barber Marino"])
+        self.assertEqual(flags["gsc_cannibalization.py"],
+                         ["--brand", "Marino Barbero", "--brand", "Barber Marino"])
+        with open(runner.REGISTRY, encoding="utf-8") as f:
+            items = [item for item in json.load(f)["items"]
+                     if (item.get("check") or {}).get("script")
+                     == "gsc_cannibalization.py"]
+        ctx = {"gsc_property": "sc-domain:example.com", "gsc_credentials": "key.json"}
+        plan, skipped = runner.build_plan(items, ctx, runner.MODE_CAPS["live"] | {"gsc"},
+                                          "live", has_gsc=True, opt_in=flags)
+        self.assertEqual(skipped, {})
+        self.assertEqual(len(plan), 1)
+        (script, args), ids = next(iter(plan.items()))
+        self.assertEqual(sorted(ids), ["GO-139", "KW-070", "KW-071", "MS-023"])
+        self.assertEqual(list(args[-4:]),
+                         ["--brand", "Marino Barbero", "--brand", "Barber Marino"])
+        self.assertEqual(runner.build_parser().parse_args(
+            ["https://example.com/", "--brand", "A", "--brand", "B"]).brand, ["A", "B"])
+
 
 class SecretsStayOutOfTheOutput(unittest.TestCase):
     """checklist-results.json and .seo-runs/ are what gets shared. The run log is

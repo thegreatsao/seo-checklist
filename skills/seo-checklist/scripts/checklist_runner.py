@@ -755,6 +755,21 @@ def _named_measure_context(rule: dict, data: dict) -> str:
     return f"; keyword = {parent['keyword']!r}"
 
 
+def _absent(rule: dict, data: dict) -> str:
+    """`<path> missing`, and why, when the block that should hold it says why.
+
+    A script that could not measure something often leaves its reason one level up —
+    `branded` with no brand name to go on carries `checked: false` and a `reason`
+    naming the flag that would supply one. Printing only the absent leaf sent the
+    reader to the tool when the sentence they needed was already in its output."""
+    parent_path, separator, _ = rule.get("path", "").rpartition(".")
+    parent = resolve(data, parent_path) if separator else None
+    reason = parent.get("reason") if isinstance(parent, dict) else None
+    if isinstance(reason, str) and reason.strip():
+        return f"{rule['path']} missing: {reason.strip()[:200]}"
+    return f"{rule['path']} missing"
+
+
 def evaluate(rule: dict, data: dict) -> tuple[bool | None, str]:
     """Return (passed, evidence). passed is None when the data needed to
     decide is absent — the caller turns that into NO_DATA, never a false PASS.
@@ -771,7 +786,7 @@ def evaluate(rule: dict, data: dict) -> tuple[bool | None, str]:
     if "none_severity" in rule:
         levels = {SEVERITY_ALIAS.get(s.lower(), s.lower()) for s in rule["none_severity"]}
         if value is _MISSING:
-            return None, f"{rule['path']} missing"
+            return None, _absent(rule, data)
         entries = value if isinstance(value, list) else []
         hits = [it for it in entries
                 if isinstance(it, dict)
@@ -792,7 +807,7 @@ def evaluate(rule: dict, data: dict) -> tuple[bool | None, str]:
 
     if "none_matching" in rule:
         if value is _MISSING:
-            return None, f"{rule['path']} missing"
+            return None, _absent(rule, data)
         rx = re.compile(rule["none_matching"])
         field = rule.get("field")
         if field:
@@ -828,7 +843,7 @@ def evaluate(rule: dict, data: dict) -> tuple[bool | None, str]:
         # that state. Here the failure mode is inverted: an unlisted value is
         # undecided, and the evidence says which value it was.
         if value is _MISSING:
-            return None, f"{rule['path']} missing"
+            return None, _absent(rule, data)
         field = rule.get("field")
         elements = value if isinstance(value, list) else [value]
         mapping = {str(k): str(v) for k, v in rule["value_map"].items()}
@@ -859,13 +874,13 @@ def evaluate(rule: dict, data: dict) -> tuple[bool | None, str]:
     if "count_matching_lte" in rule:
         pattern, limit = rule["count_matching_lte"]
         if value is _MISSING:
-            return None, f"{rule['path']} missing"
+            return None, _absent(rule, data)
         rx = re.compile(pattern)
         n = sum(1 for t in _texts(value) if rx.search(t))
         return n <= limit, f"{n} match(es) for {pattern!r}, limit {limit}"
 
     if value is _MISSING:
-        return None, f"{rule['path']} missing"
+        return None, _absent(rule, data)
 
     ev = repr(value)[:120]
 
@@ -2606,13 +2621,23 @@ def aggregate_pages(primary: list[dict], per_page: list[list[dict]]) -> list[dic
     return out
 
 
-def opt_in_flags(mode: str, verify_bots: bool) -> dict[str, list[str]]:
-    """Flags attached to script runs by mode or explicit operator permission."""
+def opt_in_flags(mode: str, verify_bots: bool,
+                 brands: list[str] | None = None) -> dict[str, list[str]]:
+    """Flags attached to script runs by mode or explicit operator permission.
+
+    `--brand` is the operator's word on what the business is called. It is not a
+    registry argument because the item does not need it: without one the script
+    reads the names the homepage publishes, and only a site that publishes none is
+    left undecided."""
     flags: dict[str, list[str]] = {}
     if mode != "archive":
         flags["hreflang_checker.py"] = ["--verify-returns"]
     if verify_bots:
         flags["server_log_audit.py"] = ["--verify-bots"]
+    names = [name.strip() for name in brands or [] if name.strip()]
+    if names:
+        flags["gsc_cannibalization.py"] = [arg for name in names
+                                           for arg in ("--brand", name)]
     return flags
 
 
@@ -2969,6 +2994,10 @@ def build_parser() -> argparse.ArgumentParser:
                          "network call about a third party, and without it the crawl "
                          "figures rest on a User-Agent string the client chose. "
                          "Recorded in the artifact either way.")
+    ap.add_argument("--brand", action="append", default=[], metavar="NAME",
+                    help="a name the business is searched by; repeat for more. KW-070 "
+                         "and GO-139 otherwise read the names the homepage publishes "
+                         "(WebSite and organisation names, og:site_name)")
     ap.add_argument("--gsc-property", default="",
                     help="Search Console property (default: sc-domain:<registrable domain>). "
                          "Must be one the service account can read — it is not always the "
@@ -3440,7 +3469,7 @@ def main() -> int:
                       + (f"; truncated at --crawl-max-pages {a.crawl_max_pages}"
                          if s.get("truncated") else ""), file=sys.stderr)
 
-    opt_in = opt_in_flags(mode, a.verify_bots)
+    opt_in = opt_in_flags(mode, a.verify_bots, a.brand)
     secrets = artifact_secrets(ctx)
     has_safe_browsing = any(os.environ.get(key) for key in SAFE_BROWSING_ENV_KEYS)
     prof_args = {k: list(v) for k, v in (profile.get("script_args") or {}).items()}

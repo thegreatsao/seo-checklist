@@ -270,6 +270,11 @@ LEDGER = [
     (os.path.join(ROOT, "README.md"),
      r"Every one of the (\d+) evidence scripts has tests", "named_scripts",
      "the claim that every checker is tested"),
+    # Found while writing 0.122.0's paragraph beside it: the README said "Seven" for
+    # the items SKILL.md's bound sentence already said were nine.
+    (os.path.join(ROOT, "README.md"),
+     r"^([A-Z][a-z]+) items are answered from live data", "gsc_answered",
+     "the README's account of what Search Console credentials buy"),
     (os.path.join(ROOT, "README.md"),
      r"`pagespeed\.py` runs once, not\s+([a-z]+) times", "pagespeed",
      "the example of what grouping by invocation saves"),

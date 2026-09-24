@@ -10,6 +10,63 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.122.0 — the branded query carries the brand's name
+
+Registry version: **`3b6928c0dde9` → `08c2492fb163`.** KW-070 and GO-139 change what they
+read, so both can move on a real site with Search Console connected. No declared verdict
+moves: both are credentialed, and the fixtures carry none.
+
+**Since 0.90.1 the brand was whatever query had the most clicks.** On the property that
+exposed it, that was `barber paphos` — a generic head term served by an inner page — while
+the shop's own name had no impressions, and both items failed the site for not owning a
+query that is not its name. `gsc_cannibalization.py` now takes the brand from a name:
+`--brand` when the operator passes one (repeatable, on the runner and on the script), and
+otherwise every name the homepage publishes for itself — `WebSite` and organisation
+`name` and `alternateName` in JSON-LD, and `og:site_name`. A branded query is one carrying
+such a name: as a run of letters, within the misspelling bounds the spread classifier
+already used, or — new — its first two words in any order, each within the same bounds,
+so *barber marino* and *marinos barber shop* are the shop published as *Marino Barbero*.
+The query judged is the branded one with the most impressions.
+
+| the brand | KW-070 and GO-139 |
+|---|---|
+| no name supplied, none published, or the homepage unreadable | NO_DATA, with the reason and the flag |
+| named, and nobody searched it in the window | N/A — a demand gap is not a ranking defect |
+| named and searched | decided |
+
+**KW-070 reads both halves of its title**: `branded.homepage_ranks_first` — the page served
+most for the brand is the homepage, or a locale alternate of it that hreflang declares
+beside `/`, and it averages position 1.5 or better. It read `owns_homepage` alone. GO-139
+still reads `ranks_first`, now about the brand, and carries `measures`: the rest of the
+brand's results page is not read. Both readings are re-read by hand; **none is owed**.
+
+The highest-click query is still used for one narrower job, and says so: with no name
+known, it counts as the brand *for classifying spreads* when the homepage is where it
+lands, as before. `spread_brand.source` records which it was. With a name known, a
+branded query split across the site's pages is a branded spread whether or not the
+homepage owns it — whether it does is KW-070's question.
+
+**A missing field now carries the reason its block gives.** `branded` with no name is
+`{checked: false, reason: …}`, and the runner printed only `branded.searched missing`.
+Every "missing" verdict now appends the `reason` beside the absent key when there is one,
+so the report says *pass --brand* instead of sending the reader to the tool. One
+evidence string moved with it: MB-104's unreadable favicon now says *format not
+recognised* after the missing key.
+
+**Two applicability declarations outside the class REG-9's sweep derives.** The gate
+held `applies_when` to exactly the items that pass when nothing is found. KW-070 and
+GO-139 *require* a ranking over a subject a site may legitimately not have — the class
+`declarations` A.1 had named as out of that sweep's reach — so the test now requires
+every such candidate to be covered, the excused ones to be candidates, and a declaration
+outside the class to read the block its own assertion reads.
+
+Found while writing the README paragraph: *"Seven items are answered from live data"* —
+nine are, and SKILL.md's bound sentence said so. It is corrected and bound in
+`tests/test_protocol_counts.py`.
+
+KNOWN-ISSUES' branded-query entry is closed; its probe now asks the block with the name
+and without, and neither answer names the head term. Suite 1855 → 1865.
+
 ## 0.121.0 — a secure page is one the browser does not block
 
 Registry version: **`d9d576746b80` → `3b6928c0dde9`.** TE-175 changes what it asserts, so it

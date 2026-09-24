@@ -646,20 +646,35 @@
       "why": "A closed narrative about a suite repair, held by the discovery rules it fixed."
     },
     "the-branded-query-is-whatever-got-the-most-clicks": {
-      "claim": "KW-070 and GO-139 both read a `branded` block whose query is simply the highest-click query; nothing identifies a brand. On a property whose head term is generic and whose brand name has zero impressions, both items fail the site over a query that is not its brand.",
+      "claim": "Closed in 0.122.0. KW-070 and GO-139 read a `branded` block whose brand is a name the operator supplies or the homepage publishes; the highest-click query is never judged as the brand. On rows whose head term is generic and whose brand has no impressions, the block answers not searched with the name and not checked without one, and names the head term in neither.",
       "measured": {
         "items_reading_it": {
-          "GO-139": "Monitor & Improve Brand SERPs",
-          "KW-070": "Own Your Branded Query (Homepage Ranks #1)"
+          "GO-139": [
+            "Monitor & Improve Brand SERPs",
+            "branded.ranks_first",
+            "branded.searched"
+          ],
+          "KW-070": [
+            "Own Your Branded Query (Homepage Ranks #1)",
+            "branded.homepage_ranks_first",
+            "branded.searched"
+          ]
         },
-        "method": "highest-click query",
-        "owns_homepage": false,
-        "picked_as_the_brand": "barber paphos",
-        "ranks_first": false,
-        "the_actual_brand_is_in_the_rows": true
+        "method": "a name the site publishes or the operator supplies",
+        "the_head_term_is_judged": false,
+        "with_the_name": {
+          "branded_queries": 0,
+          "checked": true,
+          "query": null,
+          "searched": false
+        },
+        "without_a_name": {
+          "checked": false,
+          "query": null
+        }
       },
       "probe": "the_branded_query_is_whatever_got_the_most_clicks",
-      "state": "open"
+      "state": "closed"
     },
     "the-crawl-defaults-now-decide-whether-items-answer": {
       "claim": "DEFAULT_MAX_PAGES = 100 and DEFAULT_DEPTH = 3 decide whether the fifteen crawl-fed items answer at all, and both are inherited. The probe used to count every truncation reporter under that name, which was seven items too many; the crawl-fed set is now derived from requires: crawl and the rest are recorded beside it.",

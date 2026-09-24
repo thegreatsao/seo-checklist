@@ -989,14 +989,18 @@
         ],
         "requires": "gsc",
         "assert": {
-          "path": "branded.owns_homepage",
+          "path": "branded.homepage_ranks_first",
+          "truthy": true
+        },
+        "applies_when": {
+          "path": "branded.searched",
           "truthy": true
         }
       },
-      "verdict": "owed",
-      "reading": "`branded.owns_homepage` treats the highest-click query as the brand, so a site whose head term is generic is judged on a query that is not its brand. The identification is Anton's open decision (KNOWN-ISSUES, branded query).",
+      "verdict": "answers",
+      "reading": "`branded.homepage_ranks_first` is true when the page Google serves most for the site's most-searched branded query is the homepage (the root, or a locale alternate of it) and averages position 1.5 or better. Branded means the query carries a name the operator supplied with `--brand` or the homepage publishes — `WebSite`/organisation `name` and `alternateName`, `og:site_name` — in any word order (0.122.0; it had judged the highest-click query, which on a site with a generic head term is not its name). `branded.searched` false — nobody searched the name — is N/A; no name at all is NO_DATA.",
       "shapes": {
-        "conjunction": "Owed: *branded* is not identified, so the ranks-first half is read about the wrong query."
+        "conjunction": "*Own your branded query* is the homepage being the page served for it; *homepage ranks #1* is that page averaging position 1.5 or better. `homepage_ranks_first` is both."
       }
     },
     "KW-071": {
@@ -2031,12 +2035,16 @@
         "assert": {
           "path": "branded.ranks_first",
           "truthy": true
+        },
+        "applies_when": {
+          "path": "branded.searched",
+          "truthy": true
         }
       },
-      "verdict": "owed",
-      "reading": "`branded.ranks_first` shares KW-070's identification of the brand as the highest-click query — Anton's open decision.",
+      "verdict": "measures",
+      "reading": "`branded.ranks_first` is the site's own page ranking first — average position 1.5 or better — for its most-searched branded query, identified as KW-070's is (0.122.0; it had been the highest-click query). The rest of the brand results page is not read, and `measures` says so.",
       "shapes": {
-        "conjunction": "Owed: monitor and improve are both read as one ranking, about a query that may not be the brand."
+        "conjunction": "*Monitor* and *improve* are one reading: the brand query's ranking over the Search Console window, which is what monitoring it shows and what improving it moves."
       }
     },
     "GO-143": {

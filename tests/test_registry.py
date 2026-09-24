@@ -170,7 +170,23 @@ class RegistryShape(unittest.TestCase):
         excused = set(build_checklist.SUBJECT_ALWAYS_PRESENT)
         self.assertTrue(candidates, "nothing passes by absence; the sweep reads nothing")
         self.assertEqual(declared & excused, set())
-        self.assertEqual(declared | excused, candidates)
+        self.assertEqual(candidates - (declared | excused), set())
+        self.assertEqual(excused - candidates, set())
+        # 0.122.0: REG-9 is wider than the class this derivation finds. KW-070 and
+        # GO-139 *require* a ranking over a subject a site may legitimately not have —
+        # nobody searched the brand — which `declarations` A.1 had named as the class
+        # this sweep cannot reach. They may declare. What keeps such a declaration from
+        # being a stale or borrowed one is that it reads the item's own subject: the
+        # block its assertion reads.
+        def block(rule):
+            return rule["path"].split(".")[0]
+        for item_id in sorted(declared - candidates):
+            with self.subTest(item=item_id):
+                check = next(i for i in ITEMS if i["id"] == item_id)["check"]
+                self.assertEqual(block(check["applies_when"]), block(check["assert"]),
+                                 f"{item_id} declares applicability over something its "
+                                 f"assertion does not read")
+        self.assertEqual(sorted(declared - candidates), ["GO-139", "KW-070"])
 
     def test_every_recorded_reason_names_a_subject_rather_than_asserting_a_verdict(self):
         """A reason is only worth keeping if the next person can argue with it. The
@@ -2287,6 +2303,9 @@ class MeasuresQualifications(unittest.TestCase):
         "MS-030": "That the description runs 100 to 144 characters, what the desktop snippet shows of ordinary text by this tool's calibration; the title's 150–160 is cut. Whether it is clear and relevant is not read.",
         # 0.121.0: TE-175 reads what a browser blocks or upgrades on the page.
         "TE-175": "That the page is served over HTTPS and loads nothing over plain HTTP that a browser blocks or upgrades: scripts, stylesheets, frames, objects, images and media. URLs inside CSS and other page errors are not read.",
+        # 0.122.0: GO-139 ranks the brand's own query; the rest of its results page is
+        # not read.
+        "GO-139": "Whether the site ranks first, with any of its pages, for its most-searched branded query in Search Console. The rest of the brand's results page — knowledge panel, reviews, other sites — is not read.",
     }
 
     @staticmethod
@@ -2295,7 +2314,7 @@ class MeasuresQualifications(unittest.TestCase):
         import build_checklist
         return build_checklist
 
-    def test_the_registry_carries_exactly_the_twenty_eight_qualifications_verbatim(self):
+    def test_the_registry_carries_exactly_the_twenty_nine_qualifications_verbatim(self):
         build_checklist = self.module()
         self.assertEqual(build_checklist.MEASURES, self.EXPECTED)
         shipped = {item["id"]: item["measures"] for item in ITEMS

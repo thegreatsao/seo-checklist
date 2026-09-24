@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.121.0 — see [CHANGELOG.md](CHANGELOG.md). **One verdict can move on your site.** *Secure Pages & Eliminate Errors* now reads what your page loads over plain `http://` on HTTPS — a script, stylesheet or frame the browser blocks fails, an image it upgrades warns — instead of counting security headers. Before that, `0.120.0` made *Keep Meta Descriptions ~150–160 Characters* ask for the 100–144 the desktop snippet shows.
+Version 0.122.0 — see [CHANGELOG.md](CHANGELOG.md). **Two verdicts can move on your site if Search Console is connected.** *Own Your Branded Query* and *Monitor & Improve Brand SERPs* now judge the query carrying your business's name — the one your homepage publishes, or the one you pass with `--brand` — instead of whichever query had the most clicks. Before that, `0.121.0` made *Secure Pages & Eliminate Errors* read what your page loads over plain `http://`.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -268,11 +268,19 @@ replaced handled `example.co.uk` correctly and every platform domain wrong —
 so the default property was one nobody owns and every Search Console item came
 back empty, which reads as a site with no search traffic.
 
-Seven items are answered from live data: cannibalization, branded-query ownership,
-reported opportunities, and — via the URL Inspection API — whether Google indexed
-the page and which canonical it picked. That last one earns the setup on its own:
-a page can declare `rel=canonical` to itself and still have Google choose a
-different URL, and nothing in the page reveals it.
+Nine items are answered from live data: cannibalization, branded-query ownership,
+reported opportunities, the sitemaps reconciled against the index, and — via the
+URL Inspection API — whether Google indexed the page and which canonical it picked.
+That last one earns the setup on its own: a page can declare `rel=canonical` to
+itself and still have Google choose a different URL, and nothing in the page
+reveals it.
+
+A branded query is one carrying the business's name — the names the homepage
+publishes for itself (`WebSite` and organisation names, `og:site_name`), or the
+ones you pass with `--brand`, repeatable. It is never simply the query with the
+most clicks: on a site whose busiest search is a generic term, that is not its
+name. A site that publishes no name and gets no `--brand` leaves the two branded
+items undecided, and the report says which flag decides them.
 
 Three items report `MANUAL` even with working credentials, and this is not
 missing wiring: **the Search Console API has no endpoint for manual actions, the

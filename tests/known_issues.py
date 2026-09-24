@@ -1117,6 +1117,9 @@ def _the_branded_query_is_whatever_got_the_most_clicks() -> dict:
     and a method that picks by clicks answers the same on invented rows as on real
     ones. The rows are shaped like the property that exposed this — a generic head
     term carrying every click, and the actual brand name carrying none.
+
+    Closed in 0.122.0: the block is asked with the brand's name, as a run asks it,
+    and once without one. Neither answer may name the head term.
     """
     import gsc_cannibalization
 
@@ -1130,17 +1133,22 @@ def _the_branded_query_is_whatever_got_the_most_clicks() -> dict:
         {"query": "marino barbero", "page": "https://example.test/",
          "clicks": 0, "impressions": 0, "position": 0.0},
     ]
-    branded = gsc_cannibalization.find_branded(rows, "sc-domain:example.test")
+    named = gsc_cannibalization.find_branded(
+        rows, "sc-domain:example.test", ["Marino Barbero"], "published")
+    unnamed = gsc_cannibalization.find_branded(
+        rows, "sc-domain:example.test", [], "", no_brand_reason="no name")
     items = _items_by_id()
     return {
-        "method": "highest-click query",
-        "picked_as_the_brand": branded.get("query"),
-        "the_actual_brand_is_in_the_rows": any(
-            r["query"] == "marino barbero" for r in rows),
-        "owns_homepage": branded.get("owns_homepage"),
-        "ranks_first": branded.get("ranks_first"),
+        "method": "a name the site publishes or the operator supplies",
+        "with_the_name": {key: named.get(key) for key in
+                          ("checked", "searched", "branded_queries", "query")},
+        "without_a_name": {key: unnamed.get(key) for key in ("checked", "query")},
+        "the_head_term_is_judged": "barber paphos" in (named.get("query"),
+                                                       unnamed.get("query")),
         "items_reading_it": {
-            item_id: items[item_id]["title"]
+            item_id: [items[item_id]["title"],
+                      items[item_id]["check"]["assert"]["path"],
+                      items[item_id]["check"].get("applies_when", {}).get("path")]
             for item_id in ("KW-070", "GO-139")
         },
     }

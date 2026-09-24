@@ -894,10 +894,14 @@ class Cannibalization(unittest.TestCase):
                  "ctr": 0.05, "position": position}
                 for keys, clicks, impressions, position in triples]
 
-    def analyze(self, rows, alternate_urls=None):
+    def analyze(self, rows, alternate_urls=None, brand=None, source="operator"):
         self.mod.build_service = lambda *a, **k: _Query(rows=rows)
         return self.mod.analyze("https://example.com/", "/dev/null", 90,
-                                alternate_urls=alternate_urls)
+                                alternate_urls=alternate_urls, brand_names=brand,
+                                brand_source=source if brand else "",
+                                no_brand_reason="the homepage publishes no WebSite or "
+                                                "organisation name and no og:site_name; "
+                                                "pass --brand")
 
     def items_for(self):
         return [i for i in ITEMS.values()
@@ -908,7 +912,7 @@ class Cannibalization(unittest.TestCase):
             (("fixture bakery", "https://example.com/"), 400, 2000, 1.1),
             (("sourdough starter", "https://example.com/starter"), 90, 1000, 3.1),
             (("proofing times", "https://example.com/guide"), 40, 600, 5.4),
-        ]))
+        ]), brand=["Fixture Bakery"])
         self.assertEqual(out["cannibalized"], [])
         self.assertEqual(verdicts(self.items_for(), out),
                          {"GO-139": PASS, "KW-070": PASS, "KW-071": PASS,
@@ -920,7 +924,7 @@ class Cannibalization(unittest.TestCase):
             (("sourdough starter", "https://example.com/starter"), 50, 900, 4.2),
             (("sourdough starter", "https://example.com/blog/starter"), 30, 800, 6.9),
             (("sourdough starter", "https://example.com/faq"), 5, 400, 18.0),
-        ]))
+        ]), brand=["Fixture Bakery"])
         self.assertTrue(out["cannibalized"])
         found = out["cannibalized"][0]
         self.assertEqual(found["query"], "sourdough starter")
@@ -1067,9 +1071,23 @@ class Cannibalization(unittest.TestCase):
             (("acme valley", "https://example.com/other"), 400, 2000, 1.2),
             (("acme valley", "https://example.com/"), 30, 500, 2.0),
         ]))
-        self.assertFalse(out["branded"]["owns_homepage"])
+        # With no name known, the top query is a brand only if the homepage is where
+        # it lands — here it is not, so nothing is inferred and the split counts.
+        self.assertEqual(out["spread_brand"], {"source": "none", "names": []})
         self.assertEqual([row["query"] for row in out["cannibalized"]],
                          ["acme valley"])
+
+    def test_a_named_brand_split_across_pages_is_a_branded_spread(self):
+        """The same rows with the name known: a search for the business that lands
+        on two of its pages is not two pages competing for a topic. Whether the
+        homepage owns it is KW-070's question, and it is asked there."""
+        out = self.analyze(self.rows([
+            (("acme valley", "https://example.com/other"), 400, 2000, 1.2),
+            (("acme valley", "https://example.com/"), 30, 500, 2.0),
+        ]), brand=["Acme Valley"])
+        self.assertEqual(out["cannibalized"], [])
+        self.assertEqual([row["query"] for row in out["branded_spread"]], ["acme valley"])
+        self.assertEqual(self.brand_verdicts(out), {"KW-070": FAIL, "GO-139": PASS})
 
     def test_hreflang_alternates_count_as_one_logical_page(self):
         out = self.analyze(self.rows([
@@ -1092,6 +1110,122 @@ class Cannibalization(unittest.TestCase):
         self.assertEqual(out["summary"]["contested_queries"], 1)
         self.assertEqual([row["query"] for row in out["contested"]], ["close query"])
         self.assertNotIn("worst_spread", out["summary"])
+
+    BRAND_ITEMS = ("KW-070", "GO-139")
+
+    def brand_verdicts(self, out):
+        return {item_id: verdict(item_id, out) for item_id in self.BRAND_ITEMS}
+
+    def test_a_generic_head_term_is_not_the_brand(self):
+        """The property that exposed the defect, in shape: the highest-click query is
+        `barber paphos`, served by an inner page, and the shop's own name is served by
+        the homepage at position 1. Before 0.122.0 both items failed the site over
+        `barber paphos`; they are about the name."""
+        out = self.analyze(self.rows([
+            (("barber paphos", "https://example.com/en/services"), 40, 300, 3.1),
+            (("marino barbero", "https://example.com/"), 6, 20, 1.0),
+            (("barber marino", "https://example.com/"), 2, 8, 1.2),
+            (("marinos barber shop", "https://example.com/"), 1, 5, 1.0),
+        ]), brand=["Marino Barbero"], source="published")
+        branded = out["branded"]
+        self.assertEqual(branded["query"], "marino barbero")
+        self.assertEqual(branded["branded_queries"], 3)
+        self.assertEqual(branded["brand_source"], "published")
+        self.assertTrue(branded["homepage_ranks_first"])
+        self.assertEqual(self.brand_verdicts(out), {"KW-070": PASS, "GO-139": PASS})
+        self.assertFalse(any("barber paphos" in issue["message"]
+                             for issue in out["issues"]))
+
+    def test_the_most_searched_branded_query_is_judged_not_the_most_clicked(self):
+        """Impressions, not clicks: a brand search nobody clicked through is still
+        the brand's own search, and the one that says whether the name is owned."""
+        out = self.analyze(self.rows([
+            (("acme valley", "https://example.com/about"), 0, 400, 2.4),
+            (("acme valley reviews", "https://example.com/"), 30, 60, 1.0),
+        ]), brand=["Acme Valley"])
+        self.assertEqual(out["branded"]["query"], "acme valley")
+        self.assertFalse(out["branded"]["owns_homepage"])
+        self.assertEqual(self.brand_verdicts(out), {"KW-070": FAIL, "GO-139": FAIL})
+
+    def test_the_homepage_must_be_served_and_rank_first(self):
+        """KW-070's title is a conjunction and so is its rule; GO-139 asks only that
+        the site ranks first, with whatever page."""
+        served_low = self.analyze(self.rows([
+            (("acme valley", "https://example.com/"), 50, 400, 3.1),
+        ]), brand=["Acme Valley"])
+        self.assertTrue(served_low["branded"]["owns_homepage"])
+        self.assertEqual(self.brand_verdicts(served_low),
+                         {"KW-070": FAIL, "GO-139": FAIL})
+        inner_first = self.analyze(self.rows([
+            (("acme valley", "https://example.com/contact"), 50, 400, 1.0),
+        ]), brand=["Acme Valley"])
+        self.assertEqual(self.brand_verdicts(inner_first),
+                         {"KW-070": FAIL, "GO-139": PASS})
+
+    def test_a_locale_alternate_of_the_homepage_is_the_homepage(self):
+        out = self.analyze(self.rows([
+            (("acme valley", "https://example.com/en/"), 50, 400, 1.1),
+        ]), alternate_urls=["https://example.com/", "https://example.com/en/"],
+            brand=["Acme Valley"])
+        self.assertTrue(out["branded"]["owns_homepage"])
+        self.assertEqual(self.brand_verdicts(out), {"KW-070": PASS, "GO-139": PASS})
+        unrelated = self.analyze(self.rows([
+            (("acme valley", "https://example.com/en/"), 50, 400, 1.1),
+        ]), brand=["Acme Valley"])
+        self.assertFalse(unrelated["branded"]["owns_homepage"],
+                         "/en/ with no hreflang set is an inner page")
+
+    def test_a_brand_nobody_searched_does_not_apply(self):
+        """A demand gap, not a ranking defect: with no branded query in the window
+        there is nothing for the homepage to own. The cannibalisation items still
+        decide."""
+        out = self.analyze(self.rows([
+            (("barber paphos", "https://example.com/"), 40, 300, 1.1),
+        ]), brand=["Marino Barbero"])
+        self.assertFalse(out["branded"]["searched"])
+        self.assertNotIn("owns_homepage", out["branded"])
+        self.assertEqual(self.brand_verdicts(out), {"KW-070": NA, "GO-139": NA})
+        self.assertEqual(verdict("MS-023", out), PASS)
+
+    def test_no_brand_name_is_undecided_and_names_the_flag(self):
+        """The highest-click query is never promoted to the brand for these two
+        items. The evidence carries the script's reason, so the reader is told which
+        flag supplies what is missing rather than that a key is absent."""
+        out = self.analyze(self.rows([
+            (("fixture bakery", "https://example.com/"), 400, 2000, 1.1),
+        ]))
+        self.assertFalse(out["branded"]["checked"])
+        self.assertEqual(self.brand_verdicts(out), {"KW-070": NO_DATA, "GO-139": NO_DATA})
+        ok, evidence = evaluate(ITEMS["KW-070"]["check"]["applies_when"], out)
+        self.assertIsNone(ok)
+        self.assertIn("pass --brand", evidence)
+        self.assertEqual(out["spread_brand"]["source"], "inferred")
+
+    def test_reordered_and_plural_forms_of_a_name_are_branded(self):
+        match = self.mod._any_brand_match
+        for query in ("marino barbero", "barber marino", "marinos barber shop",
+                      "marino barbero paphos", "marinobarbero"):
+            with self.subTest(query=query):
+                self.assertIsNotNone(match(query, ["Marino Barbero"]))
+        for query in ("barber paphos", "best barber", "marina bay"):
+            with self.subTest(query=query):
+                self.assertIsNone(match(query, ["Marino Barbero"]))
+
+    def test_the_names_a_homepage_publishes_are_read(self):
+        html = """<html><head>
+          <meta property="og:site_name" content="Marino Barber Shop">
+          <script type="application/ld+json">{"@context": "https://schema.org",
+            "@graph": [
+              {"@type": "WebSite", "name": "Marino Barbero", "url": "/"},
+              {"@type": ["HairSalon"], "name": "Marino  Barbero",
+               "alternateName": ["Barber Marino"]},
+              {"@type": "WebPage", "name": "Home"}]}</script>
+          <script type="application/ld+json">{not json</script>
+        </head><body></body></html>"""
+        self.assertEqual(self.mod.published_brand_names(html),
+                         ["Marino Barbero", "Barber Marino", "Marino Barber Shop"])
+        self.assertEqual(self.mod.published_brand_names("<html><title>x</title></html>"),
+                         [])
 
     def test_no_credentials_is_undecided_and_says_so(self):
         """Not an empty history. A property nobody could open and a property with no

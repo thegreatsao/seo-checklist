@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "3b6928c0dde9",
+  "registry_version": "08c2492fb163",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1524,7 +1524,11 @@
         ],
         "requires": "gsc",
         "assert": {
-          "path": "branded.owns_homepage",
+          "path": "branded.homepage_ranks_first",
+          "truthy": true
+        },
+        "applies_when": {
+          "path": "branded.searched",
           "truthy": true
         }
       },
@@ -3025,8 +3029,13 @@
         "assert": {
           "path": "branded.ranks_first",
           "truthy": true
+        },
+        "applies_when": {
+          "path": "branded.searched",
+          "truthy": true
         }
       },
+      "measures": "Whether the site ranks first, with any of its pages, for its most-searched branded query in Search Console. The rest of the brand's results page — knowledge panel, reviews, other sites — is not read.",
       "effort": "low",
       "fix": "Monitor and improve the brand SERP"
     },

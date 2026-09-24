@@ -1057,6 +1057,15 @@ content: blocked fails, upgraded warns — where it counted missing security hea
 SE-115's and SE-120's subject. It carries `measures` for CSS URLs and the page's other
 errors. Two owed remain: KW-070 and GO-139 on the branded-query decision.
 
+*Repaired at 0.122.0 (`08c2492fb163`):* KW-070 and GO-139 read a `branded` block whose
+brand is a name — `--brand`, or the names the homepage publishes (`WebSite` and
+organisation `name`/`alternateName`, `og:site_name`) — where it was the highest-click
+query, which on a site whose head term is generic is not its name. KW-070 reads
+`homepage_ranks_first`, both halves of its title; GO-139 reads `ranks_first` and carries
+`measures` for the rest of the brand's results page. Both apply only when the name was
+searched in the window. None owed: every rule-carrying item's reading answers its title
+or says what it leaves out.
+
 *Carrying `measures` since 0.113.0* — one sentence, printed under the title in every
 report and translated, saying what the rule checks and naming what it does not: CI-001, TE-167, IN-121, IN-128, SE-119, CN-038,
 SP-110, TE-170, TECH-003, MB-093, MB-098, AR-152, CN-040, SP-109, BL-086, SP-111, SP-112,

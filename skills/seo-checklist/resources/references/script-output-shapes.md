@@ -655,20 +655,36 @@ of this file.
     positions_compared
 `branded_spread[]` / `contested[]` — arrays with the same item shape and
 human-facing 25-entry cap
+`spread_brand.source` — str (`operator`, `published`, `inferred`, or `none`) —
+  what `branded_spread` was classified by; `inferred` is the highest-click query
+  landing on the homepage, used only when no brand name is known
+`spread_brand.names[]` — array of str
 `branded.checked` — bool
-`branded.query` / `branded.owner_page` / `branded.host` — str
+`branded.brand_names[]` — array of str — `--brand` values, or the names the
+  homepage publishes (`WebSite`/organisation `name` and `alternateName`,
+  `og:site_name`)
+`branded.brand_source` — str (`operator` or `published`)
+`branded.branded_queries` — int — distinct queries carrying a brand name
+`branded.searched` — bool — at least one did, in the window
+`branded.host` — str
+`branded.query` / `branded.owner_page` — str — the branded query with the most
+  impressions, and the page (locale alternates grouped) serving it most
 `branded.position` — float
-`branded.clicks` — int
-`branded.owns_homepage` — bool
+`branded.clicks` / `branded.impressions` — int
+`branded.owns_homepage` — bool — the root, or a locale alternate of it
 `branded.ranks_first` — bool
+`branded.homepage_ranks_first` — bool — both of the above
 `summary.cannibalized_queries` — int
 `summary.contested_queries` — int
 `issues[]` — array
 `error` — str | null
 
-When the range holds no query data, `branded` collapses to
+With no brand name — none supplied, none published, or the homepage unreadable —
+or no query data in the range, `branded` collapses to
 `{checked: false, reason: "..."}` and the sub-fields are absent — so rules on
-`branded.*` yield `NO_DATA`, not a verdict.
+`branded.*` yield `NO_DATA`, with the reason, not a verdict. When a name is known
+but no query in the window carries it, `searched` is false and the query fields
+are absent.
 
 ### gsc_checker.py
 

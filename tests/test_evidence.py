@@ -1437,7 +1437,9 @@ class FaviconDisplayRule(unittest.TestCase):
         output = {"favicon": {"declared": True, "format": None,
                               "reason": "format not recognised"}}
         evidence = self.assert_rule(output, None)
-        self.assertEqual(evidence, "favicon.displays_at_48px missing")
+        # 0.122.0: the absent key carries the reason its block gives.
+        self.assertEqual(evidence,
+                         "favicon.displays_at_48px missing: format not recognised")
         self.assertEqual(verdict("MB-104", output), NO_DATA)
 
     def test_an_unread_page_is_no_data(self):

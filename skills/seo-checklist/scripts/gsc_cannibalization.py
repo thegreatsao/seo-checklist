@@ -10,11 +10,18 @@ Two checks no crawler can make, because both need real query data:
                     page would.
   branded query   — whether the homepage actually owns the site's own name.
 
+The brand is a name, not a guess from traffic: `--brand` when the operator gives
+one, otherwise every name the homepage publishes for itself — `WebSite` and
+organisation names and alternate names in JSON-LD, and `og:site_name`. A branded
+query is one that carries such a name. With no name to go on the branded block
+says so and decides nothing.
+
 Auth is the same service account gsc_checker.py uses.
 
 Usage:
     python gsc_cannibalization.py sc-domain:example.com --credentials key.json --json
     python gsc_cannibalization.py https://example.com/ --credentials key.json --days 28
+    python gsc_cannibalization.py sc-domain:example.com --brand "Acme Valley" --json
 """
 
 import argparse
@@ -44,8 +51,12 @@ _utf8_stdout()
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
+    from bs4 import BeautifulSoup
+    from entity_checker import ENTITY_TYPES
     from gsc_checker import build_service
     from hreflang_checker import locale_page_key, run_hreflang_check
+    from lib.schema_types import schema_types
+    from seo_common import fetch_html, html_parser
 except ImportError:
     print("Error: gsc_checker.py must be importable from the same directory")
     sys.exit(1)
@@ -237,7 +248,41 @@ def _brand_match(query: str, brand_query: str) -> tuple[str, int] | None:
     # shorter form such as "acme valley" / "acmevalley" as the same brand.
     if query_form in brand_form and len(query_form) >= max(5, len(brand_form) // 2):
         return query_form, 0
-    return _near_brand_match(query, brand_query)
+    return _near_brand_match(query, brand_query) or _reordered_brand_match(
+        query, brand_words)
+
+
+def _reordered_brand_match(query: str, brand_words: list[str]) -> tuple[str, int] | None:
+    """The first two words of a brand, each present in the query in any order.
+
+    People search a name the way they say it: "barber marino" and "marinos barber
+    shop" are both the shop published as "Marino Barbero", and neither contains the
+    name as a run of letters. Each word is held to the same bounds as a whole-name
+    misspelling, and a word shorter than the near-match floor must appear exactly.
+    """
+    if len(brand_words) < 2:
+        return None
+    query_words = [_brand_form(word) for word in str(query).split()]
+    query_words = [word for word in query_words if word]
+    total = 0
+    for brand_word in brand_words[:2]:
+        best = None
+        for query_word in query_words:
+            if query_word == brand_word:
+                best = 0
+                break
+            if min(len(brand_word), len(query_word)) < MIN_NEAR_BRAND_LENGTH:
+                continue
+            limit = (SHORT_NEAR_BRAND_EDITS
+                     if len(brand_word) < SHORT_NEAR_BRAND_LENGTH
+                     else LONG_NEAR_BRAND_EDITS)
+            distance = _bounded_edit_distance(query_word, brand_word, limit)
+            if distance is not None and (best is None or distance < best):
+                best = distance
+        if best is None:
+            return None
+        total += best
+    return "".join(brand_words[:2]), total
 
 
 def is_branded_query(query: str, brand_query: str) -> bool:
@@ -245,18 +290,65 @@ def is_branded_query(query: str, brand_query: str) -> bool:
     return _brand_match(query, brand_query) is not None
 
 
+def _any_brand_match(query: str, names: list[str]) -> tuple[str, int] | None:
+    """The closest match among every name the brand goes by."""
+    matches = [match for match in (_brand_match(query, name) for name in names)
+               if match]
+    return min(matches, key=lambda match: match[1]) if matches else None
+
+
+def published_brand_names(html: str) -> list[str]:
+    """Every name a homepage publishes for the site or the business behind it.
+
+    `WebSite.name` is what Google reads for the site name; an organisation, a local
+    business, a person or a `Brand` names the owner; `alternateName` is the same
+    thing said another way; `og:site_name` is the social card's. All are the site's
+    own statement of what it is called, which is the only honest source of "branded"
+    this script has — a query's traffic says what people search, not whose name it is.
+    """
+    soup = BeautifulSoup(html or "", html_parser())
+    names: list[str] = []
+
+    def add(value) -> None:
+        for candidate in (value if isinstance(value, list) else [value]):
+            if isinstance(candidate, str) and candidate.strip():
+                names.append(" ".join(candidate.split()))
+
+    def visit(node) -> None:
+        if isinstance(node, list):
+            for child in node:
+                visit(child)
+            return
+        if not isinstance(node, dict):
+            return
+        types = schema_types(node.get("@type"))
+        if "WebSite" in types or any(kind in ENTITY_TYPES for kind in types):
+            add(node.get("name"))
+            add(node.get("alternateName"))
+        visit(node.get("@graph"))
+
+    for script in soup.find_all("script", type="application/ld+json"):
+        try:
+            visit(json.loads(script.string or ""))
+        except (json.JSONDecodeError, TypeError):
+            continue
+    site_name = soup.find("meta", attrs={"property": "og:site_name"})
+    if site_name:
+        add(site_name.get("content"))
+    return list(dict.fromkeys(names))
+
+
 def _query_evidence(rows: list, alternate_urls: list[str] | None,
-                    result: dict, owns_brand: bool) -> tuple[list, bool]:
+                    spread_brand: list[str]) -> tuple[list, bool]:
     by_query: dict = {}
     for row in rows:
         by_query.setdefault(row["query"], []).append(row)
 
-    brand_query = result["branded"].get("query", "") if owns_brand else ""
     evidence = []
     for query, hits in by_query.items():
         eligible = [hit for hit in hits if hit["impressions"] >= MIN_IMPRESSIONS]
         summary = _query_summary(query, eligible, alternate_urls)
-        brand_match = _brand_match(query, brand_query) if brand_query else None
+        brand_match = _any_brand_match(query, spread_brand)
         is_spread = len(eligible) >= MIN_PAGES
         if is_spread and brand_match:
             bucket = "branded_spread"
@@ -291,26 +383,98 @@ def _query_evidence(rows: list, alternate_urls: list[str] | None,
     return evidence[:QUERY_EVIDENCE_LIMIT], len(evidence) > QUERY_EVIDENCE_LIMIT
 
 
-def find_branded(rows: list, site_url: str) -> dict:
-    """The highest-click query is treated as the brand term. Reports which page
-    Google actually serves for it, and whether that is the homepage."""
+def homepage_of(site_url: str) -> str:
+    """The property's root URL; a domain property is read over https."""
+    if site_url.startswith("sc-domain:"):
+        return "https://" + site_url[len("sc-domain:"):].strip("/") + "/"
+    parsed = urlparse(site_url)
+    return f"{parsed.scheme}://{parsed.netloc}/"
+
+
+def _is_homepage(page: str, homepage: str, alternate_urls: list[str]) -> bool:
+    """The root, or a locale alternate of it: `/en/` declared by hreflang beside `/`
+    is the homepage in English, not an inner page. A domain property spans hosts, so
+    `www.` and the bare host are one homepage."""
+    parsed = urlparse(page)
+    home = urlparse(homepage)
+    same_site = (parsed.netloc.lower().removeprefix("www.")
+                 == home.netloc.lower().removeprefix("www."))
+    if same_site and parsed.path.rstrip("/") == "":
+        return True
+    return (locale_page_key(page, alternate_urls)
+            == locale_page_key(homepage, alternate_urls)
+            and bool(alternate_urls))
+
+
+def _inferred_brand(rows: list, homepage: str) -> str:
+    """The pre-0.122.0 guess, kept for one narrower job: with no published or
+    supplied name, the highest-click query counts as the brand *for classifying
+    spreads* when the homepage is the page it lands on. It never decides KW-070 or
+    GO-139 — that was the defect: a generic head term judged as the site's name."""
+    if not rows:
+        return ""
+    best = max(rows, key=lambda r: r["clicks"])
+    owner = max((r for r in rows if r["query"] == best["query"]),
+                key=lambda r: r["clicks"])
+    return best["query"] if _is_homepage(owner["page"], homepage, []) else ""
+
+
+def find_branded(rows: list, site_url: str, brand_names: list[str],
+                 brand_source: str, alternate_urls: list[str] | None = None,
+                 no_brand_reason: str = "") -> dict:
+    """Which page Google serves for the site's most-searched branded query.
+
+    Branded means the query carries one of `brand_names` — never "the query with
+    the most clicks", which on a site whose head term is generic is not its name.
+    The query judged is the branded one with the most impressions: the brand's own
+    search, whichever spelling people use. `searched` is false when no query in the
+    window carries the name, and KW-070 and GO-139 then do not apply rather than
+    failing a site nobody looked up.
+    """
+    alternate_urls = alternate_urls or []
+    if not brand_names:
+        return {"checked": False,
+                "reason": no_brand_reason or "no brand name to identify branded queries"}
     if not rows:
         return {"checked": False, "reason": "no query data in range"}
-    host = urlparse(site_url.replace("sc-domain:", "https://")).netloc
-    best = max(rows, key=lambda r: r["clicks"])
-    same_query = [r for r in rows if r["query"] == best["query"]]
-    owner = max(same_query, key=lambda r: r["clicks"])
-    path = urlparse(owner["page"]).path.rstrip("/")
-    return {
+    homepage = homepage_of(site_url)
+    # A row with no impressions is nobody's search; it cannot make the brand searched.
+    branded_rows = [row for row in rows
+                    if row["impressions"] > 0
+                    and _any_brand_match(row["query"], brand_names)]
+    out = {
         "checked": True,
-        "query": best["query"],
+        "brand_names": brand_names,
+        "brand_source": brand_source,
+        "branded_queries": len({row["query"] for row in branded_rows}),
+        "searched": bool(branded_rows),
+        "host": urlparse(homepage).netloc,
+    }
+    if not branded_rows:
+        return out
+    impressions: dict[str, list[int]] = {}
+    for row in branded_rows:
+        total = impressions.setdefault(row["query"], [0, 0])
+        total[0] += row["impressions"]
+        total[1] += row["clicks"]
+    query = min(impressions, key=lambda q: (-impressions[q][0], -impressions[q][1], q))
+    pages = _group_locale_pages([row for row in branded_rows if row["query"] == query],
+                                alternate_urls)
+    owner = pages[0]
+    owns = any(_is_homepage(page, homepage, alternate_urls)
+               for page in owner["alternates"])
+    first = 0 < owner["position"] <= RANKS_FIRST_POSITION
+    out.update({
+        "query": query,
         "owner_page": owner["page"],
         "position": owner["position"],
         "clicks": owner["clicks"],
-        "owns_homepage": path in ("", "/"),
-        "ranks_first": owner["position"] <= RANKS_FIRST_POSITION,
-        "host": host,
-    }
+        "impressions": owner["impressions"],
+        "owns_homepage": owns,
+        "ranks_first": first,
+        "homepage_ranks_first": owns and first,
+    })
+    return out
 
 
 def hreflang_alternates(site_url: str) -> list[str]:
@@ -324,8 +488,25 @@ def hreflang_alternates(site_url: str) -> list[str]:
     return [tag["url"] for tag in report.get("tags", []) if tag.get("url")]
 
 
+def brand_from_site(site_url: str) -> tuple[list[str], str]:
+    """(names, why none) read off the homepage. A page that could not be read and
+    a page that names nothing are different sentences in the report."""
+    html, _final = fetch_html(homepage_of(site_url), timeout=12, quiet=True)
+    if not html:
+        return [], (f"the homepage {homepage_of(site_url)} could not be read, so no "
+                    "brand name was found; pass --brand")
+    names = published_brand_names(html)
+    if not names:
+        return [], ("the homepage publishes no WebSite or organisation name and no "
+                    "og:site_name; pass --brand")
+    return names, ""
+
+
 def analyze(site_url: str, credentials: str, days: int,
-            alternate_urls: list[str] | None = None) -> dict:
+            alternate_urls: list[str] | None = None,
+            brand_names: list[str] | None = None, brand_source: str = "",
+            no_brand_reason: str = "") -> dict:
+    brand_names = list(brand_names or [])
     result = {
         "property": site_url,
         "period": {"start": None, "end": None},
@@ -341,6 +522,9 @@ def analyze(site_url: str, credentials: str, days: int,
         "branded_spread": [],
         "contested": [],
         "branded": {},
+        # What `branded_spread` was classified by: the brand's names, or — with no
+        # name known — the old inference, said as such.
+        "spread_brand": {"source": "none", "names": []},
         # Empty, not `{"cannibalized_queries": None, …}`. `eq` and `truthy` read a
         # None as a *failing value* rather than as silence, so pre-seeding the keys
         # turned a revoked token or an exhausted quota into "two of your URLs compete
@@ -365,15 +549,20 @@ def analyze(site_url: str, credentials: str, days: int,
     result["period"] = {"start": start, "end": end}
     result["truncated"] = len(rows) >= ROW_LIMIT
     result["queries_analyzed"] = len({r["query"] for r in rows})
-    result["branded"] = find_branded(rows, site_url)
+    result["branded"] = find_branded(rows, site_url, brand_names, brand_source,
+                                     alternate_urls, no_brand_reason)
     spreads = find_query_spreads(rows, alternate_urls)
-    brand = result["branded"]
-    owns_brand = bool(brand.get("checked") and brand.get("owns_homepage"))
-    if owns_brand:
-        result["branded_spread"] = [
-            spread for spread in spreads
-            if is_branded_query(spread["query"], brand.get("query", ""))
-        ][:25]
+    if brand_names:
+        result["spread_brand"] = {"source": brand_source, "names": brand_names}
+    else:
+        inferred = _inferred_brand(rows, homepage_of(site_url))
+        if inferred:
+            result["spread_brand"] = {"source": "inferred", "names": [inferred]}
+    spread_brand = result["spread_brand"]["names"]
+    result["branded_spread"] = [
+        spread for spread in spreads
+        if _any_brand_match(spread["query"], spread_brand)
+    ][:25]
     # Counted whole, then capped for reading. The 25 is a human-facing cap and
     # `script-output-shapes.md` has always said so — it also says
     # `summary.cannibalized_queries = bucket[cannibalized] + bucket[contested]`,
@@ -386,8 +575,7 @@ def analyze(site_url: str, credentials: str, days: int,
     cannibalized_all = [
         spread for spread in spreads
         if spread["page_count"] >= MIN_PAGES
-        and not (owns_brand
-                 and is_branded_query(spread["query"], brand.get("query", "")))
+        and not _any_brand_match(spread["query"], spread_brand)
     ]
     contested_all = [
         spread for spread in cannibalized_all
@@ -401,7 +589,7 @@ def analyze(site_url: str, credentials: str, days: int,
         "contested_queries": len(contested_all),
     }
     result["queries"], result["queries_truncated"] = _query_evidence(
-        rows, alternate_urls, result, owns_brand)
+        rows, alternate_urls, spread_brand)
 
     for c in result["cannibalized"][:10]:
         result["issues"].append({
@@ -411,16 +599,16 @@ def analyze(site_url: str, credentials: str, days: int,
                        f"pick one target and consolidate",
         })
     b = result["branded"]
-    if b.get("checked") and not b.get("owns_homepage"):
+    if b.get("searched") and not b.get("owns_homepage"):
         result["issues"].append({
             "severity": "high",
-            "message": f"Top query '{b['query']}' is served by {b['owner_page']}, "
+            "message": f"Branded query '{b['query']}' is served by {b['owner_page']}, "
                        f"not the homepage",
         })
-    if b.get("checked") and not b.get("ranks_first"):
+    if b.get("searched") and not b.get("ranks_first"):
         result["issues"].append({
             "severity": "high",
-            "message": f"Top query '{b['query']}' averages position {b['position']}",
+            "message": f"Branded query '{b['query']}' averages position {b['position']}",
         })
     return result
 
@@ -432,6 +620,9 @@ def main():
     parser.add_argument("--credentials", default="",
                         help="Service account JSON (or GSC_CREDENTIALS_PATH / GV_SA_KEY)")
     parser.add_argument("--days", type=int, default=28)
+    parser.add_argument("--brand", action="append", default=[],
+                        help="a name the business is searched by; repeat for more. "
+                             "Without it the names the homepage publishes are used")
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     args = parser.parse_args()
 
@@ -439,8 +630,15 @@ def main():
              or os.environ.get("GV_SA_KEY")
              or os.path.expanduser("~/.config/gcloud/gsc-service-account.json"))
 
+    names = [name.strip() for name in args.brand if name.strip()]
+    source, why_none = "operator", ""
+    if not names:
+        names, why_none = brand_from_site(args.site_url)
+        source = "published"
     result = analyze(args.site_url, creds, args.days,
-                     alternate_urls=hreflang_alternates(args.site_url))
+                     alternate_urls=hreflang_alternates(args.site_url),
+                     brand_names=names, brand_source=source,
+                     no_brand_reason=why_none)
 
     if args.json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
@@ -454,9 +652,13 @@ def main():
     print(f"  queries analyzed:     {result['queries_analyzed']}")
     print(f"  cannibalized queries: {result['summary']['cannibalized_queries']}")
     b = result["branded"]
-    if b.get("checked"):
-        print(f"  top query:            '{b['query']}' -> {b['owner_page']} "
+    if b.get("searched"):
+        print(f"  branded query:        '{b['query']}' -> {b['owner_page']} "
               f"(pos {b['position']}, homepage={b['owns_homepage']})")
+    elif b.get("checked"):
+        print(f"  branded query:        none searched for {b['brand_names']}")
+    else:
+        print(f"  branded query:        not checked — {b.get('reason')}")
     for c in result["cannibalized"][:10]:
         print(f"\n  '{c['query']}' — {c['page_count']} URLs, spread {c['spread']}")
         for p in c["pages"][:3]:

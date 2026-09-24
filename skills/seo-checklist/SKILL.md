@@ -716,6 +716,20 @@ not indexed, and pages with impressions that no sitemap lists. CI-010 is the one
 `rel=canonical` to itself and still have Google pick another URL, and nothing in
 the page reveals the disagreement.
 
+KW-070 and GO-139 judge the site's most-searched **branded** query, and branded
+means the query carries the business's name: the names the homepage publishes
+(`WebSite` and organisation `name`/`alternateName`, `og:site_name`), or the ones
+given with `--brand` (repeatable), which replace them. When the published name is
+not what people search — a legal name, a tagline — pass the name they do search:
+
+```bash
+python3 <SKILL_DIR>/scripts/checklist_runner.py https://example.com/ \
+    --brand "Marino Barbero" --brand "Barber Marino"
+```
+
+Nobody searching the name in the window makes both items N/A; no name at all makes
+them NO_DATA, with the flag named in the evidence.
+
 Three items report `MANUAL` even with valid credentials, and that is not missing
 wiring — **the Search Console API exposes no endpoint for manual actions
 (GO-141), the Index Coverage report (GO-142), or mobile-usability signals

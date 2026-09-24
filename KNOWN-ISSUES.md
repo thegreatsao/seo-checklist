@@ -1716,7 +1716,20 @@ name. A column called `url` would be read as "fix this page".
   including the tree the Windows CI job audits end to end.
   <!-- ki: a-greek-rho-killed-the-evidence-layer -->
 
-5. **Two items say "branded query" and nothing here identifies one.** `KW-070`
+5. **Closed in 0.122.0 — the brand is a name, not the busiest query.**
+   `gsc_cannibalization.py` takes the brand from `--brand`, or else from every name
+   the homepage publishes for itself (`WebSite` and organisation `name` and
+   `alternateName`, `og:site_name`), and a branded query is one carrying such a name —
+   in any word order, within the same misspelling bounds the spread classifier uses.
+   KW-070 now reads `branded.homepage_ranks_first`, both halves of its title; GO-139
+   still reads `ranks_first`, now about the brand. Both apply only when somebody
+   searched the name in the window, and with no name to go on they are `NO_DATA` with
+   the reason and the flag. On the rows below, the probe now answers *not searched*
+   with the name and *not checked* without one; neither names `barber paphos`. Of the
+   three repairs this entry listed, the first two shipped together — published name,
+   operator flag — and the titles stayed. The original, kept for the measurement:
+
+   **Two items say "branded query" and nothing here identifies one.** `KW-070`
    (`high`, *Own Your Branded Query (Homepage Ranks #1)*) asserts
    `branded.owns_homepage`, and `GO-139` (`low`, *Monitor & Improve Brand SERPs*)
    asserts `branded.ranks_first`. Both read a block that `find_branded` fills, and its

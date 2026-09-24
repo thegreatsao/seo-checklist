@@ -291,6 +291,13 @@ APPLIES_WHEN = {
     # The subject is a sitemap with URLs. With no sitemap there is nothing to
     # reconcile against Google's index, so the item does not apply.
     "GO-137": {"path": "summary.sitemap_urls", "gt": 0},
+    # 0.122.0: the brand's own search. A property where nobody searched the name in the
+    # window has no branded query for the homepage to own or rank first for; failing
+    # it would report a demand gap as a ranking defect. `searched` is written only once
+    # a brand name is known, so a site that publishes none stays NO_DATA, with the
+    # reason, rather than N/A.
+    "KW-070": {"path": "branded.searched", "truthy": True},
+    "GO-139": {"path": "branded.searched", "truthy": True},
 }
 
 # Why an absence-passing item needs no applicability declaration: the entity whose
@@ -553,6 +560,7 @@ MEASURES = {
     "IN-121": "That the hreflang set carries exactly one x-default. Region codes, country domains and Search Console settings are not read.",
     "IN-128": "That the page lists itself in its own hreflang set. Which version a visitor is actually served is not tested.",
     "MS-030": "That the description runs 100 to 144 characters, what the desktop snippet shows of ordinary text by this tool's calibration; the title's 150–160 is cut. Whether it is clear and relevant is not read.",
+    "GO-139": "Whether the site ranks first, with any of its pages, for its most-searched branded query in Search Console. The rest of the brand's results page — knowledge panel, reviews, other sites — is not read.",
     "SE-117": "That the audited page and up to three same-site pages it links to answer their http:// address with a permanent redirect to HTTPS. Other pages are not requested.",
     "TE-175": "That the page is served over HTTPS and loads nothing over plain HTTP that a browser blocks or upgrades: scripts, stylesheets, frames, objects, images and media. URLs inside CSS and other page errors are not read.",
     "SE-119": "The Cumulative Layout Shift of the whole page. The cookie banner is not identified, so a shift caused by anything else counts too.",
@@ -974,8 +982,13 @@ item(68, "high", S, "eeat_signal_checker.py", PAGE,
 
 # --- 4. Keyword analysis ----------------------------------------------------
 item(69, "high", M, fix="Run keyword research and set position benchmarks")
+# 0.122.0: the branded query is one carrying the brand's name — `--brand`, or what
+# the homepage publishes — and not the highest-click query, which on a site whose head
+# term is generic was a query that is not its name (KNOWN-ISSUES, retired). The title
+# is a conjunction, so the rule is too: the homepage is the page served, and it ranks
+# first.
 item(70, "high", S, "gsc_cannibalization.py", GSCARG,
-     {"path": "branded.owns_homepage", "truthy": True},
+     {"path": "branded.homepage_ranks_first", "truthy": True},
      "Confirm the homepage ranks first for the branded query")
 # `worst_spread` disappeared when the script split multi-URL queries into broad
 # cannibalization and the narrower close-position contest. MS-023 already owns

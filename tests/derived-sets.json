@@ -210,7 +210,7 @@
         },
         {
           "name": "MEASURES",
-          "entries": 28
+          "entries": 29
         },
         {
           "name": "EXTRA",
@@ -256,7 +256,7 @@
         },
         {
           "name": "APPLIES_WHEN",
-          "entries": 21
+          "entries": 23
         },
         {
           "name": "CANNOT_FAIL",
