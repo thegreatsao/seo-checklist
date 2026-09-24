@@ -10,6 +10,42 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.118.0 — the http:// address is asked
+
+Registry version: **`950f09b9ca61` → `835d527f8f95`.** SE-117 changes what it asserts, so it can
+move on a real site, and one fixture verdict moves with it: `broken_tls` SE-117 PASS →
+FAIL, recorded in the manifest's triage log. Suite 1815 → 1831.
+
+**SE-117 *Force HTTPS Across the Site (Single Canonical Protocol)* asserted `https`** —
+whether the audited URL *ended* on https — and nothing in the tree ever requested the
+`http://` address. A site answering every page over both protocols passed: two protocols,
+no canonical one, nothing forced. It now reads `http_to_https`, the worst answer the
+`http://` address gave, asked of the audited page and of up to three same-site pages it
+links to that robots.txt permits:
+
+| answer | verdict |
+|---|---|
+| 301 or 308 to https | PASS |
+| 302, 303 or 307 on the way to https — Google's *weak* canonical signal | WARN |
+| nothing listening — what hstspreload.org accepts of a preloaded host | WARN |
+| a page, an error, a loop, a redirect with no Location, an http-only chain | FAIL |
+| a connection accepted and then broken | no verdict |
+
+The `http://` form of `https://host:8443/` keeps its port — a server told to answer plain
+HTTP on its TLS port is the only thing a non-default port's plain counterpart can mean —
+and a page audited as `http://` is read from its own redirect chain rather than asked
+twice. A page served over plain HTTP decides the item without a second request. The rest of
+the site is not requested, and the item's `measures` line says so.
+
+**The test harness serves TLS and plain HTTP on one port**, chosen by the first byte of each
+connection, so an HTTPS origin now has a plain side a test can decide: `good_tls` answers
+it with a 301 and `broken_tls` with the page, server policy like their header sets and
+compression. No served file changed. Until this release a plain request to a TLS fixture
+reset the connection, which is why no test could have told the two apart.
+
+Five readings stay owed: MB-095, MS-030, TE-175, and KW-070 and GO-139 on the
+branded-query decision.
+
 ## 0.117.0 — a correct robots.txt, and the accessibility failures themselves
 
 Registry version: **`ba813d8f630e` → `950f09b9ca61`.** AR-151 and TE-180 change what they

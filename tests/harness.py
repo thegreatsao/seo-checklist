@@ -52,7 +52,9 @@ import http.server
 import io
 import os
 import shutil
+import socket
 import socketserver
+import ssl
 import sys
 import tempfile
 import threading
@@ -77,6 +79,50 @@ TEXTUAL = (".html", ".xml", ".txt", ".css", ".json", ".md", ".csv")
 # They live outside both document roots on purpose — an artifact is an input to
 # the audit, not a page of the site, and serving one would put it in the crawl.
 ARTIFACTS = "artifacts"
+
+
+class _ThreadingServer(socketserver.ThreadingTCPServer):
+    """A test origin whose TLS and plain-HTTP sides share one listening socket."""
+
+    allow_reuse_address = True
+    daemon_threads = True
+
+    def __init__(self, address, handler, *, tls_context=None, plain=None,
+                 plain_handler=None):
+        self.tls_context = tls_context
+        self.plain = plain
+        self.plain_handler = plain_handler
+        super().__init__(address, handler)
+
+    def process_request_thread(self, request, client_address):
+        """Choose TLS or plain HTTP from the connection's first byte."""
+        active = request
+        try:
+            if self.tls_context is None:
+                self.finish_request(active, client_address)
+                return
+
+            try:
+                request.settimeout(10)
+                first = request.recv(1, socket.MSG_PEEK)
+                request.settimeout(None)
+            except OSError:
+                return
+
+            if first == b"\x16":
+                try:
+                    active = self.tls_context.wrap_socket(request, server_side=True)
+                except (ssl.SSLError, OSError):
+                    return
+                self.finish_request(active, client_address)
+            elif self.plain is not None:
+                self.plain_handler(active, client_address, self)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        except Exception:  # noqa: BLE001 - match socketserver's worker boundary
+            self.handle_error(active, client_address)
+        finally:
+            self.shutdown_request(active)
 
 
 def safe_http():
@@ -248,9 +294,12 @@ class _Site:
 
     def __init__(self, source: str, into: str, *, tls: bool = False,
                  response_headers: dict[str, str] | None = None,
-                 gzip_text: bool = False):
+                 gzip_text: bool = False, plain=None):
+        if plain is not None and not tls:
+            raise ValueError("plain is valid only with tls=True")
+        if plain not in (None, "redirect", "serve"):
+            raise ValueError(f"unknown plain policy: {plain!r}")
         self.dir = shutil.copytree(source, into)
-        socketserver.ThreadingTCPServer.allow_reuse_address = True
         # Threading: several evidence scripts fetch concurrently, and a
         # single-threaded server deadlocks the moment one of them holds a connection
         # open while asking for the next page.
@@ -259,11 +308,15 @@ class _Site:
             "response_headers": dict(response_headers or {}),
             "gzip_text": gzip_text,
         })
-        self.server = socketserver.ThreadingTCPServer(("127.0.0.1", 0), handler)
-        self.server.daemon_threads = True
-        if tls:
-            self.server.socket = tls_context().wrap_socket(self.server.socket,
-                                                           server_side=True)
+        context = tls_context() if tls else None
+        plain_handler = None
+        if plain == "redirect":
+            plain_handler = type("PlainRedirect", (_RedirectToTLS,), {"seen": []})
+        elif plain == "serve":
+            plain_handler = handler
+        self.server = _ThreadingServer(("127.0.0.1", 0), handler,
+                                       tls_context=context, plain=plain,
+                                       plain_handler=plain_handler)
         self.port = self.server.server_address[1]
         self.base = f"{'https' if tls else 'http'}://127.0.0.1:{self.port}"
         self._rewrite()
@@ -313,7 +366,7 @@ class FixtureSite:
 
     @classmethod
     def origins(cls) -> tuple[tuple, ...]:
-        """The four origins, as `(label, tree, tls, headers, gzip_text)`.
+        """The four origins, as `(label, tree, tls, headers, gzip_text, plain)`.
 
         Lifted out of `start()` at 0.104.0 so that the thing which decides what an
         origin serves is also the thing a digest of that material is derived from.
@@ -328,12 +381,17 @@ class FixtureSite:
         server behaviour, and a pair that answers identically on a server question
         cannot tell a good site from a bad one. Both good origins serve gzip to a
         client that asks; neither broken origin does.
+
+        From 0.118.0, SE-117 asks the page's `http://` address. The plain side of a
+        TLS origin is server policy, like its header set and compression, so the good
+        tree redirects and the broken one serves. No served file changes, so
+        `fixture_digest` does not move.
         """
         return (
-            ("good", "good", False, {}, True),
-            ("broken", "broken", False, {}, False),
-            ("good_tls", "good", True, cls.GOOD_TLS_HEADERS, True),
-            ("broken_tls", "broken", True, {}, False),
+            ("good", "good", False, {}, True, None),
+            ("broken", "broken", False, {}, False, None),
+            ("good_tls", "good", True, cls.GOOD_TLS_HEADERS, True, "redirect"),
+            ("broken_tls", "broken", True, {}, False, "serve"),
         )
 
     @classmethod
@@ -346,7 +404,7 @@ class FixtureSite:
         Both halves move together or neither does.
         """
         served = {}
-        for name, tree, tls, _headers, _gzip in cls.origins():
+        for name, tree, tls, _headers, _gzip, _plain in cls.origins():
             dirs = [tree]
             if not tls:
                 dirs.append(f"{ARTIFACTS}/{name}")
@@ -355,12 +413,12 @@ class FixtureSite:
 
     def start(self) -> "FixtureSite":
         self.dir = tempfile.mkdtemp(prefix="seo-fixture-")
-        for name, source_name, tls, headers, gzip_text in self.origins():
+        for name, source_name, tls, headers, gzip_text, plain in self.origins():
             src = os.path.join(self.source, source_name)
             if os.path.isdir(src):
                 self._sites[name] = _Site(src, os.path.join(self.dir, name), tls=tls,
                                           response_headers=headers,
-                                          gzip_text=gzip_text)
+                                          gzip_text=gzip_text, plain=plain)
                 if not tls:
                     self._copy_artifacts(name)
         # Each site's external links point at its same-protocol neighbour, once both
@@ -511,6 +569,30 @@ class _Routed(http.server.BaseHTTPRequestHandler):
         pass
 
 
+class _RedirectToTLS(http.server.BaseHTTPRequestHandler):
+    """Redirect every plain GET or HEAD to the same path over TLS."""
+
+    seen: list = []
+    protocol_version = "HTTP/1.1"
+
+    def _respond(self):
+        type(self).seen.append((self.command, self.path))
+        port = self.server.server_address[1]
+        self.send_response(301)
+        self.send_header("Location", f"https://127.0.0.1:{port}{self.path}")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def do_GET(self):
+        self._respond()
+
+    def do_HEAD(self):
+        self._respond()
+
+    def log_message(self, *args):
+        pass
+
+
 class Served:
     """A throwaway origin whose every response a test decides.
 
@@ -527,19 +609,41 @@ class Served:
     `requested` is what the server actually received, so a test can assert the thing
     no output field shows: that a script honoured a `Disallow`, or fetched the entry
     URL once rather than nine times.
+
+    With `tls=True`, `plain` decides the same port's HTTP side: close it with `None`,
+    redirect it, serve the TLS routes, or serve a separate routing dict.
     """
 
-    def __init__(self, routes: dict, tls: bool = False):
+    def __init__(self, routes: dict, tls: bool = False, plain=None):
+        if plain is not None and not tls:
+            raise ValueError("plain is valid only with tls=True")
+        if isinstance(plain, str) and plain not in ("redirect", "serve"):
+            raise ValueError(f"unknown plain policy: {plain!r}")
+        if plain is not None and not isinstance(plain, (str, dict)):
+            raise ValueError(f"unknown plain policy: {plain!r}")
         self.routes = {path: _normalise(value) for path, value in routes.items()}
         handler = type("Handler", (_Routed,), {"routes": self.routes, "seen": []})
         self.handler = handler
-        socketserver.ThreadingTCPServer.allow_reuse_address = True
+        self.plain_routes = None
+        if plain == "redirect":
+            plain_handler = type("PlainRedirect", (_RedirectToTLS,), {"seen": []})
+        elif plain == "serve":
+            self.plain_routes = self.routes
+            plain_handler = type("PlainHandler", (_Routed,),
+                                 {"routes": self.plain_routes, "seen": []})
+        elif isinstance(plain, dict):
+            self.plain_routes = {path: _normalise(value)
+                                 for path, value in plain.items()}
+            plain_handler = type("PlainHandler", (_Routed,),
+                                 {"routes": self.plain_routes, "seen": []})
+        else:
+            plain_handler = None
+        self.plain_handler = plain_handler
         # Threading, for the same reason FixtureSite needs it: several of these
         # scripts fetch concurrently, and a single-threaded server deadlocks the
         # moment one worker holds a connection while another asks for a page.
-        self.server = socketserver.ThreadingTCPServer(("127.0.0.1", 0), handler)
-        self.server.daemon_threads = True
         self.tls = tls
+        context = None
         if tls:
             # HTTPS matters here for one reason: `safe_http` sets `verify=True` and
             # never relaxes it, so until something in this suite could speak TLS, the
@@ -548,8 +652,10 @@ class Served:
             # keeps certificate *verification* switched on while trusting one cert for
             # one test. Disabling verification instead would have made the test pass
             # while removing the property it is testing.
-            self.server.socket = tls_context().wrap_socket(self.server.socket,
-                                                           server_side=True)
+            context = tls_context()
+        self.server = _ThreadingServer(("127.0.0.1", 0), handler,
+                                       tls_context=context, plain=plain,
+                                       plain_handler=plain_handler)
         self.port = self.server.server_address[1]
         self.base = f"{'https' if tls else 'http'}://127.0.0.1:{self.port}"
         self.url = self.base + "/"
@@ -570,6 +676,15 @@ class Served:
             headers = {k: (v.replace(needle, replacement) if isinstance(v, str) else v)
                        for k, v in headers.items()}
             self.routes[path] = (status, headers, body)
+        if self.plain_routes is not None and self.plain_routes is not self.routes:
+            for path, (status, headers, body) in list(self.plain_routes.items()):
+                if isinstance(body, str):
+                    body = body.replace(needle, replacement)
+                headers = {
+                    k: (v.replace(needle, replacement) if isinstance(v, str) else v)
+                    for k, v in headers.items()
+                }
+                self.plain_routes[path] = (status, headers, body)
         return self
 
     @property
@@ -578,6 +693,13 @@ class Served:
 
     def paths(self, method: str = "GET") -> list:
         return [p for m, p in self.handler.seen if m == method]
+
+    @property
+    def plain_requested(self) -> list:
+        return list(self.plain_handler.seen) if self.plain_handler else []
+
+    def plain_paths(self, method: str = "GET") -> list:
+        return [p for m, p in self.plain_requested if m == method]
 
     def stop(self) -> None:
         self.server.shutdown()
@@ -654,9 +776,12 @@ class own_rate_limit_dir:
         shutil.rmtree(self.path, ignore_errors=True)
 
 
-def served(routes: dict, tls: bool = False) -> Served:
-    """`with served({...}) as site:` — see `Served`. `tls=True` serves it over HTTPS."""
-    return Served(routes, tls=tls)
+def served(routes: dict, tls: bool = False, plain=None) -> Served:
+    """`with served({...}) as site:` — see `Served`.
+
+    With `tls=True`, `plain` closes, redirects, mirrors, or separately routes HTTP.
+    """
+    return Served(routes, tls=tls, plain=plain)
 
 
 _TLS = {}

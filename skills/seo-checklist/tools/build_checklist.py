@@ -552,6 +552,7 @@ MEASURES = {
     "TE-167": "One request made during this audit, and whether it was answered below 500. Uptime over time needs a monitoring service.",
     "IN-121": "That the hreflang set carries exactly one x-default. Region codes, country domains and Search Console settings are not read.",
     "IN-128": "That the page lists itself in its own hreflang set. Which version a visitor is actually served is not tested.",
+    "SE-117": "That the audited page and up to three same-site pages it links to answer their http:// address with a permanent redirect to HTTPS. Other pages are not requested.",
     "SE-119": "The Cumulative Layout Shift of the whole page. The cookie banner is not identified, so a shift caused by anything else counts too.",
     "CN-038": "How recent this page's own dates and statistics are. The balance of fresh and evergreen content across the site is not measured.",
     "SP-110": "Render-blocking resources and critical request chains read from the page's HTML. The other speed checks are separate items.",
@@ -1198,9 +1199,17 @@ item(115, "medium", S, "security_headers.py", PAGE,
 item(116, "critical", S, "domain_safety_check.py", PAGE,
      {"path": "safe_browsing.threats", "len_eq": 0},
      "Confirm there is no hacked content or malware")
+# SE-117 asserted `https` until 0.118.0 and never asked `http://`. A temporary
+# redirect is Google's weak canonical signal, and hstspreload.org accepts a host
+# that does not listen on port 80, so both outcomes warn.
 item(117, "critical", S, "security_headers.py", PAGE,
-     {"path": "https", "truthy": True},
-     "Force HTTPS sitewide with a single canonical protocol")
+     {"path": "http_to_https",
+      "value_map": {"permanent": "pass", "temporary": "fail",
+                    "not_listening": "fail", "not_redirected": "fail"}},
+     "Force HTTPS sitewide with a single canonical protocol",
+     warn={"path": "http_to_https",
+           "value_map": {"permanent": "pass", "temporary": "pass",
+                         "not_listening": "pass", "not_redirected": "fail"}})
 # SE-118 asserted `https` — SE-117's field, from SE-117's script — until 0.20, so two
 # `critical` items shared one assertion and this one could not fail independently on any
 # site. A certificate that expired yesterday passed it, because the URL still began

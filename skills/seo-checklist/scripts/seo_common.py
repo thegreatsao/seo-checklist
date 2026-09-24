@@ -39,7 +39,7 @@ import socket
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 from urllib.parse import urljoin, urlparse, urlunparse
 
 try:
@@ -78,13 +78,9 @@ FETCH_ERROR_KINDS = (
 DEAD_FETCH_ERROR_KINDS = ("unresolved", "refused", "tls")
 
 
-def _has_name_resolution_cause(exc: BaseException) -> bool:
-    """Whether a typed exception chain contains a resolver failure.
-
-    Requests wraps urllib3's ``NameResolutionError`` in ``MaxRetryError`` and then
-    ``ConnectionError``. Those links live partly in exception arguments and partly
-    in urllib3's ``reason`` attribute, so follow both without inspecting prose.
-    """
+def _exception_chain_has(exc: BaseException,
+                         predicate: Callable[[BaseException], bool]) -> bool:
+    """Whether any typed exception reachable from ``exc`` matches ``predicate``."""
     pending = [exc]
     seen = set()
     while pending:
@@ -92,15 +88,33 @@ def _has_name_resolution_cause(exc: BaseException) -> bool:
         if id(current) in seen:
             continue
         seen.add(id(current))
-        if isinstance(current, socket.gaierror):
-            return True
-        if (_NameResolutionError is not None
-                and isinstance(current, _NameResolutionError)):
+        if predicate(current):
             return True
         linked = (current.__cause__, current.__context__,
                   getattr(current, "reason", None), *current.args)
         pending.extend(item for item in linked if isinstance(item, BaseException))
     return False
+
+
+def _has_name_resolution_cause(exc: BaseException) -> bool:
+    """Whether a typed exception chain contains a resolver failure.
+
+    Requests wraps urllib3's ``NameResolutionError`` in ``MaxRetryError`` and then
+    ``ConnectionError``. Those links live partly in exception arguments and partly
+    in urllib3's ``reason`` attribute, so follow both without inspecting prose.
+    """
+    def is_resolution_error(current: BaseException) -> bool:
+        return (isinstance(current, socket.gaierror)
+                or (_NameResolutionError is not None
+                    and isinstance(current, _NameResolutionError)))
+
+    return _exception_chain_has(exc, is_resolution_error)
+
+
+def connection_refused(exc: BaseException) -> bool:
+    """Whether a typed exception chain contains ``ConnectionRefusedError``."""
+    return _exception_chain_has(exc, lambda current: isinstance(
+        current, ConnectionRefusedError))
 
 
 def fetch_error_kind(exc: BaseException) -> str:

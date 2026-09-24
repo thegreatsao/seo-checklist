@@ -546,7 +546,8 @@ class NothingAccusesTheGoodSiteWithoutAReason(unittest.TestCase):
         "GO-138": "the same robots-disallowed URL is invalid under Search Console's "
                   "Submitted URL blocked by robots.txt classification",
         "SE-115": "served over plain HTTP, where the fixture cannot enable HSTS",
-        "SE-117": "served over plain HTTP by http.server: HSTS cannot be present",
+        "SE-117": "served over plain HTTP by http.server, so the page itself answers "
+                  "http:// without redirecting (good_tls redirects, and passes)",
         # SE-118 was here until 0.20, when it stopped reading `https` off
         # security_headers.py and started verifying an actual certificate. On an
         # http:// fixture there is no certificate to inspect, so it now resolves to

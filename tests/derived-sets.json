@@ -1,8 +1,8 @@
 {
   "measured": "module-level upper-case names bound to a list, tuple, set or dict literal in scripts/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 179,
-  "read": 51,
+  "total": 182,
+  "read": 54,
   "unread": 128,
   "modules": {
     "ai_crawler_policy_matrix": {
@@ -210,7 +210,7 @@
         },
         {
           "name": "MEASURES",
-          "entries": 25
+          "entries": 26
         },
         {
           "name": "EXTRA",
@@ -888,7 +888,20 @@
       ]
     },
     "security_headers": {
-      "read": [],
+      "read": [
+        {
+          "name": "PERMANENT_REDIRECTS",
+          "entries": 2
+        },
+        {
+          "name": "TEMPORARY_REDIRECTS",
+          "entries": 3
+        },
+        {
+          "name": "HTTP_TO_HTTPS_OUTCOMES",
+          "entries": 4
+        }
+      ],
       "unread": [
         {
           "name": "SECURITY_HEADERS",

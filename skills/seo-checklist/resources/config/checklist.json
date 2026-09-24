@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "950f09b9ca61",
+  "registry_version": "835d527f8f95",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -2500,10 +2500,25 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "https",
-          "truthy": true
+          "path": "http_to_https",
+          "value_map": {
+            "permanent": "pass",
+            "temporary": "fail",
+            "not_listening": "fail",
+            "not_redirected": "fail"
+          }
+        },
+        "warn": {
+          "path": "http_to_https",
+          "value_map": {
+            "permanent": "pass",
+            "temporary": "pass",
+            "not_listening": "pass",
+            "not_redirected": "fail"
+          }
         }
       },
+      "measures": "That the audited page and up to three same-site pages it links to answer their http:// address with a permanent redirect to HTTPS. Other pages are not requested.",
       "effort": "low",
       "fix": "Force HTTPS sitewide with a single canonical protocol"
     },

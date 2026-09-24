@@ -43,7 +43,9 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         # 0.116.0: CN-044 repaired to contact routes, with a statement (owed -> measures).
         # 0.117.0: AR-151 repaired (owed -> answers); TE-180 repaired with a statement
         # (owed -> measures).
-        self.assertEqual(counts, {"answers": 114, "measures": 25, "owed": 6})
+        # 0.118.0: SE-117 asks the http:// address, with a statement for the rest of the
+        # site (owed -> measures).
+        self.assertEqual(counts, {"answers": 114, "measures": 26, "owed": 5})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
         """Line endings are normalised first: a Windows checkout writes CRLF, and how

@@ -614,16 +614,19 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # registry is invisible to this scan; as a constant it is counted.
         # 0.117.0 adds one `standard`: `GOOGLE_ROBOTS_MAX_BYTES` in `robots_checker.py`,
         # the 500 KiB Google reads of a robots.txt.
+        # 0.118.0 adds one `convention`: `HTTP_SAMPLE_PAGES` in
+        # `security_headers.py`, the three linked same-site pages SE-117 samples
+        # beyond the audited page.
         self.assertEqual(by_kind, {
             "standard": 16,
             "measured": 11,
-            "convention": 55,
+            "convention": 56,
             "inherited": 77,
             "presentation": 13,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 159)
-        self.assertEqual(len(named), 172)
-        self.assertEqual(len(uncounted), 13)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 160)
+        self.assertEqual(len(named), 173)
+        self.assertEqual(len(uncounted), 15)
         # 169 -> 170: the outbound-link check's cap was a default argument value,
         # which is a place no instrument here can see. Promoting it to a module
         # constant is what made it countable at all; 0.107.0 moved that definition
@@ -644,8 +647,10 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 182 -> 183: the 4xx lower bound above at 0.110.0.
         # 183 -> 184: `MAX_SHORT_PARAMS` at 0.115.0, moved out of the registry.
         # 184 -> 185: `GOOGLE_ROBOTS_MAX_BYTES` at 0.117.0.
+        # 185 -> 188: `HTTP_SAMPLE_PAGES`, `PERMANENT_REDIRECTS` and
+        # `TEMPORARY_REDIRECTS` in `security_headers.py` at 0.118.0.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 185)
+                             for path in at._script_paths()), 188)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -726,8 +731,11 @@ WINDOW = 7
         # caps the same verdicts less visibly. `INVENTORY_VERSION` takes the seat
         # and should keep it: a schema version is not a threshold and will never
         # carry a basis line, so the witness stops moving when a cap is named.
+        # 0.118.0 adds the numeric redirect-code tuples `PERMANENT_REDIRECTS` and
+        # `TEMPORARY_REDIRECTS`; `HTTP_SAMPLE_PAGES` is counted by its convention
+        # basis, so the uncounted total moves from 13 to 15.
         self.assertRegex(output, r"(?m)^  .*site_crawl\.py:\d+  INVENTORY_VERSION$")
-        self.assertIn("\n13 module-level numeric constant(s) not in the inventory\n",
+        self.assertIn("\n15 module-level numeric constant(s) not in the inventory\n",
                       output)
         listed = {line.strip() for line in output.splitlines() if line.startswith("  ")}
         for row in named:
@@ -746,7 +754,9 @@ WINDOW = 7
         # item asserting `none of these`. They did not become thresholds — they were
         # thresholds already, and invisible to this instrument for want of the line
         # that makes a number visible to it.
-        self.assertIn("13 module-level numeric constant(s) are not in this inventory",
+        # 0.118.0 adds `PERMANENT_REDIRECTS` and `TEMPORARY_REDIRECTS` in
+        # `security_headers.py`, taking this uncounted census from 13 to 15.
+        self.assertIn("15 module-level numeric constant(s) are not in this inventory",
                       output)
         self.assertIn("1 basis line(s) name something that is not a module-level "
                       "numeric constant", output)
@@ -2264,6 +2274,8 @@ class MeasuresQualifications(unittest.TestCase):
         "CN-044": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
         # 0.117.0: TE-180 repaired to level-A failures, with a statement for the rest.
         "TE-180": "The WCAG level-A failures the HTML shows: images without alt, form fields without an accessible name, no page language. Contrast is CN-036; keyboard use is not tested.",
+        # 0.118.0: SE-117 asks the http:// address, of the page and a sample of its links.
+        "SE-117": "That the audited page and up to three same-site pages it links to answer their http:// address with a permanent redirect to HTTPS. Other pages are not requested.",
     }
 
     @staticmethod
@@ -2272,7 +2284,7 @@ class MeasuresQualifications(unittest.TestCase):
         import build_checklist
         return build_checklist
 
-    def test_the_registry_carries_exactly_the_twenty_five_qualifications_verbatim(self):
+    def test_the_registry_carries_exactly_the_twenty_six_qualifications_verbatim(self):
         build_checklist = self.module()
         self.assertEqual(build_checklist.MEASURES, self.EXPECTED)
         shipped = {item["id"]: item["measures"] for item in ITEMS

@@ -14,7 +14,9 @@ import argparse
 import json
 import re
 import sys
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
+
+from bs4 import BeautifulSoup
 
 try:
     import requests
@@ -23,9 +25,30 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from lib.safe_http import default_headers, safe_get
+    from lib.safe_http import default_headers, robots_allows, safe_get
+    from redirect_checker import MAX_REDIRECT_HOPS
+    from seo_common import connection_refused, html_parser
 except ImportError:
-    from scripts.lib.safe_http import default_headers, safe_get
+    from scripts.lib.safe_http import default_headers, robots_allows, safe_get
+    from scripts.redirect_checker import MAX_REDIRECT_HOPS
+    from scripts.seo_common import connection_refused, html_parser
+
+
+# Google Search Central, "HTTP status codes, network and DNS errors": 301 and 308 are
+# "a strong signal that the redirect target should be processed", 302, 303 and 307 "a
+# weak signal". Its "Redirects and Google Search" goes further for the temporary codes:
+# the indexing pipeline "doesn't use the redirect as a signal that the redirect target
+# should be canonical" — so a temporary redirect forces HTTPS for visitors and settles
+# no canonical protocol, which is why SE-117 warns on it rather than passing.
+PERMANENT_REDIRECTS = (301, 308)
+TEMPORARY_REDIRECTS = (302, 303, 307)
+# Worst first: the order `summarize_http_to_https` reads.
+HTTP_TO_HTTPS_OUTCOMES = ("not_redirected", "temporary", "not_listening", "permanent")
+# basis: convention — the audited page plus three same-site pages it links to is the
+#  sample SE-117 reads for "Across the Site": enough to catch a redirect rule written
+#  for one path, few enough that an audit adds at most four plain-HTTP requests. The
+#  item's `measures` line says the rest of the site is not requested.
+HTTP_SAMPLE_PAGES = 3
 
 
 # basis: inherited — per-header weights present at import, summing to a 0-100 score. The
@@ -80,6 +103,96 @@ HSTS_MIN_MAX_AGE = 31_536_000
 #  scores; kept because the finding it raises is about breadth rather than score.
 MANY_MISSING_HEADERS = 3
 
+
+def http_form(url: str) -> str:
+    """Return the plain-HTTP form of ``url`` without its fragment."""
+    parsed = urlparse(url)
+    if parsed.scheme.lower() == "http":
+        return url
+    hostname = parsed.hostname or ""
+    if ":" in hostname and not hostname.startswith("["):
+        hostname = f"[{hostname}]"
+    userinfo = ""
+    if "@" in parsed.netloc:
+        userinfo = parsed.netloc.rsplit("@", 1)[0] + "@"
+    port = parsed.port
+    if port not in (None, 443):
+        hostname = f"{hostname}:{port}"
+    return parsed._replace(scheme="http", netloc=userinfo + hostname,
+                           fragment="").geturl()
+
+
+def walk_http_to_https(url: str, timeout: int = 15) -> dict:
+    """Read a bounded plain-HTTP redirect chain, stopping before HTTPS."""
+    result = {"url": url, "outcome": "not_redirected", "hops": [], "error": None}
+    current = url
+    visited = {current}
+    for request_number in range(MAX_REDIRECT_HOPS + 1):
+        try:
+            resp = safe_get(current, timeout=timeout, headers=default_headers(),
+                            allow_redirects=False, stream=True)
+        except requests.exceptions.RequestException as exc:
+            if request_number == 0 and connection_refused(exc):
+                result["outcome"] = "not_listening"
+            else:
+                result["outcome"] = "unread"
+                result["error"] = str(exc)
+            return result
+
+        try:
+            status = resp.status_code
+            location = resp.headers.get("Location")
+            result["hops"].append({"url": current, "status": status,
+                                   "location": location})
+        finally:
+            resp.close()
+
+        if status not in PERMANENT_REDIRECTS + TEMPORARY_REDIRECTS or not location:
+            return result
+        target = urljoin(current, location)
+        scheme = urlparse(target).scheme.lower()
+        if scheme == "https":
+            statuses = [hop["status"] for hop in result["hops"]]
+            result["outcome"] = ("permanent"
+                                 if all(code in PERMANENT_REDIRECTS
+                                        for code in statuses)
+                                 else "temporary")
+            return result
+        if scheme != "http" or target in visited:
+            return result
+        visited.add(target)
+        current = target
+    return result
+
+
+def summarize_http_to_https(outcomes) -> str | None:
+    """Return the worst decided plain-HTTP outcome, or ``None`` when withheld."""
+    if "not_redirected" in outcomes:
+        return "not_redirected"
+    if "unread" in outcomes:
+        return None
+    for outcome in HTTP_TO_HTTPS_OUTCOMES:
+        if outcome in outcomes:
+            return outcome
+    return None
+
+
+def _history_http_to_https(resp) -> dict:
+    """Build the already-walked HTTP variant from a followed response history."""
+    hops = []
+    for previous in resp.history:
+        location = previous.headers.get("Location")
+        hops.append({"url": previous.url, "status": previous.status_code,
+                     "location": location})
+        if location and urlparse(urljoin(previous.url, location)).scheme.lower() == "https":
+            break
+    outcome = ("permanent"
+               if hops and all(hop["status"] in PERMANENT_REDIRECTS for hop in hops)
+               else "temporary")
+    return {"url": hops[0]["url"] if hops else http_form(resp.url),
+            "outcome": outcome, "hops": hops, "error": None}
+
+
 def check_security_headers(url: str, timeout: int = 15) -> dict:
     """
     Check security headers for a URL.
@@ -106,6 +219,7 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
         "hsts_enabled": False,
         "hsts_disabled_reason": None,
         "hardening_missing": [],
+        "http_variants": [],
         "issues": [],
         "recommendations": [],
         "error": None,
@@ -196,6 +310,73 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
         elif missing_count > 0:
             result["issues"].append(f"⚠️ {missing_count} security header(s) missing")
 
+        final = resp.url
+        variants = result["http_variants"]
+        if final.lower().startswith("http://"):
+            variants.append({"url": final, "page": url,
+                             "outcome": "not_redirected", "hops": [],
+                             "error": None})
+        elif (urlparse(url).scheme.lower() == "http"
+              and final.lower().startswith("https://")):
+            variant = _history_http_to_https(resp)
+            variant["page"] = url
+            variants.append(variant)
+        else:
+            variant = walk_http_to_https(http_form(url), timeout)
+            variant["page"] = url
+            variants.append(variant)
+
+        content_type = response_headers.get("content-type", "").split(";", 1)[0].lower()
+        if (not any(variant["outcome"] == "not_redirected" for variant in variants)
+                and content_type in ("text/html", "application/xhtml+xml")):
+            soup = BeautifulSoup(resp.text, html_parser())
+            final_page = urlparse(final)._replace(fragment="").geturl()
+            final_netloc = urlparse(final).netloc.lower()
+            seen_pages = {final_page}
+            walked = 0
+            for anchor in soup.find_all("a", href=True):
+                candidate = urlparse(urljoin(final, anchor["href"]))
+                candidate = candidate._replace(fragment="").geturl()
+                parsed_candidate = urlparse(candidate)
+                if (parsed_candidate.scheme.lower() != "https"
+                        or parsed_candidate.netloc.lower() != final_netloc
+                        or candidate in seen_pages):
+                    continue
+                seen_pages.add(candidate)
+                if not robots_allows(candidate)[0]:
+                    continue
+                variant = walk_http_to_https(http_form(candidate), timeout)
+                variant["page"] = candidate
+                variants.append(variant)
+                walked += 1
+                if variant["outcome"] == "not_redirected" or walked >= HTTP_SAMPLE_PAGES:
+                    break
+
+        summary = summarize_http_to_https([variant["outcome"] for variant in variants])
+        if summary is not None:
+            result["http_to_https"] = summary
+
+        recommend_redirect = False
+        for variant in variants:
+            if variant["outcome"] == "not_redirected":
+                result["issues"].append(
+                    f"🔴 http:// address answers without redirecting to HTTPS: "
+                    f"{variant['url']}"
+                )
+                recommend_redirect = True
+            elif variant["outcome"] == "temporary":
+                status = next((hop["status"] for hop in variant["hops"]
+                               if hop["status"] in TEMPORARY_REDIRECTS),
+                              variant["hops"][0]["status"])
+                result["issues"].append(
+                    f"⚠️ http:// address redirects to HTTPS with a temporary "
+                    f"{status}: {variant['url']}"
+                )
+        if recommend_redirect:
+            result["recommendations"].append(
+                "Redirect every http:// URL to its https:// form with a 301"
+            )
+
     except requests.exceptions.RequestException as e:
         result["error"] = str(e)
         result["error_kind"] = "unread"
@@ -225,6 +406,7 @@ def main():
     # HTTPS status
     https_icon = "✅" if result["https"] else "🔴"
     print(f"{https_icon} HTTPS: {'Yes' if result['https'] else 'No'}")
+    print(f"HTTP → HTTPS: {result.get('http_to_https') or 'unknown'}")
     print(f"Security Score: {result['score']}/100")
 
     if result["headers_present"]:

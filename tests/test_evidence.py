@@ -919,8 +919,9 @@ class SystemPagesAreNotIndexable(unittest.TestCase):
 
 
 class SecurityHeaders(unittest.TestCase):
-    """SE-115 reads `hsts_enabled`, SE-117 reads `https`, SE-120 reads
-    `hardening_missing`, and TE-175 reads `headers_missing`.
+    """SE-115 reads `hsts_enabled`, SE-120 reads `hardening_missing`, and TE-175 reads
+    `headers_missing`. SE-117 read `https` until 0.118.0 and reads `http_to_https` now,
+    which only a served origin can answer — `tests/test_http_to_https.py`.
 
     SE-118 read `https` too until 0.20, from this same script — two critical items
     sharing one field, so SE-118 could not fail independently on any site and a
@@ -938,11 +939,19 @@ class SecurityHeaders(unittest.TestCase):
         self.sh.safe_get = self.saved
 
     def serve(self, url, headers=None):
+        """Every request answers alike, the `http://` address included — so these
+        tests decide the header items and not SE-117, which needs that address to
+        answer differently and is `tests/test_http_to_https.py`'s."""
         class Resp:
             def __init__(self):
                 self.url = url
                 self.headers = headers or {}
                 self.status_code = 200
+                self.history = []
+                self.text = ""
+
+            def close(self):
+                pass
         self.sh.safe_get = lambda *a, **k: Resp()
 
     ALL_HEADERS = {
@@ -954,13 +963,14 @@ class SecurityHeaders(unittest.TestCase):
         "Permissions-Policy": "camera=()",
     }
 
-    def test_https_with_every_header_passes_both_items_it_decides(self):
+    def test_https_with_every_header_passes_the_header_item(self):
+        # SE-117 was in this loop until 0.118.0, passing on a stub that never answered
+        # the http:// address — which is exactly what the item failed to ask.
         self.serve("https://example.com/", self.ALL_HEADERS)
         out = self.sh.check_security_headers("https://example.com/")
         self.assertIs(out["https"], True)
         self.assertEqual(out["headers_missing"], {})
-        for item_id in ("SE-117", "TE-175"):
-            self.assertEqual(verdict(item_id, out), PASS, item_id)
+        self.assertEqual(verdict("TE-175", out), PASS)
 
     def test_plain_http_fails_the_critical_item(self):
         self.serve("http://example.com/", {})

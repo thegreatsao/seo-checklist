@@ -882,13 +882,13 @@
       "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants and the three detect_profile tables as inherited, DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and twenty module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
         "basis": {
-          "convention": 55,
+          "convention": 56,
           "inherited": 77,
           "measured": 11,
           "presentation": 13,
           "standard": 16
         },
-        "counted": 159,
+        "counted": 160,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:31"
         ],
@@ -903,8 +903,10 @@
           "INVENTORY_VERSION",
           "JPEG_SOF_MARKERS",
           "MAX_ICON_BYTES",
+          "PERMANENT_REDIRECTS",
           "ROBOTS_FETCH_WAIT",
           "SOCKET_TIMEOUT",
+          "TEMPORARY_REDIRECTS",
           "TOP_N",
           "_CACHE_POLL"
         ],

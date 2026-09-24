@@ -1572,6 +1572,22 @@ to walk `rows[].decisions` directly; there is no aggregate to assert against.
   null when enabled or when the header is absent
 `hardening_missing[]` — sorted array of missing `content-security-policy`,
   `permissions-policy`, and `referrer-policy` header names
+`http_to_https` — str — the worst decided answer the `http://` addresses gave:
+  `permanent` (301/308 to https), `temporary` (302/303/307 on the way to https),
+  `not_listening` (the connection was refused), `not_redirected` (a page, an error, a
+  loop, a redirect with no Location or an http-only chain). **Absent** when an address
+  was `unread` and none was `not_redirected`, so SE-117 is NO_DATA rather than guessed.
+  From 0.118.0; the same port is kept for an `https://` URL that names one
+`http_variants[]` — one per `http://` address asked, in the order asked: the audited
+  page's, then up to `HTTP_SAMPLE_PAGES` (3) same-origin pages it links to that
+  robots.txt permits. Empty only when the main read failed
+`http_variants[].url` — str — the `http://` address
+`http_variants[].page` — str — the page it is the address of
+`http_variants[].outcome` — str — one of the four above, or `unread`
+`http_variants[].hops[]` — `{url, status, location}` per plain-HTTP response, up to the
+  first `https://` Location, which is not requested. Empty for a page whose own read
+  ended on `http://`, and for `not_listening` / `unread`
+`http_variants[].error` — str | null — why an address is `unread`
 `issues[]` — array
 `recommendations[]` — array
 `error` — NoneType

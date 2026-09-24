@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "registry_version": "950f09b9ca61",
+  "registry_version": "835d527f8f95",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -129,6 +129,15 @@
       "to": "c22606b1d3ea",
       "decided": "new-material",
       "why": "two comments in sitemap.xml were false — one named a test that no longer exists, one said GO-137 still passes, which has asked Search Console since 0.106.0 — and are rewritten; no URL changes and no declared verdict moves."
+    },
+    {
+      "kind": "expect",
+      "origin": "broken_tls",
+      "item": "SE-117",
+      "from": "PASS",
+      "to": "FAIL",
+      "decided": "checker-was-wrong",
+      "why": "SE-117 asserted `https`, whether the audited URL ended on https, and never requested the page's http:// address, so a site answering both protocols passed Force HTTPS (Single Canonical Protocol). From 0.118.0 it asks that address. The harness serves plain HTTP on each TLS origin's own port, as the server's plain side: broken_tls answers it with the page and good_tls with a 301 to https, a difference of server policy like the header set and compression. No served file changes"
     }
   ],
   "fixtures": {
@@ -1310,7 +1319,7 @@
       "SE-117": {
         "expect": "PASS",
         "title": "Force HTTPS Across the Site (Single Canonical Protocol)",
-        "why": "the site and its rewritten same-origin URLs are served over HTTPS"
+        "why": "the entry's http:// address and those of the pages it links to answer a plain request with a 301 to the same path over https, so no page is served over plain HTTP"
       },
       "SE-115": {
         "expect": "PASS",
@@ -1345,9 +1354,9 @@
     },
     "broken_tls": {
       "SE-117": {
-        "expect": "PASS",
+        "expect": "FAIL",
         "title": "Force HTTPS Across the Site (Single Canonical Protocol)",
-        "why": "the site and its rewritten same-origin URLs are still served over HTTPS despite the sparse header policy"
+        "why": "the entry's http:// address answers a plain request with the page itself, so the site is served over both protocols and neither is forced"
       },
       "SE-115": {
         "expect": "FAIL",

@@ -345,9 +345,11 @@ class HttpsAndHsts(unittest.TestCase):
             "Permissions-Policy": "camera=()"}
 
     def audit_over_tls(self, headers):
+        # `plain="redirect"`: SE-117 asks the page's http:// address from 0.118.0, and a
+        # TLS-only port answers that with a broken connection, which is no verdict.
         body = page("A page served over TLS")
         with served({"/": (200, dict(headers, **{"Content-Type": "text/html"}), body)},
-                    tls=True) as site:
+                    tls=True, plain="redirect") as site:
             return run_audit(site.url, env=tls_env(), only="security")
 
     def test_a_real_handshake_satisfies_the_https_items(self):

@@ -1640,14 +1640,28 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "https",
-          "truthy": true
+          "path": "http_to_https",
+          "value_map": {
+            "permanent": "pass",
+            "temporary": "fail",
+            "not_listening": "fail",
+            "not_redirected": "fail"
+          }
+        },
+        "warn": {
+          "path": "http_to_https",
+          "value_map": {
+            "permanent": "pass",
+            "temporary": "pass",
+            "not_listening": "pass",
+            "not_redirected": "fail"
+          }
         }
       },
-      "verdict": "owed",
-      "reading": "`https` is whether the audited URL ended on https; whether the http:// version redirects there — what *force* means — is never requested. A rule repair is owed (A.10).",
+      "verdict": "measures",
+      "reading": "`http_to_https` is the worst answer the http:// address gave, asked of the audited page and up to three same-site pages it links to: a 301/308 to https passes, a 302/303/307 or nothing listening warns, and a page, an error, a loop or an http-only chain over plain HTTP fails; a broken connection withholds the verdict (0.118.0; it read `https`, the scheme the audited URL ended on, and never asked http://). The rest of the site is not requested, and `measures` says so.",
       "shapes": {
-        "conjunction": "Owed: the single canonical protocol needs the http variant read."
+        "conjunction": "*Force HTTPS* is the http:// address redirecting; *single canonical protocol* is that redirect being permanent, which Google reads as a strong canonical signal and a temporary one as weak."
       }
     },
     "SE-118": {

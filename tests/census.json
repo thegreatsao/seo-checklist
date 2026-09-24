@@ -2989,7 +2989,7 @@
       "answers": {
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
-        "fixture:broken_tls": "PASS",
+        "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
         "fixture:good_tls": "PASS"
       },
@@ -3586,7 +3586,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "950f09b9ca61",
+  "registry_version": "835d527f8f95",
   "sites": [
     "fixture:good",
     "fixture:broken",
