@@ -10,6 +10,38 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.121.0 — a secure page is one the browser does not block
+
+Registry version: **`d9d576746b80` → `3b6928c0dde9`.** TE-175 changes what it asserts, so it
+can move on a real site. No declared verdict moves; the broken fixture gains one iframe,
+recorded in the manifest's triage log. Suite 1843 → 1854.
+
+**TE-175 *Secure Pages & Eliminate Errors* counted missing security headers and allowed
+three** — the headers SE-115 and SE-120 already assert, counted a second time — and never
+looked at what the page loads. An HTTPS page whose scripts and stylesheet came over
+`http://` passed it with the right headers, and a browser blocks both. It now reads
+`page_security`, graded the way browsers treat mixed content (MDN, *Mixed content*):
+
+| the page | verdict |
+|---|---|
+| served over HTTPS, nothing requested over `http://` | PASS |
+| an image, audio, video or `<source src>` over `http://` — the browser upgrades it | WARN |
+| a script, stylesheet, frame, object or `srcset` over `http://`, or an upgradable load from an IP address — the browser blocks it | FAIL |
+| served over plain HTTP | FAIL |
+
+`mixed_content` lists each load with its tag, attribute and kind. Anchors are navigation, not
+loads, and never count. URLs inside CSS and the page's other errors are not read; the item's
+`measures` line says so, and its fix text now says what to do rather than repeating the
+title.
+
+The broken fixture's entry page gains `<iframe src="http://insecure.invalid/frame.html">`:
+neither tree requested anything over plain HTTP before — its `http://insecure.invalid` link is
+an anchor — and `.invalid` never resolves, while nothing in the audit requests a frame. The
+code half was executed by Codex until its credits ran out at the last step; the gates and the
+release were finished by hand.
+
+Two readings stay owed: KW-070 and GO-139, on the branded-query decision.
+
 ## 0.120.0 — one length for a meta description, the measured one
 
 Registry version: **`01b63b6dfafd` → `d9d576746b80`.** MS-030 changes what it asserts, so

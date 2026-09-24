@@ -1599,6 +1599,13 @@ to walk `rows[].decisions` directly; there is no aggregate to assert against.
   first `https://` Location, which is not requested. Empty for a page whose own read
   ended on `http://`, and for `not_listening` / `unread`
 `http_variants[].error` — str | null — why an address is `unread`
+`page_security` — str — what a browser does to the page, worst first: `plain_http` (the
+  page itself ended on http://), `blocked_content` (a blockable request over http://),
+  `upgraded_content` (only upgradable ones), `secure`. From 0.121.0; TE-175 reads it
+`mixed_content[]` — `{url, tag, attribute, kind}` per http:// load on an https page, in
+  document order; `kind` is MDN's: `blockable` (script src, stylesheet link href, iframe
+  src, object data, img/source srcset) or `upgradable` (img/audio/video/source src, but
+  `blockable` on an IP-address host). Empty on a plain-HTTP page and on a non-HTML response
 `issues[]` — array
 `recommendations[]` — array
 `error` — NoneType

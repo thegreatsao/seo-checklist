@@ -919,8 +919,9 @@ class SystemPagesAreNotIndexable(unittest.TestCase):
 
 
 class SecurityHeaders(unittest.TestCase):
-    """SE-115 reads `hsts_enabled`, SE-120 reads `hardening_missing`, and TE-175 reads
-    `headers_missing`. SE-117 read `https` until 0.118.0 and reads `http_to_https` now,
+    """SE-115 reads `hsts_enabled` and SE-120 reads `hardening_missing`. TE-175 read
+    `headers_missing` until 0.121.0 and reads `page_security` now —
+    `tests/test_mixed_content.py`. SE-117 read `https` until 0.118.0 and reads `http_to_https` now,
     which only a served origin can answer — `tests/test_http_to_https.py`.
 
     SE-118 read `https` too until 0.20, from this same script — two critical items
@@ -963,7 +964,7 @@ class SecurityHeaders(unittest.TestCase):
         "Permissions-Policy": "camera=()",
     }
 
-    def test_https_with_every_header_passes_the_header_item(self):
+    def test_https_with_every_header_passes_a_page_that_loads_nothing(self):
         # SE-117 was in this loop until 0.118.0, passing on a stub that never answered
         # the http:// address — which is exactly what the item failed to ask.
         self.serve("https://example.com/", self.ALL_HEADERS)
@@ -1091,8 +1092,8 @@ class SecurityHeaders(unittest.TestCase):
         """This script appends plain strings to `issues`, so the old
         `none_severity` rule iterated dicts, found none, and reported PASS — while
         the script itself was printing "Site not using HTTPS" and "6 security
-        headers missing". `headers_missing` is a dict, and the rule uses the
-        script's own bar: more than three of six absent is a failure."""
+        headers missing". From 0.121.0 TE-175 reads `page_security`, and a page
+        served over plain HTTP is not a secure page."""
         self.serve("http://example.com/", {})
         out = self.sh.check_security_headers("http://example.com/")
         self.assertEqual(len(out["headers_missing"]), 6)
@@ -1104,11 +1105,15 @@ class SecurityHeaders(unittest.TestCase):
         self.assertIsNone(ok, "a list of strings must be undecided, never a pass")
         self.assertEqual(verdict("TE-175", out), FAIL)
 
-    def test_three_missing_headers_is_still_a_pass(self):
-        keep = dict(list(self.ALL_HEADERS.items())[:3])
-        self.serve("https://example.com/", keep)
+    def test_missing_headers_are_se_120s_and_not_te_175s(self):
+        """Until 0.121.0 TE-175 counted the headers SE-115 and SE-120 already assert,
+        and failed on the fourth one missing. A page served over HTTPS that loads
+        nothing over plain HTTP is secure in the sense the item's own title asks,
+        with every header absent — which SE-120 reports."""
+        self.serve("https://example.com/", {})
         out = self.sh.check_security_headers("https://example.com/")
-        self.assertEqual(len(out["headers_missing"]), 3)
+        self.assertEqual(len(out["headers_missing"]), 6)
+        self.assertEqual(verdict("SE-120", out), FAIL)
         self.assertEqual(verdict("TE-175", out), PASS)
 
 

@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "registry_version": "d9d576746b80",
+  "registry_version": "3b6928c0dde9",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -26,9 +26,9 @@
   },
   "fixture_digest": {
     "good": "1b811e0d3859",
-    "broken": "f35c3695bf5d",
+    "broken": "031366471266",
     "good_tls": "a6ab3c1eb2d0",
-    "broken_tls": "44c01c9b01a1"
+    "broken_tls": "4646a85b7d15"
   },
   "triage": [
     {
@@ -192,6 +192,24 @@
       "to": "44c01c9b01a1",
       "decided": "new-material",
       "why": "MS-030 now reads the length the tree calibrated, 100 to 144 characters. The good tree's entry and About descriptions were 145 and 151 — cut on desktop by that calibration — and are trimmed to 134 and 143 by removing words, their og: and twitter: copies untouched; the broken tree's /orphan.html description, which failed only because the old floor was 120, is shortened to 63 so the tree still carries a too-short description in the sample. No declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "broken",
+      "item": null,
+      "from": "f35c3695bf5d",
+      "to": "031366471266",
+      "decided": "new-material",
+      "why": "TE-175 reads mixed content from 0.121.0, and neither tree requested anything over plain HTTP — the broken entry's http://insecure.invalid link is an anchor, not a load. The broken entry page gains an iframe from http://insecure.invalid/frame.html, blockable mixed content on broken_tls; `.invalid` never resolves and nothing in the audit requests a frame. No declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "broken_tls",
+      "item": null,
+      "from": "44c01c9b01a1",
+      "to": "4646a85b7d15",
+      "decided": "new-material",
+      "why": "TE-175 reads mixed content from 0.121.0, and neither tree requested anything over plain HTTP — the broken entry's http://insecure.invalid link is an anchor, not a load. The broken entry page gains an iframe from http://insecure.invalid/frame.html, blockable mixed content on broken_tls; `.invalid` never resolves and nothing in the audit requests a frame. No declared verdict moves."
     }
   ],
   "fixtures": {
@@ -1378,7 +1396,7 @@
       "TE-175": {
         "expect": "PASS",
         "title": "Secure Pages & Eliminate Errors",
-        "why": "the HTTPS pages use the deliberately hardened response-header policy with only X-Frame-Options omitted"
+        "why": "the entry page is served over HTTPS and requests nothing over plain HTTP: its stylesheet, icon and images are same-origin paths and its external links are anchors, not loads"
       },
       "CI-014": {
         "expect": "PASS",
@@ -1415,7 +1433,7 @@
       "TE-175": {
         "expect": "FAIL",
         "title": "Secure Pages & Eliminate Errors",
-        "why": "the HTTPS pages use a deliberately sparse response-header policy and omit every tracked security header"
+        "why": "the entry page is served over HTTPS and embeds an iframe from http://insecure.invalid/frame.html, blockable mixed content a browser refuses to load"
       },
       "CI-014": {
         "expect": "PASS",

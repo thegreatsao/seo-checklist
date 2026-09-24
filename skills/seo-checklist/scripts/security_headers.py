@@ -11,6 +11,7 @@ Usage:
 """
 
 import argparse
+import ipaddress
 import json
 import re
 import sys
@@ -27,10 +28,12 @@ except ImportError:
 try:
     from lib.safe_http import default_headers, robots_allows, safe_get
     from redirect_checker import MAX_REDIRECT_HOPS
+    import seo_common
     from seo_common import connection_refused, html_parser
 except ImportError:
     from scripts.lib.safe_http import default_headers, robots_allows, safe_get
     from scripts.redirect_checker import MAX_REDIRECT_HOPS
+    from scripts import seo_common
     from scripts.seo_common import connection_refused, html_parser
 
 
@@ -49,6 +52,8 @@ HTTP_TO_HTTPS_OUTCOMES = ("not_redirected", "temporary", "not_listening", "perma
 #  for one path, few enough that an audit adds at most four plain-HTTP requests. The
 #  item's `measures` line says the rest of the site is not requested.
 HTTP_SAMPLE_PAGES = 3
+# Worst first; TE-175's value_map names exactly these.
+PAGE_SECURITY_STATES = ("plain_http", "blocked_content", "upgraded_content", "secure")
 
 
 # basis: inherited — per-header weights present at import, summing to a 0-100 score. The
@@ -177,6 +182,64 @@ def summarize_http_to_https(outcomes) -> str | None:
     return None
 
 
+def mixed_content(html: str, final_url: str) -> list[dict]:
+    """Return plain-HTTP subresources requested by an HTTPS document."""
+    if urlparse(final_url).scheme.lower() != "https":
+        return []
+
+    soup = BeautifulSoup(html, html_parser())
+    found = []
+    for element in soup.find_all(True):
+        tag = element.name.lower()
+        loads = []
+        if tag == "script" and element.has_attr("src"):
+            loads.append(("src", element["src"], "blockable"))
+        elif tag == "link" and element.has_attr("href"):
+            rel = element.get("rel") or []
+            if isinstance(rel, str):
+                rel = rel.split()
+            if any(token.lower() == "stylesheet" for token in rel):
+                loads.append(("href", element["href"], "blockable"))
+        elif tag == "iframe" and element.has_attr("src"):
+            loads.append(("src", element["src"], "blockable"))
+        elif tag == "object" and element.has_attr("data"):
+            loads.append(("data", element["data"], "blockable"))
+
+        if tag in ("img", "source") and element.has_attr("srcset"):
+            for candidate in seo_common.srcset_urls(element["srcset"], final_url):
+                loads.append(("srcset", candidate, "blockable"))
+
+        if tag in ("img", "audio", "video", "source") and element.has_attr("src"):
+            loads.append(("src", element["src"], "upgradable"))
+
+        for attribute, value, kind in loads:
+            resolved = urljoin(final_url, value)
+            parsed = urlparse(resolved)
+            if parsed.scheme.lower() != "http":
+                continue
+            if kind == "upgradable":
+                try:
+                    ipaddress.ip_address(parsed.hostname or "")
+                except ValueError:
+                    pass
+                else:
+                    kind = "blockable"
+            found.append({"url": resolved, "tag": tag, "attribute": attribute,
+                          "kind": kind})
+    return found
+
+
+def summarize_page_security(final_url, mixed) -> str:
+    """Summarize the page and its mixed subresources, worst first."""
+    if urlparse(final_url).scheme.lower() != "https":
+        return "plain_http"
+    if any(entry["kind"] == "blockable" for entry in mixed):
+        return "blocked_content"
+    if mixed:
+        return "upgraded_content"
+    return "secure"
+
+
 def _history_http_to_https(resp) -> dict:
     """Build the already-walked HTTP variant from a followed response history."""
     hops = []
@@ -220,6 +283,7 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
         "hsts_disabled_reason": None,
         "hardening_missing": [],
         "http_variants": [],
+        "mixed_content": [],
         "issues": [],
         "recommendations": [],
         "error": None,
@@ -310,6 +374,23 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
         elif missing_count > 0:
             result["issues"].append(f"⚠️ {missing_count} security header(s) missing")
 
+        content_type = response_headers.get("content-type", "").split(";", 1)[0].lower()
+        if (content_type in ("text/html", "application/xhtml+xml")
+                and urlparse(resp.url).scheme.lower() == "https"):
+            result["mixed_content"] = mixed_content(resp.text, resp.url)
+        result["page_security"] = summarize_page_security(
+            resp.url, result["mixed_content"])
+        for entry in result["mixed_content"]:
+            if entry["kind"] == "blockable":
+                result["issues"].append(
+                    f"🔴 Blocked mixed content: {entry['tag']} {entry['url']}"
+                )
+            else:
+                result["issues"].append(
+                    f"⚠️ Mixed content a browser upgrades: "
+                    f"{entry['tag']} {entry['url']}"
+                )
+
         final = resp.url
         variants = result["http_variants"]
         if final.lower().startswith("http://"):
@@ -326,7 +407,6 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
             variant["page"] = url
             variants.append(variant)
 
-        content_type = response_headers.get("content-type", "").split(";", 1)[0].lower()
         if (not any(variant["outcome"] == "not_redirected" for variant in variants)
                 and content_type in ("text/html", "application/xhtml+xml")):
             soup = BeautifulSoup(resp.text, html_parser())
@@ -407,6 +487,7 @@ def main():
     https_icon = "✅" if result["https"] else "🔴"
     print(f"{https_icon} HTTPS: {'Yes' if result['https'] else 'No'}")
     print(f"HTTP → HTTPS: {result.get('http_to_https') or 'unknown'}")
+    print(f"Page security: {result['page_security']}")
     print(f"Security Score: {result['score']}/100")
 
     if result["headers_present"]:

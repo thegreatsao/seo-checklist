@@ -2285,6 +2285,8 @@ class MeasuresQualifications(unittest.TestCase):
         "SE-117": "That the audited page and up to three same-site pages it links to answer their http:// address with a permanent redirect to HTTPS. Other pages are not requested.",
         # 0.120.0: MS-030 reads the calibrated length band.
         "MS-030": "That the description runs 100 to 144 characters, what the desktop snippet shows of ordinary text by this tool's calibration; the title's 150–160 is cut. Whether it is clear and relevant is not read.",
+        # 0.121.0: TE-175 reads what a browser blocks or upgrades on the page.
+        "TE-175": "That the page is served over HTTPS and loads nothing over plain HTTP that a browser blocks or upgrades: scripts, stylesheets, frames, objects, images and media. URLs inside CSS and other page errors are not read.",
     }
 
     @staticmethod
@@ -2293,7 +2295,7 @@ class MeasuresQualifications(unittest.TestCase):
         import build_checklist
         return build_checklist
 
-    def test_the_registry_carries_exactly_the_twenty_seven_qualifications_verbatim(self):
+    def test_the_registry_carries_exactly_the_twenty_eight_qualifications_verbatim(self):
         build_checklist = self.module()
         self.assertEqual(build_checklist.MEASURES, self.EXPECTED)
         shipped = {item["id"]: item["measures"] for item in ITEMS

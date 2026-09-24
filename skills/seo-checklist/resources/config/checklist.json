@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "d9d576746b80",
+  "registry_version": "3b6928c0dde9",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -3792,12 +3792,27 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "headers_missing",
-          "len_lte": 3
+          "path": "page_security",
+          "value_map": {
+            "plain_http": "fail",
+            "blocked_content": "fail",
+            "upgraded_content": "fail",
+            "secure": "pass"
+          }
+        },
+        "warn": {
+          "path": "page_security",
+          "value_map": {
+            "plain_http": "fail",
+            "blocked_content": "fail",
+            "upgraded_content": "pass",
+            "secure": "pass"
+          }
         }
       },
+      "measures": "That the page is served over HTTPS and loads nothing over plain HTTP that a browser blocks or upgrades: scripts, stylesheets, frames, objects, images and media. URLs inside CSS and other page errors are not read.",
       "effort": "low",
-      "fix": "Secure pages and eliminate errors"
+      "fix": "Serve pages over HTTPS and request nothing over http:// — the browser blocks it"
     },
     {
       "id": "TE-176",

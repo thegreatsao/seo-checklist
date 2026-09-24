@@ -199,7 +199,8 @@ SAME_ON_BOTH = {
     "SE-117": "both fixtures are served over plain HTTP by the same server",
     "SE-118": "both fixtures are served over plain HTTP by the same server",
     "SE-120": "both fixtures are served by the same header-free http.server",
-    "TE-175": "both fixtures are served by the same header-free http.server",
+    "TE-175": "both fixtures are served over plain HTTP, which is not a secure page "
+              "whatever it loads",
     # `TE-170` and `SP-110` were here until 0.50.0, both for the same reason: the
     # scripts behind them could say only `warning`, so the exemplary tree and the
     # tree built to be slow landed in one band. Grading the two findings that are
@@ -558,7 +559,7 @@ class NothingAccusesTheGoodSiteWithoutAReason(unittest.TestCase):
         # the item softened: the good origin now serves gzip with Vary and a validator
         # header, so an exemplary tree passes the item about server configuration
         # instead of being excused from it.
-        "TE-175": "http.server sends no cache headers and no gzip",
+        "TE-175": "served over plain HTTP, so no page is a secure page",
         # SP-110 was here until 0.87.0, and it left because the reasoning stopped
         # being true: a render-blocking stylesheet is how CSS is delivered, not a
         # defect the good fixture carries on purpose, and it is graded `info` now.

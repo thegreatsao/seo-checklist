@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.120.0 — see [CHANGELOG.md](CHANGELOG.md). **One verdict can move on your site.** *Keep Meta Descriptions ~150–160 Characters* now asks for 100–144, the length the desktop snippet shows by this tool's own calibration — a 150–160 description is cut, and fails. Before that, `0.119.0` made *Keep Mobile Page Weight Light* read the total bytes Lighthouse's mobile run downloaded.
+Version 0.121.0 — see [CHANGELOG.md](CHANGELOG.md). **One verdict can move on your site.** *Secure Pages & Eliminate Errors* now reads what your page loads over plain `http://` on HTTPS — a script, stylesheet or frame the browser blocks fails, an image it upgrades warns — instead of counting security headers. Before that, `0.120.0` made *Keep Meta Descriptions ~150–160 Characters* ask for the 100–144 the desktop snippet shows.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

@@ -554,6 +554,7 @@ MEASURES = {
     "IN-128": "That the page lists itself in its own hreflang set. Which version a visitor is actually served is not tested.",
     "MS-030": "That the description runs 100 to 144 characters, what the desktop snippet shows of ordinary text by this tool's calibration; the title's 150–160 is cut. Whether it is clear and relevant is not read.",
     "SE-117": "That the audited page and up to three same-site pages it links to answer their http:// address with a permanent redirect to HTTPS. Other pages are not requested.",
+    "TE-175": "That the page is served over HTTPS and loads nothing over plain HTTP that a browser blocks or upgrades: scripts, stylesheets, frames, objects, images and media. URLs inside CSS and other page errors are not read.",
     "SE-119": "The Cumulative Layout Shift of the whole page. The cookie banner is not identified, so a shift caused by anything else counts too.",
     "CN-038": "How recent this page's own dates and statistics are. The balance of fresh and evergreen content across the site is not measured.",
     "SP-110": "Render-blocking resources and critical request chains read from the page's HTML. The other speed checks are separate items.",
@@ -1506,14 +1507,18 @@ item(173, "medium", M, fix="Fix browser console errors (chrome-devtools MCP: lis
 item(174, "low", S, "css_minify_check.py", PAGE,
      {"path": "unminified_count", "eq": 0},
      "Minify and optimize CSS")
-# security_headers.py also emits `issues` as strings — it was printing "Site not
-# using HTTPS" and "6 security headers missing" while this item reported PASS. Its
-# `headers_missing` is a dict of the security headers absent from the response, so
-# the rule uses the script's own bar for "poor security posture": more than three
-# of the six missing. HTTPS itself is SE-117/SE-118, so this item owns the headers.
+# Until 0.121.0 this counted missing security headers and allowed three, so SE-115's
+# and SE-120's subject was counted twice, and it never read what the page loads. It
+# now reads `page_security`, MDN's two kinds of mixed content: blocked fails, upgraded
+# warns, and a page on plain HTTP fails.
 item(175, "high", S, "security_headers.py", PAGE,
-     {"path": "headers_missing", "len_lte": 3},
-     "Secure pages and eliminate errors")
+     {"path": "page_security",
+      "value_map": {"plain_http": "fail", "blocked_content": "fail",
+                    "upgraded_content": "fail", "secure": "pass"}},
+     "Serve pages over HTTPS and request nothing over http:// — the browser blocks it",
+     warn={"path": "page_security",
+           "value_map": {"plain_http": "fail", "blocked_content": "fail",
+                         "upgraded_content": "pass", "secure": "pass"}})
 item(176, "high", S, "canonical_checker.py", PAGE,
      {"path": "issues", "len_eq": 0},
      "Fix canonicalization issues")

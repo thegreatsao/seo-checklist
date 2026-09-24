@@ -59,6 +59,9 @@ check does not have to resolve a stylesheet to find it.</p>
 <a href="/gone.html">a link to a page that is not there</a>,
 <a href="/blog/thin.html">thin content</a>,
 <a href="https://dead.invalid/">click here</a>.</p>
+<!-- TE-175, from 0.121.0: a frame requested over plain HTTP, which a browser blocks on an
+     HTTPS page. `.invalid` never resolves, and nothing in the audit requests a frame. -->
+<iframe src="http://insecure.invalid/frame.html" title="An insecure frame"></iframe>
 <!-- The duplicate pair has to be reachable from here or the crawl never sees it:
      duplicate_content walks links from the entry page, so two identical files
      nothing points at are two files nobody compares. CN-041, MS-022 and MS-029 all

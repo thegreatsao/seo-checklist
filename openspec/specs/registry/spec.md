@@ -259,7 +259,7 @@ subject the script cannot reach, *at least one*, a compound title, a quality wor
 each be answered in the reading. `TheShapesWouldHaveExposedEveryItemRepairedByHand` holds
 that they fire on GO-137, BL-083, MB-096, MB-097, MD-189, CI-016 and MD-186 as those stood
 at `v0.104.0`, which `tools/audit_item_semantics.py`'s word overlap passed. It stays
-`partial` for two reasons: three readings are `owed` (A.10), and whether a reading is
+`partial` for two reasons: two readings are `owed` (A.10), and whether a reading is
 true is still a person's judgement — the reader guarantees that nothing changes under one
 unnoticed, not that it was right.
 
@@ -1049,8 +1049,13 @@ allowed five.
 *Repaired at 0.120.0 (`d9d576746b80`):* MS-030 reads `meta_description_band` — the
 length against `article_seo`'s 100 and the calibrated 144 — where it read 120–165 written
 into the registry, a ceiling the tree's own calibration measured as cut; it carries
-`measures` for *Clear & Relevant*. Three owed remain: TE-175, and KW-070 and GO-139 on the
-branded-query decision.
+`measures` for *Clear & Relevant*.
+
+*Repaired at 0.121.0 (`3b6928c0dde9`):* TE-175 reads `page_security` — the page's scheme
+and every load it makes over `http://`, graded as browsers treat MDN's two kinds of mixed
+content: blocked fails, upgraded warns — where it counted missing security headers,
+SE-115's and SE-120's subject. It carries `measures` for CSS URLs and the page's other
+errors. Two owed remain: KW-070 and GO-139 on the branded-query decision.
 
 *Carrying `measures` since 0.113.0* — one sentence, printed under the title in every
 report and translated, saying what the rule checks and naming what it does not: CI-001, TE-167, IN-121, IN-128, SE-119, CN-038,

@@ -48,7 +48,9 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         # 0.119.0: MB-095 reads Lighthouse's page weight (owed -> answers).
         # 0.120.0: MS-030 reads the calibrated band, with a statement for *Clear &
         # Relevant* (owed -> measures).
-        self.assertEqual(counts, {"answers": 115, "measures": 27, "owed": 3})
+        # 0.121.0: TE-175 reads mixed content, with a statement for the page's other
+        # errors (owed -> measures).
+        self.assertEqual(counts, {"answers": 115, "measures": 28, "owed": 2})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
         """Line endings are normalised first: a Windows checkout writes CRLF, and how
