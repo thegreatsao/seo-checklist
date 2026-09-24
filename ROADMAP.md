@@ -99,7 +99,9 @@ this clause's other half.
 The specification's ledger above is this clause's measure for behaviour. For prose the
 gate is `tests/test_prose_counts.py`: every count this file, `README.md`, `plugin.json`,
 `pyproject.toml`, `KNOWN-ISSUES.md`'s header and the census's own documentation state is
-derived and compared. It is narrower than the ask it answers. A sentence of the form
+derived and compared. `tests/test_protocol_counts.py` holds the protocol's counts in
+`SKILL.md` and the agents, and is the one derivation of every registry population both
+modules read; no number is bound by both. It is narrower than the ask it answers. A sentence of the form
 "X is N" outside those files, and a threshold named in prose, are still read by nobody.
 
 ---

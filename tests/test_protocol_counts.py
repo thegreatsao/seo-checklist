@@ -30,12 +30,22 @@ import collections
 import json
 import os
 import re
+import sys
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL_DIR = os.path.join(ROOT, "skills", "seo-checklist")
 SCRIPTS = os.path.join(SKILL_DIR, "scripts")
+TOOLS = os.path.join(SKILL_DIR, "tools")
 REGISTRY = os.path.join(SKILL_DIR, "resources", "config", "checklist.json")
+README = os.path.join(ROOT, "README.md")
+SKILL = os.path.join(SKILL_DIR, "SKILL.md")
+
+sys.path.insert(0, SCRIPTS)
+sys.path.insert(0, TOOLS)
+
+import audit_reachability  # noqa: E402
+import checklist_runner  # noqa: E402
 
 UNITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
          "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
@@ -79,12 +89,42 @@ TWINS = [item for item in ITEMS if item.get("scores_with")]
 CARRIERS = {item["scores_with"] for item in TWINS}
 
 
+def launches() -> int:
+    """The runner's own launch set, asked with every input available synthetically.
+
+    Not a set of (script, args) pairs counted here: until the two ledgers were merged
+    this module counted pairs and `test_prose_counts` asked `build_plan`, two answers to
+    one question that agreed only because nothing yet made them differ. The plan is
+    what a run launches, so it is the one that counts.
+    """
+    keys = {
+        arg[1:-1]
+        for item in ITEMS
+        for arg in ((item.get("check") or {}).get("args") or [])
+        if isinstance(arg, str) and arg.startswith("{") and arg.endswith("}")
+    }
+    context = {key: f"<{key}>" for key in keys}
+    capabilities = {
+        (item.get("check") or {}).get("requires", "fetch")
+        for item in ITEMS if (item.get("check") or {}).get("script")
+    }
+    plan, skipped = checklist_runner.build_plan(
+        ITEMS, context, capabilities, "prose-count", has_gsc=True,
+        has_safe_browsing=True)
+    if skipped:
+        raise AssertionError(f"launch derivation unexpectedly skipped {sorted(skipped)}")
+    return len(plan)
+
+
 def population() -> dict:
-    """Every number in the ledger, derived here and nowhere else.
+    """Every registry population a sentence in this tree states, derived here and
+    nowhere else.
 
     Named rather than inlined so that a claim cites a population instead of restating
-    an arithmetic: `"llm"` is the queue's size wherever the queue's size is stated, and
-    one edit here moves every claim that reads it.
+    an arithmetic: `"source:llm"` is the queue's size wherever the queue's size is
+    stated, and one edit here moves every claim that reads it. `test_prose_counts`
+    reads its registry numbers from this function rather than counting them again —
+    the two modules had derived `launches` and `asserted` two different ways each.
     """
     return {
         "items": len(ITEMS),
@@ -107,12 +147,10 @@ def population() -> dict:
         "named_scripts": len({(item.get("check") or {}).get("script")
                               for item in ITEMS
                               if (item.get("check") or {}).get("script")}),
-        "launches": len({((item.get("check") or {}).get("script"),
-                          tuple((item.get("check") or {}).get("args") or []))
-                         for item in ITEMS if (item.get("check") or {}).get("script")}),
-        "asserted": sum(1 for item in ITEMS
-                        if item["source"] == "script"
-                        and (item.get("check") or {}).get("assert")),
+        "launches": launches(),
+        # The reachability audit's own population, because the sentence that states
+        # it is that audit's account of what it covers.
+        "asserted": len(audit_reachability.script_backed(DATA)),
         "crawl_readers": sum(
             1 for item in ITEMS
             if any("inventory_json" in str(arg)
@@ -120,8 +158,7 @@ def population() -> dict:
         "pagespeed": sum(1 for item in ITEMS
                          if (item.get("check") or {}).get("script") == "pagespeed.py"),
         "translated": translated(),
-        "llm": BY_SOURCE["llm"],
-        "manual": BY_SOURCE["manual"],
+        **{f"source:{source}": count for source, count in BY_SOURCE.items()},
         "twins": len(TWINS),
         "carriers": len(CARRIERS),
         **{f"lens:{lens}": count for lens, count in BY_LENS.items()},
@@ -172,16 +209,16 @@ LEDGER = [
      r"plus (\d+)\nchecks it does not cover", "added",
      "the added half, in the same sentence"),
     (os.path.join(SKILL_DIR, "SKILL.md"),
-     r"The LLM queue produces (\d+) verdicts", "llm",
+     r"The LLM queue produces (\d+) verdicts", "source:llm",
      "what the operator is told to expect back from the model"),
     (os.path.join(SKILL_DIR, "SKILL.md"),
-     r"# the model's (\d+), after the lens agents", "llm",
+     r"# the model's (\d+), after the lens agents", "source:llm",
      "the same number, in the comment above the command that merges them"),
     (os.path.join(SKILL_DIR, "SKILL.md"),
-     r"# the (\d+) a person has to look at", "manual",
+     r"# the (\d+) a person has to look at", "source:manual",
      "the size of the by-hand queue, above the command that merges it"),
     (os.path.join(SKILL_DIR, "SKILL.md"),
-     r"refused with its id: ([a-z]+(?:-[a-z]+)?) ticks would move", "manual",
+     r"refused with its id: ([a-z]+(?:-[a-z]+)?) ticks would move", "source:manual",
      "the same number, arguing why a tick needs a reason"),
     (os.path.join(SKILL_DIR, "SKILL.md"),
      r"^([A-Z][a-z]+) items are answered from live GSC data", "gsc_answered",
@@ -190,7 +227,7 @@ LEDGER = [
      r"deliberate: (\d+) category agents would", "categories",
      "why the queue splits by lens and not by category"),
     (os.path.join(SKILL_DIR, "scripts", "checklist_report.py"),
-     r"([A-Za-z]+(?:-[a-z]+)?) items rest on one language model's reading", "llm",
+     r"([A-Za-z]+(?:-[a-z]+)?) items rest on one language model's reading", "source:llm",
      "the sentence explaining why a second reading exists"),
     (os.path.join(SKILL_DIR, "scripts", "checklist_runner.py"),
      r"([A-Za-z]+) duplicate groups in this", "carriers",
@@ -199,7 +236,7 @@ LEDGER = [
      r"carry ([a-z]+) `scores_with` twins", "twins",
      "how many items defer their weight, in the same comment"),
     (agents("seo-llm-adversary.md"),
-     r"([A-Za-z]+(?:-[a-z]+)?) items in this audit rest on", "llm",
+     r"([A-Za-z]+(?:-[a-z]+)?) items in this audit rest on", "source:llm",
      "what the second reader is told it is reviewing"),
     (agents("seo-llm-market.md"),
      r"^([A-Za-z]+) items, each cheap to answer badly", "lens:market",
@@ -231,9 +268,6 @@ LEDGER = [
      "the denominator under the semantics auditor's false-alarm rate; the "
      "numerator is that heuristic's own output and no registry field gives it"),
     (os.path.join(ROOT, "README.md"),
-     r"Of (\d+) script-backed assertions", "asserted",
-     "the README's account of what the reachability audit covers"),
-    (os.path.join(ROOT, "README.md"),
      r"Every one of the (\d+) evidence scripts has tests", "named_scripts",
      "the claim that every checker is tested"),
     (os.path.join(ROOT, "README.md"),
@@ -248,6 +282,39 @@ LEDGER = [
 def read(path: str) -> str:
     with open(path, encoding="utf-8") as stream:
         return stream.read()
+
+
+# The sweeps' patterns, one definition each: the tests below read them, and so does
+# `bound_spans`, which must see exactly what the tests read.
+def readme_queue_row(lens: str) -> str:
+    return r"\| `LLM-QUEUE-%s\.md` \|[^|]+\| (\d+) \|" % lens
+
+
+def skill_queue_row(lens: str) -> str:
+    return r"\| `LLM-QUEUE-%s\.md` \|[^|]+\| (\d+) —" % lens
+
+
+AGENT_SIZE = r"^description: Judges the (\d+) checklist items"
+
+
+def bound_spans() -> list[tuple[str, int, str]]:
+    """Where every number this module reads sits: (file, offset, which claim).
+
+    `test_prose_counts` holds its own claims against this list, so one sentence cannot
+    be bound by both modules — two bindings of one number are two places to keep in
+    step, and they had drifted to two different derivations before anyone noticed."""
+    spans = []
+    for path, pattern, key, why in LEDGER:
+        for found in re.finditer(pattern, read(path), re.M):
+            spans.append((path, found.start(1), f"{key} — {why}"))
+    for lens in sorted(BY_LENS):
+        for path, pattern in ((README, readme_queue_row(lens)),
+                              (SKILL, skill_queue_row(lens)),
+                              (agents(f"seo-llm-{lens}.md"), AGENT_SIZE)):
+            if os.path.exists(path):
+                for found in re.finditer(pattern, read(path), re.M):
+                    spans.append((path, found.start(1), f"the {lens!r} lens's size"))
+    return spans
 
 
 class TheProtocolsCountsComeFromTheRegistry(unittest.TestCase):
@@ -284,11 +351,10 @@ class TheProtocolsCountsComeFromTheRegistry(unittest.TestCase):
         registry holding 19, 13 and 3. Swept from the registry's lenses rather than
         compared against SKILL.md, so the two copies cannot agree with each other and
         both be wrong."""
-        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as stream:
-            text = stream.read()
+        text = read(README)
         for lens, size in sorted(BY_LENS.items()):
             with self.subTest(lens=lens):
-                row = re.search(r"\| `LLM-QUEUE-%s\.md` \|[^|]+\| (\d+) \|" % lens, text)
+                row = re.search(readme_queue_row(lens), text)
                 self.assertIsNotNone(row, f"the README has no row for {lens!r}")
                 self.assertEqual(int(row.group(1)), size)
 
@@ -298,11 +364,11 @@ class TheProtocolsCountsComeFromTheRegistry(unittest.TestCase):
         The protocol's table is what an operator reads to decide how many agents to run
         and what each one is for. A lens with no row is work nobody is dispatched to do,
         and the check that would have caught it cannot be a list of four names."""
-        text = read(os.path.join(SKILL_DIR, "SKILL.md"))
+        text = read(SKILL)
         self.assertTrue(BY_LENS, "no lens carries an item; the registry shape moved")
         for lens, size in sorted(BY_LENS.items()):
             with self.subTest(lens=lens):
-                row = re.search(r"\| `LLM-QUEUE-%s\.md` \|[^|]+\| (\d+) —" % lens, text)
+                row = re.search(skill_queue_row(lens), text)
                 self.assertIsNotNone(row, f"no queue-table row for the {lens!r} lens")
                 self.assertEqual(int(row.group(1)), size)
         rows = re.findall(r"\| `LLM-QUEUE-([a-z]+)\.md` \|", text)
@@ -317,8 +383,7 @@ class TheProtocolsCountsComeFromTheRegistry(unittest.TestCase):
                 path = agents(f"seo-llm-{lens}.md")
                 self.assertTrue(os.path.exists(path),
                                 f"the {lens!r} lens has items and no agent file")
-                stated = re.search(r"^description: Judges the (\d+) checklist items",
-                                   read(path), re.M)
+                stated = re.search(AGENT_SIZE, read(path), re.M)
                 self.assertIsNotNone(
                     stated, f"{os.path.basename(path)} does not state how many items "
                             f"the {lens!r} lens holds")
@@ -333,7 +398,7 @@ class TheProtocolsCountsComeFromTheRegistry(unittest.TestCase):
         counts = population()
         self.assertEqual(sum(BY_SOURCE.values()), counts["items"])
         self.assertEqual(sorted(BY_SOURCE), ["gsc", "llm", "manual", "script"])
-        self.assertEqual(sum(BY_LENS.values()), counts["llm"],
+        self.assertEqual(sum(BY_LENS.values()), counts["source:llm"],
                          "an llm item carries no lens, so the lens rows no longer "
                          "account for the queue the protocol promises")
 

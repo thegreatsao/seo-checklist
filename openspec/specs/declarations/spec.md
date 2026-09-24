@@ -1065,8 +1065,9 @@ deferral was a literal beside the thing it waited for. By the time it was picked
 "tree says" column was wrong too — 0.106.0 withdrew GO-137 from both fixtures, so 123 had
 become 122 and 118 had become 117. `tests/test_prose_counts.py` now derives both from the
 functions the oracle prints them with (`coverage()` and the manifest), and binds the same
-sentences in `README.md`, `plugin.json`, `pyproject.toml`, `SKILL.md`, `KNOWN-ISSUES.md`'s
-header and `ROADMAP.md`. A sentence it binds that is reworded or deleted reddens too: each
+sentences in `README.md`, `plugin.json`, `pyproject.toml`, `KNOWN-ISSUES.md`'s header and
+`ROADMAP.md` (it bound two `SKILL.md` counts as well, until they were found bound twice and
+left to `tests/test_protocol_counts.py` alone). A sentence it binds that is reworded or deleted reddens too: each
 claim asserts how many times it matches before it asserts what it says.
 
 #### A.7 — this appendix spent the blindness it describes
