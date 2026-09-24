@@ -403,23 +403,17 @@ jobs:
           python - <<'PY'
           import json
           d = json.load(open("profile.json"))
-          # This is the refusal exclusion, asserted rather than assumed.
+          # The good fixture has no real orphans, so the whole count is zero.
           #
-          # /private/secret.html is listed in the sitemap and disallowed in
-          # robots.txt, so the crawl refuses it and it cannot acquire inbound links.
-          # `link_profile` must exclude refusals from its orphan arithmetic or our
-          # own politeness becomes the site's defect for CI-008 and AR-162.
-          #
-          # The good fixture has no real orphans, so the excluded URL must not be
-          # listed and the whole orphan count remains zero.
-          blocked = "http://127.0.0.1:8000/private/secret.html"
-          # Not being an orphan alone proves nothing: the graph holds only pages with
-          # HTML, so a refused URL could never be one. That the refusal was *recorded*
-          # is what shows the crawl met it and set it aside rather than never seeing it.
-          assert blocked in d["robots_refused"], d["robots_refused"]
-          assert blocked not in d["orphan_pages"]["urls"], d["orphan_pages"]
+          # Until 0.123.0 this step also asserted that /private/secret.html, listed in
+          # the good sitemap and disallowed in robots.txt, was recorded as refused and
+          # not counted as an orphan. The URL left the sitemap so GO-136 and GO-138 can
+          # pass here, and the refusal is held in the suite by
+          # test_evidence_scripts.LinkProfile.test_a_robots_refusal_is_recorded_and_never_an_orphan,
+          # which also reads the server's log to show the page was never requested.
           assert d["orphan_pages"]["count"] == 0, d["orphan_pages"]
-          print("link-profile orphan and robots arithmetic OK")
+          assert d["robots_refused"] == [], d["robots_refused"]
+          print("link-profile orphan arithmetic OK")
           PY
 
       # robots.txt governs what the tool discovers, never what it was handed. Both

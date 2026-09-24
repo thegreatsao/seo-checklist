@@ -13,22 +13,25 @@ this directory are what make that reproducible.
 Serve it and audit it:
 
 ```bash
-python3 -m http.server 8000 --directory tests/fixtures/site &
+python3 -m http.server 8000 --directory tests/fixtures/good &
 python3 skills/seo-checklist/scripts/checklist_runner.py http://127.0.0.1:8000/ \
     --allow-private --sample 3 --max-rps 50 --no-history --no-prompt
 ```
 
-The site is deliberately **not** clean. It is a fixture for the machinery, not a
-model of good SEO, and a page that passes everything would exercise none of the
-failure paths:
+This is the half of the pair that has to be able to pass, and the failure paths live
+in `../broken/`. What it still fails, it fails for a reason written down in one
+place: `ACCUSED_ON_PURPOSE` in `tests/test_contract.py`, which refuses a failure it
+does not list and a listed reason that no longer fails. Most are what `http.server`
+over plain HTTP cannot do — HSTS, security headers, a secure page, a redirect from
+`http://` — and the rest are a breadcrumb trail it deliberately lacks and `sameAs`
+links that would take the suite online.
 
-| On purpose | So that |
-|---|---|
-| `/orphan.html` is in `sitemap.xml` and linked from nowhere | the orphan check has a real orphan |
-| `/private/secret.html` is in the sitemap **and** disallowed in `robots.txt` | the sitemap/robots conflict is reported as itself, and our own politeness is not counted as the site's defect |
-| `/blog/second-post.html` is linked everywhere and absent from the sitemap | the reverse of an orphan, which the orphan check must not report |
-| the two blog posts share a meta description | `duplicate_content.py` has a duplicate |
-| `/about.html` has a one-word title | a sampled page disagrees with the entry page, so aggregation is exercised rather than assumed |
+The table of planted defects that used to stand here described a site that had
+moved: the orphan and the shared description went to `../broken/` long ago, the
+second blog post is in the sitemap, and the about page's title is a sentence. Its
+last true row went at 0.123.0 — `/private/secret.html` is still disallowed in
+`robots.txt` but no longer listed in `sitemap.xml`, so the sitemap items can pass
+here. The refusal it exercised is a unit test now.
 
 One planted defect was removed in 0.9.0: `/blog/first-post.html` used to link to
 `/gone.html` so `broken_links.py` had a 404 to find. That predates the good/broken

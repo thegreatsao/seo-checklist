@@ -212,7 +212,7 @@ CLAIMS = (
 
 
 NEVER_PASS = (r"The (?P<n>\w+) that were never seen passing are "
-              r"(?P<body>.+?)invalid URL\.")
+              r"(?P<body>.+?)with no boundary\.")
 
 
 def path_of(relative: str) -> str:

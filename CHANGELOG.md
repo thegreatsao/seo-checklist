@@ -10,6 +10,45 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.123.0 — the good sitemap is clean, and two sitemap items can pass
+
+Registry version: unchanged at `08c2492fb163`. No rule moves; two declared verdicts do,
+because the fixture does.
+
+**The good fixture's sitemap listed `/private/secret.html`, which its own robots.txt
+disallows.** It was there so the crawl's refusal of a disallowed page, and the server-log
+audit's subtraction of it from *never crawled*, had a served case. Since 0.110.0 it also
+made GO-136 *Provide Clean XML Sitemaps* WARN and GO-138 *Remove Invalid URLs from
+Sitemaps* FAIL on the half of the pair that has to be able to pass, and GO-138 sat in the
+census's *never seen passing* row. The URL leaves the sitemap; on the good origins
+GO-136 goes WARN → PASS and GO-138 FAIL → PASS, recorded in the manifest's triage log as
+`fixture-was-wrong` with the digests of both origins built from that tree. The census's
+*never PASS* row falls 3 → 2, and both items leave `SAME_ON_BOTH`: they tell the good
+site from the broken one again, which is what a contract test is for.
+
+What the URL exercised moves into the suite rather than disappearing with it:
+
+* **The log audit's subtraction had no other reader.** Removing
+  `- facts["robots_refused"]` from `server_log_audit.py`'s never-crawled set passed every
+  test in `test_evidence_scripts`; only the served good log caught it.
+  `test_a_sitemap_url_robots_forbids_is_not_never_crawled` now reddens on that mutation.
+* **The crawl's refusal** was asserted in `ci.yml`'s live-path step, where a local run
+  never saw it. `LinkProfile.test_a_robots_refusal_is_recorded_and_never_an_orphan` serves
+  its own tree, asserts the refusal is recorded, that the server never received the
+  request, and that a real orphan beside it still counts; emptying the recorded refusals
+  reddens it. The step now asserts the good site refuses nothing. Measured while moving
+  it, and said in the test: the refused URL never enters the link graph, so
+  `analyze_link_profile`'s `url in refused` exclusion is not reached from a crawl — the
+  step had not reached it either.
+
+`tests/fixtures/good/README.md`'s table of planted defects is gone: every row but the
+one this release removes described a site that had moved — the orphan and the shared
+description live in `broken/`, the second post is in the sitemap, the about page's title
+is a sentence — and its serve command named `tests/fixtures/site`. It now points at
+`ACCUSED_ON_PURPOSE`, which a test holds. `ROADMAP.md` no longer says nothing would notice
+REG-6's sixth item: the readings have held every rule against its title since 0.114.0.
+Suite 1865 → 1867.
+
 ## 0.122.0 — the branded query carries the brand's name
 
 Registry version: **`3b6928c0dde9` → `08c2492fb163`.** KW-070 and GO-139 change what they

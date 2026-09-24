@@ -1231,7 +1231,7 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
                     rows.append(row)
         return self.write("\n".join(rows) + "\n", ".log")
 
-    def inventory(self, paths, sitemap=None):
+    def inventory(self, paths, sitemap=None, robots_blocked=None):
         """An inventory `site_crawl.load` accepts, keyed off its own constant."""
         from site_crawl import INVENTORY_VERSION
         return self.write(json.dumps({
@@ -1245,10 +1245,26 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
                                           "redirect_chain": []}
                       for p in paths},
             "sitemap": {"urls": [f"{self.SITE}{p}" for p in (sitemap or paths)]},
-            "robots_blocked": {},
+            "robots_blocked": {f"{self.SITE}{p}": why
+                               for p, why in (robots_blocked or {}).items()},
             "fetch_error": None,
             "summary": {"pages_fetched": len(paths), "truncated": False},
         }), ".json")
+
+    def test_a_sitemap_url_robots_forbids_is_not_never_crawled(self):
+        """A crawler obeying `Disallow` never asks for the page, so its absence from
+        the log is the rule working, not coverage missing — and counting it would make
+        our own politeness the site's defect. Held until 0.123.0 only by the good
+        fixture's sitemap listing `/private/secret.html`; a mutation removing the
+        subtraction passed every test in this module. A listed page robots allows and
+        nobody requested still counts."""
+        data = self.audit(
+            self.log(days=14, per_day=30),
+            self.inventory(self.PATHS,
+                           sitemap=self.PATHS + ("/private/secret.html", "/never.html"),
+                           robots_blocked={"/private/secret.html": "disallowed"}))
+        self.assertEqual([row["path"] for row in data["never_crawled"]], ["/never.html"])
+        self.assertEqual(data["summary"]["never_crawled_count"], 1)
 
     def audit(self, log_path, inventory_path):
         import server_log_audit as sla
@@ -5780,6 +5796,47 @@ class LinkProfile(unittest.TestCase):
         self.assertEqual(good["orphan_pages"]["count"], 0)
         self.assertEqual(verdict("CI-008", good), PASS)
         self.assertEqual(verdict("AR-162", good), PASS)
+
+    def test_a_robots_refusal_is_recorded_and_never_an_orphan(self):
+        """Moved out of ci.yml's live-path step at 0.123.0, when the good fixture's
+        sitemap stopped listing a disallowed page so GO-136 and GO-138 could pass on
+        it. A sitemap page robots.txt forbids is met, refused and recorded, and is not
+        an orphan — our politeness is not the site's defect — while a real orphan
+        beside it still counts. The server's own log shows the refused page was never
+        requested, so "recorded" cannot mean "fetched and dropped".
+
+        What this does not hold, and the step it replaces did not either: the refused
+        URL never enters the graph, which carries only pages with HTML, so the
+        `url in refused` exclusion in `analyze_link_profile` is not reached from a
+        crawl. Probed: removing it leaves this test green; emptying the recorded
+        refusals reddens it."""
+        sitemap = ('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                   + "".join(f"<url><loc>PLACEHOLDER{path}</loc></url>"
+                             for path in ("/", "/a.html", "/private/secret.html",
+                                          "/orphan.html"))
+                   + "</urlset>")
+        routes = {
+            "/": '<html><body><a href="/a.html">About the bakery</a></body></html>',
+            "/a.html": '<html><body><a href="/">Back to the bakery</a></body></html>',
+            "/orphan.html": "<html><body>Nothing links here</body></html>",
+            "/private/secret.html": "<html><body>Private</body></html>",
+            "/robots.txt": (200, "User-agent: *\nDisallow: /private/\n"
+                                 "Sitemap: PLACEHOLDER/sitemap.xml\n"),
+            "/sitemap.xml": (200, {"Content-Type": "application/xml"}, sitemap),
+        }
+        with harness.served(routes).rewrite("PLACEHOLDER") as site:
+            proc = harness.spawn(
+                [sys.executable, os.path.join(SCRIPTS, "link_profile.py"), site.url,
+                 "--json"], env=script_env(), timeout=120)
+            requested = site.paths()
+            blocked = site.base + "/private/secret.html"
+            orphan = site.base + "/orphan.html"
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        profile = json.loads(proc.stdout)
+        self.assertIn(blocked, profile["robots_refused"])
+        self.assertNotIn("/private/secret.html", requested)
+        self.assertEqual(profile["orphan_pages"]["urls"], [orphan])
+        self.assertEqual(profile["orphan_pages"]["count"], 1)
 
     def test_sitemap_pages_nothing_links_to_are_orphans(self):
         bad = out("profile_bad")

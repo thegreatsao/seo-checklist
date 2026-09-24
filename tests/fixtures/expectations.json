@@ -25,9 +25,9 @@
     ]
   },
   "fixture_digest": {
-    "good": "1b811e0d3859",
+    "good": "3af512b0bc95",
     "broken": "031366471266",
-    "good_tls": "a6ab3c1eb2d0",
+    "good_tls": "48877c02c219",
     "broken_tls": "4646a85b7d15"
   },
   "triage": [
@@ -210,6 +210,42 @@
       "to": "4646a85b7d15",
       "decided": "new-material",
       "why": "TE-175 reads mixed content from 0.121.0, and neither tree requested anything over plain HTTP — the broken entry's http://insecure.invalid link is an anchor, not a load. The broken entry page gains an iframe from http://insecure.invalid/frame.html, blockable mixed content on broken_tls; `.invalid` never resolves and nothing in the audit requests a frame. No declared verdict moves."
+    },
+    {
+      "kind": "expect",
+      "origin": "good",
+      "item": "GO-136",
+      "from": "WARN",
+      "to": "PASS",
+      "decided": "fixture-was-wrong",
+      "why": "The good sitemap listed /private/secret.html, which its robots.txt disallows, from the fixture's first days, so that the crawl's refusal and the server-log audit's subtraction of it had a served case. Since 0.110.0 that made GO-136 WARN and GO-138 FAIL on the half of the pair that has to be able to pass, and both items were never seen passing on a served site. The URL leaves the sitemap; the refusal and the subtraction are unit tests now (test_evidence_scripts.LinkProfile.test_a_robots_refusal_is_recorded_and_never_an_orphan and test_a_sitemap_url_robots_forbids_is_not_never_crawled, the second reddening on a mutation nothing else caught). The README's table of planted defects, stale in every other row, is rewritten."
+    },
+    {
+      "kind": "expect",
+      "origin": "good",
+      "item": "GO-138",
+      "from": "FAIL",
+      "to": "PASS",
+      "decided": "fixture-was-wrong",
+      "why": "The good sitemap listed /private/secret.html, which its robots.txt disallows, from the fixture's first days, so that the crawl's refusal and the server-log audit's subtraction of it had a served case. Since 0.110.0 that made GO-136 WARN and GO-138 FAIL on the half of the pair that has to be able to pass, and both items were never seen passing on a served site. The URL leaves the sitemap; the refusal and the subtraction are unit tests now (test_evidence_scripts.LinkProfile.test_a_robots_refusal_is_recorded_and_never_an_orphan and test_a_sitemap_url_robots_forbids_is_not_never_crawled, the second reddening on a mutation nothing else caught). The README's table of planted defects, stale in every other row, is rewritten."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good",
+      "item": null,
+      "from": "1b811e0d3859",
+      "to": "3af512b0bc95",
+      "decided": "fixture-was-wrong",
+      "why": "The good sitemap listed /private/secret.html, which its robots.txt disallows, from the fixture's first days, so that the crawl's refusal and the server-log audit's subtraction of it had a served case. Since 0.110.0 that made GO-136 WARN and GO-138 FAIL on the half of the pair that has to be able to pass, and both items were never seen passing on a served site. The URL leaves the sitemap; the refusal and the subtraction are unit tests now (test_evidence_scripts.LinkProfile.test_a_robots_refusal_is_recorded_and_never_an_orphan and test_a_sitemap_url_robots_forbids_is_not_never_crawled, the second reddening on a mutation nothing else caught). The README's table of planted defects, stale in every other row, is rewritten."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good_tls",
+      "item": null,
+      "from": "a6ab3c1eb2d0",
+      "to": "48877c02c219",
+      "decided": "fixture-was-wrong",
+      "why": "The good sitemap listed /private/secret.html, which its robots.txt disallows, from the fixture's first days, so that the crawl's refusal and the server-log audit's subtraction of it had a served case. Since 0.110.0 that made GO-136 WARN and GO-138 FAIL on the half of the pair that has to be able to pass, and both items were never seen passing on a served site. The URL leaves the sitemap; the refusal and the subtraction are unit tests now (test_evidence_scripts.LinkProfile.test_a_robots_refusal_is_recorded_and_never_an_orphan and test_a_sitemap_url_robots_forbids_is_not_never_crawled, the second reddening on a mutation nothing else caught). The README's table of planted defects, stale in every other row, is rewritten."
     }
   ],
   "fixtures": {
@@ -260,9 +296,9 @@
         "why": "the sole GA4 measurement ID is configured once"
       },
       "GO-138": {
-        "expect": "FAIL",
+        "expect": "PASS",
         "title": "Remove Invalid URLs from Sitemaps",
-        "why": "every listed URL answers 200 and none redirects or carries noindex, but /private/secret.html is disallowed by robots.txt, which Search Console reports as Submitted URL blocked by robots.txt; it is the one invalid URL"
+        "why": "every listed URL answers 200, none redirects, carries noindex or is disallowed by robots.txt; the one that was, /private/secret.html, left the sitemap at 0.123.0"
       },
       "LO-200": {
         "expect": "PASS",
@@ -575,9 +611,9 @@
         "why": "declared with the repair that makes it true, in the same commit: /about.html and /privacy.html now carry the same GA4 snippet and the single measurement ID the entry page configures, so the sample no longer finds a page with no analytics. Flipped from FAIL, which described the tree before this commit"
       },
       "GO-136": {
-        "expect": "WARN",
+        "expect": "PASS",
         "title": "Provide Clean XML Sitemaps",
-        "why": "the sitemap is well-formed, lists only URLs this origin serves, every one of which answers 200, and each lastmod is a real date; it also lists /private/secret.html, which robots.txt disallows for every agent, so it carries one medium issue, while everything else about the sitemap is clean"
+        "why": "the sitemap is well-formed, lists only URLs this origin serves, every one of which answers 200, each lastmod is a real date, and none is disallowed by robots.txt; /private/secret.html is disallowed and, since 0.123.0, no longer listed"
       },
       "MB-102": {
         "expect": "N/A",

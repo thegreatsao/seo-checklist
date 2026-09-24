@@ -46,8 +46,11 @@ it was last written:
 The `partial` column is where the work is, and a count does not say how much of each row
 is held — read the document. The largest single debt is `registry` REG-6: five items
 measured something other than their titles, all five were repaired by 0.108.0, and every
-one was found by a person reading a rule against its title. Nothing in the tree would
-notice the sixth.
+one was found by a person reading a rule against its title. Since 0.114.0
+`tools/audit_item_readings.py` holds a written reading of every rule-carrying item
+against its title and rule, and reddens when either changes until the pair is re-read;
+since 0.122.0 no reading is owed. Whether a reading is *true* is still a person's
+judgement, which is why REG-6 stays `partial`.
 
 ### Clause 1 — a verdict, or a stated reason there is none
 
@@ -61,14 +64,13 @@ can serve:
 | | count | what it means |
 |---|---|---|
 | answered somewhere, never FAIL | 20 | a rule that cannot fail, or a case the corpus does not have |
-| answered somewhere, never PASS | 3 | the mirror |
+| answered somewhere, never PASS | 2 | the mirror |
 | never answered anywhere | 35 | mostly honest — Search Console, PageSpeed and Safe Browsing cannot answer offline |
 
-The three that were never seen passing are `AR-158`, whose visible-breadcrumb half no
-fixture carries; `GEO-006`, whose script reads the JSON-LD graph with no boundary; and,
-since 0.110.0, `GO-138`, because the good fixture's sitemap lists a page its robots.txt
-forbids and that is now an invalid URL. The passing path of `GO-138` is held by unit
-tests; restoring a served one is a fixture decision.
+The two that were never seen passing are `AR-158`, whose visible-breadcrumb half no
+fixture carries, and `GEO-006`, whose script reads the JSON-LD graph with no boundary.
+`GO-138` left this row at 0.123.0: the good fixture's sitemap had listed a page its
+robots.txt forbids, and it no longer does.
 
 ### Clause 2 — every number measured or declared unmeasured
 
@@ -110,8 +112,9 @@ modules read; no number is bound by both. It is narrower than the ask it answers
 
 1. **`inherited` 77 → 0**, by calibration or by an honest relabel to `convention` with
    the judgement written out.
-2. **REG-6's reader** — something that would have noticed any of the five items that
-   measured the wrong thing. Until it exists, `partial` there is the honest word.
+2. **REG-6's second reader** — the readings exist and are held against the registry;
+   what would close the row is a check of whether each reading is true that is not the
+   word of the person who wrote it.
 3. **The 23 `partial` requirements and DEC-1**, each either held or narrowed to what is
    held.
 4. **The 143 unclaimed assertions**, reduced by extending the detectors

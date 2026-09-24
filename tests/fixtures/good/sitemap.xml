@@ -21,19 +21,12 @@
     <loc>http://127.0.0.1:8000/blog/second-post.html</loc>
     <lastmod>2026-07-11</lastmod>
   </url>
-  <!-- Disallowed in robots.txt, and deliberately still listed here. The crawl meets it
-       through this sitemap and refuses it, and the live-path step in ci.yml asserts the
-       refusal is recorded and that link_profile does not count it as an orphan (CI-008,
-       AR-162) — our own politeness must not become the site's defect. It is also a real
-       sitemap defect: since 0.110.0 it makes GO-136 WARN and GO-138 FAIL on this site,
-       declared in expectations.json. -->
-  <url>
-    <loc>http://127.0.0.1:8000/private/secret.html</loc>
-    <lastmod>2026-05-30</lastmod>
-  </url>
 </urlset>
 <!--
-  One entry here is a defect on purpose: /private/secret.html, above. Everything else
-  is clean. The orphan the orphan checks need lives in ../broken/, because a page
-  nothing links to would fail CI-008 and AR-162 here.
+  Clean on purpose, so GO-136 and GO-138 can pass on this site. Until 0.123.0 it also
+  listed /private/secret.html, which robots.txt disallows, so that the crawl's
+  refusal and the log audit's subtraction had a served case; both are unit tests now
+  (test_evidence_scripts: LinkProfile and ALogThatCouldOnlyAnswerHalfTheQuestion).
+  The orphan the orphan checks need lives in ../broken/, because a page nothing
+  links to would fail CI-008 and AR-162 here.
 -->

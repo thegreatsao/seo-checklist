@@ -63,12 +63,16 @@ on purpose rather than incidentally:
 
 - **good** — every sitemap URL fetched, then revalidated with `304`s. Nothing
   wasted, no redirects, no 5xx. It produces zero issues, so CI-018 passes.
-  `/private/secret.html` is in the sitemap and disallowed in this fixture's
-  `robots.txt`, and it is **deliberately absent from the log**: a crawler obeying
-  the rule never asks for it, and the audit must not count our own `Disallow` as a
-  page nobody crawled. That subtraction is the one that shipped broken once
-already, in the former sitemap-orphan reader before 0.4.0, and was written wrong a
-  second time here before a real inventory caught it.
+  `/private/secret.html` is disallowed in this fixture's `robots.txt` and
+  **deliberately absent from the log**: a crawler obeying the rule never asks for
+  it. Until 0.123.0 it was also listed in the sitemap, which made this log the
+  served case for the subtraction that keeps our own `Disallow` from counting as a
+  page nobody crawled — the one that shipped broken once already, in the former
+  sitemap-orphan reader before 0.4.0, and was written wrong a second time here
+  before a real inventory caught it. It left the sitemap so GO-136 and GO-138 can
+  pass on the good site; the subtraction is held by
+  `test_a_sitemap_url_robots_forbids_is_not_never_crawled`, which reddens when it is
+  removed (nothing but this log did before).
 - **broken** — a crawl budget going nowhere: a deleted section still being
   requested, a permanent redirect, a 5xx served to Googlebot, and a `?sort=`
   parameter multiplying one page into dozens. Two `high` issues, so CI-018 fails.

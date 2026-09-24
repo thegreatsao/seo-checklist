@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.122.0 — see [CHANGELOG.md](CHANGELOG.md). **Two verdicts can move on your site if Search Console is connected.** *Own Your Branded Query* and *Monitor & Improve Brand SERPs* now judge the query carrying your business's name — the one your homepage publishes, or the one you pass with `--brand` — instead of whichever query had the most clicks. Before that, `0.121.0` made *Secure Pages & Eliminate Errors* read what your page loads over plain `http://`.
+Version 0.123.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing moves on your site: this release cleans the test fixture so two sitemap items can pass on it. The one before, `0.122.0`, moved two verdicts if Search Console is connected: *Own Your Branded Query* and *Monitor & Improve Brand SERPs* now judge the query carrying your business's name — the one your homepage publishes, or the one you pass with `--brand` — instead of whichever query had the most clicks.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
