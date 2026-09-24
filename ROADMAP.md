@@ -60,9 +60,9 @@ can serve:
 
 | | count | what it means |
 |---|---|---|
-| answered somewhere, never FAIL | 21 | a rule that cannot fail, or a case the corpus does not have |
+| answered somewhere, never FAIL | 20 | a rule that cannot fail, or a case the corpus does not have |
 | answered somewhere, never PASS | 3 | the mirror |
-| never answered anywhere | 34 | mostly honest — Search Console, PageSpeed and Safe Browsing cannot answer offline |
+| never answered anywhere | 35 | mostly honest — Search Console, PageSpeed and Safe Browsing cannot answer offline |
 
 The three that were never seen passing are `AR-158`, whose visible-breadcrumb half no
 fixture carries; `GEO-006`, whose script reads the JSON-LD graph with no boundary; and,
@@ -78,14 +78,14 @@ tests; restoring a served one is a fixture decision.
 
 | basis | count |
 |---|---|
-| standard | 16 |
+| standard | 18 |
 | measured | 11 |
 | convention | 56 |
 | inherited | 77 |
 | no basis | 0 |
-| **numbers a verdict depends on** | **160** |
+| **numbers a verdict depends on** | **162** |
 
-**`inherited` at 77 of 160 is the largest single gap between this tree and 1.0,** and it
+**`inherited` at 77 of 162 is the largest single gap between this tree and 1.0,** and it
 has barely moved: it was 75 of 144 at 0.87.1. Nothing is unnamed — that took a gate — but half
 the numbers a verdict rests on are still numbers nobody here decided. The calibrations so
 far show what closing one costs: each took a corpus, a method and a stated limitation.
@@ -114,7 +114,7 @@ derived and compared. It is narrower than the ask it answers. A sentence of the 
    held.
 4. **The 143 unclaimed assertions**, reduced by extending the detectors
    `audit_reachability.py` already has rather than by asserting reachability in prose.
-5. **The census's 21 and 34**, each turned into an answer or a named structural reason.
+5. **The census's 20 and 35**, each turned into an answer or a named structural reason.
 6. **Clause 3 beyond counts** — every checkable sentence in `SKILL.md`, `README.md` and
    this file tied to observable behaviour, the way counts now are.
 

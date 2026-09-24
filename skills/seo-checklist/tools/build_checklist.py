@@ -1059,33 +1059,29 @@ item(93, "critical", S, "parse_html.py", HTMLARG,
 item(94, "high", S, "rendered_audit.py", RENDERED,
      {"path": "mobile_overlays_covering_content", "eq": 0},
      "Remove intrusive interstitials on mobile")
-item(95, "medium", S, "image_weight_audit.py", ["{url}", "--fetch-images"],
-     # `large_image_count` is the same measurement the pattern was reaching for —
-     # images whose transfer size exceeds LARGE_IMAGE_BYTES — taken from the count
-     # instead of from the sentence announcing it. The key is absent when no
-     # transfer size was learned, so a page nobody fetched is NO_DATA rather than
-     # light.
-     #
-     # Which is why this item moved onto `--fetch-images`, MD-185's invocation. On
-     # `PAGE` no image is ever requested, `content_length` is None on every row, and
-     # the item was NO_DATA on every live run — a question about transfer weight
-     # asked of a run that transferred nothing. It costs no extra launch and no extra
-     # request: MD-185 already fetches these images, and the runner groups by
-     # (script, args). The old pattern hid this by answering PASS instead.
-     {"path": "large_image_count", "lte": 5},
-     "Reduce mobile page weight")
+# Until 0.119.0 this counted images over `LARGE_IMAGE_BYTES` and allowed five, so a
+# page of megabytes of script passed and the page was never totalled. It now reads
+# Lighthouse's `total-byte-weight` from the mobile PageSpeed run the Core Web Vitals
+# items already make, so it costs no extra call, and needs the API.
+item(95, "medium", S, "pagespeed.py", ["{url}", "--strategy", "mobile"],
+     {"path": "page_weight",
+      "value_map": {"light": "pass", "heavy": "fail", "enormous": "fail"}},
+     "Reduce mobile page weight",
+     warn={"path": "page_weight",
+           "value_map": {"light": "pass", "heavy": "pass", "enormous": "fail"}})
 # 0.108.0: per image, on Anton's decision of 23 September 2026. `responsive_count
 # >= 1` passed a page with one responsive image among a hundred; the defect is an
 # image too wide for a phone sent without a srcset, and a 64-px icon is not one.
 # `LARGE_IMAGE_WIDTH_PX` draws the line, read from each image's own header, which is
-# why these moved onto `--fetch-images` beside MB-095 and MD-185 (one launch, one
+# why these share `--fetch-images` with MD-185 (one launch, one
 # set of requests). A width nobody learned sets `truncated` and withholds a PASS.
 item(96, "medium", S, "image_weight_audit.py", ["{url}", "--fetch-images"],
      {"path": "large_without_srcset_count", "eq": 0},
      "Use srcset/sizes for responsive images")
 # Both halves of the title, per image: a large image with no WebP/AVIF offer, or any
 # image over `LARGE_IMAGE_BYTES` — the format half and the compression half. The
-# second is MB-095's measurement too; MB-095 tolerates five, this one asks for none.
+# over-`LARGE_IMAGE_BYTES` half is MB-097's and asks for none; MB-095 reads the
+# whole page's bytes. MB-097 shares `--fetch-images` with MD-185.
 item(97, "medium", S, "image_weight_audit.py", ["{url}", "--fetch-images"],
      {"path": "legacy_or_heavy_count", "eq": 0},
      "Move to WebP/AVIF and compress images")
@@ -1097,8 +1093,9 @@ item(98, "medium", S, "image_weight_audit.py", PAGE,
      #
      # The half kept is the one this item is titled for. `sizes` is what tells the
      # browser which `srcset` candidate to take; without it the browser guesses from
-     # its own default and a phone can be served the desktop file. The other half is
-     # MB-095's question and is still asked there, once.
+     # its own default and a phone can be served the desktop file. The other half,
+     # images over `LARGE_IMAGE_BYTES`, is MB-097's question and is asked there once;
+     # MB-095 reads the whole page's bytes.
      #
      # `eq: 0`, not the old rule's `lte: 10`. That ten counted matching *issue
      # messages*; carried over to a count of images it would need eleven of them

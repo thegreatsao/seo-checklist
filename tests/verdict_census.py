@@ -2,7 +2,7 @@
 """What every item actually reports, across every site we can serve.
 
 Not a test and not an oracle. The fixture oracle answers "is this verdict right",
-one declaration at a time, and it has declared 122 of 217 items. This answers a
+one declaration at a time, and it has declared 121 of 217 items. This answers a
 different and cheaper question — **what range of answers does this item have at all**
 — and it answers it for all 217 at once.
 

@@ -259,7 +259,7 @@ subject the script cannot reach, *at least one*, a compound title, a quality wor
 each be answered in the reading. `TheShapesWouldHaveExposedEveryItemRepairedByHand` holds
 that they fire on GO-137, BL-083, MB-096, MB-097, MD-189, CI-016 and MD-186 as those stood
 at `v0.104.0`, which `tools/audit_item_semantics.py`'s word overlap passed. It stays
-`partial` for two reasons: five readings are `owed` (A.10), and whether a reading is
+`partial` for two reasons: four readings are `owed` (A.10), and whether a reading is
 true is still a person's judgement — the reader guarantees that nothing changes under one
 unnoticed, not that it was right.
 
@@ -1040,8 +1040,12 @@ the `http://` address gave, asked of the audited page and up to three same-site 
 links to: a 301/308 to https passes, a 302/303/307 or nothing listening warns, a page, an
 error, a loop or an http-only chain fails — where it read `https`, the scheme the audited
 URL ended on, and never asked `http://`. It carries `measures` for the rest of the site.
-Five owed remain: MB-095, MS-030, TE-175, and KW-070 and GO-139 on the branded-query
-decision.
+
+*Repaired at 0.119.0 (`01b63b6dfafd`):* MB-095 reads `page_weight` — Lighthouse's
+`total-byte-weight` from the mobile PageSpeed run, banded at the 1,600 KiB target and
+5,000 KiB flag its documentation publishes — where it counted images over 250 KB and
+allowed five. Four owed remain: MS-030, TE-175, and KW-070 and GO-139 on the
+branded-query decision.
 
 *Carrying `measures` since 0.113.0* — one sentence, printed under the title in every
 report and translated, saying what the rule checks and naming what it does not: CI-001, TE-167, IN-121, IN-128, SE-119, CN-038,

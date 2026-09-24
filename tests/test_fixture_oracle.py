@@ -71,7 +71,9 @@ HTTP_DECLARED_IDS = {
     # `--no-autocomplete` and
     # this module a keyword to pass. Its declaration was written before the first run
     # that could answer it, as every declaration here is.
-    "AR-152", "CI-013", "CN-036", "GEO-002", "GEO-003", "KW-076", "MB-095",
+    # MB-095 left at 0.119.0: it reads Lighthouse's page weight from the PageSpeed
+    # API, which no offline fixture run can reach.
+    "AR-152", "CI-013", "CN-036", "GEO-002", "GEO-003", "KW-076",
     "MB-098", "MB-100", "MB-105", "MD-184", "MD-189", "TE-169", "TE-177",
     # Stage 2e. SE-118 is declared on all four origins and means different things on
     # each pair: the HTTP origins have no certificate to judge, and the HTTPS pair is

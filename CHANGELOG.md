@@ -10,6 +10,30 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.119.0 — the page's weight, not its heavy images
+
+Registry version: **`835d527f8f95` → `01b63b6dfafd`.** MB-095 changes what it asserts and
+where it gets it, so it can move on a real site. Its two fixture declarations are
+withdrawn, recorded in the manifest's triage log. Suite 1831 → 1837.
+
+**MB-095 *Keep Mobile Page Weight Light* counted images over 250 KB and allowed five.** A
+page carrying megabytes of JavaScript and small images passed, and so did five 240 KB
+photographs; the page was never totalled. It now reads `page_weight`, from the
+`total-byte-weight` audit of the mobile Lighthouse run PageSpeed Insights already makes for
+the Core Web Vitals items — every resource the page requested, including the ones its
+scripts added, at no extra call. The bands are Lighthouse's own documentation of that
+audit: below 1,600 KiB, its target, passes; up to 5,000 KiB, where it flags a payload,
+warns; above fails. `total_byte_weight` carries the bytes.
+
+The item now needs the PageSpeed API, like the other Lighthouse items: on an offline run it
+is undecided rather than answered from image sizes. No fixture run can reach it, so its
+`good` and `broken` declarations are withdrawn — the fixtures never told the two apart
+anyway, since neither tree ships an image over 250 KB. `large_image_count` stays in
+`image_weight_audit.py`; MB-097 asks for no image over that line.
+
+Four readings stay owed: MS-030, TE-175, and KW-070 and GO-139 on the branded-query
+decision.
+
 ## 0.118.0 — the http:// address is asked
 
 Registry version: **`950f09b9ca61` → `835d527f8f95`.** SE-117 changes what it asserts, so it can

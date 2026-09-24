@@ -45,7 +45,8 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         # (owed -> measures).
         # 0.118.0: SE-117 asks the http:// address, with a statement for the rest of the
         # site (owed -> measures).
-        self.assertEqual(counts, {"answers": 114, "measures": 26, "owed": 5})
+        # 0.119.0: MB-095 reads Lighthouse's page weight (owed -> answers).
+        self.assertEqual(counts, {"answers": 115, "measures": 26, "owed": 4})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
         """Line endings are normalised first: a Windows checkout writes CRLF, and how

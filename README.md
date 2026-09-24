@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.118.0 — see [CHANGELOG.md](CHANGELOG.md). **One verdict can move on your site.** *Force HTTPS Across the Site* now asks your pages' `http://` addresses: a page served over plain HTTP fails it, and a temporary redirect to HTTPS, or nothing listening on port 80, is a warning. Before that, `0.117.0` made *Provide a Correct robots.txt* read the file and *Meet Accessibility (WCAG) Basics* read level-A failures.
+Version 0.119.0 — see [CHANGELOG.md](CHANGELOG.md). **One verdict can move on your site.** *Keep Mobile Page Weight Light* now reads the total bytes Lighthouse's mobile run downloaded — over 1,600 KiB warns, over 5,000 KiB fails — instead of counting heavy images, and needs the PageSpeed API to answer. Before that, `0.118.0` made *Force HTTPS Across the Site* ask your pages' `http://` addresses.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -74,7 +74,7 @@ measures read from a rendered page.
 
 Those 145 items collapse to **66 unique process launches** over 57 distinct scripts —
 the runner deduplicates by script *and* arguments, so `pagespeed.py` runs once, not
-six times, and `MB-107` and `MB-108` cost no launch at all: they read the artifact
+seven times, and `MB-107` and `MB-108` cost no launch at all: they read the artifact
 five other items already read.
 
 Nine items moved from script to judgement in August 2026 as a correction, not a

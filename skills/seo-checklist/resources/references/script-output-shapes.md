@@ -1360,6 +1360,12 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
 `diagnostics[]` — array
   - item keys: title, score, display
 `field_data_available` — bool
+`total_byte_weight` — int — Lighthouse's `total-byte-weight`: the bytes of every resource
+  the page requested in this run (mobile emulation under `--strategy mobile`). Absent
+  when the audit or a non-negative number is missing. From 0.119.0
+`page_weight` — str — `light` (below `PAGE_WEIGHT_TARGET_KIB`, 1,600 KiB), `heavy` (up to
+  `PAGE_WEIGHT_FLAG_KIB`, 5,000 KiB), `enormous` (above it); absent with
+  `total_byte_weight`. MB-095 reads it
 `error` — NoneType
 
 ### parse_html.py

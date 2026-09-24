@@ -21,6 +21,7 @@ Usage:
 
 import argparse
 import json
+import math
 import sys
 import time
 from typing import Any
@@ -41,6 +42,17 @@ except ImportError:
 
 PSI_API = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 VALID_STRATEGIES = ("mobile", "desktop")
+
+# basis: standard — Lighthouse's documented target for its total-byte-weight audit:
+#  "Aim to keep your total byte size below 1,600 KiB", what a 3G connection downloads
+#  with Time to Interactive at ten seconds ("Avoid enormous network payloads",
+#  developer.chrome.com, last updated 2019-05-02). MB-095 passes below it.
+PAGE_WEIGHT_TARGET_KIB = 1600
+# basis: standard — same page: "Lighthouse flags pages whose total network requests
+#  exceed 5,000 KiB". MB-095 warns up to it and fails past it.
+PAGE_WEIGHT_FLAG_KIB = 5000
+# Lightest first; MB-095's value_map names exactly these.
+PAGE_WEIGHT_BANDS = ("light", "heavy", "enormous")
 
 # basis: inherited — 100ms of predicted saving, present at import. Below it a Lighthouse
 #  opportunity is dropped from the report, so it does decide what the audit says; the
@@ -164,6 +176,21 @@ def parse_pagespeed_response(data: dict[str, Any], url: str, strategy: str = "mo
     perf = categories.get("performance", {})
     result["performance_score"] = round((perf.get("score", 0) or 0) * 100)
 
+    audits = lighthouse.get("audits", {})
+    total_byte_weight = audits.get("total-byte-weight", {}).get("numericValue")
+    if (isinstance(total_byte_weight, (int, float))
+            and not isinstance(total_byte_weight, bool)
+            and math.isfinite(total_byte_weight)
+            and total_byte_weight >= 0):
+        total_byte_weight = int(total_byte_weight)
+        result["total_byte_weight"] = total_byte_weight
+        if total_byte_weight < PAGE_WEIGHT_TARGET_KIB * 1024:
+            result["page_weight"] = "light"
+        elif total_byte_weight <= PAGE_WEIGHT_FLAG_KIB * 1024:
+            result["page_weight"] = "heavy"
+        else:
+            result["page_weight"] = "enormous"
+
     # Extract CrUX field data (real user metrics)
     loading = data.get("loadingExperience", {})
     crux_metrics = loading.get("metrics", {})
@@ -191,7 +218,6 @@ def parse_pagespeed_response(data: dict[str, Any], url: str, strategy: str = "mo
 
     # Fall back to Lighthouse lab data if no field data
     if not result["field_data_available"]:
-        audits = lighthouse.get("audits", {})
         lab_map = {
             "largest-contentful-paint": "LCP",
             "interaction-to-next-paint": "INP",
@@ -238,7 +264,6 @@ def parse_pagespeed_response(data: dict[str, Any], url: str, strategy: str = "mo
                 }
 
     # Extract opportunities
-    audits = lighthouse.get("audits", {})
     for audit_id, audit in audits.items():
         if audit.get("details", {}).get("type") == "opportunity":
             savings = audit.get("details", {}).get("overallSavingsMs")

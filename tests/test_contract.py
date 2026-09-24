@@ -272,8 +272,6 @@ SAME_ON_BOTH = {
               "at least one and passes this",
     "MD-184": "the broken site needs images to fail the image checks, so both have "
               "at least one image",
-    "MB-095": "image_weight_audit reports oversize by weight, and neither fixture "
-              "ships an image big enough to trip it without bloating the repository",
     "MB-098": "0.93.0 moved this to `srcset_without_sizes_count`, which a fixture "
               "could express — but only by putting an `<img srcset>` in the broken "
               "tree, and that makes `responsive_count` 1 there, which hands MB-096 "
@@ -358,9 +356,8 @@ BAND_UNSEEN = {
               "which TE-170 does not pass",
     "MD-185": "the band needs Large image transfer size, which fires above "
               "LARGE_IMAGE_BYTES = 250,000. The largest image in either tree is "
-              "broken/assets/huge.png at 54,606 bytes, kept small on purpose — the "
-              "same reason MB-095 is in SAME_ON_BOTH, and not something a fixture "
-              "can change without bloating the repository",
+              "broken/assets/huge.png at 54,606 bytes, kept small on purpose, and "
+              "not something a fixture can change without bloating the repository",
 }
 
 

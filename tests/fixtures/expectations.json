@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "registry_version": "835d527f8f95",
+  "registry_version": "01b63b6dfafd",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -138,6 +138,24 @@
       "to": "FAIL",
       "decided": "checker-was-wrong",
       "why": "SE-117 asserted `https`, whether the audited URL ended on https, and never requested the page's http:// address, so a site answering both protocols passed Force HTTPS (Single Canonical Protocol). From 0.118.0 it asks that address. The harness serves plain HTTP on each TLS origin's own port, as the server's plain side: broken_tls answers it with the page and good_tls with a 301 to https, a difference of server policy like the header set and compression. No served file changes"
+    },
+    {
+      "kind": "withdrawal",
+      "origin": "good",
+      "item": "MB-095",
+      "from": "PASS",
+      "to": null,
+      "decided": "checker-was-wrong",
+      "why": "MB-095 is titled Keep Mobile Page Weight Light and counted images over 250 KB, allowing five, so a page of megabytes of script passed and no page weight was ever totalled. It now reads the total-byte-weight of PageSpeed's mobile Lighthouse run, which needs the PageSpeed API; no fixture run reaches it, so the item has nothing left to declare here."
+    },
+    {
+      "kind": "withdrawal",
+      "origin": "broken",
+      "item": "MB-095",
+      "from": "PASS",
+      "to": null,
+      "decided": "checker-was-wrong",
+      "why": "MB-095 is titled Keep Mobile Page Weight Light and counted images over 250 KB, allowing five, so a page of megabytes of script passed and no page weight was ever totalled. It now reads the total-byte-weight of PageSpeed's mobile Lighthouse run, which needs the PageSpeed API; no fixture run reaches it, so the item has nothing left to declare here."
     }
   ],
   "fixtures": {
@@ -576,11 +594,6 @@
         "expect": "PASS",
         "title": "Include the Primary Keyword in Body Copy",
         "why": "the audit now supplies --keyword bread, and 'Include the Primary Keyword in Body Copy' is answered per page with the worst of the three sampled deciding. The sample is the entry page, /about.html and /privacy.html, and the word is in the copy article_seo.py reads on all three: 'Sourdough keeps longer than yeasted bread' on the entry page, 'four of them in bread specifically' on /about.html, and the 'Ordering bread' heading on /privacy.html — headings count, the corpus is h1, h2s, h3s and paragraphs inside <main>. A site whose own subject is on every page it publishes is what this item passes"
-      },
-      "MB-095": {
-        "expect": "PASS",
-        "title": "Keep Mobile Page Weight Light",
-        "why": "re-read for 0.93.0, which moved this off a pattern over issue messages and onto `large_image_count` — and onto `--fetch-images`, so the transfer sizes are learned rather than assumed. The tree's only raster image is a 64-pixel loaf mark, far under the 250,000-byte line, so the count is zero"
       },
       "MB-098": {
         "expect": "PASS",
@@ -1163,11 +1176,6 @@
         "expect": "FAIL",
         "title": "Include the Primary Keyword in Body Copy",
         "why": "the sampled set here is the entry page, /blog/duplicate-a.html and /orphan.html. The entry page carries 'bread' five times over, inside the stuffed 'best sourdough bread vilnius' anchors, so on its own it would pass; the duplicate post is a heading and two sentences about being a duplicate, and the orphan is a heading and two about being an orphan, and neither says the word at all. The worst sampled page decides, so FAIL — a site that names its subject on the home page and nowhere else is the shape this item exists to catch"
-      },
-      "MB-095": {
-        "expect": "PASS",
-        "title": "Keep Mobile Page Weight Light",
-        "why": "re-read for 0.93.0. `large_image_count` counts images over 250,000 bytes; the tree's heavy image, /assets/huge.png, is 54,606 bytes and is kept small on purpose, so a page built to be slow still reports zero. This is the same reason the item sits in test_contract.py SAME_ON_BOTH"
       },
       "MB-098": {
         "expect": "PASS",

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "835d527f8f95",
+  "registry_version": "01b63b6dfafd",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1947,15 +1947,28 @@
       "severity": "medium",
       "source": "script",
       "check": {
-        "script": "image_weight_audit.py",
+        "script": "pagespeed.py",
         "args": [
           "{url}",
-          "--fetch-images"
+          "--strategy",
+          "mobile"
         ],
-        "requires": "fetch",
+        "requires": "api",
         "assert": {
-          "path": "large_image_count",
-          "lte": 5
+          "path": "page_weight",
+          "value_map": {
+            "light": "pass",
+            "heavy": "fail",
+            "enormous": "fail"
+          }
+        },
+        "warn": {
+          "path": "page_weight",
+          "value_map": {
+            "light": "pass",
+            "heavy": "pass",
+            "enormous": "fail"
+          }
         }
       },
       "effort": "medium",

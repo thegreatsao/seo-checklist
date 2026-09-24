@@ -2352,16 +2352,16 @@
     },
     "MB-095": {
       "answers": {
-        "failing-shapes": "PASS",
-        "fixture:broken": "PASS",
-        "fixture:broken_tls": "PASS",
-        "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "failing-shapes": "NO_DATA",
+        "fixture:broken": "NO_DATA",
+        "fixture:broken_tls": "NO_DATA",
+        "fixture:good": "NO_DATA",
+        "fixture:good_tls": "NO_DATA"
       },
       "distinct": [
-        "PASS"
+        "NO_DATA"
       ],
-      "script": "image_weight_audit.py",
+      "script": "pagespeed.py",
       "severity": "medium",
       "source": "script",
       "title": "Keep Mobile Page Weight Light"
@@ -3586,7 +3586,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "835d527f8f95",
+  "registry_version": "01b63b6dfafd",
   "sites": [
     "fixture:good",
     "fixture:broken",

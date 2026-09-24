@@ -391,9 +391,11 @@ class RegistryScope(unittest.TestCase):
         self.assertEqual(check["requires"], "crawl")
         self.assertIn("{inventory_json}", check["args"])
 
-    def test_the_other_six_image_items_remain_page_level(self):
+    def test_the_other_five_image_items_remain_page_level(self):
+        # Six until 0.119.0, when MB-095 stopped counting images and started reading
+        # the page weight PageSpeed's mobile run downloads.
         items = self.items()
-        for item_id in ("MB-095", "MB-096", "MB-097", "MB-098", "MD-185", "MD-189"):
+        for item_id in ("MB-096", "MB-097", "MB-098", "MD-185", "MD-189"):
             with self.subTest(item_id=item_id):
                 check = items[item_id]["check"]
                 self.assertEqual(check["requires"], "fetch")

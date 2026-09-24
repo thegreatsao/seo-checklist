@@ -1202,19 +1202,32 @@
     "MB-095": {
       "title": "Keep Mobile Page Weight Light",
       "check": {
-        "script": "image_weight_audit.py",
+        "script": "pagespeed.py",
         "args": [
           "{url}",
-          "--fetch-images"
+          "--strategy",
+          "mobile"
         ],
-        "requires": "fetch",
+        "requires": "api",
         "assert": {
-          "path": "large_image_count",
-          "lte": 5
+          "path": "page_weight",
+          "value_map": {
+            "light": "pass",
+            "heavy": "fail",
+            "enormous": "fail"
+          }
+        },
+        "warn": {
+          "path": "page_weight",
+          "value_map": {
+            "light": "pass",
+            "heavy": "pass",
+            "enormous": "fail"
+          }
         }
       },
-      "verdict": "owed",
-      "reading": "`large_image_count` counts images over 250 KB, at most 5; page weight — the bytes a phone downloads — is not totalled. A rule repair is owed (A.10).",
+      "verdict": "answers",
+      "reading": "`page_weight` bands Lighthouse's `total-byte-weight` from PageSpeed's mobile run — the bytes of every resource the page requested, scripts' own requests included: below 1,600 KiB, Lighthouse's documented target, passes; up to 5,000 KiB, where Lighthouse flags a payload, warns; above fails (0.119.0; it counted images over 250 KB and allowed five, and never totalled the page).",
       "shapes": {}
     },
     "MB-096": {

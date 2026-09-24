@@ -617,15 +617,19 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 0.118.0 adds one `convention`: `HTTP_SAMPLE_PAGES` in
         # `security_headers.py`, the three linked same-site pages SE-117 samples
         # beyond the audited page.
+        # 0.119.0 adds two `standard`s in `pagespeed.py`:
+        # `PAGE_WEIGHT_TARGET_KIB`, Lighthouse's documented target for total byte
+        # weight, and `PAGE_WEIGHT_FLAG_KIB`, the point past which Lighthouse flags
+        # an enormous network payload.
         self.assertEqual(by_kind, {
-            "standard": 16,
+            "standard": 18,
             "measured": 11,
             "convention": 56,
             "inherited": 77,
             "presentation": 13,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 160)
-        self.assertEqual(len(named), 173)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 162)
+        self.assertEqual(len(named), 175)
         self.assertEqual(len(uncounted), 15)
         # 169 -> 170: the outbound-link check's cap was a default argument value,
         # which is a place no instrument here can see. Promoting it to a module
@@ -649,8 +653,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 184 -> 185: `GOOGLE_ROBOTS_MAX_BYTES` at 0.117.0.
         # 185 -> 188: `HTTP_SAMPLE_PAGES`, `PERMANENT_REDIRECTS` and
         # `TEMPORARY_REDIRECTS` in `security_headers.py` at 0.118.0.
+        # 188 -> 190: the two page-weight standards above at 0.119.0.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 188)
+                             for path in at._script_paths()), 190)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -1917,7 +1922,9 @@ class AVerdictComesFromAFieldAndNeverFromASentence(unittest.TestCase):
         each is pinned at the field that replaced its pattern — so a revert is a
         failure here rather than a silent return."""
         by_id = {item["id"]: item for item in ITEMS}
-        for item_id, path in (("MB-095", "large_image_count"),
+        # MB-095 moved on again at 0.119.0, from a count of heavy images to
+        # Lighthouse's page weight — still a field, still no pattern.
+        for item_id, path in (("MB-095", "page_weight"),
                               ("MB-098", "srcset_without_sizes_count"),
                               ("GO-138", "invalid_url_count"),
                               ("GO-143", "incomplete_nodes_by_type.WebSite")):
