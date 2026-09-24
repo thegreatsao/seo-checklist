@@ -282,10 +282,24 @@ from a fixture inside the job.
 **Why:** a gate that depends on somebody else's uptime fails for reasons that are not about
 the change, and a suite that fails for reasons that are not about the change gets ignored or
 re-run until green. That is how a real failure gets merged.
-**Reader:** partial. The offline property is achieved by construction — every network-capable
-script goes through the guard, and the guard refuses everything but loopback unless the
-allowance is set. Nothing asserts that a CI job makes no outbound request, and the guard's
-own per-run allowance is unread on the child-process side (`openspec/specs/http/` HTTP-2).
+**Reader:** partial. `tests/test_offline.py` holds two layers. `SEO_LOOPBACK_ONLY`, set by
+`tests/harness.py` for the suite and every child and by `ci.yml`'s workflow `env` for every
+job (which `tools/ci_local.py` applies locally), makes the guard refuse any host but this
+machine before resolving it, and keeps `whois` from starting; a tripwire at the socket
+(`tests/tripwire/`) raises in the test process and ends a child on any other request, so a
+path around the guard fails loudly. Each is probed by breaking it.
+
+This line said until 0.124.0 that the guard "refuses everything but loopback unless the
+allowance is set". It refused *private* addresses; the public internet was open, and an
+audit hook over one suite run counted 68 connections to Wikimedia and 6 to Cloudflare, from
+`entity_checker.py` inside fixture audits and from the known-issues probes. The same hook
+after the repair: none outside the tripwire's own tests.
+
+**Partial, for what the tripwire cannot see:** it is a Python audit hook, so a non-Python
+child binary is held only if the script starting it consults the switch, as
+`domain_safety_check.py` does for `whois` — a new binary would be unread. And a test that
+clears the switch for itself stands both layers down for whatever it starts; two did, and
+were given it back.
 
 #### Scenario: the matrix runs with no network
 - **WHEN** any job in CI runs

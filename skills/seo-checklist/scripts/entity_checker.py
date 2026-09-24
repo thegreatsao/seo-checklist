@@ -186,10 +186,20 @@ def analyze_sameas(same_as_list: list) -> dict:
 # Wikidata lookup
 # ---------------------------------------------------------------------------
 
+def _not_asked(exc: BaseException, **empty) -> dict:
+    """A lookup that never got an answer is not a lookup that found nothing.
+
+    Both of these swallowed every exception into `found: False` until 0.124.0, so a
+    refused connection, a timeout and an empty result all said "no entry for this
+    name" — a statement about the entity made from a failure of the network.
+    """
+    return {"found": None, "checked": False, "error": str(exc)[:200], **empty}
+
+
 def check_wikidata(entity_name: str) -> dict:
     """Search Wikidata for the entity name. Returns QID if found."""
     if not entity_name:
-        return {"found": False, "qid": None, "url": None}
+        return {"found": False, "checked": False, "qid": None, "url": None}
 
     try:
         query = urllib.parse.quote(entity_name)
@@ -206,11 +216,12 @@ def check_wikidata(entity_name: str) -> dict:
                 "description": best.get("description", ""),
                 "url": f"https://www.wikidata.org/wiki/{best.get('id')}",
                 "confidence": "High" if best.get("label", "").lower() == entity_name.lower() else "Medium",
+                "checked": True,
             }
-    except Exception:
-        pass
+    except Exception as exc:  # noqa: BLE001 — said as not asked, never as not found
+        return _not_asked(exc, qid=None, url=None)
 
-    return {"found": False, "qid": None, "url": None}
+    return {"found": False, "checked": True, "qid": None, "url": None}
 
 
 # ---------------------------------------------------------------------------
@@ -220,7 +231,7 @@ def check_wikidata(entity_name: str) -> dict:
 def check_wikipedia(entity_name: str) -> dict:
     """Check if the entity has a Wikipedia article."""
     if not entity_name:
-        return {"found": False, "url": None}
+        return {"found": False, "checked": False, "url": None}
 
     try:
         query = urllib.parse.quote(entity_name.replace(" ", "_"))
@@ -234,11 +245,12 @@ def check_wikipedia(entity_name: str) -> dict:
                     "found": True,
                     "title": page_data.get("title"),
                     "url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(page_data.get('title', '').replace(' ', '_'))}",
+                    "checked": True,
                 }
-    except Exception:
-        pass
+    except Exception as exc:  # noqa: BLE001 — said as not asked, never as not found
+        return _not_asked(exc, url=None)
 
-    return {"found": False, "url": None}
+    return {"found": False, "checked": True, "url": None}
 
 
 def check_google_knowledge_graph(entity_name: str, api_key: str = "") -> dict:
@@ -524,7 +536,17 @@ def run_entity_check(url: str, entity_name: str = "", kg_api_key: str = "") -> d
             "fix": "Add sameAs URLs pointing to Wikipedia, LinkedIn, Twitter/X, etc.",
         })
 
-    if not wikidata["found"]:
+    for area, lookup in (("Wikidata", wikidata), ("Wikipedia", wikipedia)):
+        if lookup.get("error"):
+            issues.append({
+                "severity": "Info",
+                "area": area,
+                "finding": f"{area} could not be asked about '{entity_name}': "
+                           f"{lookup['error']}",
+                "fix": "Nothing on the site; re-run when the service answers.",
+            })
+
+    if wikidata["found"] is False:
         issues.append({
             "severity": "Info",
             "area": "Wikidata",
@@ -532,7 +554,7 @@ def run_entity_check(url: str, entity_name: str = "", kg_api_key: str = "") -> d
             "fix": "If the entity meets Wikidata notability guidelines, create or improve an item with accurate third-party references. Do not create one solely for SEO.",
         })
 
-    if not wikipedia["found"]:
+    if wikipedia["found"] is False:
         issues.append({
             "severity": "Info",
             "area": "Wikipedia",
@@ -631,10 +653,10 @@ def main():
         print(f"  {icon} Missing: {name} ({data['kg_signal']} signal)")
 
     wd = report["wikidata"]
-    print(f"\nWikidata          : {'✅ ' + wd['qid'] + ' — ' + wd.get('description', '') if wd['found'] else '❌ Not found'}")
+    print(f"\nWikidata          : {'✅ ' + wd['qid'] + ' — ' + wd.get('description', '') if wd['found'] else ('❌ Not found' if wd['found'] is False else 'not asked — ' + wd.get('error', ''))}")
 
     wp = report["wikipedia"]
-    print(f"Wikipedia         : {'✅ ' + wp.get('url', '') if wp['found'] else '❌ Not found'}")
+    print(f"Wikipedia         : {'✅ ' + wp.get('url', '') if wp['found'] else ('❌ Not found' if wp['found'] is False else 'not asked — ' + wp.get('error', ''))}")
 
     kg = report.get("google_kg", {})
     if kg.get("checked"):

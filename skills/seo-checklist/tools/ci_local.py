@@ -51,7 +51,7 @@ for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8", errors="replace")
 
 
-def load_jobs() -> dict:
+def load_workflow() -> dict:
     try:
         import yaml
     except ImportError:
@@ -59,7 +59,26 @@ def load_jobs() -> dict:
                  "It is not in requirements.txt because nothing shipped needs it:\n"
                  "    python -m pip install pyyaml")
     with open(WORKFLOW, encoding="utf-8") as f:
-        return yaml.safe_load(f)["jobs"]
+        return yaml.safe_load(f)
+
+
+def load_jobs() -> dict:
+    return load_workflow()["jobs"]
+
+
+def step_env(base: dict, workflow: dict, job: dict, step: dict) -> dict:
+    """The environment CI gives this step: the workflow's `env`, then the job's, then
+    the step's own, each over the last — GitHub's order.
+
+    Read rather than restated, like the steps themselves. Until 0.124.0 the workflow
+    had no `env` at all and this ignored the key; the first one it gained,
+    `SEO_LOOPBACK_ONLY`, is a guarantee about the run, and a local gate running the
+    same steps without it would be a different run passing under the same name.
+    """
+    env = dict(base)
+    for layer in (workflow, job, step):
+        env.update({str(k): str(v) for k, v in (layer.get("env") or {}).items()})
+    return env
 
 
 def only_installs(script: str) -> bool:
@@ -191,7 +210,8 @@ def main() -> int:
                     help="ignore the stamp from a previous green run")
     a = ap.parse_args()
 
-    jobs = load_jobs()
+    workflow = load_workflow()
+    jobs = workflow["jobs"]
     wanted = list(jobs) if a.job == "all" else [j.strip() for j in a.job.split(",")]
     for job in wanted:
         if job not in jobs:
@@ -233,7 +253,8 @@ def main() -> int:
     failures, total = [], 0.0
     for job, step in runnable:
         name = step.get("name", "(unnamed)")
-        ok, took, output = run_step(name, step["run"], env)
+        ok, took, output = run_step(name, step["run"],
+                                    step_env(env, workflow, jobs[job], step))
         total += took
         print(f"  {'ok  ' if ok else 'FAIL'}  {took:6.1f}s  {job}: {name}")
         if not ok:

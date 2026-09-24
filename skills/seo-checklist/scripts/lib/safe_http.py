@@ -654,6 +654,36 @@ def allow_private() -> bool:
     return os.environ.get("SEO_ALLOW_PRIVATE", "").strip().lower() in _TRUE
 
 
+class LoopbackOnly(SafeHTTPError):
+    """A host other than this machine, asked for in a loopback-only process."""
+
+
+def loopback_only() -> bool:
+    """Whether this process may reach nothing but this machine. Off unless asked.
+
+    The suite and every CI job run with it on (`tests/harness.py`, `ci.yml`). Until
+    0.124.0 they did not, and nothing said so: `SEO_ALLOW_PRIVATE` opens loopback
+    *in addition to* the public internet, so a fixture audit's `entity_checker.py`
+    asked Wikidata and Wikipedia about the fixture's name on every run — 68
+    connections to Wikimedia in one suite, measured with an audit hook — while
+    `openspec/specs/governance/` GOV-7 said the matrix ran offline. Refused before any
+    name is resolved, because a DNS query is itself a request to somebody else's
+    server.
+    """
+    return os.environ.get("SEO_LOOPBACK_ONLY", "").strip().lower() in _TRUE
+
+
+def _is_loopback_host(hostname: str | None) -> bool:
+    if not hostname:
+        return False
+    if hostname.lower() in ("localhost", "localhost."):
+        return True
+    try:
+        return ipaddress.ip_address(hostname).is_loopback
+    except ValueError:
+        return False
+
+
 def _is_allowed_private(ip_text: str) -> bool:
     try:
         ip = ipaddress.ip_address(ip_text)
@@ -719,6 +749,8 @@ def is_private_host(url: str) -> bool:
         return False
     if _is_allowed_private(host):
         return True
+    if loopback_only():
+        return _is_loopback_host(host)
     try:
         infos = socket.getaddrinfo(host, _port_for(parsed), type=socket.SOCK_STREAM)
     except socket.gaierror:
@@ -737,6 +769,11 @@ def _validated_url(url: str) -> tuple[str, tuple[str, ...]]:
     normalized = normalize_url(url)
     parsed = urlparse(normalized)
     hostname = parsed.hostname
+
+    if loopback_only() and not _is_loopback_host(hostname):
+        raise LoopbackOnly(
+            f"Blocked: {hostname} is not this machine and the process is loopback-only "
+            f"(SEO_LOOPBACK_ONLY) — the test suite and CI do not reach the internet")
 
     try:
         _guard_ip(hostname)

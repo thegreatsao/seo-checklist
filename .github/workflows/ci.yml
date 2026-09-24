@@ -4,6 +4,14 @@ on:
   push:
   pull_request:
 
+# Every job reaches nothing but the runner itself (`openspec/specs/governance/` GOV-7).
+# `lib/safe_http.py` refuses any other host, before resolving it, while this is set;
+# the suite sets it for itself too (`tests/harness.py`), and the local pre-push gate
+# applies this block to the steps it runs. Until 0.124.0 nothing was set, and a
+# fixture audit asked Wikidata and Wikipedia about the fixture's name on every run.
+env:
+  SEO_LOOPBACK_ONLY: "1"
+
 jobs:
   test:
     runs-on: ubuntu-latest

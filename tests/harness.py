@@ -72,7 +72,36 @@ PLACEHOLDER = "http://127.0.0.1:8000"
 # Each site's neighbour is external by host and still on loopback.
 PLACEHOLDER_EXTERNAL = "http://127.0.0.1:8001"
 
-TEXTUAL = (".html", ".xml", ".txt", ".css", ".json", ".md", ".csv")
+# The suite reaches nothing but this machine (`openspec/specs/governance/` GOV-7), and
+# until 0.124.0 that was a claim with no mechanism: `SEO_ALLOW_PRIVATE` opens loopback
+# *in addition to* the public internet, and a fixture audit asked Wikidata and
+# Wikipedia about the fixture's name on every run. Two layers now. The guard in
+# `lib/safe_http.py` refuses any other host before resolving it once
+# `SEO_LOOPBACK_ONLY` is set — here, for this process and, through `os.environ`, for
+# every child. And a tripwire at the socket catches whatever does not go through the
+# guard: raised in this process, fatal in a child, where `spawn` and the inherited
+# `PYTHONPATH` put its `sitecustomize` first.
+TRIPWIRE = os.path.join(HERE, "tripwire")
+os.environ["SEO_LOOPBACK_ONLY"] = "1"
+os.environ["PYTHONPATH"] = os.pathsep.join(
+    [TRIPWIRE] + [p for p in os.environ.get("PYTHONPATH", "").split(os.pathsep)
+                  if p and p != TRIPWIRE])
+sys.path.insert(0, TRIPWIRE)
+import tripwire  # noqa: E402
+sys.path.remove(TRIPWIRE)
+tripwire.install(fatal=False)
+
+
+def with_tripwire(env: dict) -> dict:
+    """`env` with the tripwire's directory first on `PYTHONPATH`."""
+    env = dict(env)
+    rest = [p for p in env.get("PYTHONPATH", "").split(os.pathsep)
+            if p and p != TRIPWIRE]
+    env["PYTHONPATH"] = os.pathsep.join([TRIPWIRE] + rest)
+    return env
+
+
+TEXTUAL =(".html", ".xml", ".txt", ".css", ".json", ".md", ".csv")
 
 # Files the operator measures in a browser and hands to the run, rather than
 # anything the tool fetches: a performance trace and a rendered-page measurement.
@@ -883,7 +912,7 @@ def spawn(args, env=None, timeout=600, stdin_text=None):
         import shutil
         args[0] = shutil.which(args[0]) or args[0]
     kwargs = {"capture_output": True, "text": True, "timeout": timeout,
-              "env": env or offline_env()}
+              "env": with_tripwire(env or offline_env())}
     if stdin_text is not None:
         kwargs["input"] = stdin_text
     import subprocess

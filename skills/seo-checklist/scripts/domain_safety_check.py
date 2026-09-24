@@ -35,9 +35,9 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from lib.safe_http import default_headers, safe_get
+    from lib.safe_http import default_headers, loopback_only, safe_get
 except ImportError:
-    from scripts.lib.safe_http import default_headers, safe_get
+    from scripts.lib.safe_http import default_headers, loopback_only, safe_get
 
 # basis: inherited — three labels, present at import, and definitional rather than
 #  calibratable: a whois lookup needs the registrable domain, and a multi-label public
@@ -130,6 +130,12 @@ def check_whois(domain: str, timeout: int) -> dict:
     """Uses the system whois binary. Registries format dates inconsistently, so
     a parse failure reports checked=False rather than guessing an age."""
     out = {"checked": False, "created": None, "registrar": None, "error": None}
+    # whois always asks a registry's server, so a loopback-only process never
+    # starts it — the guard in `safe_http` cannot see a child binary, and a CI runner
+    # with whois installed would otherwise query the registries about 127.0.0.1.
+    if loopback_only():
+        out["error"] = "whois not asked: this process is loopback-only (SEO_LOOPBACK_ONLY)"
+        return out
     binary = shutil.which("whois")
     if not binary:
         out["error"] = "whois binary not available"

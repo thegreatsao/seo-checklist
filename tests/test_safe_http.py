@@ -28,6 +28,13 @@ PUBLIC_B = "8.8.8.8"
 LOOPBACK = "127.0.0.1"
 METADATA = "169.254.169.254"
 
+# The classes below that test the guard's policy for public names, with resolution
+# and transport replaced, run with the suite's loopback-only switch off — which also
+# stands the tripwire down (`tests/tripwire/`). Per class, not per module: at 0.124.0 a
+# module-wide switch-off let `ThePrivateEntryIsObservedAndCostsCoverage`, which runs a
+# whole audit, ask Wikidata about its page — measured with an audit hook.
+public_policy = mock.patch.dict(os.environ, {"SEO_LOOPBACK_ONLY": ""})
+
 
 def answer(ip: str, port: int = 80):
     """One getaddrinfo-shaped stream address."""
@@ -48,6 +55,7 @@ def response_for(request, status=200, headers=None, body=b"ok"):
     return made
 
 
+@public_policy
 class PinnedTransport(unittest.TestCase):
 
     def setUp(self):
@@ -228,6 +236,7 @@ class PinnedTransport(unittest.TestCase):
         self.assertEqual(adapter.pool.conn_kw["server_hostname"], "tls.example")
 
 
+@public_policy
 class CertificateVerificationCannotBeTurnedOff(unittest.TestCase):
     """`openspec/specs/http/` HTTP-11. An audit that reports on a site's security while
     accepting any certificate is making a claim it did not check, and the failure is
@@ -346,6 +355,7 @@ class CertificateVerificationCannotBeTurnedOff(unittest.TestCase):
 
 
 
+@public_policy
 class TheRobotsFetchGoesThroughTheGuardToo(unittest.TestCase):
     """`openspec/specs/http/` HTTP-1 says *every* request is validated before it is made
     and connects to the address that was validated. One request in this module was not:
@@ -465,6 +475,7 @@ class TheRobotsFetchGoesThroughTheGuardToo(unittest.TestCase):
         self.assertEqual(text, "", "an unfollowable redirect yields no policy, fail-open")
 
 
+@public_policy
 class TheAgentIdentifiesItselfOnTheWire(unittest.TestCase):
     """`openspec/specs/http/` HTTP-6. Politeness that cannot be declined is not politeness:
     a site owner's only lever is a `robots.txt` rule, and it works only if the token this
@@ -533,6 +544,7 @@ class TheAgentIdentifiesItselfOnTheWire(unittest.TestCase):
                          "the caller's other headers must still travel")
 
 
+@public_policy
 class ASuccessfulFetchCarriesNoFailure(unittest.TestCase):
     """`openspec/specs/http/` HTTP-9's `iff`, read from the side nothing read.
 
@@ -598,6 +610,7 @@ class ASuccessfulFetchCarriesNoFailure(unittest.TestCase):
                                  result.get("error_kind") is None)
 
 
+@public_policy
 class TheCacheTellsTheReaderItAnswered(unittest.TestCase):
     """`openspec/specs/http/` HTTP-8. A run records whether the response cache was on, and
     the surface a person is handed says so too.
@@ -790,6 +803,7 @@ class TheDefaultRateIsANumberSomebodyChose(unittest.TestCase):
         self.assertLessEqual(waited, 0.25)
 
 
+@public_policy
 class TheCapsAreTheOnesTheSubstrateShips(unittest.TestCase):
     """`openspec/specs/http/` HTTP-10: a cap is a stated condition, never a silent
     truncation. The raising is enforced and the encoding recovery is covered fourteen ways.

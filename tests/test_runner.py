@@ -13,6 +13,7 @@ import json
 import os
 import re
 import signal
+import socket
 import shutil
 import sys
 import tempfile
@@ -489,12 +490,17 @@ class PrivateAddresses(unittest.TestCase):
         self.saved = os.environ.get("SEO_ALLOW_PRIVATE")
         os.environ.pop("SEO_ALLOW_PRIVATE", None)
         sh._announced_private = False
+        # The guard's policy for public addresses, classified from literals; the
+        # suite's loopback-only switch would refuse them before the policy is asked.
+        self.saved_loopback = os.environ.pop("SEO_LOOPBACK_ONLY", None)
 
     def tearDown(self):
         if self.saved is None:
             os.environ.pop("SEO_ALLOW_PRIVATE", None)
         else:
             os.environ["SEO_ALLOW_PRIVATE"] = self.saved
+        if self.saved_loopback is not None:
+            os.environ["SEO_LOOPBACK_ONLY"] = self.saved_loopback
         self.sh._announced_private = False
 
     def allow(self, value="1"):
@@ -621,8 +627,12 @@ class PrivateAddresses(unittest.TestCase):
         self.allow()
         self.assertFalse(self.sh.is_private_host("https://93.184.216.34/"))
         self.assertTrue(self.sh.is_private_host("http://127.0.0.1:8000/"))
-        self.assertFalse(self.sh.is_private_host("http://nothing.invalid/"),
-                         "an unresolvable host is unreachable, not private")
+        # The resolver's refusal is the case, not a real DNS query: until 0.124.0
+        # this asked the network's resolver about `.invalid` on every run.
+        refused = socket.gaierror(socket.EAI_NONAME, "Name or service not known")
+        with mock.patch.object(self.sh.socket, "getaddrinfo", side_effect=refused):
+            self.assertFalse(self.sh.is_private_host("http://nothing.invalid/"),
+                             "an unresolvable host is unreachable, not private")
 
     def test_a_run_records_and_announces_the_allowance(self):
         """An artifact that does not record it cannot be told apart from an audit of
@@ -643,7 +653,11 @@ class PrivateAddresses(unittest.TestCase):
                  "https://nothing-resolves-here.invalid/", "--mode", "page",
                  "--allow-private", "--no-history", "--no-prompt", "--quiet",
                  "--timeout", "20", "--json", out],
-                capture_output=True, text=True, timeout=300, close_fds=False)
+                capture_output=True, text=True, timeout=300, close_fds=False,
+                # This class clears the loopback-only switch to classify public
+                # literals; the run it starts must not resolve a name on the
+                # network, so the child gets it back.
+                env=dict(os.environ, SEO_LOOPBACK_ONLY="1"))
             self.assertEqual(proc.returncode, 0, proc.stderr[-2000:])
             with open(out, encoding="utf-8") as f:
                 payload = json.load(f)

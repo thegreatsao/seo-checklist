@@ -528,8 +528,8 @@ than fetching them.
 `summary.entities_found` — int
 `summary.sameas_count` — int
 `summary.sameas_missing_critical` — int
-`summary.wikidata_found` — bool
-`summary.wikipedia_found` — bool
+`summary.wikidata_found` — bool | null — null when Wikidata could not be asked (0.124.0)
+`summary.wikipedia_found` — bool | null — null when Wikipedia could not be asked
 `summary.google_kg_checked` — bool
 `summary.google_kg_found` — bool
 `summary.total_issues` — int

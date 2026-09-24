@@ -10,6 +10,43 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.124.0 — the suite reaches nothing but this machine
+
+Registry version: unchanged at `08c2492fb163`. No verdict moves.
+
+**`openspec/specs/governance/` GOV-7 said the CI matrix ran offline, and it did not.**
+Measured with a PEP 578 audit hook over one full suite run: 68 connections to Wikimedia
+and 6 to Cloudflare — `entity_checker.py` asking Wikidata and Wikipedia about the fixture's
+name inside every fixture audit, and the known-issues probes doing the same. The guard in
+`lib/safe_http.py` refuses *private* addresses unless `SEO_ALLOW_PRIVATE` is set; the suite
+sets it for its loopback fixtures, and nothing had ever closed the public internet. The
+requirement's own Reader line described a guard that "refuses everything but loopback".
+
+* **`SEO_LOOPBACK_ONLY`.** While it is set the guard refuses any host but this machine
+  **before resolving it** — a DNS query is a request to somebody else's server — as a
+  `blocked` fetch naming the switch, and `domain_safety_check.py` does not start `whois`.
+  `tests/harness.py` sets it for the suite and every child; `ci.yml` gains a workflow-level
+  `env` setting it for every job, and `tools/ci_local.py` now applies the workflow's, job's
+  and step's `env` to the steps it runs, so the local gate is the same run.
+* **A tripwire at the socket** (`tests/tripwire/`): an audit hook that raises in the test
+  process and ends a child (exit 97, reason on stderr) on any non-loopback connection or
+  name lookup — the paths that do not go through the guard. `harness.spawn` puts it first on
+  every child's `PYTHONPATH`; children started otherwise inherit it.
+* **A lookup that was not asked no longer reads as one that found nothing.**
+  `entity_checker.py`'s Wikidata and Wikipedia lookups caught every exception into
+  `found: false`, so a refused connection said "no Wikidata entry for this name".
+  They now say `found: null`, `checked: false` and the error, and the report says the
+  service could not be asked. `summary.wikidata_found`/`wikipedia_found` are `bool | null`.
+
+The same hook after the repair found two children still reaching out, both started by tests
+that clear the switch to test the guard's public-address policy: a whole-module switch-off
+in `test_safe_http` (now per class) and a runner run on a `.invalid` name (the child gets
+the switch back; the in-process name test now fakes the resolver's refusal). After that,
+nothing but the tripwire's own tests. `tests/test_offline.py` holds each layer, and each was
+probed by breaking it: 7 of 7 caught (`local/gov7/probe.py`). GOV-7 stays `partial`, for the
+honest reason now in its Reader line: a non-Python child binary is held only where the
+script consults the switch. Suite 1867 → 1880.
+
 ## 0.123.0 — the good sitemap is clean, and two sitemap items can pass
 
 Registry version: unchanged at `08c2492fb163`. No rule moves; two declared verdicts do,
