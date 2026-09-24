@@ -612,15 +612,17 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 0.115.0 adds one `inherited`: `MAX_SHORT_PARAMS` in `url_quality.py`, the two
         # query parameters AR-147 asserted in the registry since import. A floor in the
         # registry is invisible to this scan; as a constant it is counted.
+        # 0.117.0 adds one `standard`: `GOOGLE_ROBOTS_MAX_BYTES` in `robots_checker.py`,
+        # the 500 KiB Google reads of a robots.txt.
         self.assertEqual(by_kind, {
-            "standard": 15,
+            "standard": 16,
             "measured": 11,
             "convention": 55,
             "inherited": 77,
             "presentation": 13,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 158)
-        self.assertEqual(len(named), 171)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 159)
+        self.assertEqual(len(named), 172)
         self.assertEqual(len(uncounted), 13)
         # 169 -> 170: the outbound-link check's cap was a default argument value,
         # which is a place no instrument here can see. Promoting it to a module
@@ -641,8 +643,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # module with the header reader and counts once, as before.
         # 182 -> 183: the 4xx lower bound above at 0.110.0.
         # 183 -> 184: `MAX_SHORT_PARAMS` at 0.115.0, moved out of the registry.
+        # 184 -> 185: `GOOGLE_ROBOTS_MAX_BYTES` at 0.117.0.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 184)
+                             for path in at._script_paths()), 185)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -2259,6 +2262,8 @@ class MeasuresQualifications(unittest.TestCase):
         "TE-174": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
         # 0.116.0: CN-044 repaired to contact routes, with a statement for *clear*.
         "CN-044": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
+        # 0.117.0: TE-180 repaired to level-A failures, with a statement for the rest.
+        "TE-180": "The WCAG level-A failures the HTML shows: images without alt, form fields without an accessible name, no page language. Contrast is CN-036; keyboard use is not tested.",
     }
 
     @staticmethod
@@ -2267,7 +2272,7 @@ class MeasuresQualifications(unittest.TestCase):
         import build_checklist
         return build_checklist
 
-    def test_the_registry_carries_exactly_the_twenty_four_qualifications_verbatim(self):
+    def test_the_registry_carries_exactly_the_twenty_five_qualifications_verbatim(self):
         build_checklist = self.module()
         self.assertEqual(build_checklist.MEASURES, self.EXPECTED)
         shipped = {item["id"]: item["measures"] for item in ITEMS

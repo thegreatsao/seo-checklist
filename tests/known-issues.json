@@ -731,6 +731,9 @@
           "video_schema_checker.py": "slices the printed lines, not `issues`"
         },
         "not_yet_read": {
+          "robots_checker.py": [
+            "AR-151"
+          ],
           "security_headers.py": [
             "SE-120"
           ]
@@ -883,9 +886,9 @@
           "inherited": 77,
           "measured": 11,
           "presentation": 13,
-          "standard": 15
+          "standard": 16
         },
-        "counted": 158,
+        "counted": 159,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:31"
         ],
@@ -914,7 +917,7 @@
       "claim": "Seventy-six of 217 items pass only when a path is absent or bounded, over nine spellings; whether a title states the side of its subject that its assertion means is read by a person, and the entry says why no check can.",
       "measured": {
         "items": 217,
-        "negative_polarity": 79
+        "negative_polarity": 81
       },
       "probe": "negative_polarity_share",
       "state": "open"

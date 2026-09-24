@@ -89,6 +89,12 @@ for that page. Use `--no-http-cache` for an isolated timing.
 ### a11y_seo_checker.py
 
 `url` — str
+`wcag_a_failures` — int — TE-180 (0.117.0): the level-A failures the HTML shows, the
+  sum of the three keys below, each counted over its whole list
+`wcag_a.images_missing_alt` — int
+`wcag_a.unnamed_fields` — int — form fields with no accessible name; hidden,
+  submit, button, reset and image inputs are not counted
+`wcag_a.missing_lang` — bool
 `score` — int
 `checks.h1_count` — int
 `checks.lang` — str
@@ -1446,6 +1452,10 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
 
 `url` — str
 `status` — int
+`correctness_problems[]` — array of str — AR-151 (0.117.0): an HTML page at the path,
+  over 500 KiB, a line that is not `field: value`, an unread directive, a rule before any
+  user-agent, a relative sitemap, or the whole site disallowed for Googlebot; on a 404 the
+  one entry "no robots.txt at this origin"; **absent** on any other status
 `user_agents.*.allow[]` — array
 `user_agents.*.disallow[]` — array
 `sitemaps[]` — array

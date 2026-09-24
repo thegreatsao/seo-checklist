@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.116.0 — see [CHANGELOG.md](CHANGELOG.md). **One verdict can move on your site.** *Provide a Clear, Easy-to-Find Contact Page* now needs a contact link, a phone or an email — an About or Privacy link no longer counts. Before that, `0.115.0` stopped *llms.txt present and well-formed* passing an HTML page served at /llms.txt.
+Version 0.117.0 — see [CHANGELOG.md](CHANGELOG.md). **Two verdicts can move on your site.** *Provide a Correct robots.txt* now reads the file — a `Disallow: /` for every crawler, an HTML page at the path or an unread directive fails it — and *Meet Accessibility (WCAG) Basics* fails on any level-A failure the HTML shows instead of a score. Before that, `0.116.0` made the contact-page item ask for a contact route.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

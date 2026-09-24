@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "ba813d8f630e",
+  "registry_version": "950f09b9ca61",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -3236,8 +3236,8 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "status",
-          "eq": 200
+          "path": "correctness_problems",
+          "len_eq": 0
         }
       },
       "effort": "high",
@@ -3884,10 +3884,11 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
-          "gte": 80
+          "path": "wcag_a_failures",
+          "eq": 0
         }
       },
+      "measures": "The WCAG level-A failures the HTML shows: images without alt, form fields without an accessible name, no page language. Contrast is CN-036; keyboard use is not tested.",
       "effort": "low",
       "fix": "Meet WCAG accessibility basics"
     },

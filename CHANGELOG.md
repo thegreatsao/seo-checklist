@@ -10,6 +10,29 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.117.0 — a correct robots.txt, and the accessibility failures themselves
+
+Registry version: **`ba813d8f630e` → `950f09b9ca61`.** AR-151 and TE-180 change what they
+assert, so both can move on a real site. No fixture verdict moves. Suite 1808 → 1815.
+
+**AR-151 *Provide a Correct robots.txt* asserted `status == 200`**, so a file shutting every
+crawler out with `Disallow: /`, or the site's HTML shell served at the path, was *correct*.
+It now reads `correctness_problems`: an HTML page, more than the 500 KiB Google reads, a line
+that is not `field: value`, a directive no crawler reads — `Noindex:` is the usual one — a
+rule before any user-agent line, a relative sitemap, or the whole site disallowed for
+Googlebot through 0.109.0's matcher. A 404 is the problem *no robots.txt*.
+
+**TE-180 *Meet Accessibility (WCAG) Basics* asserted a score** of a hundred less eight per
+finding, at least 80: two images without alt passed, while two H1 elements — not a WCAG
+requirement — cost the same. It now reads `wcag_a_failures`, the level-A failures static HTML
+shows: images without alt, form fields without an accessible name, no page language. Two
+defects in the old field count went with it: a field inside its `<label>` is named, and
+hidden, submit, button, reset and image inputs need no label. Contrast is CN-036's and
+keyboard use is not tested; the item's `measures` line says so.
+
+Six readings stay owed: MB-095, MS-030, SE-117, TE-175, and KW-070 and GO-139 on the
+branded-query decision.
+
 ## 0.116.0 — a contact page, not any institutional link
 
 Registry version: **`e972b3b363d4` → `ba813d8f630e`.** CN-044 changes what it counts, so it

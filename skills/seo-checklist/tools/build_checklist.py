@@ -430,6 +430,11 @@ SUBJECT_ALWAYS_PRESENT = {
     "CI-014": "every requested URL has a redirect chain, possibly of length zero",
     # The response, and the server behind it. A run that got here got a response.
     "TE-170": "every response carries headers, and their absence is the finding",
+    # 0.117.0. Every page declares a language or does not, and the missing declaration
+    # alone is a level-A failure; images and fields are counted where they exist.
+    "TE-180": "every page declares its language or fails to, whatever else it holds",
+    # Every origin answers for /robots.txt; a 404 is recorded as a problem, not an absence.
+    "AR-151": "every origin answers for /robots.txt, and a missing file is itself the finding",
     "SE-120": "every response carries the three hardening headers or omits them; "
               "their absence is the finding",
     "SP-109": "every page loads some set of third-party scripts, possibly empty",
@@ -567,6 +572,7 @@ MEASURES = {
     "GO-145": "How citation-ready this page's content is. Whether it appears in AI Overviews or zero-click results is not observable here.",
     "TE-174": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
     "CN-044": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
+    "TE-180": "The WCAG level-A failures the HTML shows: images without alt, form fields without an accessible name, no page language. Contrast is CN-036; keyboard use is not tested.",
 }
 
 
@@ -1414,7 +1420,7 @@ item(150, "high", S, "redirect_checker.py", PAGE,
 # failed, which is NO_DATA rather than a verdict. The Sitemap directive and the
 # per-agent rules are already AR-152 and item 6.
 item(151, "high", S, "robots_checker.py", PAGE,
-     {"path": "status", "eq": 200},
+     {"path": "correctness_problems", "len_eq": 0},
      "Correct robots.txt")
 item(152, "medium", S, "robots_checker.py", PAGE,
      {"path": "user_agents", "truthy": True},
@@ -1528,7 +1534,7 @@ item(179, "low", S, "domain_safety_check.py", PAGE,
      "before buying it.",
      warn={"path": "whois.age_days", "lt": 90})
 item(180, "medium", S, "a11y_seo_checker.py", PAGE,
-     {"path": "score", "gte": 80},
+     {"path": "wcag_a_failures", "eq": 0},
      "Meet WCAG accessibility basics")
 # CI-017 validates the bytes Nu fetches from the server; TE-181 validates the DOM a
 # browser builds after scripts run. Those are two documents that can independently be

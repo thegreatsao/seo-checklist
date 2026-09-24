@@ -1460,6 +1460,31 @@ class Robots(unittest.TestCase):
         self.assertEqual(verdict("AR-152", bad), FAIL)
         self.assertEqual(verdict("CI-006", bad), FAIL)
 
+    def check(self, body, content_type="text/plain; charset=utf-8"):
+        import robots_checker
+        routes = {"/": "<html><body>home</body></html>",
+                  "/robots.txt": (200, {"Content-Type": content_type}, body)}
+        with harness.allow_loopback(), served(routes) as site:
+            return robots_checker.fetch_robots_txt(site.url)
+
+    def test_a_200_that_shuts_googlebot_out_is_not_correct(self):
+        """The defect 0.117.0 repairs: AR-151 asserted `status == 200`."""
+        result = self.check("User-agent: *\nDisallow: /\n")
+        self.assertEqual(result["status"], 200)
+        self.assertIn("the whole site is disallowed for Googlebot",
+                      result["correctness_problems"])
+        self.assertEqual(verdict("AR-151", result), FAIL)
+
+    def test_the_html_shell_served_at_the_path_is_not_a_robots_txt(self):
+        result = self.check("<!doctype html><html><body>Not found</body></html>",
+                            content_type="text/html")
+        self.assertEqual(verdict("AR-151", result), FAIL)
+
+    def test_a_directive_no_crawler_reads_is_named(self):
+        result = self.check("User-agent: *\nNoindex: /drafts/\n")
+        self.assertTrue(any("noindex" in p for p in result["correctness_problems"]))
+        self.assertEqual(verdict("AR-151", result), FAIL)
+
 
 class Sitemap(unittest.TestCase):
     """GO-136 `issues`, GO-138 `issues` (with --fetch-urls).
@@ -6265,6 +6290,49 @@ class Accessibility(unittest.TestCase):
 
     def test_a_page_with_landmarks_alt_text_and_labels_scores(self):
         self.assertEqual(verdict("TE-180", out("a11y")), PASS)
+
+    @staticmethod
+    def check(markup):
+        import a11y_seo_checker
+        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
+                                         encoding="utf-8") as fh:
+            fh.write(markup)
+            path = fh.name
+        try:
+            return a11y_seo_checker.checker(path)
+        finally:
+            os.unlink(path)
+
+    def test_two_images_without_alt_fail_even_when_the_score_would_pass(self):
+        """The defect 0.117.0 repairs: 100 less 8 per issue is 84 here, and TE-180
+        passed a page with two WCAG 1.1.1 failures on it."""
+        result = self.check('<html lang="en"><head><meta name="viewport" '
+                            'content="width=device-width"></head><body><main><h1>T</h1>'
+                            '<img src="a.png"><img src="b.png"></main></body></html>')
+        self.assertGreaterEqual(result["score"], 80)
+        self.assertEqual(result["wcag_a"]["images_missing_alt"], 2)
+        self.assertEqual(verdict("TE-180", result), FAIL)
+
+    def test_two_h1s_are_not_a_wcag_failure(self):
+        result = self.check('<html lang="en"><body><main><h1>A</h1><h1>B</h1>'
+                            '</main></body></html>')
+        self.assertEqual(result["wcag_a_failures"], 0)
+        self.assertEqual(verdict("TE-180", result), PASS)
+
+    def test_a_wrapped_label_hidden_input_and_submit_need_no_label(self):
+        result = self.check('<html lang="en"><body><main><form>'
+                            '<label>Name <input name="n"></label>'
+                            '<input type="hidden" name="t"><input type="submit" value="Go">'
+                            '</form></main></body></html>')
+        self.assertEqual(result["wcag_a"]["unnamed_fields"], 0)
+        self.assertEqual(verdict("TE-180", result), PASS)
+
+    def test_a_field_with_no_name_and_a_page_with_no_language_fail(self):
+        result = self.check('<html><body><main><input name="q"></main></body></html>')
+        self.assertEqual(result["wcag_a"], {"images_missing_alt": 0,
+                                            "unnamed_fields": 1, "missing_lang": True})
+        self.assertEqual(result["wcag_a_failures"], 2)
+        self.assertEqual(verdict("TE-180", result), FAIL)
 
     def test_this_script_emits_no_contrast_key_for_an_item_to_misread(self):
         """Until 0.101.0 it emitted `inline_contrast_candidates` — elements whose

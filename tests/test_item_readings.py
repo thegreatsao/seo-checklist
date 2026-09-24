@@ -41,7 +41,9 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         # given a statement for the rest, GO-135, GO-145, TE-174 given statements
         # (owed -> measures). Nine owed remain.
         # 0.116.0: CN-044 repaired to contact routes, with a statement (owed -> measures).
-        self.assertEqual(counts, {"answers": 113, "measures": 24, "owed": 8})
+        # 0.117.0: AR-151 repaired (owed -> answers); TE-180 repaired with a statement
+        # (owed -> measures).
+        self.assertEqual(counts, {"answers": 114, "measures": 25, "owed": 6})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
         """Line endings are normalised first: a Windows checkout writes CRLF, and how

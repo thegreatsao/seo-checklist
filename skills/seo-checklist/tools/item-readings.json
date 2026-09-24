@@ -2171,14 +2171,14 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "status",
-          "eq": 200
+          "path": "correctness_problems",
+          "len_eq": 0
         }
       },
-      "verdict": "owed",
-      "reading": "`status` is robots.txt's HTTP status; a file answering 200 with `Disallow: /` is *correct* by this rule. A rule repair is owed (A.10).",
+      "verdict": "answers",
+      "reading": "`correctness_problems` lists what stops the file saying what its owner means: an HTML page served at the path, more than the 500 KiB Google reads, a line that is not `field: value`, a directive no crawler reads, a rule before any user-agent, a relative sitemap, or the whole site disallowed for Googlebot; a 404 is the problem *no robots.txt* (0.117.0; it read `status` alone).",
       "shapes": {
-        "qualifier": "Owed: correctness of the content is not read."
+        "qualifier": "*Correct* is the problem list: syntax a crawler parses, directives it reads, and not shutting Googlebot out."
       }
     },
     "AR-152": {
@@ -2639,14 +2639,14 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
-          "gte": 80
+          "path": "wcag_a_failures",
+          "eq": 0
         }
       },
-      "verdict": "owed",
-      "reading": "`score` is 100 less 8 per issue, at least 80: two WCAG-A failures — two images without alt, say — pass, while an H1 count other than one, not a WCAG requirement, costs the same. A rule repair is owed (A.10).",
+      "verdict": "measures",
+      "reading": "`wcag_a_failures` counts the level-A failures the HTML shows — images without alt, form fields without an accessible name, no page language (0.117.0; it read a score in which two such failures passed and a non-WCAG H1 count cost the same). Contrast is CN-036's and keyboard use is not tested, and `measures` says so.",
       "shapes": {
-        "conjunction": "Owed: *(WCAG)* names a standard the score only partly reads."
+        "conjunction": "*(WCAG)* names the standard; its level-A criteria that static HTML shows are what is read."
       }
     },
     "TE-181": {

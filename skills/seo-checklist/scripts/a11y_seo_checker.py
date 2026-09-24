@@ -10,6 +10,12 @@ import re
 from seo_common import load_html, parse_html
 
 
+# HTML input types that are either not rendered (`hidden`) or whose
+#  accessible name comes from their own value or alt attribute (`submit`, `button`,
+#  `reset`, `image`), per the HTML-AAM accessible-name computation.
+UNLABELLED_INPUT_TYPES = frozenset({"hidden", "submit", "button", "reset", "image"})
+
+
 def checker(source: str, timeout: int = 15) -> dict:
     html, url, fetched = load_html(source, timeout=timeout)
     parsed = parse_html(html, url)
@@ -49,8 +55,36 @@ def checker(source: str, timeout: int = 15) -> dict:
     # #000000 on #ffffff written inline is 21:1 and failed. Contrast is a computed
     # value; it belongs with the other computed ones in `rendered_audit.py`, which
     # is where CN-036 now reads it.
+    # TE-180 *Meet Accessibility (WCAG) Basics* asserted `score >= 80` until 0.117.0:
+    # a hundred less eight per issue, so two level-A failures passed, while an H1 count
+    # other than one — not a WCAG requirement — cost the same. It now counts the level-A
+    # failures this HTML shows, each over its whole list rather than the capped issues:
+    # an image with no alt (1.1.1), a form field with no accessible name (1.3.1, 4.1.2),
+    # and no page language (3.1.1).
+    #
+    # A field's name can come from aria-label, aria-labelledby, title, a label[for], or
+    # a <label> wrapping it. Hidden inputs are not rendered, and submit, button, reset
+    # and image inputs take their name from their value or alt, so none of those needs
+    # a label; the score above still counts them the old way.
+    unnamed_fields = 0
+    for field in inputs:
+        if (field.name == "input"
+                and (field.get("type") or "").lower() in UNLABELLED_INPUT_TYPES):
+            continue
+        field_id = field.get("id")
+        if (field.get("aria-label") or field.get("aria-labelledby") or field.get("title")
+                or field.find_parent("label")
+                or (field_id and soup.find("label", attrs={"for": field_id}))):
+            continue
+        unnamed_fields += 1
+    wcag_a = {"images_missing_alt": len(missing_alt),
+              "unnamed_fields": unnamed_fields,
+              "missing_lang": not parsed.get("lang")}
     return {
         "url": url or source,
+        "wcag_a": wcag_a,
+        "wcag_a_failures": (wcag_a["images_missing_alt"] + wcag_a["unnamed_fields"]
+                            + int(wcag_a["missing_lang"])),
         "score": max(0, 100 - 8 * len(issues)),
         "checks": {
             "h1_count": h1_count,

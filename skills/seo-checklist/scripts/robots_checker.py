@@ -53,6 +53,55 @@ STANDARD_CRAWLERS = [
 ]
 
 
+# basis: standard — Google reads the first 500 KiB of a robots.txt and ignores the rest
+#  ("How Google interprets the robots.txt specification").
+GOOGLE_ROBOTS_MAX_BYTES = 500 * 1024
+
+# Fields a robots.txt line may carry and still mean something to a crawler this audit
+# cares about: RFC 9309's three, the sitemap extension, and the ones Bing and Yandex read.
+# Anything else — `Noindex:`, which Google stopped honouring in 2019, is the usual one —
+# is a line the site believes does something and does not.
+KNOWN_ROBOTS_FIELDS = frozenset({"user-agent", "allow", "disallow", "sitemap",
+                                 "crawl-delay", "host", "clean-param"})
+
+
+def correctness_problems(text: str, content_type: str) -> list[str]:
+    """What stops a served robots.txt from saying what its owner means, one line each.
+
+    AR-151 *Provide a Correct robots.txt* asserted `status == 200` until 0.117.0, so a
+    file answering 200 with `Disallow: /` for every crawler — or the site's HTML shell
+    served at the path — was *correct*.
+    """
+    head = text.lstrip()[:200].lower()
+    if "html" in (content_type or "").lower() or head.startswith(("<!doctype", "<html")):
+        return ["the response is an HTML page, not a robots.txt file"]
+    problems = []
+    if len(text.encode("utf-8")) > GOOGLE_ROBOTS_MAX_BYTES:
+        problems.append("larger than the 500 KiB Google reads; rules past it are ignored")
+    in_group = False
+    for number, raw in enumerate(text.splitlines(), 1):
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        if ":" not in line:
+            problems.append(f"line {number} is not a `field: value` line")
+            continue
+        field, value = (part.strip() for part in line.split(":", 1))
+        field = field.lower()
+        if field not in KNOWN_ROBOTS_FIELDS:
+            problems.append(f"line {number}: `{field}` is not a directive crawlers read")
+        elif field == "user-agent":
+            in_group = True
+        elif field in ("allow", "disallow") and not in_group:
+            problems.append(f"line {number}: a rule before any user-agent line is ignored")
+        elif field == "sitemap" and not value.lower().startswith(("http://", "https://")):
+            problems.append(f"line {number}: a sitemap must be an absolute URL")
+    parsed = robots_rules.parse(text)
+    if not robots_rules.allowed(parsed, "https://example.invalid/", "Googlebot")[0]:
+        problems.append("the whole site is disallowed for Googlebot")
+    return problems
+
+
 def fetch_robots_txt(url: str, timeout: int = 15) -> dict:
     """Fetch and parse robots.txt from a domain."""
     parsed = urlparse(url)
@@ -79,6 +128,7 @@ def fetch_robots_txt(url: str, timeout: int = 15) -> dict:
         result["status"] = resp.status_code
 
         if resp.status_code == 404:
+            result["correctness_problems"] = ["no robots.txt at this origin"]
             result["issues"].append("🔴 No robots.txt found — all crawlers allowed by default")
             # Still check AI crawlers
             for crawler in AI_CRAWLERS:
@@ -93,6 +143,8 @@ def fetch_robots_txt(url: str, timeout: int = 15) -> dict:
             return result
 
         result["raw"] = resp.text
+        result["correctness_problems"] = correctness_problems(
+            resp.text, (resp.headers or {}).get("content-type", ""))
         _parse_robots(resp.text, result)
 
     except requests.exceptions.RequestException as e:
