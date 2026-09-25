@@ -10,6 +10,33 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.127.0 — every table the registry is built from has a source or a reader
+
+Registry version: unchanged at `08c2492fb163`. No verdict moves.
+
+**`openspec/specs/governance/` GOV-3, second module: the twenty tables in
+`tools/build_checklist.py` the census counted as read by nothing.**
+
+* **Four were read — through the built registry, where an import census cannot see.**
+  `CANNOT_FAIL` is exactly what `audit_reachability.py` proves, mechanism for mechanism;
+  `APPLIES_WHEN` is what the REG-9 sweep holds against `passes_by_absence`; `SAME_CHECK` is
+  what `audit_item_semantics.py` groups; `LENS` is refused by the build if a model item has
+  none. `tests/test_build_sets.py` ties each to its reader by name.
+* **Two carried dead entries, now removed.** `REQUIRES` recorded a requirement for
+  `readability.py` and `competitor_gap.py`, which no item runs; `EFFORT_OVERRIDES` gave
+  MS-031 the effort its category already gives it. The registry did not move.
+* **One direction nothing held.** `audit_item_semantics.py` refuses a duplicate group nobody
+  ruled on, but not a `SAME_CHECK` pair that is *not* the same check — which would silently
+  drop the twin's weight for a question nothing else scores. Held now.
+* The rest are held against what each describes: the Plerdy spans tile rows 1–200 and name
+  every item; every argument template is used, and one that reads the crawl or Search
+  Console carries that requirement; every script and item requirement is in the runner's
+  vocabulary and changes something; every category has an effort; every guard token is
+  claimed by a recorded reason. `EFFORT_RANK` is now read off the runner's `EFFORT_COST`.
+
+Derived-sets census 178/70/108 → **177/89/88** (total/read/unread); the ratchet is 88.
+Probed 8 of 8 (`local/gov3/probe_build.py`). Suite 1898 → 1910.
+
 ## 0.126.0 — every set the runner decides with has a source or a reader
 
 Registry version: unchanged at `08c2492fb163`. No verdict moves.

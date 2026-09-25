@@ -183,6 +183,16 @@ from `seo_common` — and `tests/test_runner_sets.py` holds each of the rest aga
 thing it describes: the registry's vocabularies, the operator language, what scripts
 emit, what the classifier does with each member. Probed 11 of 11.
 
+**At 0.127.0: 177 sets, 89 read, 88 unread; none in `build_checklist.py` either.** Its
+twenty were a different shape: four were already held by a gate reading the *built
+registry* — `CANNOT_FAIL` by `audit_reachability.py`'s proofs, `APPLIES_WHEN` by the REG-9
+sweep, `SAME_CHECK` by `audit_item_semantics.py`, `LENS` by the build itself — which an
+import census cannot see, and `tests/test_build_sets.py` ties each to that reader by name.
+Measuring the rest found two tables carrying dead entries: `REQUIRES` for two scripts no
+item runs, and an `EFFORT_OVERRIDES` entry equal to its category's default. Both removed;
+the registry did not move. `SAME_CHECK` had one direction nothing held — a twin that is
+not the same check silently loses its weight — and now it is. Probed 8 of 8.
+
 Two lists were converted to derivations during this suite's writing — the notebook's spec
 manifest, and this document's own reader discovering documents by glob rather than by
 name — and neither conversion was required by anything. That is what the census now

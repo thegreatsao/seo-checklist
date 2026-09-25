@@ -29,7 +29,7 @@ SKILL_DIR = os.path.dirname(HERE)
 # rule the runner applies at grading time have to be the same set, or an item can owe a
 # declaration to one and not the other.
 sys.path.insert(0, os.path.join(SKILL_DIR, "scripts"))
-from checklist_runner import passes_by_absence  # noqa: E402
+from checklist_runner import EFFORT_COST, passes_by_absence  # noqa: E402
 
 # The same AST reading `tools/audit_reachability.py` makes of a checker's source, for
 # a different question: not "can this rule ever fail" but "does this rule's key reach
@@ -180,7 +180,6 @@ REQUIRES = {
     # taking it.
     "cwv_metrics.py": "offline",
     "rendered_audit.py": "offline",
-    "readability.py": "offline",
     "pagespeed.py": "api",
     "html_validator.py": "api",
     "domain_safety_check.py": "api",
@@ -195,7 +194,6 @@ REQUIRES = {
     "broken_links.py": "crawl",
     "sitemap_checker.py": "crawl",
     "indexability_matrix.py": "crawl",
-    "competitor_gap.py": "crawl",
     # Reads a file the user exported; no network, so even archive mode can use it.
     "gsc_links_csv.py": "offline",
     "gsc_checker.py": "gsc",
@@ -540,7 +538,6 @@ EFFORT_BY_CATEGORY = {
 EFFORT_OVERRIDES = {
     "CN-047": "low",    # fix spelling
     "CN-064": "low",    # add a call to action
-    "MS-031": "low",    # drop meta keywords
     "AR-160": "low",    # footer links
     "TE-176": "high",   # migrate to HTTP/2/3 — infrastructure, not a page edit
     "SP-107": "high",   # Core Web Vitals work is rarely a quick fix
@@ -549,7 +546,9 @@ EFFORT_OVERRIDES = {
 }
 # A human-facing task is never "low" no matter what its category says.
 EFFORT_FLOOR_BY_SOURCE = {"manual": "high", "llm": "medium"}
-EFFORT_RANK = {"low": 0, "medium": 1, "high": 2}
+# The build ranks the same three words the report divides by, so the order is read
+# off the one table that prices them.
+EFFORT_RANK = {effort: rank for rank, effort in enumerate(sorted(EFFORT_COST, key=EFFORT_COST.get))}
 
 # Some borrowed titles cover more than the evidence layer can honestly answer.
 # Keep the title for traceability, and tell the operator exactly which part the

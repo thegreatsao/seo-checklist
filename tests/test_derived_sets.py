@@ -56,7 +56,10 @@ import audit_derived_sets  # noqa: E402
 # report's `SEVERITY_ORDER`, and `audit_score_sensitivity`'s `SEVERITIES` and `DECIDED`),
 # ten moved to the read column through `tests/test_runner_sets.py`, and the three sources
 # they are read off — `REQUIREMENT_GATES`, `SEVERITIES`, `VERDICTS` — joined it read.
-UNREAD_AT_MOST = 108
+# 88 at 0.127.0, `build_checklist.py`'s twenty: `EFFORT_RANK` left as a derivation of the
+# runner's `EFFORT_COST`, and the other nineteen moved to the read column through
+# `tests/test_build_sets.py`.
+UNREAD_AT_MOST = 88
 
 
 class TheCensusDescribesThisTree(unittest.TestCase):
