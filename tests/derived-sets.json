@@ -1,9 +1,9 @@
 {
   "measured": "module-level upper-case names bound to a list, tuple, set or dict literal in scripts/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 185,
-  "read": 57,
-  "unread": 128,
+  "total": 178,
+  "read": 70,
+  "unread": 108,
   "modules": {
     "ai_crawler_policy_matrix": {
       "read": [
@@ -163,14 +163,6 @@
         }
       ],
       "unread": [
-        {
-          "name": "DECIDED",
-          "entries": 3
-        },
-        {
-          "name": "SEVERITIES",
-          "entries": 4
-        },
         {
           "name": "CANDIDATE_EFFORTS",
           "entries": 4
@@ -398,10 +390,6 @@
       ],
       "unread": [
         {
-          "name": "SEVERITY_ORDER",
-          "entries": 4
-        },
-        {
           "name": "STATUS_ICON",
           "entries": 8
         },
@@ -430,52 +418,6 @@
     "checklist_runner": {
       "read": [
         {
-          "name": "SEVERITY_WEIGHT",
-          "entries": 4
-        },
-        {
-          "name": "VERDICT_CREDIT",
-          "entries": 3
-        },
-        {
-          "name": "EFFORT_COST",
-          "entries": 3
-        },
-        {
-          "name": "GSC_UNAVAILABLE",
-          "entries": 3
-        },
-        {
-          "name": "MODE_CAPS",
-          "entries": 3
-        },
-        {
-          "name": "MODE_HELP",
-          "entries": 3
-        },
-        {
-          "name": "HOW_TO_SUPPLY",
-          "entries": 8
-        },
-        {
-          "name": "SECRET_CTX_KEYS",
-          "entries": 2
-        },
-        {
-          "name": "SAFE_BROWSING_ENV_KEYS",
-          "entries": 2
-        },
-        {
-          "name": "GSC_FALLBACKS",
-          "entries": 2
-        },
-        {
-          "name": "PAGE_SUBJECT_ARTIFACT_KEYS",
-          "entries": 2
-        }
-      ],
-      "unread": [
-        {
           "name": "FAILURE_LABEL",
           "entries": 5
         },
@@ -492,8 +434,40 @@
           "entries": 13
         },
         {
+          "name": "VERDICTS",
+          "entries": 3
+        },
+        {
+          "name": "SEVERITY_WEIGHT",
+          "entries": 4
+        },
+        {
+          "name": "SEVERITIES",
+          "entries": 4
+        },
+        {
+          "name": "VERDICT_CREDIT",
+          "entries": 3
+        },
+        {
+          "name": "EFFORT_COST",
+          "entries": 3
+        },
+        {
           "name": "SEVERITY_ALIAS",
           "entries": 5
+        },
+        {
+          "name": "GSC_UNAVAILABLE",
+          "entries": 3
+        },
+        {
+          "name": "MODE_CAPS",
+          "entries": 3
+        },
+        {
+          "name": "MODE_HELP",
+          "entries": 3
         },
         {
           "name": "SLOW_FIRST",
@@ -504,27 +478,27 @@
           "entries": 15
         },
         {
+          "name": "HOW_TO_SUPPLY",
+          "entries": 8
+        },
+        {
           "name": "UNREAD_KEYS",
           "entries": 2
         },
         {
-          "name": "NEEDS_A_LIVE_SITE",
-          "entries": 3
+          "name": "SECRET_CTX_KEYS",
+          "entries": 2
         },
         {
-          "name": "NEEDS_THE_OUTSIDE_WORLD",
-          "entries": 3
+          "name": "SAFE_BROWSING_ENV_KEYS",
+          "entries": 2
         },
         {
-          "name": "SEVERITY_ORDER_KEY",
-          "entries": 4
+          "name": "REQUIREMENT_GATES",
+          "entries": 6
         },
         {
-          "name": "VERDICT_RANK",
-          "entries": 3
-        },
-        {
-          "name": "SITEMAP_PATHS",
+          "name": "GSC_FALLBACKS",
           "entries": 2
         },
         {
@@ -532,14 +506,11 @@
           "entries": 47
         },
         {
-          "name": "PAGE_LEVEL",
+          "name": "PAGE_SUBJECT_ARTIFACT_KEYS",
           "entries": 2
-        },
-        {
-          "name": "STATUS_RANK",
-          "entries": 3
         }
-      ]
+      ],
+      "unread": []
     },
     "citation_readiness": {
       "read": [],
@@ -935,6 +906,10 @@
         {
           "name": "DEAD_FETCH_ERROR_KINDS",
           "entries": 3
+        },
+        {
+          "name": "CONVENTIONAL_SITEMAP_PATHS",
+          "entries": 3
         }
       ],
       "unread": [
@@ -948,10 +923,6 @@
         },
         {
           "name": "HEAD_REFUSED_STATUSES",
-          "entries": 3
-        },
-        {
-          "name": "CONVENTIONAL_SITEMAP_PATHS",
           "entries": 3
         }
       ]

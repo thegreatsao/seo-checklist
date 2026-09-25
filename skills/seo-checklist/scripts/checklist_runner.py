@@ -541,6 +541,8 @@ def fetch_page(url: str, enforce_guard: bool = True) -> Fetch:
 
 # Statuses
 PASS, FAIL, WARN = "PASS", "FAIL", "WARN"
+# The statuses `score()` decides on, worst first, in the order the credit rises.
+VERDICTS = (FAIL, WARN, PASS)
 NO_DATA, MANUAL, LLM_PENDING, NA = "NO_DATA", "MANUAL", "LLM_PENDING", "N/A"
 # The audit could have decided this and was not given what it needed. Split out of
 # NO_DATA in 0.16, because that status was carrying four unrelated sentences at once:
@@ -565,6 +567,9 @@ NEEDS_INPUT = "NEEDS_INPUT"
 #  14.6. It moves the score most on exactly the sites where severity discriminates,
 #  which is where the critical items are the broken ones
 SEVERITY_WEIGHT = {"critical": 10, "high": 6, "medium": 3, "low": 1}
+# Worst first: the registry's four words. Every severity sort in the runner and
+# report is read off this one ordering.
+SEVERITIES = ("critical", "high", "medium", "low")
 
 # The credit a verdict earns against its item's weight. A table since 0.94.0; before
 # that the same three numbers were written inline twice — once for the headline and
@@ -1658,7 +1663,7 @@ def score(graded: list[dict]) -> dict:
     it**, and the buckets sum to the registry — so no item can hide in a denominator,
     and a test asserts the sum. Percentages named nobody; `waiting_on_you` is a list
     of things to do."""
-    scored = [g for g in graded if g["status"] in (PASS, FAIL, WARN)]
+    scored = [g for g in graded if g["status"] in VERDICTS]
     applicable = [g for g in graded if g["status"] != NA]
 
     # Weight is carried per *check*, not per item. Seven duplicate groups in this
@@ -1713,7 +1718,7 @@ def score(graded: list[dict]) -> dict:
         c["score"] = round(100 * earned_c / total_c) if total_c else None
         # What the bar cannot show: a single failing critical in an otherwise clean
         # category still scores well, so the count travels with the score.
-        c["worst_open"] = next((s for s in ("critical", "high", "medium", "low")
+        c["worst_open"] = next((s for s in SEVERITIES
                                if any(g["severity"] == s and g["status"] in (FAIL, WARN)
                                       for g in scored if g["category"] == key)), None)
 
@@ -1819,11 +1824,24 @@ def artifact_secrets(ctx: dict) -> tuple[str, ...]:
                     if (value := os.environ.get(key))))
 
 
+# The gates below are read off this table, so a new `requires` value is decided
+# here or tests/test_runner_sets.py refuses it.
+REQUIREMENT_GATES = {
+    "offline": {"page_level"},
+    "fetch": {"page_level", "live_site"},
+    "crawl": {"live_site"},
+    "api": {"live_site", "outside_world"},
+    "gsc": {"outside_world"},
+    "safe_browsing": {"outside_world"},
+}
+
+
 # What an unreachable entry page makes undecidable. `gsc` is deliberately absent:
 # Search Console serves Google's stored history, which is still answerable when
 # the site is down right now. Everything else here reads the live site — directly
 # (fetch, crawl) or through an API that fetches it for us (PageSpeed, W3C).
-NEEDS_A_LIVE_SITE = {"fetch", "crawl", "api"}
+NEEDS_A_LIVE_SITE = {req for req, gates in REQUIREMENT_GATES.items()
+                     if "live_site" in gates}
 
 
 # What a *wrong* entry page makes undecidable — everything the reachability gate
@@ -1867,7 +1885,8 @@ def unreachable_skips(items: list[dict], reason: str,
 # an index, IndexNow submits it, and a Search Console property cannot exist for an
 # address on somebody's LAN. None of that is a defect in the site or in the tool,
 # and none of it becomes possible by trying harder.
-NEEDS_THE_OUTSIDE_WORLD = {"api", "gsc", "safe_browsing"}
+NEEDS_THE_OUTSIDE_WORLD = {req for req, gates in REQUIREMENT_GATES.items()
+                           if "outside_world" in gates}
 
 
 def private_host_skips(items: list[dict], host: str,
@@ -2036,9 +2055,7 @@ def run_series(domain: str, exclude: str, limit: int = HISTORY_RUNS) -> list[dic
     return [r[1] for r in rows[-limit:]]
 
 
-# basis: convention — a sort order for the streak list, definitional in the same way
-#  VERDICT_RANK is: critical before low is the only ordering severity can have
-SEVERITY_ORDER_KEY = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+SEVERITY_ORDER_KEY = {severity: rank for rank, severity in enumerate(SEVERITIES)}
 
 
 def open_since(series: list[dict], current: list[dict]) -> list[dict]:
@@ -2074,10 +2091,7 @@ def open_since(series: list[dict], current: list[dict]) -> list[dict]:
 # Where a status sits on the pass/fail scale, for saying whether a change was an
 # improvement. Only these three are on it: NO_DATA, MANUAL, LLM_PENDING and N/A are
 # not worse or better verdicts, they are the absence of one.
-# basis: convention — definitional rather than calibratable: FAIL < WARN < PASS is the
-#  only ordering those three can have. NO_DATA and MANUAL are deliberately absent — they
-#  are the absence of a verdict, not a worse one
-VERDICT_RANK = {FAIL: 0, WARN: 1, PASS: 2}
+VERDICT_RANK = {status: rank for rank, status in enumerate(VERDICTS)}
 
 
 def direction(was: str, now: str) -> str:
@@ -2312,8 +2326,6 @@ def profile_excludes(items: list[dict], profile: dict) -> dict[str, str]:
     return out
 
 
-SITEMAP_PATHS = ("/sitemap.xml", "/sitemap_index.xml")
-
 # Extensions that are certainly not pages. A stylesheet or a PDF sampled as a
 # page fails every page-level check, and because sampling aggregates on the
 # worst verdict, one asset in the sample condemns the whole site.
@@ -2400,8 +2412,10 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
     single entry URL and says so, rather than claiming to have looked wider."""
     try:
         from lib.safe_http import robots_allows, safe_get
+        from seo_common import CONVENTIONAL_SITEMAP_PATHS
     except ImportError:
         from scripts.lib.safe_http import robots_allows, safe_get
+        from scripts.seo_common import CONVENTIONAL_SITEMAP_PATHS
     host = urlparse(base_url).netloc
     found: list[str] = []
 
@@ -2415,7 +2429,7 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
                  if row.get("html") and row.get("status") == 200
                  and same_host(key) and looks_like_a_page(key)]
 
-    for path in SITEMAP_PATHS if not found else ():
+    for path in CONVENTIONAL_SITEMAP_PATHS if not found else ():
         if found:
             break
         try:
@@ -2477,7 +2491,8 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
     return out
 
 
-PAGE_LEVEL = {"offline", "fetch"}
+PAGE_LEVEL = {req for req, gates in REQUIREMENT_GATES.items()
+              if "page_level" in gates}
 
 
 def is_page_level(item: dict) -> bool:
@@ -2565,9 +2580,8 @@ def same_page(a: str, b: str) -> bool:
     return key(a) == key(b)
 
 
-# basis: convention — definitional: aggregating a page-level check across sampled pages
-#  takes the worst verdict, so FAIL must outrank WARM and WARN outrank PASS
-STATUS_RANK = {FAIL: 3, WARN: 2, PASS: 1}
+STATUS_RANK = {status: len(VERDICTS) - rank
+               for rank, status in enumerate(VERDICTS)}
 
 
 def aggregate_pages(primary: list[dict], per_page: list[list[dict]]) -> list[dict]:

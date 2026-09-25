@@ -45,10 +45,8 @@ SCRIPTS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, SCRIPTS)
 
 from checklist_report import EFFORT_COST  # noqa: E402
-from checklist_runner import FAIL, PASS, SEVERITY_WEIGHT, WARN  # noqa: E402
-
-DECIDED = (PASS, FAIL, WARN)
-SEVERITIES = ("critical", "high", "medium", "low")
+from checklist_runner import (FAIL, PASS, SEVERITIES, SEVERITY_WEIGHT,  # noqa: E402
+                              VERDICTS as DECIDED, WARN)
 
 # The tables to try. Chosen to bracket what somebody could defend rather than to
 # be exhaustive, and the two ends are the ones that carry the argument.

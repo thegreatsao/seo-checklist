@@ -51,7 +51,12 @@ import audit_derived_sets  # noqa: E402
 # 128 at 0.116.0: 0.114.0 and 0.116.0 added four sets (`SHAPES`, `EXTERNAL_SUBJECTS`,
 # `CONCEPTS`, `HREF_CONCEPTS`), and the tests that now assert their membership read
 # them, taking the column back to where 0.113.0 left it.
-UNREAD_AT_MOST = 128
+# 108 at 0.126.0, the runner's sixteen: ten unread sets left the census as derivations
+# (the three `requires` gates, three orderings and `SITEMAP_PATHS` in the runner, the
+# report's `SEVERITY_ORDER`, and `audit_score_sensitivity`'s `SEVERITIES` and `DECIDED`),
+# ten moved to the read column through `tests/test_runner_sets.py`, and the three sources
+# they are read off — `REQUIREMENT_GATES`, `SEVERITIES`, `VERDICTS` — joined it read.
+UNREAD_AT_MOST = 108
 
 
 class TheCensusDescribesThisTree(unittest.TestCase):
@@ -111,9 +116,11 @@ class TheCensusDescribesThisTree(unittest.TestCase):
         # learned to resolve aliases and found that `test_runner.py` had been asserting
         # it all along as `r.MODE_CAPS`. `ASSET_EXTENSIONS` is the replacement, and the
         # swap is the point: an example of "nothing reads this" is a claim about the
-        # tree, and it goes stale like any other.
-        self.assertIn("ASSET_EXTENSIONS",
-                      [e["name"] for e in modules["checklist_runner"]["unread"]])
+        # tree, and it goes stale like any other. It went stale again at 0.126.0, when
+        # `tests/test_runner_sets.py` gave every set in the runner a reader;
+        # `HEAD_REFUSED_STATUSES` stands here now.
+        self.assertIn("HEAD_REFUSED_STATUSES",
+                      [e["name"] for e in modules["seo_common"]["unread"]])
 
     def test_read_means_the_test_named_the_module_it_came_from(self):
         """The measure itself, in both directions. `PAGE` is a constant in

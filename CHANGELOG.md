@@ -10,6 +10,38 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.126.0 — every set the runner decides with has a source or a reader
+
+Registry version: unchanged at `08c2492fb163`. No verdict moves.
+
+**`openspec/specs/governance/` GOV-3: a set that decides behaviour is derived from what it
+describes, or something reads it. Sixteen of `checklist_runner.py`'s sets were neither.**
+Each was measured against what it describes before anything was written; every relation
+held, so no verdict moves — what changes is that the next forgotten or dead entry fails by
+name.
+
+* **Derived.** The three `requires` gates (`NEEDS_A_LIVE_SITE`, `NEEDS_THE_OUTSIDE_WORLD`,
+  `PAGE_LEVEL`) are read off one table, `REQUIREMENT_GATES`, keyed by every value the
+  registry uses — a new value is decided there or refused. The severity order was written
+  by hand five times; `SEVERITIES` is the one tuple, and the runner's `SEVERITY_ORDER_KEY`,
+  the report's `SEVERITY_ORDER` and the score-sensitivity tool read it. `VERDICTS` is the
+  other: `score()` decides on it and both verdict rank maps are enumerations of it. The four
+  orderings leave the threshold inventory (convention 56 → 53, presentation 13 → 12, 162 →
+  159 numbers a verdict depends on), because none is a number anybody wrote.
+* **One behaviour change.** The runner kept its own two sitemap paths beside `seo_common`'s
+  three; it reads `seo_common`'s now, so page sampling with no crawl inventory also tries
+  `/sitemap-index.xml`.
+* **Read.** `tests/test_runner_sets.py` holds the rest against what they describe: every
+  severity word a script emits is the registry's or aliased; `measurement()` names every
+  operator `evaluate()` implements; every challenge marker is recognised where it lives and
+  not in prose; no asset extension is sampled as a page; every slow-first script is one the
+  registry runs; every unread key is one a script writes; `FAILURE_LABEL` is what
+  `ERROR_KINDS` is built from, which puts it under `audit_error_kinds.py`'s two-way check.
+
+Derived-sets census 185/57/128 → **178/70/108** (total/read/unread); the ratchet is 108.
+Probed 11 of 11 (`local/gov3/probe.py`). GOV-3 stays `partial`: 108 sets elsewhere are still
+unread. Suite 1887 → 1898.
+
 ## 0.125.0 — a passing audit says what it did not check
 
 Registry version: unchanged at `08c2492fb163`. No verdict moves.

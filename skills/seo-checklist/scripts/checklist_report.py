@@ -41,9 +41,6 @@ BAR_WARN_SCORE = 85          # basis: presentation — the upper band of the pai
 CAVEAT_LIST_SHOWN = 4
 LINKED_FROM_SHOWN = 3        # basis: presentation — the same, for a broken-URL row
 
-# basis: presentation — present at import. Only a sort order, so a wrong answer changes
-#  what is listed first rather than any verdict.
-SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 STATUS_ICON = {PASS: "PASS", FAIL: "FAIL", WARN: "WARN",
                NO_DATA: "NO DATA", NEEDS_INPUT: "NEED INPUT", MANUAL: "MANUAL",
                LLM_PENDING: "LLM", NA: "N/A"}
@@ -105,10 +102,11 @@ def load_scoring():
     return score
 
 
-from checklist_runner import EFFORT_COST, SEVERITY_WEIGHT  # noqa: E402,F401 — single
+from checklist_runner import EFFORT_COST, SEVERITIES, SEVERITY_WEIGHT  # noqa: E402,F401 — single
 #  source of truth. Both tables live in the runner since 0.94.0 so that SCR-2 can stamp
 #  the instrument in one place; `EFFORT_COST` is re-exported here, where it lived until
 #  then, because tools/audit_score_sensitivity.py imports it from this module.
+SEVERITY_ORDER = {severity: rank for rank, severity in enumerate(SEVERITIES)}
 
 
 # Not every caller is the runner. This script prints `ensure_ascii=False` JSON, and a

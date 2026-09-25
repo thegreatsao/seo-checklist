@@ -637,15 +637,19 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # `PAGE_WEIGHT_TARGET_KIB`, Lighthouse's documented target for total byte
         # weight, and `PAGE_WEIGHT_FLAG_KIB`, the point past which Lighthouse flags
         # an enormous network payload.
+        # 0.126.0 removes three `convention`s and one `presentation`: the runner's
+        # `SEVERITY_ORDER_KEY`, `VERDICT_RANK` and `STATUS_RANK` and the report's
+        # `SEVERITY_ORDER` are read off the `SEVERITIES` and `VERDICTS` tuples, so
+        # none of them is a number anybody wrote any more.
         self.assertEqual(by_kind, {
             "standard": 18,
             "measured": 11,
-            "convention": 56,
+            "convention": 53,
             "inherited": 77,
-            "presentation": 13,
+            "presentation": 12,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 162)
-        self.assertEqual(len(named), 175)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 159)
+        self.assertEqual(len(named), 171)
         self.assertEqual(len(uncounted), 15)
         # 169 -> 170: the outbound-link check's cap was a default argument value,
         # which is a place no instrument here can see. Promoting it to a module
@@ -670,8 +674,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 185 -> 188: `HTTP_SAMPLE_PAGES`, `PERMANENT_REDIRECTS` and
         # `TEMPORARY_REDIRECTS` in `security_headers.py` at 0.118.0.
         # 188 -> 190: the two page-weight standards above at 0.119.0.
+        # 190 -> 186: the four orderings above at 0.126.0, derived from tuples.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 190)
+                             for path in at._script_paths()), 186)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -897,15 +902,19 @@ def over(result):
             f"{self.UNNAMED_CEILING}. A threshold with no name cannot carry a basis, "
             f"so name it — or raise this ceiling deliberately and say why")
 
-    def test_a_sort_order_is_presentation_not_a_verdict_number(self):
+    def test_a_sort_order_is_not_a_verdict_number(self):
+        """Until 0.126.0 the report's `SEVERITY_ORDER` was counted as `presentation`
+        and the runner's identical `SEVERITY_ORDER_KEY` as `convention` — one
+        ordering, two classes. Both, and the two verdict rank maps, are read off the
+        `SEVERITIES` and `VERDICTS` tuples now, so none is a number anybody wrote;
+        the order they carry is held by `tests/test_runner_sets.py` against the
+        weights and the credit."""
         at = self._tool()
         named, _ = at.scan()
-        severity_order = [t for t in named if t["name"] == "SEVERITY_ORDER"]
-        self.assertEqual(len(severity_order), 1, severity_order)
-        self.assertEqual(severity_order[0]["kind"], "presentation")
-        verdict_inventory = [t["name"] for t in named
-                             if t["kind"] in at.VERDICT_KINDS]
-        self.assertNotIn("SEVERITY_ORDER", verdict_inventory)
+        derived = {"SEVERITY_ORDER", "SEVERITY_ORDER_KEY", "VERDICT_RANK",
+                   "STATUS_RANK"}
+        self.assertEqual(sorted(t["name"] for t in named if t["name"] in derived),
+                         [])
 
     def test_the_two_copies_of_googles_cwv_bands_agree(self):
         """`cwv_metrics` reads a local trace and `pagespeed` reads CrUX, and each

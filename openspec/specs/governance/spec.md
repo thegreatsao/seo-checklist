@@ -173,6 +173,16 @@ with a test that mentions some other module's `PAGE`. The stricter measure is th
 recorded, because the flattering number is the one that would let this be called
 enforced.
 
+**At 0.126.0: 178 sets, 70 read, 108 unread, and none of them in `checklist_runner.py`.**
+The runner's sixteen were measured against what each describes before anything was
+written (`local/gov3/measure.py`); every relation held, so this was a reader for the
+next edit rather than a repair. Where a set had a source, it became a derivation — the
+three `requires` gates from one table keyed by every value the registry uses, three
+orderings from the `SEVERITIES` and `VERDICTS` tuples, a second copy of the sitemap paths
+from `seo_common` — and `tests/test_runner_sets.py` holds each of the rest against the
+thing it describes: the registry's vocabularies, the operator language, what scripts
+emit, what the classifier does with each member. Probed 11 of 11.
+
 Two lists were converted to derivations during this suite's writing — the notebook's spec
 manifest, and this document's own reader discovering documents by glob rather than by
 name — and neither conversion was required by anything. That is what the census now
