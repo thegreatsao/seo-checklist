@@ -219,6 +219,21 @@ REVIEWED: dict[str, str] = {
 _SUFFIXES = ("ability", "ibility", "ations", "ation", "ising", "izing", "ised",
              "ized", "ing", "ies", "ed", "es", "s")
 
+from scope_line import print_scope  # noqa: E402
+
+# What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
+ESTABLISHES = (
+    "no two items run the same script, arguments and assertion unless one scores with "
+    "the other, and every item whose assertion shares no word with its title has a "
+    "recorded ruling"
+)
+DOES_NOT_ESTABLISH = (
+    "that any item measures what its title asks, since sharing a word is not measuring "
+    "the thing and audit_item_readings.py holds that reading, or that a PASS points the "
+    "way the title does"
+)
+
+
 
 def _stem(word: str) -> str:
     for suffix in _SUFFIXES:
@@ -354,6 +369,7 @@ def main() -> int:
             print(f"  - {line}")
         return 1
     print("\nOK")
+    print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
     return 0
 
 

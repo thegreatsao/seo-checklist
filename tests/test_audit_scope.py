@@ -2,9 +2,10 @@
 it did not.
 
 Every `tools/audit_*.py` answers one narrow question, and a green one is read as "the
-registry is correct" unless its output says which question it was. Until 0.125.0 one of
-the ten said so on a pass — `audit_reachability.py`, "the other 143 are not claimed
-either way" — and `audit_item_semantics.py` printed `OK`.
+registry is correct" unless its output says which question it was. Until 0.125.0 three
+of the ten said anywhere on a pass what they did not claim — `audit_reachability.py`'s
+"the other 143 are not claimed either way" among them — none last and none read by a
+test, and `audit_item_semantics.py` ended on `OK`.
 
 The contract, per audit: two module-level strings, `ESTABLISHES` and
 `DOES_NOT_ESTABLISH`, and a passing run whose last two lines are those strings behind

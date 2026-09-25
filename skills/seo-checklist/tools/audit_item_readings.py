@@ -68,6 +68,20 @@ QUALIFIERS = re.compile(
     r"|optimi[sz]e[ds]?|fast|strong|secure|proper|appropriate|quality|readable|clear"
     r"|consistent|complete|compelling)\b")
 
+from scope_line import print_scope  # noqa: E402
+
+# What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
+ESTABLISHES = (
+    "every rule-carrying item has a reading whose copy of its title and rule is "
+    "current, which names the path the rule asserts and answers every shape that fires "
+    "on the item"
+)
+DOES_NOT_ESTABLISH = (
+    "that any reading is true, which a person decides, or that a script's field still "
+    "means what it meant when the reading was written"
+)
+
+
 
 def _external(item: dict) -> bool:
     title = item["title"].lower()
@@ -160,7 +174,10 @@ def main() -> int:
             print(line)
         print(f"{len(found)} problem(s): re-read each named pair and edit "
               f"{READINGS.name} by hand")
-        return 1 if args.check else 0
+        if args.check:
+            return 1
+        print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
+        return 0
     entries = readings["items"]
     verdicts = Counter(entry["verdict"] for entry in entries.values())
     shapes = Counter(shape for item in rule_items(registry).values()
@@ -170,6 +187,7 @@ def main() -> int:
     print("owed: " + ", ".join(sorted(k for k, e in entries.items()
                                       if e["verdict"] == "owed")))
     print("shapes: " + ", ".join(f"{shapes[s]} {s}" for s in SHAPES))
+    print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
     return 0
 
 

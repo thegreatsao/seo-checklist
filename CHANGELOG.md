@@ -10,6 +10,33 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.125.0 — a passing audit says what it did not check
+
+Registry version: unchanged at `08c2492fb163`. No verdict moves.
+
+**`openspec/specs/governance/` GOV-6 asks every audit to say what it establishes and what
+it does not.** Measured on a pass, three of ten said anywhere in their output what they do
+not claim — `audit_reachability.py` ("the other 143 are not claimed either way"),
+`audit_derived_sets.py` and the score-sensitivity report — none of them last and none read
+by a test; `audit_item_semantics.py` ended on `OK`, the rest on counts or "in step with the
+tree". A column of green audit steps read as "the registry is correct", which none of them
+checks.
+
+* Every `tools/audit_*.py` carries two module-level sentences, `ESTABLISHES` and
+  `DOES_NOT_ESTABLISH`, and closes every passing run on them through
+  `tools/scope_line.py` — `establishes: …` and `does not establish: …`, last, because a CI
+  log is read from the bottom. The score report's closing disclaimer is replaced by its
+  pair.
+* `tests/test_audit_scope.py` holds it. The audits are found by globbing, so the next one
+  is in scope the day it lands; each must state both halves, no two may share a sentence,
+  and each is heard passing — the eight gates as the workflow invokes them, the
+  score-sensitivity report over a small results file, the revision audit's `main` over an
+  agreeing walk.
+
+GOV-6 stays `partial`: its second scenario is a reader taking a green audit for a right
+threshold anyway, and whether the line is read is outside any program — GOV-5's limit.
+Spec debt unchanged at 121/23/1/0/4. Suite 1880 → 1887.
+
 ## 0.124.0 — the suite reaches nothing but this machine
 
 Registry version: unchanged at `08c2492fb163`. No verdict moves.

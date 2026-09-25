@@ -42,6 +42,19 @@ from checklist_runner import ERROR_KINDS  # noqa: E402
 
 FIELD = "error_kind"
 
+from scope_line import print_scope  # noqa: E402
+
+# What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
+ESTABLISHES = (
+    "every error_kind the runner and the evidence scripts assign is named in the "
+    "runner's vocabulary, and every kind the vocabulary names is assigned somewhere"
+)
+DOES_NOT_ESTABLISH = (
+    "that any failure is given the right kind, or anything about the fetch layer's "
+    "own vocabulary, whose kinds stay on per-URL rows and do not reach the runner"
+)
+
+
 
 def assigned_kinds(path: str = RUNNER) -> set[str]:
     """Every literal string the source assigns to `error_kind`, however spelled.
@@ -180,6 +193,7 @@ def main() -> int:
         return 1
     if not problems:
         print("\nthe vocabulary and the source agree in both directions")
+    print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
     return 0
 
 

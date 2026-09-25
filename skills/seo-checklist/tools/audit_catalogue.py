@@ -51,6 +51,20 @@ CLOSE = "<!-- /derived -->"
 
 CONVENTION = ("severity", "message")
 
+from scope_line import print_scope  # noqa: E402
+
+# What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
+ESTABLISHES = (
+    "the opening account in script-output-shapes.md, of which scripts it covers and "
+    "which break the issues[] convention, matches what is derived from the registry "
+    "and the catalogue's own body"
+)
+DOES_NOT_ESTABLISH = (
+    "that the catalogue's shapes match what the scripts emit today, which is "
+    "probe_shapes.py's question and needs a live site"
+)
+
+
 
 def registry_scripts() -> set[str]:
     with open(REGISTRY, encoding="utf-8") as stream:
@@ -248,6 +262,7 @@ def main() -> int:
     if args.check:
         if held.strip() == fresh.strip():
             print("the catalogue's account of itself is in step with the tree")
+            print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
             return 0
         print("the catalogue's account of itself is stale. It says:\n", file=sys.stderr)
         print(held, file=sys.stderr)
@@ -263,6 +278,7 @@ def main() -> int:
     with open(CATALOGUE, "w", encoding="utf-8", newline=newline) as stream:
         stream.write(body)
     print(f"rewrote the derived block in {os.path.relpath(CATALOGUE, ROOT)}")
+    print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
     return 0
 
 

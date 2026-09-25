@@ -80,6 +80,20 @@ CANDIDATE_EFFORTS = {
 #  so agreement further down is agreement about work nobody reached.
 FIX_LIST_COMPARED = 10
 
+from scope_line import print_scope  # noqa: E402
+
+# What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
+ESTABLISHES = (
+    "how far the headline score and the head of the fix list move under the candidate "
+    "weight and effort tables on the runs given, and the per-severity pass rates "
+    "behind it"
+)
+DOES_NOT_ESTABLISH = (
+    "which table is right, which needs outcome data this tool does not have, or that a "
+    "small spread on these runs is a small spread on every site"
+)
+
+
 
 def scored_items(data: dict) -> list[dict]:
     return [i for i in data.get("items", []) if i.get("status") in DECIDED]
@@ -178,8 +192,7 @@ def report(paths: list[str]) -> int:
           "table moves the score exactly as far as severity discriminates on that "
           "site, and a site whose critical items are the broken ones is the case "
           "where it moves most.")
-    print("A number this tool prints is evidence, not a verdict: what it can show is "
-          "whether the choice of table matters, never which table is right.")
+    print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
     return 0
 
 

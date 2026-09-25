@@ -69,6 +69,20 @@ PAGE_DERIVED = {
     ("parse_html.py", "meta_robots"),
 }
 
+from scope_line import print_scope  # noqa: E402
+
+# What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
+ESTABLISHES = (
+    "every pattern and severity assertion in the registry can match something its "
+    "script emits, and every path a rule reads is recorded in the probed shapes "
+    "reference or exempted here with a reason"
+)
+DOES_NOT_ESTABLISH = (
+    "that an assertion fires on the sites it should, or that what it asserts is the "
+    "right question for the item's title"
+)
+
+
 
 def assertions(registry_path: str = REGISTRY) -> list[dict]:
     """Every pattern assertion in the registry, with the script that answers it."""
@@ -367,7 +381,10 @@ def main() -> int:
               "it at a severity the script emits, or move the item to whoever can "
               "answer it. If a path is genuinely absent only without a credential, "
               "add it to PATH_EXEMPT with the reason.", file=sys.stderr)
-    return 1 if (dead or dead_sev or dead_paths) else 0
+    if dead or dead_sev or dead_paths:
+        return 1
+    print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
+    return 0
 
 
 if __name__ == "__main__":

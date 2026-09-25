@@ -48,6 +48,20 @@ TESTS = os.path.join(ROOT, "tests")
 
 LITERALS = (ast.List, ast.Tuple, ast.Set, ast.Dict)
 
+from scope_line import print_scope  # noqa: E402
+
+# What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
+ESTABLISHES = (
+    "the census of hand-written sets in scripts/ and tools/, and of which ones a test "
+    "imports, matches the record it is checked against"
+)
+DOES_NOT_ESTABLISH = (
+    "that any set holds the right members, since importing a name is not asserting "
+    "what belongs in it and the read column is a ceiling, or anything about a set "
+    "built by a call or a comprehension, which is not counted"
+)
+
+
 
 def literal_sets(path: str) -> list[tuple[str, int]]:
     """Upper-case module-level names bound to a collection literal, with their size."""
@@ -240,6 +254,7 @@ def main() -> int:
             json.dump(record, stream, indent=2, ensure_ascii=False)
             stream.write("\n")
         print(f"\nwrote {os.path.relpath(args.out, ROOT)}")
+        print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
         return 0
 
     if args.check:
@@ -247,6 +262,7 @@ def main() -> int:
             stored = json.load(stream)
         if stored == record:
             print("\nthe record is in step with the tree")
+            print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
             return 0
         print(f"\n{os.path.relpath(args.check, ROOT)} is stale.", file=sys.stderr)
         if (stored.get("total"), stored.get("unread")) != (record["total"],
@@ -259,6 +275,7 @@ def main() -> int:
         print("Re-record with --out and say in the commit which set moved and why.",
               file=sys.stderr)
         return 1
+    print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
     return 0
 
 

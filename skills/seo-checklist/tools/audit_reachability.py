@@ -114,6 +114,21 @@ MECHANISMS = ("warn_complement", "path_never_emitted", "guarded_by_assertion",
 # so no value is left for FAIL.
 COMPLEMENTS = (("gte", "lt"), ("gt", "lte"), ("lte", "gt"), ("lt", "gte"))
 
+from scope_line import print_scope  # noqa: E402
+
+# What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
+ESTABLISHES = (
+    "no rule this tool can prove unable to report FAIL is left undeclared, every "
+    "cannot_fail declaration still has the proof it names, and no warn band is left "
+    "with no verdict to reach"
+)
+DOES_NOT_ESTABLISH = (
+    "that the rules it proves nothing about can fail, since silence here is the "
+    "absence of a proof either way, or that a rule able to fail fails on the right "
+    "sites"
+)
+
+
 
 def script_backed(registry: dict) -> list[dict]:
     """Items answered by a script, with an assertion to be reached."""
@@ -585,7 +600,10 @@ def main() -> int:
               "build_checklist.py with the mechanism this tool proved and a reason a "
               "reader can check. A dead warn band is never deliberate.",
               file=sys.stderr)
-    return 1 if findings else 0
+    if findings:
+        return 1
+    print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
+    return 0
 
 
 if __name__ == "__main__":

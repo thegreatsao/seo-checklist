@@ -101,9 +101,22 @@ KINDS = ("expect", "withdrawal", "fixture")
 
 MIN_ARGUMENT = 40
 
+from scope_line import print_scope  # noqa: E402
+
+# What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
+ESTABLISHES = (
+    "every move of a declaration or of served fixture material since the epoch has a "
+    "recorded decision, and every recorded decision names a move that happened"
+)
+DOES_NOT_ESTABLISH = (
+    "that a recorded decision was the right one, or anything about a checker repaired "
+    "under a standing declaration, which moves nothing this walk can see"
+)
+
 
 class Unreadable(Exception):
     """History could not be read. Never downgraded to a skip — see the module docstring."""
+
 
 
 def _git_binary() -> str:
@@ -426,7 +439,10 @@ def main() -> int:
     if not problems:
         print("every move since the epoch carries a recorded decision, and every "
               "recorded decision names a move that happened")
-    return 1 if (args.check and problems) else 0
+    if args.check and problems:
+        return 1
+    print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
+    return 0
 
 
 if __name__ == "__main__":

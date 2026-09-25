@@ -80,6 +80,20 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL = os.path.dirname(HERE)
 SCRIPTS = os.path.join(SKILL, "scripts")
 
+from scope_line import print_scope  # noqa: E402
+
+# What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
+ESTABLISHES = (
+    "every named number a verdict depends on carries a basis line of a known kind, "
+    "and every measured basis names its corpus, date and method"
+)
+DOES_NOT_ESTABLISH = (
+    "that any number is right: a basis is a claim and not a proof, an inherited one "
+    "has not been examined here, and constants this name-based scan cannot see are "
+    "listed with --uncounted rather than judged"
+)
+
+
 
 def _report_path(path: str) -> str:
     """`path` relative to the skill, or absolute when no relation can be expressed.
@@ -472,12 +486,14 @@ def main(argv: list[str] | None = None, paths: list[str] | None = None) -> int:
         for t in by_kind[a.kind]:
             print(f"  {t['file']}:{t['line']}  {t['name']}\n      {t['why']}")
         print(f"\n{len(by_kind[a.kind])} {a.kind} threshold(s)")
+        print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
         return 0
 
     if a.unnamed and not a.check:
         for t in unnamed:
             print(f"  {t['file']}:{t['line']}  {t['value']}   {t['source']}")
         print(f"\n{len(unnamed)} comparison(s) against a bare number")
+        print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
         return 0
 
     if a.uncounted:
@@ -485,6 +501,7 @@ def main(argv: list[str] | None = None, paths: list[str] | None = None) -> int:
             print(f"  {t['file']}:{t['line']}  {t['name']}")
         print(f"\n{len(uncounted)} module-level numeric constant(s) not in the inventory")
         if not a.check:
+            print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
             return 0
         print()
 
@@ -540,7 +557,10 @@ def main(argv: list[str] | None = None, paths: list[str] | None = None) -> int:
                   "with a name, which is worth more than a number with neither.",
                   file=sys.stderr)
             failed = True
-    return int(failed)
+    if failed:
+        return 1
+    print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
+    return 0
 
 
 if __name__ == "__main__":

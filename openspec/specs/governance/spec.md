@@ -65,7 +65,7 @@ the thing it describes, or it has a reader that says what belongs in it.**
 | calibration reports | four constants, against recorded data | yes, since this document |
 | known-issues ledger | defects somebody decided to keep | yes |
 | inert-findings ledger | findings no rule can act on | yes |
-| four registry audits | rules that cannot fire, unreachable verdicts, titles | yes |
+| registry audits (`tools/audit_*.py`) | rules that cannot fire, unreachable verdicts, titles, readings; each closes on what it does not establish | yes |
 | score-sensitivity report | how much of the score one weight decides | reports only |
 | CI matrix | everything above, three Pythons and Windows | — |
 | `tests/test_specs.py` | the documents in `openspec/specs/` | yes |
@@ -251,19 +251,28 @@ pretending otherwise.
 
 ### Requirement: GOV-6 — a static audit proves one thing and disclaims the rest
 
-Each registry audit SHALL state what it establishes and what it does not. None of them argues
-that a threshold is *right*; they establish that a rule can fire, that a verdict is
-reachable or declared unreachable, that an item asserts what its title says, and that every
-number carries a basis.
+Each audit — every `tools/audit_*.py` — SHALL state what it establishes and what it does
+not. None of them argues that a threshold is *right*; they establish that a rule can fire,
+that a verdict is reachable or declared unreachable, that a title and its rule have been
+read against each other, that every number carries a basis, and that a record is in step
+with what it records.
 
 **Why:** four green audits read as "the registry is correct" unless each says what it
 checked. The gap between "this rule can produce FAIL" and "this rule produces FAIL on the
 right sites" is the whole of `openspec/specs/declarations/`, and a reader who conflates them stops
 looking.
-**Reader:** partial. All four run in CI and fail the build, so what they *do* check is
-enforced. What they disclaim is stated in their docstrings and in no test — and the fifth
-tool, the score-sensitivity report, runs in CI and only prints, which is the disclaimer made
-executable and also the reason nobody notices its output.
+**Reader:** partial. `tests/test_audit_scope.py` holds the first scenario for every
+`tools/audit_*.py`, found by globbing: each declares `ESTABLISHES` and `DOES_NOT_ESTABLISH`,
+no two share a sentence, and a passing run closes on both — the eight gates as the
+workflow invokes them, the score-sensitivity report over a results file, the revision
+audit's `main` over an agreeing walk. The second scenario is a reader taking a green audit
+for a right threshold anyway: the output now says it is not one, and whether that is read
+is outside any program, GOV-5's limit.
+
+This line said until 0.125.0 that the disclaimers lived "in their docstrings and in no
+test". Measured on a pass: three audits of ten said somewhere in their output what they
+did not claim, none last and none read by a test, and `audit_item_semantics.py` ended on
+`OK`.
 
 #### Scenario: an audit states its own limits
 - **WHEN** a registry audit passes
