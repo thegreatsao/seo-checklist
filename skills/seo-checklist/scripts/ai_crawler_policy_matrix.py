@@ -7,6 +7,7 @@ import argparse
 import json
 from typing import NamedTuple
 
+from lib import robots_rules
 from seo_common import fetch_robots, fetch_url, normalize_url, origin, robots_allowed
 
 
@@ -74,6 +75,7 @@ def matrix(site: str, paths: list[str] | None = None, timeout: int = 15) -> dict
     paths = paths or ["/", "/llms.txt", "/sitemap.xml"]
     robots = fetch_robots(base, timeout=timeout)
     llms = fetch_url(base + "/llms.txt", timeout=timeout, max_bytes=500_000)
+    parsed = robots.get("parsed")
     rows = []
     for crawler, crawler_policy in AI_CRAWLERS.items():
         decisions = {}
@@ -87,12 +89,30 @@ def matrix(site: str, paths: list[str] | None = None, timeout: int = 15) -> dict
             "crawler": crawler,
             "scope": crawler_policy.scope,
             "honours_robots_txt": crawler_policy.honours_robots_txt,
+            # RFC 9309 group selection: a token governed only by `*` has been
+            # decided for, but the policy has not named that token.
+            "named": (parsed is not None
+                      and robots_rules.group_for(parsed, crawler)["matched"]
+                      == robots_rules.product_token(crawler)),
             "policy": ("allowed" if allowed_all else "restricted")
                       if crawler_policy.honours_robots_txt else NOT_ENFORCED_POLICY,
             "paths": decisions,
             "llms_txt_available": llms.get("status") == 200,
             "alignment": "documented" if llms.get("status") == 200 and allowed_all else "robots_only" if not allowed_all else "allowed_without_llms_txt",
         })
+    named_scopes = {
+        scope: sorted(row["crawler"] for row in rows
+                      if row["scope"] == scope and row["named"]
+                      and row["honours_robots_txt"])
+        for scope in (MODEL_TRAINING_SCOPE, ANSWER_FEEDING_SCOPE, AD_REVIEW_SCOPE)
+    }
+    if named_scopes[MODEL_TRAINING_SCOPE] and named_scopes[ANSWER_FEEDING_SCOPE]:
+        policy_grade = "explicit"
+    elif any(named_scopes.values()):
+        policy_grade = "partial"
+    else:
+        policy_grade = "silent"
+
     # `fetch_error` so the runner can tell "this site allows GPTBot" from "nobody
     # answered". Without it a refused connection produced a full policy matrix built
     # entirely out of absent robots.txt rules, and GEO-003 graded it.
@@ -100,6 +120,7 @@ def matrix(site: str, paths: list[str] | None = None, timeout: int = 15) -> dict
             "robots_status": robots["fetch"].get("status"),
             "llms_txt_url": base + "/llms.txt", "llms_txt_status": llms.get("status"),
             "fetch_error": robots["fetch"].get("error") or llms.get("error"),
+            "named_scopes": named_scopes, "policy_grade": policy_grade,
             "rows": rows}
 
 

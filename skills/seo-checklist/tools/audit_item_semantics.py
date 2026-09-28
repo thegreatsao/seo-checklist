@@ -74,7 +74,10 @@ REVIEWED: dict[str, str] = {
               "domain warns but can never fail, and an absent age remains NO_DATA.",
     "MB-104": "FIXED (0.44). The title promised a favicon that displays in a mobile "
               "result and the assertion only asked whether a <link rel=icon> existed. "
-              "It now fetches the icon and measures it.",
+              "It now fetches the icon and measures it. 0.129.0: measured against "
+              "Google's favicon page as it reads now — square, at least 8 px, a listed "
+              "format and crawlable, larger than 48 px recommended — instead of a 48 px "
+              "floor whose basis quoted a 'multiple of 48' the page no longer says.",
     "GO-134": "FIXED (0.23). A defect from 0.20: 'Resolve Search Console issues' read "
               "`opportunities` through a severity gate, so position 4.0 with 115 "
               "impressions printed as a high failure. An opportunity is not a defect at "

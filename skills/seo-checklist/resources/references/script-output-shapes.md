@@ -117,8 +117,13 @@ for that page. Use `--no-http-cache` for an isolated timing.
 `robots_status` — int
 `llms_txt_url` — str
 `llms_txt_status` — int
+`fetch_error` — NoneType or str
+`named_scopes.model_training[]` — array of str
+`named_scopes.answer_feeding[]` — array of str
+`named_scopes.ad_landing_page_review[]` — array of str
+`policy_grade` — str  (`explicit` | `partial` | `silent`)
 `rows[]` — array
-  - item keys: crawler, scope, honours_robots_txt, policy, paths,
+  - item keys: crawler, scope, honours_robots_txt, named, policy, paths,
     llms_txt_available, alignment
   - `honours_robots_txt` is false for a documented user fetcher that generally ignores
     robots.txt; its `policy` is `not_enforced`, while `paths` retains the site's stated
@@ -574,12 +579,14 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `favicon.url` — str or NoneType  (resolved against the fetched page URL)
 `favicon.status` — int or NoneType
 `favicon.content_type` — str or NoneType
-`favicon.format` — str or NoneType  (png | ico | gif | jpeg | webp | svg)
+`favicon.format` — str or NoneType  (png | ico | gif | jpeg | webp | bmp | pbm | pgm | ppm | tiff | svg)
 `favicon.width` — int or NoneType
 `favicon.height` — int or NoneType
 `favicon.min_side_px` — int or NoneType  (raster images only)
-`favicon.displays_at_48px` — bool  (absent when the page was not fetched or the
-  fetched icon's format was not recognised, so an unmade measurement stays NO_DATA)
+`favicon.square` — bool or NoneType  (NoneType when dimensions are unknown)
+`favicon.google_format` — bool or NoneType  (NoneType when the format is unknown)
+`favicon.grade` — str  (`recommended` | `required_only` | `fails`; absent when
+  nothing was measured, except that a missing, blocked or unreachable declaration fails)
 `favicon.reason` — str
 `issues[]` — array
   - item keys: severity, message, url, evidence

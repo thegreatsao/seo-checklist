@@ -319,6 +319,16 @@ SAME_ON_BOTH = {
 # record. What is left is the item the fixtures *do* exercise, past the band and
 # into FAIL.
 BAND_UNSEEN = {
+    # 0.129.0 gave both of these a band from the cross-test's findings.
+    "MB-104": "the band is Google's requirement met short of its recommendation — "
+              "square and at least 8 px, but not larger than 48 px or not in Google's "
+              "format list. The good fixture's icon is a 64x64 PNG and passes; the "
+              "broken fixture declares none and fails. test_favicon_and_ai_policy."
+              "AFaviconIsGradedAsGoogleWritesIt reaches WARN at 48, 8, SVG and WebP",
+    "GEO-003": "the band is a robots.txt naming AI crawlers in one scope only. The "
+               "good fixture names both training and answer tokens and passes; the "
+               "broken fixture has no robots.txt and fails. test_favicon_and_ai_policy."
+               "AnAiCrawlerPolicyIsExplicitWhenItNamesTheCrawler reaches WARN",
     # 0.112.0 gave CN-056 its band: a publication date with no update date is half the
     # title. Both fixtures sit at the ends of it.
     "CN-056": "the band needs a publication date and no update date. The good pages "

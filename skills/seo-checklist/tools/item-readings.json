@@ -1390,12 +1390,24 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "favicon.displays_at_48px",
-          "truthy": true
+          "path": "favicon.grade",
+          "value_map": {
+            "recommended": "pass",
+            "required_only": "fail",
+            "fails": "fail"
+          }
+        },
+        "warn": {
+          "path": "favicon.grade",
+          "value_map": {
+            "recommended": "pass",
+            "required_only": "pass",
+            "fails": "fail"
+          }
         }
       },
-      "verdict": "answers",
-      "reading": "`favicon.displays_at_48px` fetches the declared icon and checks it can render at 48px, Google's minimum for search results.",
+      "verdict": "measures",
+      "reading": "`favicon.grade` grades the declared icon as Google's favicon page does: declared, crawlable by Googlebot-Image with the home page open to Googlebot, an image, square and at least 8 px fails otherwise; larger than 48 px in a listed format passes. Whether it represents the brand is what `measures` says is not read.",
       "shapes": {}
     },
     "MB-105": {
@@ -2963,17 +2975,24 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "rows",
-          "field": "alignment",
+          "path": "policy_grade",
           "value_map": {
-            "documented": "pass",
-            "robots_only": "pass",
-            "allowed_without_llms_txt": "fail"
+            "explicit": "pass",
+            "partial": "fail",
+            "silent": "fail"
+          }
+        },
+        "warn": {
+          "path": "policy_grade",
+          "value_map": {
+            "explicit": "pass",
+            "partial": "pass",
+            "silent": "fail"
           }
         }
       },
       "verdict": "answers",
-      "reading": "`rows` maps each AI crawler's alignment between robots.txt and llms.txt; allowed without llms.txt fails.",
+      "reading": "`policy_grade` says which scopes robots.txt names in a group of their own — training and answer feeding, among tokens that honour robots.txt; a policy left to `*` names nothing.",
       "shapes": {}
     },
     "GEO-004": {

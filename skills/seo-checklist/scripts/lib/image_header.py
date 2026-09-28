@@ -114,6 +114,74 @@ def _webp_dimensions(data: bytes) -> tuple[int, int] | None:
     return None
 
 
+def _bmp_dimensions(data: bytes) -> tuple[int, int] | None:
+    """The DIB header's size is its version, an identity rather than a bound:
+    BITMAPCOREHEADER (12 bytes) carries 16-bit sizes; BITMAPINFOHEADER and every
+    later version (V2–V5, OS/2's 64) carry signed 32-bit ones, where a negative
+    height is a top-down bitmap."""
+    size_field = data[14:18]
+    if data[:2] != b"BM" or len(size_field) != 4:
+        return None
+    header_size = int.from_bytes(size_field, "little")
+    if header_size == 12:
+        sizes = data[18:22]
+        return (_positive_dimensions(*struct.unpack("<HH", sizes))
+                if len(sizes) == 4 else None)
+    sizes = data[18:26]
+    if header_size not in (40, 52, 56, 64, 108, 124) or len(sizes) != 8:
+        return None
+    width, height = struct.unpack("<ii", sizes)
+    return _positive_dimensions(width, abs(height))
+
+
+def _netpbm_name(magic: bytes) -> str | None:
+    return {b"P1": "pbm", b"P2": "pgm", b"P3": "ppm",
+            b"P4": "pbm", b"P5": "pgm", b"P6": "ppm"}.get(magic)
+
+
+def _netpbm_dimensions(data: bytes) -> tuple[int, int] | None:
+    """Width and height after a Netpbm magic: whitespace-separated ASCII, `#` comments."""
+    if _netpbm_name(data[:2]) is None:
+        return None
+    tokens = []
+    for line in data[2:].split(b"\n"):
+        for token in line.split(b"#", 1)[0].split():
+            tokens.append(token)
+            if len(tokens) == 2:
+                if not all(token.isdigit() for token in tokens):
+                    return None
+                return _positive_dimensions(int(tokens[0]), int(tokens[1]))
+    return None
+
+
+def _tiff_dimensions(data: bytes) -> tuple[int, int] | None:
+    """ImageWidth (tag 256) and ImageLength (257) from the first IFD, each a SHORT
+    (type 3, two bytes) or a LONG (type 4, four), in 12-byte entries."""
+    width_tag, length_tag, entry_bytes = 256, 257, 12
+    value_bytes = {3: 2, 4: 4}
+    byte_order = {b"II*\0": "<", b"MM\0*": ">"}.get(data[:4])
+    offset_field = data[4:8]
+    if byte_order is None or len(offset_field) != 4:
+        return None
+    endian = "little" if byte_order == "<" else "big"
+    ifd_offset = int.from_bytes(offset_field, endian)
+    count_field = data[ifd_offset:ifd_offset + 2]
+    if len(count_field) != 2:
+        return None
+    start = ifd_offset + 2
+    entries = data[start:start + int.from_bytes(count_field, endian) * entry_bytes]
+    dimensions = {}
+    for index in range(0, len(entries) - len(entries) % entry_bytes, entry_bytes):
+        tag, value_type, count = struct.unpack(byte_order + "HHI",
+                                               entries[index:index + 8])
+        size = value_bytes.get(value_type)
+        if tag in (width_tag, length_tag) and count == 1 and size:
+            dimensions[tag] = int.from_bytes(entries[index + 8:index + 8 + size], endian)
+    if width_tag not in dimensions or length_tag not in dimensions:
+        return None
+    return _positive_dimensions(dimensions[width_tag], dimensions[length_tag])
+
+
 def _svg_dimensions(root) -> tuple[int, int] | None:
     def pixels(value: str | None) -> int | None:
         match = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*(?:px)?\s*", value or "", re.I)
@@ -142,10 +210,15 @@ def image_header(data: bytes) -> tuple[str, int | None, int | None] | None:
         ("gif", _gif_dimensions),
         ("jpeg", _jpeg_dimensions),
         ("webp", _webp_dimensions),
+        ("bmp", _bmp_dimensions),
+        ("netpbm", _netpbm_dimensions),
+        ("tiff", _tiff_dimensions),
     )
     for name, probe in probes:
         dimensions = probe(data)
         if dimensions:
+            if probe is _netpbm_dimensions:
+                name = _netpbm_name(data[:2])
             return name, dimensions[0], dimensions[1]
     try:
         root = ET.fromstring(data)

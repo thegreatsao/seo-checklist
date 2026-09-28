@@ -571,6 +571,7 @@ MEASURES = {
     "TE-170": "Caching, compression and Vary headers on the page's response. URL rewrite rules are not read.",
     "TECH-003": "Time to first byte, the first of the four LCP subparts. The other three need a browser trace.",
     "MB-093": "That the page declares a viewport. Whether the layout fits a phone is MB-107, which renders it.",
+    "MB-104": "Google's size, shape, format and crawl requirements for the icon the page declares. Whether it represents the brand, or keeps a stable URL, is not read.",
     "MB-098": "That every image with a srcset also carries sizes. A large image sent without srcset is MB-096.",
     "AR-152": "That robots.txt declares at least one user-agent group. Whether its rules are the right ones is a judgement the audit does not make.",
     "CN-040": "That the page links to a privacy policy. Whether the policy is current is not read.",
@@ -1146,15 +1147,15 @@ item(102, "low", S, "video_schema_checker.py", PAGE,
 item(103, "medium", S, "rendered_audit.py", RENDERED,
      {"path": "tap_targets_below_48px", "eq": 0},
      "Increase tap targets to 48x48 CSS pixels")
-# MB-104 left TE-166's synonym group in 0.44 because its title promises an icon
-# that displays, not merely a declaration. It now fetches and measures the icon: an
-# unreachable declaration is FAIL because the declared resource is defective, while
-# an unrecognised format is NO_DATA because no size was measured. A resolvable SVG
-# passes as a scalable vector. The separate measurement now carries weight 1; as
-# TE-166's scores_with twin it carried 0.
+# MB-104 reads Google's favicon page (last updated 2026-08-28): the requirement fails
+# the item, the recommendation warns; until 0.129.0 it held a 48 px floor under a basis
+# line quoting "a multiple of 48", which the page no longer says.
 item(104, "low", S, "favicon_check.py", PAGE,
-     {"path": "favicon.displays_at_48px", "truthy": True},
-     "Serve a favicon that resolves and is at least 48x48 - a declared icon returning 404 shows nothing in a mobile result")
+     {"path": "favicon.grade", "value_map": {
+         "recommended": "pass", "required_only": "fail", "fails": "fail"}},
+     "Serve a square favicon larger than 48x48 in a format Google Search supports (ICO, PNG, GIF, JPEG, BMP, PPM, TIFF), and let Googlebot-Image fetch it - a declared icon returning 404 shows nothing in a mobile result",
+     warn={"path": "favicon.grade", "value_map": {
+         "recommended": "pass", "required_only": "pass", "fails": "fail"}})
 item(105, "high", S, "javascript_render_audit.py", JSRENDER,
      {"path": "diffs", "len_eq": 0},
      "Put the title, description, canonical, H1s, internal links, schema and body text in the served HTML, not only in what JavaScript builds")
@@ -1667,18 +1668,18 @@ EXTRA = [
      "Flesh out llms.txt: title, description, sections, links"),
     ("GEO-003", "geo_ai", "AI crawler policy is explicit", "medium", S,
      "ai_crawler_policy_matrix.py", PAGE,
-     # The matrix reports an `alignment` per crawler and never the words "not
-     # managed". Allowing everything while publishing no llms.txt is precisely
-     # the policy this item calls inexplicit.
-     {"path": "rows", "field": "alignment",
-      "value_map": {"documented": "pass", "robots_only": "pass",
-                    "allowed_without_llms_txt": "fail"}},
+     # This item reads which scopes robots.txt names. The old `alignment` rule passed
+     # a wildcard-only policy because llms.txt made every allowed row `documented`.
+     {"path": "policy_grade", "value_map": {
+         "explicit": "pass", "partial": "fail", "silent": "fail"}},
      "Declare per-token rules for training, answer retrieval and ad review. Treat "
      "ClaudeBot as training; handle Claude-User and Claude-SearchBot separately. "
      "PerplexityBot feeds search, while Perplexity-User generally ignores robots.txt. "
      "Google-Extended covers Gemini training and grounding, not AI Overviews or AI "
      "Mode. Applebot-Extended controls training; Applebot answer use follows "
-     "nosnippet"),
+     "nosnippet",
+     {"path": "policy_grade", "value_map": {
+         "explicit": "pass", "partial": "pass", "silent": "fail"}}),
     # The floor moves with its twin GO-144; the derivation is written there.
     ("GEO-004", "geo_ai", "Answer blocks present for AEO", "medium", S,
      "answer_block_scanner.py", PAGE, {"path": "score", "gte": 32},

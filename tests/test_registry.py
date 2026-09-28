@@ -644,15 +644,18 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 0.128.0 adds one `convention`: `MAX_TARGET_FETCHES` in `canonical_checker.py`,
         # the canonical targets TE-176 asks for when the crawl has not already; the
         # same hundred as `MAX_TARGETS`, and it withholds a PASS when it bites.
+        # 0.129.0: MB-104's `MIN_FAVICON_SIDE_PX` (48, "a multiple of 48") gives way
+        # to Google's page as it reads now — `REQUIRED_MIN_SIDE_PX` 8 and
+        # `RECOMMENDED_SIDE_ABOVE_PX` 48, both `standard`: one out, two in.
         self.assertEqual(by_kind, {
-            "standard": 18,
+            "standard": 19,
             "measured": 11,
             "convention": 54,
             "inherited": 77,
             "presentation": 12,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 160)
-        self.assertEqual(len(named), 172)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 161)
+        self.assertEqual(len(named), 173)
         self.assertEqual(len(uncounted), 15)
         # 169 -> 170: the outbound-link check's cap was a default argument value,
         # which is a place no instrument here can see. Promoting it to a module
@@ -679,8 +682,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 188 -> 190: the two page-weight standards above at 0.119.0.
         # 190 -> 186: the four orderings above at 0.126.0, derived from tuples.
         # 186 -> 187: `MAX_TARGET_FETCHES` in `canonical_checker.py` at 0.128.0.
+        # 187 -> 188: MB-104's one floor became Google's two tiers at 0.129.0.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 187)
+                             for path in at._script_paths()), 188)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -2293,6 +2297,7 @@ class MeasuresQualifications(unittest.TestCase):
         "TECH-003": "Time to first byte, the first of the four LCP subparts. The other three need a browser trace.",
         "MB-093": "That the page declares a viewport. Whether the layout fits a phone is MB-107, which renders it.",
         "MB-098": "That every image with a srcset also carries sizes. A large image sent without srcset is MB-096.",
+        "MB-104": "Google's size, shape, format and crawl requirements for the icon the page declares. Whether it represents the brand, or keeps a stable URL, is not read.",
         "AR-152": "That robots.txt declares at least one user-agent group. Whether its rules are the right ones is a judgement the audit does not make.",
         "CN-040": "That the page links to a privacy policy. Whether the policy is current is not read.",
         "SP-109": "Third-party scripts that block rendering. The other common speed traps are separate items.",
@@ -2327,7 +2332,7 @@ class MeasuresQualifications(unittest.TestCase):
         import build_checklist
         return build_checklist
 
-    def test_the_registry_carries_exactly_the_twenty_nine_qualifications_verbatim(self):
+    def test_the_registry_carries_exactly_the_thirty_qualifications_verbatim(self):
         build_checklist = self.module()
         self.assertEqual(build_checklist.MEASURES, self.EXPECTED)
         shipped = {item["id"]: item["measures"] for item in ITEMS

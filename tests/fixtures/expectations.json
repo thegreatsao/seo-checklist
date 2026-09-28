@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "registry_version": "b8c20d13cd6b",
+  "registry_version": "405f6d395409",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -25,9 +25,9 @@
     ]
   },
   "fixture_digest": {
-    "good": "3af512b0bc95",
+    "good": "c1a19ceed02e",
     "broken": "41915277914c",
-    "good_tls": "48877c02c219",
+    "good_tls": "b84ad265e245",
     "broken_tls": "be8038ea85ee"
   },
   "triage": [
@@ -273,6 +273,24 @@
       "to": "48877c02c219",
       "decided": "fixture-was-wrong",
       "why": "The good sitemap listed /private/secret.html, which its robots.txt disallows, from the fixture's first days, so that the crawl's refusal and the server-log audit's subtraction of it had a served case. Since 0.110.0 that made GO-136 WARN and GO-138 FAIL on the half of the pair that has to be able to pass, and both items were never seen passing on a served site. The URL leaves the sitemap; the refusal and the subtraction are unit tests now (test_evidence_scripts.LinkProfile.test_a_robots_refusal_is_recorded_and_never_an_orphan and test_a_sitemap_url_robots_forbids_is_not_never_crawled, the second reddening on a mutation nothing else caught). The README's table of planted defects, stale in every other row, is rewritten."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good",
+      "item": null,
+      "from": "3af512b0bc95",
+      "to": "c1a19ceed02e",
+      "decided": "new-material",
+      "why": "robots.txt now names GPTBot, ClaudeBot, OAI-SearchBot and Claude-SearchBot in their own group while giving them the same access as the wildcard group, so GEO-003 exercises an explicit policy without moving a declared verdict."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good_tls",
+      "item": null,
+      "from": "48877c02c219",
+      "to": "b84ad265e245",
+      "decided": "new-material",
+      "why": "robots.txt now names GPTBot, ClaudeBot, OAI-SearchBot and Claude-SearchBot in their own group while giving them the same access as the wildcard group, so GEO-003 exercises an explicit policy without moving a declared verdict."
     }
   ],
   "fixtures": {
@@ -475,7 +493,7 @@
       "MB-104": {
         "expect": "PASS",
         "title": "Ensure Favicon Displays in Mobile SERPs",
-        "why": "'Ensure Favicon Displays in Mobile SERPs' needs an icon that a mobile result can actually render: declared, reachable, and at least 48 px on its shorter side. Every page in this fixture carries <link rel=\"icon\"> to /assets/logo.png, which the server returns as a 64x64 PNG"
+        "why": "every page declares /assets/logo.png, a 64x64 PNG: square, larger than 48 px, in a format Google lists"
       },
       "IN-123": {
         "expect": "PASS",
@@ -705,7 +723,7 @@
       "GEO-003": {
         "expect": "PASS",
         "title": "AI crawler policy is explicit",
-        "why": "this origin publishes both a robots.txt naming its policy and an llms.txt, which is the documented end of the item's scale rather than the permitted-by-silence end"
+        "why": "robots.txt names GPTBot and ClaudeBot for training and OAI-SearchBot and Claude-SearchBot for answers, in a group of their own"
       },
       "KW-076": {
         "expect": "PASS",

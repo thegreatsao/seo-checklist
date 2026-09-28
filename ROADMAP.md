@@ -80,14 +80,14 @@ robots.txt forbids, and it no longer does.
 
 | basis | count |
 |---|---|
-| standard | 18 |
+| standard | 19 |
 | measured | 11 |
 | convention | 54 |
 | inherited | 77 |
 | no basis | 0 |
-| **numbers a verdict depends on** | **160** |
+| **numbers a verdict depends on** | **161** |
 
-**`inherited` at 77 of 160 is the largest single gap between this tree and 1.0,** and it
+**`inherited` at 77 of 161 is the largest single gap between this tree and 1.0,** and it
 has barely moved: it was 75 of 144 at 0.87.1. Nothing is unnamed — that took a gate — but half
 the numbers a verdict rests on are still numbers nobody here decided. The calibrations so
 far show what closing one costs: each took a corpus, a method and a stated limitation.

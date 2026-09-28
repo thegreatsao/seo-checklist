@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "b8c20d13cd6b",
+  "registry_version": "405f6d395409",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -2188,12 +2188,25 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "favicon.displays_at_48px",
-          "truthy": true
+          "path": "favicon.grade",
+          "value_map": {
+            "recommended": "pass",
+            "required_only": "fail",
+            "fails": "fail"
+          }
+        },
+        "warn": {
+          "path": "favicon.grade",
+          "value_map": {
+            "recommended": "pass",
+            "required_only": "pass",
+            "fails": "fail"
+          }
         }
       },
+      "measures": "Google's size, shape, format and crawl requirements for the icon the page declares. Whether it represents the brand, or keeps a stable URL, is not read.",
       "effort": "medium",
-      "fix": "Serve a favicon that resolves and is at least 48x48 - a declared icon returning 404 shows nothing in a mobile result"
+      "fix": "Serve a square favicon larger than 48x48 in a format Google Search supports (ICO, PNG, GIF, JPEG, BMP, PPM, TIFF), and let Googlebot-Image fetch it - a declared icon returning 404 shows nothing in a mobile result"
     },
     {
       "id": "MB-105",
@@ -4386,12 +4399,19 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "rows",
-          "field": "alignment",
+          "path": "policy_grade",
           "value_map": {
-            "documented": "pass",
-            "robots_only": "pass",
-            "allowed_without_llms_txt": "fail"
+            "explicit": "pass",
+            "partial": "fail",
+            "silent": "fail"
+          }
+        },
+        "warn": {
+          "path": "policy_grade",
+          "value_map": {
+            "explicit": "pass",
+            "partial": "pass",
+            "silent": "fail"
           }
         }
       },

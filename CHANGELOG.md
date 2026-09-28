@@ -10,6 +10,43 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.129.0 — the favicon as Google writes it, and an AI policy that names its crawlers
+
+Registry version: `b8c20d13cd6b` → `405f6d395409`. Verdicts move: see below.
+
+Both found by running this tool on the fixtures of an independently built plugin
+(0.128.0 has the other four), re-measured, and decided by Anton on 28 September.
+
+**MB-104 *Ensure Favicon Displays in Mobile SERPs*** held a 48 px floor under a basis
+line quoting Google as requiring "a multiple of 48px". Google's favicon page (last
+updated 2026-08-28) now says a favicon must be square and at least 8x8px, recommends one
+larger than 48x48px, lists BMP, GIF, ICO, PNG, JPEG, PPM and TIFF, and asks that
+Googlebot-Image may fetch the icon and Googlebot the home page. The item now reads that:
+
+| | before | now |
+|---|---|---|
+| 32x32 PNG | FAIL | WARN — meets the requirement, not the recommendation |
+| 48x48 PNG | PASS | WARN — Google recommends *larger than* 48 |
+| 96x48 PNG | PASS (shorter side 48) | FAIL — not square |
+| SVG, WebP | PASS | WARN — outside Google's format list |
+| an icon URL answering an HTML page | NO_DATA | FAIL |
+| robots.txt keeping Googlebot-Image off the icon | PASS | FAIL |
+| BMP, PPM, TIFF | NO_DATA (unreadable) | graded — `lib/image_header.py` reads them now |
+
+It carries a `measures` line: whether the icon represents the brand, or keeps a stable
+URL, is not read.
+
+**GEO-003 *AI crawler policy is explicit*** passed whenever llms.txt existed and nothing
+was restricted, so `User-agent: *` alone was "explicit". It now asks which crawlers
+robots.txt *names* in a group of their own (RFC 9309 group selection; a token left to
+`*` has been decided for, not named), counting only tokens that honour robots.txt:
+**PASS** when training and answer feeding are both named, **WARN** when one is, **FAIL**
+when none is. llms.txt stays with GEO-001 and GEO-002.
+
+The good fixture's robots.txt names GPTBot, ClaudeBot, OAI-SearchBot and Claude-SearchBot
+in a group telling them exactly what `*` is told — no crawler's access changes; its
+declared verdicts do not move. Suite 1929 → 1951.
+
 ## 0.128.0 — four titles about the whole site read the whole crawl
 
 Registry version: `08c2492fb163` → `b8c20d13cd6b`. Verdicts move: see below.

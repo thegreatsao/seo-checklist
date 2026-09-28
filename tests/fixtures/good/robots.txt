@@ -9,4 +9,16 @@ Disallow: /cart
 Disallow: /checkout
 Disallow: /login
 
+# GEO-003: an AI crawler policy names its crawlers. These four are named and told
+# exactly what every crawler is told, so naming them changes no crawler's access.
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: OAI-SearchBot
+User-agent: Claude-SearchBot
+Disallow: /private/
+Disallow: /search
+Disallow: /cart
+Disallow: /checkout
+Disallow: /login
+
 Sitemap: http://127.0.0.1:8000/sitemap.xml
