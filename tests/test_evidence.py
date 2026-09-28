@@ -283,16 +283,17 @@ PAGE = """<!doctype html>
 
 
 class ParseHtml(unittest.TestCase):
-    """Four critical items read this script: CI-004 (meta robots), MS-026 (title),
-    CN-065 (one h1), MB-093 (viewport)."""
+    """Three critical items read this script: CI-004 (meta robots), CN-065 (one h1),
+    MB-093 (viewport). MS-026 (title) did until 0.128.0, when *every page* moved it to
+    the crawl — `test_crawl_wide_titles.EveryPageHasATitle`."""
 
     def parse(self, html, url="https://example.com/page"):
         import parse_html
         return parse_html.parse_html(html, url)
 
-    def test_a_complete_page_satisfies_all_four_critical_items(self):
+    def test_a_complete_page_satisfies_all_three_critical_items(self):
         out = self.parse(PAGE)
-        for item_id in ("CI-004", "MS-026", "CN-065", "MB-093"):
+        for item_id in ("CI-004", "CN-065", "MB-093"):
             self.assertEqual(verdict(item_id, out), PASS, item_id)
 
     def test_a_noindex_page_fails_ci_004(self):
@@ -310,11 +311,11 @@ class ParseHtml(unittest.TestCase):
         self.assertEqual(registry_rule("CI-004")["assert"]["missing_is"], "pass")
         self.assertEqual(verdict("CI-004", out), PASS)
 
-    def test_a_missing_title_and_a_missing_viewport_fail(self):
+    def test_a_missing_title_reads_none_and_a_missing_viewport_fails(self):
+        # `title` is still read here, by MS-020 and MS-021; None is its contract.
         no_title = self.parse(PAGE.replace(
             "<title>A page with everything the critical items ask for</title>", ""))
         self.assertIsNone(no_title["title"])
-        self.assertEqual(verdict("MS-026", no_title), FAIL)
         no_viewport = self.parse(PAGE.replace(
             '<meta name="viewport" content="width=device-width, initial-scale=1">', ""))
         self.assertIsNone(no_viewport["viewport"])
@@ -435,8 +436,10 @@ class ParseHtml(unittest.TestCase):
 
 
 class IndexabilityMatrix(unittest.TestCase):
-    """Four critical items read this script: CI-001 (indexable), CI-003 (200),
-    CI-005 (robots allows), CI-015 (no 5xx)."""
+    """Three critical items read this script's rows: CI-001 (indexable), CI-003 (200),
+    CI-005 (robots allows). CI-015 (no 5xx) read `rows.0` too until 0.128.0 — a 5xx
+    entry page stops the audit, so it could not fail; it reads the crawl now,
+    `test_crawl_wide_titles.FiveHundredsAnywhereInTheCrawl`."""
 
     def setUp(self):
         import indexability_matrix as ix
@@ -462,20 +465,19 @@ class IndexabilityMatrix(unittest.TestCase):
             "fetch": {"status": 200 if robots else 404},
             "parsed": parse_robots_txt(robots) if robots else None}
 
-    def test_a_healthy_page_satisfies_all_four(self):
+    def test_a_healthy_page_satisfies_all_three(self):
         self.serve()
         out = self.ix.evaluate(["https://example.com/page"], "https://example.com/")
         self.assertEqual(out["rows"][0]["status"], 200)
         self.assertIs(out["rows"][0]["robots_allowed"], True)
         self.assertEqual(out["rows"][0]["verdict"], "indexable")
-        for item_id in ("CI-001", "CI-003", "CI-005", "CI-015"):
+        for item_id in ("CI-001", "CI-003", "CI-005"):
             self.assertEqual(verdict(item_id, out), PASS, item_id)
 
-    def test_a_500_fails_both_status_items(self):
+    def test_a_500_fails_the_status_item(self):
         self.serve(status=503)
         out = self.ix.evaluate(["https://example.com/page"], "https://example.com/")
         self.assertEqual(verdict("CI-003", out), FAIL)
-        self.assertEqual(verdict("CI-015", out), FAIL)
 
     def test_a_robots_disallow_fails_ci_005(self):
         self.serve(robots="User-agent: *\nDisallow: /page\n")

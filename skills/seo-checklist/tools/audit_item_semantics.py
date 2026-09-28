@@ -142,8 +142,12 @@ REVIEWED: dict[str, str] = {
               "consistency is still computed and still counted in the severity tally; "
               "no item asserts it now.",
 
-    "CI-015": "OK. rows.0.status < 500 is exactly '5xx server errors', spelled in "
-              "numbers instead of words.",
+    "CI-015": "FIXED (0.128.0). Was ruled OK here as 'rows.0.status < 500 is exactly "
+              "5xx server errors', and the ruling read the number and not the page: "
+              "rows.0 is the entry page, and a 5xx entry page stops the audit, so the "
+              "rule could not fail in a finished run. Found by running this tool on "
+              "an independently built plugin's fixtures, whose 500 sat one link from "
+              "the entry. Now summary.server_errors == 0 over every crawled page.",
     "MS-021": "OK. title len_gte 30 is the '<30 characters' in the title, as a rule.",
     "CN-034": "OK. text_nodes_below_12px == 0 is 'readable font sizes' measured.",
     "CN-038": "OK on the measurement, and 'balance' is aspiration rather than a "

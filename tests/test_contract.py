@@ -235,7 +235,10 @@ SAME_ON_BOTH = {
     # items and this whole file would measure nothing.
     "CI-003": "the entry page must return 200 on both, or the run is gated and no "
               "other item is exercised at all",
-    "CI-015": "same: a 5xx entry page stops the audit instead of failing one item",
+    # CI-015 was here until 0.128.0 with "a 5xx entry page stops the audit". True, and
+    # it was the item's defect rather than the fixture's: reading only the entry page,
+    # the rule could not fail in any finished audit. It reads the crawl now, and the
+    # broken tree serves `/server-error.html` as a 500 off its entry page.
     "CI-005": "the broken site's own defect is having no robots.txt, and a missing "
               "robots.txt allows everything; one origin cannot both lack robots.txt "
               "and disallow its own entry page",
