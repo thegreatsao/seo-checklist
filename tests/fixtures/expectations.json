@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "registry_version": "08c2492fb163",
+  "registry_version": "b8c20d13cd6b",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -26,9 +26,9 @@
   },
   "fixture_digest": {
     "good": "3af512b0bc95",
-    "broken": "031366471266",
+    "broken": "41915277914c",
     "good_tls": "48877c02c219",
-    "broken_tls": "4646a85b7d15"
+    "broken_tls": "be8038ea85ee"
   },
   "triage": [
     {
@@ -219,6 +219,33 @@
       "to": "PASS",
       "decided": "fixture-was-wrong",
       "why": "The good sitemap listed /private/secret.html, which its robots.txt disallows, from the fixture's first days, so that the crawl's refusal and the server-log audit's subtraction of it had a served case. Since 0.110.0 that made GO-136 WARN and GO-138 FAIL on the half of the pair that has to be able to pass, and both items were never seen passing on a served site. The URL leaves the sitemap; the refusal and the subtraction are unit tests now (test_evidence_scripts.LinkProfile.test_a_robots_refusal_is_recorded_and_never_an_orphan and test_a_sitemap_url_robots_forbids_is_not_never_crawled, the second reddening on a mutation nothing else caught). The README's table of planted defects, stale in every other row, is rewritten."
+    },
+    {
+      "kind": "expect",
+      "origin": "broken",
+      "item": "CI-015",
+      "from": "PASS",
+      "to": "FAIL",
+      "decided": "new-material",
+      "why": "the entry page links /server-error.html, which answers 500"
+    },
+    {
+      "kind": "fixture",
+      "origin": "broken",
+      "item": null,
+      "from": "031366471266",
+      "to": "41915277914c",
+      "decided": "new-material",
+      "why": "The broken tree gains a linked 500 response and an image URL answering text/html, both declared by _answers.json and reached by the shared crawl."
+    },
+    {
+      "kind": "fixture",
+      "origin": "broken_tls",
+      "item": null,
+      "from": "4646a85b7d15",
+      "to": "be8038ea85ee",
+      "decided": "new-material",
+      "why": "The broken tree gains a linked 500 response and an image URL answering text/html, both declared by _answers.json and reached by the shared crawl."
     },
     {
       "kind": "expect",
@@ -950,7 +977,7 @@
       "MS-026": {
         "expect": "FAIL",
         "title": "Ensure Every Page Has a Title",
-        "why": "the entry page has no title element"
+        "why": "the crawl includes the untitled entry page"
       },
       "MS-028": {
         "expect": "FAIL",
@@ -1083,9 +1110,9 @@
         "why": "there is deliberately no robots.txt in this tree, and a missing robots.txt blocks nothing"
       },
       "CI-015": {
-        "expect": "PASS",
+        "expect": "FAIL",
         "title": "Eliminate 5xx Server Errors",
-        "why": "a static file server handing back files that exist returns no 5xx; the tree has no failing handler"
+        "why": "the entry page links /server-error.html, which answers 500"
       },
       "BL-083": {
         "expect": "FAIL",
@@ -1120,7 +1147,7 @@
       "TE-176": {
         "expect": "FAIL",
         "title": "Fix Canonicalization Issues",
-        "why": "the entry page canonicalises to a URL on a domain the fixture does not serve, so nothing resolves the duplicate it claims"
+        "why": "the crawl records an entry-page canonical to a domain the fixture does not serve, so nothing resolves the duplicate it claims"
       },
       "CI-012": {
         "expect": "PASS",
@@ -1150,7 +1177,7 @@
       "MD-187": {
         "expect": "FAIL",
         "title": "Fix Broken Images",
-        "why": "the entry page references /assets/no-such-image.png, which is not in the tree and is served as a 404"
+        "why": "the crawl records /assets/no-such-image.png answering 404 and /assets/soft-404.png answering text/html"
       },
       "AR-149": {
         "expect": "PASS",

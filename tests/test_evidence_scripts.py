@@ -7163,13 +7163,18 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
 
         Twenty-eight at 0.108.0: MB-096, MB-097 and MD-189 left `gte: 1` for a per-image
         `eq: 0`, over a script that sets `truncated` when an image's width or size went
-        unlearned — the same definition, three new members."""
+        unlearned — the same definition, three new members.
+
+        Thirty-one at 0.128.0: CI-015, MS-026 and TE-176 read the crawl — a count of
+        zero over scripts that carry the crawl's `truncated` (and, for TE-176, the
+        canonical targets it could not ask). Same definition, three new members."""
         ids = sorted(i["id"] for i in self._covered())
         self.assertEqual(ids, [
-            "AR-149", "AR-162", "AR-163", "BL-081", "BL-083", "CI-008", "CI-014", "CI-018",
-            "CN-039", "CN-041", "GO-136", "GO-137", "GO-138", "KW-071", "MB-096",
+            "AR-149", "AR-162", "AR-163", "BL-081", "BL-083", "CI-008", "CI-014", "CI-015",
+            "CI-018", "CN-039", "CN-041", "GO-136", "GO-137", "GO-138", "KW-071", "MB-096",
             "MB-097", "MB-098", "MD-185", "MD-187", "MD-189", "MS-022", "MS-023",
-            "MS-029", "TE-168", "TE-170", "TE-172", "TE-174", "TECH-001",
+            "MS-026", "MS-029", "TE-168", "TE-170", "TE-172", "TE-174", "TE-176",
+            "TECH-001",
         ], "the covered set moved; say which definition gives the new one")
 
     def test_every_way_this_registry_spells_nothing_is_covered(self):

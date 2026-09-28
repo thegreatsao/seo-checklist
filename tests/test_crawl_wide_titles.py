@@ -225,6 +225,16 @@ class CanonicalsAcrossTheCrawl(Inventories):
         self.assertEqual([(issue["message"], issue["url"]) for issue in out["issues"]],
                          [("Missing canonical", "https://example.test/b")])
 
+    def test_a_page_naming_where_its_redirect_lands_is_canonical_to_itself(self):
+        """The page path compares a canonical with the URL it fetched; the crawl
+        path keeps both the asked and the landed URL and must accept either."""
+        entry = page(SITE, canonical="https://example.test/home/")
+        entry["final_url"] = "https://example.test/home/"
+        entry["redirect_chain"] = [SITE]
+        out = self.run_over([entry])
+        self.assertEqual(out["rows"][0]["verdict"], "self_canonical")
+        self.assertEqual(out["issues"], [])
+
     def test_every_page_self_canonical_passes(self):
         out = self.run_over([
             page(SITE, canonical=SITE),

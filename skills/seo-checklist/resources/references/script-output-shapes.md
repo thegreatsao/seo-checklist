@@ -272,6 +272,16 @@ counted in neither direction)
 
 ### canonical_checker.py
 
+With `--inventory` the scope is every crawled HTML page that answered 200. Canonical
+targets already present in the crawl are not fetched again; distinct targets outside
+the crawl are fetched up to `MAX_TARGET_FETCHES` (100).
+
+Inventory mode adds `scope` (`site`), `truncated`, and, when truncated,
+`truncated_reason`. Its `rows[]` use the keys below plus `canonical_status` on
+non-self canonicals. `duplicate_canonical_targets` maps targets named by more than
+one source page. `truncated_reason` names the number of distinct canonical targets
+that could not be checked when there are any.
+
 `count` — int
 `rows[]` — array
   - item keys: url, status, final_url, canonical, verdict, issues
@@ -409,6 +419,12 @@ reverse-IP service. Both report `checked: false` with a reason instead.
 Reads `--inventory` (see `site_crawl.py`): the word count, the content hash and the
 MinHash signature are computed by the crawl, so this script compares pages rather
 than fetching them.
+
+`missing_titles[]` is the sorted list of page keys with an empty or whitespace-only
+title, including noindex pages. Unlike title duplication, absence is not competition.
+
+`summary.missing_title_pages` — int — the length of `missing_titles`, and what MS-026
+  asserts is zero
 
 `truncated` — bool — the crawl behind this stopped at `--max-pages`, so every
   count here is over the pages it read
@@ -1041,7 +1057,7 @@ Inventory mode:
 `broken_image_count` — int — absent when no image check produced usable evidence
 `broken_images[]` — array of str — absent under the same condition
 `broken[]` — array
-  - item keys: url, status, error_kind, pages
+  - item keys: url, status, error_kind, content_type, pages
 `truncated` — bool — true for any of three reasons: the crawl behind this was capped,
   an image answered nothing, or an image sat past `--max-images` and was never asked.
   `broken_image_count` and `broken_images` are absent whenever one of the last two
@@ -1065,6 +1081,15 @@ Inventory mode:
     when neither a document nor an `X-Robots-Tag` was read
   - `max_snippet` is the effective integer: -1 is unlimited, 0 suppresses the
     snippet, and the smallest non-negative value wins when sources disagree
+
+With `--inventory`, no URL is fetched. The alternate output shape is:
+
+`server_errors[]` — array, sorted by URL
+  - item keys: url, status, linked_from
+`summary.pages` — int
+`summary.server_errors` — int — what CI-015 asserts is zero
+`truncated` — bool
+`truncated_reason` — str — present when the shared crawl was truncated
 
 ### indexnow_checker.py
 

@@ -96,7 +96,11 @@ class EachWayAReadingFallsOutOfStep(unittest.TestCase):
 
     def test_a_reading_that_stops_naming_its_path(self):
         entry = self.readings["items"]["CI-015"]
-        entry["reading"] = entry["reading"].replace("`rows.0.status`", "the status")
+        before = entry["reading"]
+        entry["reading"] = before.replace("`summary.server_errors`", "the count")
+        # The mutation must happen, or this passes over an unchanged reading: it did at
+        # 0.128.0, when the path it cut out stopped being CI-015's.
+        self.assertNotEqual(entry["reading"], before)
         self.assertTrue(named(self.found(), "CI-015", "does not name the asserted path"))
 
     def test_measures_removed_from_an_item_read_as_measures(self):

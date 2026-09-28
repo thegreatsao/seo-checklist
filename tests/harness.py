@@ -50,6 +50,7 @@ import atexit
 import gzip
 import http.server
 import io
+import json
 import os
 import shutil
 import socket
@@ -225,6 +226,7 @@ class _Quiet(http.server.SimpleHTTPRequestHandler):
 
     root = ""
     response_headers: dict[str, str] = {}
+    route_answers: dict[str, dict] = {}
     # Whether this origin compresses textual responses the way a competently
     # configured server does. Off by default, and on for the `good` tree only.
     #
@@ -261,6 +263,18 @@ class _Quiet(http.server.SimpleHTTPRequestHandler):
         `cache_compression_checker.py` reads it, and a size that describes the
         uncompressed file would be a fixture lying about the thing under test.
         """
+        request_path = self.path.split("?", 1)[0]
+        if request_path == "/_answers.json":
+            self.send_error(404)
+            return None
+        answer = self.route_answers.get(request_path)
+        if answer is not None:
+            body = answer["body"].encode("utf-8")
+            self.send_response(answer["status"])
+            self.send_header("Content-Type", answer["content_type"])
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return io.BytesIO(body)
         if not self.gzip_text:
             return super().send_head()
         # The base class answers validators with `304 Not Modified`, and this
@@ -329,12 +343,18 @@ class _Site:
         if plain not in (None, "redirect", "serve"):
             raise ValueError(f"unknown plain policy: {plain!r}")
         self.dir = shutil.copytree(source, into)
+        answers_path = os.path.join(self.dir, "_answers.json")
+        route_answers = {}
+        if os.path.isfile(answers_path):
+            with open(answers_path, encoding="utf-8") as stream:
+                route_answers = json.load(stream)
         # Threading: several evidence scripts fetch concurrently, and a
         # single-threaded server deadlocks the moment one of them holds a connection
         # open while asking for the next page.
         handler = type("Handler", (_Quiet,), {
             "root": self.dir,
             "response_headers": dict(response_headers or {}),
+            "route_answers": route_answers,
             "gzip_text": gzip_text,
         })
         context = tls_context() if tls else None

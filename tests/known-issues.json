@@ -154,6 +154,7 @@
           "MS-023",
           "TE-168",
           "TE-172",
+          "TE-176",
           "TECH-001"
         ],
         "items_covered": [
@@ -164,6 +165,7 @@
           "BL-083",
           "CI-008",
           "CI-014",
+          "CI-015",
           "CI-018",
           "CN-039",
           "CN-041",
@@ -179,17 +181,20 @@
           "MD-189",
           "MS-022",
           "MS-023",
+          "MS-026",
           "MS-029",
           "TE-168",
           "TE-170",
           "TE-172",
           "TE-174",
+          "TE-176",
           "TECH-001"
         ],
         "scripts_that_report_a_cap": [
           "anchor_text_audit.py",
           "broken_links.py",
           "cache_compression_checker.py",
+          "canonical_checker.py",
           "css_minify_check.py",
           "duplicate_content.py",
           "faceted_nav_audit.py",
@@ -197,6 +202,7 @@
           "gsc_links_csv.py",
           "gsc_sitemap_reconcile.py",
           "image_weight_audit.py",
+          "indexability_matrix.py",
           "internal_links.py",
           "link_profile.py",
           "redirect_checker.py",
@@ -703,6 +709,7 @@
           "AR-162",
           "BL-081",
           "CI-008",
+          "CI-015",
           "CI-018",
           "CN-039",
           "CN-041",
@@ -710,8 +717,10 @@
           "GO-138",
           "MD-187",
           "MS-022",
+          "MS-026",
           "MS-029",
-          "TE-168"
+          "TE-168",
+          "TE-176"
         ],
         "max_pages": 100
       },
@@ -723,7 +732,7 @@
       "measured": {
         "cleared_by_reading": {
           "a11y_seo_checker.py": "slices findings, not input, and CN-036 reads a contrast count instead",
-          "canonical_checker.py": "no cap",
+          "canonical_checker.py": "MAX_TARGET_FETCHES bounds the site-wide target requests; TE-176 reads truncated beside the count",
           "collection_page_checker.py": "slices the printed lines, not `issues`",
           "critical_request_chain.py": "no cap",
           "domain_safety_check.py": "slices error text; no input is cut",
@@ -897,13 +906,13 @@
       "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants and the three detect_profile tables as inherited, DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and twenty module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
         "basis": {
-          "convention": 53,
+          "convention": 54,
           "inherited": 77,
           "measured": 11,
           "presentation": 12,
           "standard": 18
         },
-        "counted": 159,
+        "counted": 160,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:31"
         ],
@@ -934,7 +943,7 @@
       "claim": "Seventy-six of 217 items pass only when a path is absent or bounded, over nine spellings; whether a title states the side of its subject that its assertion means is read by a person, and the entry says why no check can.",
       "measured": {
         "items": 217,
-        "negative_polarity": 79
+        "negative_polarity": 80
       },
       "probe": "negative_polarity_share",
       "state": "open"

@@ -22,11 +22,14 @@ it belongs in an operator's own archive, not here.
 ## What a corpus tree can and cannot express
 
 `tests/harness._Quiet` is a static file server. It answers **200**, **404** for a
-missing file, and **301** for a directory requested without its trailing slash. It has
-no routing table, so a corpus tree cannot serve a 5xx, a redirect chain, a redirect
-loop, or a status that varies by user agent. Items that need those — `CI-003`,
-`CI-015`, `AR-150`, `CI-014` — stay unexercised by anything here, and the census will
-keep reporting them as never seen failing. **That is a limit of the mechanism, not a
+missing file, and **301** for a directory requested without its trailing slash. Since
+0.128.0 a tree may carry `_answers.json`, a table of fixed answers — a status, a
+`Content-Type` and a body per path — which is how `broken` serves a 500 and a soft-404
+image; it sends no `Location`, so a tree still cannot serve a redirect chain, a redirect
+loop, or a status that varies by user agent. `CI-003` needs a non-200 *entry* page,
+which stops the run before any item is graded. Items that need those — `CI-003`,
+`AR-150`, `CI-014` — stay unexercised by anything here, and the census will keep
+reporting them as never seen failing. **That is a limit of the mechanism, not a
 finding about the registry**, and it is written here so the next reader of the census
 does not have to rediscover it.
 

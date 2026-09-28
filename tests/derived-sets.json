@@ -222,7 +222,7 @@
         },
         {
           "name": "ITEM_REQUIRES",
-          "entries": 6
+          "entries": 7
         },
         {
           "name": "APPLIES_WHEN",
@@ -238,7 +238,7 @@
         },
         {
           "name": "SUBJECT_ALWAYS_PRESENT",
-          "entries": 48
+          "entries": 50
         },
         {
           "name": "CANNOT_FAIL",

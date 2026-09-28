@@ -212,6 +212,7 @@ ITEM_REQUIRES = {
     # script-wide default.
     "LO-198": "crawl",
     "MD-187": "crawl",
+    "TE-176": "crawl",
     # gsc_links_csv.py is offline for the three report-only items, but BL-083 asks
     # it to request the exported target pages.
     "BL-083": "fetch",
@@ -400,6 +401,8 @@ RULELESS_SUBJECT_ALWAYS_PRESENT = {
 }
 
 SUBJECT_ALWAYS_PRESENT = {
+    "CI-015": "every crawled page answered with a status; a 5xx among them is the finding",
+    "MS-026": "every crawled HTML page has a title element or has none; none is the finding",
     # The page's own directives and markup. Every page has a `meta robots`, a set of
     # headings and a DOM, present or absent by the author's choice — which is the
     # finding, not a missing subject.
@@ -695,8 +698,8 @@ item(14, "high", S, "redirect_checker.py", PAGE,
      {"path": "redirect_issues", "none_severity": ["critical", "high", "medium"]},
      "Use 301/308 for permanent and 302/307 for temporary; remove chains and loops",
      {"path": "redirect_issues", "none_severity": ["critical", "high"]})
-item(15, "critical", S, "indexability_matrix.py", PAGE,
-     {"path": "rows.0.status", "lt": 500},
+item(15, "critical", S, "indexability_matrix.py", CRAWLARG,
+     {"path": "summary.server_errors", "eq": 0},
      "Set up uptime and log alerts, resolve 5xx errors reported in GSC")
 # `alt_not_meaningful`, not `missing_alt`, since 0.105.0. The title asks whether
 # the alt text means anything and the old path asked only whether it existed:
@@ -777,8 +780,8 @@ item(23, "high", S, "gsc_cannibalization.py", GSCARG,
      {"path": "summary.cannibalized_queries", "lte": 3})
 item(24, "medium", L, fix="Lead the title with the main topic")
 item(25, "medium", L, fix="The title must accurately describe the page content and intent")
-item(26, "critical", S, "parse_html.py", HTMLARG,
-     {"path": "title", "truthy": True},
+item(26, "critical", S, "duplicate_content.py", CRAWLARG,
+     {"path": "summary.missing_title_pages", "eq": 0},
      "Every page needs a title")
 # Three items about meta descriptions that were two assertions between them. MS-027
 # and MS-028 both asserted `meta_description truthy` — the same field, the same script,
@@ -1531,7 +1534,7 @@ item(175, "high", S, "security_headers.py", PAGE,
      warn={"path": "page_security",
            "value_map": {"plain_http": "fail", "blocked_content": "fail",
                          "upgraded_content": "pass", "secure": "pass"}})
-item(176, "high", S, "canonical_checker.py", PAGE,
+item(176, "high", S, "canonical_checker.py", CRAWLARG,
      {"path": "issues", "len_eq": 0},
      "Fix canonicalization issues")
 item(177, "medium", S, "javascript_render_audit.py", PAGE,

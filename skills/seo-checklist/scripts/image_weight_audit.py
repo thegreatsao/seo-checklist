@@ -122,6 +122,13 @@ def _local_size(src: str, html_source: str) -> int | None:
 
 def _classify_image(url: str, result: dict, timeout: int) -> tuple[str, dict | None]:
     """Return broken/fine/unchecked, confirming ambiguous HEAD responses once."""
+    def is_text_response(response: dict) -> bool:
+        status = response.get("status")
+        content_type = (response.get("headers") or {}).get("content-type", "")
+        media_type = content_type.split(";", 1)[0].strip().lower()
+        return (isinstance(status, int) and status // 100 == 2
+                and media_type.startswith("text/"))
+
     error_kind = result.get("error_kind")
     if error_kind in DEAD_FETCH_ERROR_KINDS:
         return "broken", None
@@ -139,11 +146,15 @@ def _classify_image(url: str, result: dict, timeout: int) -> tuple[str, dict | N
         confirmed_status = confirmation.get("status")
         if confirmed_kind in DEAD_FETCH_ERROR_KINDS:
             return "broken", confirmation
+        if is_text_response(confirmation):
+            return "broken", confirmation
         if isinstance(confirmed_status, int) and confirmed_status // 100 in (2, 3):
             return "fine", confirmation
         if confirmed_status in (401, 403, 404, 405, 410):
             return "broken", confirmation
         return "unchecked", confirmation
+    if is_text_response(result):
+        return "broken", None
     if isinstance(status, int) and status // 100 in (2, 3):
         return "fine", None
     return "unchecked", None
@@ -287,6 +298,9 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
             length = headers.get("content-length")
             row["content_length"] = int(length) if length and length.isdigit() else None
             row["content_type"] = headers.get("content-type")
+            if state == "broken" and confirmation is not None:
+                row["content_type"] = (confirmation.get("headers") or {}).get(
+                    "content-type")
             if state != "broken":
                 if src not in sizes:
                     sizes[src] = _intrinsic_size(src, timeout, row["content_length"])
@@ -456,7 +470,7 @@ def audit_inventory(site_url: str, inventory_path: str, timeout: int = 15,
     unchecked = 0
     usable_evidence = False
     for image_url in ordered:
-        state, head, _confirmation = _check_image(image_url, timeout)
+        state, head, confirmation = _check_image(image_url, timeout)
         if isinstance(head.get("status"), int) or state == "broken":
             usable_evidence = True
         if state == "unchecked":
@@ -467,6 +481,8 @@ def audit_inventory(site_url: str, inventory_path: str, timeout: int = 15,
                 "url": image_url,
                 "status": head.get("status"),
                 "error_kind": head.get("error_kind"),
+                "content_type": ((confirmation if confirmation is not None else head)
+                                 .get("headers") or {}).get("content-type"),
                 "pages": references[image_url],
             })
 

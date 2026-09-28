@@ -641,15 +641,18 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # `SEVERITY_ORDER_KEY`, `VERDICT_RANK` and `STATUS_RANK` and the report's
         # `SEVERITY_ORDER` are read off the `SEVERITIES` and `VERDICTS` tuples, so
         # none of them is a number anybody wrote any more.
+        # 0.128.0 adds one `convention`: `MAX_TARGET_FETCHES` in `canonical_checker.py`,
+        # the canonical targets TE-176 asks for when the crawl has not already; the
+        # same hundred as `MAX_TARGETS`, and it withholds a PASS when it bites.
         self.assertEqual(by_kind, {
             "standard": 18,
             "measured": 11,
-            "convention": 53,
+            "convention": 54,
             "inherited": 77,
             "presentation": 12,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 159)
-        self.assertEqual(len(named), 171)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 160)
+        self.assertEqual(len(named), 172)
         self.assertEqual(len(uncounted), 15)
         # 169 -> 170: the outbound-link check's cap was a default argument value,
         # which is a place no instrument here can see. Promoting it to a module
@@ -675,8 +678,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # `TEMPORARY_REDIRECTS` in `security_headers.py` at 0.118.0.
         # 188 -> 190: the two page-weight standards above at 0.119.0.
         # 190 -> 186: the four orderings above at 0.126.0, derived from tuples.
+        # 186 -> 187: `MAX_TARGET_FETCHES` in `canonical_checker.py` at 0.128.0.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 186)
+                             for path in at._script_paths()), 187)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()

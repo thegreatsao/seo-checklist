@@ -1,0 +1,12 @@
+{
+  "/server-error.html": {
+    "status": 500,
+    "content_type": "text/html; charset=utf-8",
+    "body": "<!doctype html><html><head><title>500</title></head><body><h1>Internal Server Error</h1></body></html>"
+  },
+  "/assets/soft-404.png": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "body": "<!doctype html><html><head><title>Page not found</title></head><body><h1>Page not found</h1></body></html>"
+  }
+}

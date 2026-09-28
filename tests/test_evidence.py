@@ -1600,7 +1600,10 @@ class EveryCriticalItemIsCovered(unittest.TestCase):
     # makes the suite prove each name.
     COVERED = {"parse_html.py", "indexability_matrix.py", "canonical_checker.py",
                "robots_path_tester.py", "security_headers.py", "pagespeed.py",
-               "domain_safety_check.py", "tls_certificate.py"}
+               "domain_safety_check.py", "tls_certificate.py",
+               # 0.128.0: MS-026 *Every Page Has a Title* reads the crawl through it;
+               # its cases are in test_crawl_wide_titles.py.
+               "duplicate_content.py"}
 
     def test_every_script_deciding_a_critical_item_has_a_test_class(self):
         with open(REGISTRY, encoding="utf-8") as f:

@@ -9,6 +9,7 @@ import re
 
 from bs4 import BeautifulSoup, NavigableString
 
+import site_crawl
 from seo_common import (
     discover_sitemap_urls,
     fetch_robots,
@@ -156,21 +157,65 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
     }
 
 
+def evaluate_inventory(site_url: str, inventory_path: str) -> dict:
+    """Report server errors already recorded by the shared crawl."""
+    inventory = site_crawl.inventory_for(site_url, inventory_path)
+    pages = inventory.get("pages") or {}
+    inbound = site_crawl.inbound_map(inventory)
+    server_errors = []
+    for key, row in pages.items():
+        status = row.get("status")
+        if isinstance(status, int) and 500 <= status <= 599:
+            server_errors.append({
+                "url": row.get("url"),
+                "status": status,
+                "linked_from": sorted(
+                    edge["source"] for edge in inbound.get(key, [])),
+            })
+    server_errors.sort(key=lambda row: row["url"])
+    truncated = bool((inventory.get("summary") or {}).get("truncated"))
+    out = {
+        "site": inventory.get("site"),
+        "server_errors": server_errors,
+        "summary": {
+            "pages": len(pages),
+            "server_errors": len(server_errors),
+        },
+        "truncated": truncated,
+        "fetch_error": (inventory.get("fetch_error")
+                        or ("no page could be read" if not pages else None)),
+    }
+    if truncated:
+        out["truncated_reason"] = "the shared crawl was truncated"
+    return out
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate an indexability matrix")
     parser.add_argument("urls", nargs="*")
     parser.add_argument("--url-file")
     parser.add_argument("--site", help="Site URL for robots/sitemap context")
+    parser.add_argument("--inventory", default="",
+                        help="crawl inventory from site_crawl.py")
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
-    urls = read_urls(args.urls, args.url_file)
-    result = evaluate(urls, args.site, args.timeout)
+    if args.inventory:
+        site = args.site or (args.urls[0] if args.urls else "")
+        result = evaluate_inventory(site, args.inventory)
+    else:
+        urls = read_urls(args.urls, args.url_file)
+        result = evaluate(urls, args.site, args.timeout)
     if args.json:
         print(json.dumps(result, indent=2))
     else:
-        for row in result["rows"]:
-            print(f"{row['verdict']}\t{row['status']}\t{row['url']}\t{', '.join(row['blockers'])}")
+        if args.inventory:
+            for row in result["server_errors"]:
+                print(f"{row['status']}\t{row['url']}")
+            print(f"Server errors: {result['summary']['server_errors']}")
+        else:
+            for row in result["rows"]:
+                print(f"{row['verdict']}\t{row['status']}\t{row['url']}\t{', '.join(row['blockers'])}")
 
 
 if __name__ == "__main__":

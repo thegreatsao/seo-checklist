@@ -849,7 +849,7 @@ def _the_other_caps_have_not_been_read() -> dict:
 
         # 0.91.0. No cap of any kind, established by enumerating slices, breaks and
         # `MAX_*` constants in each file rather than by reading for an impression.
-        "canonical_checker.py": "no cap",
+        "canonical_checker.py": "MAX_TARGET_FETCHES bounds the site-wide target requests; TE-176 reads truncated beside the count",
         "critical_request_chain.py": "no cap",
         "image_inventory.py": "no cap",
         "javascript_render_audit.py": "no cap",

@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.127.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing moves on your site: this release gives every table the checklist is built from a single source or a test, and removes three entries that described nothing. `0.126.0` did the same for the runner's lists, and page sampling without a crawl also looks for `/sitemap-index.xml`; `0.125.0` made every internal audit end a passing run on what it established and what it did not; `0.124.0` made the test suite and CI reach nothing but the machine they run on, and made *Entity is resolvable* say "could not ask" instead of "not found" when Wikidata or Wikipedia does not answer. `0.122.0` moved two verdicts if Search Console is connected: *Own Your Branded Query* and *Monitor & Improve Brand SERPs* now judge the query carrying your business's name — the one your homepage publishes, or the one you pass with `--brand` — instead of whichever query had the most clicks.
+Version 0.128.0 — see [CHANGELOG.md](CHANGELOG.md). Four items about the whole site now read the whole crawl: *Eliminate 5xx Server Errors*, *Ensure Every Page Has a Title* and *Fix Canonicalization Issues* judged only the entry page (the first could never fail), and *Fix Broken Images* now counts an image URL answering a "not found" page with status 200. `0.127.0` gave every table the checklist is built from a single source or a test. `0.126.0` did the same for the runner's lists, and page sampling without a crawl also looks for `/sitemap-index.xml`; `0.125.0` made every internal audit end a passing run on what it established and what it did not; `0.124.0` made the test suite and CI reach nothing but the machine they run on, and made *Entity is resolvable* say "could not ask" instead of "not found" when Wikidata or Wikipedia does not answer. `0.122.0` moved two verdicts if Search Console is connected: *Own Your Branded Query* and *Monitor & Improve Brand SERPs* now judge the query carrying your business's name — the one your homepage publishes, or the one you pass with `--brand` — instead of whichever query had the most clicks.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -72,7 +72,7 @@ measures read from a rendered page.
 | a human | 31 |
 | Search Console, with no API to answer it, so a person opens the UI | 3 |
 
-Those 145 items collapse to **66 unique process launches** over 57 distinct scripts —
+Those 145 items collapse to **68 unique process launches** over 57 distinct scripts —
 the runner deduplicates by script *and* arguments, so `pagespeed.py` runs once, not
 seven times, and `MB-107` and `MB-108` cost no launch at all: they read the artifact
 five other items already read.

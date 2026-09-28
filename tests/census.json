@@ -791,12 +791,13 @@
     "CI-015": {
       "answers": {
         "failing-shapes": "PASS",
-        "fixture:broken": "PASS",
-        "fixture:broken_tls": "PASS",
+        "fixture:broken": "FAIL",
+        "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
         "fixture:good_tls": "PASS"
       },
       "distinct": [
+        "FAIL",
         "PASS"
       ],
       "script": "indexability_matrix.py",
@@ -2813,7 +2814,7 @@
         "FAIL",
         "PASS"
       ],
-      "script": "parse_html.py",
+      "script": "duplicate_content.py",
       "severity": "critical",
       "source": "script",
       "title": "Ensure Every Page Has a Title"
@@ -3587,7 +3588,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "08c2492fb163",
+  "registry_version": "b8c20d13cd6b",
   "sites": [
     "fixture:good",
     "fixture:broken",

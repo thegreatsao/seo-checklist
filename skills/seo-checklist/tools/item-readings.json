@@ -294,16 +294,18 @@
       "check": {
         "script": "indexability_matrix.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
         "requires": "crawl",
         "assert": {
-          "path": "rows.0.status",
-          "lt": 500
+          "path": "summary.server_errors",
+          "eq": 0
         }
       },
       "verdict": "answers",
-      "reading": "`rows.0.status` below 500 on the entry URL.",
+      "reading": "`summary.server_errors` counts crawled pages answering 500–599, the entry page among them; the site-wide 5xx the title names, over what the crawl reached.",
       "shapes": {}
     },
     "CI-016": {
@@ -497,20 +499,20 @@
     "MS-026": {
       "title": "Ensure Every Page Has a Title",
       "check": {
-        "script": "parse_html.py",
+        "script": "duplicate_content.py",
         "args": [
-          "{html}",
-          "--url",
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
-        "requires": "offline",
+        "requires": "crawl",
         "assert": {
-          "path": "title",
-          "truthy": true
+          "path": "summary.missing_title_pages",
+          "eq": 0
         }
       },
       "verdict": "answers",
-      "reading": "`title` present and non-empty.",
+      "reading": "`summary.missing_title_pages` counts crawled HTML pages answering 200 whose title is absent or blank, noindex pages included; every page the crawl reached.",
       "shapes": {}
     },
     "MS-028": {
@@ -2605,16 +2607,18 @@
       "check": {
         "script": "canonical_checker.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
-        "requires": "fetch",
+        "requires": "crawl",
         "assert": {
           "path": "issues",
           "len_eq": 0
         }
       },
       "verdict": "answers",
-      "reading": "`issues` carries canonical_checker's canonicalisation findings.",
+      "reading": "`issues` carries canonical_checker's findings over every crawled HTML page: a missing or cross-host canonical, a canonical whose target does not answer 200, and a target that canonicalises elsewhere.",
       "shapes": {}
     },
     "TE-177": {

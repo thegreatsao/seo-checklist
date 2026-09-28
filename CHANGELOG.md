@@ -10,6 +10,44 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.128.0 — four titles about the whole site read the whole crawl
+
+Registry version: `08c2492fb163` → `b8c20d13cd6b`. Verdicts move: see below.
+
+Found by running this tool on the fixtures of an independently built plugin, and
+re-measured against 0.127.0 before anything changed. In each case the crawl the run
+already makes held the fact the title asks about, and the rule looked somewhere else.
+
+| item | was | now |
+|---|---|---|
+| CI-015 *Eliminate 5xx Server Errors* | the entry page's status below 500 | `indexability_matrix.py --inventory`: crawled pages answering 500–599 |
+| MS-026 *Ensure Every Page Has a Title* | the entry page has a title | `duplicate_content.py`: crawled HTML pages with no title, noindex included |
+| TE-176 *Fix Canonicalization Issues* | the entry page's canonical, target never asked | `canonical_checker.py --inventory`: every crawled page's canonical, and its target's status — from the crawl, or asked (at most 100) |
+| MD-187 *Fix Broken Images* | a 2xx image URL was fine | a 2xx answering `text/*` is broken: the URL returned a page, not an image |
+
+**CI-015 could not fail.** An entry page answering 5xx stops the audit before any item
+is graded, so `rows.0.status < 500` was PASS or NO_DATA on every site ever audited. The
+internal semantics audit had ruled it "exactly 5xx", and the fixture contract listed it
+as "the same on both sites" for the very reason it could not fail.
+
+**TE-176 never asked where a canonical pointed.** `canonical_checker.py` had
+`--check-targets`; no item passed it, so a canonical naming a page that answers 500 was
+invisible on every page.
+
+**MD-187 read the crawl and trusted a 200.** A CMS answering a missing image with its
+"page not found" page and status 200 — a soft 404 — had its image counted as sound.
+
+What moves for you: **CI-015, MS-026 and TE-176 now need the crawl** (`live` mode). In
+`page` and `archive` modes they are not run, which is honest for a title about every page.
+On a site with a 5xx page, an untitled page, or a canonical to a dead page anywhere the
+crawl reaches, the item now fails where it used to pass. A capped crawl withholds their
+PASS, as for every other crawl item.
+
+The `broken` fixture now serves a 500 (`/server-error.html`, linked from its entry) and a
+soft-404 image (`/assets/soft-404.png`), through a per-tree table of fixed answers the test
+harness reads (`_answers.json`, never served itself); CI-015 on `broken` PASS → FAIL,
+recorded as new material. `good` does not move. Suite 1910 → 1929.
+
 ## 0.127.0 — every table the registry is built from has a source or a reader
 
 Registry version: unchanged at `08c2492fb163`. No verdict moves.

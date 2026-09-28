@@ -260,6 +260,11 @@ def detect_duplicates(pages: dict, similarity_threshold: float = 0.85,
     grouping_pages, title_group_exclusions = _snippet_grouping_pages(pages)
     title_groups = duplicate_titles(grouping_pages)
     description_groups = duplicate_descriptions(grouping_pages)
+    # This title says every page, and Google's Influencing title links asks for a
+    # title specified in the <title> element on every page. Noindex pages stay out
+    # of MS-022 because they do not compete; a missing title is not a competition.
+    missing_titles = sorted(
+        key for key, page in pages.items() if not page.get("title", "").strip())
     return {
         # An empty crawl is not a site with no duplicates. Without this the runner
         # cannot tell "nothing is wrong" from "nothing was read", and four items —
@@ -276,6 +281,7 @@ def detect_duplicates(pages: dict, similarity_threshold: float = 0.85,
         "thin_content": thin_pages,
         "duplicate_titles": title_groups,
         "duplicate_descriptions": description_groups,
+        "missing_titles": missing_titles,
         "summary": {
             "exact_duplicate_groups": len(exact_dupes),
             "duplicate_title_groups": len(title_groups),
@@ -286,6 +292,7 @@ def detect_duplicates(pages: dict, similarity_threshold: float = 0.85,
             # for a different kind of site.
             "thin_words_threshold": thin_words or THIN_CONTENT_THRESHOLDS["default"],
             "duplicate_description_groups": len(description_groups),
+            "missing_title_pages": len(missing_titles),
             "title_group_exclusions": title_group_exclusions,
             "avg_word_count": round(
                 sum(p["word_count"] for p in pages.values()) / max(1, len(pages))

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "08c2492fb163",
+  "registry_version": "b8c20d13cd6b",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -438,12 +438,14 @@
       "check": {
         "script": "indexability_matrix.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
         "requires": "crawl",
         "assert": {
-          "path": "rows.0.status",
-          "lt": 500
+          "path": "summary.server_errors",
+          "eq": 0
         }
       },
       "effort": "low",
@@ -694,16 +696,16 @@
       "severity": "critical",
       "source": "script",
       "check": {
-        "script": "parse_html.py",
+        "script": "duplicate_content.py",
         "args": [
-          "{html}",
-          "--url",
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
-        "requires": "offline",
+        "requires": "crawl",
         "assert": {
-          "path": "title",
-          "truthy": true
+          "path": "summary.missing_title_pages",
+          "eq": 0
         }
       },
       "effort": "low",
@@ -3834,9 +3836,11 @@
       "check": {
         "script": "canonical_checker.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
-        "requires": "fetch",
+        "requires": "crawl",
         "assert": {
           "path": "issues",
           "len_eq": 0
