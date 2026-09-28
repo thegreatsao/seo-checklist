@@ -529,7 +529,7 @@ def valid_webp(width: int, height: int, kind: str) -> bytes:
     return webp_chunk(b"VP8 ", payload)
 
 
-FAVICON_ICO = valid_ico((48, 48))
+FAVICON_ICO = valid_ico((16, 16), (48, 48), (96, 96))
 
 TEXT = {"Content-Type": "text/plain; charset=utf-8"}
 XML = {"Content-Type": "application/xml"}
@@ -579,6 +579,7 @@ GOOD_ROUTES = {
     "/shop.html": ABOUT_PAGE,
     "/robots.txt": (200, TEXT, "User-agent: *\nAllow: /\nDisallow: /private/\n"
                                "User-agent: GPTBot\nAllow: /\n"
+                               "User-agent: OAI-SearchBot\nAllow: /\n"
                                "Sitemap: PLACEHOLDER/sitemap.xml\n"),
     "/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.txt": (200, TEXT, "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6"),
     "/llms.txt": (200, TEXT, "# Fixture Bakery\n\n> Sourdough guides and recipes.\n\n"
@@ -2001,19 +2002,22 @@ class UrlQuality(unittest.TestCase):
 
 
 class Indexability(unittest.TestCase):
-    """AI crawler alignment, GEO-003 `rows` with a `field`-scoped value map."""
+    """AI crawler policy, GEO-003 `policy_grade` — which scopes robots.txt names.
 
-    def test_a_documented_policy_aligns_and_an_undocumented_one_does_not(self):
+    Until 0.129.0 the verdict was each row's `alignment`, which a robots.txt of
+    `User-agent: *` alone passed whenever llms.txt existed."""
+
+    def test_a_policy_naming_both_scopes_passes_and_silence_does_not(self):
+        self.assertEqual(out("aicrawl")["policy_grade"], "explicit")
         self.assertEqual(verdict("GEO-003", out("aicrawl")), PASS)
         self.assertEqual(verdict("GEO-003", out("aicrawl_bad")), FAIL)
 
-    def test_the_verdict_comes_from_the_alignment_field_of_each_row(self):
-        """`value_map` with `field` is the operator that replaced matching prose. It
-        reads one named key per row, so a row growing a new key cannot change the
-        verdict by accident."""
-        rows = out("aicrawl")["rows"]
+    def test_every_row_says_whether_robots_txt_names_it(self):
+        rows = {row["crawler"]: row for row in out("aicrawl")["rows"]}
         self.assertTrue(rows)
-        self.assertTrue(all("alignment" in row for row in rows))
+        self.assertTrue(all(isinstance(row["named"], bool) for row in rows.values()))
+        self.assertIs(rows["GPTBot"]["named"], True)
+        self.assertIs(rows["ClaudeBot"]["named"], False)
 
     def test_every_ai_crawler_has_a_scope_and_both_reach_scopes_are_present(self):
         """The values may be renamed, but training and answer fetching must remain
@@ -3830,7 +3834,11 @@ class Freshness(unittest.TestCase):
 
 
 class FaviconDisplay(unittest.TestCase):
-    """MB-104 fetches the declaration and grades only dimensions it could read."""
+    """MB-104 fetches the declaration and grades it as Google's favicon page does.
+
+    Required: declared, reachable, an image, square, at least 8 px, and crawlable by
+    Google. Recommended: larger than 48 px, in a format Google lists. The first
+    failing is FAIL, the second WARN; a size that could not be read is NO_DATA."""
 
     PAGE = ('<!doctype html><html><head><title>Icon test</title>'
             '<link rel="icon" href="/icon"></head><body></body></html>')
@@ -3850,21 +3858,17 @@ class FaviconDisplay(unittest.TestCase):
         with served(routes) as site:
             return self.run_url(site.url)
 
-    def rule_evidence(self, output: dict) -> tuple[bool | None, str]:
-        return evaluate(ITEMS["MB-104"]["check"]["assert"], output)
-
-    def test_the_good_mock_reaches_a_measured_48px_pass(self):
+    def test_the_good_mock_reaches_the_recommendation(self):
         result = out("favicon")
         self.assertEqual(verdict("MB-104", result), PASS)
         self.assertEqual(result["favicon"]["format"], "ico")
-        self.assertEqual(result["favicon"]["min_side_px"], 48)
-        self.assertEqual(self.rule_evidence(result),
-                         (True, "favicon.displays_at_48px = True"))
+        self.assertEqual(result["favicon"]["min_side_px"], 96)
+        self.assertEqual(result["favicon"]["grade"], "recommended")
 
     def test_no_declared_icon_is_a_failure_with_a_reason_and_issue(self):
         result = out("favicon_bad")
         self.assertEqual(verdict("MB-104", result), FAIL)
-        self.assertIs(result["favicon"]["displays_at_48px"], False)
+        self.assertEqual(result["favicon"]["grade"], "fails")
         self.assertIn("No favicon is declared", result["favicon"]["reason"])
         self.assertTrue(result["issues"])
 
@@ -3885,15 +3889,14 @@ class FaviconDisplay(unittest.TestCase):
                          (64, 64))
         self.assertIn("64x64", result["favicon"]["reason"])
 
-    def test_a_32px_png_fails_and_names_the_measured_size(self):
+    def test_a_32px_png_meets_the_requirement_and_warns(self):
         result = self.served_icon(valid_png(32, 32))
-        self.assertEqual(verdict("MB-104", result), FAIL)
+        self.assertEqual(verdict("MB-104", result), WARN)
         self.assertEqual(result["favicon"]["min_side_px"], 32)
         self.assertIn("32x32", result["favicon"]["reason"])
 
     def test_an_unrecognised_body_is_no_data_not_a_small_icon(self):
         cases = (
-            (b"<!doctype html><title>error</title>", "text/html"),
             (b"", "application/octet-stream"),
             (b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR" + b"\0" * 8, "image/png"),
         )
@@ -3901,9 +3904,16 @@ class FaviconDisplay(unittest.TestCase):
             with self.subTest(content_type=content_type, bytes=len(body)):
                 result = self.served_icon(body, content_type)
                 self.assertEqual(verdict("MB-104", result), NO_DATA)
-                self.assertNotIn("displays_at_48px", result["favicon"])
+                self.assertNotIn("grade", result["favicon"])
                 self.assertIsNone(result["favicon"]["min_side_px"])
                 self.assertIn("not recognised", result["favicon"]["reason"])
+
+    def test_a_page_where_the_icon_should_be_fails(self):
+        """Until 0.129.0 this was among the unrecognised bodies and NO_DATA. A 200
+        answering HTML is not an unmeasured icon; it is no icon — a soft 404."""
+        result = self.served_icon(b"<!doctype html><title>error</title>", "text/html")
+        self.assertEqual(verdict("MB-104", result), FAIL)
+        self.assertEqual(result["favicon"]["grade"], "fails")
 
     def test_an_unreachable_page_is_no_data(self):
         probe = socket.socket()
@@ -3912,26 +3922,27 @@ class FaviconDisplay(unittest.TestCase):
         probe.close()
         result = self.run_url(f"http://127.0.0.1:{port}/")
         self.assertEqual(verdict("MB-104", result), NO_DATA)
-        self.assertNotIn("displays_at_48px", result["favicon"])
+        self.assertNotIn("grade", result["favicon"])
         self.assertIn("could not be fetched", result["favicon"]["reason"])
 
-    def test_svg_passes_even_with_a_one_pixel_viewbox(self):
+    def test_svg_is_outside_googles_list_and_warns_at_any_size(self):
         svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"></svg>'
         result = self.served_icon(svg, "image/svg+xml")
-        self.assertEqual(verdict("MB-104", result), PASS)
+        self.assertEqual(verdict("MB-104", result), WARN)
         self.assertEqual(result["favicon"]["format"], "svg")
         self.assertEqual((result["favicon"]["width"], result["favicon"]["height"]),
                          (1, 1))
         self.assertIsNone(result["favicon"]["min_side_px"])
+        self.assertIs(result["favicon"]["google_format"], False)
 
     def test_the_largest_ico_entry_decides(self):
         multi = self.served_icon(valid_ico((16, 16), (32, 32), (48, 48)),
                                  "image/x-icon")
-        small = self.served_icon(valid_ico((16, 16)), "image/x-icon")
-        self.assertEqual(verdict("MB-104", multi), PASS)
+        small = self.served_icon(valid_ico((6, 6)), "image/x-icon")
+        self.assertEqual(verdict("MB-104", multi), WARN)
         self.assertEqual(multi["favicon"]["min_side_px"], 48)
         self.assertEqual(verdict("MB-104", small), FAIL)
-        self.assertEqual(small["favicon"]["min_side_px"], 16)
+        self.assertEqual(small["favicon"]["min_side_px"], 6)
 
     def test_a_zero_ico_size_byte_means_256(self):
         result = self.served_icon(valid_ico((256, 256)), "image/x-icon")
@@ -3939,24 +3950,26 @@ class FaviconDisplay(unittest.TestCase):
         self.assertEqual((result["favicon"]["width"], result["favicon"]["height"]),
                          (256, 256))
 
-    def test_a_non_square_icon_is_judged_on_its_shorter_side(self):
+    def test_a_non_square_icon_fails(self):
         result = self.served_icon(valid_png(96, 32))
         self.assertEqual(verdict("MB-104", result), FAIL)
         self.assertEqual(result["favicon"]["min_side_px"], 32)
+        self.assertIs(result["favicon"]["square"], False)
         self.assertIn("96x32", result["favicon"]["reason"])
 
     def test_gif_jpeg_and_each_webp_header_are_measured(self):
         cases = (
-            ("gif", valid_gif(64, 64), "image/gif"),
-            ("jpeg", valid_jpeg(64, 64), "image/jpeg"),
-            ("webp", valid_webp(64, 64, "VP8 "), "image/webp"),
-            ("webp", valid_webp(64, 64, "VP8L"), "image/webp"),
-            ("webp", valid_webp(64, 64, "VP8X"), "image/webp"),
+            ("gif", valid_gif(64, 64), "image/gif", PASS),
+            ("jpeg", valid_jpeg(64, 64), "image/jpeg", PASS),
+            # WebP is read and is not in Google's list of favicon formats.
+            ("webp", valid_webp(64, 64, "VP8 "), "image/webp", WARN),
+            ("webp", valid_webp(64, 64, "VP8L"), "image/webp", WARN),
+            ("webp", valid_webp(64, 64, "VP8X"), "image/webp", WARN),
         )
-        for expected_format, body, content_type in cases:
+        for expected_format, body, content_type, expected in cases:
             with self.subTest(format=expected_format, body=body[12:16]):
                 result = self.served_icon(body, content_type)
-                self.assertEqual(verdict("MB-104", result), PASS)
+                self.assertEqual(verdict("MB-104", result), expected)
                 self.assertEqual(result["favicon"]["format"], expected_format)
                 self.assertEqual(result["favicon"]["min_side_px"], 64)
 

@@ -1401,60 +1401,50 @@ class DomainHistory(unittest.TestCase):
 
 
 class FaviconDisplayRule(unittest.TestCase):
-    """MB-104 distinguishes a measured defect from a measurement that never happened."""
+    """MB-104 distinguishes a measured defect from a measurement that never happened.
 
-    def setUp(self):
-        self.check = registry_rule("MB-104")
-
-    def assert_rule(self, output, expected):
-        observed, evidence = evaluate(self.check["assert"], output)
-        self.assertIs(observed, expected)
-        return evidence
+    From 0.129.0 the script says `favicon.grade` — Google's requirement failed, met
+    but short of its recommendation, or met in full — and the rule maps it to FAIL,
+    WARN and PASS (`test_favicon_and_ai_policy` has the served cases)."""
 
     def test_no_icon_declared_is_a_measured_failure(self):
-        evidence = self.assert_rule({"favicon": {"declared": False,
-                                                  "displays_at_48px": False}}, False)
-        self.assertEqual(evidence, "favicon.displays_at_48px = False")
+        output = {"favicon": {"declared": False, "grade": "fails"}}
+        self.assertEqual(evaluate(registry_rule("MB-104")["assert"], output),
+                         (False, "1 of 1 favicon.grade = 'fails'"))
+        self.assertEqual(verdict("MB-104", output), FAIL)
 
     def test_a_declared_but_unreachable_icon_is_a_failure(self):
         output = {"favicon": {"declared": True, "url": "https://example.test/icon",
-                              "displays_at_48px": False,
+                              "grade": "fails",
                               "reason": "Declared favicon is unreachable: HTTP 404"}}
-        self.assert_rule(output, False)
         self.assertEqual(verdict("MB-104", output), FAIL)
 
-    def test_a_64px_icon_passes(self):
+    def test_a_square_icon_above_48_passes(self):
         output = {"favicon": {"width": 64, "height": 64, "min_side_px": 64,
-                              "displays_at_48px": True}}
-        self.assert_rule(output, True)
+                              "grade": "recommended"}}
         self.assertEqual(verdict("MB-104", output), PASS)
 
-    def test_a_32px_icon_fails(self):
+    def test_the_requirement_met_short_of_the_recommendation_warns(self):
         output = {"favicon": {"width": 32, "height": 32, "min_side_px": 32,
-                              "displays_at_48px": False}}
-        self.assert_rule(output, False)
-        self.assertEqual(verdict("MB-104", output), FAIL)
+                              "grade": "required_only"}}
+        self.assertEqual(verdict("MB-104", output), WARN)
 
     def test_an_unrecognised_format_is_no_data_not_failure(self):
         output = {"favicon": {"declared": True, "format": None,
                               "reason": "format not recognised"}}
-        evidence = self.assert_rule(output, None)
+        ok, evidence = evaluate(registry_rule("MB-104")["assert"], output)
+        self.assertIsNone(ok)
         # 0.122.0: the absent key carries the reason its block gives.
-        self.assertEqual(evidence,
-                         "favicon.displays_at_48px missing: format not recognised")
+        self.assertEqual(evidence, "favicon.grade missing: format not recognised")
         self.assertEqual(verdict("MB-104", output), NO_DATA)
 
     def test_an_unread_page_is_no_data(self):
         output = {"fetch_error": "connection refused",
                   "favicon": {"reason": "page could not be fetched"}}
-        self.assert_rule(output, None)
         self.assertEqual(verdict("MB-104", output), NO_DATA)
 
-    def test_a_resolvable_svg_passes_without_a_raster_size(self):
-        output = {"favicon": {"format": "svg", "width": None, "height": None,
-                              "displays_at_48px": True}}
-        self.assert_rule(output, True)
-        self.assertEqual(verdict("MB-104", output), PASS)
+    def test_an_unmapped_grade_is_no_data_never_a_pass(self):
+        self.assertEqual(verdict("MB-104", {"favicon": {"grade": "displays"}}), NO_DATA)
 
 
 class ImageWeightAudit(unittest.TestCase):
