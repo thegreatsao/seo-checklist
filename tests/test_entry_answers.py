@@ -56,7 +56,6 @@ sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(SKILL, "tools"))
 
-import harness  # noqa: E402
 from harness import allow_loopback, offline_env, served, spawn, tree_served  # noqa: E402
 import checklist_runner as cr  # noqa: E402
 from checklist_runner import (FAIL, NO_DATA, PASS, WARN, build_plan, evaluate,  # noqa: E402
@@ -387,7 +386,7 @@ class TheGateHidesNoFailureItDoesNotAnswer(unittest.TestCase):
                 ("s404", "on", 404), ("s503", "on", 503), ("dead", "off", None),
                 ("dead", "on", None)]
         with ThreadPoolExecutor(max_workers=3) as pool:
-            for key, result in zip(runs, pool.map(lambda r: cls.audit(*r), runs)):
+            for key, result in zip(runs, pool.map(lambda r: cls.audit(*r), runs), strict=True):
                 cls.RESULTS[key[:2]] = result
 
     @classmethod
