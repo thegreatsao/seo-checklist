@@ -1,8 +1,8 @@
 {
   "measured": "module-level upper-case names bound to a list, tuple, set or dict literal in scripts/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 179,
-  "read": 91,
+  "total": 180,
+  "read": 92,
   "unread": 88,
   "modules": {
     "ai_crawler_policy_matrix": {
@@ -495,6 +495,10 @@
         {
           "name": "REQUIREMENT_GATES",
           "entries": 6
+        },
+        {
+          "name": "NO_ANSWER_KINDS",
+          "entries": 3
         },
         {
           "name": "GSC_FALLBACKS",
