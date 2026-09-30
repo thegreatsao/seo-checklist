@@ -20,10 +20,17 @@
             "indexable": "pass",
             "not_indexable": "fail"
           }
+        },
+        "entry_answer": {
+          "fails_on": [
+            "client_error",
+            "server_error"
+          ],
+          "why": "The item asks whether anything on the page or server stops Google from indexing it, and the status is one of those things: an entry answering 4xx or 5xx is not indexable, which the gate already measured."
         }
       },
       "verdict": "measures",
-      "reading": "The title asks whether the URL is indexed, which only Google knows; `rows` carries indexability_matrix's verdict, which lists what would stop indexing — robots.txt, status, noindex in meta or header, a canonical elsewhere. CI-002 asks Google.",
+      "reading": "The title asks whether the URL is indexed, which only Google knows; `rows` carries indexability_matrix's verdict, which lists what would stop indexing — robots.txt, status, noindex in meta or header, a canonical elsewhere. CI-002 asks Google. On an entry the audit could not read, `entry_answer` lets the entry's own request decide it: a 4xx or 5xx answer fails it, anything else is NO_DATA.",
       "shapes": {
         "external": "Indexing is Search Console's to report; this rule reads the page's own blockers, and `measures` says so."
       }
@@ -58,12 +65,37 @@
         ],
         "requires": "crawl",
         "assert": {
-          "path": "rows.0.status",
-          "eq": 200
+          "path": "rows.0.status_class",
+          "value_map": {
+            "ok": "pass",
+            "other_success": "fail",
+            "no_content": "fail",
+            "redirect": "fail",
+            "client_error": "fail",
+            "server_error": "fail"
+          }
+        },
+        "warn": {
+          "path": "rows.0.status_class",
+          "value_map": {
+            "ok": "pass",
+            "other_success": "pass",
+            "no_content": "fail",
+            "redirect": "fail",
+            "client_error": "fail",
+            "server_error": "fail"
+          }
+        },
+        "entry_answer": {
+          "fails_on": [
+            "client_error",
+            "server_error"
+          ],
+          "why": "The item asks what the audited page answers, and the entry gate stops the run on exactly the answers that fail it. Without this it could not fail in any finished audit (measured 30.09.2026)."
         }
       },
-      "verdict": "answers",
-      "reading": "`rows.0.status` is the entry URL's final status, asserted equal to 200.",
+      "verdict": "measures",
+      "reading": "`rows.0.status_class` classifies the audited URL's final status as Google's HTTP-status page reads it: 200 passes, another success warns, no content, a redirect that ends there, 4xx and 5xx fail. It is the audited page only; `measures` names CI-015 and GO-138 for the rest of the site. On an entry the audit could not read, `entry_answer` lets the entry's own request decide it: a 4xx or 5xx answer fails it, anything else is NO_DATA.",
       "shapes": {
         "conjunction": "The parenthetical is the status name, not a second subject."
       }
@@ -302,10 +334,16 @@
         "assert": {
           "path": "summary.server_errors",
           "eq": 0
+        },
+        "entry_answer": {
+          "fails_on": [
+            "server_error"
+          ],
+          "why": "A 5xx entry page is a server error on the site, and the crawl that finds the others never starts when the entry is one."
         }
       },
       "verdict": "answers",
-      "reading": "`summary.server_errors` counts crawled pages answering 500–599, the entry page among them; the site-wide 5xx the title names, over what the crawl reached.",
+      "reading": "`summary.server_errors` counts crawled pages answering 500–599, the entry page among them; the site-wide 5xx the title names, over what the crawl reached. On an entry the audit could not read, `entry_answer` lets the entry's own request decide it: a 5xx answer fails it, anything else is NO_DATA.",
       "shapes": {}
     },
     "CI-016": {
@@ -2436,10 +2474,17 @@
         "assert": {
           "path": "uptime.reachable",
           "truthy": true
+        },
+        "entry_answer": {
+          "fails_on": [
+            "server_error",
+            "no_answer"
+          ],
+          "why": "The item reads whether one request of this audit was answered below 500. When the entry request was not, the gate stopped the run on exactly that answer."
         }
       },
       "verdict": "measures",
-      "reading": "`uptime.reachable` is one request during the audit answered below 500; monitoring over time needs a service.",
+      "reading": "`uptime.reachable` is one request during the audit answered below 500; monitoring over time needs a service. On an entry the audit could not read, `entry_answer` lets the entry's own request decide it: a 5xx answer or no answer at all fails it, anything else is NO_DATA.",
       "shapes": {}
     },
     "TE-168": {

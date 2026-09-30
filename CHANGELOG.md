@@ -10,6 +10,81 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.130.0 — an entry page that answered an error is evidence, for the items that ask about it
+
+Registry version: `405f6d395409` → `b81c0edcd245`. Verdicts move: see below.
+
+When the entry page answers >= 400, or answers something that is not a page, the runner
+makes every live item `NO_DATA` and runs nothing. That is right for almost every item —
+an error page is not the site — and it made three items unable to report what they exist
+to report, because their question *is* the entry's answer. Measured on 30 September: the
+good fixture served with only `/` changed, eleven entry states, the runner as shipped
+against the same runner with its entry gate removed.
+
+* **CI-003 *Page Returns 200 (OK) Status Code*** could not fail in any finished audit. An
+  entry answering >= 400 was stopped by the gate, and on every other status but 200
+  `indexability_matrix.py` wrote `fetch_error: "no URL could be read"` — so a readable page
+  answering 203 was `NO_DATA` under a sentence that was false.
+* **TE-167 *Monitor Site Uptime*** asserts that one request of the audit was answered
+  below 500. A 5xx or a refused connection is exactly what the gate stops first, so it
+  could not fail either.
+* **CI-015 *Eliminate 5xx Server Errors*** has been failable on other pages since 0.128.0,
+  never on the entry: a home page answering 503 was `NO_DATA`.
+* **CI-001 *Ensure URL Is Indexed*** was not in the plan. Once `indexability_matrix.py`
+  stopped calling a 404 unread, a 404 entry failed it through its `HTTP 404` blocker — a
+  true failure the gate had been turning into `NO_DATA`. The derivation below named it on
+  its first run.
+
+The gate already made the request these four ask about, so it answers them. An item may
+declare `check.entry_answer` — the status classes under which the entry's answer fails it
+— and on a dead entry it is `FAIL` when the answer is in that list and `NO_DATA`
+otherwise: **the gate withholds a pass, never a failure it measured.** No second request
+is made to a server that is failing; nothing runs against an entry the audit could not
+read (RUN-8), as before.
+
+| entry answers | CI-001 | CI-003 | CI-015 | TE-167 |
+|---|---|---|---|---|
+| 404, 410 | NO_DATA → FAIL | NO_DATA → FAIL | NO_DATA | NO_DATA |
+| 500, 503 | NO_DATA → FAIL | NO_DATA → FAIL | NO_DATA → FAIL | NO_DATA → FAIL |
+| no answer (refused, timeout, DNS) | NO_DATA | NO_DATA | NO_DATA | NO_DATA → FAIL |
+| 200 that is not a page (soft 404, challenge, not HTML, empty) | NO_DATA | NO_DATA | NO_DATA | NO_DATA |
+| 203 or another success, readable | NO_DATA → PASS | NO_DATA → **WARN** | as before | as before |
+
+A status is read one way now, `seo_common.status_class`, from Google's *HTTP status codes,
+network and DNS errors* (last updated 2026-02-04): 200 is `ok`, another 2xx is a success
+Google still processes, 204 has nothing to process, the rest follow the first digit, and
+no answer is its own class. CI-003 reads it: 200 passes, another success warns (it met
+Google, not the item's title), anything else fails. `indexability_matrix.py` calls a URL
+unread only when nothing answered, and its indexability blocker follows the same page, so
+a 203 is no longer "not indexable" for CI-001. CI-003 carries a `measures` line: the
+audited page's own status; the rest of the site is CI-015 and GO-138.
+
+**An entry nobody read carries no score** — RUN-8's third scenario, which a run with
+browser artifacts broke: an entry answering 404 with `--rendered-json` and `--cwv-json`
+printed `SEO Score: 100/100` over eleven artifact items and never said the site was
+unreachable. The report now prints `UNREACHABLE:` whenever the entry could not be read,
+and neither the headline nor any category is scored.
+
+**The set is derived by the operation, not listed.** `tests/test_entry_answers.py` serves
+the entry under 404 and 503 and points at a port nothing listens on, runs the runner with
+its gate removed beside the runner as shipped, and requires every failure the error provokes to be answered by the gate or
+argued (BL-083, GO-138 and LO-198 are argued: the first two fail truly on this fixture,
+but only through an export and a sitemap the gate does not read; LO-198's failure is the
+one the gate exists to withhold). It also requires the gate to say exactly what each
+answered item's own script says. `audit_reachability.py` names this mechanism as one it
+cannot see from source.
+
+**The suite's HTTPS fixtures run again on a machine that cannot start openssl.** An
+Application Control policy on the machine this is written on began refusing both of
+Git's openssl builds (`WinError 4551`), and 29 HTTPS tests had turned into skips — the
+census writer's own fixtures among them. `harness.tls_context` now writes the same
+certificate with `cryptography` when openssl cannot be started, and still skips, naming
+both causes, when neither is available.
+
+Found and not done here: the crawler, `canonical_checker.py` and about thirty other places
+treat only 200 as content, so a page answering 203 drops out of every site-wide reader
+(LO-198 fails a 203 page that carries LocalBusiness markup). Next release.
+
 ## 0.129.0 — the favicon as Google writes it, and an AI policy that names its crawlers
 
 Registry version: `b8c20d13cd6b` → `405f6d395409`. Verdicts move: see below.

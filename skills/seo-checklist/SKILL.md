@@ -45,7 +45,7 @@ the reasoning behind it.
 | Run modes | anything a mode cannot satisfy is `N/A` and leaves both metrics alone; Search Console without a key is `NO_DATA`, which is a different claim | choose the mode that matches what you actually have |
 | A host that is not on the public internet | every request passes an SSRF guard; link-local stays blocked even under `--allow-private`; the flag is recorded on stderr, in the summary, in the JSON and above the report | pass `--allow-private` only for a host you are entitled to audit, and report the result as a staging audit rather than as an audit of the site |
 | Which HTML parser read the page | `html_parser` is recorded in every result, and a test asserts the two parsers agree on every field the checklist reads | do not report a verdict as sensitive to which parser is installed |
-| When the site cannot be read | no script is run, no score is reported, and every live check is `NO_DATA` with the reason | — |
+| When the site cannot be read | no script is run, no score is reported, and every live check is `NO_DATA` with the reason, except the few the entry's own answer decides | — |
 | Answering the items no script can | neither door can touch a verdict a script reached, and a `PASS` with no reason is refused with its id | give every answer a reason somebody can argue with |
 | Statuses | absence of a field is `NO_DATA`, never `PASS`, unless the rule says `missing_is: pass` | read `NEEDS_INPUT` as your own to-do list — it names the flag it wanted |
 | Politeness, and what it does not cover | 4 requests/second/host shared across processes, `robots.txt` honoured for discovered URLs, `Crawl-delay` obeyed, one crawl and one fetch per URL | answer a site owner about load with the real numbers, and read `KNOWN-ISSUES.md` before defending one |
@@ -497,7 +497,7 @@ If the entry page does not load — DNS failure, 4xx/5xx, a non-HTML response �
 every check that reads the live site (`requires` of `fetch`, `crawl` or `api`) is
 `NO_DATA` with the reason attached, **no script is run against it, and no score
 is reported at all**. Search Console items still run: Google's stored history
-does not stop existing because the site is down today.
+does not stop existing because the site is down today. The exception is an item whose question is the entry's own answer: CI-001, CI-003, CI-015 and TE-167 declare `check.entry_answer`, and the request that failed has already measured them, so each is `FAIL` when that answer fails it and `NO_DATA` otherwise — no second request is made.
 
 This is not a nicety. Most evidence scripts exit 0 with a well-formed empty
 result when they cannot fetch anything, and an empty result satisfies exactly the

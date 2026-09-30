@@ -117,6 +117,33 @@ def connection_refused(exc: BaseException) -> bool:
         current, ConnectionRefusedError))
 
 
+# Google, *HTTP status codes, network and DNS errors*
+# (developers.google.com/crawling/docs/troubleshooting/http-status-codes, last updated
+# 2026-02-04): for 2xx "Google considers the content for processing", 201/202 it
+# waits for, and for 204 "Google wasn't able to receive any content".
+STATUS_CLASSES = ("ok", "other_success", "no_content", "redirect", "client_error",
+                  "server_error", "no_answer", "unrecognised")
+
+
+def status_class(status: int | None) -> str:
+    """Classify one HTTP answer by what Google can process from it."""
+    if status is None:
+        return "no_answer"
+    if status == 200:
+        return "ok"
+    if status == 204:
+        return "no_content"
+    if 200 <= status <= 299:
+        return "other_success"
+    if 300 <= status <= 399:
+        return "redirect"
+    if 400 <= status <= 499:
+        return "client_error"
+    if 500 <= status <= 599:
+        return "server_error"
+    return "unrecognised"
+
+
 def fetch_error_kind(exc: BaseException) -> str:
     """Classify a failed shared fetch from exception types and attributes only."""
     if isinstance(exc, HostResolutionError) or _has_name_resolution_cause(exc):

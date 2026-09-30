@@ -30,6 +30,7 @@ SKILL_DIR = os.path.dirname(HERE)
 # declaration to one and not the other.
 sys.path.insert(0, os.path.join(SKILL_DIR, "scripts"))
 from checklist_runner import EFFORT_COST, passes_by_absence  # noqa: E402
+from seo_common import STATUS_CLASSES  # noqa: E402
 
 # The same AST reading `tools/audit_reachability.py` makes of a checker's source, for
 # a different question: not "can this rule ever fail" but "does this rule's key reach
@@ -524,6 +525,40 @@ CANNOT_FAIL = {
     },
 }
 
+# An item here is one whose question is the entry page's own answer. The runner's
+# entry gate answers it from the request it already made
+# (`checklist_runner.unreachable_skips`): FAIL when that answer's class is in
+# `fails_on`, NO_DATA otherwise. `tests/test_entry_answers.py` derives the set from runs.
+ENTRY_ANSWERS = {
+    # Found by the derivation, not by the plan: once `indexability_matrix.py` stopped
+    # calling a 404 unread, a 404 entry failed this item through its `HTTP 404`
+    # blocker, and the gate had been turning that true failure into NO_DATA.
+    "CI-001": {
+        "fails_on": ["client_error", "server_error"],
+        "why": "The item asks whether anything on the page or server stops Google "
+               "from indexing it, and the status is one of those things: an entry "
+               "answering 4xx or 5xx is not indexable, which the gate already "
+               "measured.",
+    },
+    "CI-003": {
+        "fails_on": ["client_error", "server_error"],
+        "why": "The item asks what the audited page answers, and the entry gate stops "
+               "the run on exactly the answers that fail it. Without this it could "
+               "not fail in any finished audit (measured 30.09.2026).",
+    },
+    "CI-015": {
+        "fails_on": ["server_error"],
+        "why": "A 5xx entry page is a server error on the site, and the crawl that "
+               "finds the others never starts when the entry is one.",
+    },
+    "TE-167": {
+        "fails_on": ["server_error", "no_answer"],
+        "why": "The item reads whether one request of this audit was answered below "
+               "500. When the entry request was not, the gate stopped the run on "
+               "exactly that answer.",
+    },
+}
+
 # How much work a fix costs, so that priority can weigh severity against effort
 # instead of ranking by severity alone. These are per-category heuristics, not
 # per-item estimates: a meta tag is a config edit, a rewrite is not, and an
@@ -558,6 +593,7 @@ EFFORT_RANK = {effort: rank for rank, effort in enumerate(sorted(EFFORT_COST, ke
 # attached rule measures. Items absent from this table need no qualification.
 MEASURES = {
     "CI-001": "Whether anything on the page or server stops Google from indexing it: robots.txt, the status code, noindex, or a canonical pointing elsewhere. Whether Google has indexed it is CI-002, which asks Search Console.",
+    "CI-003": "The audited page's own status, after redirects: 200 passes, another success warns because Google still processes it, anything else fails. The rest of the site is CI-015 for server errors and GO-138 for the sitemap's URLs.",
     "TE-167": "One request made during this audit, and whether it was answered below 500. Uptime over time needs a monitoring service.",
     "IN-121": "That the hreflang set carries exactly one x-default. Region codes, country domains and Search Console settings are not read.",
     "IN-128": "That the page lists itself in its own hreflang set. Which version a visitor is actually served is not tested.",
@@ -635,9 +671,20 @@ item(2, "high", S, "gsc_url_inspection.py", INSPECTARG,
      "Get the page indexed: remove noindex, allow crawling, then request indexing in "
      "Search Console. Submit only valuable templates — categories, product pages, "
      "articles")
+# Until 0.130.0 this asserted `rows.0.status == 200`, which could not fail: the
+# gate stopped every entry >= 400 and the script called everything else unread.
+# Another success warns because Google still processes it (the HTTP-status page
+# cited in seo_common); `unrecognised` and `no_answer` are intentionally unmapped.
 item(3, "critical", S, "indexability_matrix.py", PAGE,
-     {"path": "rows.0.status", "eq": 200},
-     "Canonical URL must return 200 OK across all variants (http/https, www/non-www)")
+     {"path": "rows.0.status_class",
+      "value_map": {"ok": "pass", "other_success": "fail", "no_content": "fail",
+                    "redirect": "fail", "client_error": "fail",
+                    "server_error": "fail"}},
+     "Canonical URL must return 200 OK across all variants (http/https, www/non-www)",
+     warn={"path": "rows.0.status_class",
+           "value_map": {"ok": "pass", "other_success": "pass",
+                         "no_content": "fail", "redirect": "fail",
+                         "client_error": "fail", "server_error": "fail"}})
 item(4, "critical", S, "parse_html.py", HTMLARG,
      {"path": "meta_robots", "none_matching": "noindex", "missing_is": "pass"},
      "Indexable pages should be set to index, follow")
@@ -1840,6 +1887,37 @@ def measures_problems(items: list[dict], measures: dict[str, str] | None = None)
     return problems
 
 
+def entry_answer_problems(items: list[dict],
+                          answers: dict[str, dict] | None = None) -> list[str]:
+    """Name every entry-gate answer that cannot describe a rule-backed item."""
+    answers = ENTRY_ANSWERS if answers is None else answers
+    known = {item["id"]: item for item in items}
+    allowed = set(STATUS_CLASSES)
+    problems = []
+    for item_id, answer in answers.items():
+        item = known.get(item_id)
+        if item is None:
+            problems.append(f"{item_id}: no registry item has this id")
+            continue
+        if not item.get("check"):
+            problems.append(f"{item_id}: item has no rule (check)")
+        answer = answer if isinstance(answer, dict) else {}
+        fails_on = answer.get("fails_on")
+        if not isinstance(fails_on, list) or not fails_on:
+            problems.append(f"{item_id}: entry answer fails_on is empty or not a list")
+        else:
+            classes = set(fails_on)
+            if not classes <= allowed:
+                problems.append(
+                    f"{item_id}: entry answer fails_on contains unknown status classes")
+            if classes & {"ok", "other_success"}:
+                problems.append(
+                    f"{item_id}: entry answer fails_on contains a successful answer")
+        if not str(answer.get("why") or "").strip():
+            problems.append(f"{item_id}: entry answer reason is blank")
+    return problems
+
+
 # Which evidence answers an LLM item, which is not the same question as which
 # checklist category it sits in. Grouping by lens lets one agent read one slice
 # of the page once; grouping by category would make four agents re-read the same
@@ -1945,6 +2023,8 @@ def build(titles: dict[int, str] | None = None,
                     entry["check"]["warn"] = warn
                 if item_id in CANNOT_FAIL:
                     entry["check"]["cannot_fail"] = CANNOT_FAIL[item_id]
+                if item_id in ENTRY_ANSWERS:
+                    entry["check"]["entry_answer"] = ENTRY_ANSWERS[item_id]
             if source == L:
                 entry["lens"] = LENS_OF.get(entry["id"], "")
             if item_id in MEASURES:
@@ -1987,6 +2067,8 @@ def build(titles: dict[int, str] | None = None,
                 entry["check"]["warn"] = warn
             if eid in CANNOT_FAIL:
                 entry["check"]["cannot_fail"] = CANNOT_FAIL[eid]
+            if eid in ENTRY_ANSWERS:
+                entry["check"]["entry_answer"] = ENTRY_ANSWERS[eid]
         if source == L:
             entry["lens"] = LENS_OF.get(entry["id"], "")
         if eid in MEASURES:
@@ -2178,6 +2260,11 @@ def main() -> int:
     if invalid_measures:
         for problem in invalid_measures:
             print(f"Invalid measures: {problem}", file=sys.stderr)
+        return 1
+    invalid_entry_answers = entry_answer_problems(items)
+    if invalid_entry_answers:
+        for problem in invalid_entry_answers:
+            print(f"Invalid entry answer: {problem}", file=sys.stderr)
         return 1
     unlensed = [i["id"] for i in items if i["source"] == L and not i.get("lens")]
     if unlensed:

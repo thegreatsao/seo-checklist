@@ -44,6 +44,11 @@ this registry has actually held. Silence about an item is not a finding that it 
 fail; it is the absence of a proof either way, and the summary line prints that count
 rather than implying coverage it does not have.
 
+The runner's entry gate is a mechanism this tool cannot see from a script's source:
+CI-003 and TE-167 could not fail because of it until 0.130.0. That mechanism is derived
+by `tests/test_entry_answers.py`, which serves an error entry and compares the runner
+with the gate removed against the runner as shipped.
+
 **And `severity_vocabulary` reads literals, not reachable code.** A script that writes
 `"severity": "error"` under a flag the registry never passes has the word and cannot
 say it, so this tool falls silent while FAIL stays unreachable. That is not
@@ -124,8 +129,9 @@ ESTABLISHES = (
 )
 DOES_NOT_ESTABLISH = (
     "that the rules it proves nothing about can fail, since silence here is the "
-    "absence of a proof either way, or that a rule able to fail fails on the right "
-    "sites"
+    "absence of a proof either way, that a rule able to fail fails on the right "
+    "sites, or that the runner's entry gate leaves every rule able to fail, which "
+    "only a run can show and tests/test_entry_answers.py derives from runs"
 )
 
 

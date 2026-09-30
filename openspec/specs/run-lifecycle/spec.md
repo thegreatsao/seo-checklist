@@ -451,8 +451,10 @@ could see and no tally could count.
 ### Requirement: RUN-8 — nothing runs against an entry the audit could not read, and the absence of a score is the output
 
 When the entry page cannot be read, every item that needs the live site SHALL be `NO_DATA`
-and no script SHALL be executed against it. The run still produces a report; that report
-MUST carry no score, and MUST say why.
+and no script SHALL be executed against it — except that an item whose question is the
+entry's own answer (`check.entry_answer`) SHALL be `FAIL` when that answer's status class is
+one the item declares, because the request that failed has already measured it. The run
+still produces a report; that report MUST carry no score, and MUST say why.
 
 **Why:** a score computed from the handful of items that do not need the site is a number
 about almost nothing, printed in the same place as a real one. Refusing to print it is the
@@ -469,6 +471,27 @@ unit and the live path. The second scenario — nothing *run* as opposed to noth
 entry over the whole registry under `--sample 5` and asserts the origin was asked for
 nothing beyond `/` and `/robots.txt`, with
 `test_the_same_origin_is_asked_for_more_when_it_is_up` as its floor.
+
+**The exception, 0.130.0.** CI-003 *Page Returns 200* and TE-167 *Monitor Site Uptime*
+could not fail in any finished audit, because the answers that fail them are exactly the
+answers this gate stops the run on; CI-001 and CI-015 lost the same failure on the entry.
+Measured, not reasoned: the good tree served with `/` changed only in its status, the runner
+with the gate removed against the runner as shipped (`local/entry-gate/`, outside git). The
+gate withholds a pass, never a failure it measured, and it answers from the request it
+already made, so the second scenario still holds without a word changed.
+`TheGateAnswersWhatItMeasured` pins the statuses and that an answered item is never
+planned; `TheGateHidesNoFailureItDoesNotAnswer` **derives the answered set from runs** —
+every failure an error entry provokes is answered or argued, in both directions, and the
+gate must say what the item's own script says. CI-001 was not in the plan; the derivation
+named it on its first run.
+
+**The third scenario had been broken all along, and its two readers could not see it.**
+Both built their unreadable run without browser artifacts, so nothing was decided and the
+score was absent by arithmetic. An entry answering 404 with `--rendered-json` and
+`--cwv-json` decided eleven artifact items and printed `SEO Score: 100/100` with no
+`UNREACHABLE` line. `score(graded, entry_error=...)` now withholds the headline and every
+category, and `test_an_entry_nobody_read_is_not_scored` is the reader that supplies the
+artifacts.
 
 **The witness is the origin, and nothing was asking it.** Every reader this line carried
 until 0.96.6 read a plan or a report, which is a statement about a dict: a runner that
@@ -487,9 +510,16 @@ says which.
 #### Scenario: the entry page cannot be read
 - **WHEN** the entry fetch fails
 - **THEN** every item requiring `fetch`, `crawl` or `api` is `NO_DATA` carrying the
-  reason
+  reason, unless the next scenario decides it
 - **AND** it is `NO_DATA` rather than `N/A`, because the items apply and the audit
   simply could not answer them
+
+#### Scenario: the entry's answer is the item's question
+- **WHEN** the entry answered with a status, or did not answer, and an item declares
+  that answer's class in `check.entry_answer`
+- **THEN** the item is `FAIL`, with the status in its evidence, and nothing runs
+- **AND** an answer outside its classes leaves it `NO_DATA`: the gate withholds a pass,
+  never a failure it measured
 
 #### Scenario: nothing planned is not the same as nothing run
 - **WHEN** the gated items are absent from the plan
@@ -497,7 +527,7 @@ says which.
 - **AND** an assertion that the plan is empty does not establish this
 
 #### Scenario: a score over the items that did not need the site
-- **WHEN** only items needing no live site could be decided
+- **WHEN** only items needing no live site, or the entry's own answer, could be decided
 - **THEN** no score is printed, and the report says why
 - **AND** printing one puts a number about almost nothing in the same place as a real
   one

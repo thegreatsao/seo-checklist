@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "405f6d395409",
+  "registry_version": "b81c0edcd245",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -107,6 +107,13 @@
             "indexable": "pass",
             "not_indexable": "fail"
           }
+        },
+        "entry_answer": {
+          "fails_on": [
+            "client_error",
+            "server_error"
+          ],
+          "why": "The item asks whether anything on the page or server stops Google from indexing it, and the status is one of those things: an entry answering 4xx or 5xx is not indexable, which the gate already measured."
         }
       },
       "measures": "Whether anything on the page or server stops Google from indexing it: robots.txt, the status code, noindex, or a canonical pointing elsewhere. Whether Google has indexed it is CI-002, which asks Search Console.",
@@ -154,10 +161,36 @@
         ],
         "requires": "crawl",
         "assert": {
-          "path": "rows.0.status",
-          "eq": 200
+          "path": "rows.0.status_class",
+          "value_map": {
+            "ok": "pass",
+            "other_success": "fail",
+            "no_content": "fail",
+            "redirect": "fail",
+            "client_error": "fail",
+            "server_error": "fail"
+          }
+        },
+        "warn": {
+          "path": "rows.0.status_class",
+          "value_map": {
+            "ok": "pass",
+            "other_success": "pass",
+            "no_content": "fail",
+            "redirect": "fail",
+            "client_error": "fail",
+            "server_error": "fail"
+          }
+        },
+        "entry_answer": {
+          "fails_on": [
+            "client_error",
+            "server_error"
+          ],
+          "why": "The item asks what the audited page answers, and the entry gate stops the run on exactly the answers that fail it. Without this it could not fail in any finished audit (measured 30.09.2026)."
         }
       },
+      "measures": "The audited page's own status, after redirects: 200 passes, another success warns because Google still processes it, anything else fails. The rest of the site is CI-015 for server errors and GO-138 for the sitemap's URLs.",
       "effort": "low",
       "fix": "Canonical URL must return 200 OK across all variants (http/https, www/non-www)"
     },
@@ -446,6 +479,12 @@
         "assert": {
           "path": "summary.server_errors",
           "eq": 0
+        },
+        "entry_answer": {
+          "fails_on": [
+            "server_error"
+          ],
+          "why": "A 5xx entry page is a server error on the site, and the crawl that finds the others never starts when the entry is one."
         }
       },
       "effort": "low",
@@ -3624,6 +3663,13 @@
         "assert": {
           "path": "uptime.reachable",
           "truthy": true
+        },
+        "entry_answer": {
+          "fails_on": [
+            "server_error",
+            "no_answer"
+          ],
+          "why": "The item reads whether one request of this audit was answered below 500. When the entry request was not, the gate stopped the run on exactly that answer."
         }
       },
       "measures": "One request made during this audit, and whether it was answered below 500. Uptime over time needs a monitoring service.",

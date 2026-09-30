@@ -877,6 +877,45 @@ class tree_served:
 _TLS = {}
 
 
+def _certificate_without_openssl(cert: str, key: str) -> bool:
+    """Write the certificate `tls_context` asks openssl for, with `cryptography`.
+
+    The same subject, the same `subjectAltName=IP:127.0.0.1`, RSA 2048 and two days.
+    False when `cryptography` cannot be imported, so the caller can say so.
+    """
+    try:
+        import datetime
+        import ipaddress
+        from cryptography import x509
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.x509.oid import NameOID
+    except ImportError:
+        return False
+    private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "127.0.0.1")])
+    now = datetime.datetime.now(datetime.timezone.utc)
+    certificate = (
+        x509.CertificateBuilder()
+        .subject_name(name).issuer_name(name)
+        .public_key(private.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - datetime.timedelta(minutes=5))
+        .not_valid_after(now + datetime.timedelta(days=2))
+        .add_extension(x509.SubjectAlternativeName(
+            [x509.IPAddress(ipaddress.ip_address("127.0.0.1"))]), critical=False)
+        .add_extension(x509.BasicConstraints(ca=True, path_length=None),
+                       critical=True)
+        .sign(private, hashes.SHA256()))
+    with open(key, "wb") as f:
+        f.write(private.private_bytes(serialization.Encoding.PEM,
+                                      serialization.PrivateFormat.TraditionalOpenSSL,
+                                      serialization.NoEncryption()))
+    with open(cert, "wb") as f:
+        f.write(certificate.public_bytes(serialization.Encoding.PEM))
+    return True
+
+
 def tls_context():
     """A TLS context for 127.0.0.1, from a certificate generated once per process.
 
@@ -905,9 +944,18 @@ def tls_context():
                       "-addext", "subjectAltName=IP:127.0.0.1"],
                      env=os.environ.copy(), timeout=120)
     except OSError as exc:
-        raise unittest.SkipTest(f"openssl could not be run, so the HTTPS shape "
-                                f"cannot be served: {exc}") from exc
-    if proc.returncode != 0:
+        # The binary exists and cannot be started — measured 30.09.2026 on the
+        # machine this is written on, where an Application Control policy began
+        # refusing both of Git's openssl builds (`WinError 4551`) and 29 HTTPS tests
+        # turned into skips, among them the census writer's own fixtures. The same
+        # certificate from `cryptography`, when it is importable, rather than a
+        # smaller suite; a skip naming both causes when it is not.
+        if not _certificate_without_openssl(cert, key):
+            raise unittest.SkipTest(
+                f"openssl could not be run and `cryptography` is not installed, so "
+                f"the HTTPS shape cannot be served: {exc}") from exc
+        proc = None
+    if proc is not None and proc.returncode != 0:
         # Named apart from "not installed", because they call for opposite responses:
         # one is a machine without openssl, the other is a bug in this harness.
         raise unittest.SkipTest(

@@ -20,6 +20,7 @@ from seo_common import (
     read_urls,
     robots_allowed,
     normalize_url,
+    status_class,
 )
 
 
@@ -106,6 +107,7 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
         url = normalize_url(url)
         allowed, robots_rule = robots_allowed(robots.get("parsed"), url, "Googlebot")
         fetched = fetch_url(url, timeout=timeout, max_bytes=1_500_000)
+        fetched_status_class = status_class(fetched.get("status"))
         headers = fetched.get("headers", {})
         xrobots = headers.get("x-robots-tag") or headers.get("X-Robots-Tag")
         html = {}
@@ -117,7 +119,9 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
         blockers = []
         if not allowed:
             blockers.append("robots.txt disallow")
-        if fetched.get("status") != 200:
+        # Google's HTTP-status guidance treats 2xx content other than 204 as
+        # processable, so those answers do not make the page non-indexable.
+        if fetched_status_class not in ("ok", "other_success"):
             blockers.append(f"HTTP {fetched.get('status')}")
         if html.get("meta_robots") and "noindex" in html["meta_robots"].lower():
             blockers.append("meta robots noindex")
@@ -129,6 +133,7 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
             "url": url,
             "final_url": fetched.get("url"),
             "status": fetched.get("status"),
+            "status_class": fetched_status_class,
             "robots_allowed": allowed,
             "robots_rule": robots_rule,
             "meta_robots": html.get("meta_robots"),
@@ -144,15 +149,15 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
     return {
         "site": normalize_url(base) if base else None,
         "count": len(rows),
-        # No URL answered at all. Three `critical` items read `rows.0` — is this page
+        # Nothing answered at all. Three `critical` items read `rows.0` — is this page
         # indexable, does it return 200, does robots.txt allow it — and against a host
-        # that refused every connection they reported "not indexable" and "robots.txt
-        # allows it" as *verdicts*. Not indexable is a claim about a page; nothing was
-        # read here. This script was outside the dead-origin sweep because the sweep
-        # took its list from one test file's run table and the seven scripts behind the
-        # nineteen critical items are tested in another.
-        "fetch_error": (None if any(row["status"] == 200 for row in rows)
-                        else "no URL could be read"),
+        # that refused every connection they once reported "not indexable" and
+        # "robots.txt allows it" as verdicts. Until 0.130.0 this also called every
+        # answer but 200 unread, so CI-003 could not fail: a 404 is an answer, and its
+        # status is the finding CI-003 reports. Only the absence of every answer makes
+        # the URL unread.
+        "fetch_error": (None if any(row["status"] is not None for row in rows)
+                         else "no URL could be read"),
         "rows": rows,
     }
 
@@ -165,7 +170,7 @@ def evaluate_inventory(site_url: str, inventory_path: str) -> dict:
     server_errors = []
     for key, row in pages.items():
         status = row.get("status")
-        if isinstance(status, int) and 500 <= status <= 599:
+        if status_class(status) == "server_error":
             server_errors.append({
                 "url": row.get("url"),
                 "status": status,

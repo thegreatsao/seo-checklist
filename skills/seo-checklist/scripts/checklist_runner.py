@@ -55,6 +55,8 @@ REGISTRY = os.path.join(SKILL_DIR, "resources", "config", "checklist.json")
 
 sys.path.insert(0, SCRIPT_DIR)
 
+from seo_common import status_class  # noqa: E402
+
 
 # How an evidence script failed. All four end as NO_DATA — the item is undecided
 # either way — but they are not the same problem and the report must not pretend
@@ -475,11 +477,13 @@ class Fetch(NamedTuple):
     `error` and `path` are mutually exclusive. `guard` is set whenever the
     response looked like an interstitial or an error page **even when it was not
     enforced**, so `--no-page-guard` records the suspicion instead of erasing it.
+    `status` is the response's HTTP status, or ``None`` when nothing answered.
     """
     path: str        # temp file holding the HTML, "" when the fetch failed
     error: str       # why it failed, "" on success
     final_url: str   # the URL the request actually ended on, after redirects
     guard: str       # "bot_challenge" | "soft_404" | ""
+    status: int | None = None
 
 
 def fetch_page(url: str, enforce_guard: bool = True) -> Fetch:
@@ -517,27 +521,27 @@ def fetch_page(url: str, enforce_guard: bool = True) -> Fetch:
     final_url = getattr(resp, "url", "") or url
     code = getattr(resp, "status_code", 200)
     if code >= 400:
-        return Fetch("", f"HTTP {code}", final_url, "")
+        return Fetch("", f"HTTP {code}", final_url, "", code)
     ctype = (getattr(resp, "headers", {}) or {}).get("Content-Type", "")
     if ctype and not any(t in ctype.lower() for t in ("html", "xml", "text/plain")):
         return Fetch("", f"not a page: Content-Type {ctype.split(';')[0]}",
-                     final_url, "")
+                     final_url, "", code)
     html = resp.text
     # An empty or non-markup body is not a page either. This catches a server
     # answering 200 with nothing.
     if "<" not in html:
         return Fetch("", f"no HTML in a {len(html)}-byte 200 response",
-                     final_url, "")
+                     final_url, "", code)
 
     kind, detail = page_guard(html)
     if kind and enforce_guard:
-        return Fetch("", detail, final_url, kind)
+        return Fetch("", detail, final_url, kind, code)
 
     tmp = tempfile.NamedTemporaryFile(suffix=".html", delete=False,
                                       mode="w", encoding="utf-8")
     tmp.write(html)
     tmp.close()
-    return Fetch(tmp.name, "", final_url, kind)
+    return Fetch(tmp.name, "", final_url, kind, code)
 
 # Statuses
 PASS, FAIL, WARN = "PASS", "FAIL", "WARN"
@@ -1638,7 +1642,7 @@ def grade(items: list[dict], plan: dict, results: dict, skipped: dict,
     return graded
 
 
-def score(graded: list[dict]) -> dict:
+def score(graded: list[dict], entry_error: str = "") -> dict:
     """SEO Score counts only items that were actually decided, and says over how
     much of the registry's weight it was computed.
 
@@ -1662,7 +1666,8 @@ def score(graded: list[dict]) -> dict:
     `partition` puts every item in exactly one bucket named for **whose action moves
     it**, and the buckets sum to the registry — so no item can hide in a denominator,
     and a test asserts the sum. Percentages named nobody; `waiting_on_you` is a list
-    of things to do."""
+    of things to do. RUN-8's third scenario withholds every score when the entry
+    page could not be read."""
     scored = [g for g in graded if g["status"] in VERDICTS]
     applicable = [g for g in graded if g["status"] != NA]
 
@@ -1715,7 +1720,8 @@ def score(graded: list[dict]) -> dict:
         earned_c = sum(SEVERITY_WEIGHT[g["severity"]] * VERDICT_CREDIT[g["status"]]
                        for g in cat_weighed)
         total_c = sum(SEVERITY_WEIGHT[g["severity"]] for g in cat_weighed)
-        c["score"] = round(100 * earned_c / total_c) if total_c else None
+        c["score"] = (None if entry_error else
+                      round(100 * earned_c / total_c) if total_c else None)
         # What the bar cannot show: a single failing critical in an otherwise clean
         # category still scores well, so the count travels with the score.
         c["worst_open"] = next((s for s in SEVERITIES
@@ -1764,7 +1770,8 @@ def score(graded: list[dict]) -> dict:
         provenance[g.get("decided_by") or "measured"] = \
             provenance.get(g.get("decided_by") or "measured", 0) + 1
     return {
-        "seo_score": round(100 * earned / total) if total else None,
+        "seo_score": (None if entry_error else
+                      round(100 * earned / total) if total else None),
         "decided_by": provenance,
         # How much of the registry the score speaks for. Always printed beside it;
         # a score without it is a fraction with the denominator torn off.
@@ -1855,7 +1862,8 @@ NEEDS_THE_RIGHT_PAGE = NEEDS_A_LIVE_SITE | {"offline"}
 
 
 def unreachable_skips(items: list[dict], reason: str,
-                      wrong_page: bool = False) -> dict[str, tuple[str, str]]:
+                      wrong_page: bool = False, entry_status=None,
+                      requested: bool = False) -> dict[str, tuple[str, str]]:
     """Mark every check that reads the live site as undecided.
 
     Without this the audit grades a site it never saw. Most evidence scripts exit
@@ -1868,14 +1876,31 @@ def unreachable_skips(items: list[dict], reason: str,
 
     `wrong_page` widens the gate to the offline checks, for the case where a page
     was read successfully and is the wrong page — see NEEDS_THE_RIGHT_PAGE.
+
+    The gate withholds a pass, never a failure it measured. An `entry_answer`
+    comes from the request the gate already made, so the item is answered while
+    nothing runs against the unread entry, as RUN-8 requires.
     """
     gate = NEEDS_THE_RIGHT_PAGE if wrong_page else NEEDS_A_LIVE_SITE
     label = "entry page is not the site" if wrong_page else "entry page unreachable"
     out = {}
     for it in items:
-        need = (it.get("check") or {}).get("requires", "fetch")
+        check = it.get("check") or {}
+        need = check.get("requires", "fetch")
         if need in gate:
-            out[it["id"]] = (NO_DATA, f"{label} ({reason})")
+            entry_answer = check.get("entry_answer") or {}
+            if (requested
+                    and status_class(entry_status) in entry_answer.get("fails_on", [])):
+                if entry_status is not None:
+                    out[it["id"]] = (
+                        FAIL,
+                        f"the entry page answered HTTP {entry_status} to this audit's own request")
+                else:
+                    out[it["id"]] = (
+                        FAIL,
+                        f"the entry page did not answer this audit's own request ({reason})")
+            else:
+                out[it["id"]] = (NO_DATA, f"{label} ({reason})")
     return out
 
 
@@ -3048,17 +3073,16 @@ def print_report(payload, a, hist, crawl_path, diff_note) -> None:
     entry_guard = payload.get("entry_guard") or ""
     s = payload["scores"]
     print(f"\nMode: {mode}   GSC: {'yes' if payload['gsc_credentials_found'] else 'no'}")
-    if s.get("seo_score") is None:
-        if entry_error:
-            print(f"UNREACHABLE: {audit_url} could not be read — {entry_error}.")
-            print(f"No score: nothing about this site was measured. "
-                  f"{s['decided']}/{s['total_items']} items decided.")
-        else:
-            # The site answered and decided nothing. Reported apart from the line
-            # above because it sends a reader to a different place, and because
-            # branching on reachability here is what printed `None/100` for years.
-            print(f"No score: the site answered and no check reached a verdict. "
-                  f"{s['decided']}/{s['total_items']} items decided.")
+    if entry_error:
+        print(f"UNREACHABLE: {audit_url} could not be read — {entry_error}.")
+        print(f"No score: the entry page could not be read, so this site was not "
+              f"audited. {s['decided']}/{s['total_items']} items decided.")
+    elif s.get("seo_score") is None:
+        # The site answered and decided nothing. Reported apart from the line
+        # above because it sends a reader to a different place, and because
+        # branching on reachability here is what printed `None/100` for years.
+        print(f"No score: the site answered and no check reached a verdict. "
+              f"{s['decided']}/{s['total_items']} items decided.")
     else:
         print(f"SEO Score: {s['seo_score']}/100 — over {s['decided']} items, "
               f"{s['weight_pct']}% of the weight in scope")
@@ -3215,6 +3239,7 @@ def main() -> int:
     temp_html = ""
     entry_error = ""
     entry_guard = ""
+    entry_status = None
     entry_words = -1
     audit_url = a.url
     if mode == "archive":
@@ -3235,6 +3260,7 @@ def main() -> int:
     else:
         fetched = fetch_page(a.url, enforce_guard=not a.no_page_guard)
         html_path, entry_error, entry_guard = fetched.path, fetched.error, fetched.guard
+        entry_status = fetched.status
         temp_html = html_path
         # Audit the URL the request actually landed on when the host changed.
         # Otherwise every script is handed the address that redirected away:
@@ -3252,8 +3278,9 @@ def main() -> int:
                 entry_words = visible_words(f.read())
         if entry_error:
             print(f"\n  ENTRY PAGE UNREACHABLE: {entry_error}\n"
-                  f"  Every check that reads the live site reports NO_DATA. "
-                  f"Nothing about this site was measured.", file=sys.stderr)
+                  f"  Every check that reads the live site reports NO_DATA, except "
+                  f"the few the entry's own answer decides. Nothing else about this "
+                  f"site was measured.", file=sys.stderr)
         elif entry_guard:
             print(f"\n  WARNING: the entry page looks like "
                   f"{entry_guard.replace('_', ' ')}, audited anyway "
@@ -3347,7 +3374,8 @@ def main() -> int:
         # checks with it: the file is there and parses, so nothing else would
         # stop them from grading an interstitial's 12 words as a site.
         for item_id, skip in unreachable_skips(
-                items, entry_error, wrong_page=bool(entry_guard)).items():
+                items, entry_error, wrong_page=bool(entry_guard),
+                entry_status=entry_status, requested=(mode != "archive")).items():
             preskip.setdefault(item_id, skip)
     elif entry_private:
         gate = set(NEEDS_THE_OUTSIDE_WORLD)
@@ -3658,7 +3686,7 @@ def main() -> int:
         "sample": a.sample,
         "sampled_urls": sampled_urls,
         "evidence_path": a.evidence_json or None,
-        "scores": score(graded),
+        "scores": score(graded, entry_error=entry_error),
         "runs": summarize_runs(results),
         # Timeouts and crashes both land in NO_DATA; counted apart so a run that
         # was merely too slow does not read as a plugin full of broken scripts.

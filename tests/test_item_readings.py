@@ -56,7 +56,9 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         # owed.
         # 0.129.0: MB-104 reads Google's favicon requirements and carries a statement
         # for the brand and URL-stability halves it cannot read (answers -> measures).
-        self.assertEqual(counts, {"answers": 115, "measures": 30, "owed": 0})
+        # 0.130.0: CI-003 reads the status class and carries a statement naming the
+        # items that read the rest of the site (answers -> measures).
+        self.assertEqual(counts, {"answers": 114, "measures": 31, "owed": 0})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
         """Line endings are normalised first: a Windows checkout writes CRLF, and how

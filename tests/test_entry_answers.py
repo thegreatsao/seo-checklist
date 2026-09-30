@@ -29,7 +29,8 @@ which a run with browser artifacts broke: `SEO Score: 100/100` over eleven artif
 items, on an entry answering 404).
 
 **The set is derived by the operation, not listed.** `TheGateHidesNoFailureItDoesNotAnswer`
-serves the entry under 404 and 503, runs the runner with the gate removed
+serves the entry under 404 and 503 and points at a port nothing listens on, runs the runner
+with the gate removed
 (`tests/entry_gate_off.py`), and requires every failure the error provokes to be either
 answered by the gate or argued in `NOT_THE_ENTRYS_ANSWER` — in both directions, and with
 the gate saying exactly what the item's own script says.
@@ -320,6 +321,36 @@ class TheRegistryDeclaresWhatTheGateMayAnswer(unittest.TestCase):
         self.assertTrue(seen, "CI-003 reads status_class; the check reached nothing")
 
 
+class TheBuilderRefusesABadEntryAnswer(unittest.TestCase):
+    """`build_checklist.entry_answer_problems`, each refusal naming its id, and the
+    shipped table refused by none of them."""
+
+    def test_each_bad_shape_is_refused_by_name(self):
+        import build_checklist
+        items = build_checklist.build()
+        good = {"fails_on": ["server_error"], "why": "a reason"}
+        cases = {
+            "unknown id": ("NO-999", good),
+            "rule-less item": ("CN-037", good),
+            "empty list": ("CI-003", {"fails_on": [], "why": "a reason"}),
+            "unknown class": ("CI-003", {"fails_on": ["teapot"], "why": "a reason"}),
+            "a success": ("CI-003", {"fails_on": ["ok"], "why": "a reason"}),
+            "blank reason": ("CI-003", {"fails_on": ["server_error"], "why": " "}),
+        }
+        for label, (item_id, answer) in cases.items():
+            with self.subTest(label):
+                problems = build_checklist.entry_answer_problems(
+                    items, {item_id: answer})
+                self.assertTrue(problems, label)
+                self.assertTrue(all(p.startswith(f"{item_id}:") for p in problems),
+                                problems)
+
+    def test_the_shipped_table_is_accepted(self):
+        import build_checklist
+        self.assertEqual(
+            build_checklist.entry_answer_problems(build_checklist.build()), [])
+
+
 # Failures an error entry provokes that the gate is right to withhold, each argued.
 # Every member must still be provoked (the reader below), so a line here cannot
 # outlive its reason.
@@ -337,14 +368,15 @@ NOT_THE_ENTRYS_ANSWER = {
               "withhold",
 }
 
-STATES = {"s404": 404, "s503": 503}
+# `dead` is a port nothing listens on: the entry that did not answer at all.
+STATES = {"s404": 404, "s503": 503, "dead": None}
 
 
 class TheGateHidesNoFailureItDoesNotAnswer(unittest.TestCase):
-    """The derivation, by the operation. Five audits of the good tree, `/` changed only
-    in its status: the gate removed on the plain tree and on 404 and 503, the shipped
-    runner on 404 (with the page artifacts, so the score has something to be computed
-    over) and on 503."""
+    """The derivation, by the operation. Seven audits: the good tree with `/` changed
+    only in its status — the gate removed on the plain tree and on 404 and 503, the
+    shipped runner on 404 (with the page artifacts, so the score has something to be
+    computed over) and on 503 — and both runners against a port nothing listens on."""
 
     RESULTS: dict = {}
 
@@ -352,7 +384,8 @@ class TheGateHidesNoFailureItDoesNotAnswer(unittest.TestCase):
     def setUpClass(cls):
         cls.work = tempfile.mkdtemp(prefix="seo-entry-answers-")
         runs = [("baseline", "off", None), ("s404", "off", 404), ("s503", "off", 503),
-                ("s404", "on", 404), ("s503", "on", 503)]
+                ("s404", "on", 404), ("s503", "on", 503), ("dead", "off", None),
+                ("dead", "on", None)]
         with ThreadPoolExecutor(max_workers=3) as pool:
             for key, result in zip(runs, pool.map(lambda r: cls.audit(*r), runs)):
                 cls.RESULTS[key[:2]] = result
@@ -367,6 +400,8 @@ class TheGateHidesNoFailureItDoesNotAnswer(unittest.TestCase):
                               "content_type": "text/html; charset=utf-8",
                               "body": f.read()}}
         tag = f"{state}-{gate}"
+        if state == "dead":
+            return cls.launch(tag, gate, cls.dead_url(), [])
         with tree_served("good", answers) as site:
             arts = tree_served.artifacts(site, "good", os.path.join(cls.work, tag))
             # Every artifact where the gate is off, so what the tree can provoke is
@@ -379,12 +414,22 @@ class TheGateHidesNoFailureItDoesNotAnswer(unittest.TestCase):
                 names = ()
             extra = [arg for flag, name in names
                      for arg in (flag, os.path.join(arts, name))]
-            out = os.path.join(cls.work, f"{tag}.json")
-            program = GATE_OFF if gate == "off" else RUNNER
-            proc = spawn([sys.executable, program, site.url, "--allow-private",
-                          "--max-rps", "0", "--no-history", "--no-prompt",
-                          "--timeout", "120", "--json", out, *extra],
-                         env=offline_env(), timeout=900)
+            return cls.launch(tag, gate, site.url, extra)
+
+    @staticmethod
+    def dead_url():
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1", 0))
+            return f"http://127.0.0.1:{sock.getsockname()[1]}/"
+
+    @classmethod
+    def launch(cls, tag, gate, url, extra):
+        out = os.path.join(cls.work, f"{tag}.json")
+        program = GATE_OFF if gate == "off" else RUNNER
+        proc = spawn([sys.executable, program, url, "--allow-private",
+                      "--max-rps", "0", "--no-history", "--no-prompt",
+                      "--timeout", "120", "--json", out, *extra],
+                     env=offline_env(), timeout=900)
         if proc.returncode != 0 or not os.path.exists(out):
             raise AssertionError(f"{tag} exited {proc.returncode}\n"
                                  f"{proc.stdout[-2000:]}\n{proc.stderr[-2000:]}")
@@ -406,6 +451,8 @@ class TheGateHidesNoFailureItDoesNotAnswer(unittest.TestCase):
 
     def test_the_runs_are_the_runs_they_claim_to_be(self):
         self.assertTrue(self.RESULTS[("baseline", "off")]["payload"]["entry_reachable"])
+        self.assertIn("ConnectionError",
+                      self.RESULTS[("dead", "on")]["payload"]["entry_error"] or "")
         for state in STATES:
             self.assertTrue(self.RESULTS[(state, "off")]["payload"]["entry_reachable"])
             self.assertFalse(self.RESULTS[(state, "on")]["payload"]["entry_reachable"])
@@ -448,7 +495,8 @@ class TheGateHidesNoFailureItDoesNotAnswer(unittest.TestCase):
                          for s in STATES if self.status(s, "on", item_id) == FAIL]
                 self.assertTrue(fired, f"{item_id} never failed on an error entry")
                 for state, evidence in fired:
-                    self.assertIn(f"HTTP {STATES[state]}", evidence)
+                    self.assertIn(f"HTTP {STATES[state]}" if STATES[state]
+                                  else "did not answer", evidence)
 
     def test_an_entry_nobody_read_is_not_scored(self):
         """With browser artifacts, which decided eleven items and printed 100/100."""
