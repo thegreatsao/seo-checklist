@@ -8,7 +8,8 @@ import json
 from collections import defaultdict
 
 import site_crawl
-from seo_common import fetch_url, issue, normalize_url, parse_html, read_urls, same_host
+from seo_common import (carries_content, fetch_url, issue, normalize_url,
+                        parse_html, read_urls, same_host)
 
 
 # basis: convention — the same hundred target requests as gsc_links_csv.MAX_TARGETS.
@@ -44,7 +45,7 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
             if check_targets:
                 target = fetch_url(canonical, timeout=timeout, max_bytes=1_000_000)
                 row["canonical_status"] = target.get("status")
-                if target.get("status") != 200:
+                if not carries_content(target.get("status")):
                     row["issues"].append(f"canonical target HTTP {target.get('status')}")
                     issues.append(issue("error", "Canonical target is not 200", row["url"], str(target.get("status"))))
                 if target.get("text"):
@@ -62,7 +63,7 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
         # A page with no canonical and a page nobody could fetch are not the same
         # finding, and "missing canonical" was reported for both — a `critical` verdict
         # (CI-009) about a host that answered nothing.
-        "fetch_error": (None if any(row.get("status") == 200 for row in rows)
+        "fetch_error": (None if any(carries_content(row.get("status")) for row in rows)
                         else "no URL could be read"),
     }
 
@@ -80,7 +81,7 @@ def check_inventory(site_url: str, inventory_path: str,
     unchecked_targets = set()
 
     for key, source in sorted(pages.items()):
-        if not source.get("html") or source.get("status") != 200:
+        if not source.get("html") or not carries_content(source.get("status")):
             continue
         page_url = source.get("url") or source.get("final_url") or key
         final_url = source.get("final_url") or page_url
@@ -143,7 +144,7 @@ def check_inventory(site_url: str, inventory_path: str,
             unchecked_targets.add(target_key)
             rows.append(row)
             continue
-        if target_status != 200:
+        if not carries_content(target_status):
             row["issues"].append(f"canonical target HTTP {target_status}")
             issues.append(issue("error", "Canonical target is not 200",
                                 row["url"], str(target_status)))

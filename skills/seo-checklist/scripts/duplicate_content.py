@@ -22,7 +22,7 @@ import sys
 from collections import defaultdict
 
 import site_crawl
-from seo_common import THIN_CONTENT_WORDS, normalize_url
+from seo_common import THIN_CONTENT_WORDS, carries_content, normalize_url
 
 # basis: inherited — 100 words, present at import. Splits a thin page into two
 #  severities: under a hundred words the page is closer to empty than to short, which is
@@ -58,7 +58,7 @@ def pages_from_inventory(inventory: dict) -> dict:
     """
     pages = {}
     for key, row in sorted((inventory.get("pages") or {}).items()):
-        if not row.get("html") or row.get("status") != 200:
+        if not row.get("html") or not carries_content(row.get("status")):
             continue
         if not row.get("text_hash"):
             continue

@@ -23,6 +23,7 @@ import requests
 import site_crawl
 from seo_common import (
     DEAD_FETCH_ERROR_KINDS,
+    carries_content,
     fetch_url,
     likely_lcp_candidate,
     load_source,
@@ -181,7 +182,7 @@ def _intrinsic_size(url: str, timeout: int,
             whole = safe_get(url, timeout=timeout)
         except requests.exceptions.RequestException:
             return None, None
-        if whole.status_code != 200:
+        if not carries_content(whole.status_code):
             return None, None
         return image_header(whole.content), len(whole.content)
     try:
@@ -190,7 +191,7 @@ def _intrinsic_size(url: str, timeout: int,
     except requests.exceptions.RequestException:
         return None, None
     try:
-        if response.status_code not in (200, 206):
+        if not carries_content(response.status_code):
             return None, None
         data = b""
         for chunk in response.iter_content(8192):

@@ -8,7 +8,8 @@ import json
 from typing import NamedTuple
 
 from lib import robots_rules
-from seo_common import fetch_robots, fetch_url, normalize_url, origin, robots_allowed
+from seo_common import (carries_content, fetch_robots, fetch_url, normalize_url,
+                        origin, robots_allowed)
 
 
 # OpenAI splits its fetching across four tokens and blocking one does not block the
@@ -97,8 +98,8 @@ def matrix(site: str, paths: list[str] | None = None, timeout: int = 15) -> dict
             "policy": ("allowed" if allowed_all else "restricted")
                       if crawler_policy.honours_robots_txt else NOT_ENFORCED_POLICY,
             "paths": decisions,
-            "llms_txt_available": llms.get("status") == 200,
-            "alignment": "documented" if llms.get("status") == 200 and allowed_all else "robots_only" if not allowed_all else "allowed_without_llms_txt",
+            "llms_txt_available": carries_content(llms.get("status")),
+            "alignment": "documented" if carries_content(llms.get("status")) and allowed_all else "robots_only" if not allowed_all else "allowed_without_llms_txt",
         })
     named_scopes = {
         scope: sorted(row["crawler"] for row in rows

@@ -55,7 +55,7 @@ REGISTRY = os.path.join(SKILL_DIR, "resources", "config", "checklist.json")
 
 sys.path.insert(0, SCRIPT_DIR)
 
-from seo_common import fetch_error_kind, status_class  # noqa: E402
+from seo_common import carries_content, fetch_error_kind, status_class  # noqa: E402
 
 
 # How an evidence script failed. All four end as NO_DATA — the item is undecided
@@ -2462,10 +2462,10 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
         return urlparse(u).netloc == host
 
     if inventory:
-        # 200-only: a sampled URL that turns out to be a 404 fails every page-level
-        # check, and the worst page decides the verdict.
+        # Content-only: any readable success is a page, while a 404 would fail every
+        # page-level check and let the worst page decide the verdict.
         found = [key for key, row in sorted((inventory.get("pages") or {}).items())
-                 if row.get("html") and row.get("status") == 200
+                 if row.get("html") and carries_content(row.get("status"))
                  and same_host(key) and looks_like_a_page(key)]
 
     for path in CONVENTIONAL_SITEMAP_PATHS if not found else ():

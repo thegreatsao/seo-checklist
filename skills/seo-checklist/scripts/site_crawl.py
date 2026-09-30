@@ -47,6 +47,7 @@ from urllib.parse import urljoin, urlparse
 
 from seo_common import (
     as_list,
+    carries_content,
     discover_sitemap_urls,
     fetch_url,
     normalize_url,
@@ -264,7 +265,7 @@ def load_sitemap_urls(site_url: str, sitemap_urls: list[str] | None = None,
             continue
         seen_sitemaps.add(sitemap_url)
         fetched = fetch(sitemap_url, timeout=timeout, max_bytes=8_000_000)
-        if fetched.get("status") != 200 or not fetched.get("text"):
+        if not carries_content(fetched.get("status")) or not fetched.get("text"):
             errors.append({"url": sitemap_url, "status": fetched.get("status"),
                            "error": fetched.get("error"),
                            "error_kind": fetched.get("error_kind")})
@@ -379,7 +380,7 @@ def _read_page(fetched: dict, key: str, discovered_url: str, site_url: str,
     }
     row["redirected"] = bool(row["redirect_chain"])
     text = fetched.get("text") or ""
-    if fetched.get("status") != 200 or not text:
+    if not carries_content(fetched.get("status")) or not text:
         return row
     if "html" not in row["content_type"] and row["content_type"]:
         # An audit of a PDF or a stylesheet is not a page audit. Recorded with its

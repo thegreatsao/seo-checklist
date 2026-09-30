@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urljoin, urlparse
 
 import site_crawl
-from seo_common import (DEAD_FETCH_ERROR_KINDS, check_link_status,
+from seo_common import (DEAD_FETCH_ERROR_KINDS, carries_content, check_link_status,
                         fetch_error_kind, html_parser)
 
 try:
@@ -171,7 +171,7 @@ def check_broken_links(url: str, internal_only: bool = False,
     # Fetch page
     try:
         resp = safe_get(url, timeout=15, headers=HEADERS)
-        if resp.status_code != 200:
+        if not carries_content(resp.status_code):
             # The site answered, and not with the page. Not this script failing.
             result["error"] = f"Failed to fetch page: HTTP {resp.status_code}"
             result["error_kind"] = "unread"

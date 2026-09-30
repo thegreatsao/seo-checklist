@@ -144,6 +144,13 @@ def status_class(status: int | None) -> str:
     return "unrecognised"
 
 
+def carries_content(status: int | None) -> bool:
+    """Whether an audited-site answer carries content to read, as Google's page reads a 2xx.
+    A 204 has none; a redirect, an error or no answer is not content.
+    """
+    return status_class(status) in ("ok", "other_success")
+
+
 def fetch_error_kind(exc: BaseException) -> str:
     """Classify a failed shared fetch from exception types and attributes only."""
     if isinstance(exc, HostResolutionError) or _has_name_resolution_cause(exc):
@@ -1124,7 +1131,8 @@ def robots_allowed(parsed_robots: dict | None, url: str, user_agent: str = "*") 
 def fetch_robots(site_url: str, timeout: int = 15) -> dict:
     robots_url = origin(site_url) + "/robots.txt"
     fetched = fetch_url(robots_url, timeout=timeout, max_bytes=500_000)
-    parsed = parse_robots_txt(fetched.get("text") or "") if fetched.get("status") == 200 else None
+    parsed = (parse_robots_txt(fetched.get("text") or "")
+              if carries_content(fetched.get("status")) else None)
     return {"url": robots_url, "fetch": fetched, "parsed": parsed}
 
 

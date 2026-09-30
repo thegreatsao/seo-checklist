@@ -459,6 +459,11 @@ def _fetch_robots(origin: str) -> str:
     and the reason is here so it can be argued with.
     """
     try:
+        from seo_common import carries_content
+    except ImportError:
+        from scripts.seo_common import carries_content
+
+    try:
         url, pinned_addresses = _validated_url(urljoin(origin, "/robots.txt"))
         headers = CaseInsensitiveDict(default_headers())
         headers.setdefault("Host", _host_header(url))
@@ -490,7 +495,7 @@ def _fetch_robots(origin: str) -> str:
         # for rather than an unattended crawl.
         if response is None:
             return ""
-        if response.status_code != 200:
+        if not carries_content(response.status_code):
             return ""
         return response.content[:ROBOTS_MAX_BYTES].decode("utf-8", "replace")
     except Exception:  # noqa: BLE001

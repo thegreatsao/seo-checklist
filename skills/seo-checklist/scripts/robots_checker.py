@@ -25,6 +25,11 @@ except ImportError:
     from scripts.lib.safe_http import default_headers, safe_get
     from scripts.lib import robots_rules
 
+try:
+    from seo_common import carries_content
+except ImportError:
+    from scripts.seo_common import carries_content
+
 
 # AI crawlers to check for explicit management
 AI_CRAWLERS = [
@@ -135,7 +140,7 @@ def fetch_robots_txt(url: str, timeout: int = 15) -> dict:
                 result["ai_crawler_status"][crawler] = "allowed (no robots.txt)"
             return result
 
-        if resp.status_code != 200:
+        if not carries_content(resp.status_code):
             # The site answered, and what it answered means robots.txt could not
             # be read. That is a fact about the site, not about this script.
             result["error"] = f"HTTP {resp.status_code}"

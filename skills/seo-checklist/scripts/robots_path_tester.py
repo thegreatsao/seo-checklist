@@ -18,7 +18,7 @@ from urllib.parse import urljoin, urlsplit
 
 from bs4 import BeautifulSoup
 
-from seo_common import fetch_robots, html_parser, normalize_url, robots_allowed
+from seo_common import carries_content, fetch_robots, html_parser, normalize_url, robots_allowed
 
 try:
     from lib.safe_http import default_headers, safe_get
@@ -180,7 +180,8 @@ def test_paths(site: str, paths: list[str], agents: list[str], timeout: int = 15
     # matching text across a nested structure — where "allowed" and "true" never
     # land in the same string, so the pattern never fired and every site passed.
     reachable = sorted({row["url"] for row in rows if row["allowed_for"]})
-    unreachable_robots = robots["fetch"].get("status") not in (200, 404)
+    status = robots["fetch"].get("status")
+    unreachable_robots = not (carries_content(status) or status == 404)
     out = {"site": normalize_url(site), "robots_url": robots["url"],
            "robots_status": robots["fetch"].get("status"), "rows": rows}
     # No robots.txt answer means no verdict: a 500 or a timeout says nothing about

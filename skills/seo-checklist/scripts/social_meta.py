@@ -32,9 +32,9 @@ except ImportError:
     from scripts.lib.safe_http import default_headers, safe_get
 
 try:
-    from seo_common import html_parser
+    from seo_common import carries_content, html_parser
 except ImportError:
-    from scripts.seo_common import html_parser
+    from scripts.seo_common import carries_content, html_parser
 
 
 # basis: presentation — 60 characters of a tag's value in the console listing. The
@@ -102,7 +102,7 @@ def check_social_meta(url: str, timeout: int = 15) -> dict:
 
     try:
         resp = safe_get(url, timeout=timeout, headers=HEADERS)
-        if resp.status_code != 200:
+        if not carries_content(resp.status_code):
             result["error"] = f"HTTP {resp.status_code}"
             result["error_kind"] = "unread"
             return result

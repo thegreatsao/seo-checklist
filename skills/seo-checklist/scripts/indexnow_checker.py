@@ -35,9 +35,9 @@ except ImportError:
     from scripts.lib.safe_http import safe_get, safe_post
 
 try:
-    from seo_common import html_parser
+    from seo_common import carries_content, html_parser
 except ImportError:
-    from scripts.seo_common import html_parser
+    from scripts.seo_common import carries_content, html_parser
 
 # basis: presentation — a key longer than eight characters is echoed as first four,
 #  last four; anything shorter is replaced outright. A masking rule for the output, and
@@ -75,13 +75,13 @@ def check_key_file(site_url: str, key: str) -> dict:
     key_url = f"{parsed.scheme}://{parsed.netloc}/{key}.txt"
 
     status, body = fetch_url(key_url)
-    if status == 200 and key in body:
+    if carries_content(status) and key in body:
         return {
             "passed": True,
             "detail": f"Key file found at {key_url}",
             "url": key_url,
         }
-    elif status == 200:
+    elif carries_content(status):
         return {
             "passed": False,
             "severity": "Critical",
@@ -121,7 +121,7 @@ def check_robots_txt(site_url: str, key: str) -> dict:
     robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
 
     status, body = fetch_url(robots_url)
-    if status != 200:
+    if not carries_content(status):
         return {"passed": None, "finding": f"Could not fetch robots.txt (HTTP {status})."}
 
     if "indexnow" in body.lower() or key in body:
@@ -181,7 +181,7 @@ def extract_sitemap_urls(site_url: str, limit: int = 50) -> list:
     sitemap_url = f"{parsed.scheme}://{parsed.netloc}/sitemap.xml"
 
     status, body = fetch_url(sitemap_url)
-    if status != 200:
+    if not carries_content(status):
         return []
 
     import re

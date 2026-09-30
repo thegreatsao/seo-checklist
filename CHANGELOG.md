@@ -10,6 +10,38 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.131.0 — a success that is not a plain 200 is still the site's content
+
+Registry version: unchanged at `b81c0edcd245`. No rule moves; verdicts on a site answering a non-200 success do, below.
+
+Google's *HTTP status codes* page (last updated 2026-02-04) says that for a 2xx "Google
+considers the content for processing" — only 204 has nothing to process — and that a
+robots.txt answering any 2xx is processed "as provided". 0.130.0 read a status that way
+once, for the entry page. Everywhere else this tool read its own site as content only on
+exactly 200, so a site behind a proxy that answers 203, or a range server answering 206,
+was partly invisible.
+
+Measured on 30 September: the good fixture served with every textual file answering 203 —
+the same bytes — moved **30 verdicts**:
+
+* the crawler kept no page, so fifteen site-wide items were `NO_DATA` under "the shared
+  crawl read nothing" (CI-015, MS-026, TE-176, LO-198, AR-162 among them);
+* `canonical_checker.py` called the page unread (CI-009, CI-011), and `robots_checker.py`,
+  `social_meta.py` and `llms_txt_checker.py` reported "the site stopped answering: HTTP 203";
+* **three failed falsely**: GEO-003 read a robots.txt at 203 as absent and graded the AI
+  crawler policy `silent`, GEO-002 scored llms.txt 0, and GO-136 reported "No sitemap found".
+
+An AST census found 46 comparisons with 200 in `scripts/`. Every one reading the audited
+site's own answer — 31 in 22 functions — now asks `seo_common.carries_content`, read off
+`status_class`. Five stay, each argued: the Safe Browsing, W3C validator, PageSpeed and
+IndexNow services name their own success, and `status_class` is where 200 is named once.
+Only CI-003 *Page Returns 200 (OK)* still tells 203 from 200, and it warns, as 0.130.0 made
+it.
+
+`tests/test_a_success_is_content.py` holds all three: the table, the census in both
+directions, and the derivation by the operation — the good tree at 200 and the same bytes
+at 203 must get the same verdicts, CI-003 excepted.
+
 ## 0.130.0 — an entry page that answered an error is evidence, for the items that ask about it
 
 Registry version: `405f6d395409` → `b81c0edcd245`. Verdicts move: see below.

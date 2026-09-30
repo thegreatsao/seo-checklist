@@ -51,8 +51,10 @@ from urllib.parse import parse_qsl, urlsplit
 
 try:
     import site_crawl
+    from seo_common import carries_content
 except ImportError:  # pragma: no cover - path shim, as everywhere else here
     from scripts import site_crawl
+    from scripts.seo_common import carries_content
 
 # ---------------------------------------------------------------------------
 # Who is asking
@@ -451,7 +453,7 @@ def _inventory_facts(path: str) -> dict:
         "sitemap": {_key(u) for u in site_crawl.sitemap_urls(inv)},
         "robots_refused": {_key(u) for u in site_crawl.robots_refused(inv)},
         "html": {_key(u) for u, p in pages.items()
-                 if isinstance(p, dict) and p.get("status") == 200},
+                 if isinstance(p, dict) and carries_content(p.get("status"))},
     }
 
 

@@ -26,6 +26,11 @@ try:
 except ImportError:
     from scripts.lib.safe_http import default_headers, safe_get
 
+try:
+    from seo_common import carries_content
+except ImportError:
+    from scripts.seo_common import carries_content
+
 
 # basis: inherited — every one of these, present at import. `llms.txt` is a proposal
 #  with no ratified spec, so none of them can be `standard` even in principle: the file
@@ -87,7 +92,7 @@ def check_llms_txt(url: str, timeout: int = 15) -> dict:
         resp = safe_get(f"{base}/llms.txt", timeout=timeout, headers=headers)
         result["status"] = resp.status_code
 
-        if resp.status_code == 200:
+        if carries_content(resp.status_code):
             result["exists"] = True
             result["content"] = resp.text
             _parse_llms_txt(resp.text, result)
@@ -111,7 +116,7 @@ def check_llms_txt(url: str, timeout: int = 15) -> dict:
     try:
         resp = safe_get(f"{base}/llms-full.txt", timeout=timeout, headers=headers)
         result["full_status"] = resp.status_code
-        result["full_exists"] = resp.status_code == 200
+        result["full_exists"] = carries_content(resp.status_code)
     except requests.exceptions.RequestException:
         pass
 

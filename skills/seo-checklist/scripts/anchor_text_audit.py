@@ -11,7 +11,8 @@ import argparse
 from collections import Counter, defaultdict
 
 import site_crawl
-from seo_common import normalize_url, primary_language, print_json_or_text
+from seo_common import (carries_content, normalize_url, primary_language,
+                        print_json_or_text)
 
 
 # basis: convention — four pages. Below it "this anchor appears on most pages" is a
@@ -67,7 +68,7 @@ def anchors_from_inventory(inventory: dict) -> dict:
             # of bug as the one being fixed.
             "lang": row.get("lang"),
         }
-        if row.get("error") or row.get("status") != 200 or not row.get("html"):
+        if row.get("error") or not carries_content(row.get("status")) or not row.get("html"):
             fetch_errors.append({"url": key, "status": row.get("status"),
                                  "error": row.get("error")})
             continue
@@ -121,7 +122,8 @@ def navigation_links(links: list[dict], pages: dict) -> set:
     and one is never more than half of a group that must hold at least four pages to be
     asked about at all.
     """
-    html_pages = [key for key, row in pages.items() if row.get("status") == 200]
+    html_pages = [key for key, row in pages.items()
+                  if carries_content(row.get("status"))]
     if len(html_pages) < MIN_PAGES_FOR_SITEWIDE:
         return set()
     sources: dict[tuple, set] = defaultdict(set)

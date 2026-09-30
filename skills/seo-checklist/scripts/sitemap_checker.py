@@ -8,6 +8,7 @@ import re
 from datetime import datetime, timezone
 
 from seo_common import (
+    carries_content,
     discover_sitemap_urls,
     fetch_robots,
     fetch_url,
@@ -87,7 +88,7 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
             "error": fetched.get("error"),
             "error_kind": fetched.get("error_kind"),
         }
-        if fetched.get("status") != 200:
+        if not carries_content(fetched.get("status")):
             if sm_url in probed:
                 # Not there, and nothing said it would be. Recorded so the run is
                 # inspectable, but it is not an issue and must not read as one.
@@ -174,7 +175,7 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
     for url_origin in sorted(robots_by_origin):
         answer = robots_by_origin[url_origin]
         status = (answer.get("fetch") or {}).get("status")
-        read = (status == 200
+        read = (carries_content(status)
                 or (isinstance(status, int)
                     and ROBOTS_NO_RULES_STATUS_MIN <= status < 500
                     and status != 429))
@@ -183,7 +184,7 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
         if not read:
             unread_robots.append({"url": robots_url, "status": status})
             continue
-        rules = answer.get("parsed") if status == 200 else None
+        rules = answer.get("parsed") if carries_content(status) else None
         for row in urls_by_origin[url_origin]:
             allowed, rule = robots_rules.allowed(rules, row["url"], "Googlebot")
             if not allowed:
@@ -213,8 +214,9 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
             reasons.append("the sitemap walk also stopped at MAX_SITEMAPS_FOLLOWED")
         result["truncated_reason"] = "; ".join(reasons)
     result["summary"]["sitemaps"] = len(result["sitemaps_checked"])
-    result["summary"]["loaded"] = sum(1 for e in result["sitemaps_checked"]
-                                      if e.get("status") == 200)
+    result["summary"]["loaded"] = sum(
+        1 for e in result["sitemaps_checked"]
+        if carries_content(e.get("status")))
     result["summary"]["urls"] = len(result["urls"])
     # No sitemap anywhere *is* a finding, and downgrading the probe misses must not
     # swallow it. This is the one case where absence is the site's problem: nothing
