@@ -55,7 +55,7 @@ REGISTRY = os.path.join(SKILL_DIR, "resources", "config", "checklist.json")
 
 sys.path.insert(0, SCRIPT_DIR)
 
-from seo_common import status_class  # noqa: E402
+from seo_common import fetch_error_kind, status_class  # noqa: E402
 
 
 # How an evidence script failed. All four end as NO_DATA — the item is undecided
@@ -477,13 +477,15 @@ class Fetch(NamedTuple):
     `error` and `path` are mutually exclusive. `guard` is set whenever the
     response looked like an interstitial or an error page **even when it was not
     enforced**, so `--no-page-guard` records the suspicion instead of erasing it.
-    `status` is the response's HTTP status, or ``None`` when nothing answered.
+    `status` is the response's HTTP status, or ``None`` when nothing answered;
+    `error_kind` is then `seo_common.fetch_error_kind` of the exception.
     """
     path: str        # temp file holding the HTML, "" when the fetch failed
     error: str       # why it failed, "" on success
     final_url: str   # the URL the request actually ended on, after redirects
     guard: str       # "bot_challenge" | "soft_404" | ""
     status: int | None = None
+    error_kind: str = ""
 
 
 def fetch_page(url: str, enforce_guard: bool = True) -> Fetch:
@@ -513,7 +515,7 @@ def fetch_page(url: str, enforce_guard: bool = True) -> Fetch:
         if len(detail) > ERROR_DETAIL_CHARS:
             detail = detail[:ERROR_DETAIL_CHARS].rsplit(" ", 1)[0] + "…"
         return Fetch("", f"{type(e).__name__}: {detail}" if detail
-                         else type(e).__name__, "", "")
+                         else type(e).__name__, "", "", None, fetch_error_kind(e))
 
     # Where the request actually landed. safe_request follows redirects itself and
     # returns the last response, so this is the resolved URL — the one the rest of
@@ -1861,9 +1863,19 @@ NEEDS_A_LIVE_SITE = {req for req, gates in REQUIREMENT_GATES.items()
 NEEDS_THE_RIGHT_PAGE = NEEDS_A_LIVE_SITE | {"offline"}
 
 
+# The failed requests that are the site not answering, as opposed to the audit not
+# reaching a site at all (`seo_common.fetch_error_kind`). A name that does not resolve
+# is a typo as easily as an outage, our own guard refusing an address is ours, and an
+# unclassified failure is not evidence, so each of those leaves an entry answer
+# NO_DATA. Found at 0.130.0 by the CI step "An unreachable site gets no score", which
+# audits `unreachable.invalid` and saw TE-167 fail a site that has no address.
+NO_ANSWER_KINDS = ("refused", "timeout", "tls")
+
+
 def unreachable_skips(items: list[dict], reason: str,
                       wrong_page: bool = False, entry_status=None,
-                      requested: bool = False) -> dict[str, tuple[str, str]]:
+                      requested: bool = False,
+                      entry_error_kind: str = "") -> dict[str, tuple[str, str]]:
     """Mark every check that reads the live site as undecided.
 
     Without this the audit grades a site it never saw. Most evidence scripts exit
@@ -1889,7 +1901,9 @@ def unreachable_skips(items: list[dict], reason: str,
         need = check.get("requires", "fetch")
         if need in gate:
             entry_answer = check.get("entry_answer") or {}
-            if (requested
+            answered = (entry_status is not None
+                        or entry_error_kind in NO_ANSWER_KINDS)
+            if (requested and answered
                     and status_class(entry_status) in entry_answer.get("fails_on", [])):
                 if entry_status is not None:
                     out[it["id"]] = (
@@ -3240,6 +3254,7 @@ def main() -> int:
     entry_error = ""
     entry_guard = ""
     entry_status = None
+    entry_error_kind = ""
     entry_words = -1
     audit_url = a.url
     if mode == "archive":
@@ -3261,6 +3276,7 @@ def main() -> int:
         fetched = fetch_page(a.url, enforce_guard=not a.no_page_guard)
         html_path, entry_error, entry_guard = fetched.path, fetched.error, fetched.guard
         entry_status = fetched.status
+        entry_error_kind = fetched.error_kind
         temp_html = html_path
         # Audit the URL the request actually landed on when the host changed.
         # Otherwise every script is handed the address that redirected away:
@@ -3375,7 +3391,8 @@ def main() -> int:
         # stop them from grading an interstitial's 12 words as a site.
         for item_id, skip in unreachable_skips(
                 items, entry_error, wrong_page=bool(entry_guard),
-                entry_status=entry_status, requested=(mode != "archive")).items():
+                entry_status=entry_status, requested=(mode != "archive"),
+                entry_error_kind=entry_error_kind).items():
             preskip.setdefault(item_id, skip)
     elif entry_private:
         gate = set(NEEDS_THE_OUTSIDE_WORLD)

@@ -483,7 +483,9 @@ already made, so the second scenario still holds without a word changed.
 planned; `TheGateHidesNoFailureItDoesNotAnswer` **derives the answered set from runs** —
 every failure an error entry provokes is answered or argued, in both directions, and the
 gate must say what the item's own script says. CI-001 was not in the plan; the derivation
-named it on its first run.
+named it on its first run. And a name that does not resolve answers nothing: the CI step
+"An unreachable site gets no score" audits `unreachable.invalid`, and it refused the first
+version, which failed TE-167 for a site that has no address.
 
 **The third scenario had been broken all along, and its two readers could not see it.**
 Both built their unreadable run without browser artifacts, so nothing was decided and the
@@ -515,8 +517,9 @@ says which.
   simply could not answer them
 
 #### Scenario: the entry's answer is the item's question
-- **WHEN** the entry answered with a status, or did not answer, and an item declares
-  that answer's class in `check.entry_answer`
+- **WHEN** the entry answered with a status, or the host was reached and did not answer
+  (refused, timed out, TLS failed), and an item declares that answer's class in
+  `check.entry_answer`
 - **THEN** the item is `FAIL`, with the status in its evidence, and nothing runs
 - **AND** an answer outside its classes leaves it `NO_DATA`: the gate withholds a pass,
   never a failure it measured

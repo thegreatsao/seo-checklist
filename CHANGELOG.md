@@ -40,13 +40,16 @@ declare `check.entry_answer` — the status classes under which the entry's answ
 — and on a dead entry it is `FAIL` when the answer is in that list and `NO_DATA`
 otherwise: **the gate withholds a pass, never a failure it measured.** No second request
 is made to a server that is failing; nothing runs against an entry the audit could not
-read (RUN-8), as before.
+read (RUN-8), as before. "No answer" means the host was there and did not answer: a name
+that does not resolve is a typo as easily as an outage, so it answers nothing — the CI
+step that audits `unreachable.invalid` caught the first version failing TE-167 there.
 
 | entry answers | CI-001 | CI-003 | CI-015 | TE-167 |
 |---|---|---|---|---|
 | 404, 410 | NO_DATA → FAIL | NO_DATA → FAIL | NO_DATA | NO_DATA |
 | 500, 503 | NO_DATA → FAIL | NO_DATA → FAIL | NO_DATA → FAIL | NO_DATA → FAIL |
-| no answer (refused, timeout, DNS) | NO_DATA | NO_DATA | NO_DATA | NO_DATA → FAIL |
+| no answer: refused, timed out, TLS failed | NO_DATA | NO_DATA | NO_DATA | NO_DATA → FAIL |
+| a name that does not resolve, or an address our own guard refuses | NO_DATA | NO_DATA | NO_DATA | NO_DATA |
 | 200 that is not a page (soft 404, challenge, not HTML, empty) | NO_DATA | NO_DATA | NO_DATA | NO_DATA |
 | 203 or another success, readable | NO_DATA → PASS | NO_DATA → **WARN** | as before | as before |
 

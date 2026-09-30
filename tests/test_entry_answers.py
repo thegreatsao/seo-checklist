@@ -218,11 +218,29 @@ class TheGateAnswersWhatItMeasured(unittest.TestCase):
         self.assertIn("HTTP 503", skips["U"][1])
 
     def test_no_answer_is_its_own_class(self):
-        reason = "ConnectionError: refused"
-        skips = unreachable_skips(self.ITEMS, reason, entry_status=None, requested=True)
-        self.assertEqual(self.statuses(skips), {"S": NO_DATA, "U": FAIL, "F": NO_DATA})
-        self.assertIn("did not answer", skips["U"][1])
-        self.assertIn(reason, skips["U"][1])
+        for kind in cr.NO_ANSWER_KINDS:
+            with self.subTest(kind=kind):
+                reason = f"ConnectionError: {kind}"
+                skips = unreachable_skips(self.ITEMS, reason, entry_status=None,
+                                          requested=True, entry_error_kind=kind)
+                self.assertEqual(self.statuses(skips),
+                                 {"S": NO_DATA, "U": FAIL, "F": NO_DATA})
+                self.assertIn("did not answer", skips["U"][1])
+                self.assertIn(reason, skips["U"][1])
+
+    def test_a_request_that_reached_no_site_answers_nothing(self):
+        """A name that does not resolve may be a typo as easily as an outage; our own
+        guard refusing an address, robots.txt keeping us out and an unclassified
+        failure are not the site's answer either. The CI step "An unreachable site gets
+        no score" audits `unreachable.invalid` and holds the live half."""
+        self.assertEqual(set(cr.NO_ANSWER_KINDS) & {"unresolved", "blocked", "robots",
+                                                    "other"}, set())
+        for kind in ("unresolved", "blocked", "robots", "other", ""):
+            with self.subTest(kind=kind):
+                skips = unreachable_skips(self.ITEMS, "HostResolutionError: x",
+                                          entry_status=None, requested=True,
+                                          entry_error_kind=kind)
+                self.assertEqual(set(self.statuses(skips).values()), {NO_DATA})
 
     def test_a_success_that_is_the_wrong_page_fails_nothing(self):
         skips = unreachable_skips(self.ITEMS, "soft 404: a 200 response titled 'x'",
