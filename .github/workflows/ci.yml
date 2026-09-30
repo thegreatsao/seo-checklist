@@ -273,6 +273,14 @@ jobs:
       # what makes this step possible, and this step is most of why it exists.
       - name: The full live path, against a locally served fixture site
         run: |
+          # 0.131.0: a server an earlier run left on 8000 answered in this one's place.
+          # The audit ran against it, this job's server never bound, and the request
+          # count below read the empty log as "0 requests". The fixture's URLs name
+          # port 8000, so the port cannot move: refuse an occupied one, and require
+          # that the server answering is the one started here.
+          if curl -s -o /dev/null http://127.0.0.1:8000/; then
+            echo "port 8000 is already served by another process; stop it and rerun"; exit 1
+          fi
           python -m http.server 8000 --directory tests/fixtures/good > server.log 2>&1 &
           SERVER=$!
           trap 'kill $SERVER' EXIT
@@ -280,6 +288,7 @@ jobs:
             curl -sf -o /dev/null http://127.0.0.1:8000/ && break || sleep 0.5
           done
           curl -sf -o /dev/null http://127.0.0.1:8000/ || { echo "fixture server never came up"; exit 1; }
+          kill -0 "$SERVER" 2>/dev/null || { echo "the fixture server exited; another answered"; cat server.log; exit 1; }
 
           # The guard first: the default must still refuse. If this ever passes,
           # every audit is one DNS answer away from reaching a private network.

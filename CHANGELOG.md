@@ -42,6 +42,13 @@ it.
 directions, and the derivation by the operation — the good tree at 200 and the same bytes
 at 203 must get the same verdicts, CI-003 excepted.
 
+**The live-path CI step no longer counts requests against somebody else's server.** A
+fixture server an earlier run left on port 8000 answered in this run's place: the audit
+ran against it, the step's own server never bound, and the request count read the empty
+log as "made 0 requests" — a refusal naming the wrong cause. The fixture's URLs name port
+8000, so the port cannot move; the step now refuses an occupied port and requires that the
+server answering is the one it started.
+
 ## 0.130.0 — an entry page that answered an error is evidence, for the items that ask about it
 
 Registry version: `405f6d395409` → `b81c0edcd245`. Verdicts move: see below.
