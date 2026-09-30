@@ -207,7 +207,12 @@ SAME_ON_BOTH = {
     # defects on every site — text served uncompressed, and a parser-blocking script
     # in `<head>` — separated them, and the good origin now compresses. Two entries
     # that read as facts about the fixtures were facts about the severity vocabulary.
-    "TE-167": "both fixtures are up; downtime is not something a fixture can show",
+    # Downtime is shown since 0.130.0, on an entry of its own: `test_entry_answers`
+    # serves the good tree with `/` answering 503, and the entry gate answers TE-167
+    # from that response. It cannot be shown here, where a down entry would gate
+    # every other item.
+    "TE-167": "both fixtures are up; a down entry is test_entry_answers' origin, "
+              "because here it would gate every other item",
     "TE-179": "no loopback fixture host has a whois record, so neither side can be dated",
     "SP-109": "neither fixture loads a third-party script",
     "TECH-002": "neither fixture loads a web font",

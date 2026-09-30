@@ -2287,6 +2287,7 @@ class DeliberateTitleOverrides(unittest.TestCase):
 class MeasuresQualifications(unittest.TestCase):
     EXPECTED = {
         "CI-001": "Whether anything on the page or server stops Google from indexing it: robots.txt, the status code, noindex, or a canonical pointing elsewhere. Whether Google has indexed it is CI-002, which asks Search Console.",
+        "CI-003": "The audited page's own status, after redirects: 200 passes, another success warns because Google still processes it, anything else fails. The rest of the site is CI-015 for server errors and GO-138 for the sitemap's URLs.",
         "TE-167": "One request made during this audit, and whether it was answered below 500. Uptime over time needs a monitoring service.",
         "IN-121": "That the hreflang set carries exactly one x-default. Region codes, country domains and Search Console settings are not read.",
         "IN-128": "That the page lists itself in its own hreflang set. Which version a visitor is actually served is not tested.",
@@ -2332,7 +2333,7 @@ class MeasuresQualifications(unittest.TestCase):
         import build_checklist
         return build_checklist
 
-    def test_the_registry_carries_exactly_the_thirty_qualifications_verbatim(self):
+    def test_the_registry_carries_exactly_the_thirty_one_qualifications_verbatim(self):
         build_checklist = self.module()
         self.assertEqual(build_checklist.MEASURES, self.EXPECTED)
         shipped = {item["id"]: item["measures"] for item in ITEMS

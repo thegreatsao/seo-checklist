@@ -833,6 +833,47 @@ def served(routes: dict, tls: bool = False, plain=None) -> Served:
     return Served(routes, tls=tls, plain=plain)
 
 
+class tree_served:
+    """`with tree_served("good", answers) as site:` — one fixture tree on its own origin.
+
+    `answers(site_dir)` returns routes to answer from a table instead of the tree, in
+    the shape of `_answers.json`, and is called **after** the tree's URLs point at the
+    bound port — so a body read from `site_dir` is the body that tree would have served.
+    Added at 0.130.0 for the entry-answer derivation, which serves the good tree with
+    only `/` changed: the same index under another status, so a verdict that moves is
+    the status's doing and not the content's.
+
+    `.base` is the origin without a trailing slash, as on `_Site`; `.url` is the entry.
+    """
+
+    def __init__(self, tree: str, answers=None):
+        self.tree, self.answers = tree, answers
+        self.work = ""
+        self.site = None
+
+    def __enter__(self) -> "_Site":
+        self.work = tempfile.mkdtemp(prefix="seo-tree-")
+        self.site = _Site(os.path.join(FIXTURES, self.tree),
+                          os.path.join(self.work, self.tree))
+        if self.answers:
+            self.site.server.RequestHandlerClass.route_answers.update(
+                self.answers(self.site.dir))
+        self.site.url = self.site.base + "/"
+        return self.site
+
+    def __exit__(self, *exc) -> None:
+        self.site.stop()
+        shutil.rmtree(self.work, ignore_errors=True)
+
+    @staticmethod
+    def artifacts(site: "_Site", tree: str, into: str) -> str:
+        """The tree's browser artifacts, staged under `into` and rewritten to `site`."""
+        dest = shutil.copytree(os.path.join(FIXTURES, ARTIFACTS, tree),
+                               os.path.join(into, f"{ARTIFACTS}-{tree}"))
+        substitute(dest, PLACEHOLDER, site.base)
+        return dest
+
+
 _TLS = {}
 
 
