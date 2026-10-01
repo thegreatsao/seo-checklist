@@ -279,7 +279,18 @@ legal; nothing is written there and nothing is moved. Held by
 `test_a_host_without_a_port_keeps_the_folder_it_always_had`,
 `test_two_ports_of_one_host_are_two_sites` and
 `test_runs_filed_under_the_verbatim_netloc_are_still_read` — the last skipped on Windows,
-where such a folder cannot exist.
+where such a folder cannot exist, so
+`test_the_older_folder_is_still_read_where_a_colon_cannot_be_written` holds the same
+relation on every platform.
+
+**Two things the new name made necessary, both found reviewing it.** The name that is
+written was made safe; the name that is *read* — the verbatim netloc — has to be one too,
+and is consulted only as a direct child of the history root carrying exactly that name
+(`test_the_older_folder_is_a_folder_inside_the_history_and_nothing_else`,
+`test_a_netloc_cannot_spell_its_way_into_another_sites_folder`). And the folder name is
+no longer reversible, so the folder alone no longer says whose runs it holds: a stored
+run that records another `domain` is not this site's history
+(`test_a_stored_run_that_names_another_site_is_not_this_sites_history`).
 
 #### Scenario: a host with a port
 - **WHEN** the audited URL carries a port
@@ -290,6 +301,21 @@ where such a folder cannot exist.
 - **WHEN** an earlier release stored a ported host's runs under its netloc verbatim
 - **THEN** those runs are still read as that site's history, and are neither moved nor
   written to
+
+#### Scenario: a netloc that is not a folder name
+- **WHEN** the URL's netloc is `..`, `.`, names a drive, or carries a separator that the
+  platform resolves into some other folder
+- **THEN** no older folder is read: the verbatim name is consulted only when joining it
+  onto the history root lands on a direct child of that root carrying exactly that name
+- **AND** neither the working directory's results file nor another site's folder is taken
+  for this site's history
+
+#### Scenario: a host spelled like another host's folder
+- **WHEN** one audited host is `localhost:3000` and another is literally named
+  `localhost_3000`, so that both are filed in `localhost_3000`
+- **THEN** each reads only its own runs: a stored run records the `domain` it audited, and
+  one that names another site is passed over
+- **AND** a run stored before that field existed is still read
 
 #### Scenario: two runs in the same clock tick
 - **WHEN** two audits of one site produce the same timestamp

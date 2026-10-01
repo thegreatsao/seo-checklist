@@ -32,6 +32,17 @@ ported host's history lives is a decision. This release takes it.
   `.seo-runs/localhost:3000/` on Linux or macOS, `previous_run` and `run_series` read it
   alongside the new folder — through one `stored_runs`, where there had been two
   `os.path.join`s — and new runs go only to `localhost_3000/`.
+* **Found in review, before release: the older folder could be anywhere, and a folder could
+  be two sites.** The verbatim netloc was joined onto the history root unexamined, and a
+  netloc is whatever was typed. `http://../` has the netloc `..`, so the "older folder" was
+  the working directory and the `checklist-results.json` lying there — of whatever site was
+  audited last — came back as this site's previous run; on Windows a netloc carrying a
+  backslash could spell its way into another site's folder. The older folder is now the
+  verbatim name as a direct child of `.seo-runs/`, or nothing (a list of properties was
+  tried first and missed a drive-relative name, `Z:elsewhere`). And because the new folder
+  name is not reversible — `localhost:3000` and a host named `localhost_3000` share one — a
+  stored run that records another `domain` is passed over by both readers; a run from
+  before the field existed is still read.
 * **`--json out/results.json` creates `out/`.** Met by running the reported command to
   its end: with the first crash gone the same run died one step later, on a results path
   whose directory did not exist — again after the audit, and after its history file had
@@ -45,7 +56,11 @@ ported host's history lives is a decision. This release takes it.
 names as text, a port-less host does not move, two ports are two sites, the older folder
 is still read (skipped on Windows, where it cannot exist), and the reported command run
 whole with history on. The HST-8 reader in `tests/test_contract.py` is no longer skipped
-on Windows. Known-issues ledger: 18 open / 15 closed → **17 / 16**. Suite 2022 → 2028.
+on Windows. Review added four: the older folder is read on a platform where a colon cannot
+be written — dropping that lookup had turned nothing red on Windows, where the test for it
+is skipped; it is never anything but its own name directly under the history root; a netloc
+cannot spell another site's folder; and a stored run naming another site is not this site's
+history. Known-issues ledger: 18 open / 15 closed → **17 / 16**. Suite 2022 → 2032.
 
 ## 0.133.0 — an id is never re-used, and a profile has no word for an item's weight
 
