@@ -3670,6 +3670,46 @@ class History(unittest.TestCase):
                             os.path.dirname(os.path.abspath(found)), root,
                             f"{domain!r} would read runs from {found!r}")
 
+    def test_a_stored_run_that_names_another_site_is_not_this_sites_history(self):
+        """The folder name is not reversible: `localhost:3000` and a host literally
+        called `localhost_3000` are filed together. What tells them apart is in the
+        file — every run records the `domain` it audited — so a stored run that says it
+        describes another site is passed over, and a run from before the field existed
+        is still read."""
+        folder = os.path.dirname(history_path("localhost:3000", run_stamp()))
+        self.assertEqual(folder, os.path.dirname(history_path("localhost_3000", run_stamp())),
+                         "the two no longer share a folder, so this asks nothing")
+        for name, started, domain, points in (
+                ("20260801T090000000Z.json", "2026-08-01T09:00:00+00:00", None, 11),
+                ("20260802T090000000Z.json", "2026-08-02T09:00:00+00:00", "localhost:3000", 41),
+                ("20260803T090000000Z.json", "2026-08-03T09:00:00+00:00", "localhost_3000", 92)):
+            payload = {"started_at": started, "scores": {"seo_score": points}}
+            if domain:
+                payload["domain"] = domain
+            with open(os.path.join(folder, name), "w", encoding="utf-8") as f:
+                json.dump(payload, f)
+        self.assertEqual(previous_run("localhost:3000", "")["scores"]["seo_score"], 41)
+        self.assertEqual(previous_run("localhost_3000", "")["scores"]["seo_score"], 92)
+        self.assertEqual([r["seo_score"] for r in run_series("localhost:3000", "")], [11, 41])
+        self.assertEqual([r["seo_score"] for r in run_series("localhost_3000", "")], [11, 92])
+
+    def test_a_netloc_cannot_spell_its_way_into_another_sites_folder(self):
+        """A netloc may carry a backslash, and on Windows joining `x`, `..`, `beta.example`
+        so spelled onto the root
+        lands on `beta.example` — a direct child, and another site's history. The older
+        folder is the verbatim name or it is nothing."""
+        self.two_sites()
+        with open(os.path.join(".seo-runs", "beta.example", "20260701T090000000Z.json"),
+                  "w", encoding="utf-8") as f:
+            json.dump({"started_at": "2026-07-01T09:00:00+00:00",
+                       "scores": {"seo_score": 5}}, f)
+        back = chr(92)
+        for domain in (f"x{back}..{back}beta.example", f"beta.example{back}",
+                       f".{back}beta.example"):
+            with self.subTest(domain=domain):
+                self.assertIsNone(previous_run(domain, ""))
+                self.assertEqual(run_series(domain, ""), [])
+
 
 class LabCoreWebVitals(unittest.TestCase):
     """Lab metrics from a browser trace. The risks are units and silence: a
