@@ -10,6 +10,41 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.132.0 — the report's tables have readers, and an effort that described another item is gone
+
+Registry version: `b81c0edcd245` → `486f68dd3ee7`. No verdict and no score moves; one item's
+effort does, and with it its place in the fix list.
+
+* **TE-176 *Fix Canonicalization Issues* carried the effort of a server migration.** Its
+  `EFFORT_OVERRIDES` entry said `high` with the reason "migrate to HTTP/2/3 —
+  infrastructure, not a page edit". No item is about HTTP/2; the entry dates from the first
+  commit and described a title that row no longer carries. It takes its category's effort,
+  `low`, so a failing canonical is ranked as the cheap high-severity fix it is instead of
+  being divided by four. Three other overrides — CN-047, CN-064, AR-160 — said `low` for
+  model-judged items whose floor is `medium`; `medium` is what shipped, and the table now
+  says so. `tests/test_build_sets.py` holds both: an override states the effort that
+  ships.
+* **`openspec/specs/governance/` GOV-3, `checklist_report.py`'s six.** Two were never
+  unread: `tests/test_report.py` imports `STATUS_ICON` and `FIX_STATUSES` in a
+  parenthesised import that spans lines, and the census matched imports one line at a
+  time. `audit_derived_sets.read_by_a_test` resolves imports with the AST now. The other
+  four — `CATEGORY_HELP`, `DIRECTION_HEADING`, `DIRECTION_NOTE`, `FIX_COLUMNS` — are held
+  by `tests/test_report_sets.py` against what each describes, and the two places that
+  wrote the direction kinds out by hand iterate `DIRECTION_HEADING`: a fourth kind taught
+  to the runner and the tables would have been classified, translated and never printed.
+  The rendered Markdown and HTML are byte-identical.
+* **`openspec/specs/registry/` REG-3 goes partial → enforced, and its table was wrong.**
+  The closed vocabularies in §2.1 were held against sets written out in a test — a second
+  copy — and the *distribution today* column by nothing. Measured: `requires` said fetch
+  74 / api 11 / gsc 8 where the registry has 72 / 12 / 9, stale for releases; this
+  release's own effort move (66 / 52 / 99 → 67 / 52 / 98) was named by no plan until a
+  reader in another document objected. `tests/test_registry_vocabulary.py` reads the
+  table itself, both columns, in both directions. REG-3's `Reader:` line also still said
+  `lens` was unpinned, which stopped being true at 0.127.0.
+
+Derived-sets census 180/92/88 → **180/98/82** (total/read/unread); the ratchet is 82.
+Specification ledger 121/23/1/0/4 → **122/22/1/0/4**. Suite 1984 → 2001.
+
 ## 0.131.0 — a success that is not a plain 200 is still the site's content
 
 Registry version: unchanged at `b81c0edcd245`. No rule moves; verdicts on a site answering a non-200 success do, below.

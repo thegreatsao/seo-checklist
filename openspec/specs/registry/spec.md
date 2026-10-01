@@ -72,9 +72,9 @@ site:** `applies_if`, a yes/no question for whoever answers it (REG-9).
 |---|---|---|
 | `source` | script, llm, manual, gsc | 145 / 38 / 31 / 3 |
 | `severity` | critical, high, medium, low | 19 / 62 / 102 / 34 |
-| `effort` | low, medium, high | 66 / 52 / 99 |
+| `effort` | low, medium, high | 67 / 52 / 98 |
 | `lens` | copy, layout, locale, market | 19 / 13 / 3 / 3 |
-| `requires` | offline, fetch, crawl, api, gsc, safe_browsing | 28 / 74 / 21 / 11 / 8 / 3 |
+| `requires` | offline, fetch, crawl, api, gsc, safe_browsing | 28 / 72 / 21 / 12 / 9 / 3 |
 
 72 items carry no `check` and therefore no `requires`: they are the manual, model-judged
 and Search-Console items.
@@ -146,33 +146,38 @@ both Linux and Windows.
 ### Requirement: REG-3 — every field is drawn from a closed vocabulary
 
 The values in §2.1 SHALL be exhaustive: every `source`, `severity`, `effort`, `lens` and
-`requires` MUST be one of them. A new value is a change to this document first.
+`requires` MUST be one of them. A new value is a change to this document first. Every
+value the table lists MUST be carried by at least one item, and the distribution
+written beside each row MUST be the registry's.
 
 **Why:** every consumer switches on these fields. An unknown `source` or `requires`
 silently falls through to a default, and the item is then decided by whichever branch
 happens to catch it.
-**Reader:** partial — enforced for four of the five.
-`test_every_item_has_the_required_fields`
-asserts membership in `VALID_SEVERITY`, `VALID_SOURCES` and `VALID_EFFORT`, and
-`test_script_items_are_fully_specified` asserts it for `VALID_REQUIRES`. An unrecognised
-value in any of those four fails today. Only `lens` is unpinned as a vocabulary:
-`test_every_llm_item_has_a_lens` requires the field to exist on a model-judged item and
-does not constrain what it says. There is no `VALID_LENS` beside the other four sets, and
-the four lens names that appear elsewhere in the tests are written as literals rather than
-read from the registry, so an item declaring a fifth lens builds, ships and scores. One
-vocabulary of five unheld is what puts this requirement in `partial` rather than
-`enforced`, by the rule this document applies to REG-1.
+**Reader:** enforced. `tests/test_registry_vocabulary.py` reads the table in §2.1 itself,
+both columns, for all five fields: a value an item carries that its row does not list, a
+value a row lists that no item carries, and a count that is not the registry's each fail
+and name the field. Before 0.132.0 four of the five were held against sets written out in
+`test_registry.py` (`VALID_SOURCES`, `VALID_SEVERITY`, `VALID_EFFORT`, `VALID_REQUIRES`) —
+a second copy of the table, so "a change to this document first" was held by nothing — and
+this line went on saying `lens` was unpinned for four releases after
+`test_every_lens_is_an_agent_and_every_model_item_has_one` pinned it at 0.127.0. The
+*distribution today* column had no reader, and its `requires` row had gone stale: it said
+fetch 74 / api 11 / gsc 8 over a registry holding 72 / 12 / 9.
 
-#### Scenario: a value outside a vocabulary the tests read
-- **WHEN** an item declares a `severity`, `source`, `effort` or `requires` the table in
-  §2.1 does not list
-- **THEN** the registry is invalid and the build fails
+#### Scenario: a value outside a vocabulary
+- **WHEN** an item declares a `source`, `severity`, `effort`, `lens` or `requires` the
+  table in §2.1 does not list
+- **THEN** the build fails, naming the field and the value
 
-#### Scenario: a lens nobody enumerated
-- **WHEN** a model-judged item declares a `lens` the table does not list
-- **THEN** the requirement is violated
-- **AND** nothing objects: the field is only required to be non-empty, so the item
-  builds, ships and scores while belonging to no agent's slice
+#### Scenario: a value the table lists and no item carries
+- **WHEN** a row in §2.1 lists a value no item in the registry uses
+- **THEN** the build fails: every consumer still switches on that word, and a branch
+  nothing reaches is one nothing tests
+
+#### Scenario: an item moves and the distribution is not edited
+- **WHEN** an item's `source`, `severity`, `effort`, `lens` or `requires` changes and the
+  *distribution today* column, or the count of items without a `check`, is left as it was
+- **THEN** the build fails with the stated and the measured count
 
 #### Scenario: an unknown value reaches a consumer
 - **WHEN** a consumer switches on one of these fields and meets a value it does not
@@ -1100,14 +1105,14 @@ five; REG-7 now says what a rule is, so the count above is taken over all three.
 
 | | requirements |
 |---|---|
-| **enforced** | REG-2, REG-5, REG-7, REG-9, REG-10, REG-11, REG-12 |
-| **partial** | REG-1, REG-3, REG-4, REG-6, REG-8, REG-13 |
+| **enforced** | REG-2, REG-3, REG-5, REG-7, REG-9, REG-10, REG-11, REG-12 |
+| **partial** | REG-1, REG-4, REG-6, REG-8, REG-13 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-R2 enforced; INV-R1, INV-R3 and INV-R4 partial.
 
-**Seven enforced, six partial, none unread, none opposed, of thirteen.**
+**Eight enforced, five partial, none unread, none opposed, of thirteen.**
 
 `opposed` is a fourth category this document introduced and its column is empty now.
 REG-9 earned it: a fixed-membership test pinning the two existing applicability

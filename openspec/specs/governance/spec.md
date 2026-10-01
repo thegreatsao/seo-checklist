@@ -193,6 +193,17 @@ item runs, and an `EFFORT_OVERRIDES` entry equal to its category's default. Both
 the registry did not move. `SAME_CHECK` had one direction nothing held — a twin that is
 not the same check silently loses its weight — and now it is. Probed 8 of 8.
 
+**At 0.132.0: 180 sets, 98 read, 82 unread; none in `checklist_report.py`.** Of its six,
+two had been read all along: `tests/test_report.py` imports `STATUS_ICON` and
+`FIX_STATUSES` in a parenthesised import spanning lines, and the census matched an import
+on one line (measured with the AST first, `local/gov3/measure_import_blindness.py`; the
+second time this census under-counted its own read column — aliases at 0.104.0). The other
+four are held by `tests/test_report_sets.py`, and the direction kinds, written out by hand
+twice more as the tuples the Markdown and HTML sections iterated, are read off
+`DIRECTION_HEADING`. Measuring `EFFORT_OVERRIDES` against what ships found an entry
+describing another item — TE-176 carried `high` for "migrate to HTTP/2/3" — and three that
+said `low` under a `medium` floor.
+
 Two lists were converted to derivations during this suite's writing — the notebook's spec
 manifest, and this document's own reader discovering documents by glob rather than by
 name — and neither conversion was required by anything. That is what the census now

@@ -84,9 +84,9 @@ comparisons with archived runs in `.seo-runs/`.
 
 | effort | cost | items in the registry |
 |---|---:|---:|
-| low | 1 | 66 |
+| low | 1 | 67 |
 | medium | 2 | 52 |
-| high | 4 | 99 |
+| high | 4 | 98 |
 
 All three are **normative constants of the audit**, not implementation details. The
 provenance of severity weight and effort cost is `inherited`: nobody in this project chose
