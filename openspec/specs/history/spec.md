@@ -292,6 +292,20 @@ no longer reversible, so the folder alone no longer says whose runs it holds: a 
 run that records another `domain` is not this site's history
 (`test_a_stored_run_that_names_another_site_is_not_this_sites_history`).
 
+**A credential in front of the host is not part of the site, since 0.135.0.** The folder
+was derived from the whole netloc, and a netloc includes userinfo: a run under
+`http://user:password@host:81/` was filed in `.seo-runs/user_password@host_81/` — the
+password in a directory name (`openspec/specs/inputs/` INP-7 owns that half) and the
+site's history split in two, one arc per way of typing the URL. The site is the host and
+port. Folders an earlier release filed under a name carrying userinfo are still read:
+every direct child of the history root whose name is something, then `@`, then the
+site's folder name — or its verbatim netloc, where that was legal — with the stored run
+again deciding whose it is, by the `domain` it records with the userinfo taken off.
+Nothing is written there and nothing is moved, and because such a folder still holds a
+password in its name, the run says once that it is there, with the credential masked.
+Held by `tests/test_url_credentials.py`: `OneSiteOneHistory` through the runner,
+`RunsAlreadyFiledUnderANameCarryingUserinfo` through the lookup and the arc.
+
 #### Scenario: a host with a port
 - **WHEN** the audited URL carries a port
 - **THEN** the run is stored in a folder every platform can create
@@ -301,6 +315,21 @@ run that records another `domain` is not this site's history
 - **WHEN** an earlier release stored a ported host's runs under its netloc verbatim
 - **THEN** those runs are still read as that site's history, and are neither moved nor
   written to
+
+#### Scenario: a credential in front of the host
+- **WHEN** one site is audited once as `user:password@host` and once as `host`
+- **THEN** both runs are stored in the folder named for the host and port, and the later
+  one is compared with the earlier
+- **AND** no folder is created whose name carries the userinfo
+
+#### Scenario: runs stored under a name that carries a credential
+- **WHEN** an earlier release stored the site's runs in a folder named for the whole
+  netloc, userinfo included — under one credential or several over time
+- **THEN** those runs are still read as that site's history, and are neither moved nor
+  written to
+- **AND** a stored run in such a folder that records another site is not read, and a
+  folder that merely ends in the site's name without the `@` is not consulted
+- **AND** the operator is told the folder is there without the credential being printed
 
 #### Scenario: a netloc that is not a folder name
 - **WHEN** the URL's netloc is `..`, `.`, names a drive, or carries a separator that the

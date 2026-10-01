@@ -366,6 +366,13 @@ Every secret value MUST be removed from everything the run writes, including the
 file and the run log. A *path* to a credential is not a secret and SHALL stay readable,
 because a reader needs to know which credential was used.
 
+A credential typed into the audited URL — everything in front of the `@` in
+`https://user:password@host/` — is a secret value like any other, and it is the one the
+operator hands to the run *inside* the thing the run writes most often. It MUST be taken
+out of the URL where the URL comes in, so that no later step is handed it; it MUST still be
+presented to the site it was typed for, and to no other origin; and the record SHALL say
+that a credential came with the URL, since it cannot say which.
+
 **Why:** the run log is built from each script's argv, so a key passed as an argument lands
 in it verbatim, and the artifact is a file operators send to clients. Redaction over the
 whole payload rather than the log alone is deliberate: a script that echoes its arguments
@@ -393,6 +400,37 @@ because the scripts read it themselves, so what is checked there is that the nam
 Probed 6 September 2026 by adding a `moz_key` / `MOZ_API_KEY` pair and not declaring it,
 which names the key and says where it would have been written.
 
+**The URL was a route nobody had named, measured on 1 October 2026 at 0.134.0.** Both
+scenarios above are about a *key*, and the reader of the secret set derives its members
+from environment variables. The audited URL is neither. `http://user:password@host/` is
+how a staging site behind Basic authentication is audited — it works, an origin answering
+401 to everyone else was audited in full — and the good fixture audited under such a URL
+carried the password in: the history folder's **name**; the stored run and the results
+(`domain`, `url`, `sampled_urls`, 102 item URLs, 96 evidence strings, every run-log key);
+the evidence file, 484 times; the crawl inventory, 58; the Markdown report, 122; the HTML
+report, 133; each of the five LLM queues; the banner and every sampled page on stderr; and
+stdout, through the `History:` line. Not in the pacing and robots files, whose names are
+digests, and not in the response cache after the run, which removes it. Redacting the
+password from the payload would have closed the two files this requirement names and left
+the folder name, the crawl inventory and both streams — the argument the **Why** already
+makes about routes that cannot be enumerated. So the credential is split off at the
+entrance (`split_userinfo`) and travels beside the URL instead of inside it;
+`safe_http.url_credentials` decides which requests carry it. Two defects that were not
+about writing went with it: a link the site writes to itself in full, without the
+credential, was another host by name, went out bare and was refused; and several scripts
+split the netloc on `:` to find the host and found the user name.
+
+Held by `tests/test_url_credentials.py`, which audits a loopback origin that refuses
+everybody without the credential and then reads the run from every side:
+`NothingTheRunWritesCarriesTheCredential` sweeps every file, every path and both streams
+of the runner and the report for the password, the user name and the Basic token;
+`TheCredentialReachesTheSiteAndNothingElse` reads what the site and a second origin were
+actually sent; `TheRecordNamesTheSiteAndSaysACredentialWasUsed` reads the record;
+`WhichRequestsCarryTheCredential` holds the scope case by case, and
+`WhatIsAddedToTheSecretSet` the forms redaction looks for when the *site* hands the
+credential back. The user name is swept for as well as the password: a URL may carry a
+token alone, so nothing in front of the `@` is assumed public.
+
 #### Scenario: a key passed as an argument
 - **WHEN** a secret was given on the command line, so a script's argv carries it into the
   run log
@@ -408,6 +446,41 @@ which names the key and says where it would have been written.
 - **WHEN** the run authenticated with a credential named by a path
 - **THEN** that path survives into the record, because a reader who cannot see which
   credential answered cannot judge the answer
+
+#### Scenario: a credential typed into the URL
+- **WHEN** the audited URL carries userinfo — a user and a password, or a token alone
+- **THEN** nothing the run writes carries it: not the results, the stored run or the name
+  of the folder it is stored in, not the evidence file, the crawl inventory, either
+  report or a queue
+- **AND** nothing the run prints carries it, on either stream
+- **AND** the record names the site by host and port, as it would have without one
+
+#### Scenario: the site behind the credential is still read
+- **WHEN** the origin refuses every request that does not carry the credential
+- **THEN** the audit reads it as it did while the credential was part of the URL
+- **AND** a link the site writes to itself in full, without the credential, is asked with
+  it too: the site is the host and port, not the spelling that was typed
+
+#### Scenario: the credential is sent nowhere else
+- **WHEN** the site redirects or links to another host, or to another port of its own
+- **THEN** that request carries no credential
+- **AND** a URL typed as `https://` does not give its credential to the same host over
+  `http://`, while one typed as `http://` keeps it across an upgrade to `https://`
+- **AND** a URL that carries userinfo of its own is asked as written
+
+#### Scenario: the site hands the credential back
+- **WHEN** a page links to the site with the credential baked into the address, or echoes
+  the request it was sent
+- **THEN** redaction removes it from what is written, in the forms it can take there —
+  the userinfo as typed, the same percent-decoded, and the Basic token
+- **AND** the bare password is not one of those forms, because a short one would be
+  replaced inside every word of the record
+
+#### Scenario: the record says a credential was used
+- **WHEN** a run was made with a credential from the URL
+- **THEN** the record says so, and a run without one says that it was not — a reader
+  comparing an audit of the site with an audit of its 401 page needs to know which is which
+- **AND** the operator is told on stderr what became of it
 
 #### Scenario: a secret nobody added to the list
 - **WHEN** a new key-valued input reaches the run and is not added to the set of values
