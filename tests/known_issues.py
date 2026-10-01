@@ -1232,43 +1232,44 @@ def _a_census_copied_a_title_no_item_has() -> dict:
 
 @probe("a_run_under_a_ported_host_cannot_be_filed_on_windows")
 def _a_run_under_a_ported_host_cannot_be_filed_on_windows() -> dict:
-    """Whether a run is still filed under its netloc, character for character.
+    """Which directory a run is filed in, for a host with a port and for one without.
 
-    The mechanism, not the crash: the crash is what the mechanism costs on one
+    The mechanism, not the crash: the crash is what the mechanism cost on one
     platform, and a probe that measured it would answer differently on Linux and on
     Windows, so the record could not be in step on both. What is measured instead is
-    platform-independent and is the thing a fix would change — the directory a run
-    goes into is the URL's netloc verbatim, and a netloc may contain a colon.
+    platform-independent and is the thing the repair changed — the directory a run
+    goes into, which was the URL's netloc verbatim and may no longer carry a colon.
 
-    `example.com` is used for the live call because it is a legal directory name
-    everywhere; the ported netlocs are derived rather than typed, so this keeps
-    reading if `urlparse` ever normalises one of them away.
+    The ported netlocs are derived rather than typed, so this keeps reading if
+    `urlparse` ever normalises one of them away. Each is really filed, since 0.134.0
+    made that possible everywhere: a name that is only computed says nothing about
+    whether a directory of that name can be made.
     """
     import checklist_runner as runner
     from urllib.parse import urlparse
-
-    with tempfile.TemporaryDirectory() as tmp:
-        here = os.getcwd()
-        os.chdir(tmp)
-        try:
-            filed = runner.history_path("example.com", "20260905-000000-000000")
-        finally:
-            os.chdir(here)
 
     forbidden = ':*?"<>|'
     ported = [urlparse(u).netloc for u in ("http://localhost:3000/",
                                            "http://127.0.0.1:8000/",
                                            "http://[::1]:8080/")]
+    filed = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        here = os.getcwd()
+        os.chdir(tmp)
+        try:
+            for netloc in ["example.com"] + ported:
+                path = runner.history_path(netloc, "20260905-000000-000000")
+                filed[netloc] = os.path.basename(os.path.dirname(path))
+        finally:
+            os.chdir(here)
+
     return {
-        "directory_a_run_is_filed_in": os.path.basename(os.path.dirname(filed)),
-        "the_netloc_is_used_verbatim":
-            os.path.basename(os.path.dirname(filed)) == "example.com",
-        "netlocs_a_port_produces": ported,
-        "characters_windows_forbids_in_a_path_component": sorted(
-            {c for n in ported for c in n if c in forbidden}),
-        "callers_building_the_same_path": sorted(
-            name for name in ("history_path", "previous_run", "run_series")
-            if hasattr(runner, name)),
+        "directory_a_run_is_filed_in": filed,
+        "a_host_without_a_port_is_filed_under_its_netloc":
+            filed["example.com"] == "example.com",
+        "characters_windows_forbids_left_in_a_directory_name": sorted(
+            {c for name in filed.values() for c in name if c in forbidden}),
+        "directories_are_distinct": len(set(filed.values())) == len(filed),
     }
 
 

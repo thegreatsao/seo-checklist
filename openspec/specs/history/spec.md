@@ -267,6 +267,30 @@ quotes this path inside the **open** entry for the Windows colon defect (§HST-8
 that defect and closing the entry would have removed the only thing asserting where a run
 is filed — a reader that exists because a bug is still open. A.3.
 
+**The site's folder is named so every platform can create it, since 0.134.0.** The folder
+was the URL's netloc verbatim, and `localhost:3000` is not a directory Windows will make.
+It is now `history_folder(netloc)`: each character Windows refuses in a file name becomes
+`_`, trailing dots are dropped, a Windows device name gets a leading `_` — the same name
+on every platform. A host with no port keeps the folder it always had. The lookup and the
+arc also read the verbatim-netloc folder an earlier release wrote where the colon was
+legal; nothing is written there and nothing is moved. Held by
+`test_a_host_with_a_port_is_filed_in_a_folder_windows_can_create`,
+`test_the_folder_names_are_the_stated_ones`,
+`test_a_host_without_a_port_keeps_the_folder_it_always_had`,
+`test_two_ports_of_one_host_are_two_sites` and
+`test_runs_filed_under_the_verbatim_netloc_are_still_read` — the last skipped on Windows,
+where such a folder cannot exist.
+
+#### Scenario: a host with a port
+- **WHEN** the audited URL carries a port
+- **THEN** the run is stored in a folder every platform can create
+- **AND** two ports of one host are stored apart
+
+#### Scenario: runs stored under an earlier folder name
+- **WHEN** an earlier release stored a ported host's runs under its netloc verbatim
+- **THEN** those runs are still read as that site's history, and are neither moved nor
+  written to
+
 #### Scenario: two runs in the same clock tick
 - **WHEN** two audits of one site produce the same timestamp
 - **THEN** both are stored, in separate files, and neither overwrites the other
@@ -317,15 +341,16 @@ of one unchanged fixture to be exactly empty, guards that claim by checking the 
 answer identically — otherwise the empty diff proves nothing — and compares the registry
 version, mode and profile the comparison reports against the run it names.
 
-It is skipped on Windows, which is a defect in the tree rather than a weakness in the
-requirement, and writing this test is what found it: `history_path` files a run under
-`os.getcwd()/.seo-runs/<netloc>` with the netloc used verbatim, so a fixture served on
-`127.0.0.1:<port>` produces a directory name containing a colon, and Windows raises
-`NotADirectoryError` **after the audit has finished** — losing the whole run. Recorded as
-`a-run-under-a-ported-host-cannot-be-filed-on-windows`, with a probe. The reason it went
+It was skipped on Windows until 0.134.0, which was a defect in the tree rather than a
+weakness in the requirement, and writing this test is what found it: `history_path` filed
+a run under `os.getcwd()/.seo-runs/<netloc>` with the netloc used verbatim, so a fixture
+served on `127.0.0.1:<port>` produced a directory name containing a colon, and Windows
+raised `NotADirectoryError` **after the audit had finished** — losing the whole run.
+Recorded as `a-run-under-a-ported-host-cannot-be-filed-on-windows`, with a probe, and
+closed in 0.134.0 (see HST-6 for where a ported host is filed now). The reason it went
 unseen is the reason this requirement went unread: **every invocation of the runner in this
-suite and in CI passes `--no-history`**, all six in `ci.yml`, so the history subsystem this
-document is about has never run end to end in CI on any platform.
+suite and in CI passed `--no-history`**, all six in `ci.yml`, so the history subsystem this
+document is about had never run end to end in CI on any platform.
 
 #### Scenario: nobody asked to see the comparison
 - **WHEN** a second audit of one site runs without `--diff`

@@ -983,21 +983,15 @@ class TheRecordDoesNotDependOnHowItWasInvoked(unittest.TestCase):
     purpose — giving one makes CPython fork, which segfaults on macOS — and the child
     inherits ours. `--only speed` keeps each pass to seconds.
 
-    **Skipped on Windows, and the skip is the finding.** Writing this is what found
-    `a-run-under-a-ported-host-cannot-be-filed-on-windows`: the fixture is served on
-    `127.0.0.1:<port>`, `history_path` files a run under that netloc verbatim, and
-    Windows rejects a colon in a path component — so the runner dies *after* finishing
-    the audit. Every other invocation of the runner in this suite and in CI passes
-    `--no-history`, which is exactly why nobody had met it. The skip goes when the
-    release deciding how a ported host is filed lands; until then HST-8 is read on three
-    of the five CI jobs and unread on the other two, which is what `openspec/specs/history/` now
-    says.
+    **Skipped on Windows until 0.134.0, and the skip was the finding.** Writing this is
+    what found `a-run-under-a-ported-host-cannot-be-filed-on-windows`: the fixture is
+    served on `127.0.0.1:<port>`, `history_path` filed a run under that netloc verbatim,
+    and Windows rejects a colon in a path component — so the runner died *after*
+    finishing the audit. Every other invocation of the runner in this suite and in CI
+    passes `--no-history`, which is exactly why nobody had met it. A ported host is now
+    filed under `127.0.0.1_<port>` and this runs on every platform.
     """
 
-    @unittest.skipIf(os.name == "nt",
-                     "history_path cannot make a directory named "
-                     "'127.0.0.1:<port>' on Windows — known issue "
-                     "a-run-under-a-ported-host-cannot-be-filed-on-windows")
     def test_the_payload_carries_the_comparison_though_nobody_asked_to_see_it(self):
         return self.check()
 

@@ -1966,6 +1966,48 @@ def run_stamp() -> str:
     return now.strftime("%Y%m%dT%H%M%S") + f"{now.microsecond // 1000:03d}Z"
 
 
+# What Windows refuses in a path component, plus the two separators. A netloc can
+# carry the first of them on any ordinary day: `localhost:3000`.
+_UNSAFE_IN_A_FOLDER_NAME = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+# Names Windows hands to a device instead of the disk. `os.makedirs("NUL")` succeeds
+# there and creates nothing, so a host called `nul` would lose its history quietly.
+_WINDOWS_DEVICE_NAMES = frozenset(
+    ["CON", "PRN", "AUX", "NUL"]
+    + [f"COM{n}" for n in range(1, 10)] + [f"LPT{n}" for n in range(1, 10)])
+
+
+def history_folder(domain: str) -> str:
+    """The folder name a site's runs are filed under, legal on every platform.
+
+    The netloc was used verbatim until 0.134.0, and `127.0.0.1:8123` is not a
+    directory Windows will create: the run died in `os.makedirs` after the audit had
+    finished. The same name is produced on every platform rather than only where the
+    colon is illegal, so a `.seo-runs/` carried from one machine to another is still
+    the history of the same sites.
+
+    A host with no port and no trailing dot — every public site — is returned
+    unchanged, so the folders already on disk are the ones still read and written.
+    """
+    name = _UNSAFE_IN_A_FOLDER_NAME.sub("_", domain).rstrip(". ")
+    if name.split(".")[0].upper() in _WINDOWS_DEVICE_NAMES:
+        name = "_" + name
+    return name or "unknown"
+
+
+def history_dirs(domain: str) -> list[str]:
+    """Every directory holding this site's stored runs: the current one, then the
+    verbatim-netloc one a release before 0.134.0 wrote wherever the name was legal.
+
+    Read, never written and never moved: `.seo-runs/localhost:3000/` on Linux keeps
+    its files and they stay part of the arc, while new runs go to
+    `.seo-runs/localhost_3000/`.
+    """
+    root = os.path.join(os.getcwd(), ".seo-runs")
+    names = dict.fromkeys((history_folder(domain), domain))
+    return [d for d in (os.path.join(root, name) for name in names if name)
+            if os.path.isdir(d)]
+
+
 def history_path(domain: str, stamp: str) -> str:
     """Where this run is filed, without ever landing on an existing file.
 
@@ -1973,7 +2015,7 @@ def history_path(domain: str, stamp: str) -> str:
     second-precision version was justified too, and the cost of being wrong is
     destroying a previous audit.
     """
-    d = os.path.join(os.getcwd(), ".seo-runs", domain)
+    d = os.path.join(os.getcwd(), ".seo-runs", history_folder(domain))
     os.makedirs(d, exist_ok=True)
     path = os.path.join(d, f"{stamp}.json")
     n = 2
@@ -2022,21 +2064,32 @@ def previous_run(domain: str, exclude: str) -> dict | None:
     A history file that will not parse is skipped, not fatal: a corrupt record of
     an old run is no reason to abandon the current one.
     """
-    d = os.path.join(os.getcwd(), ".seo-runs", domain)
-    if not os.path.isdir(d):
-        return None
-    skip = os.path.basename(exclude) if exclude else ""
     best, best_key = None, EPOCH
-    for name in sorted(f for f in os.listdir(d) if f.endswith(".json") and f != skip):
+    for path in stored_runs(domain, exclude):
         try:
-            with open(os.path.join(d, name), encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 payload = json.load(f)
         except (OSError, json.JSONDecodeError):
             continue
-        key = run_time(payload, name)
+        key = run_time(payload, os.path.basename(path))
         if key >= best_key:
             best, best_key = payload, key
     return best
+
+
+def stored_runs(domain: str, exclude: str) -> list[str]:
+    """The path of every stored run of this site except the one being written.
+
+    The run being written is excluded by name, and only from the folder runs are
+    written to: a file of the same name in the older folder is another run.
+    """
+    skip = os.path.basename(exclude) if exclude else ""
+    current = os.path.join(os.getcwd(), ".seo-runs", history_folder(domain))
+    found = []
+    for d in history_dirs(domain):
+        found += [os.path.join(d, name) for name in sorted(os.listdir(d))
+                  if name.endswith(".json") and not (d == current and name == skip)]
+    return found
 
 
 # basis: convention — how many stored runs the trend reads. Twelve is a year of
@@ -2064,19 +2117,15 @@ def run_series(domain: str, exclude: str, limit: int = HISTORY_RUNS) -> list[dic
     is skipped rather than fatal — a corrupt record of an old audit is no reason to
     abandon this one.
     """
-    d = os.path.join(os.getcwd(), ".seo-runs", domain)
-    if not os.path.isdir(d):
-        return []
-    skip = os.path.basename(exclude) if exclude else ""
     rows = []
-    for name in sorted(f for f in os.listdir(d) if f.endswith(".json") and f != skip):
+    for path in stored_runs(domain, exclude):
         try:
-            with open(os.path.join(d, name), encoding="utf-8") as fh:
+            with open(path, encoding="utf-8") as fh:
                 payload = json.load(fh)
         except (OSError, json.JSONDecodeError):
             continue
         scores = payload.get("scores") or {}
-        rows.append((run_time(payload, name), {
+        rows.append((run_time(payload, os.path.basename(path)), {
             "started_at": payload.get("started_at"),
             "registry_version": payload.get("registry_version"),
             # The arc is the place a table change does the most damage: a trend line
@@ -3819,6 +3868,9 @@ def main() -> int:
         "current": True,
     }]
 
+    # `--json out/results.json` with no `out/` yet died here, after the audit had
+    # finished and its history file was already written.
+    os.makedirs(os.path.dirname(os.path.abspath(a.json_out)), exist_ok=True)
     with open(a.json_out, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 

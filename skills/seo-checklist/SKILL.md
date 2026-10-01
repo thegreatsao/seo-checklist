@@ -813,7 +813,7 @@ report was reshaped. Run it after the LLM queue is answered.
 - `CHECKLIST-REPORT.md` — summary, priority actions, full checklist, manual items, undetermined items
 - `CHECKLIST.html` — filterable view; `MANUAL` items are checkboxes persisted in localStorage
 - `LLM-QUEUE.md` + one file per lens — the model's work list
-- `checklist-results.json` — machine-readable; also archived to `.seo-runs/<domain>/<timestamp>.json`
+- `checklist-results.json` — machine-readable; also archived to `.seo-runs/<domain>/<timestamp>.json` (`localhost:3000` is filed as `localhost_3000`)
 
 Every result carries the `registry_version` it was produced from. `--diff` warns
 when two runs came from different registry versions, profiles or modes — without

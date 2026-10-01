@@ -10,6 +10,43 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.134.0 — a URL with a port no longer loses the audit on Windows
+
+Registry version: unchanged at `486f68dd3ee7`. No verdict and no score moves.
+
+`checklist_runner.py http://127.0.0.1:8123/` on Windows ran the whole audit and then died
+in `os.makedirs` with `NotADirectoryError: [WinError 267]`: the run history folder was
+`.seo-runs/<netloc>`, the netloc verbatim, and Windows refuses a colon in a path
+component. Open in KNOWN-ISSUES since 5 September as
+`a-run-under-a-ported-host-cannot-be-filed-on-windows`, and left open because where a
+ported host's history lives is a decision. This release takes it.
+
+* **The folder is `history_folder(netloc)`, on every platform.** Each character Windows
+  refuses in a file name (`< > : " / \ | ? *` and control characters) becomes `_`,
+  trailing dots are dropped, and a Windows device name gets a leading `_` —
+  `os.makedirs("NUL")` succeeds there and creates nothing. `127.0.0.1:8123` →
+  `127.0.0.1_8123`, `[::1]:8080` → `[__1]_8080`. The same name everywhere, so a
+  `.seo-runs/` carried between machines is still the history of the same sites.
+* **A host with no port keeps its folder**, which is every history written on Windows and
+  every public site anywhere. **Nothing is migrated:** where an older release wrote
+  `.seo-runs/localhost:3000/` on Linux or macOS, `previous_run` and `run_series` read it
+  alongside the new folder — through one `stored_runs`, where there had been two
+  `os.path.join`s — and new runs go only to `localhost_3000/`.
+* **`--json out/results.json` creates `out/`.** Met by running the reported command to
+  its end: with the first crash gone the same run died one step later, on a results path
+  whose directory did not exist — again after the audit, and after its history file had
+  been written.
+* **The private-host refusal was never masked, only followed by a traceback.** That run
+  had no `--allow-private`; the refusal was printed in full before the crash and is now
+  the last word, on stderr, in the summary and in `entry_error`, with exit 0 and a
+  payload that decides nothing.
+
+`tests/test_runner.py::History` gains six: a ported host is filed and read back, the
+names as text, a port-less host does not move, two ports are two sites, the older folder
+is still read (skipped on Windows, where it cannot exist), and the reported command run
+whole with history on. The HST-8 reader in `tests/test_contract.py` is no longer skipped
+on Windows. Known-issues ledger: 18 open / 15 closed → **17 / 16**. Suite 2022 → 2028.
+
 ## 0.133.0 — an id is never re-used, and a profile has no word for an item's weight
 
 Registry version: unchanged at `486f68dd3ee7`. No verdict moves.

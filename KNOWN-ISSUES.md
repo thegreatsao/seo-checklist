@@ -2051,14 +2051,30 @@ name. A column called `url` would be read as "fix this page".
   what this tree answers.
   <!-- ki: a-census-copied-a-title-no-item-has -->
 
-- **Open — a URL with a port loses the whole audit on Windows.** `history_path` files a
-  run under `os.getcwd()/.seo-runs/<netloc>`, and the netloc is used verbatim. For
+- **Closed in 0.134.0 — a URL with a port lost the whole audit on Windows.** `history_path`
+  filed a run under `os.getcwd()/.seo-runs/<netloc>`, and the netloc was used verbatim. For
   `http://localhost:3000/` that directory name is `localhost:3000`, and Windows rejects
-  a colon in a path component, so `os.makedirs` raises `NotADirectoryError` — **after
-  the audit has finished**. The run is complete, the verdicts are computed, and the
-  process dies writing them down. `previous_run` and `run_series` build the same path
-  and would fail the same way. On Linux and macOS the colon is legal and everything
-  works, which is why this is a Windows-only loss.
+  a colon in a path component, so `os.makedirs` raised `NotADirectoryError` — **after
+  the audit had finished**. The run was complete, the verdicts were computed, and the
+  process died writing them down. `previous_run` and `run_series` built the same path.
+  On Linux and macOS the colon is legal and everything worked, which is why this was a
+  Windows-only loss.
+
+  **The decision, since the entry said one was owed.** The folder name is now
+  `history_folder(netloc)` on every platform, not only where the colon is illegal:
+  each character Windows refuses in a file name becomes `_`, trailing dots go, and a
+  Windows device name (`nul`, `con`) gets a leading `_`. `localhost:3000` is filed
+  under `localhost_3000`, `[::1]:8080` under `[__1]_8080`. A host with no port — every
+  public site — keeps the folder it always had. **Nothing is migrated and nothing is
+  orphaned:** `previous_run` and `run_series` read the new folder and, where it
+  exists, the verbatim-netloc one an older release wrote on Linux or macOS; new runs
+  go only to the new one. One name everywhere so a `.seo-runs/` carried between
+  machines is still the history of the same sites.
+
+  What it does not do: two different netlocs can share a folder if one of them is
+  spelled with the replacement character where the other has a colon — a host
+  literally named `localhost_3000`. An underscore is not legal in a hostname, so that
+  takes a deliberately odd `/etc/hosts`.
 
   Found on 5 September 2026 while writing the reader for `openspec/specs/history/` HST-8, which
   needs two real runs against one host and therefore cannot pass `--no-history`. That is
@@ -2066,12 +2082,9 @@ name. A column called `url` would be read as "fix this page".
   the test suite and in CI passes `--no-history`** — all six in `ci.yml` — so the history
   subsystem, which is what `openspec/specs/history/` is about, has never run end to end in CI on
   any platform. The one shape in which the defect appears is the one nothing constructs.
-
-  Not fixed here because the fix is a decision rather than a line. Sanitising the netloc
-  moves where a ported host's history lives, orphaning any `.seo-runs/<host>:<port>/`
-  directory already written on Linux, and IPv6 netlocs (`[::1]:8080`) need an answer of
-  their own. The release that takes it owes a migration or a stated decision not to
-  migrate.
+  Two tests construct it now: the HST-8 reader, no longer skipped on Windows, and
+  `test_a_refused_ported_host_ends_as_a_refusal_and_not_as_a_crash`, which runs the
+  runner with history on against a loopback URL with a port.
   <!-- ki: a-run-under-a-ported-host-cannot-be-filed-on-windows -->
 
 ---

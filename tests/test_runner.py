@@ -19,6 +19,7 @@ import sys
 import tempfile
 import time
 import unittest
+from urllib.parse import urlparse
 from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -3505,6 +3506,115 @@ class History(unittest.TestCase):
                 self.assertTrue(series, f"{domain}'s own arc is empty")
                 self.assertEqual([r["seo_score"] for r in series], [mine],
                                  f"{domain}'s arc carries another site's runs")
+
+    # -- A host with a port -------------------------------------------------------
+    #
+    # The netloc was the folder name verbatim, `127.0.0.1:8123` is not a directory
+    # Windows will create, and the run died in `os.makedirs` after the audit had
+    # finished. Every test above uses a host with no port, which is how it stood for
+    # eighteen releases. The netlocs here are derived from URLs rather than typed,
+    # because the URL is what an operator passes.
+
+    PORTED = ("http://127.0.0.1:8123/", "http://localhost:3000/", "http://[::1]:8080/")
+
+    def test_a_host_with_a_port_is_filed_in_a_folder_windows_can_create(self):
+        for url in self.PORTED:
+            domain = urlparse(url).netloc
+            with self.subTest(domain=domain):
+                path = history_path(domain, run_stamp())
+                folder = os.path.basename(os.path.dirname(path))
+                self.assertEqual(
+                    [c for c in folder if c in '<>:"/\\|?*' or ord(c) < 32], [],
+                    f"{domain} was filed under {folder!r}")
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump({"started_at": "2026-10-01T09:00:00+00:00",
+                               "domain": domain, "scores": {"seo_score": 7}}, f)
+                self.assertEqual(previous_run(domain, "")["domain"], domain,
+                                 "the run was written where the lookup does not read")
+                self.assertEqual([r["seo_score"] for r in run_series(domain, "")], [7])
+                self.assertIsNone(previous_run(domain, path),
+                                  "the run being written was its own predecessor")
+
+    def test_the_folder_names_are_the_stated_ones(self):
+        """Pinned as text: where a site's history lives is what an operator looks for
+        on disk, and a rule that changes moves it."""
+        for domain, folder in (("127.0.0.1:8123", "127.0.0.1_8123"),
+                               ("localhost:3000", "localhost_3000"),
+                               ("[::1]:8080", "[__1]_8080"),
+                               ("example.com.", "example.com"),
+                               ("nul", "_nul"),
+                               ("", "unknown")):
+            with self.subTest(domain=domain):
+                self.assertEqual(runner.history_folder(domain), folder)
+
+    def test_a_host_without_a_port_keeps_the_folder_it_always_had(self):
+        """The half that must not move: every history written before this rule is
+        under a name with no port in it, and it is still the one read and written."""
+        for domain in ("example.com", "www.example.co.uk", "xn--e1afmkfd.xn--p1ai",
+                       "sub-domain.example.com", "127.0.0.1", "localhost"):
+            with self.subTest(domain=domain):
+                self.assertEqual(runner.history_folder(domain), domain)
+        self.two_sites()
+        self.assertEqual(
+            os.path.dirname(history_path("alpha.example", run_stamp())),
+            os.path.join(os.getcwd(), ".seo-runs", "alpha.example"))
+        self.assertEqual(previous_run("alpha.example", "")["scores"]["seo_score"], 41)
+
+    def test_two_ports_of_one_host_are_two_sites(self):
+        """Two dev servers on one machine are two sites; folding the port away
+        instead of rewriting it would compare one against the other."""
+        folders = {os.path.dirname(history_path(urlparse(url).netloc, run_stamp()))
+                   for url in ("http://localhost:3000/", "http://localhost:8000/",
+                               "http://localhost/")}
+        self.assertEqual(len(folders), 3, sorted(folders))
+
+    @unittest.skipIf(os.name == "nt", "a folder named host:port cannot exist on "
+                                      "Windows, so there is no older history to read")
+    def test_runs_filed_under_the_verbatim_netloc_are_still_read(self):
+        """Where the colon was legal, releases before 0.134.0 wrote
+        `.seo-runs/localhost:3000/`. Those runs stay where they are and stay in the
+        arc; new ones go to the new folder."""
+        old = os.path.join(".seo-runs", "localhost:3000")
+        os.makedirs(old)
+        with open(os.path.join(old, "20260803T090000000Z.json"), "w",
+                  encoding="utf-8") as f:
+            json.dump({"started_at": "2026-08-03T09:00:00+00:00",
+                       "scores": {"seo_score": 41}}, f)
+        new = history_path("localhost:3000", "20260901T090000000Z")
+        self.assertNotEqual(os.path.dirname(new), os.path.abspath(old))
+        with open(new, "w", encoding="utf-8") as f:
+            json.dump({"started_at": "2026-09-01T09:00:00+00:00",
+                       "scores": {"seo_score": 92}}, f)
+        self.assertEqual(previous_run("localhost:3000", "")["scores"]["seo_score"], 92)
+        self.assertEqual(previous_run("localhost:3000", new)["scores"]["seo_score"], 41)
+        self.assertEqual([r["seo_score"] for r in run_series("localhost:3000", "")],
+                         [41, 92])
+
+    def test_a_refused_ported_host_ends_as_a_refusal_and_not_as_a_crash(self):
+        """The command that found it, whole: a loopback URL with a port, history on,
+        no `--allow-private`, `--json` into a directory that does not exist yet.
+
+        It exited 1 on a traceback from `os.makedirs`, so the one thing the operator
+        needed to read — the host is private, pass `--allow-private` — was followed
+        by a crash that read as the cause. History is on here because that is the
+        path: every other runner invocation in the suite passes `--no-history`.
+        """
+        env = harness.offline_env()
+        env.pop("SEO_ALLOW_PRIVATE", None)
+        proc = harness.spawn(
+            [sys.executable, os.path.join(SCRIPTS, "checklist_runner.py"),
+             "http://127.0.0.1:8123/", "--json",
+             os.path.join("out", "checklist-results.json"), "--no-prompt",
+             "--mode", "page"], env=env, timeout=120)
+        self.assertEqual(proc.returncode, 0, proc.stderr[-2000:])
+        self.assertNotIn("Traceback", proc.stderr)
+        self.assertIn("--allow-private", proc.stderr)
+        with open(os.path.join("out", "checklist-results.json"), encoding="utf-8") as f:
+            payload = json.load(f)
+        self.assertFalse(payload["entry_reachable"])
+        self.assertIn("private", payload["entry_error"])
+        self.assertEqual(os.listdir(".seo-runs"), ["127.0.0.1_8123"])
+        self.assertEqual(len(os.listdir(os.path.join(".seo-runs", "127.0.0.1_8123"))), 1)
 
 
 class LabCoreWebVitals(unittest.TestCase):
