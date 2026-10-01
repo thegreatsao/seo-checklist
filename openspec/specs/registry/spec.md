@@ -188,22 +188,38 @@ fetch 74 / api 11 / gsc 8 over a registry holding 72 / 12 / 9.
 ### Requirement: REG-4 — ids are stable, unique, and never re-used
 
 An id names one question for the life of the registry. A retired item's id MUST NOT be
-reassigned, and two items MUST NOT share one. Ids are prefixed, and **a prefix SHALL
+reassigned, and two items MUST NOT share one. An item that is removed MUST be named in
+the generator's `RETIRED` table with the reason. Ids are prefixed, and **a prefix SHALL
 belong to exactly one category** — though a category may hold more than one prefix, as
 `content` holds `CN` and `CONT`, and `technical` holds `TE` and `TECH`.
 
 **Why:** ids travel outside this repository — into declarations, ledgers, archived runs,
 and client reports. A re-used id makes every historical reference silently wrong.
-**Reader:** partial. `test_ids_unique` pins uniqueness within a build. Nothing compares
-ids against previous releases, so a retirement-and-reuse across versions would pass.
+**Reader:** enforced. `tests/test_id_history.py` walks every revision of the registry,
+from its first commit to the file on disk (`tests/id_history.py`), and fails on an id that
+left without being recorded in `build_checklist.RETIRED`, one that came back, one whose
+source-title number changed, two items sharing one, and a prefix in two categories — at
+any revision, the release being made included. The build refuses an id `RETIRED` names. A
+clone too shallow to hold the first commit fails by name rather than agreeing with an empty
+history. Replayed before it was written, 1 October 2026: 70 revisions, 217 ids, none ever
+retired. Until 0.133.0 only uniqueness within one build was held.
 
 #### Scenario: an id is retired and issued to a different question
 - **WHEN** an item is removed in one release and its id is given to a new question in a
   later one
-- **THEN** the requirement is violated, and every archived run, declaration and client
-  report naming that id becomes silently wrong
-- **AND** nothing in the tree objects: uniqueness is checked within one build, and no
-  gate compares this build's ids against any earlier release's
+- **THEN** the build fails at the revision the id returns, whether or not its retirement
+  was recorded: every archived run, declaration and client report naming that id would
+  otherwise become silently wrong
+
+#### Scenario: an item is removed
+- **WHEN** an item leaves the registry
+- **THEN** the build fails until `RETIRED` names its id and says why
+- **AND** from then on the generator refuses to build an item carrying that id
+
+#### Scenario: a retirement is recorded that did not happen
+- **WHEN** `RETIRED` names an id the registry still ships, or one it never carried, or
+  gives no reason
+- **THEN** the build fails: the record is compared with the history in both directions
 
 #### Scenario: two items share an id in one build
 - **WHEN** two rows carry the same id
@@ -211,8 +227,24 @@ ids against previous releases, so a retirement-and-reuse across versions would p
 
 #### Scenario: a prefix appears in two categories
 - **WHEN** an item is added under an existing prefix and filed in a different category
-- **THEN** the requirement is violated, whether or not that category already holds
-  another prefix
+- **THEN** the build fails, whether or not that category already holds another prefix
+
+#### Scenario: a borrowed item's id is pointed at another source title
+- **WHEN** an item keeps its id and its `plerdy_ref` changes
+- **THEN** the build fails: the id was given to another question without being retired
+
+#### Scenario: an added item's question is rewritten under its id
+- **WHEN** an item with no source reference keeps its id and its title is replaced
+- **THEN** no rule here can tell an edit from a substitution, and this requirement does
+  not claim to
+- **AND** the change is not silent: the translation digest fails and names the item, for
+  every item in the registry, and REG-6's reading fails for one that carries a rule —
+  whether it is still the same question is decided by the person who re-reads it
+
+#### Scenario: the history cannot be read
+- **WHEN** the suite runs over a clone that does not hold the registry's first commit
+- **THEN** it fails and names `fetch-depth: 0`, because one revision is a history in which
+  no id can have been re-used
 
 ### Requirement: REG-5 — a borrowed title says so, and a departure says why
 
@@ -264,7 +296,8 @@ subject the script cannot reach, *at least one*, a compound title, a quality wor
 each be answered in the reading. `TheShapesWouldHaveExposedEveryItemRepairedByHand` holds
 that they fire on GO-137, BL-083, MB-096, MB-097, MD-189, CI-016 and MD-186 as those stood
 at `v0.104.0`, which `tools/audit_item_semantics.py`'s word overlap passed. It stays
-`partial` for two reasons: two readings are `owed` (A.10), and whether a reading is
+`partial` for one reason — no reading has been `owed` since 0.122.0 (A.10), and the
+audit prints that count on every run: whether a reading is
 true is still a person's judgement — the reader guarantees that nothing changes under one
 unnoticed, not that it was right.
 
@@ -607,17 +640,27 @@ change with the mode, the profile, the reach, or the verdict the item receives.
 **Why:** both feed the score and the fix order, and a value that moves with the run makes
 two audits of the same site incomparable for reasons that have nothing to do with the
 site.
-**Reader:** partial. `test_manual_and_llm_items_are_never_low_effort` and
-`test_every_registry_item_declares_an_effort` pin presence and one floor;
-`test_effort_survives_grading` pins that grading does not alter it. Nothing forbids a
-profile from carrying a severity override, which is currently possible only because no
-profile does it.
+**Reader:** enforced. `tests/test_profile_keys.py`: the runner names the eight keys a
+profile may carry (`PROFILE_KEYS`), held equal to what the shipped profiles use and disjoint
+from an item's fields; a profile file carrying any other key is refused by name, whichever
+profile was asked for, and the run ends with that sentence and exit 2. Under every shipped
+profile each graded row carries the registry's `severity` and `effort`, and so does every
+row of a finished sampled run under a narrowing profile. `test_effort_survives_grading`,
+`test_manual_and_llm_items_are_never_low_effort` and
+`test_every_registry_item_declares_an_effort` hold presence and the floor as before. Until
+0.133.0 a profile declaring a severity loaded without a word, and was harmless only because
+no code read the key.
 
 #### Scenario: a profile carries a severity of its own
-- **WHEN** a profile declares a severity or an effort for an item it does not exclude
-- **THEN** the requirement is violated
-- **AND** nothing refuses it: a profile is validated for the keys it uses, not closed
-  against the ones it must not carry
+- **WHEN** a profile declares a `severity`, an `effort`, or any key outside the eight
+- **THEN** the profile file is refused, naming the profile and the key, and the run ends
+  before anything is graded
+- **AND** it is refused whichever profile the run asked for: the file is one artifact
+
+#### Scenario: a row leaves the run with another weight
+- **WHEN** a finished run's row states a `severity` or an `effort` that is not its item's
+- **THEN** the build fails, for a graded row under every shipped profile and for the
+  artifact of a sampled run
 
 #### Scenario: the graded row loses the field
 - **WHEN** a row is built from a registry item for the report
@@ -1105,14 +1148,14 @@ five; REG-7 now says what a rule is, so the count above is taken over all three.
 
 | | requirements |
 |---|---|
-| **enforced** | REG-2, REG-3, REG-5, REG-7, REG-9, REG-10, REG-11, REG-12 |
-| **partial** | REG-1, REG-4, REG-6, REG-8, REG-13 |
+| **enforced** | REG-2, REG-3, REG-4, REG-5, REG-7, REG-9, REG-10, REG-11, REG-12, REG-13 |
+| **partial** | REG-1, REG-6, REG-8 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-R2 enforced; INV-R1, INV-R3 and INV-R4 partial.
 
-**Eight enforced, five partial, none unread, none opposed, of thirteen.**
+**Ten enforced, three partial, none unread, none opposed, of thirteen.**
 
 `opposed` is a fourth category this document introduced and its column is empty now.
 REG-9 earned it: a fixed-membership test pinning the two existing applicability

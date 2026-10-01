@@ -10,6 +10,39 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.133.0 — an id is never re-used, and a profile has no word for an item's weight
+
+Registry version: unchanged at `486f68dd3ee7`. No verdict moves.
+
+Two requirements of `openspec/specs/registry/` named a door and said nothing guarded it.
+Each was re-run before anything was built, not re-read.
+
+* **REG-4, an id names one question for the life of the registry.** Uniqueness inside one
+  build was held; *retired in one release, issued to another question in a later one* was
+  not, because that is a property of a history and every reader looked at one tree.
+  `tests/id_history.py` walks every revision of the registry from its first commit to the
+  file on disk and refuses an id that left without being recorded, one that came back, one
+  pointed at another source title in place, two items sharing one, and a prefix in two
+  categories. Replayed first: 70 revisions, 217 ids, none ever retired — a reader for the
+  next edit, not a repair. A retirement is legal and has to be said:
+  `build_checklist.RETIRED` names the id and why, and the build refuses to ship an id it
+  names. A clone too shallow to hold the first commit fails by name instead of agreeing.
+* **REG-13, severity and effort are the item's and never a run's.** `profiles.json` was
+  validated for the keys it used and not closed against the ones it must not carry: a
+  profile declaring a `severity` loaded without a word, and changed nothing only because no
+  code reads the key. The runner now names the eight keys a profile may carry
+  (`PROFILE_KEYS`) and refuses a profile file with any other, whichever profile was asked
+  for; the run ends with the sentence and exit 2. `tests/test_profile_keys.py` also holds
+  the behaviour itself: under every shipped profile, and in a finished sampled run under a
+  narrowing one, each row states the registry's severity and effort.
+* **REG-6's `Reader:` line said two readings were owed.** None has been since 0.122.0; the
+  line was a record of a debt that had been paid. It stays `partial` for its other reason:
+  whether a reading is true is a person's judgement.
+
+Probed 8 of 8 (`local/gov3/probe_0133.py`), each caught by the test meant to catch it.
+Derived-sets census 180/98/82 → **182/100/82**. Specification ledger 122/22/1/0/4 →
+**124/20/1/0/4**. Suite 2001 → 2022.
+
 ## 0.132.0 — the report's tables have readers, and an effort that described another item is gone
 
 Registry version: `b81c0edcd245` → `486f68dd3ee7`. No verdict and no score moves; one item's

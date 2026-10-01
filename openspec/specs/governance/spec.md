@@ -204,6 +204,11 @@ twice more as the tuples the Markdown and HTML sections iterated, are read off
 describing another item — TE-176 carried `high` for "migrate to HTTP/2/3" — and three that
 said `low` under a `medium` floor.
 
+**At 0.133.0: 182 sets, 100 read, 82 unread.** Two sets were added and both arrived with a
+reader: `checklist_runner.PROFILE_KEYS`, the closed vocabulary of a profile (`registry`
+REG-13), and `build_checklist.RETIRED`, empty, held against the registry's whole history
+(`registry` REG-4).
+
 Two lists were converted to derivations during this suite's writing — the notebook's spec
 manifest, and this document's own reader discovering documents by glob rather than by
 name — and neither conversion was required by anything. That is what the census now
