@@ -59,7 +59,12 @@ import audit_derived_sets  # noqa: E402
 # 88 at 0.127.0, `build_checklist.py`'s twenty: `EFFORT_RANK` left as a derivation of the
 # runner's `EFFORT_COST`, and the other nineteen moved to the read column through
 # `tests/test_build_sets.py`.
-UNREAD_AT_MOST = 88
+# 82 at 0.132.0, the report's six. Two were never unread: `test_report.py` imports
+# `STATUS_ICON` and `FIX_STATUSES` in a parenthesised import spanning lines, which the
+# one-line pattern could not see (the second time this instrument under-counted its own
+# read column; 0.104.0 was aliases). The other four moved through
+# `tests/test_report_sets.py`.
+UNREAD_AT_MOST = 82
 
 
 class TheCensusDescribesThisTree(unittest.TestCase):
@@ -137,6 +142,35 @@ class TheCensusDescribesThisTree(unittest.TestCase):
             "build_checklist", "PAGE", corpus))
         self.assertTrue(audit_derived_sets.read_by_a_test(
             "build_checklist", "PAGE", "build_checklist.PAGE\n"))
+
+    def test_an_import_that_spans_lines_still_credits_the_name(self):
+        """The arm added at 0.132.0. `from m import ... NAME` was matched on one line,
+        so a parenthesised import — the form every long import in this suite takes —
+        credited only the names on the line that says `import`. Measured before the
+        repair in `local/gov3/measure_import_blindness.py`: two sets recorded as unread
+        were asserted by `test_report.py` all along."""
+        spanning = ("from checklist_report import (  # noqa: E402\n"
+                    "    FAIL, FIX_STATUSES, LLM_PENDING,\n"
+                    "    STATUS_ICON, render_html,\n"
+                    ")\n")
+        for name in ("FIX_STATUSES", "STATUS_ICON"):
+            self.assertTrue(audit_derived_sets.read_by_a_test(
+                "checklist_report", name, spanning), name)
+        # The module still has to be the one named: the same names imported from
+        # another module credit nothing here, and a name only mentioned in a comment
+        # inside the parentheses was not imported.
+        self.assertFalse(audit_derived_sets.read_by_a_test(
+            "checklist_runner", "STATUS_ICON", spanning))
+        commented = ("from checklist_report import (\n"
+                     "    FAIL,  # not STATUS_ICON\n"
+                     ")\n")
+        self.assertFalse(audit_derived_sets.read_by_a_test(
+            "checklist_report", "STATUS_ICON", commented))
+        packaged = ("from lib.safe_http import (\n"
+                    "    ROBOTS_MAX_BYTES,\n"
+                    ")\n")
+        self.assertTrue(audit_derived_sets.read_by_a_test(
+            "safe_http", "ROBOTS_MAX_BYTES", packaged))
 
     def test_a_module_the_test_renamed_still_credits_the_module(self):
         """The arm added at 0.104.0, and the reason the read column was 28 not 43.

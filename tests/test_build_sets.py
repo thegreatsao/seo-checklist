@@ -135,6 +135,24 @@ class TheEffortTables(unittest.TestCase):
                              {i["source"] for i in ITEMS.values()})
         self.assertLessEqual(set(b.EFFORT_FLOOR_BY_SOURCE.values()), efforts)
 
+    def test_an_override_says_the_effort_that_ships(self):
+        """An override the source floor then raises is a table entry stating an
+        effort no report prints. Until 0.132.0 three said `low` for LLM items, whose
+        floor is `medium`: the override did move them (off their category's `high`),
+        but to a value the table did not name."""
+        for item_id, effort in b.EFFORT_OVERRIDES.items():
+            with self.subTest(override=item_id):
+                self.assertEqual(ITEMS[item_id]["effort"], effort)
+
+    def test_te_176_takes_its_categorys_effort(self):
+        """Its override said `high`, with the reason "migrate to HTTP/2/3 —
+        infrastructure, not a page edit". TE-176 is *Fix Canonicalization Issues* and
+        has been since the first commit; no item in the registry is about HTTP/2. A
+        decision recorded about another subject is not a decision about this one."""
+        self.assertNotIn("TE-176", b.EFFORT_OVERRIDES)
+        self.assertEqual(ITEMS["TE-176"]["effort"],
+                         b.EFFORT_BY_CATEGORY[ITEMS["TE-176"]["category"]])
+
     def test_the_effort_rank_is_the_order_of_the_effort_cost(self):
         """Two tables over the same three words: the build ranks them, the report
         divides by their cost. They must agree about which is harder."""
