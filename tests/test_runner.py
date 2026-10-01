@@ -3616,6 +3616,48 @@ class History(unittest.TestCase):
         self.assertEqual(os.listdir(".seo-runs"), ["127.0.0.1_8123"])
         self.assertEqual(len(os.listdir(os.path.join(".seo-runs", "127.0.0.1_8123"))), 1)
 
+    def test_the_older_folder_is_still_read_where_a_colon_cannot_be_written(self):
+        """The test above is skipped on Windows, because `host:port` cannot be a folder
+        there — which left the second name `history_dirs` reads with no reader on the
+        machine this tool is developed on: dropping it turned nothing red (probed at
+        0.134.0). The relation is the same whatever the two names are, so give the
+        folder rule another answer and keep the verbatim folder on disk."""
+        self.two_sites()
+        with mock.patch.object(runner, "history_folder", lambda domain: domain + "_now"):
+            self.assertEqual(previous_run("alpha.example", "")["scores"]["seo_score"], 41)
+            new = history_path("alpha.example", "20260901T090000000Z")
+            self.assertEqual(os.path.basename(os.path.dirname(new)), "alpha.example_now")
+            with open(new, "w", encoding="utf-8") as f:
+                json.dump({"started_at": "2026-09-01T09:00:00+00:00",
+                           "scores": {"seo_score": 77}}, f)
+            self.assertEqual([r["seo_score"] for r in run_series("alpha.example", "")],
+                             [41, 77])
+            self.assertEqual(previous_run("alpha.example", new)["scores"]["seo_score"], 41)
+
+    def test_the_older_folder_is_a_folder_inside_the_history_and_nothing_else(self):
+        """The verbatim netloc is joined onto `.seo-runs/` to find runs an earlier
+        release filed. A netloc is whatever was typed: `http://../` has the netloc
+        `..`, and `.seo-runs/..` is the working directory — where the previous audit's
+        `checklist-results.json` sits. Found reviewing 0.134.0: `previous_run("..")`
+        returned another site's results as this site's last run. The name that is
+        written was already made safe; the name that is read has to be one too."""
+        os.makedirs(".seo-runs")
+        os.makedirs("elsewhere")
+        for where in (".", "elsewhere", ".seo-runs"):
+            with open(os.path.join(where, "checklist-results.json"), "w",
+                      encoding="utf-8") as f:
+                json.dump({"started_at": "2026-09-01T09:00:00+00:00",
+                           "domain": "another.example", "scores": {"seo_score": 55}}, f)
+        root = os.path.join(os.getcwd(), ".seo-runs")
+        for domain in ("..", ".", "", "../elsewhere", "..\\elsewhere", "x/../../elsewhere",
+                       os.path.join(os.getcwd(), "elsewhere")):
+            with self.subTest(domain=domain):
+                for found in runner.history_dirs(domain):
+                    self.assertEqual(os.path.dirname(os.path.abspath(found)), root,
+                                     f"{domain!r} reads runs from {found!r}")
+                self.assertIsNone(previous_run(domain, ""))
+                self.assertEqual(run_series(domain, ""), [])
+
 
 class LabCoreWebVitals(unittest.TestCase):
     """Lab metrics from a browser trace. The risks are units and silence: a
