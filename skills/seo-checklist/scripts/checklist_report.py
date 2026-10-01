@@ -474,6 +474,8 @@ def plain_summary(data: dict, L: "Lang | None" = None) -> list[str]:
 # supplied file stopped being supplied. Reporting that as a regression would tell a
 # client their site broke when the measurement broke, and the reverse would take
 # credit for a fix nobody made.
+# The sections iterate this table, so a kind checklist_runner.direction learns to
+# return is printed once it has a heading and a note here.
 DIRECTION_HEADING = {
     "improved": ("fixed", "Fixed since then"),
     "regressed": ("regressed", "Got worse"),
@@ -743,7 +745,7 @@ def history_section(data: dict, L: "Lang | None" = None) -> list[str]:
                     "No item changed status."), ""]
         return out
 
-    for kind in ("improved", "regressed", "evidence"):
+    for kind in DIRECTION_HEADING:
         rows = [c for c in diff if c.get("direction") == kind]
         if not rows:
             continue
@@ -1688,7 +1690,7 @@ def render_html(data: dict, L: Lang | None = None) -> str:
         if data.get("diff_note"):
             head.append(f'<p class="caveat">{html.escape(str(data["diff_note"]))}</p>')
         body = []
-        for kind in ("improved", "regressed", "evidence"):
+        for kind in DIRECTION_HEADING:
             rows = [c for c in diff if c.get("direction") == kind]
             if not rows:
                 continue

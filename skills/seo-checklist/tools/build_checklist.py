@@ -574,10 +574,12 @@ EFFORT_BY_CATEGORY = {
 }
 # Outliers where the category default is plainly wrong for a specific item.
 EFFORT_OVERRIDES = {
-    "CN-047": "low",    # fix spelling
-    "CN-064": "low",    # add a call to action
-    "AR-160": "low",    # footer links
-    "TE-176": "high",   # migrate to HTTP/2/3 — infrastructure, not a page edit
+    # These LLM items have a medium floor (EFFORT_FLOOR_BY_SOURCE): the override
+    # takes them off their category's high, and medium is what ships; the table
+    # used to say low, which no report printed.
+    "CN-047": "medium",    # fix spelling
+    "CN-064": "medium",    # add a call to action
+    "AR-160": "medium",    # footer links
     "SP-107": "high",   # Core Web Vitals work is rarely a quick fix
     "SP-108": "high",
     "SP-109": "high",

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "b81c0edcd245",
+  "registry_version": "486f68dd3ee7",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -3905,7 +3905,7 @@
           "len_eq": 0
         }
       },
-      "effort": "high",
+      "effort": "low",
       "fix": "Fix canonicalization issues"
     },
     {

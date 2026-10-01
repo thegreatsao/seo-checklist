@@ -126,6 +126,21 @@ def aliases_in(source: str) -> dict[str, frozenset[str]]:
     return {module: frozenset(names) for module, names in found.items()}
 
 
+@functools.lru_cache(maxsize=None)
+def imports_in(source: str) -> frozenset[tuple[str, str]] | None:
+    """Imported (module basename, original name) pairs, cached per test source."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return None
+    return frozenset(
+        (node.module.split(".")[-1], alias.name)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom) and node.module
+        for alias in node.names
+    )
+
+
 def read_by_a_test(module: str, name: str,
                    corpus: list[tuple[str, str]] | str) -> bool:
     """`from <module> import <NAME>`, `<module>.<NAME>`, or the same under an alias.
@@ -142,6 +157,12 @@ def read_by_a_test(module: str, name: str,
     census finds only the spellings it was given. Measured before the repair in
     `local/dec8/measure-alias-blindness.py`, which resolves the aliases with the AST and
     re-asks the same question of the record this tool had already written.
+
+    **The AST import arm was added at 0.132.0.** The one-line pattern could not
+    see names on later lines of a parenthesised import, so STATUS_ICON and
+    FIX_STATUSES were recorded unread despite being asserted by test_report.py.
+    The measurement is `local/gov3/measure_import_blindness.py`; imports are cached
+    per source, and a source that does not parse uses the former one-line pattern.
     """
     if isinstance(corpus, str):
         # One test module's worth of source, which is how `test_derived_sets.py` asks
@@ -154,7 +175,9 @@ def read_by_a_test(module: str, name: str,
         for spelling in {module, *aliases_in(source).get(module, set())}:
             if re.search(re.escape(spelling) + r"\." + re.escape(name) + r"\b", source):
                 return True
-        if re.search(imported, source):
+        imports = imports_in(source)
+        if ((imports is None and re.search(imported, source))
+                or (imports is not None and (module, name) in imports)):
             return True
     return False
 
