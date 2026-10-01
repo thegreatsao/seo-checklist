@@ -2002,13 +2002,15 @@ def history_dirs(domain: str) -> list[str]:
     its files and they stay part of the arc, while new runs go to
     `.seo-runs/localhost_3000/`.
     The verbatim name is read if and only if it is nonempty and the absolute
-    joined path has the absolute history root as its parent, a direct child.
+    joined path has the absolute history root as its parent, a direct child,
+    and its last component is exactly the verbatim name.
     A property list was tried first but missed a drive-relative name.
     """
     root = os.path.join(os.getcwd(), ".seo-runs")
     names = dict.fromkeys((history_folder(domain),))
-    if (domain and os.path.dirname(os.path.abspath(os.path.join(root, domain)))
-            == os.path.abspath(root)):
+    joined = os.path.abspath(os.path.join(root, domain))
+    if (domain and os.path.dirname(joined) == os.path.abspath(root)
+            and os.path.basename(joined) == domain):
         names[domain] = None
     return [d for d in (os.path.join(root, name) for name in names if name)
             if os.path.isdir(d)]
@@ -2059,6 +2061,13 @@ def run_time(payload: dict, name: str) -> datetime:
     return EPOCH
 
 
+def stored_run_matches_domain(payload: dict, domain: str) -> bool:
+    # The folder name is not reversible; the payload identifies the audited site.
+    stored_domain = payload.get("domain")
+    return not (isinstance(stored_domain, str) and stored_domain
+                and stored_domain != domain)
+
+
 def previous_run(domain: str, exclude: str) -> dict | None:
     """The most recent earlier run for this domain.
 
@@ -2076,6 +2085,8 @@ def previous_run(domain: str, exclude: str) -> dict | None:
             with open(path, encoding="utf-8") as f:
                 payload = json.load(f)
         except (OSError, json.JSONDecodeError):
+            continue
+        if not stored_run_matches_domain(payload, domain):
             continue
         key = run_time(payload, os.path.basename(path))
         if key >= best_key:
@@ -2129,6 +2140,8 @@ def run_series(domain: str, exclude: str, limit: int = HISTORY_RUNS) -> list[dic
             with open(path, encoding="utf-8") as fh:
                 payload = json.load(fh)
         except (OSError, json.JSONDecodeError):
+            continue
+        if not stored_run_matches_domain(payload, domain):
             continue
         scores = payload.get("scores") or {}
         rows.append((run_time(payload, os.path.basename(path)), {
