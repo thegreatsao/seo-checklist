@@ -2001,15 +2001,14 @@ def history_dirs(domain: str) -> list[str]:
     Read, never written and never moved: `.seo-runs/localhost:3000/` on Linux keeps
     its files and they stay part of the arc, while new runs go to
     `.seo-runs/localhost_3000/`.
-    The verbatim name is read only when it is a nonempty, nonabsolute path
-    component other than `.` or `..`, containing neither platform separator.
-    This prevents older-history lookup from reading the root or unrelated runs
-    through a parent, nested or absolute path.
+    The verbatim name is read if and only if it is nonempty and the absolute
+    joined path has the absolute history root as its parent, a direct child.
+    A property list was tried first but missed a drive-relative name.
     """
     root = os.path.join(os.getcwd(), ".seo-runs")
     names = dict.fromkeys((history_folder(domain),))
-    if (domain and domain not in (".", "..") and not os.path.isabs(domain)
-            and os.sep not in domain and (not os.altsep or os.altsep not in domain)):
+    if (domain and os.path.dirname(os.path.abspath(os.path.join(root, domain)))
+            == os.path.abspath(root)):
         names[domain] = None
     return [d for d in (os.path.join(root, name) for name in names if name)
             if os.path.isdir(d)]
