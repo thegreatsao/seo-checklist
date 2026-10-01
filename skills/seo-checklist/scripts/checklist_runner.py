@@ -2222,22 +2222,38 @@ GSC_FALLBACKS = [
 
 
 PROFILES = os.path.join(SKILL_DIR, "resources", "config", "profiles.json")
+# A profile narrows the registry and may tune a script's arguments; it has no key
+# in which an item's severity or effort can be said (openspec/specs/registry/ REG-13).
+# A new key is added here first.
+PROFILE_KEYS = (
+    "label", "note", "exclude_categories", "exclude_scripts", "exclude_items",
+    "exclude_item_reasons", "script_args", "script_args_note",
+)
+
+
+def read_profiles() -> dict:
+    """Read the profile file and refuse unknown keys in any profile."""
+    with open(PROFILES, encoding="utf-8") as f:
+        profiles = json.load(f)["profiles"]
+    for name, profile in profiles.items():
+        for key in profile:
+            if key not in PROFILE_KEYS:
+                raise ValueError(f"profile {name!r} has unknown key {key!r}")
+    return profiles
 
 
 def load_profile(name: str) -> dict:
     """Read one site profile. An unknown name is an error rather than a silent
     fallback to `default`: quietly auditing an online store as a blog would drop
     the storefront checks and raise the score for the wrong reason."""
-    with open(PROFILES, encoding="utf-8") as f:
-        profiles = json.load(f)["profiles"]
+    profiles = read_profiles()
     if name not in profiles:
         raise KeyError(f"unknown profile {name!r}; known: {', '.join(sorted(profiles))}")
     return profiles[name]
 
 
 def all_profiles() -> dict:
-    with open(PROFILES, encoding="utf-8") as f:
-        return json.load(f)["profiles"]
+    return read_profiles()
 
 
 def detect_profile(html_path: str, url: str) -> dict:
@@ -3358,7 +3374,7 @@ def main() -> int:
     try:
         a.profile = choose_profile(a.profile, not (a.no_prompt or a.quiet), detected)
         profile = load_profile(a.profile)
-    except KeyError as exc:
+    except (KeyError, ValueError) as exc:
         print(exc, file=sys.stderr)
         if temp_html and os.path.exists(temp_html):
             os.unlink(temp_html)

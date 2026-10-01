@@ -584,6 +584,12 @@ EFFORT_OVERRIDES = {
     "SP-108": "high",
     "SP-109": "high",
 }
+# An id names one question for the life of the registry (openspec/specs/registry/ REG-4).
+# An item that is removed is named here with the reason; its id never ships again.
+# tests/id_history.py holds this table against every revision of the registry.
+# Empty: no item has ever been retired (70 revisions replayed, 217 ids, 1 October 2026).
+RETIRED: dict[str, str] = {}
+
 # A human-facing task is never "low" no matter what its category says.
 EFFORT_FLOOR_BY_SOURCE = {"manual": "high", "llm": "medium"}
 # The build ranks the same three words the report divides by, so the order is read
@@ -1866,6 +1872,12 @@ def title_override_problems(items: list[dict], titles: dict[int, str],
     return problems
 
 
+def retired_problems(items: list[dict]) -> list[str]:
+    """Name every item whose id was retired, with the recorded reason."""
+    return [f"{item['id']} is retired: {RETIRED[item['id']]}."
+            for item in items if item["id"] in RETIRED]
+
+
 def measures_problems(items: list[dict], measures: dict[str, str] | None = None) -> list[str]:
     """Name every qualification that cannot describe a rule-backed registry item."""
     measures = MEASURES if measures is None else measures
@@ -2257,6 +2269,11 @@ def main() -> int:
     if override_problems:
         for problem in override_problems:
             print(f"Invalid title override: {problem}", file=sys.stderr)
+        return 1
+    retired = retired_problems(items)
+    if retired:
+        for problem in retired:
+            print(f"Retired id: {problem}", file=sys.stderr)
         return 1
     invalid_measures = measures_problems(items)
     if invalid_measures:
