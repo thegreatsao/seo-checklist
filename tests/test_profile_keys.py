@@ -26,7 +26,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 sys.path.insert(0, os.path.join(SKILL, "scripts"))
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import checklist_runner as runner  # noqa: E402
+from harness import served  # noqa: E402
+from test_shapes import page, run_audit  # noqa: E402
 
 with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
           encoding="utf-8") as _stream:
@@ -116,6 +120,28 @@ class ARowCarriesItsItemsWeightUnderEveryProfile(unittest.TestCase):
             for row in graded:
                 with self.subTest(profile=name, item=row["id"]):
                     self.assertEqual((row["severity"], row["effort"]), registry[row["id"]])
+
+
+class AFinishedRunCarriesItToo(unittest.TestCase):
+    """The class above asks `grade`. This asks the artifact, after everything a run does
+    to a row on the way out — sampling, aggregation over pages, a profile's exclusions
+    and its moved arguments — because "the row had it when it was graded" is not "the
+    reader of the JSON has it"."""
+
+    def test_a_sampled_run_under_a_narrowing_profile_states_the_registrys_weights(self):
+        registry = {item["id"]: (item["severity"], item["effort"]) for item in ITEMS}
+        with served({"/": page("The entry page",
+                               'It links onward. <a href="/second.html">second</a>'),
+                     "/second.html": page("The second page", "")}) as site:
+            payload = run_audit(site.url, "--profile", "local", "--sample", "2",
+                                only="meta_structured")
+        self.assertEqual(payload["profile"], "local")
+        self.assertEqual({row["id"] for row in payload["items"]}, set(registry))
+        self.assertTrue(any(row["status"] == runner.NA for row in payload["items"]),
+                        "the profile excluded nothing, so this asks less than it says")
+        for row in payload["items"]:
+            with self.subTest(item=row["id"]):
+                self.assertEqual((row["severity"], row["effort"]), registry[row["id"]])
 
 
 if __name__ == "__main__":
