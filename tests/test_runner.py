@@ -3649,14 +3649,26 @@ class History(unittest.TestCase):
                 json.dump({"started_at": "2026-09-01T09:00:00+00:00",
                            "domain": "another.example", "scores": {"seo_score": 55}}, f)
         root = os.path.join(os.getcwd(), ".seo-runs")
+        other_drive = "Y:" if os.getcwd()[:2].upper() == "Z:" else "Z:"
         for domain in ("..", ".", "", "../elsewhere", "..\\elsewhere", "x/../../elsewhere",
-                       os.path.join(os.getcwd(), "elsewhere")):
+                       os.path.join(os.getcwd(), "elsewhere"),
+                       # Drive-relative on Windows: neither absolute nor carrying a
+                       # separator, and on another drive it still leaves the root
+                       # (Codex, in review). A plain name everywhere else.
+                       other_drive + "elsewhere"):
             with self.subTest(domain=domain):
                 for found in runner.history_dirs(domain):
                     self.assertEqual(os.path.dirname(os.path.abspath(found)), root,
                                      f"{domain!r} reads runs from {found!r}")
                 self.assertIsNone(previous_run(domain, ""))
                 self.assertEqual(run_series(domain, ""), [])
+                # What exists on this machine must not be what keeps it inside:
+                # another drive's folder cannot be made here to be found.
+                with mock.patch("os.path.isdir", return_value=True):
+                    for found in runner.history_dirs(domain):
+                        self.assertEqual(
+                            os.path.dirname(os.path.abspath(found)), root,
+                            f"{domain!r} would read runs from {found!r}")
 
 
 class LabCoreWebVitals(unittest.TestCase):
