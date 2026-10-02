@@ -160,6 +160,9 @@ def setUpModule():
     other_routes.update({
         "/landing.html": (200, {}, html("Where the redirect lands")),
         "/elsewhere.html": (200, {}, html("Somebody else's page")),
+        # An entry that sends the audit to the protected site with the credential written
+        # into the `Location`: nobody typed it, and it is in the URL the run ends on.
+        "/hop": (302, {"Location": f"http://{USERINFO}@{site.host}/"}, ""),
         "/robots.txt": (200, {"Content-Type": "text/plain"}, "User-agent: *\nAllow: /\n"),
     })
     links = (
@@ -170,6 +173,10 @@ def setUpModule():
         # the operator's secret once it is in a file somebody is sent.
         f"<a href='http://{USERINFO}@{site.host}/about.html'>About, as pasted</a> "
         "<a href='/moved'>Moved</a> "
+        # A page that echoes the request it was asked with: the pair as it went over
+        # the wire. The typed form is not in it, so only the token's own entry in the
+        # secret set can take it out of what the run writes.
+        f"<a href='/about.html?asked-with={BASIC}'>What you sent</a> "
         f"<a href='{other.base}/elsewhere.html'>Elsewhere</a>")
     routes.update({
         "/": (200, {}, html("A site behind a password", links)),
@@ -228,6 +235,18 @@ def setUpModule():
                                "--json", os.path.join(work, "bare.json")],
                               env=stale, timeout=600)
         RUN["bare_seen"] = site.seen[len(RUN["site_seen"]):]
+        # `--quiet` asks for nothing but warnings on stderr, and the line about the
+        # credential is not one.
+        RUN["quiet"] = spawn([sys.executable, RUNNER, with_credential, *common, "--quiet",
+                              "--only", "speed", "--no-history",
+                              "--json", os.path.join(work, "quiet.json")], timeout=600)
+        # Its own working directory: this run is filed under the site as well, and the
+        # history tests below count what the first two runs left there.
+        hop_work = RUN["hop_work"] = tempfile.mkdtemp(prefix="seo-url-credentials-hop-")
+        os.chdir(hop_work)
+        RUN["hop"] = spawn([sys.executable, RUNNER, other.base + "/hop", *common,
+                            "--only", "speed",
+                            "--json", os.path.join(hop_work, "hop.json")], timeout=600)
     finally:
         os.chdir(home)
 
@@ -237,6 +256,7 @@ def tearDownModule():
         if name in RUN:
             RUN[name].stop()
     shutil.rmtree(RUN.get("work", ""), ignore_errors=True)
+    shutil.rmtree(RUN.get("hop_work", ""), ignore_errors=True)
 
 
 def payload(name: str) -> dict:
@@ -295,7 +315,7 @@ class NothingTheRunWritesCarriesTheCredential(unittest.TestCase):
                         self.assertNotIn(needle, name)
 
     def test_neither_stream_prints_it(self):
-        for label in ("first", "report", "second"):
+        for label in ("first", "report", "second", "quiet", "hop"):
             proc = RUN.get(label)
             self.assertIsNotNone(proc, f"the {label} program was never started")
             for stream in ("stdout", "stderr"):
@@ -327,6 +347,50 @@ class TheRecordNamesTheSiteAndSaysACredentialWasUsed(unittest.TestCase):
     def test_the_operator_is_told_what_became_of_it(self):
         self.assertIn("credential from the URL", RUN["first"].stderr)
         self.assertNotIn("credential from the URL", RUN["second"].stderr)
+
+    def test_a_quiet_run_is_not_told(self):
+        quiet = RUN["quiet"]
+        self.assertEqual(quiet.returncode, 0, quiet.stderr[-2000:].replace(PASSWORD, "…"))
+        self.assertIs(payload("quiet.json").get("url_credentials"), True,
+                      "the quiet run carried no credential, so its silence says nothing")
+        self.assertNotIn("credential from the URL", quiet.stderr)
+
+
+class ACredentialTheSiteWritesIntoARedirect(unittest.TestCase):
+    """The split at the entrance takes out what the operator typed. A `Location` header
+    can put a credential into the URL the run *ends* on, and that URL is the one the
+    record, the history folder and every script are then given — so it is split again
+    where it comes in, and what was in front of the `@` is dropped."""
+
+    def record(self) -> dict:
+        with open(os.path.join(RUN["hop_work"], "hop.json"), encoding="utf-8") as stream:
+            return json.load(stream)
+
+    def test_the_run_followed_the_redirect_to_the_site(self):
+        hop = RUN["hop"]
+        self.assertEqual(hop.returncode, 0, hop.stderr[-2000:].replace(PASSWORD, "…"))
+        self.assertTrue(self.record()["entry_reachable"], self.record().get("entry_error"))
+
+    def test_the_site_is_named_by_host_and_port(self):
+        self.assertEqual(self.record()["domain"], RUN["site"].host)
+
+    def test_nothing_it_wrote_carries_it(self):
+        walked = 0
+        for base, dirs, files in os.walk(RUN["hop_work"]):
+            for name in dirs + files:
+                for what, needle in NEEDLES.items():
+                    with self.subTest(name=name.replace(PASSWORD, "<password>"),
+                                      carries=what):
+                        self.assertNotIn(needle, name)
+            for name in files:
+                walked += 1
+                with open(os.path.join(base, name), "rb") as stream:
+                    data = stream.read()
+                for what, needle in NEEDLES.items():
+                    with self.subTest(file=name.replace(PASSWORD, "<password>"),
+                                      carries=what):
+                        self.assertEqual(data.count(needle.encode()), 0)
+        self.assertGreaterEqual(walked, 2, "the sweep walked almost nothing")
 
 
 class TheCredentialReachesTheSiteAndNothingElse(unittest.TestCase):
@@ -363,6 +427,44 @@ class TheCredentialReachesTheSiteAndNothingElse(unittest.TestCase):
         seen = RUN["other_seen"]
         self.assertTrue(seen, "nothing reached the other origin, so this proves nothing")
         self.assertEqual(sorted({path for path, carried, _right in seen if carried}), [])
+
+
+class EveryWayARequestLeavesCarriesIt(unittest.TestCase):
+    """`_paced_request` sends a request from three places: through an address the guard
+    pinned, without a pin when the resolver found none, and once more after a
+    `Retry-After`. Every origin a test serves resolves, so the audits above only ever
+    leave by the first — and a probe that took the credential off either of the other
+    two left all of them green. Each is asked here by itself."""
+
+    def setUp(self):
+        self.http = harness.safe_http()
+        self.origin = _Origin({"/": (200, {}, html("A quiet page")),
+                               "/busy": (429, {"Retry-After": "1"}, "slow down")},
+                              protected=True)
+        self.env = mock.patch.dict(os.environ, {
+            "SEO_ALLOW_PRIVATE": "1", "SEO_MAX_RPS": "0",
+            "SEO_URL_CREDENTIALS": f"http://{USERINFO}@{self.origin.host}"})
+        self.env.start()
+        self.session = self.http.requests.Session()
+
+    def tearDown(self):
+        self.session.close()
+        self.env.stop()
+        self.origin.stop()
+
+    def test_a_request_with_no_pinned_address(self):
+        answer = self.http._paced_request(self.session, "GET", self.origin.base + "/",
+                                          {}, 10, {}, ())
+        self.assertEqual(answer.status_code, 200)
+        self.assertEqual(self.origin.seen, [("/", True, True)])
+
+    def test_the_request_made_again_after_a_retry_after(self):
+        answer = self.http._paced_request(self.session, "GET", self.origin.base + "/busy",
+                                          {}, 10, {}, ("127.0.0.1",))
+        self.assertEqual(answer.status_code, 429)
+        self.assertEqual(self.origin.seen, [("/busy", True, True), ("/busy", True, True)],
+                         "the site asked for a pause and the request that came back "
+                         "after it was not the one that had been sent")
 
 
 class OneSiteOneHistory(unittest.TestCase):
@@ -479,6 +581,12 @@ class RunsAlreadyFiledUnderANameCarryingUserinfo(unittest.TestCase):
         # Ends with the name without the `@` that makes it userinfo.
         self.stored("notalpha.example", "20260803T110000000Z.json",
                     "2026-08-03T11:00:00+00:00", 7, "notalpha.example")
+        # Filed under this site's older name, and holding a run of a site whose own
+        # name merely ends the same way: the stored name is compared whole.
+        self.stored("y@alpha.example", "20260803T120000000Z.json",
+                    "2026-08-03T12:00:00+00:00", 8, "notalpha.example")
+        self.stored("z@alpha.example", "20260803T130000000Z.json",
+                    "2026-08-03T13:00:00+00:00", 9, "z@notalpha.example")
         self.assertIsNone(runner.previous_run("alpha.example", ""))
         self.assertEqual(runner.run_series("alpha.example", ""), [])
 
@@ -506,6 +614,10 @@ class TheUrlIsSplitWhereItComesIn(unittest.TestCase):
 
     CASES = (
         ("http://u:p@host.example/", "http://host.example/", "u:p"),
+        ("http://u:\tp@host.example/", "http://host.example/", "u:p"),
+        ("http://u:p@ho\tst.example/", "http://ho\tst.example/", "u:p"),
+        ("http:\t//u:p@host.example/", "http:\t//host.example/", "u:p"),
+        ("http://u:p@host.example/a\r\nb", "http://host.example/a\r\nb", "u:p"),
         ("https://u:p@host.example:8443/a/b?q=1#f", "https://host.example:8443/a/b?q=1#f",
          "u:p"),
         ("https://tok3n@host.example/", "https://host.example/", "tok3n"),
