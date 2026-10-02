@@ -303,12 +303,14 @@ class ParseHtml(unittest.TestCase):
         self.assertEqual(out["meta_robots"], "noindex, follow")
         self.assertEqual(verdict("CI-004", out), FAIL)
 
-    def test_an_absent_meta_robots_passes_because_the_rule_says_so(self):
-        """The one place absence is an answer: no meta robots means indexable, and
-        the rule carries `missing_is: pass` to say that out loud."""
+    def test_an_absent_meta_robots_passes_because_the_script_says_none(self):
+        """No meta robots means indexable, and the script says so: the key is emitted
+        as `None` and the operator answers over it. Until 0.135.0 the rule also carried
+        `missing_is: pass`, which never fired on a page and passed an output that had
+        no such key at all (`tests/test_missing_is.py`)."""
         out = self.parse(PAGE)
         self.assertIsNone(out["meta_robots"])
-        self.assertEqual(registry_rule("CI-004")["assert"]["missing_is"], "pass")
+        self.assertNotIn("missing_is", registry_rule("CI-004")["assert"])
         self.assertEqual(verdict("CI-004", out), PASS)
 
     def test_a_missing_title_reads_none_and_a_missing_viewport_fails(self):
