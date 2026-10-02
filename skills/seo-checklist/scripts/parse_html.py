@@ -182,10 +182,9 @@ def parse_html(
         "title": None,
         "meta_description": None,
         "meta_robots": None,
-        # MS-031 asserts this is falsy with `missing_is: pass`, and the key was
-        # never emitted at all — so the item passed on every site, including one
-        # with a stuffed keywords tag. A rule can only be as honest as the field
-        # it reads exists.
+        # MS-031 reads the None through its falsy operator when the tag is absent.
+        # The key is always emitted, so its absence can only mean the script
+        # did not report.
         "meta_keywords": None,
         "x_robots_tag": header_lookup.get("x-robots-tag"),
         "canonical": None,

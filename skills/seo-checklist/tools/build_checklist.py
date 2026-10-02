@@ -694,7 +694,7 @@ item(3, "critical", S, "indexability_matrix.py", PAGE,
                          "no_content": "fail", "redirect": "fail",
                          "client_error": "fail", "server_error": "fail"}})
 item(4, "critical", S, "parse_html.py", HTMLARG,
-     {"path": "meta_robots", "none_matching": "noindex", "missing_is": "pass"},
+     {"path": "meta_robots", "none_matching": "noindex"},
      "Indexable pages should be set to index, follow")
 item(5, "critical", S, "indexability_matrix.py", PAGE,
      {"path": "rows.0.robots_allowed", "truthy": True},
@@ -870,7 +870,7 @@ item(30, "low", S, "parse_html.py", HTMLARG,
       "value_map": {"short": "fail", "fits": "pass", "long": "fail"}},
      "Keep meta descriptions to 100-144 characters, what the desktop snippet shows")
 item(31, "low", S, "parse_html.py", HTMLARG,
-     {"path": "meta_keywords", "falsy": True, "missing_is": "pass"},
+     {"path": "meta_keywords", "falsy": True},
      "Remove meta keywords - search engines ignore it")
 item(32, "high", S, "schema_required_props.py", PAGE,
      {"path": "summary.errors", "eq": 0},
@@ -1872,6 +1872,27 @@ def title_override_problems(items: list[dict], titles: dict[int, str],
     return problems
 
 
+def missing_is_problems(items: list[dict]) -> list[str]:
+    """Name every root absence declaration anywhere under an item's check."""
+    problems = []
+
+    def visit(node, item_id):
+        if isinstance(node, dict):
+            if "missing_is" in node and "path" in node and "." not in node["path"]:
+                problems.append(
+                    f"{item_id} declares missing_is on {node['path']!r}: a key absent "
+                    "from the root of a script's output is the script not reporting.")
+            for value in node.values():
+                visit(value, item_id)
+        elif isinstance(node, list):
+            for value in node:
+                visit(value, item_id)
+
+    for item in items:
+        visit(item.get("check"), item["id"])
+    return problems
+
+
 def retired_problems(items: list[dict]) -> list[str]:
     """Name every item whose id was retired, with the recorded reason."""
     return [f"{item['id']} is retired: {RETIRED[item['id']]}."
@@ -2274,6 +2295,11 @@ def main() -> int:
     if retired:
         for problem in retired:
             print(f"Retired id: {problem}", file=sys.stderr)
+        return 1
+    invalid_missing_is = missing_is_problems(items)
+    if invalid_missing_is:
+        for problem in invalid_missing_is:
+            print(f"Invalid missing_is: {problem}", file=sys.stderr)
         return 1
     invalid_measures = measures_problems(items)
     if invalid_measures:

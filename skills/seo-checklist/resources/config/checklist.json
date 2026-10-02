@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "486f68dd3ee7",
+  "registry_version": "90ba79b14b28",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -212,8 +212,7 @@
         "requires": "offline",
         "assert": {
           "path": "meta_robots",
-          "none_matching": "noindex",
-          "missing_is": "pass"
+          "none_matching": "noindex"
         }
       },
       "effort": "low",
@@ -857,8 +856,7 @@
         "requires": "offline",
         "assert": {
           "path": "meta_keywords",
-          "falsy": true,
-          "missing_is": "pass"
+          "falsy": true
         }
       },
       "effort": "low",

@@ -785,12 +785,18 @@ def evaluate(rule: dict, data: dict) -> tuple[bool | None, str]:
     """Return (passed, evidence). passed is None when the data needed to
     decide is absent — the caller turns that into NO_DATA, never a false PASS.
 
-    A rule may set "missing_is": "pass" | "fail" when the absence of the field
-    is itself the answer. Without it, absence stays undecided: a parser that
-    never emits a key must not be read as the site being clean."""
+    A rule may set "missing_is": "pass" | "fail" when only the last path segment
+    is absent, every segment above it resolves, and the parent is a dict that
+    could carry the key.
+    Otherwise absence stays undecided: a parser that never emits a key must not
+    be read as the site being clean."""
     value = resolve(data, rule["path"])
 
     if value is _MISSING and "missing_is" in rule:
+        parent_path, separator, _ = rule["path"].rpartition(".")
+        parent = resolve(data, parent_path) if separator else data
+        if not isinstance(parent, dict):
+            return None, _absent(rule, data)
         verdict = rule["missing_is"] == "pass"
         return verdict, f"{rule['path']} absent (treated as {rule['missing_is']})"
 
