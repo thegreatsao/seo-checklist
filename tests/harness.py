@@ -360,7 +360,7 @@ class _Site:
         context = tls_context() if tls else None
         plain_handler = None
         if plain == "redirect":
-            plain_handler = type("PlainRedirect", (_RedirectToTLS,), {"seen": []})
+            plain_handler = type("PlainRedirect", (_RedirectToTLS,), {"seen": [], "strangers": []})
         elif plain == "serve":
             plain_handler = handler
         self.server = _ThreadingServer(("127.0.0.1", 0), handler,
@@ -550,11 +550,35 @@ class FixtureSite:
         self.stop()
 
 
+# User-Agents of things that are not the audit and ask a loopback port anyway.
+#
+# Measured on 2 October 2026 (`local/gov3/who_sends_the_second_get.py`, outside git): on
+# the machine this tool is developed on, something probes newly listening loopback ports
+# every five seconds with `GET /`, `User-Agent: Workbench`, `Connection: close`. A test
+# asserting "the entry is asked once" then read two — in about one run in fifteen under
+# load, never alone, and never in CI. The audited script was traced sending exactly one
+# request each time. It is what twice refused a push with doubled request counts and
+# had no known mechanism.
+#
+# Such a request is answered and kept apart: `seen` is what the audit asked for,
+# `strangers` is what anybody else did. Named by its exact User-Agent and nothing
+# looser — a request of the audit's own that lost its User-Agent must still be counted,
+# and is.
+STRANGERS = ("Workbench",)
+
+
+def _log_of(handler) -> list:
+    """The list a request is recorded in: the audit's, or the strangers'."""
+    kind = type(handler)
+    return kind.strangers if handler.headers.get("User-Agent") in STRANGERS else kind.seen
+
+
 class _Routed(http.server.BaseHTTPRequestHandler):
     """Serve a routing table, and remember what was asked for."""
 
     routes: dict = {}
     seen: list = []
+    strangers: list = []
 
     protocol_version = "HTTP/1.1"          # so keep-alive works and nothing hangs
 
@@ -568,7 +592,7 @@ class _Routed(http.server.BaseHTTPRequestHandler):
         return None
 
     def _respond(self, body_too: bool):
-        type(self).seen.append((self.command, self.path))
+        _log_of(self).append((self.command, self.path))
         found = self._resolve()
         if found is None:
             self.send_response(404)
@@ -622,10 +646,11 @@ class _RedirectToTLS(http.server.BaseHTTPRequestHandler):
     """Redirect every plain GET or HEAD to the same path over TLS."""
 
     seen: list = []
+    strangers: list = []
     protocol_version = "HTTP/1.1"
 
     def _respond(self):
-        type(self).seen.append((self.command, self.path))
+        _log_of(self).append((self.command, self.path))
         port = self.server.server_address[1]
         self.send_response(301)
         self.send_header("Location", f"https://127.0.0.1:{port}{self.path}")
@@ -671,20 +696,20 @@ class Served:
         if plain is not None and not isinstance(plain, (str, dict)):
             raise ValueError(f"unknown plain policy: {plain!r}")
         self.routes = {path: _normalise(value) for path, value in routes.items()}
-        handler = type("Handler", (_Routed,), {"routes": self.routes, "seen": []})
+        handler = type("Handler", (_Routed,), {"routes": self.routes, "seen": [], "strangers": []})
         self.handler = handler
         self.plain_routes = None
         if plain == "redirect":
-            plain_handler = type("PlainRedirect", (_RedirectToTLS,), {"seen": []})
+            plain_handler = type("PlainRedirect", (_RedirectToTLS,), {"seen": [], "strangers": []})
         elif plain == "serve":
             self.plain_routes = self.routes
             plain_handler = type("PlainHandler", (_Routed,),
-                                 {"routes": self.plain_routes, "seen": []})
+                                 {"routes": self.plain_routes, "seen": [], "strangers": []})
         elif isinstance(plain, dict):
             self.plain_routes = {path: _normalise(value)
                                  for path, value in plain.items()}
             plain_handler = type("PlainHandler", (_Routed,),
-                                 {"routes": self.plain_routes, "seen": []})
+                                 {"routes": self.plain_routes, "seen": [], "strangers": []})
         else:
             plain_handler = None
         self.plain_handler = plain_handler
@@ -739,6 +764,11 @@ class Served:
     @property
     def requested(self) -> list:
         return list(self.handler.seen)
+
+    @property
+    def strangers(self) -> list:
+        """Requests this origin answered that the audit did not send — see `STRANGERS`."""
+        return list(self.handler.strangers)
 
     def paths(self, method: str = "GET") -> list:
         return [p for m, p in self.handler.seen if m == method]

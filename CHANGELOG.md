@@ -39,8 +39,22 @@ requirement exists to forbid.
   declarations from the registry and fails, by name, on one with no proof and on a proof
   for one that is gone.
 
+**The test harness no longer counts a request the audit did not send.** The push gate
+refused this release once on `2 != 1` — the entry asked twice — in a test that passes
+alone. Reproduced under load (about one run in ten), traced: the script sent one request
+each time and the fixture origin recorded two, the second with `User-Agent: Workbench` and
+`Connection: close`, at five-second marks in every process at once. Something on the
+development machine probes newly listening loopback ports. `harness.STRANGERS` names that
+User-Agent exactly; such a request is answered and recorded in `strangers`, not in
+`requested`, and a request with no User-Agent is still the audit's
+(`tests/test_harness_strangers.py`). 0 of 96 runs doubled afterwards. This is the
+mechanism behind the doubled request counts that refused a push on 22 September and were
+left unrecorded for want of one. The `ci.yml` steps that count requests against
+`python -m http.server` on port 8000 are not covered: that server's log has no
+User-Agent to tell the probe by.
+
 REG-8 goes partial → enforced. Specification ledger 124/20/1/0/4 → **125/19/1/0/4**. Suite
-2032 → 2047.
+2032 → 2052.
 
 ## 0.134.0 — a URL with a port no longer loses the audit on Windows
 
