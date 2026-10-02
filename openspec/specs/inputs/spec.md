@@ -410,7 +410,8 @@ carried the password in: the history folder's **name**; the stored run and the r
 the evidence file, 484 times; the crawl inventory, 58; the Markdown report, 122; the HTML
 report, 133; each of the five LLM queues; the banner and every sampled page on stderr; and
 stdout, through the `History:` line. Not in the pacing and robots files, whose names are
-digests, and not in the response cache after the run, which removes it. Redacting the
+digests. The response cache is the one place the run may hold it, and only as the site's
+own words: see the two scenarios about it below. Redacting the
 password from the payload would have closed the two files this requirement names and left
 the folder name, the crawl inventory and both streams — the argument the **Why** already
 makes about routes that cannot be enumerated. So the credential is split off at the
@@ -430,6 +431,26 @@ actually sent; `TheRecordNamesTheSiteAndSaysACredentialWasUsed` reads the record
 `WhatIsAddedToTheSecretSet` the forms redaction looks for when the *site* hands the
 credential back. The user name is swept for as well as the password: a URL may carry a
 token alone, so nothing in front of the `@` is assumed public.
+`TheUrlIsSplitWhereItComesIn` holds the split shape by shape, control characters the URL
+parser drops included; `OneSiteOneHistory` and `RunsAlreadyFiledUnderANameCarryingUserinfo`
+hold what becomes of runs an older release filed under a name carrying the credential;
+`TheResponseCacheHoldsWhatTheSiteSaidAndNothingTheRunWasGiven` sweeps the cache directory
+while the run still has it.
+
+**One mutation per door, 2 October 2026, and five doors were open.** Nineteen ways of
+undoing the repair were tried one at a time against these tests
+(`local/userinfo/probe_0136.py`). Fourteen were caught. Five left every test green: the
+request that goes out when the resolver pinned no address, and the one repeated after a
+`Retry-After`, both without the credential — every origin a test serves resolves and none
+asked for a pause, so the audits only ever left by the third way; a stored run of a site
+whose name merely *ends* like this one, read as this site's; a credential that a redirect
+writes into the URL the run ends on, which nobody typed and the entrance never saw; and
+the line telling the operator what became of the credential, printed under `--quiet`.
+`EveryWayARequestLeavesCarriesIt`, `ACredentialTheSiteWritesIntoARedirect`,
+`test_another_sites_folder_is_not` and `test_a_quiet_run_is_not_told` hold them now, each
+shown red under its own mutation. The real audit had also never been handed the wire form
+of the credential by the site, so losing the Basic token from the secret set was seen
+only by the test of the list; the fixture page hands it back now and the sweep sees it.
 
 #### Scenario: a key passed as an argument
 - **WHEN** a secret was given on the command line, so a script's argv carries it into the
@@ -467,6 +488,45 @@ token alone, so nothing in front of the `@` is assumed public.
 - **AND** a URL typed as `https://` does not give its credential to the same host over
   `http://`, while one typed as `http://` keeps it across an upgrade to `https://`
 - **AND** a URL that carries userinfo of its own is asked as written
+
+#### Scenario: every way a request leaves
+- **WHEN** the request goes out without a pinned address, or is made again because the
+  site answered with a `Retry-After`
+- **THEN** it carries the credential exactly as the first request to a pinned address does
+- **AND** so does the request for the site's `robots.txt`, which does not go through the
+  paced path at all
+
+#### Scenario: a credential the site writes into a redirect
+- **WHEN** the entry redirects to another host and the `Location` carries userinfo
+- **THEN** the URL the run ends on is split as the typed one was, and what stood in front
+  of the `@` reaches nothing the run writes or prints
+- **AND** the site is named by the host and port the redirect led to
+
+#### Scenario: a run that was asked to be quiet
+- **WHEN** the run is given `--quiet` and a URL carrying a credential
+- **THEN** the line saying where the credential is sent is not printed: it is information,
+  and `--quiet` leaves only warnings
+- **AND** the warning about an older folder whose name carries a credential is still
+  printed, because it is about a secret on disk
+
+#### Scenario: what the response cache holds while the run lasts
+- **WHEN** the run asks the site with the credential and stores the answers so that every
+  script reads the same bytes
+- **THEN** nothing the run was given is written there: not in an entry's key or file name,
+  and not in what the entry records of the request — the `Authorization` header the
+  credential became is not stored
+- **AND** what the site answered is stored as it answered it, for the life of the run,
+  even where the site wrote the credential back into its own page: an audit that judged a
+  rewritten body would be judging a document the site did not serve
+- **AND** the directory is removed when the run ends
+
+#### Scenario: a run that was killed
+- **WHEN** the run is ended from outside, so that nothing it registered for its exit runs
+- **THEN** its response cache directory is still on disk, and a page in which the site
+  echoed the credential is in it
+- **AND** `safe_http.CACHE_TTL` keeps such an entry from answering anything, and nothing
+  removes it: this requirement does not hold for that directory, and the residue is named
+  here so that it is not rediscovered as a leak nobody knew of
 
 #### Scenario: the site hands the credential back
 - **WHEN** a page links to the site with the credential baked into the address, or echoes

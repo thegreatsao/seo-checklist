@@ -10,6 +10,49 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.136.0 — a credential typed into the URL is used and never written
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves on a site audited under a
+bare URL. A site audited as `https://user:password@host/` is filed, named and reported by
+its host and port from this release on.
+
+`http://user:password@host/` is how a staging site behind Basic authentication is audited,
+and it worked. Measured on the good fixture audited that way (`local/userinfo/measure.py`):
+the password was in the history folder's **name**, in the stored run and the results, in
+the evidence file 484 times, in the crawl inventory, in both reports and all five queues,
+and on both streams. `openspec/specs/inputs/` INP-7 said every secret value is removed
+from everything the run writes, and its reader derived the secret set from environment
+variables — the URL was a route nobody had named.
+
+* **The credential leaves the URL where the URL comes in** (`split_userinfo`) and travels
+  beside it, in `SEO_URL_CREDENTIALS`, because the evidence scripts are separate processes.
+  Every later step is handed a URL that never carried it. The runner sets the variable and
+  clears it: a value inherited from the shell does not authenticate a run whose URL carries
+  nothing.
+* **It is presented to the site it was typed for, and to no other origin**
+  (`safe_http.url_credentials`): same host, same port as written, and never from `https`
+  down to `http`. A link the site writes to itself in full — which used to go out bare and
+  come back 401 — is asked with it; so is `robots.txt`, which a protected origin answered
+  401 and the tool read as "no rules".
+* **The site is its host and port.** Runs an older release filed under a folder whose name
+  carries the credential are still read and compared, left exactly where they are, and the
+  operator is told once that the folder is there — without being shown its name.
+* **What the site hands back is redacted in the forms it can take**: as typed,
+  percent-decoded, and as the Basic token. Not the bare password — a short one would be
+  replaced inside every word of the record.
+* **The record says that a credential came with the URL** (`url_credentials`), since it
+  cannot say which.
+* **The response cache holds what the site answered, unaltered, for the life of the run**,
+  and nothing the run was given. A run killed outright leaves that directory behind; INP-7
+  names the residue, and removing it is the next release.
+
+**One mutation per door, and five were open.** Nineteen ways of undoing the repair were
+tried one at a time (`local/userinfo/probe_0136.py`). Five left the suite green — the
+request without a pinned address, the request repeated after `Retry-After`, a stored run of
+a site whose name ends the same way, a credential written into a redirect, and the
+credential line under `--quiet`. Each has its test now and each test is shown red under
+its mutation.
+
 ## 0.135.0 — a script that reported nothing is no longer read as a clean site
 
 Registry version: `486f68dd3ee7` → `90ba79b14b28`. No declared verdict moves; an audit in which
