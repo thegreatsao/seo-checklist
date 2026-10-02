@@ -10,6 +10,38 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.135.0 — a script that reported nothing is no longer read as a clean site
+
+Registry version: `486f68dd3ee7` → `90ba79b14b28`. No declared verdict moves; an audit in which
+a script failed to report can.
+
+`missing_is: pass` lets a rule say that the absence of a field is itself the answer.
+`openspec/specs/registry/` REG-8 permits it "only where" that is true, and nothing read
+whether it was. Measured over the three declarations the registry carried
+(`local/gov3/measure_missing_is.py`): **each of them passed on an empty output** — a script
+that reported nothing was read as the site being clean, which is the sentence the
+requirement exists to forbid.
+
+* **CI-004 *Allow Indexing via Meta Robots* and MS-031 *Do Not Use Meta Keywords* never
+  needed the declaration.** `parse_html.py` emits both keys as `None` when the tag is
+  absent and the operator answers over that; the declaration spoke only when the key itself
+  was gone. Both rules drop it. A page without the tag passes as before; an output without
+  the key is `NO_DATA`.
+* **The declaration is honoured only under something present.** GO-143 reads
+  `incomplete_nodes_by_type.WebSite`, a map with one entry per schema type on the page,
+  where an absent entry really is "no such node" — and it passed just the same when the
+  map was not there. `evaluate` now takes the declared answer only when every segment above
+  the last resolves to something that could have carried the key; otherwise the item is
+  undecided.
+* **The build refuses the declaration at the root of an output**, on `assert`, `warn` and
+  `applies_when` alike: a key missing from the root is the script not reporting.
+* **Every declaration is run against its script.** `tests/test_missing_is.py` derives the
+  declarations from the registry and fails, by name, on one with no proof and on a proof
+  for one that is gone.
+
+REG-8 goes partial → enforced. Specification ledger 124/20/1/0/4 → **125/19/1/0/4**. Suite
+2032 → 2047.
+
 ## 0.134.0 — a URL with a port no longer loses the audit on Windows
 
 Registry version: unchanged at `486f68dd3ee7`. No verdict and no score moves.

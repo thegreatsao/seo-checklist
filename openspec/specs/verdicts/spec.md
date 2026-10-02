@@ -150,7 +150,10 @@ collapsed into one:
 * **The data field is missing.** The audit is undecided unless the item declares
   `missing_is: pass | fail`. A parser that never emits a key says nothing about whether
   the site is clean. `missing_is` is the narrow override for cases where absence of the
-  field is itself the answer; CI-004 and MS-031 use it.
+  field is itself the answer. It is honoured only under a part of the output that is
+  present and never at the root of one (`registry` REG-8); GO-143 uses it, over a map
+  with one entry per schema type on the page. CI-004 and MS-031 carried it until
+  0.135.0 and never needed it: their script reports an absent tag as `None`.
 * **The subject entity is absent.** When the entity whose quality the item judges may
   legitimately not exist, the result is `N/A`, with evidence naming what was sought and
   not found. The item must declare that boundary with an applicability condition. A
@@ -247,7 +250,8 @@ here.
 - **AND** silence from a parser is not evidence that the site is clean
 
 #### Scenario: the field is absent and its absence is the answer
-- **WHEN** the item declares `missing_is: pass` or `missing_is: fail`
+- **WHEN** the item declares `missing_is: pass` or `missing_is: fail`, and everything
+  above the absent field is present
 - **THEN** the declared verdict is taken, because the item said in advance what an
   absent field means
 

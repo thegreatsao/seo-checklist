@@ -112,12 +112,11 @@
         "requires": "offline",
         "assert": {
           "path": "meta_robots",
-          "none_matching": "noindex",
-          "missing_is": "pass"
+          "none_matching": "noindex"
         }
       },
       "verdict": "answers",
-      "reading": "`meta_robots` is the page's robots meta content; the rule passes when no directive says noindex and when the tag is absent.",
+      "reading": "`meta_robots` is the page's robots meta content, reported as `None` when the page has no such tag; the rule passes when no directive says noindex, a page without the tag included, and is undecided when the script's output has no `meta_robots` key at all.",
       "shapes": {
         "external": "The word is *Indexing*, but the title's subject is the meta tag, which the page itself carries; no search engine data is needed."
       }
@@ -631,12 +630,11 @@
         "requires": "offline",
         "assert": {
           "path": "meta_keywords",
-          "falsy": true,
-          "missing_is": "pass"
+          "falsy": true
         }
       },
       "verdict": "answers",
-      "reading": "`meta_keywords` absent or empty.",
+      "reading": "`meta_keywords` is the tag's content, `None` when the page has no such tag; the rule passes on `None` or an empty value and is undecided when the output has no `meta_keywords` key at all.",
       "shapes": {}
     },
     "MS-032": {

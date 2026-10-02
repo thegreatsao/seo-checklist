@@ -404,25 +404,46 @@ mention in a comment.
 
 A rule that finds no value at its path SHALL be undecided. It MUST NOT be read as a
 verdict unless the item declares otherwise — `missing_is: pass | fail` — and that
-declaration is permitted only where the absence of the field is itself the answer.
+declaration is permitted only where the absence of the field is itself the answer:
+it MUST be made on a path of two or more segments, it SHALL be honoured only when
+every segment above the last is present and could have carried the field, and each
+declaration MUST be run against the script whose output it reads.
 
 **Why:** a parser that never emits a key must not be read as the site being clean. This
 is the field-level half of VRD-3, and the declaration is what separates "the site has no
 such thing" from "the checker did not look".
-**Reader:** partial. `test_a_rule_does_more_than_name_a_path` forbids a bare path, and
-the evaluator's tri-state is well covered in the runner tests. Nothing audits whether a
-given `missing_is` is *justified* for its item.
+**Reader:** enforced. `tests/test_missing_is.py`: the evaluator takes the declared answer
+only under a present parent and is undecided when a segment above the last is absent or
+could not carry the key; the build refuses the declaration on a path of one segment, in
+`assert`, `warn` and `applies_when` alike; and the declarations are derived from the
+registry and held against a table of proofs in both directions, each proof running the
+script on a page with the subject, a page without it, and an output that does not report.
+`test_a_rule_does_more_than_name_a_path` forbids a bare path, as before. Measured before
+0.135.0, all three declarations the registry carried passed on an empty output, and two of
+them — CI-004 and MS-031 — never fired on a real page, because their script reports an
+absent tag as `None`.
 
 #### Scenario: the checker never emitted the key
 - **WHEN** a rule resolves its path to nothing and the item declares no `missing_is`
 - **THEN** the item is undecided, and the parser's silence is not read as the site
   being clean
 
-#### Scenario: absence declared a pass without warrant
-- **WHEN** an item declares `missing_is: pass` for a field whose absence means the
-  checker did not look rather than that the site is clean
-- **THEN** the requirement is violated, and nothing in the tree says so: the
-  declaration's presence is read, its justification is not
+#### Scenario: the part of the output that would carry the field is not there
+- **WHEN** an item declares `missing_is` and a segment above the last one is absent, or
+  is not something a key can sit in
+- **THEN** the item is undecided, whatever it declared: the script did not report, and
+  that is not the site having none
+
+#### Scenario: absence declared at the root of an output
+- **WHEN** an item declares `missing_is` on a path of one segment
+- **THEN** the build refuses it, wherever the rule sits: nothing above that key exists
+  whose presence could show the script looked
+
+#### Scenario: a declaration nobody ran
+- **WHEN** an item declares `missing_is` and no test runs its script with the subject
+  present, with it absent, and with nothing reported
+- **THEN** the build fails and names the item; so does a proof kept for a declaration
+  the registry no longer makes
 
 #### Scenario: a rule that only names a path
 - **WHEN** a rule carries a path and no operator
@@ -1148,14 +1169,14 @@ five; REG-7 now says what a rule is, so the count above is taken over all three.
 
 | | requirements |
 |---|---|
-| **enforced** | REG-2, REG-3, REG-4, REG-5, REG-7, REG-9, REG-10, REG-11, REG-12, REG-13 |
-| **partial** | REG-1, REG-6, REG-8 |
+| **enforced** | REG-2, REG-3, REG-4, REG-5, REG-7, REG-8, REG-9, REG-10, REG-11, REG-12, REG-13 |
+| **partial** | REG-1, REG-6 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-R2 enforced; INV-R1, INV-R3 and INV-R4 partial.
 
-**Ten enforced, three partial, none unread, none opposed, of thirteen.**
+**Eleven enforced, two partial, none unread, none opposed, of thirteen.**
 
 `opposed` is a fourth category this document introduced and its column is empty now.
 REG-9 earned it: a fixed-membership test pinning the two existing applicability

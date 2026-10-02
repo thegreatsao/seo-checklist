@@ -579,7 +579,8 @@ status was carrying four sentences at once, and thirteen fixable items on a meas
 run were reading as limits of the tool.
 
 Absence of a field is `NO_DATA`, not `PASS`. An item only passes on absence when
-its rule sets `missing_is: pass` — a parser that never emits a key must not be
+its rule sets `missing_is: pass` and the part of the output that would carry the
+field is there — a parser that never emits a key must not be
 read as the site being clean.
 
 ## Politeness, and what it does not cover
