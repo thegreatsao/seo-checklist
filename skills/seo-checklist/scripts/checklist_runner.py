@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import atexit
+import base64
 import hashlib
 import ipaddress
 import json
@@ -31,7 +32,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import NamedTuple
-from urllib.parse import urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlparse
 
 
 # Not every caller is the runner. These scripts print `ensure_ascii=False` JSON, and
@@ -437,6 +438,24 @@ def page_guard(html: str) -> tuple[str, str]:
         return "soft_404", (f"soft 404: a 200 response titled "
                             f"{raw_title.strip()[:60]!r}")
     return "", ""
+
+
+def split_userinfo(url: str) -> tuple[str, str]:
+    """Remove only the authority's userinfo, preserving the rest as typed."""
+    try:
+        netloc = urlparse(url).netloc
+    except ValueError:
+        return url, ""
+    if "@" not in netloc:
+        return url, ""
+    userinfo = netloc.rsplit("@", 1)[0]
+    # Map parser-stripped controls back to positions in the original string.
+    positions = [i for i, char in enumerate(url) if char not in "\t\r\n"]
+    parsed_text = "".join(url[i] for i in positions)
+    authority = parsed_text.index("//") + 2
+    start = positions[authority]
+    end = positions[authority + len(userinfo)] + 1
+    return url[:start] + url[end:], userinfo
 
 
 def audit_target(requested: str, final_url: str) -> str:
@@ -1839,6 +1858,18 @@ def artifact_secrets(ctx: dict) -> tuple[str, ...]:
                     if (value := os.environ.get(key))))
 
 
+def url_credential_secrets(userinfo: str) -> tuple[str, ...]:
+    """Forms of URL credentials a site may echo into shared artifacts."""
+    if not userinfo:
+        return ()
+    user, colon, password = userinfo.partition(":")
+    user, password = unquote(user), unquote(password)
+    decoded = user + (":" + password if colon else "") + "@"
+    basic = base64.b64encode(f"{user}:{password}".encode()).decode()
+    # redact replaces substrings: a bare short password would alter every word.
+    return tuple(dict.fromkeys((userinfo + "@", decoded, basic)))
+
+
 # The gates below are read off this table, so a new `requires` value is decided
 # here or tests/test_runner_sets.py refuses it.
 REQUIREMENT_GATES = {
@@ -2001,16 +2032,8 @@ def history_folder(domain: str) -> str:
 
 
 def history_dirs(domain: str) -> list[str]:
-    """Every directory holding this site's stored runs: the current one, then the
-    verbatim-netloc one a release before 0.134.0 wrote wherever the name was legal.
-
-    Read, never written and never moved: `.seo-runs/localhost:3000/` on Linux keeps
-    its files and they stay part of the arc, while new runs go to
-    `.seo-runs/localhost_3000/`.
-    The verbatim name is read if and only if it is nonempty and the absolute
-    joined path has the absolute history root as its parent, a direct child,
-    and its last component is exactly the verbatim name.
-    A property list was tried first but missed a drive-relative name.
+    """Read the current and legal verbatim folders, then credential-named children.
+    Older folders are read in place and are never written to or moved.
     """
     root = os.path.join(os.getcwd(), ".seo-runs")
     names = dict.fromkeys((history_folder(domain),))
@@ -2018,6 +2041,15 @@ def history_dirs(domain: str) -> list[str]:
     if (domain and os.path.dirname(joined) == os.path.abspath(root)
             and os.path.basename(joined) == domain):
         names[domain] = None
+    tails = (history_folder("x@" + domain)[1:], "@" + domain)
+    try:
+        children = sorted(os.listdir(root))
+    except OSError:
+        children = []
+    for name in children:
+        if any(name.endswith(tail) and len(name) > len(tail) for tail in tails):
+            if os.path.isdir(os.path.join(root, name)):
+                names[name] = None
     return [d for d in (os.path.join(root, name) for name in names if name)
             if os.path.isdir(d)]
 
@@ -2071,7 +2103,7 @@ def stored_run_matches_domain(payload: dict, domain: str) -> bool:
     # The folder name is not reversible; the payload identifies the audited site.
     stored_domain = payload.get("domain")
     return not (isinstance(stored_domain, str) and stored_domain
-                and stored_domain != domain)
+                and stored_domain.rsplit("@", 1)[-1] != domain)
 
 
 def previous_run(domain: str, exclude: str) -> dict | None:
@@ -3277,6 +3309,15 @@ def print_report(payload, a, hist, crawl_path, diff_note) -> None:
 
 def main() -> int:
     a = build_parser().parse_args()
+    a.url, userinfo = split_userinfo(a.url)
+    from lib.safe_http import URL_CREDENTIALS_VAR
+    # The scripts are separate processes, so the credential travels beside the URL.
+    if userinfo:
+        parsed = urlparse(a.url)
+        scheme, hostport = parsed.scheme.lower(), parsed.netloc
+        os.environ[URL_CREDENTIALS_VAR] = f"{scheme}://{userinfo}@{hostport}"
+    else:
+        os.environ.pop(URL_CREDENTIALS_VAR, None)
 
     # Passed to the evidence scripts through the environment, because they are
     # separate processes and the pacing they share is keyed on it.
@@ -3317,6 +3358,9 @@ def main() -> int:
 
     if not a.quiet:
         print(f"Checklist audit: {a.url}", file=sys.stderr)
+        if userinfo:
+            print(f"  the credential from the URL is sent to {scheme}://{hostport} "
+                  f"only and is not recorded", file=sys.stderr)
         print(f"  mode: {mode} — {MODE_HELP[mode]}", file=sys.stderr)
         print(f"  GSC: {gsc_path or 'no credentials found'}", file=sys.stderr)
         print(f"  registry: {len(items)} items "
@@ -3375,6 +3419,7 @@ def main() -> int:
         # service account cannot read. A same-host redirect keeps the requested
         # URL, so redirect_checker.py can still see the hop it is there to report.
         audit_url = audit_target(a.url, fetched.final_url)
+        audit_url, _ = split_userinfo(audit_url)
         if audit_url != a.url:
             print(f"  redirected to another host: {a.url} -> {audit_url}\n"
                   f"  auditing the destination; Search Console property and the "
@@ -3403,6 +3448,15 @@ def main() -> int:
               file=sys.stderr)
 
     domain = urlparse(audit_url).netloc or "unknown"
+    if not a.no_history:
+        for folder in history_dirs(domain):
+            name = os.path.basename(folder)
+            if "@" in name:
+                tail = name.rsplit("@", 1)[-1]
+                print(f"  history: older runs of this site are in .seo-runs/***@{tail}, "
+                      f"a folder whose name carries a credential from a URL. They are "
+                      f"read and left where they are; rename or remove that folder "
+                      f"before sharing .seo-runs/.", file=sys.stderr)
     # Whether the audited host is one only this machine can reach. Keyed on where
     # it resolves, not on whether --allow-private was passed: the flag permits a
     # private address, it does not make a public site private, and treating the two
@@ -3600,6 +3654,12 @@ def main() -> int:
             print(f"  crawl failed: {why}\n"
                   f"  the site-wide checks report NO_DATA", file=sys.stderr)
         else:
+            credential_secrets = url_credential_secrets(userinfo)
+            if credential_secrets:
+                with open(crawl_path, encoding="utf-8") as f:
+                    inventory = redact(json.load(f), credential_secrets)
+                with open(crawl_path, "w", encoding="utf-8") as f:
+                    json.dump(inventory, f, ensure_ascii=False)
             ctx["inventory_json"] = crawl_path
             # Read back for `--sample`: the crawl already knows which URLs exist and
             # which of them are pages, so discovering them again is a request the
@@ -3619,7 +3679,7 @@ def main() -> int:
                          if s.get("truncated") else ""), file=sys.stderr)
 
     opt_in = opt_in_flags(mode, a.verify_bots, a.brand)
-    secrets = artifact_secrets(ctx)
+    secrets = artifact_secrets(ctx) + url_credential_secrets(userinfo)
     has_safe_browsing = any(os.environ.get(key) for key in SAFE_BROWSING_ENV_KEYS)
     prof_args = {k: list(v) for k, v in (profile.get("script_args") or {}).items()}
     plan, skipped = build_plan(items, ctx, caps, mode, preskip, bool(gsc_path),
@@ -3759,6 +3819,7 @@ def main() -> int:
         # staging box and an audit of the live site produce the same-shaped file,
         # and only one of them describes what a visitor or a crawler gets.
         "allow_private": bool(a.allow_private),
+        "url_credentials": bool(userinfo),
         "verify_bots": bool(a.verify_bots),
         # Whether the page-level items all read the same bytes. With the cache off
         # each script fetches for itself, so on a site that changes mid-audit two

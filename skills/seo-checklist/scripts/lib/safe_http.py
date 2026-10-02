@@ -15,7 +15,7 @@ import tempfile
 import time
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
-from urllib.parse import urljoin, urlparse, urlunparse
+from urllib.parse import unquote, urljoin, urlparse, urlunparse
 
 try:
     from lib import robots_rules
@@ -937,6 +937,7 @@ def _consume_capped(response, max_response_bytes: int | None):
 #   * **GET and HEAD only.** Never POST: `indexnow_checker` submits URLs, and
 #     replaying a submission from disk would report something that did not happen.
 CACHE_DIR_VAR = "SEO_HTTP_CACHE"
+URL_CREDENTIALS_VAR = "SEO_URL_CREDENTIALS"
 # basis: convention — 15 minutes, and it is belt to the per-run directory's braces: the
 #  directory is deleted when the run ends, so nothing should ever be this old. A run
 #  killed with SIGKILL leaves one behind, and an entry from it must not be able to
@@ -950,6 +951,29 @@ CACHEABLE_METHODS = ("GET", "HEAD")
 # expecting the old shape. A mismatch is a miss, not an error.
 CACHE_ENTRY_VERSION = 1
 _CACHE_POLL = 0.05
+
+
+def url_credentials(url: str) -> tuple[str, str] | None:
+    """Return the inherited credential only for its host, written port and scheme."""
+    try:
+        typed = urlparse(os.environ.get(URL_CREDENTIALS_VAR, ""))
+        asked = urlparse(url)
+        if "@" not in typed.netloc or "@" in asked.netloc:
+            return None
+        if not typed.hostname or not asked.hostname:
+            return None
+        if typed.hostname.lower() != asked.hostname.lower() or typed.port != asked.port:
+            return None
+        if not (typed.scheme == asked.scheme
+                or (typed.scheme == "http" and asked.scheme == "https")):
+            return None
+        userinfo = typed.netloc.rsplit("@", 1)[0]
+        if not userinfo:
+            return None
+        user, _, password = userinfo.partition(":")
+        return unquote(user), unquote(password)
+    except (ValueError, TypeError, AttributeError):
+        return None
 
 
 def cache_dir() -> str:
@@ -1450,6 +1474,10 @@ def _paced_request(requester, method, url, headers, timeout, kwargs,
     hour-long Retry-After inside an audit — are both worse than letting the item
     report NO_DATA with the reason attached.
     """
+    credential = url_credentials(url)
+    request_auth = {}
+    if credential is not None and "auth" not in kwargs and requester.auth is None:
+        request_auth["auth"] = credential
     rate = _rate_for(crawl_delay)
     pace(urlparse(url).hostname or "", rate)
     request_headers = CaseInsensitiveDict(headers)
@@ -1461,7 +1489,7 @@ def _paced_request(requester, method, url, headers, timeout, kwargs,
         # changing only the error prose here moved BL-083's declared verdict.
         response = requester.request(
             method, url, headers=request_headers, timeout=timeout,
-            allow_redirects=False, stream=True, **kwargs)
+            allow_redirects=False, stream=True, **kwargs, **request_auth)
     else:
         response = None
         last_error = None
@@ -1472,7 +1500,7 @@ def _paced_request(requester, method, url, headers, timeout, kwargs,
             try:
                 response = requester.request(
                     method, url, headers=request_headers, timeout=timeout,
-                    allow_redirects=False, stream=True, **kwargs)
+                    allow_redirects=False, stream=True, **kwargs, **request_auth)
                 break
             except requests.exceptions.ConnectionError as exc:
                 last_error = exc
@@ -1485,7 +1513,7 @@ def _paced_request(requester, method, url, headers, timeout, kwargs,
         time.sleep(wait)
         pace(urlparse(url).hostname or "", rate)
         response = requester.request(method, url, headers=request_headers, timeout=timeout,
-                                     allow_redirects=False, stream=True, **kwargs)
+                                     allow_redirects=False, stream=True, **kwargs, **request_auth)
     return response
 
 
