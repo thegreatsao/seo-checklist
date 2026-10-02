@@ -88,7 +88,10 @@ class _Origin:
 
             def _answer(self, body_too):
                 given = self.headers.get("Authorization")
-                seen.append((self.path, given is not None, given == expect))
+                # A local port probe is answered and not counted, as in the harness
+                # (`harness.STRANGERS`): it carries no credential and is not the audit.
+                if self.headers.get("User-Agent") not in harness.STRANGERS:
+                    seen.append((self.path, given is not None, given == expect))
                 status, headers, body = 404, {}, "not found"
                 if protected and given != expect:
                     status, headers, body = (
@@ -545,6 +548,66 @@ class WhatIsAddedToTheSecretSet(unittest.TestCase):
 
     def test_nothing_typed_nothing_added(self):
         self.assertEqual(tuple(runner.url_credential_secrets("")), ())
+
+
+class TheResponseCacheHoldsWhatTheSiteSaidAndNothingTheRunWasGiven(unittest.TestCase):
+    """The response cache is a directory of files, written during the run and removed at
+    its end. It exists so that every script reads the same bytes, and those bytes are the
+    site's: a page that writes the credential into its own links is stored as it answered,
+    for the life of the run, and is not this requirement's to rewrite.
+
+    What the run was *given* is another matter. The credential must not become part of a
+    cache key, of the request the entry records, or of anything else the cache writes for
+    a site that never said it — found by the executor of 0.136.0's first spec, which
+    stopped on it. The origin here answers a page that does not mention the credential,
+    so every hit in the cache directory is the run's doing."""
+
+    def setUp(self):
+        self.http = harness.safe_http()
+        self.origin = _Origin({"/": (200, {}, html("A quiet page")),
+                               "/moved": (301, {"Location": "/"}, "")}, protected=True)
+        self.cache = tempfile.mkdtemp(prefix="seo-cred-cache-")
+        self.env = mock.patch.dict(os.environ, {
+            "SEO_ALLOW_PRIVATE": "1", "SEO_MAX_RPS": "0",
+            self.http.CACHE_DIR_VAR: self.cache,
+            "SEO_URL_CREDENTIALS": f"http://{USERINFO}@{self.origin.host}"})
+        self.env.start()
+
+    def tearDown(self):
+        self.env.stop()
+        self.origin.stop()
+        shutil.rmtree(self.cache, ignore_errors=True)
+
+    def stored(self) -> dict:
+        found = {}
+        for folder, _dirs, files in os.walk(self.cache):
+            for name in files:
+                path = os.path.join(folder, name)
+                with open(path, "rb") as stream:
+                    found[path] = stream.read().decode("utf-8", "replace")
+        return found
+
+    def test_the_request_was_authenticated_stored_and_answered_again_from_the_store(self):
+        first = self.http.safe_get(self.origin.base + "/")
+        self.assertEqual(first.status_code, 200)
+        again = self.http.safe_get(self.origin.base + "/")
+        self.assertEqual(again.status_code, 200)
+        self.assertEqual(again.text, first.text)
+        self.assertEqual([path for path, _carried, _right in self.origin.seen
+                          if path == "/"], ["/"], "the second read went out again")
+        self.assertTrue(self.stored(), "nothing was stored, so the sweep below reads nothing")
+
+    def test_nothing_in_the_cache_directory_carries_the_credential(self):
+        self.assertEqual(self.http.safe_get(self.origin.base + "/").status_code, 200)
+        self.assertEqual(self.http.safe_get(self.origin.base + "/moved").status_code, 200)
+        self.assertEqual(self.http.safe_head(self.origin.base + "/").status_code, 200)
+        stored = self.stored()
+        self.assertTrue(stored)
+        for path, content in stored.items():
+            for what, needle in NEEDLES.items():
+                with self.subTest(file=os.path.basename(path), needle=what):
+                    self.assertNotIn(needle, path)
+                    self.assertNotIn(needle, content)
 
 
 class WhichRequestsCarryTheCredential(unittest.TestCase):
