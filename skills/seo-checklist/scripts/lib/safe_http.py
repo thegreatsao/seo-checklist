@@ -468,7 +468,11 @@ def _fetch_robots(origin: str) -> str:
         headers = CaseInsensitiveDict(default_headers())
         headers.setdefault("Host", _host_header(url))
         response = None
+        credential = url_credentials(url)
         with _owned_session() as requester:
+            request_auth = {}
+            if credential is not None and requester.auth is None:
+                request_auth["auth"] = credential
             for address in pinned_addresses:
                 adapter = _PinnedAdapter(url, address)
                 requester.mount(f"{urlparse(url).scheme}://", adapter)
@@ -485,6 +489,7 @@ def _fetch_robots(origin: str) -> str:
                         timeout=10,
                         allow_redirects=False,
                         verify=True,
+                        **request_auth,
                     )
                     break
                 except requests.exceptions.ConnectionError:
