@@ -292,7 +292,7 @@ no longer reversible, so the folder alone no longer says whose runs it holds: a 
 run that records another `domain` is not this site's history
 (`test_a_stored_run_that_names_another_site_is_not_this_sites_history`).
 
-**A credential in front of the host is not part of the site, since 0.135.0.** The folder
+**A credential in front of the host is not part of the site, since 0.136.0.** The folder
 was derived from the whole netloc, and a netloc includes userinfo: a run under
 `http://user:password@host:81/` was filed in `.seo-runs/user_password@host_81/` — the
 password in a directory name (`openspec/specs/inputs/` INP-7 owns that half) and the
