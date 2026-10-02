@@ -12,9 +12,21 @@
 set -euo pipefail
 
 root="$(git rev-parse --show-toplevel)"
-py="$root/.venv/Scripts/python.exe"
-[ -x "$py" ] || py="$root/.venv/bin/python"
-[ -x "$py" ] || py="$(command -v python3 || command -v python)"
+# A linked worktree has no virtualenv of its own: the checkout it was added from has
+# the one the suite needs. This tree's own is preferred when it exists. Until 0.137.0
+# only this tree was looked in, and a push from a worktree went on to whatever
+# `python` the PATH held — on Windows, a stub that is not an interpreter.
+main="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
+py=""
+for home in "$root" "$main"; do
+  for candidate in "$home/.venv/Scripts/python.exe" "$home/.venv/bin/python"; do
+    if [ -x "$candidate" ]; then
+      py="$candidate"
+      break 2
+    fi
+  done
+done
+[ -n "$py" ] || py="$(command -v python3 || command -v python || true)"
 
 if [ -z "${py:-}" ]; then
   echo "pre-push: no interpreter found; run the checks yourself or --no-verify" >&2

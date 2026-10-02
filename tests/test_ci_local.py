@@ -20,7 +20,6 @@ about the last commit.
 from __future__ import annotations
 
 import os
-import subprocess
 import sys
 import unittest
 
@@ -71,15 +70,14 @@ class TheStampNamesTheTreeItVerified(unittest.TestCase):
         """The cost of reading the working tree is a throwaway index, and it has to
         stay throwaway: a gate that stages somebody's work as a side effect of checking
         it would be traded away the first time it surprised them."""
-        before = subprocess.run(
-            [ci_local.resolve("git"), "-C", ROOT, "write-tree"],
-            capture_output=True, text=True, close_fds=False).stdout.strip()
+        before = spawn(
+            [ci_local.resolve("git"), "-C", ROOT, "write-tree"]).stdout.strip()
         ci_local.tree_hash()
-        after = subprocess.run(
-            [ci_local.resolve("git"), "-C", ROOT, "write-tree"],
-            capture_output=True, text=True, close_fds=False).stdout.strip()
+        after = spawn(
+            [ci_local.resolve("git"), "-C", ROOT, "write-tree"]).stdout.strip()
         self.assertEqual(before, after, "the real index moved while the hash was taken")
-        self.assertFalse(os.path.exists(os.path.join(ROOT, ".git", "ci-local-index")),
+        self.assertFalse(os.path.exists(os.path.join(
+            ci_local.git_directory(ROOT), "ci-local-index")),
                          "the scratch index was left behind")
 
 

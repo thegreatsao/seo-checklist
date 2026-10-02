@@ -10,6 +10,49 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.137.0 — the gates work in a git worktree
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit does
+changes. This release is about the tools that guard a release.
+
+In a linked worktree `.git` is a file that names the real directory, and the tree has no
+virtualenv of its own. Four places assumed otherwise:
+
+* **The two history gates refused a history they could read.** `tests/id_history.py`
+  (REG-4, an id is never re-used) and `tools/audit_declaration_revisions.py` (DEC-8, no
+  declaration or fixture moves without a recorded decision) tested
+  `os.path.isdir(".git")` and answered "is not a git checkout". Five tests were red in
+  every worktree.
+* **The local gate could not take the tree's hash or keep its stamp.** `tools/ci_local.py`
+  built both paths as `<root>/.git/…`, so a push from a worktree could not be verified at
+  all, and a sixth test was red.
+
+* **The hook could not find an interpreter.** `.githooks/pre-push` looked for `.venv` in
+  the tree being pushed; a linked worktree has none, so it went on to whatever `python`
+  the PATH held. Found by the first push of this very release, which died there with the
+  three repairs above already green: the hook now looks in the checkout the worktree was
+  added from as well, and prefers the tree's own when it has one.
+
+Found on 2 October 2026 by running the whole suite in a worktree for the first time:
+`Ran 2091 tests … FAILED (failures=3, errors=3)`, all six of them this. The releases are
+now prepared in worktrees, so the gates were blind exactly where the releases are made.
+
+Whether a directory is a checkout, and where its private files live, is now git's answer:
+`rev-parse --is-inside-work-tree` and `rev-parse --git-dir`, through one helper
+(`audit_declaration_revisions.git_directory`). The stamp and the scratch index live in the
+directory git names for *this* working tree — `.git/worktrees/<name>/` in a linked one —
+so two worktrees whose content differs never share a stamp. The refusals keep their words:
+a shallow clone still fails naming `fetch-depth: 0`, a directory with no repository is
+still "not a git checkout", and a bare repository is refused as well. The stamp's place is
+asked when it is needed rather than when the module is imported, so reading the gate
+starts no process and a tree with no checkout around it yields no hash instead of an
+exception.
+
+`tests/test_git_worktrees.py` builds a repository, a linked worktree, a shallow clone, a
+bare repository and a plain directory and holds each answer; five mutations — a plain
+directory admitted, `<root>/.git` assumed again, either shallow refusal dropped, the
+scratch index left behind — are each caught by it.
+
 ## 0.136.0 — a credential typed into the URL is used and never written
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves on a site audited under a

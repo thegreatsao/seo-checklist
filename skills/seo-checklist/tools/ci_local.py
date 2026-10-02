@@ -34,13 +34,24 @@ import subprocess
 import sys
 import time
 
+from audit_declaration_revisions import Unreadable, git_directory
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))))
 WORKFLOW = os.path.join(ROOT, ".github", "workflows", "ci.yml")
-# Written on success, read to make the second push of an unchanged tree free. It
-# lives in .git/ so it never travels: a stamp that can cross machines is a claim
-# about a tree this machine never built.
-STAMP = os.path.join(ROOT, ".git", "ci-local-verified")
+
+
+def stamp_path() -> str:
+    """Where the stamp of a verified tree is kept.
+
+    Written on success, read to make the second push of an unchanged tree free. It
+    lives in the directory git itself names for this working tree — `.git/` in a plain
+    checkout, `.git/worktrees/<name>/` in a linked one, where `.git` is a file — so it
+    never travels: a stamp that can cross machines, or be shared by two worktrees
+    whose content differs, is a claim about a tree this one never built. Asked when
+    it is needed and not at import, so that reading this module starts no process.
+    """
+    return os.path.join(git_directory(ROOT), "ci-local-verified")
 
 
 # This file prints em dashes and the step names CI wrote, and a Windows console
@@ -127,7 +138,10 @@ def tree_hash() -> str | None:
     not change the bytes the hash is taken over.
     """
     git = resolve("git")
-    scratch = os.path.join(ROOT, ".git", "ci-local-index")
+    try:
+        scratch = os.path.join(git_directory(ROOT), "ci-local-index")
+    except Unreadable:
+        return None
     env = dict(os.environ, GIT_INDEX_FILE=scratch)
     try:
         if os.path.exists(scratch):
@@ -230,8 +244,8 @@ def main() -> int:
         return 0
 
     here = tree_hash()
-    if here and not a.no_cache and os.path.exists(STAMP):
-        with open(STAMP, encoding="utf-8") as f:
+    if here and not a.no_cache and os.path.exists(stamp_path()):
+        with open(stamp_path(), encoding="utf-8") as f:
             if f.read().strip() == f"{','.join(wanted)} {here}":
                 print(f"ci_local: this exact tree ({here[:12]}) already ran {','.join(wanted)} "
                       f"green here. Nothing changed, so nothing is rerun.")
@@ -279,7 +293,7 @@ def main() -> int:
         print(f"\n{len(failures)} step(s) failed. Nothing was pushed.")
         return 1
     if here:
-        with open(STAMP, "w", encoding="utf-8") as f:
+        with open(stamp_path(), "w", encoding="utf-8") as f:
             f.write(f"{','.join(wanted)} {here}\n")
     print("\nEvery step this machine can run is green.")
     return 0

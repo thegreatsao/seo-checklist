@@ -246,6 +246,22 @@ retired. Until 0.133.0 only uniqueness within one build was held.
 - **THEN** it fails and names `fetch-depth: 0`, because one revision is a history in which
   no id can have been re-used
 
+#### Scenario: the checkout is a linked worktree
+- **WHEN** the suite runs in a `git worktree`, where `.git` is a file naming the real
+  directory and not a directory
+- **THEN** the history is walked exactly as in a plain checkout: whether there is a
+  repository here is git's answer (`rev-parse --is-inside-work-tree`), not a look at the
+  filesystem
+- **AND** a directory with no repository around it is still refused by name, and so is a
+  bare repository, which has a history and no tree to compare it with
+
+Until 0.137.0 the walk asked whether `.git` was a directory, so in a linked worktree it
+refused a history it could have read — "is not a git checkout" — and this requirement's
+reader was red wherever a release was being prepared in one. Found on 2 October 2026 by
+running the suite in a worktree: six tests red, three of them this reader.
+`tests/test_git_worktrees.py` builds a repository, a linked worktree, a shallow clone, a
+bare repository and a plain directory, and holds each answer.
+
 ### Requirement: REG-5 — a borrowed title says so, and a departure says why
 
 Titles taken from the published source checklist SHALL keep their reference number. An

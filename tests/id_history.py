@@ -49,9 +49,7 @@ def rows(document: dict) -> list[Row]:
 
 
 def first_is_reachable() -> None:
-    if not os.path.isdir(os.path.join(ROOT, ".git")):
-        raise Unreadable(f"{ROOT} is not a git checkout, so the registry's history "
-                         f"cannot be walked and REG-4 has nothing to compare against")
+    revisions.git_directory(ROOT)
     try:
         kind = revisions.git("cat-file", "-t", FIRST).strip()
     except Unreadable as exc:

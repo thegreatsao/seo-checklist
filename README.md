@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.136.0 — see [CHANGELOG.md](CHANGELOG.md). A site behind a password can be audited as `https://user:password@host/` without the password ending up in what the audit writes: until now it was in the name of the history folder, in the results, the evidence file, the crawl inventory, both reports and on the console. The credential is now taken out of the URL where it comes in, sent to that site and to no other, and recorded only as the fact that one was used. Runs an older version filed under a folder whose name carries the credential are still read, and the tool says once that the folder is there.
+Version 0.137.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit does changes in this version. The project's own checks — the ones that walk its history and the one that verifies a tree before a push — now work in a `git worktree`, where they used to refuse to run. The version before it made a site behind a password auditable as `https://user:password@host/` without the password ending up in anything the audit writes.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

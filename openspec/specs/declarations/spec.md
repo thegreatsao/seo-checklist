@@ -488,7 +488,10 @@ re-derives a digest of every file the harness serves rather than reading a stamp
 so a fixture page edited under a prediction reddens too. `TheRecordHasAShape` refuses a
 record that does not say what was decided, and `HistoryIsReadableAtAll` refuses to run at
 all where the history is not there — the failure this gate has that would otherwise look
-exactly like its success.
+exactly like its success. Whether the history is there is git's answer and not the
+filesystem's: until 0.137.0 the gate asked whether `.git` was a directory and so refused a
+linked worktree, where it is a file, though the history was one command away
+(`tests/test_git_worktrees.py`).
 
 **The vocabulary gained a fourth value at 0.105.0, the first time the gate met real
 work.** It had three — the prediction was wrong, the checker was wrong, the fixture was

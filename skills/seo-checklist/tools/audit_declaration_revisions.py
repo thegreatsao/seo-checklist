@@ -41,7 +41,7 @@ rather than a comparison.
 
 `actions/checkout@v5` clones to depth 1. A history walk over a shallow clone finds no
 commits, agrees with an empty record, and prints a pass — a check whose failure looks
-exactly like its success. So an unreachable `EPOCH`, a missing `.git`, or a `git` that
+exactly like its success. So an unreachable `EPOCH`, a non-checkout, or a `git` that
 will not run is a **failure** with a named reason, never a skip. The workflow carries
 `fetch-depth: 0` on every job that runs this.
 
@@ -135,28 +135,43 @@ def _git_binary() -> str:
     return found
 
 
-def _run_git(args: list[str], *, text: bool = True):
+def _run_git(args: list[str], *, text: bool = True, root: str | None = None):
     try:
         return subprocess.run(
-            [_git_binary(), "-C", ROOT, *args], capture_output=True, close_fds=False,
+            [_git_binary(), "-C", ROOT if root is None else root, *args],
+            capture_output=True, close_fds=False,
             text=text, **({"encoding": "utf-8", "errors": "replace"} if text else {}))
     except OSError as exc:
         raise Unreadable(f"git would not run: {exc}") from exc
 
 
-def git(*args: str) -> str:
-    done = _run_git(list(args))
+def git(*args: str, root: str | None = None) -> str:
+    done = _run_git(list(args), root=root)
     if done.returncode != 0:
         raise Unreadable(f"git {' '.join(args)} failed: {done.stderr.strip()}")
     return done.stdout
 
 
+def git_directory(root: str | None = None) -> str:
+    """Git's per-worktree directory, also when `.git` is a file or we are below ROOT.
+
+    Relative answers belong to the directory git ran in. The common directory would
+    share a verification stamp between worktrees whose content need not agree.
+    """
+    root = ROOT if root is None else root
+    inside = _run_git(["rev-parse", "--is-inside-work-tree"], root=root)
+    if inside.returncode or inside.stdout.strip() != "true":
+        raise Unreadable(
+            f"{root} is not a git checkout, so no history can be walked. This gate "
+            f"compares the tree with its past and has nothing to compare against "
+            f"({inside.stderr.strip() or inside.stdout.strip()})")
+    printed = git("rev-parse", "--git-dir", root=root).strip()
+    return os.path.abspath(os.path.join(root, printed))
+
+
 def epoch_is_reachable() -> None:
     """Refuse a shallow clone by name, before anything reads as agreement."""
-    if not os.path.isdir(os.path.join(ROOT, ".git")):
-        raise Unreadable(
-            f"{ROOT} is not a git checkout, so no history can be walked. This gate "
-            f"compares the tree with its past and has nothing to compare against")
+    git_directory(ROOT)
     try:
         kind = git("cat-file", "-t", EPOCH).strip()
     except Unreadable as exc:
