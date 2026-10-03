@@ -200,7 +200,7 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
             script = f"cd '{where.as_posix()}'\n{resolution}printf '%s' \"$py\"\n"
             done = spawn([bash, "-c", script])
             self.assertEqual(done.returncode, 0, done.stderr)
-            return os.path.normcase(os.path.abspath(done.stdout.strip()))
+            return os.path.normcase(os.path.realpath(done.stdout.strip()))
 
         def install(where: Path) -> str:
             # Both layouts, as the hook tries both; the first it finds is the answer.
@@ -209,7 +209,7 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text("#!/bin/sh\n", encoding="utf-8")
                 target.chmod(0o755)
-            return os.path.normcase(os.path.abspath(where / ".venv"))
+            return os.path.normcase(os.path.realpath(where / ".venv"))
 
         try:
             mine = install(self.checkout)
