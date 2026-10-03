@@ -34,7 +34,7 @@ import subprocess
 import sys
 import time
 
-from audit_declaration_revisions import Unreadable, git_directory
+from git_checkout import Unreadable, git_directory, leave_the_hook_behind
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))))
@@ -223,6 +223,11 @@ def main() -> int:
     ap.add_argument("--no-cache", action="store_true",
                     help="ignore the stamp from a previous green run")
     a = ap.parse_args()
+
+    # Before anything else starts a process: this is run from a hook, and what git
+    # put in the environment to aim the hook at this repository would aim every
+    # `git` the suite runs at it too. See `leave_the_hook_behind`.
+    leave_the_hook_behind(os.environ)
 
     workflow = load_workflow()
     jobs = workflow["jobs"]

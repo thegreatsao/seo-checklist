@@ -15,8 +15,66 @@ sys.path.insert(0, str(ROOT / "skills" / "seo-checklist" / "tools"))
 sys.path.insert(0, str(ROOT / "tests"))
 
 import audit_declaration_revisions as revisions
+import git_checkout
 import id_history
 from harness import spawn
+
+
+def harness_environment() -> dict:
+    return dict(os.environ)
+
+
+class TheGateLeavesTheHookBehind(unittest.TestCase):
+    """git aims a hook at its repository through the environment, and the gate runs
+    the whole suite from inside one."""
+
+    def test_what_git_sets_for_a_hook_is_removed_and_nothing_else(self):
+        environment = {"GIT_DIR": "somewhere/.git", "GIT_WORK_TREE": "somewhere",
+                       "GIT_INDEX_FILE": "somewhere/.git/index", "GIT_PREFIX": "",
+                       "GIT_COMMON_DIR": "elsewhere/.git",
+                       "GIT_AUTHOR_NAME": "kept: it aims git at nothing",
+                       "PATH": os.environ.get("PATH", "")}
+        removed = git_checkout.leave_the_hook_behind(environment)
+        self.assertEqual(sorted(removed), ["GIT_COMMON_DIR", "GIT_DIR", "GIT_INDEX_FILE",
+                                           "GIT_PREFIX", "GIT_WORK_TREE"])
+        self.assertEqual(sorted(environment), ["GIT_AUTHOR_NAME", "PATH"])
+
+    def test_a_git_that_does_not_answer_is_not_an_empty_list(self):
+        with mock.patch.object(git_checkout.subprocess, "run", side_effect=OSError("probe")):
+            with self.assertRaisesRegex(git_checkout.Unreadable, "git would not run"):
+                git_checkout.leave_the_hook_behind({"GIT_DIR": "x"})
+
+    def test_the_gate_does_it_before_it_starts_anything(self):
+        """Read off the gate's own source: the call is in `main`, and no process is
+        started and no step environment built above it."""
+        source = (ROOT / "skills" / "seo-checklist" / "tools" / "ci_local.py").read_text(
+            encoding="utf-8")
+        body = source[source.index("def main() -> int:"):]
+        call = body.index("leave_the_hook_behind(os.environ)")
+        for later in ("load_workflow()", "tree_hash()", "dict(os.environ", "run_step("):
+            with self.subTest(later=later):
+                self.assertGreater(body.index(later), call)
+
+    def test_under_a_hooks_environment_a_command_reaches_the_directory_it_names(self):
+        """The incident, in a temp directory: two repositories, `GIT_DIR` naming the
+        first, a commit meant for the second."""
+        with tempfile.TemporaryDirectory(prefix="seo-git-hook-") as base:
+            pushed, meant = Path(base, "pushed"), Path(base, "meant")
+            for repository in (pushed, meant):
+                repository.mkdir()
+                GitOwnsTheCheckoutLocations.run_git(repository, "init")
+            hooked = dict(os.environ, GIT_DIR=str(pushed / ".git"))
+            with mock.patch.dict(os.environ, hooked):
+                (meant / "note.txt").write_text("for the second\n", encoding="utf-8")
+                GitOwnsTheCheckoutLocations.run_git(meant, "add", "note.txt")
+                GitOwnsTheCheckoutLocations.run_git(
+                    meant, "-c", "user.name=Hook test",
+                    "-c", "user.email=hook@example.invalid", "commit", "-m", "meant")
+            self.assertEqual(
+                GitOwnsTheCheckoutLocations.run_git(meant, "log", "--format=%s"), "meant")
+            self.assertEqual(
+                GitOwnsTheCheckoutLocations.run_git(pushed, "rev-list", "--all", "--count"),
+                "0", "the repository the hook was aimed at took a commit meant for another")
 
 
 class GitOwnsTheCheckoutLocations(unittest.TestCase):
@@ -46,7 +104,13 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
 
     @staticmethod
     def run_git(root, *args):
-        done = spawn(["git", "-C", str(root), *args])
+        # These commands build and change a repository. They must reach the one in
+        # the temp directory and no other, whatever this suite was started from: a
+        # hook's `GIT_DIR` outranks `-C`, and once sent every one of them to the
+        # repository being pushed.
+        environment = harness_environment()
+        git_checkout.leave_the_hook_behind(environment)
+        done = spawn(["git", "-C", str(root), *args], env=environment)
         if done.returncode:
             raise AssertionError(done.stdout + done.stderr)
         return done.stdout.strip()
@@ -84,15 +148,15 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
             revisions.git_directory(str(bare))
 
     def test_missing_git_and_a_git_that_will_not_run_fail_by_name(self):
-        with mock.patch.object(revisions.shutil, "which", return_value=None):
+        with mock.patch.object(git_checkout.shutil, "which", return_value=None):
             with self.assertRaisesRegex(revisions.Unreadable, "git is not on PATH"):
                 revisions.git_directory(str(self.checkout))
-        with mock.patch.object(revisions.subprocess, "run", side_effect=OSError("probe")):
+        with mock.patch.object(git_checkout.subprocess, "run", side_effect=OSError("probe")):
             with self.assertRaisesRegex(revisions.Unreadable, "git would not run: probe"):
                 revisions.git_directory(str(self.checkout))
         for gate in (revisions.epoch_is_reachable, id_history.first_is_reachable):
             with self.subTest(gate=gate.__name__):
-                with mock.patch.object(revisions.shutil, "which", return_value=None):
+                with mock.patch.object(git_checkout.shutil, "which", return_value=None):
                     with self.assertRaisesRegex(revisions.Unreadable, "git is not on PATH"):
                         gate()
 
@@ -147,6 +211,21 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
             shutil.rmtree(self.checkout / ".venv", ignore_errors=True)
             shutil.rmtree(self.linked / ".venv", ignore_errors=True)
 
+    def test_the_gate_does_not_load_the_suites_harness(self):
+        """`ci_local` hands its own environment to the step that runs the suite.
+        `tests/harness.py` puts the network tripwire on `PYTHONPATH` so that every child
+        of a *test* is ended when it reaches out; loaded into the gate, it would be
+        handed to the suite itself, whose process would then be ended by the test that
+        proves the tripwire raises there. It was, on the first push from a worktree."""
+        tools = ROOT / "skills" / "seo-checklist" / "tools"
+        child = spawn([sys.executable, "-c",
+                       "import sys; sys.path.insert(0, sys.argv[1]); import ci_local; "
+                       "print(sorted(name for name in sys.modules "
+                       "if name in ('harness', 'audit_declaration_revisions')))",
+                       str(tools)])
+        self.assertEqual(child.returncode, 0, child.stderr)
+        self.assertEqual(child.stdout.strip(), "[]")
+
     def test_reading_the_gate_starts_no_process_and_no_checkout_is_no_hash(self):
         """The module is imported by tests and by the hook; where there is no checkout
         around it, importing must still work and the hash is simply not taken."""
@@ -155,7 +234,7 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
         shutil.copyfile(ROOT / "skills" / "seo-checklist" / "tools" / "ci_local.py", tool)
         spec = importlib.util.spec_from_file_location("ci_local_without_a_checkout", tool)
         ci = importlib.util.module_from_spec(spec)
-        with mock.patch.object(revisions.subprocess, "run",
+        with mock.patch.object(git_checkout.subprocess, "run",
                                side_effect=AssertionError("import ran a process")):
             spec.loader.exec_module(ci)
         self.assertIsNone(ci.tree_hash())

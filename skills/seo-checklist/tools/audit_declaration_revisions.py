@@ -54,8 +54,6 @@ import argparse
 import hashlib
 import json
 import os
-import shutil
-import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -114,59 +112,11 @@ DOES_NOT_ESTABLISH = (
 )
 
 
-class Unreadable(Exception):
-    """History could not be read. Never downgraded to a skip — see the module docstring."""
-
-
-
-def _git_binary() -> str:
-    """`git`, resolved to a path, because a bare name on PATH forks.
-
-    The three rules `test_runner.AScriptTheOperatingSystemKilled` holds, and this
-    module broke two of them on its first run: CPython needs a non-empty dirname or it
-    takes the fork path, which macOS kills inside Apple's atfork handler before the
-    exec. `close_fds=False` and `-C` in place of `cwd` are the other two.
-    """
-    found = shutil.which("git")
-    if not found:
-        raise Unreadable(
-            "git is not on PATH, so this tree's history cannot be read. DEC-8's gate "
-            "compares the manifest with its past and has nothing to compare against")
-    return found
-
-
-def _run_git(args: list[str], *, text: bool = True, root: str | None = None):
-    try:
-        return subprocess.run(
-            [_git_binary(), "-C", ROOT if root is None else root, *args],
-            capture_output=True, close_fds=False,
-            text=text, **({"encoding": "utf-8", "errors": "replace"} if text else {}))
-    except OSError as exc:
-        raise Unreadable(f"git would not run: {exc}") from exc
-
-
-def git(*args: str, root: str | None = None) -> str:
-    done = _run_git(list(args), root=root)
-    if done.returncode != 0:
-        raise Unreadable(f"git {' '.join(args)} failed: {done.stderr.strip()}")
-    return done.stdout
-
-
-def git_directory(root: str | None = None) -> str:
-    """Git's per-worktree directory, also when `.git` is a file or we are below ROOT.
-
-    Relative answers belong to the directory git ran in. The common directory would
-    share a verification stamp between worktrees whose content need not agree.
-    """
-    root = ROOT if root is None else root
-    inside = _run_git(["rev-parse", "--is-inside-work-tree"], root=root)
-    if inside.returncode or inside.stdout.strip() != "true":
-        raise Unreadable(
-            f"{root} is not a git checkout, so no history can be walked. This gate "
-            f"compares the tree with its past and has nothing to compare against "
-            f"({inside.stderr.strip() or inside.stdout.strip()})")
-    printed = git("rev-parse", "--git-dir", root=root).strip()
-    return os.path.abspath(os.path.join(root, printed))
+# The answers git gives about this checkout live apart from this module, which loads
+# the test harness: see `git_checkout.py` for why the push gate cannot import them
+# from here. They are re-exported because the readers know them by these names.
+from git_checkout import (  # noqa: E402, F401
+    Unreadable, _git_binary, _run_git, git, git_directory)
 
 
 def epoch_is_reachable() -> None:
