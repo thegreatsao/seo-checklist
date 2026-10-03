@@ -40,7 +40,8 @@ class TheGateLeavesTheHookBehind(unittest.TestCase):
         self.assertEqual(sorted(environment), ["GIT_AUTHOR_NAME", "PATH"])
 
     def test_a_git_that_does_not_answer_is_not_an_empty_list(self):
-        with mock.patch.object(git_checkout.subprocess, "run", side_effect=OSError("probe")):
+        with mock.patch.object(git_checkout.leave_the_hook_behind, "_names", None, create=True), \
+                mock.patch.object(git_checkout.subprocess, "run", side_effect=OSError("probe")):
             with self.assertRaisesRegex(git_checkout.Unreadable, "git would not run"):
                 git_checkout.leave_the_hook_behind({"GIT_DIR": "x"})
 
@@ -50,7 +51,8 @@ class TheGateLeavesTheHookBehind(unittest.TestCase):
             with self.subTest(returncode=returncode, stdout=stdout):
                 answer = mock.Mock(returncode=returncode, stdout=stdout, stderr="probe")
                 environment = {"GIT_DIR": "x"}
-                with mock.patch.object(git_checkout.subprocess, "run", return_value=answer):
+                with mock.patch.object(git_checkout.leave_the_hook_behind, "_names", None, create=True), \
+                        mock.patch.object(git_checkout.subprocess, "run", return_value=answer):
                     with self.assertRaisesRegex(git_checkout.Unreadable,
                                                 "git did not say which variables"):
                         git_checkout.leave_the_hook_behind(environment)
@@ -120,9 +122,7 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
         # the temp directory and no other, whatever this suite was started from: a
         # hook's `GIT_DIR` outranks `-C`, and once sent every one of them to the
         # repository being pushed.
-        environment = harness_environment()
-        git_checkout.leave_the_hook_behind(environment)
-        done = spawn(["git", "-C", str(root), *args], env=environment)
+        done = git_checkout._run_git(list(args), root=str(root))
         if done.returncode:
             raise AssertionError(done.stdout + done.stderr)
         return done.stdout.strip()
@@ -198,7 +198,9 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
 
         def interpreter(where: Path) -> str:
             script = f"cd '{where.as_posix()}'\n{resolution}printf '%s' \"$py\"\n"
-            done = spawn([bash, "-c", script])
+            environment = harness_environment()
+            git_checkout.leave_the_hook_behind(environment)
+            done = spawn([bash, "-c", script], env=environment)
             self.assertEqual(done.returncode, 0, done.stderr)
             return os.path.normcase(os.path.realpath(done.stdout.strip()))
 
@@ -213,13 +215,14 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
 
         try:
             mine = install(self.checkout)
-            self.assertTrue(interpreter(self.checkout).startswith(mine + os.sep))
-            self.assertTrue(interpreter(self.linked).startswith(mine + os.sep),
-                            "a push from a linked worktree did not find the checkout's "
-                            "interpreter")
-            own = install(self.linked)
-            self.assertTrue(interpreter(self.linked).startswith(own + os.sep),
-                            "a worktree with a virtualenv of its own did not use it")
+            with mock.patch.dict(os.environ, {'GIT_DIR': str(self.checkout / '.git')}):
+                self.assertTrue(interpreter(self.checkout).startswith(mine + os.sep))
+                self.assertTrue(interpreter(self.linked).startswith(mine + os.sep),
+                                "a push from a linked worktree did not find the checkout's "
+                                "interpreter")
+                own = install(self.linked)
+                self.assertTrue(interpreter(self.linked).startswith(own + os.sep),
+                                "a worktree with a virtualenv of its own did not use it")
         finally:
             shutil.rmtree(self.checkout / ".venv", ignore_errors=True)
             shutil.rmtree(self.linked / ".venv", ignore_errors=True)

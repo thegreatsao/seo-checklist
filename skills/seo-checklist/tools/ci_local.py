@@ -34,7 +34,7 @@ import subprocess
 import sys
 import time
 
-from git_checkout import Unreadable, git_directory, leave_the_hook_behind
+from git_checkout import Unreadable, _run_git, git, git_directory, leave_the_hook_behind
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))))
@@ -127,17 +127,14 @@ def tree_hash() -> str | None:
     over a release it had never seen, which is the failure shape this whole file is
     built to refuse: a check whose failure is indistinguishable from its success.
 
-    It was invisible because the hook's own moment is the one moment the two agree.
-    At `git push` everything is committed, so index and working tree are the same
-    tree and the answer is right. The README documents running this by hand, and
-    every such run mid-edit was answering about the last commit.
+    A push can start with uncommitted files on disk. With --pushed the gate first
+    asks git whether this content matches every commit being sent; hand runs
+    still verify the disk as it stands.
 
-    A throwaway index keeps the real one untouched: `git add -A` into it stages the
-    working tree as it stands, `.gitignore` still applies, and `write-tree` then names
-    the content on disk. An unchanged tree is still instant, because committing does
-    not change the bytes the hash is taken over.
+    A throwaway copy of the real index keeps it untouched: `git add -A` updates
+    every tracked file, even one an ignore rule matches, and adds unignored files.
+    `write-tree` then names that disk content, or HEAD's tree on a clean checkout.
     """
-    git = resolve("git")
     # Tests and other callers can ask for a hash without entering main. Resolve
     # the scratch directory with the same environment that will stage into it.
     env = dict(os.environ)
@@ -150,13 +147,16 @@ def tree_hash() -> str | None:
     try:
         if os.path.exists(scratch):
             os.remove(scratch)
-        staged = subprocess.run([git, "-C", ROOT, "add", "-A"], capture_output=True,
-                                text=True, close_fds=False, env=env)
+        index = os.path.join(os.path.dirname(scratch), "index")
+        if os.path.exists(index):
+            shutil.copyfile(index, scratch)
+        staged = _run_git(["add", "-A"], root=ROOT, env=env)
         if staged.returncode != 0:
             return None
-        r = subprocess.run([git, "-C", ROOT, "write-tree"], capture_output=True,
-                           text=True, close_fds=False, env=env)
+        r = _run_git(["write-tree"], root=ROOT, env=env)
         return r.stdout.strip() if r.returncode == 0 else None
+    except OSError:
+        return None
     finally:
         if os.path.exists(scratch):
             os.remove(scratch)
@@ -172,16 +172,13 @@ def run_step(name: str, script: str, env: dict) -> tuple[bool, float, str]:
     # dies with a TypeError about None, having said nothing about the step. Named
     # explicitly so a gate cannot be defeated by a character in somebody's output.
     proc = subprocess.run([resolve("bash"), "-euo", "pipefail", "-c", at_root],
-                          env=env, capture_output=True, close_fds=False,
+                          stdin=subprocess.DEVNULL, env=env, capture_output=True, close_fds=False,
                           encoding="utf-8", errors="replace")
     return proc.returncode == 0, time.time() - started, proc.stdout + proc.stderr
 
 
 def untracked() -> set[str]:
-    r = subprocess.run([resolve("git"), "-C", ROOT, "status", "--porcelain",
-                        "--untracked-files=all"],
-                       capture_output=True, close_fds=False,
-                       encoding="utf-8", errors="replace")
+    r = _run_git(["status", "--porcelain", "--untracked-files=all"], root=ROOT)
     return {ln[3:] for ln in r.stdout.splitlines() if ln.startswith("?? ")}
 
 
@@ -226,12 +223,37 @@ def main() -> int:
     ap.add_argument("--list", action="store_true", help="name the steps and exit")
     ap.add_argument("--no-cache", action="store_true",
                     help="ignore the stamp from a previous green run")
+    ap.add_argument("--pushed", action="store_true",
+                    help="read pushed refs from stdin and require their content on disk")
     a = ap.parse_args()
 
     # Before anything else starts a process: this is run from a hook, and what git
     # put in the environment to aim the hook at this repository would aim every
     # `git` the suite runs at it too. See `leave_the_hook_behind`.
     leave_the_hook_behind(os.environ)
+
+    if a.pushed:
+        refs = [line.split() for line in sys.stdin if line.strip()]
+        refs = [row for row in refs if set(row[1]) != {"0"}]
+        if not refs:
+            print("ci_local: no commit is being pushed; no checks requested.")
+            return 0
+        for ref, sha, _remote_ref, _remote_sha in refs:
+            try:
+                compared = _run_git(["diff", "--quiet", f"{sha}^{{commit}}", "--"], root=ROOT)
+                if compared.returncode:
+                    print(f"ci_local: {ref}: tracked files differ from the pushed commit "
+                          "or it could not be read. Commit or stash edits, or check out "
+                          "what is pushed.")
+                    return 1
+                if git("ls-files", "--others", "--exclude-standard", "-z", root=ROOT):
+                    print(f"ci_local: {ref}: untracked files lie beside the pushed commit. "
+                          "Commit or stash them, or check out what is pushed.")
+                    return 1
+            except Unreadable as exc:
+                print(f"ci_local: {ref}: {exc}. Commit or stash edits, or check out "
+                      "what is pushed.")
+                return 1
 
     workflow = load_workflow()
     jobs = workflow["jobs"]

@@ -26,9 +26,11 @@ SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 SCRIPTS = os.path.join(SKILL, "scripts")
 TOOLS = os.path.join(SKILL, "tools")
 sys.path.insert(0, SCRIPTS)
+sys.path.insert(0, TOOLS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import harness  # noqa: E402
+from git_checkout import _run_git  # noqa: E402
 
 REGISTRY = os.path.join(SKILL, "resources", "config", "checklist.json")
 SHAPES = os.path.join(SKILL, "resources", "references", "script-output-shapes.md")
@@ -1253,17 +1255,19 @@ class AnAuditDoesNotCommitItself(unittest.TestCase):
         self.assertIn("probe-raw.json", found,
                       "the probe's literals were not read; the half of this test "
                       "that was added because it missed a file would miss it again")
-        # `git -C` rather than `cwd=`, and through `harness.spawn` so the binary is
-        # resolved to an absolute path: both a `cwd` and a bare executable name put the
-        # child on CPython's fork path, where macOS kills it before it execs.
-        proc = harness.spawn(["git", "-C", ROOT, "check-ignore", "-v", *sorted(found)],
-                             env=os.environ.copy())
+        proc = _run_git(["check-ignore", "-v", *sorted(found)], root=ROOT)
         if proc.returncode == 128:
             self.skipTest("not a git checkout")
         ignored = {line.rsplit("\t", 1)[-1] for line in proc.stdout.splitlines()}
         self.assertEqual(sorted(found - ignored), [],
                          "a run writes these into the checkout and git would offer "
                          "to commit them; add them to .gitignore")
+
+    def test_no_tracked_file_is_ignored(self):
+        """GOV-11: ignore rules cover outputs without hiding tracked source files."""
+        proc = _run_git(["ls-files", "-ci", "--exclude-standard"], root=ROOT)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(proc.stdout, "", "ignore rules match tracked files")
 
     def test_none_of_them_is_already_committed(self):
         """The same check from the other end. A pattern added to `.gitignore` does
@@ -1275,7 +1279,7 @@ class AnAuditDoesNotCommitItself(unittest.TestCase):
         the checkout. `skills/seo-checklist/probe-inventory.json` was committed one
         directory down and matched nothing here.
         """
-        proc = harness.spawn(["git", "-C", ROOT, "ls-files"], env=os.environ.copy())
+        proc = _run_git(["ls-files"], root=ROOT)
         if proc.returncode != 0:
             self.skipTest("not a git checkout")
         tracked = {os.path.basename(p) for p in proc.stdout.split()}

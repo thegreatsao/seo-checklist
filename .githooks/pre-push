@@ -34,8 +34,7 @@ if [ -z "${py:-}" ]; then
 fi
 
 # git calls pre-push with the remote's name and URL as $1 and $2, and feeds the
-# refs being pushed on stdin. None of that is ci_local.py's business, and passing
-# it through is what the first real push found: argparse refused the remote URL
-# and the push died with a usage message for a tool nobody had invoked by hand.
+# refs being pushed on stdin. The gate reads those refs with --pushed; the remote
+# name and URL are not gate arguments.
 echo "pre-push: running the CI steps locally. --no-verify skips this."
-"$py" "$root/skills/seo-checklist/tools/ci_local.py"
+"$py" "$root/skills/seo-checklist/tools/ci_local.py" --pushed

@@ -12,10 +12,8 @@ The defect that prompted it is the one the module's own docstring is proudest of
 matched a stamp written in the previous session, and printed *"this exact tree already ran
 green here. Nothing changed, so nothing is rerun"* over a release it had never seen.
 
-It survived a release because the hook's own moment is the one moment the two agree: at
-`git push` everything is committed, so index and working tree are the same tree and the
-answer is right. Every hand run mid-edit — which the README documents — was answering
-about the last commit.
+A push can start mid-edit. GOV-11 now requires the gate to compare disk content with
+every sent commit before it starts checking; hand runs still verify the disk.
 """
 from __future__ import annotations
 
@@ -31,6 +29,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import ci_local  # noqa: E402
 from harness import spawn  # noqa: E402
+import test_git_worktrees  # noqa: E402
 
 
 class TheStampNamesTheTreeItVerified(unittest.TestCase):
@@ -68,17 +67,43 @@ class TheStampNamesTheTreeItVerified(unittest.TestCase):
                          "the hash did not come back when the file went away, so it is "
                          "measuring something other than the tree's content")
 
+    def test_an_ignored_tracked_file_moves_the_hash(self):
+        """GOV-11: the stamp includes every tracked file, even one an ignore matches."""
+        with tempfile.TemporaryDirectory(prefix="seo-ignored-tracked-") as directory:
+            git = test_git_worktrees.GitOwnsTheCheckoutLocations.run_git
+            git(directory, "init")
+            tracked = os.path.join(directory, "checklist_runner.py")
+            with open(tracked, "w", encoding="utf-8") as stream:
+                stream.write("first\n")
+            git(directory, "add", "checklist_runner.py")
+            with open(os.path.join(directory, ".gitignore"), "w", encoding="utf-8") as stream:
+                stream.write("checklist*\n")
+            git(directory, "add", ".gitignore")
+            git(directory, "-c", "user.name=Gate test", "-c",
+                "user.email=gate@example.invalid", "commit", "-m", "ignored tracked file")
+            index = os.path.join(ci_local.git_directory(directory), "index")
+            with open(index, "rb") as stream:
+                original = stream.read()
+            with mock.patch.object(ci_local, "ROOT", directory):
+                before = ci_local.tree_hash()
+                self.assertTrue(before)
+                with open(tracked, "w", encoding="utf-8") as stream:
+                    stream.write("changed\n")
+                after = ci_local.tree_hash()
+                self.assertTrue(after)
+                self.assertNotEqual(before, after)
+                self.assertEqual(before, git(directory, "rev-parse", "HEAD^{tree}"))
+            with open(index, "rb") as stream:
+                self.assertEqual(stream.read(), original)
+            self.assertFalse(os.path.exists(os.path.join(directory, ".git", "ci-local-index")))
+
     def test_taking_the_hash_does_not_disturb_the_real_index(self):
         """The cost of reading the working tree is a throwaway index, and it has to
         stay throwaway: a gate that stages somebody's work as a side effect of checking
         it would be traded away the first time it surprised them."""
-        environment = dict(os.environ)
-        ci_local.leave_the_hook_behind(environment)
-        before = spawn(
-            [ci_local.resolve("git"), "-C", ROOT, "write-tree"], env=environment).stdout.strip()
+        before = ci_local._run_git(["write-tree"], root=ROOT).stdout.strip()
         ci_local.tree_hash()
-        after = spawn(
-            [ci_local.resolve("git"), "-C", ROOT, "write-tree"], env=environment).stdout.strip()
+        after = ci_local._run_git(["write-tree"], root=ROOT).stdout.strip()
         self.assertEqual(before, after, "the real index moved while the hash was taken")
         self.assertFalse(os.path.exists(os.path.join(
             ci_local.git_directory(ROOT), "ci-local-index")),
@@ -161,9 +186,10 @@ class ItObeysTheRulesItEnforcesOnEverythingElse(unittest.TestCase):
         """The reader's two write-tree calls must not write the hook's objects."""
         hook = {"GIT_DIR": "foreign/.git", "GIT_WORK_TREE": "foreign",
                 "GIT_INDEX_FILE": "foreign/.git/index", "GIT_COMMON_DIR": "foreign/.git"}
+        ci_local.leave_the_hook_behind({})
         with tempfile.TemporaryDirectory(prefix="seo-stamp-reader-") as directory, \
                 mock.patch.dict(os.environ, hook), \
-                mock.patch.object(sys.modules[__name__], "spawn") as child, \
+                mock.patch.object(ci_local.subprocess, "run") as child, \
                 mock.patch.object(ci_local, "tree_hash"), \
                 mock.patch.object(ci_local, "git_directory", return_value=directory):
             child.return_value.stdout = "same-tree\n"

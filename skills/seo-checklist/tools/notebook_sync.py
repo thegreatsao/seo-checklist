@@ -34,6 +34,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from git_checkout import _run_git
+
 # tools/ -> skills/seo-checklist/ -> skills/ -> repo root
 REPO = Path(__file__).resolve().parents[3]
 STAMP_RE = re.compile(r"sourcesha256([0-9a-f]{64})")
@@ -312,9 +314,9 @@ def notebook_stamps() -> dict:
 
 
 def git_state(repo: Path):
-    run(["git", "-C", str(repo), "fetch", "--quiet"], timeout=300)
-    head = run(["git", "-C", str(repo), "rev-parse", "--short", "HEAD"]).stdout.strip()
-    behind = run(["git", "-C", str(repo), "rev-list", "--count", "HEAD..@{u}"]).stdout.strip()
+    _run_git(["fetch", "--quiet"], root=str(repo), timeout=300)
+    head = _run_git(["rev-parse", "--short", "HEAD"], root=str(repo)).stdout.strip()
+    behind = _run_git(["rev-list", "--count", "HEAD..@{u}"], root=str(repo)).stdout.strip()
     return head or "?", behind or "?"
 
 

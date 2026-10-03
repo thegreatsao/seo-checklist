@@ -21,7 +21,12 @@ __pycache__/
 # checks every one against `git check-ignore`, and carries the account of what went
 # wrong before it existed.
 checklist-results*
-CHECKLIST*
+# `CHECKLIST*` stood here until 0.141.0. Where the filesystem ignores case it matched
+# `checklist_runner.py`, `checklist_report.py` and `checklist.json`, and the push gate's
+# stamp was taken without them. A shape with the hyphen, and one name where a shape
+# (`CHECKLIST.*`) would take the registry. `test_no_tracked_file_is_ignored` holds it.
+CHECKLIST-*
+CHECKLIST.html
 *QUEUE*.md
 probe-*.json
 .seo-runs/

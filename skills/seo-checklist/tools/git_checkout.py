@@ -45,13 +45,16 @@ def _git_binary() -> str:
 
 
 def _run_git(args: list[str], *, text: bool = True, root: str | None = None,
-             env=None):
+             env=None, timeout=None):
+    if env is None:
+        env = dict(os.environ)
+        leave_the_hook_behind(env)
     try:
         return subprocess.run(
             [_git_binary(), "-C", ROOT if root is None else root, *args],
-            capture_output=True, close_fds=False,
+            stdin=subprocess.DEVNULL, capture_output=True, close_fds=False,
             text=text, **({"encoding": "utf-8", "errors": "replace"} if text else {}),
-            **({"env": env} if env is not None else {}))
+            env=env, timeout=timeout)
     except OSError as exc:
         raise Unreadable(f"git would not run: {exc}") from exc
 
@@ -76,20 +79,23 @@ def leave_the_hook_behind(environment) -> list[str]:
     commits it was never meant to see.
 
     The names are git's own list (`rev-parse --local-env-vars`), asked rather than
-    kept, so a variable a later git adds is covered the day it is installed. Returns
+    kept, once per process. A later git's listed variables are covered too. Returns
     the names removed. A git that will not answer is `Unreadable`, not an empty list:
     carrying on with the hook's environment intact is the failure this exists for.
     """
-    try:
-        listed = subprocess.run([_git_binary(), "rev-parse", "--local-env-vars"],
-                                capture_output=True, close_fds=False,
-                                encoding="utf-8", errors="replace")
-    except OSError as exc:
-        raise Unreadable(f"git would not run: {exc}") from exc
-    names = listed.stdout.split()
-    if listed.returncode or not names:
-        raise Unreadable("git did not say which variables aim it at a repository "
-                         f"({listed.stderr.strip() or 'no names printed'})")
+    names = getattr(leave_the_hook_behind, "_names", None)
+    if names is None:
+        try:
+            listed = subprocess.run([_git_binary(), "rev-parse", "--local-env-vars"],
+                                    stdin=subprocess.DEVNULL, capture_output=True, close_fds=False,
+                                    encoding="utf-8", errors="replace")
+        except OSError as exc:
+            raise Unreadable(f"git would not run: {exc}") from exc
+        names = listed.stdout.split()
+        if listed.returncode or not names:
+            raise Unreadable("git did not say which variables aim it at a repository "
+                             f"({listed.stderr.strip() or 'no names printed'})")
+        leave_the_hook_behind._names = names
     return [name for name in names if environment.pop(name, None) is not None]
 
 
