@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.140.0 — see [CHANGELOG.md](CHANGELOG.md). No verdict moves in this version. The HTML report used to fail with a traceback when a site could not be read and measurements supplied with the run decided some items anyway; it is written now, and a category without a score says so in words on both report surfaces. The version before it made a report say which plugin version produced it.
+Version 0.141.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit does changes in this version. The check that runs before a push now verifies the commit that is pushed rather than whatever is on disk: a push with an uncommitted or an untracked file is refused, a push that only deletes a branch is not checked at all, and its "already verified" stamp can no longer miss a change to the runner. The version before it made the HTML report survive a site that could not be read.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -738,6 +738,11 @@ step it cannot execute is a failure rather than a skip. A tree it already verifi
 instant, keyed on the tree hash and stamped inside `.git/`, so pushing an unchanged tree
 to `main` after a fast-forward merge costs nothing. `git push --no-verify` is the way
 out; the local run does not replace the CI run, because only CI runs the Python floor.
+
+The hook hands the gate what git is about to push. A push that sends no commit — deleting
+a branch — is not checked. A push whose commit is not what is on disk is refused before
+anything runs: commit or stash the edit, or check out what you are pushing. Run by hand,
+the gate checks the disk as it stands.
 The suite guards the parts that fail *silently*: an assert rule using an operator
 the runner never implemented, a pattern that cannot fire, a script the registry
 names but nobody shipped, an LLM item with no lens, a profile that hides a critical

@@ -438,6 +438,130 @@ runs them (Appendix A.1).
 - **THEN** it passes forever without being run, which is the state all four were in
   until this document looked
 
+### Requirement: GOV-11 — the push gate verifies what the push sends, and a `git` this tree starts reaches the directory it names
+
+The gate a push runs — `.githooks/pre-push`, which starts `tools/ci_local.py` — SHALL
+verify the content of the commits being pushed. A push MUST be refused, before any step
+runs, when the working tree is not the content of a commit it sends; a push that sends no
+commit SHALL NOT be gated. The stamp that lets an unchanged tree through MUST be taken over
+every file the commit tracks.
+
+A `git` process this tree starts, in a tool or in a test, SHALL reach the directory its
+caller names, whatever a hook left in the environment, and MUST NOT read the standard
+input of the process that started it.
+
+**Why:** the gate runs CI's steps over the files on disk, and a push sends commits. Where
+the two differ, green says nothing about what left. And git starts a hook with variables
+that aim every `git` below it at the repository being pushed, over `-C`: a command meant
+for a temp directory is then carried out on the real one.
+**Reader:** enforced, as of 0.141.0 — and until then nothing required any of it. The gate
+and its hook were named once in these twelve documents, in GOV-7's reader line, and
+everything below lived there unread:
+
+- At 0.137.0 the suite, run by the gate from a worktree, built its throwaway repository on
+  the real one, which was marked bare and took two commits; and the hash staged into the
+  hook's repository. Both were repaired caller by caller — three callers each cleaning
+  their own environment, and every other launch left as it was.
+- The hook dropped the refs git feeds it, so the gate never knew what was pushed. A push
+  that only deleted two branches ran all twenty-seven steps, nineteen minutes (3 October
+  2026); a tag pushed with the next release's edits on disk was "verified" on those edits;
+  and a push with a modified or an untracked file on disk verified a tree that was not the
+  commit that left.
+- **The stamp's hash did not contain the runner, the report or the registry.** It was
+  staged from an empty index, which obeys the ignore rules even for files the real index
+  tracks, and `.gitignore` held `CHECKLIST*` — written for the report's output, and
+  matching `checklist_runner.py`, `checklist_report.py` and `checklist.json` wherever the
+  filesystem ignores case, which is this machine. An edit to the runner alone after a
+  green gate would have been pushed as *"this exact tree already ran green here"*. Found
+  by asking why the hash was not the commit's tree on a clean checkout
+  (`403cbd6886a5` against `db21326ed09d` at v0.138.0); it is now.
+
+Held by `tests/test_local_gate.py`. `TheGateVerifiesWhatLeaves` builds temp repositories
+and hands the gate what git would: a deletion, a clean tree and its own `HEAD`, a modified
+tracked file, an untracked one, an ignored one, another ref with other content and with
+the same, an annotated tag, several refs of which a later one is not on disk, a run by
+hand, and the hook's own launch line executed with a program that records its arguments
+and stdin. `EveryGitReachesItsDirectory` derives every place a process is started whose
+program is git — tools, tests and the hook — and requires each to be the launcher or a
+named exception, failing as well for an exception that no longer starts git; and it starts
+each kind of read with a hook's variables naming another repository.
+`test_ci_local…test_an_ignored_tracked_file_moves_the_hash` holds the stamp, and
+`test_registry.AnAuditDoesNotCommitItself.test_no_tracked_file_is_ignored` the rule that
+hid the three files. Probed 3 October 2026, twelve mutations, each caught by the test
+written for it (`local/localgate/probe_0141.py`).
+
+**The twelfth is there because the probe of this requirement hung.** A test builds a tree
+with `git mktree`, which reads its standard input; the launcher did not say what a child's
+standard input was, so the child had its caller's, and where that was a pipe nobody closed
+it waited for ever — five minutes, until it was killed. From a terminal the suite would
+have done the same. Under the hook it is worse than a wait: the caller's standard input
+there is git's list of refs, the thing the gate reads to know what is pushed.
+`test_git_neither_waits_on_nor_consumes_the_callers_stdin` keeps a pipe open over the
+launcher and requires the command to return and the pipe's bytes to be still unread; the
+steps the gate runs are given no standard input either.
+
+Not held. A push through git's own hook is rehearsed by hand against a throwaway bare
+repository, not run by a test: in these tests the gate's steps are replaced. The
+comparison is made before the steps run, so bytes that change while they run are not
+seen. A line of stdin that is not four fields ends the gate with a traceback — the push
+is refused, by accident and not by a sentence. And the census reads source: a launch
+assembled at run time from a string is not a launch it can see.
+
+#### Scenario: a push that sends no commit
+- **WHEN** a push only deletes refs on the remote
+- **THEN** the gate says that no commit is being pushed, and runs no step
+
+#### Scenario: an edit that was not committed
+- **WHEN** a tracked file on disk differs from the commit being pushed
+- **THEN** the push is refused before any step runs, naming the ref
+- **AND** the refusal says what to do: commit or stash the edit, or check out what is
+  pushed
+
+#### Scenario: a file git has not been told about
+- **WHEN** an untracked file that no ignore rule matches lies in the working tree
+- **THEN** the push is refused the same way, because a module not yet added can be what
+  makes the suite green
+- **AND** a file an ignore rule matches does not count
+
+#### Scenario: another ref than the one checked out
+- **WHEN** the ref being pushed is not the branch that is checked out
+- **THEN** it passes if its commit holds what is on disk — a release is pushed from the
+  worktree that verified it, and a tag is read as the commit it names — and is refused if
+  it does not
+- **AND** with several refs in one push, each is compared before any step runs
+
+#### Scenario: the gate run by hand
+- **WHEN** `ci_local.py` is started without the hook
+- **THEN** it verifies the working tree as it stands, uncommitted files included, and
+  makes no claim about a push
+
+#### Scenario: a tracked file an ignore rule matches
+- **WHEN** a file the commit tracks is matched by an ignore rule, and is edited
+- **THEN** the stamp's hash moves and the gate runs again
+- **AND** no tracked file of this tree is matched by one of its own ignore rules
+
+#### Scenario: a hook's variables name another repository
+- **WHEN** `GIT_DIR` and its kin are in the environment and a tool or a test starts `git`
+  for a directory
+- **THEN** the command reads and writes that directory: every launch goes through one
+  launcher, which removes the names git itself lists
+- **AND** an environment handed to the launcher on purpose is used as given — the
+  throwaway index is one
+
+#### Scenario: a launch that goes round the launcher
+- **WHEN** a tool or a test starts `git` by itself
+- **THEN** the census fails, and it fails as well for a listed exception that no longer
+  starts `git`
+- **AND** the hook's own two reads are the exception: they mean the repository being
+  pushed
+
+#### Scenario: a `git` that reads its standard input
+- **WHEN** a tool or a test starts a `git` command that reads standard input, from a
+  process whose own input is still open
+- **THEN** the command is given an empty input and returns, and what waits in the caller's
+  input is still there to be read
+- **AND** the steps the gate runs are given no standard input either
+
 ## 4. Invariants
 
 * **INV-G1** — every gate CI runs is runnable locally with the same command.
@@ -596,14 +720,14 @@ rest were derived by reading the gates and their tests.
 
 | | requirements |
 |---|---|
-| **enforced** | GOV-1, GOV-4, GOV-8, GOV-9, GOV-10 |
+| **enforced** | GOV-1, GOV-4, GOV-8, GOV-9, GOV-10, GOV-11 |
 | **partial** | GOV-2, GOV-3, GOV-5, GOV-6, GOV-7 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-G2 and INV-G4 enforced; INV-G1 partial; INV-G3 unread.
 
-**Five enforced, five partial, none unread, of ten.**
+**Six enforced, five partial, none unread, of eleven.**
 
 The two unread requirements are the two that ask the machinery to be *governed* rather than
 to govern. GOV-2 asks that an admission not become a justification; GOV-3 asks that lists be

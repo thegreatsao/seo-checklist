@@ -29,13 +29,13 @@
     "governance": {
       "counts": {
         "bounded": 0,
-        "enforced": 5,
+        "enforced": 6,
         "none": 0,
         "opposed": 0,
         "partial": 5
       },
       "opposed": [],
-      "requirements": 10,
+      "requirements": 11,
       "unread": []
     },
     "history": {
@@ -149,10 +149,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 125,
+    "enforced": 126,
     "none": 1,
     "opposed": 0,
     "partial": 19,
-    "requirements": 149
+    "requirements": 150
   }
 }

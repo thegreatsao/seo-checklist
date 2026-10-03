@@ -10,6 +10,49 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.141.0 — the push gate verifies what the push sends
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit does
+changes. This release is about the gate a push goes through, and it changes what a push
+does on a machine that armed the hook.
+
+* **The gate is told what is being pushed.** The hook used to drop the refs git feeds it,
+  and the gate verified whatever was on disk. Now a push that sends no commit is not gated
+  — deleting two branches ran all twenty-seven steps, nineteen minutes, on 3 October — and
+  a push whose commit is not what is on disk is **refused before any step runs**, naming
+  the ref: a modified file, or an untracked one no ignore rule matches. A new module not
+  yet added could be what made the suite green; a tag pushed with the next release's edits
+  on disk was "verified" on those edits. A ref with the same content as the disk passes
+  whatever branch is checked out. Run by hand, the gate still verifies the disk as it
+  stands.
+* **The stamp sees the runner, the report and the registry.** The hash that lets an
+  unchanged tree through was staged from an empty index, which obeys the ignore rules
+  even for tracked files, and `.gitignore` held `CHECKLIST*` — matching
+  `checklist_runner.py`, `checklist_report.py` and `checklist.json` on a filesystem that
+  ignores case. An edit to the runner alone after a green gate would have gone out as
+  *"this exact tree already ran green here"*. The hash starts from a copy of the real
+  index now and is the commit's tree on a clean checkout; the rule is narrowed to what a
+  run writes; and a test requires that no tracked file is ignored.
+* **Every `git` this tree starts reaches the directory it names.** One launcher,
+  `git_checkout._run_git`, leaves a hook's variables behind unless it is handed an
+  environment on purpose; the gate's own launches, `notebook_sync`'s — one of which
+  fetches — and the tests' go through it. At 0.137.0 this was repaired in three callers
+  and left open in the rest. A census derived from every place a process is started
+  holds it, exceptions argued in both directions.
+* **A `git` the launcher starts does not read its caller's standard input**, and neither
+  do the steps the gate runs. A test that builds a tree with `git mktree` waited for ever
+  on an input nobody closed — it is how this was found, when the probe of this release
+  hung — and under the hook that input is git's list of the refs being pushed.
+
+`openspec/specs/governance/` gains **GOV-11**, with nine scenarios: 150 requirements,
+ledger 126/19/1/0/4. The gate and its hook were named once in the specification until
+now, and required by nothing. Held by `tests/test_local_gate.py`; twelve mutations, each
+caught by the test written for it (`local/localgate/probe_0141.py`).
+
+What is not held is in GOV-11's reader note: a push through git's own hook is rehearsed
+by hand, bytes that change while the steps run are not seen, and a malformed line of
+stdin refuses the push by traceback.
+
 ## 0.140.0 — the HTML report is written when items were decided and nothing was scored
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves.

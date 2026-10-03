@@ -6,7 +6,7 @@ context: |
   stdlib-first, offline tests against fixture sites served on loopback.
 
   The normative specification is twelve documents under `openspec/specs/<capability>/spec.md`
-  — 149 requirements. Read `openspec/specs/verdicts/spec.md` first: it owns the status
+  — 150 requirements. Read `openspec/specs/verdicts/spec.md` first: it owns the status
   vocabulary every other document inherits. `local/sdd/COVERAGE-MAP.md` says which
   capability each document owns.
 
