@@ -44,6 +44,18 @@ class TheGateLeavesTheHookBehind(unittest.TestCase):
             with self.assertRaisesRegex(git_checkout.Unreadable, "git would not run"):
                 git_checkout.leave_the_hook_behind({"GIT_DIR": "x"})
 
+    def test_a_failed_or_empty_git_answer_is_not_an_empty_list(self):
+        """Neither a failed command nor an empty success proves cleanup is safe."""
+        for returncode, stdout in ((1, "GIT_DIR\n"), (0, ""), (0, " \n")):
+            with self.subTest(returncode=returncode, stdout=stdout):
+                answer = mock.Mock(returncode=returncode, stdout=stdout, stderr="probe")
+                environment = {"GIT_DIR": "x"}
+                with mock.patch.object(git_checkout.subprocess, "run", return_value=answer):
+                    with self.assertRaisesRegex(git_checkout.Unreadable,
+                                                "git did not say which variables"):
+                        git_checkout.leave_the_hook_behind(environment)
+                self.assertEqual(environment, {"GIT_DIR": "x"})
+
     def test_the_gate_does_it_before_it_starts_anything(self):
         """Read off the gate's own source: the call is in `main`, and no process is
         started and no step environment built above it."""
@@ -175,8 +187,9 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
 
     def test_the_hook_finds_the_interpreter_of_the_checkout_a_worktree_came_from(self):
         """The hook's own lines, up to the one that starts the gate, run where a push
-        would run them. A linked worktree has no `.venv`; the checkout it was added
-        from has, and that is the one the suite was installed into."""
+        would run them. A linked worktree is added with no `.venv`; the main checkout —
+        the one holding the repository's `.git` directory — has the one the suite was
+        installed into, and a worktree given a `.venv` of its own uses that."""
         hook = (ROOT / ".githooks" / "pre-push").read_text(encoding="utf-8")
         resolution, announced, _rest = hook.rpartition('echo "pre-push:')
         self.assertTrue(announced, "the hook no longer announces itself where it did")
@@ -216,7 +229,8 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
         `tests/harness.py` puts the network tripwire on `PYTHONPATH` so that every child
         of a *test* is ended when it reaches out; loaded into the gate, it would be
         handed to the suite itself, whose process would then be ended by the test that
-        proves the tripwire raises there. It was, on the first push from a worktree."""
+        proves the tripwire raises there. It was, on the first push from a worktree to
+        get as far as the suite."""
         tools = ROOT / "skills" / "seo-checklist" / "tools"
         child = spawn([sys.executable, "-c",
                        "import sys; sys.path.insert(0, sys.argv[1]); import ci_local; "
@@ -262,7 +276,8 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
                     before = ci.tree_hash()
                 self.assertTrue(before, "the temporary checkout's hash could not be taken")
                 used = [call.kwargs["env"]["GIT_INDEX_FILE"]
-                        for call in calls.call_args_list if "env" in call.kwargs]
+                        for call in calls.call_args_list
+                        if "GIT_INDEX_FILE" in call.kwargs.get("env", {})]
                 self.assertEqual(used, [scratch, scratch])
                 self.assertFalse(os.path.exists(scratch), "the scratch index was left behind")
                 probe = root / "untracked.txt"
@@ -274,6 +289,34 @@ class GitOwnsTheCheckoutLocations(unittest.TestCase):
                 self.assertEqual(ci.tree_hash(), before)
                 self.assertEqual(self.run_git(root, "write-tree"), before_index)
                 self.assertFalse(os.path.exists(scratch), "the scratch index was left behind")
+
+    def test_the_hash_leaves_a_hooks_repository_and_index_behind(self):
+        """A caller can ask for a hash without having entered the gate's main."""
+        import ci_local
+
+        pushed = self.base / "hash-hook-pushed"
+        pushed.mkdir()
+        self.run_git(pushed, "init")
+        (pushed / "foreign.txt").write_text("belongs to the hook\n", encoding="utf-8")
+        with mock.patch.object(ci_local, "ROOT", str(self.checkout)):
+            expected = ci_local.tree_hash()
+            self.assertTrue(expected)
+            before = {p.relative_to(pushed): p.read_bytes()
+                      for p in (pushed / ".git").rglob("*") if p.is_file()}
+            hook = {"GIT_DIR": str(pushed / ".git"), "GIT_WORK_TREE": str(pushed),
+                    "GIT_COMMON_DIR": str(pushed / ".git"),
+                    "GIT_INDEX_FILE": str(pushed / ".git" / "index")}
+            for environment in ({"GIT_DIR": hook["GIT_DIR"]}, hook):
+                with self.subTest(variables=sorted(environment)):
+                    with mock.patch.dict(os.environ, environment):
+                        observed = ci_local.tree_hash()
+                        self.assertEqual(observed, expected,
+                                         "the hash answered about the hook's repository")
+                        self.assertEqual({k: os.environ[k] for k in environment}, environment,
+                                         "hashing changed the caller's environment")
+                    after = {p.relative_to(pushed): p.read_bytes()
+                             for p in (pushed / ".git").rglob("*") if p.is_file()}
+                    self.assertEqual(after, before, "hashing wrote into the hook's repository")
 
 
 if __name__ == "__main__":

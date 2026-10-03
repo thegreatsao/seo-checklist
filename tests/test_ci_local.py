@@ -21,7 +21,9 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 import unittest
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "skills", "seo-checklist", "tools"))
@@ -70,11 +72,13 @@ class TheStampNamesTheTreeItVerified(unittest.TestCase):
         """The cost of reading the working tree is a throwaway index, and it has to
         stay throwaway: a gate that stages somebody's work as a side effect of checking
         it would be traded away the first time it surprised them."""
+        environment = dict(os.environ)
+        ci_local.leave_the_hook_behind(environment)
         before = spawn(
-            [ci_local.resolve("git"), "-C", ROOT, "write-tree"]).stdout.strip()
+            [ci_local.resolve("git"), "-C", ROOT, "write-tree"], env=environment).stdout.strip()
         ci_local.tree_hash()
         after = spawn(
-            [ci_local.resolve("git"), "-C", ROOT, "write-tree"]).stdout.strip()
+            [ci_local.resolve("git"), "-C", ROOT, "write-tree"], env=environment).stdout.strip()
         self.assertEqual(before, after, "the real index moved while the hash was taken")
         self.assertFalse(os.path.exists(os.path.join(
             ci_local.git_directory(ROOT), "ci-local-index")),
@@ -152,6 +156,24 @@ class ItObeysTheRulesItEnforcesOnEverythingElse(unittest.TestCase):
         self.assertTrue(os.path.dirname(found),
                         "a bare name has no dirname, so CPython takes the fork path")
         self.assertTrue(os.path.exists(found), found)
+
+    def test_the_stamp_reader_leaves_a_hooks_repository_behind(self):
+        """The reader's two write-tree calls must not write the hook's objects."""
+        hook = {"GIT_DIR": "foreign/.git", "GIT_WORK_TREE": "foreign",
+                "GIT_INDEX_FILE": "foreign/.git/index", "GIT_COMMON_DIR": "foreign/.git"}
+        with tempfile.TemporaryDirectory(prefix="seo-stamp-reader-") as directory, \
+                mock.patch.dict(os.environ, hook), \
+                mock.patch.object(sys.modules[__name__], "spawn") as child, \
+                mock.patch.object(ci_local, "tree_hash"), \
+                mock.patch.object(ci_local, "git_directory", return_value=directory):
+            child.return_value.stdout = "same-tree\n"
+            reader = TheStampNamesTheTreeItVerified(
+                "test_taking_the_hash_does_not_disturb_the_real_index")
+            reader.test_taking_the_hash_does_not_disturb_the_real_index()
+            self.assertEqual(child.call_count, 2)
+            for call in child.call_args_list:
+                environment = call.kwargs.get("env", os.environ)
+                self.assertEqual(set(hook).intersection(environment), set())
 
     def test_the_harness_spawn_this_suite_requires_is_importable_here(self):
         """Named so the import above is not mistaken for an unused one: a test module

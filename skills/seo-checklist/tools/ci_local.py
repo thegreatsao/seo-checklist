@@ -138,11 +138,15 @@ def tree_hash() -> str | None:
     not change the bytes the hash is taken over.
     """
     git = resolve("git")
+    # Tests and other callers can ask for a hash without entering main. Resolve
+    # the scratch directory with the same environment that will stage into it.
+    env = dict(os.environ)
+    leave_the_hook_behind(env)
     try:
-        scratch = os.path.join(git_directory(ROOT), "ci-local-index")
+        scratch = os.path.join(git_directory(ROOT, env=env), "ci-local-index")
     except Unreadable:
         return None
-    env = dict(os.environ, GIT_INDEX_FILE=scratch)
+    env = dict(env, GIT_INDEX_FILE=scratch)
     try:
         if os.path.exists(scratch):
             os.remove(scratch)

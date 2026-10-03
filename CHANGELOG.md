@@ -15,8 +15,8 @@ breaking change for whoever read the old number, and saying so is the point.
 Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit does
 changes. This release is about the tools that guard a release.
 
-In a linked worktree `.git` is a file that names the real directory, and the tree has no
-virtualenv of its own. Four places assumed otherwise:
+In a linked worktree `.git` is a file that names the real directory, and a worktree as
+`git worktree add` leaves it has no virtualenv of its own. Four places assumed otherwise:
 
 * **The two history gates refused a history they could read.** `tests/id_history.py`
   (REG-4, an id is never re-used) and `tools/audit_declaration_revisions.py` (DEC-8, no
@@ -30,8 +30,9 @@ virtualenv of its own. Four places assumed otherwise:
 * **The hook could not find an interpreter.** `.githooks/pre-push` looked for `.venv` in
   the tree being pushed; a linked worktree has none, so it went on to whatever `python`
   the PATH held. Found by the first push of this very release, which died there with the
-  three repairs above already green: the hook now looks in the checkout the worktree was
-  added from as well, and prefers the tree's own when it has one.
+  three repairs above already green: the hook now looks in the main checkout as well —
+  the one that holds the repository's `.git` directory — and prefers the tree's own when
+  it has one.
 
 Found on 2 October 2026 by running the whole suite in a worktree for the first time:
 `Ran 2091 tests … FAILED (failures=3, errors=3)`, all six of them this. The releases are
@@ -48,37 +49,58 @@ asked when it is needed rather than when the module is imported, so reading the 
 starts no process and a tree with no checkout around it yields no hash instead of an
 exception.
 
-**Two more defects were not about `.git` at all.** The second push from the worktree found
-both, with everything above green in a run started by hand, and both exist only when the
-gate is started by git's hook:
+**Two more defects were not about `.git` at all.** The second push from the worktree — the
+first to get as far as the suite — found both, with the suite green in a run started by
+hand. Neither can be seen without the gate, and the second not without git's hook:
 
-* **The gate handed the suite its own tripwire.** `ci_local.py` took `git_directory` from
-  `audit_declaration_revisions.py`, which loads `tests/harness.py`, which puts the network
-  tripwire on `PYTHONPATH` so that every child of a *test* is ended when it reaches out.
-  The gate runs the suite as a child and gives it its own environment, so the suite's own
-  process carried the tripwire meant for children and was ended by
-  `test_offline…test_in_this_process_a_name_lookup_raises` — the test that proves the
-  tripwire raises there. The git helpers now live in `tools/git_checkout.py`, which
-  imports nothing of the suite; `audit_declaration_revisions` re-exports them under the
-  names its readers know.
-* **Under a hook, every `git` the suite started was aimed at the repository being
-  pushed.** git starts `pre-push` with `GIT_DIR` set — in a linked worktree
-  `GIT_WORK_TREE`, `GIT_INDEX_FILE` and others as well — and those outrank
-  `git -C <directory>`. `tests/test_git_worktrees.py` builds a throwaway repository with
-  `init`, `commit` and `worktree add`; run by the gate from the hook, each of those was
-  carried out on the real repository instead, which was marked bare and took two commits
-  by "Worktree test" on the release branch, a branch `linked` and a worktree entry
-  pointing into the temp directory. Nothing reached `origin`: the same run was ended by
-  the defect above before the push. The repository was repaired by hand.
+* **The gate handed the suite its own tripwire — a defect the first repair above
+  introduced.** To ask git where the stamp lives, `ci_local.py` took `git_directory` from
+  `audit_declaration_revisions.py`; until then it imported nothing of this tree. That
+  module loads `tests/harness.py`, which puts the network tripwire on `PYTHONPATH` so that
+  every child of a *test* is ended when it reaches out. The gate runs the suite as a child
+  and gives it its own environment, so the suite's own process carried the tripwire meant
+  for children and was ended by `test_offline…test_in_this_process_a_name_lookup_raises` —
+  the test that proves the tripwire raises there. Any start of the gate would have done
+  it, by hand as well. The git helpers now live in `tools/git_checkout.py`, which imports
+  nothing of the suite; `audit_declaration_revisions` re-exports them under the names its
+  readers know.
+* **From a worktree's hook, a `git` the suite started for another directory reached the
+  repository being pushed.** Measured on git 2.56.0 for Windows: `pre-push` started from a
+  linked worktree is given `GIT_DIR`, naming that worktree's private directory; started
+  from a plain checkout it is given none — so this, too, existed only where the releases
+  are made. `GIT_DIR` outranks `git -C <directory>`, and every process the hook starts
+  inherits it. `tests/test_git_worktrees.py` builds a throwaway repository with `init`,
+  `commit` and `worktree add`; run by the gate from the hook, those were carried out on
+  the real repository instead, which was marked bare and took two commits by "Worktree
+  test" on the release branch, a branch `linked` and a worktree entry pointing into the
+  temp directory. Nothing reached `origin`: the same run was ended by the defect above
+  before the push. The repository was repaired by hand.
   `git_checkout.leave_the_hook_behind` removes from an environment the names git itself
-  lists (`rev-parse --local-env-vars`, asked rather than kept, so a variable a later git
-  adds is covered); `ci_local.main` calls it before it starts anything, and the test's own
-  git commands call it too, so they do not depend on who started the suite.
+  lists (`rev-parse --local-env-vars`, asked rather than kept: `pre-commit`, measured the
+  same way, is given `GIT_INDEX_FILE` as well); `ci_local.main` calls it before it starts
+  anything.
+  The two places that do not come through `main` do it for themselves, so they do not
+  depend on who started them: the test's own git commands, and `ci_local.tree_hash`, which
+  a caller may ask for directly and which stages into a scratch index.
 
 `tests/test_git_worktrees.py` builds a repository, a linked worktree, a shallow clone, a
 bare repository and a plain directory and holds each answer; five mutations — a plain
 directory admitted, `<root>/.git` assumed again, either shallow refusal dropped, the
-scratch index left behind — are each caught by it.
+scratch index left behind — are each caught by it. `TheGateLeavesTheHookBehind` holds the
+hook's environment, one of its tests being the incident itself in a temp directory: two
+repositories, `GIT_DIR` naming the first, a commit meant for the second. Nine more
+mutations — the call removed from `main` or moved below the first thing it starts, the
+names found and not removed, only `GIT_DIR` removed, a git that fails to start or fails to
+answer taken for "nothing to remove", the test's own cleaning dropped, the gate importing
+its helpers from the old module again, the new module loading the harness — are each
+caught by the test written for that violation. One of the nine was caught by nothing at
+first (a git that answers with an error or with no names): it has a test now.
+
+Every place this tree starts a `git` process was listed by reading the calls, with where
+each would go under a hook's environment. Through the gate, none reaches a repository it
+was not meant for. Started by hand with those variables already set, the commands that
+only read would answer about the other repository, and one would write there:
+`notebook_sync.py`'s `fetch`, which is not part of the gate and is left as it is.
 
 ## 0.136.0 — a credential typed into the URL is used and never written
 
