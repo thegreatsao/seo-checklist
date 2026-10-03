@@ -104,11 +104,34 @@ all.
 Where the entry page was unreachable or refused by the guard, the report SHALL show no
 score. The absence, and its reason, MUST be the output.
 
+Every surface SHALL render every payload the runner can write. Where a score is absent —
+the run's, a category's, or that of a run in the history — the surface MUST say so in
+words: never a number, never a bar, never a traceback.
+
 **Why:** a score computed over the handful of items that do not need the site is a number
 about almost nothing, printed where a real one goes.
 **Reader:** enforced. `test_the_score_is_none_when_nothing_was_decided` pins the unit case
 and a live run against a challenge page pins it end to end, asserting that the entry is
 recorded unreachable and that nothing was scored.
+
+**Until 0.140.0 the HTML report could not be written at all for one payload the runner
+writes.** An entry answering 404, 500 or refusing the connection, with page artifacts
+supplied to the run: fifteen to eighteen items are decided from the artifacts, nothing is
+scored, and a category arrives with decided items and no score. The HTML renderer compared
+that absent score with the bar's thresholds and raised `TypeError`; the Markdown printed a
+dash. Found on 2 October 2026 by auditing the good fixture behind a dead entry, not by a
+test — every payload a test rendered had either no decided item or a score.
+`tests/test_report.py::DecidedCategoriesCanHaveNoScore` holds it: the tone, the bar and the
+number each absent for such a category and present for a scored neighbour, a zero included;
+the same words on both surfaces and in Russian; a category made only of items that score
+under another; a history row with no score; unscored categories after scored ones on both
+surfaces; and one real run against an entry answering 404 with the good artifacts, through
+both renderers. Probed 3 October 2026, nine mutations, each caught by the test written for
+it (`local/goodtree/probe_0139.py`).
+
+Not settled here: whether an artifact supplied with the run may decide an item at all
+when nobody read the entry. This requirement only says that what the runner wrote is
+rendered, and how.
 
 #### Scenario: the site could not be read
 - **WHEN** the entry page was unreachable or the guard refused it
@@ -119,6 +142,24 @@ recorded unreachable and that nothing was scored.
 - **WHEN** a surface renders the missing score as `None/100` or as zero
 - **THEN** a reader is shown a verdict about the site where the truth is a statement
   about the audit
+
+#### Scenario: items were decided and nothing was scored
+- **WHEN** a category holds decided items and no score — the entry was not read and
+  artifacts supplied with the run decided them, or every decided item in it scores under
+  another category
+- **THEN** both report surfaces are written, and that category shows the words for an
+  absent score: no number, no bar, and no claim about how many items the score covers
+- **AND** a scored category beside it keeps its number and its bar, a score of zero
+  included
+
+#### Scenario: where an unscored category stands
+- **WHEN** scored and unscored categories are listed together
+- **THEN** both surfaces list the scored ones first, worst first, and the unscored after
+  them, so an absent score is never read as the most urgent one
+
+#### Scenario: a run in the history has no score
+- **WHEN** the history of a site holds a run that was not scored
+- **THEN** its row says so in words on both surfaces rather than with a dash
 
 ### Requirement: REP-3 — provenance appears wherever the score does
 

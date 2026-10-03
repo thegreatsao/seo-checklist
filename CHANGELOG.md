@@ -10,6 +10,36 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.140.0 — the HTML report is written when items were decided and nothing was scored
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves.
+
+An entry answering 404, 500 or refusing the connection, audited with page artifacts
+supplied: the artifacts decide fifteen to eighteen items, nothing is scored (an entry
+nobody read is never scored, 0.130.0), and the HTML report raised `TypeError` — a category
+had decided items and no score, and the renderer compared the absence with the bar's
+thresholds. The Markdown and the console survived. The operator got a traceback where
+"no score, and why" belongs.
+
+* **Both reports are written for that payload.** A category with no score shows the words
+  `No score` (`Нет оценки`) — no number, no bar, and no sentence about how many items a
+  score covers.
+* **A run in the history that was not scored says so in words**, where both surfaces
+  printed a dash.
+* **The Markdown lists categories in the HTML's order**: scored ones worst first, unscored
+  after them. It used to list them in the order the results hold them; the two surfaces now agree
+  about what to look at first, and an absent score is not read as the most urgent.
+
+`openspec/specs/reporting/` REP-2 gains the rule and three scenarios. Held by
+`tests/test_report.py::DecidedCategoriesCanHaveNoScore`, nine tests, one of them a real
+run against an entry answering 404; nine mutations, each caught by the test written for
+it (`local/goodtree/probe_0139.py`).
+
+Found by measuring, not by a test: the good fixture audited behind a dead entry
+(`local/goodtree/REPORT-GOODTREE-2.md`). Not settled by this release: whether a supplied
+artifact may decide an item when nobody read the entry — the no-score sentence still says
+that nothing was measured while such items stand decided beside it.
+
 ## 0.139.0 — a report says which plugin version made it
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves.
