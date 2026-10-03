@@ -406,6 +406,11 @@ redirect chain. Failures, `POST`s, streamed bodies and oversized bodies MUST NOT
 A cache hit MUST still be subject to robots. Two requests that differ in method or in a
 header the server may vary on SHALL be two questions.
 
+A run's cache SHALL be that run's alone. A run MUST NOT remove the cache of a living run
+that holds its owner lock. What a dead run left SHALL be removed by the next run that
+starts; a directory with no lock beside it — an older release's — only once nothing in it
+was written within `CACHE_TTL`.
+
 **Why:** a cache that merges two different questions produces a verdict about a document
 nobody fetched. Caching a failure would freeze a transient outage into the run. And a hit
 that skipped the robots check would let the cache launder a request the audit is not
@@ -417,6 +422,29 @@ asserted to refetch rather than truncate; `HEAD` and `GET`, and two different `A
 values, are asserted to be separate entries; eight concurrent processes are asserted to
 produce one request; and `test_a_cache_hit_still_refuses_a_path_robots_forbids` pins the
 robots re-check.
+
+**The cache's life had no reader until 0.138.0, and no rule either.** The directory was
+removed by `atexit`, so a run killed outright left it for good — with whatever the site
+had answered in it (`inputs` INP-7, *a run that was killed*). A run now holds a lock file
+beside its directory for as long as it lives, and every run begins by removing what it can
+show to be dead. `test_runner.CacheOwnerLifetime` holds it with real processes: a child
+ended by `os._exit` and the start after it
+(`test_a_dead_run_leaves_neither_directory_nor_lock`), a living child whose bytes and held
+lock a second start leaves alone (`test_a_live_run_keeps_its_bytes_and_its_held_lock`), a
+removal the filesystem refuses — replaced and real
+(`test_failed_removal_is_silent_keeps_the_lock_and_retries`,
+`test_an_open_file_refuses_removal_keeps_the_lock_and_retries`), the lockless directories
+of older releases by the age of their files, a directory already standing at the name
+(`test_a_directory_collision_retires_only_the_sidecar`), and the names an owner loses
+before it has made a directory. Probed 3 October 2026, thirteen mutations, each caught by
+the test written for it (`local/cachelock/probe_0137.py`).
+
+What is not held: the order in which the lock file is unlinked and released is the
+platform's — on POSIX while the lock is held, on Windows after the descriptor is closed —
+and the two tests that run the POSIX order against a real filesystem are skipped on
+Windows, so they run only where CI is Linux or macOS. Two sweepers arriving at one dead
+name together, and a sweeper killed halfway through a removal, are argued from that order
+and run by no test.
 
 #### Scenario: a restored response is the response that was fetched
 - **WHEN** a request is answered from the cache
@@ -446,6 +474,42 @@ robots re-check.
   or with redirects allowed and refused
 - **THEN** each is its own entry
 - **AND** the caller that asked to see the hop is not answered with the hop's destination
+
+#### Scenario: another run is alive
+- **WHEN** a run starts while another run of this release holds its cache
+- **THEN** the other run's directory, its bytes and its lock are as they were
+
+#### Scenario: what a dead run left
+- **WHEN** a run was killed, so that nothing it registered for its exit ran, and another
+  run starts
+- **THEN** the dead run's directory and its lock file are removed before the new run opens
+  a cache of its own
+- **AND** a lock file whose run died before it made a directory is removed the same way
+
+#### Scenario: the removal is refused
+- **WHEN** the filesystem refuses to remove a dead run's directory
+- **THEN** the run goes on without a word, the lock file stays beside the directory, and
+  the next run to start tries again
+
+#### Scenario: a cache made by a release that took no lock
+- **WHEN** a `seo-http-` directory has no lock file beside it
+- **THEN** it is left while the directory itself or a file in it was written within
+  `CACHE_TTL`, and removed once none was — whether or not its run is alive, because
+  nothing on disk can say; that run fetches again and makes its directory anew
+
+#### Scenario: a directory the run did not make
+- **WHEN** a directory already stands at the name a run is about to take
+- **THEN** the run takes another name and leaves no lock file beside that directory, so no
+  later run removes it as a dead run's cache
+
+#### Scenario: no name can be had
+- **WHEN** every name the run tries is lost to another process
+- **THEN** the run names no cache to its scripts — not an inherited one either — says so,
+  and every script fetches for itself
+
+#### Scenario: what is not a cache
+- **WHEN** the temp directory holds a file or a directory whose name is not of this kind
+- **THEN** it is not touched
 
 ### Requirement: HTTP-8 — the run says whether it used a cache
 

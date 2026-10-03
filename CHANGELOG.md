@@ -10,6 +10,48 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.138.0 — what a killed run left is removed by the next one
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves.
+
+The response cache is one directory per run, removed when the run ends. It was removed by
+`atexit`, so a run that was killed — a closed terminal, a timeout in CI, the task manager —
+left its directory in the temp folder for good, holding every page the site had answered.
+0.136.0 named that residue in INP-7 because such a page can carry a credential the site
+echoed back; this release removes it.
+
+* **A run holds a lock beside its cache for as long as it lives.** The lock is the
+  operating system's, so it ends with the process however the process ends. Nothing is
+  decided by a process id: on Windows asking whether a pid is alive can end it.
+* **Every run begins by removing what dead runs left**: a directory whose lock can be
+  taken, and a lock whose run died before it made a directory. A living run's directory,
+  bytes and lock are left as they are.
+* **A removal the filesystem refuses is tried again by the next run**, and said by none.
+* **A directory an older release left has no lock**, and nothing on disk says whether its
+  run is alive. It is left while the directory or a file in it was written within the
+  cache's fifteen minutes, and removed after that; an older run still going fetches again
+  and makes its directory anew (measured on the 0.135.0 code).
+* **A run that can get no name for its cache names none to its scripts** — an inherited
+  `SEO_HTTP_CACHE` included — and says that every script fetches for itself.
+
+`openspec/specs/http/` HTTP-7 gains the rule and seven scenarios; INP-7's *a run that was
+killed* says how long the residue now lasts. Held by `test_runner.CacheOwnerLifetime`,
+21 tests, two of which run only on Linux and macOS.
+
+**Thirteen mutations, each caught by the test written for it**
+(`local/cachelock/probe_0137.py`). Two of them undo repairs this release's own review
+asked for. When a directory already stood at the name a run was about to take, the run
+left its lock beside it and the next run removed that directory as a dead run's cache —
+a directory nobody of this release had made. And the test of a refused removal replaced
+`rmtree` with a function that raises, so it passed with real refusals ignored; there is a
+second one now that keeps a file open in the directory. Two branches no test could reach —
+a callback for a subtree the same user cannot read, and the times of nested directories —
+were removed rather than tested: a cache has neither.
+
+What is not held is in HTTP-7's reader note: the POSIX order of unlinking the lock runs
+against a real filesystem only in CI, and two sweepers at one dead name, or a sweeper
+killed mid-removal, are argued and not run.
+
 ## 0.137.0 — the gates work in a git worktree
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit does

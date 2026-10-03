@@ -523,10 +523,12 @@ only by the test of the list; the fixture page hands it back now and the sweep s
 #### Scenario: a run that was killed
 - **WHEN** the run is ended from outside, so that nothing it registered for its exit runs
 - **THEN** its response cache directory is still on disk, and a page in which the site
-  echoed the credential is in it
-- **AND** `safe_http.CACHE_TTL` keeps such an entry from answering anything, and nothing
-  removes it: this requirement does not hold for that directory, and the residue is named
-  here so that it is not rediscovered as a leak nobody knew of
+  echoed the credential is in it, until the next run on this machine starts and removes
+  it (`http` HTTP-7, *what a dead run left*)
+- **AND** until then `safe_http.CACHE_TTL` keeps such an entry from answering anything
+- **AND** where no run starts again, or the removal is refused, the directory stays: this
+  requirement does not hold for it, and the residue is named here so that it is not
+  rediscovered as a leak nobody knew of
 
 #### Scenario: the site hands the credential back
 - **WHEN** a page links to the site with the credential baked into the address, or echoes
