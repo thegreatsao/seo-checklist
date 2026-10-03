@@ -10,6 +10,37 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.139.0 — a report says which plugin version made it
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves.
+
+A report named the registry it was graded against and nothing about the plugin. That was
+enough while a verdict could only move with the registry. 0.131.0 is the counter-example:
+the registry stayed at `b81c0edcd245` and a site answering 203 got thirty different
+verdicts — two reports under one registry hash, not comparable, and nothing on either
+said so.
+
+* **The run records the plugin version** (`plugin_version` in the results, read from
+  `.claude-plugin/plugin.json` when the payload is written; `unknown` when it cannot be
+  read). Each point of the history and `compared_with` carry it too.
+* **Both reports print it** beside the registry — the Markdown header and the HTML foot —
+  from the payload, so a report rendered later by another version names the one that ran.
+  A results file from before this release prints `unknown`.
+* **The comparison says when the plugin moved**, in the paragraph that already says the
+  registry did: a check can change between plugin versions while the registry stays the
+  same. A previous run that recorded no version is said to record none.
+
+`openspec/specs/history/` HST-2 gains the rule and five scenarios, HST-3 names the field.
+Held by `tests/test_plugin_version.py`; thirteen mutations, each caught by the test
+written for it (`local/pluginver/probe_0138.py`).
+
+**The reader that was said to catch a fifth axis did not.** HST-2 said of
+`test_two_reasons_are_stated_once_each` — every axis of the comparison moved at once, one
+sentence each — that it "makes a fifth axis added silently a failure in either
+direction". The plugin version is that fifth axis, and the test stayed green: its two
+runs carried no plugin version. It moves five now, and the spec says what the sentence
+was worth.
+
 ## 0.138.0 — what a killed run left is removed by the next one
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves.

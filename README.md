@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.138.0 — see [CHANGELOG.md](CHANGELOG.md). No verdict moves in this version. An audit that was killed used to leave its response cache — every page the site had answered — in the temp folder for good; the next audit to start now removes it, and never the cache of an audit still running. The version before it made the project's own checks work in a `git worktree`.
+Version 0.139.0 — see [CHANGELOG.md](CHANGELOG.md). No verdict moves in this version. A report now says which plugin version made it, beside the registry it was graded against, and a comparison between two runs says when the plugin changed between them: a check can change while the checklist stays the same. The version before it made an audit remove the response cache a killed audit had left behind.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

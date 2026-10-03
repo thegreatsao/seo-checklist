@@ -120,6 +120,10 @@ Where the two runs were computed over different registry versions, the compariso
 warn. The same holds for a change of profile or of mode. A comparison that reports no
 difference MUST be a comparison over the same registry, profile and mode.
 
+The same holds for the plugin version that made each run, and for that a run SHALL record
+it: the payload, the Markdown report and the HTML report MUST each name the version of the
+plugin that made the run.
+
 **Why:** the score is a fraction of the registry, so a registry that gained eight items
 moves it without the site moving. A profile change moves the denominator; a mode change
 moves what could be answered at all. All three produce a number that looks like news.
@@ -137,6 +141,24 @@ Measured by mutation at 0.96.7: deleting the profile branch reddens
 `test_two_reasons_are_stated_once_each`, and deleting the mode branch reddens that and
 `test_warns_when_the_mode_changed`. A.3 records what the stale line cost.
 
+**The plugin version is the fifth axis, added at 0.139.0, and the sentence above about a
+fifth axis was not true of it.** 0.131.0 changed thirty verdicts of a site answering 203
+under an unchanged registry: two reports with one registry hash, not comparable, and
+nothing on either said so. The run now records the plugin version and the comparison
+names a move of it. `test_two_reasons_are_stated_once_each` stayed green when the axis
+was added — its two runs carried no plugin version, so there was nothing for it to count;
+"a failure in either direction" held only for an axis the fixture already carried. It
+moves five now. `tests/test_plugin_version.py` holds the rest: the version read from the
+manifest on every call and `unknown` when it cannot be read; the sentences of the
+comparison case by case; the record, the history points and `compared_with`; and both
+report surfaces, which print the version the *payload* carries, so a report rendered
+later by another version still names the one that ran. Probed 3 October 2026, thirteen
+mutations, each caught by the test written for it (`local/pluginver/probe_0138.py`).
+
+Not held: that the manifest stands two directories above the skill wherever the plugin
+is installed. That is the plugin format's own layout and the test reads it in this
+repository only; where it is not so, the run records `unknown` and says so on the report.
+
 #### Scenario: the checklist itself changed between the runs
 - **WHEN** the previous run recorded one `registry_version` and this run another
 - **THEN** the comparison carries a note naming the registry
@@ -152,6 +174,36 @@ Measured by mutation at 0.96.7: deleting the profile branch reddens
 - **WHEN** the profile or the mode differs between the two runs
 - **THEN** the comparison says so
 
+#### Scenario: the checks changed and the checklist did not
+- **WHEN** the previous run was made by one plugin version and this run by another
+- **THEN** the comparison carries a note naming both versions
+- **AND** the note says a check can change while the registry stays the same, so a
+  difference may be a change to the checks rather than to the site
+
+#### Scenario: a run stored before the version was recorded
+- **WHEN** the previous run carries no plugin version and this run carries one
+- **THEN** the note says the previous run does not record which version made it
+- **AND** its history point and `compared_with` carry no version rather than a guessed one
+
+#### Scenario: nothing moved
+- **WHEN** the two runs name the same registry, profile, mode, scoring tables and plugin
+  version
+- **THEN** the comparison carries no note at all
+
+#### Scenario: every axis at once
+- **WHEN** the registry, the profile, the mode, the scoring tables and the plugin version
+  all differ between the two runs
+- **THEN** the note carries one sentence for each, and none twice
+
+#### Scenario: an artifact says which plugin made it
+- **WHEN** a run writes its payload, and a Markdown or an HTML report is rendered from it
+- **THEN** each names the plugin version that made the run, taken from the payload and
+  never from the plugin that renders the report
+- **AND** a results file written before the version was recorded, and a run that could
+  not read its own manifest, are reported as `unknown` rather than left blank
+- **AND** a results file edited by hand to carry a version that is not text is printed as
+  it stands rather than refused
+
 ### Requirement: HST-3 — the baseline is named
 
 A comparison SHALL state which run it is against by identity — a timestamp and that
@@ -163,7 +215,7 @@ baseline cannot check the claim.
 **Reader:** enforced, at 0.96.7. The payload half is held by
 `test_the_payload_carries_the_comparison_though_nobody_asked_to_see_it`, which compares
 two real audits and requires `compared_with.started_at` to be the *predecessor's* —
-the one field of the four that differs between two runs of an unchanged fixture, and
+the one field of those that differs between two runs of an unchanged fixture, and
 therefore the one that reads the scenario's "rather than this run's". The absence case is
 held by `test_no_baseline_means_no_section`. The naming where the comparison is shown is
 held on both surfaces: `test_the_baseline_is_named_not_implied` for markdown and
@@ -180,7 +232,7 @@ both renderers could not catch this one.
 #### Scenario: a comparison names the run it was made against
 - **WHEN** a run finds a predecessor for the same site
 - **THEN** the payload records that predecessor's `started_at`, `registry_version`,
-  `mode` and `profile`
+  `plugin_version`, `mode` and `profile`
 - **AND** those values are the predecessor's own rather than this run's
 
 #### Scenario: the first audit of a site
