@@ -1059,6 +1059,7 @@ def render_markdown(data: dict, L: Lang | None = None) -> str:
         f"- **{L.t('profile', 'Profile')}:** `{data.get('profile', 'default')}`",
         f"- **{L.t('generated', 'Run at')}:** {data.get('started_at', '')}",
         f"- **{L.t('registry', 'Registry')}:** `{data.get('registry_version', 'unknown')}`",
+        f"- **{L.t('plugin', 'Plugin')}:** `{data.get('plugin_version') or 'unknown'}`",
         f"- **Search Console:** "
         f"{'found' if data.get('gsc_credentials_found') else 'not configured'}",
     ]
@@ -1936,6 +1937,8 @@ def render_html(data: dict, L: Lang | None = None) -> str:
 
     parts.append(f'<p class="foot">{html.escape(L.t("foot", "Registry"))} '
                  f'<code>{html.escape(str(data.get("registry_version", "")))}</code>'
+                 f' &middot; {html.escape(L.t("plugin", "Plugin"))} '
+                 f'<code>{html.escape(str(data.get("plugin_version") or "unknown"))}</code>'
                  f' &middot; {s["total_items"]} '
                  + html.escape(L.t("items_word", "items")) + "</p></div>")
 

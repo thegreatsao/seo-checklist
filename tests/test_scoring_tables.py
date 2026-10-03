@@ -286,15 +286,15 @@ class AComparisonAcrossTheChange(unittest.TestCase):
         sentence appears twice — rather than over the pair that happened to collide.
         """
         _, note = diff_runs(
-            self.run_of(registry_version="aaa", mode="live", profile="shop",
+            self.run_of(registry_version="aaa", plugin_version="before", mode="live", profile="shop",
                         scoring_tables={"stamp": "0000aaaa1111"}),
-            self.run_of(registry_version="bbb", mode="page", profile="blog",
+            self.run_of(registry_version="bbb", plugin_version="after", mode="page", profile="blog",
                         scoring_tables={"stamp": "2222bbbb3333"}))
         sentences = [s.strip() for s in note.split(". ") if s.strip()]
         self.assertEqual(len(sentences), len(set(sentences)),
                          "a reason is stated more than once: %r" % note)
-        self.assertEqual(len(sentences), 4,
-                         "expected one sentence for each of registry, profile, mode and "
+        self.assertEqual(len(sentences), 5,
+                         "expected one sentence for each of registry, plugin, profile, mode and "
                          "scoring tables: %r" % note)
 
 

@@ -54,10 +54,23 @@ _utf8_stdout()
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(SCRIPT_DIR)
 REGISTRY = os.path.join(SKILL_DIR, "resources", "config", "checklist.json")
+PLUGIN_JSON = os.path.join(os.path.dirname(os.path.dirname(SKILL_DIR)),
+                           ".claude-plugin", "plugin.json")
 
 sys.path.insert(0, SCRIPT_DIR)
 
 from seo_common import carries_content, fetch_error_kind, status_class  # noqa: E402
+
+
+def plugin_version() -> str:
+    """Read the shipped manifest so a stored run identifies its checks."""
+    try:
+        with open(PLUGIN_JSON, encoding="utf-8") as f:
+            manifest = json.load(f)
+        version = manifest.get("version") if isinstance(manifest, dict) else None
+        return version if isinstance(version, str) and version else "unknown"
+    except (OSError, ValueError):
+        return "unknown"
 
 
 # How an evidence script failed. All four end as NO_DATA — the item is undecided
@@ -2273,6 +2286,7 @@ def run_series(domain: str, exclude: str, limit: int = HISTORY_RUNS) -> list[dic
         rows.append((run_time(payload, os.path.basename(path)), {
             "started_at": payload.get("started_at"),
             "registry_version": payload.get("registry_version"),
+            "plugin_version": payload.get("plugin_version"),
             # The arc is the place a table change does the most damage: a trend line
             # is read as the site moving. Carried per point so the reader can see
             # which stretch of it was scored with which instrument.
@@ -2374,6 +2388,14 @@ def diff_runs(prev: dict, cur: dict) -> tuple[list[dict], str]:
         reasons.append(f"previous run used registry {pv}, this one {cv}; the item set "
                        f"itself changed, so differences may be edits to the checklist "
                        f"rather than to the site")
+    pp, cp = prev.get("plugin_version"), cur.get("plugin_version")
+    if pp and cp and pp != cp:
+        reasons.append(f"previous run was made by plugin {pp}, this one by {cp}; a check can change "
+                       f"between plugin versions while the registry stays the same, so differences may "
+                       f"be changes to the checks rather than to the site")
+    elif not pp and cp:
+        reasons.append(f"previous run does not record which plugin version made it, this one was made "
+                       f"by {cp}; differences may be changes to the checks rather than to the site")
     dropped = len(set(old) - {i["id"] for i in cur["items"]})
     if dropped:
         reasons.append(f"{dropped} item(s) from the previous run are not in this one; "
@@ -3877,6 +3899,7 @@ def main() -> int:
         "started_at": datetime.now(timezone.utc).isoformat(),
         "registry_schema": registry.get("version"),
         "registry_version": registry_version,
+        "plugin_version": plugin_version(),
         # Which instrument scored this run. SCR-2: the three tables are normative
         # constants, an edit to any of them is a change of instrument, and a score
         # carries no meaning across one. Stored whole and not only as the stamp, so
@@ -4004,6 +4027,7 @@ def main() -> int:
         payload["compared_with"] = {
             "started_at": prev.get("started_at"),
             "registry_version": prev.get("registry_version"),
+            "plugin_version": prev.get("plugin_version"),
             "scoring_stamp": (prev.get("scoring_tables") or {}).get("stamp"),
             "mode": prev.get("mode"),
             "profile": prev.get("profile"),
@@ -4032,6 +4056,7 @@ def main() -> int:
                           for row in series] + [{
         "started_at": payload.get("started_at"),
         "registry_version": payload.get("registry_version"),
+        "plugin_version": payload.get("plugin_version"),
         # Same key the earlier points carry, or the arc would end on a point that
         # looks like a run from before the stamp existed.
         "scoring_stamp": payload["scoring_tables"]["stamp"],
