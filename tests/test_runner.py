@@ -5117,15 +5117,9 @@ class OneFetchPerUrl(unittest.TestCase):
         # same `if __name__` entry it gets from the shell.
         launch = ("import os, runpy, sys; os.chdir(sys.argv.pop(1)); "
                   "runpy.run_path(sys.argv.pop(1), run_name='__main__')")
-        # The cache goes to `mkdtemp(prefix="seo-http-")`, so it can only be found by
-        # that prefix — and this test used to look for it in the *shared* temp
-        # directory, which made the assertion a claim about the machine rather than
-        # about this run: a second suite in parallel, or any audit anybody else
-        # started, failed it with nothing wrong here. It did, on 3.13. Giving the
-        # child its own `TMPDIR` is what makes the question answerable: `mkdtemp`
-        # reads it, so the only `seo-http-*` that can appear in there is this run's.
-        # Snapshotting the shared directory before and after is not enough — a
-        # concurrent run creates its cache inside the window.
+        # Both the startup sweep and the owner's UUID name use tempfile.gettempdir(),
+        # which reads the child's TMPDIR. Its own sandbox makes every seo-http-* there
+        # attributable to this run; a shared temp directory includes concurrent audits.
         sandbox = tempfile.mkdtemp()
         env = harness.offline_env()
         env["TMPDIR"] = sandbox
@@ -5150,6 +5144,400 @@ class OneFetchPerUrl(unittest.TestCase):
                       "the child did not use the sandbox as its temp directory")
         left = [d for d in os.listdir(sandbox) if d.startswith("seo-http-")]
         self.assertEqual(left, [], "a run's response cache outlived the run")
+
+
+class CacheOwnerLifetime(unittest.TestCase):
+    """Own the name before the directory, including when a sweeper retires it."""
+
+    def setUp(self):
+        self.sh = harness.safe_http()
+        self.sandbox = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.sandbox, ignore_errors=True)
+        self.env = harness.offline_env(TMPDIR=self.sandbox)
+
+    def child(self, code):
+        out = harness.spawn([sys.executable, "-c", code], env=self.env, timeout=60)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        return out.stdout.strip()
+
+    def sweep(self):
+        return self.child("import checklist_runner as r; print(r.open_http_cache())")
+
+    def residue(self, name="seo-http-dead", *, directory=True):
+        path = os.path.join(self.sandbox, name)
+        if directory:
+            os.mkdir(path)
+        with open(path + ".lock", "wb"):
+            pass
+        return path
+
+    def open_here(self):
+        with mock.patch.object(runner.tempfile, "gettempdir", return_value=self.sandbox), \
+                mock.patch.dict(os.environ), \
+                mock.patch.object(runner.atexit, "register") as register:
+            directory = runner.open_http_cache()
+        self.assertTrue(directory)
+        callback = register.call_args
+        self.addCleanup(callback.args[0], *callback.args[1:], **callback.kwargs)
+        return directory, callback
+
+    def test_a_directory_collision_retires_only_the_sidecar(self):
+        path = os.path.join(self.sandbox, "seo-http-collision")
+        os.mkdir(path)
+        answer = os.path.join(path, "answer")
+        with open(answer, "wb") as f:
+            f.write(b"not this owner's bytes")
+        with mock.patch.object(runner.uuid, "uuid4", side_effect=[
+                mock.Mock(hex="collision"), mock.Mock(hex="owner")]):
+            directory, _ = self.open_here()
+        self.assertNotEqual(directory, path)
+        for stage in ("after open", "after sweep"):
+            if stage == "after sweep":
+                self.sweep()
+            with self.subTest(stage=stage):
+                self.assertTrue(os.path.isdir(path), "another directory was removed")
+                with open(answer, "rb") as f:
+                    self.assertEqual(f.read(), b"not this owner's bytes")
+                self.assertFalse(os.path.lexists(path + ".lock"),
+                                 "collision left a sidecar beside another directory")
+
+    def test_a_dead_run_leaves_neither_directory_nor_lock(self):
+        path = self.child("import os, checklist_runner as r; "
+                          "print(r.open_http_cache(), flush=True); os._exit(0)")
+        self.assertTrue(os.path.isdir(path))
+        self.sweep()
+        self.assertFalse(os.path.exists(path), "dead cache survived the next run")
+        self.assertFalse(os.path.exists(path + ".lock"))
+
+    def test_a_live_run_keeps_its_bytes_and_its_held_lock(self):
+        import threading
+        ready = os.path.join(self.sandbox, "ready")
+        finish = os.path.join(self.sandbox, "finish")
+        results = []
+        code = """
+import os, time, checklist_runner as r
+p = r.open_http_cache()
+with open(os.path.join(p, 'answer'), 'wb') as f: f.write(b'private answer')
+with open(os.environ['TMPDIR'] + '/ready', 'w') as f: f.write(p)
+deadline = time.monotonic() + 40
+while not os.path.exists(os.environ['TMPDIR'] + '/finish'):
+    if time.monotonic() > deadline: raise RuntimeError('parent never finished')
+    time.sleep(.01)
+"""
+        worker = threading.Thread(target=lambda: results.append(harness.spawn(
+            [sys.executable, "-c", code], env=self.env, timeout=60)))
+        worker.start()
+        try:
+            deadline = time.monotonic() + 30
+            while not os.path.exists(ready) and worker.is_alive():
+                self.assertLess(time.monotonic(), deadline, "owner never became ready")
+                time.sleep(.01)
+            with open(ready) as f:
+                path = f.read()
+            with open(path + ".lock", "rb") as f:
+                self.assertEqual(os.fstat(f.fileno()).st_size, 0)
+            self.sweep()
+            with open(os.path.join(path, "answer"), "rb") as f:
+                self.assertEqual(f.read(), b"private answer")
+            self.assertTrue(os.path.isfile(path + ".lock"), "live sidecar disappeared")
+            self.assertEqual(self.child(
+                "import os; from lib import safe_http as s; "
+                f"fd=os.open({path + '.lock'!r}, os.O_RDWR); "
+                "print(s._lock_exclusive(fd, blocking=False)); os.close(fd)"), "False")
+        finally:
+            with open(finish, "w"):
+                pass
+            worker.join(65)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].returncode, 0, results[0].stderr)
+        self.assertFalse(os.path.exists(path))
+        self.assertFalse(os.path.exists(path + ".lock"))
+
+    def test_lockless_young_is_left_and_old_is_removed(self):
+        young = os.path.join(self.sandbox, "seo-http-young")
+        old = os.path.join(self.sandbox, "seo-http-old")
+        os.mkdir(young)
+        os.mkdir(old)
+        age = time.time() - self.sh.CACHE_TTL * 2
+        os.utime(old, (age, age))
+        self.sweep()
+        self.assertTrue(os.path.isdir(young), "young legacy cache was removed")
+        self.assertFalse(os.path.exists(old), "old legacy cache survived")
+
+    def test_an_old_lockless_directory_with_a_new_file_is_left(self):
+        path = os.path.join(self.sandbox, "seo-http-recent-answer")
+        os.mkdir(path)
+        nested = os.path.join(path, "nested")
+        os.mkdir(nested)
+        with open(os.path.join(nested, "answer"), "wb") as f:
+            f.write(b"still usable")
+        age = time.time() - self.sh.CACHE_TTL * 2
+        os.utime(nested, (age, age))
+        os.utime(path, (age, age))
+        self.sweep()
+        with open(os.path.join(nested, "answer"), "rb") as f:
+            self.assertEqual(f.read(), b"still usable")
+
+    def test_a_lock_without_a_directory_is_removed(self):
+        path = self.residue(directory=False)
+        self.sweep()
+        self.assertFalse(os.path.exists(path + ".lock"), "orphan sidecar survived")
+
+    def test_only_its_own_kind_is_swept(self):
+        path = os.path.join(self.sandbox, "seo-http-x")
+        with open(path, "wb") as f:
+            f.write(b"not a directory")
+        for name in ("seo-httpx", "seo-httpx.lock", "seo-checklist-rate"):
+            os.mkdir(os.path.join(self.sandbox, name))
+        age = time.time() - self.sh.CACHE_TTL * 2
+        for name in os.listdir(self.sandbox):
+            os.utime(os.path.join(self.sandbox, name), (age, age))
+        self.sweep()
+        self.assertEqual(set(os.listdir(self.sandbox)),
+                         {"seo-http-x", "seo-httpx", "seo-httpx.lock", "seo-checklist-rate"})
+
+    def test_failed_removal_is_silent_keeps_the_lock_and_retries(self):
+        path = self.residue()
+        real = shutil.rmtree
+
+        def remove(directory, *args, **kwargs):
+            if directory == path:
+                raise PermissionError("open elsewhere")
+            return real(directory, *args, **kwargs)
+
+        stderr = io.StringIO()
+        with mock.patch.object(runner.shutil, "rmtree", side_effect=remove), \
+                contextlib.redirect_stderr(stderr):
+            self.open_here()
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertTrue(os.path.isdir(path))
+        self.assertTrue(os.path.isfile(path + ".lock"), "retry sidecar was lost")
+        self.sweep()
+        self.assertFalse(os.path.exists(path))
+        self.assertFalse(os.path.exists(path + ".lock"))
+
+    @unittest.skipUnless(os.name == "nt", "Windows refuses open-file deletion; POSIX permits unlink")
+    def test_an_open_file_refuses_removal_keeps_the_lock_and_retries(self):
+        path = self.child("import os, checklist_runner as r; "
+                          "print(r.open_http_cache(), flush=True); os._exit(0)")
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with open(os.path.join(path, "answer"), "wb") as f:
+            f.write(b"open elsewhere")
+            f.flush()
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                self.open_here()
+            self.assertEqual(stdout.getvalue(), "")
+            self.assertEqual(stderr.getvalue(), "")
+            self.assertTrue(os.path.isdir(path))
+            self.assertTrue(os.path.isfile(path + ".lock"), "retry sidecar was lost")
+        self.sweep()
+        self.assertFalse(os.path.exists(path))
+        self.assertFalse(os.path.exists(path + ".lock"))
+
+    def test_owner_retries_a_lost_lock_before_making_a_directory(self):
+        real = self.sh._lock_exclusive
+        attempted = []
+
+        def acquire(fd, *, blocking):
+            attempted.append(fd)
+            if len(attempted) == 1:
+                return False
+            return real(fd, blocking=blocking)
+
+        with mock.patch.object(self.sh, "_lock_exclusive", side_effect=acquire):
+            self.open_here()
+        self.assertGreater(len(attempted), 1, "owner did not retry a swept name")
+        self.assertEqual(sum(os.path.isdir(os.path.join(self.sandbox, n))
+                             for n in os.listdir(self.sandbox)), 1)
+
+    def test_owner_retries_when_its_descriptor_no_longer_names_the_path(self):
+        real = os.stat
+        lost = []
+
+        def stat(path, *args, **kwargs):
+            result = real(path, *args, **kwargs)
+            if str(path).endswith(".lock") and not lost:
+                lost.append(str(path))
+                return mock.Mock(st_dev=result.st_dev, st_ino=result.st_ino + 1)
+            return result
+
+        with mock.patch.object(runner.os, "stat", side_effect=stat):
+            directory, _ = self.open_here()
+        self.assertEqual(len(lost), 1, "owner never verified its descriptor")
+        self.assertNotEqual(directory + ".lock", lost[0], "owner used a retired name")
+        self.assertFalse(os.path.isdir(lost[0][:-len(".lock")]))
+
+    def test_sweeper_skips_a_descriptor_that_no_longer_names_the_path(self):
+        path = self.residue()
+        real = os.stat
+
+        def stat(name, *args, **kwargs):
+            result = real(name, *args, **kwargs)
+            if name == path + ".lock":
+                return mock.Mock(st_dev=result.st_dev, st_ino=result.st_ino + 1)
+            return result
+
+        with mock.patch.object(runner.os, "stat", side_effect=stat):
+            self.open_here()
+        self.assertTrue(os.path.isdir(path), "stale descriptor removed another name")
+        self.assertTrue(os.path.exists(path + ".lock"))
+
+    def test_the_owner_keeps_the_create_descriptor_and_does_not_inherit_it(self):
+        real_open = os.open
+        created = []
+
+        def opened(path, flags, *args, **kwargs):
+            fd = real_open(path, flags, *args, **kwargs)
+            if flags & os.O_EXCL:
+                created.append((path, fd))
+            return fd
+
+        with mock.patch.object(runner.os, "open", side_effect=opened), \
+                mock.patch.object(self.sh, "_lock_exclusive", wraps=self.sh._lock_exclusive) as lock:
+            directory, _ = self.open_here()
+        self.assertEqual(len(created), 1)
+        path, fd = created[0]
+        self.assertEqual(path, directory + ".lock")
+        self.assertEqual(lock.call_args.args[0], fd)
+        self.assertFalse(os.get_inheritable(fd))
+        self.assertEqual(os.fstat(fd).st_ino, os.stat(path).st_ino)
+
+    def test_normal_exit_closes_the_descriptor_before_windows_unlink(self):
+        directory, callback = self.open_here()
+        callback.args[0](*callback.args[1:], **callback.kwargs)
+        self._cleanups.pop()
+        self.assertFalse(os.path.exists(directory))
+        self.assertFalse(os.path.exists(directory + ".lock"), "exit left the sidecar")
+
+    def test_posix_protocol_retires_the_path_before_closing_the_lock(self):
+        """Check the order here too; actual POSIX filesystem races run on POSIX."""
+        directory, callback = self.open_here()
+        lock_path, fd = callback.args[2:]
+        real_unlink = os.unlink
+        witnessed = []
+
+        def unlink(path, *args, **kwargs):
+            if path == lock_path:
+                witnessed.append(os.fstat(fd).st_ino)
+                return
+            return real_unlink(path, *args, **kwargs)
+
+        try:
+            with mock.patch.object(runner.os, "name", "posix"), \
+                    mock.patch.object(runner.os, "unlink", side_effect=unlink):
+                callback.args[0](*callback.args[1:], **callback.kwargs)
+        finally:
+            self._cleanups.pop()
+        self.assertEqual(len(witnessed), 1, "POSIX never retired the locked path")
+        real_unlink(lock_path)
+
+    @unittest.skipUnless(os.name == "nt", "Windows close/unlink interleaving")
+    def test_windows_a_starting_owner_resumes_before_unlink_and_keeps_its_cache(self):
+        path = self.residue(directory=False)
+        pending = os.open(path + ".lock", os.O_RDWR)
+        real_close = os.close
+        resumed = []
+
+        def close(fd):
+            real_close(fd)
+            if fd != pending and not resumed:
+                resumed.append(self.sh._lock_exclusive(pending, blocking=False))
+                self.assertEqual(os.fstat(pending).st_ino, os.stat(path + ".lock").st_ino)
+                os.mkdir(path)
+                with open(os.path.join(path, "answer"), "wb") as f:
+                    f.write(b"new owner")
+
+        try:
+            with mock.patch.object(runner.os, "close", side_effect=close):
+                self.open_here()
+            self.assertEqual(resumed, [True])
+            with open(os.path.join(path, "answer"), "rb") as f:
+                self.assertEqual(f.read(), b"new owner")
+            self.assertTrue(os.path.exists(path + ".lock"), "live owner lost its path")
+        finally:
+            real_close(pending)
+
+    def test_missing_owner_path_is_retried(self):
+        real = os.stat
+        lost = []
+
+        def stat(path, *args, **kwargs):
+            if str(path).endswith(".lock") and not lost:
+                lost.append(str(path))
+                raise FileNotFoundError(path)
+            return real(path, *args, **kwargs)
+
+        with mock.patch.object(runner.os, "stat", side_effect=stat):
+            directory, _ = self.open_here()
+        self.assertEqual(len(lost), 1)
+        self.assertNotEqual(directory + ".lock", lost[0])
+
+    def test_busy_names_disable_the_cache_after_bounded_retries(self):
+        with mock.patch.object(runner.tempfile, "gettempdir", return_value=self.sandbox), \
+                mock.patch.dict(os.environ, {self.sh.CACHE_DIR_VAR: "old inherited cache"}), \
+                mock.patch.object(self.sh, "_lock_exclusive", return_value=False) as lock, \
+                contextlib.redirect_stderr(io.StringIO()) as stderr:
+            self.assertEqual(runner.open_http_cache(), "")
+            self.assertNotIn(self.sh.CACHE_DIR_VAR, os.environ)
+        self.assertEqual(lock.call_count, 3)
+        self.assertIn("response cache unavailable", stderr.getvalue())
+
+    @unittest.skipUnless(os.name == "nt", "Windows denies deletion of an open file")
+    def test_windows_an_open_create_descriptor_prevents_deletion(self):
+        path = os.path.join(self.sandbox, "created.lock")
+        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o600)
+        try:
+            self.assertNotEqual(os.fstat(fd).st_ino, 0)
+            with self.assertRaises(PermissionError):
+                os.unlink(path)
+            self.assertTrue(os.path.exists(path))
+        finally:
+            os.close(fd)
+        os.unlink(path)
+
+    @unittest.skipUnless(os.name == "posix", "POSIX unlink/flock interleaving")
+    def test_posix_unlinks_while_locked_before_a_starting_owner_can_resume(self):
+        path = self.residue(directory=False)
+        pending = os.open(path + ".lock", os.O_RDWR)
+        real_close = os.close
+        acquired_after_close = []
+
+        def close(fd):
+            real_close(fd)
+            if fd != pending and not acquired_after_close:
+                acquired_after_close.append(self.sh._lock_exclusive(pending, blocking=False))
+                self.assertFalse(os.path.exists(path + ".lock"),
+                                 "release-before-unlink lets the pending owner resume")
+
+        try:
+            with mock.patch.object(runner.os, "close", side_effect=close):
+                self.open_here()
+            self.assertEqual(acquired_after_close, [True])
+        finally:
+            real_close(pending)
+
+    @unittest.skipUnless(os.name == "posix", "POSIX second sweeper with an unlinked fd")
+    def test_posix_second_sweeper_cannot_remove_a_replacement_through_a_stale_fd(self):
+        path = self.residue()
+        pending = os.open(path + ".lock", os.O_RDWR)
+        self.sweep()
+        replacement = self.residue()
+        real_open = os.open
+        delivered = []
+
+        def opened(name, flags, *args, **kwargs):
+            if name == path + ".lock" and not delivered:
+                delivered.append(True)
+                return pending
+            return real_open(name, flags, *args, **kwargs)
+
+        with mock.patch.object(runner.os, "open", side_effect=opened):
+            self.open_here()
+        if not delivered:
+            os.close(pending)
+        self.assertEqual(delivered, [True])
+        self.assertTrue(os.path.isdir(replacement), "stale sweeper deleted the replacement")
 
 
 class HistoryIsASeries(unittest.TestCase):

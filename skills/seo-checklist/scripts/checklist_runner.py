@@ -29,6 +29,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import NamedTuple
@@ -259,39 +260,126 @@ def run_script(script_name: str, args: list, timeout: int = 120) -> dict:
                 "error_kind": "crash"}
 
 
-def open_http_cache() -> str:
-    """Open this run's response cache and return its directory, or "" on failure.
-
-    One directory per run, announced to the evidence scripts through the
-    environment because they are separate processes — the same reason the pacing
-    slots and `--allow-private` travel that way. Two things follow from it being
-    per run rather than global, and both are the point:
-
-    * Every item that reports on a URL reports on the same bytes. Before this, 36
-      single-page scripts fetched the entry page 36 times, and on a site that is not
-      static those were 36 different documents — items disagreeing about a page with
-      every one of them right about what it read.
-    * Nothing survives the run. There is no cache directory to go stale between
-      audits, so a second audit an hour later cannot be answered by the first.
-
-    Removal is registered with `atexit` rather than written at each return, because
-    `main` leaves by half a dozen paths and a cache that outlives its run on the
-    unusual one is exactly the failure worth preventing. A run killed outright
-    leaves the directory behind; `safe_http.CACHE_TTL` is why an entry from it can
-    still not answer anything.
-    """
+def _remove_http_cache(directory: str | None, lock_path: str, fd) -> None:
+    """Retire a name only after its contents are gone, keeping failed work retryable."""
     try:
-        directory = tempfile.mkdtemp(prefix="seo-http-")
+        try:
+            if directory is not None:
+                shutil.rmtree(directory)
+        except FileNotFoundError:
+            pass
+        if os.name == "posix":
+            # A waiter may already have this inode open. Retire its path before
+            # releasing the lock, so its identity check cannot accept the old name.
+            os.unlink(lock_path)
+        else:
+            # Windows denies deletion while any creator or waiter still has the
+            # file open. A failed unlink leaves the name for another sweep.
+            os.close(fd)
+            fd = None
+            os.unlink(lock_path)
+    except OSError:
+        pass
+    finally:
+        if fd is not None:
+            os.close(fd)
+
+
+def open_http_cache() -> str:
+    """Open a private cache whose name is protected for the owner's entire life.
+
+    Evidence scripts share the run's answers through the environment, so every
+    item that reports on a URL reports on the same bytes. Before this, 36 single-page
+    scripts fetched the entry page 36 times: on a changing site, 36 different
+    documents, with every item right about what it read.
+
+    Removal is registered with `atexit` because `main` leaves by half a dozen paths.
+    Normal exit removes the cache; after an outright kill, the next run removes its
+    residue. A refused removal is retried by a later sweep. Legacy lockless
+    directories wait until their top-level directory and every file's modification
+    time are older than CACHE_TTL.
+    """
+    from lib import safe_http
+
+    def same_file(fd, path):
+        try:
+            held, named = os.fstat(fd), os.stat(path)
+            return held.st_dev == named.st_dev and held.st_ino == named.st_ino
+        except OSError:
+            return False
+
+    def sweep():
+        try:
+            with os.scandir(tempfile.gettempdir()) as entries:
+                for entry in entries:
+                    if not entry.name.startswith("seo-http-"):
+                        continue
+                    fd = None
+                    try:
+                        if entry.is_file(follow_symlinks=False) and entry.name.endswith(
+                                safe_http.CACHE_OWNER_LOCK_SUFFIX):
+                            fd = os.open(entry.path, os.O_RDWR)
+                            if not safe_http._lock_exclusive(fd, blocking=False):
+                                continue
+                            if not same_file(fd, entry.path):
+                                continue
+                            directory = entry.path.removesuffix(safe_http.CACHE_OWNER_LOCK_SUFFIX)
+                            owned, fd = fd, None
+                            _remove_http_cache(directory, entry.path, owned)
+                        elif entry.is_dir(follow_symlinks=False):
+                            if os.path.lexists(entry.path + safe_http.CACHE_OWNER_LOCK_SUFFIX):
+                                continue
+                            newest = entry.stat(follow_symlinks=False).st_mtime
+                            # Directory timestamps do not advance when an existing
+                            # response is rewritten, so check the files themselves.
+                            for root, _, files in os.walk(entry.path):
+                                for name in files:
+                                    newest = max(newest, os.stat(os.path.join(root, name)).st_mtime)
+                            if time.time() - newest > safe_http.CACHE_TTL:
+                                shutil.rmtree(entry.path)
+                    except OSError:
+                        pass
+                    finally:
+                        if fd is not None:
+                            os.close(fd)
+        except OSError:
+            pass
+
+    sweep()
+    try:
+        # One try and two retries bound contention; each uses a fresh token.
+        for _attempt in range(3):
+            directory = os.path.join(tempfile.gettempdir(), "seo-http-" + uuid.uuid4().hex)
+            lock_path = directory + safe_http.CACHE_OWNER_LOCK_SUFFIX
+            try:
+                fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o600)
+            except FileExistsError:
+                continue
+            try:
+                if not safe_http._lock_exclusive(fd, blocking=False):
+                    continue
+                if not same_file(fd, lock_path):
+                    continue
+                try:
+                    os.mkdir(directory, mode=0o700)
+                except FileExistsError:
+                    # Retire only our sidecar; this directory belongs to someone else.
+                    owned, fd = fd, None
+                    _remove_http_cache(None, lock_path, owned)
+                    continue
+                os.environ[safe_http.CACHE_DIR_VAR] = directory
+                atexit.register(_remove_http_cache, directory, lock_path, fd)
+                fd = None
+                return directory
+            finally:
+                if fd is not None:
+                    os.close(fd)
+        raise OSError("response cache names were busy")
     except OSError as exc:
-        # Not fatal, and not silent: without a cache the audit is the audit we
-        # shipped in 0.9.0, only slower.
+        os.environ.pop(safe_http.CACHE_DIR_VAR, None)
         print(f"  response cache unavailable ({exc}); every script fetches for "
               f"itself", file=sys.stderr)
         return ""
-    from lib.safe_http import CACHE_DIR_VAR
-    os.environ[CACHE_DIR_VAR] = directory
-    atexit.register(shutil.rmtree, directory, ignore_errors=True)
-    return directory
 
 
 # ---------------------------------------------------------------------------

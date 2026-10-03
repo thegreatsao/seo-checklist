@@ -931,9 +931,11 @@ def _consume_capped(response, max_response_bytes: int | None):
 # no longer true — the one failure this tool exists to refuse. Hence:
 #
 #   * **Off unless a run turns it on.** `SEO_HTTP_CACHE` names the directory; the
-#     runner makes one per run and deletes it afterwards. A script run by hand
-#     caches nothing, and there is no shared cache that could outlive an audit and
-#     feed the next one a stale page.
+#     runner holds its sidecar lock for the run, deletes it afterwards, and sweeps
+#     dead owners on startup. Refused removals are retried by later runs; legacy
+#     lockless caches are swept only after every file has aged past CACHE_TTL.
+#     A script run by hand caches nothing, and there is no shared cache that could
+#     outlive an audit and feed the next one a stale page.
 #   * **Only real responses.** A timeout, a refused connection, a redirect loop and
 #     a robots.txt refusal are not answers and are never stored, so one transient
 #     failure cannot become every item's failure. Any status code *is* an answer,
@@ -942,11 +944,11 @@ def _consume_capped(response, max_response_bytes: int | None):
 #   * **GET and HEAD only.** Never POST: `indexnow_checker` submits URLs, and
 #     replaying a submission from disk would report something that did not happen.
 CACHE_DIR_VAR = "SEO_HTTP_CACHE"
+CACHE_OWNER_LOCK_SUFFIX = ".lock"
 URL_CREDENTIALS_VAR = "SEO_URL_CREDENTIALS"
-# basis: convention — 15 minutes, and it is belt to the per-run directory's braces: the
-#  directory is deleted when the run ends, so nothing should ever be this old. A run
-#  killed with SIGKILL leaves one behind, and an entry from it must not be able to
-#  answer anything
+# basis: convention — 15 minutes, bounding the age of a usable answer even in a
+#  live run. Dead owners are swept by the next run; legacy lockless residue is kept
+#  until its top-level directory and every file's modification time are older than this
 CACHE_TTL = 900.0
 # basis: convention — 8MB, above the 5MB response cap, so the cap decides what is
 #  fetched and this only decides what is worth writing to disk
