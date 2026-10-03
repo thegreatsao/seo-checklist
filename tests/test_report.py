@@ -2038,5 +2038,146 @@ class PageRunsAreNeverFlattenedIntoSiteRuns(unittest.TestCase):
                          "a failed run lost the reason it failed, so the artifact cannot "
                          "say what happened")
 
+
+class DecidedCategoriesCanHaveNoScore(unittest.TestCase):
+    """Artifacts can decide items on an entry the runner could not read.
+
+    That keeps the decided count without manufacturing a score. Both renderers
+    must deliver that payload, including a category made solely of scoring twins.
+    """
+
+    def payload(self):
+        # The pinned crash, with only the metadata both surfaces need added.
+        return {"url": "", "items": [], "scores": {
+            "status_counts": {}, "total_items": 2, "by_category": {
+                "x": {"decided": 1, "score": None, "counts": {},
+                      "label": "Unscored"},
+                "y": {"decided": 1, "score": 65, "counts": {},
+                      "label": "Scored"}}}}
+
+    def category_row(self, output, label="Unscored"):
+        from bs4 import BeautifulSoup
+        name = BeautifulSoup(output, "html.parser").find(class_="catname", string=label)
+        self.assertIsNotNone(name, f"{label} category disappeared")
+        return name.find_parent("div", class_="catrow")
+
+    def test_an_unscored_category_does_not_need_a_tone(self):
+        for overall in ("missing", None):
+            data = self.payload()
+            if overall is None:
+                data["scores"]["seo_score"] = None
+            with self.subTest(overall=overall):
+                self.category_row(render_html(data))
+
+    def test_an_unscored_category_has_no_bar(self):
+        row = self.category_row(render_html(self.payload()))
+        self.assertIsNone(row.find(class_="cattrack"))
+        self.assertIsNone(row.find("i"))
+        self.assertNotIn("width:", str(row))
+
+    def test_an_unscored_category_says_the_same_words_as_markdown(self):
+        data = self.payload()
+        md_row = next(line for line in render_markdown(data).splitlines()
+                      if line.startswith("| Unscored |"))
+        self.assertEqual(md_row.split("|")[2].strip(), "No score")
+        row = self.category_row(render_html(data))
+        self.assertEqual(row.find(class_="catnum").get_text(), "No score")
+        self.assertNotIn("/100", str(row))
+        self.assertNotIn("None", str(row))
+
+    def test_a_scored_neighbour_keeps_its_number_bar_and_tone(self):
+        for score, tone in ((0, "fail"), (25, "fail"), (65, "warn"), (100, "pass")):
+            data = self.payload()
+            data["scores"]["by_category"]["y"]["score"] = score
+            with self.subTest(score=score):
+                row = self.category_row(render_html(data), "Scored")
+                self.assertEqual(row.find(class_="catnum").get_text(), f"{score}/100")
+                bar = row.find(class_="cattrack").find("i")
+                self.assertEqual(bar["style"], f"width:{score}%")
+                self.assertEqual(bar["class"], [tone])
+
+    def test_both_surfaces_put_unscored_categories_after_scored_ones(self):
+        data = self.payload()
+        cats = data["scores"]["by_category"]
+        cats["x"]["worst_open"] = "critical"
+        cats["y"]["score"] = 100
+        cats["z"] = {"decided": 1, "score": 65, "counts": {},
+                     "label": "First", "worst_open": "high"}
+        cats["w"] = {"decided": 1, "score": 65, "counts": {},
+                     "label": "Critical first", "worst_open": "critical"}
+        for output in (render_markdown(data), render_html(data)):
+            with self.subTest(surface="html" if "catrow" in output else "markdown"):
+                positions = [output.index(label) for label in
+                             ("Critical first", "First", "Scored", "Unscored")]
+                self.assertEqual(positions, sorted(positions))
+
+    def test_a_twin_only_category_has_no_score_or_scored_population_claim(self):
+        data = results(item("A", PASS, category="meta", category_label="Scored"),
+                       item("B", PASS, category_label="Unscored", scores_with="A"))
+        data["scores"] = runner.score(data["items"])
+        cat = data["scores"]["by_category"]["content"]
+        self.assertEqual(cat["decided"], 1)
+        self.assertEqual(cat["score_population"], 0)
+        self.assertIsNone(cat["score"])
+        for output in (render_markdown(data), str(self.category_row(render_html(data)))):
+            self.assertIn("No score", output)
+            self.assertNotIn("scored over 0", output)
+
+    def test_the_absent_category_score_is_localized_on_both_surfaces(self):
+        data = self.payload()
+        for output in (render_markdown(data, Lang("ru")), render_html(data, Lang("ru"))):
+            self.assertIn("Нет оценки", output)
+            self.assertNotIn("No score", output)
+
+    def test_an_absent_history_score_is_named_in_words(self):
+        data = self.payload()
+        data["history"] = [{"started_at": "2026-10-01", "seo_score": None},
+                           {"started_at": "2026-10-02", "seo_score": 65}]
+        for output in (render_markdown(data), render_html(data)):
+            section = output.split("Over time", 1)[1]
+            self.assertIn("No score", section)
+            self.assertIn("65", section)
+            self.assertNotIn("None", section)
+
+    def test_a_real_404_with_good_artifacts_reaches_both_renderers(self):
+        import shutil
+        import tempfile
+        from pathlib import Path
+        from harness import offline_env, served, spawn, substitute
+
+        with tempfile.TemporaryDirectory(prefix="seo-report-dead-") as directory:
+            work = Path(directory)
+            body = Path(ROOT, "tests/fixtures/good/index.html").read_text(encoding="utf-8")
+            with served({"/": (404, {"Content-Type": "text/html"}, body)}) as site:
+                artifacts = work / "artifacts"
+                shutil.copytree(Path(ROOT, "tests/fixtures/artifacts/good"), artifacts)
+                substitute(str(artifacts), "http://127.0.0.1:8000", site.base)
+                target = work / "results.json"
+                flags = [arg for flag, filename in (
+                    ("--rendered-json", "rendered.json"), ("--cwv-json", "cwv.json"),
+                    ("--links-csv", "links"), ("--server-log", "access.log"))
+                    for arg in (flag, str(artifacts / filename))]
+                child = spawn([sys.executable, os.path.join(SKILL, "scripts", "checklist_runner.py"),
+                               site.url, "--allow-private", "--max-rps", "0", "--no-history",
+                               "--no-prompt", "--quiet", "--timeout", "120", "--keyword", "bread",
+                               "--json", str(target), "--evidence-json", str(work / "evidence.json"),
+                               *flags], env=offline_env(), timeout=180)
+                self.assertEqual(child.returncode, 0, child.stdout + child.stderr)
+                data = json.loads(target.read_text(encoding="utf-8"))
+            self.assertFalse(data["entry_reachable"])
+            self.assertGreater(data["scores"]["decided"], 0)
+            self.assertIsNone(data["scores"]["seo_score"])
+            self.assertFalse(data.get("script_failures"))
+            self.assertIn("No score:", child.stdout)
+            self.assertNotIn("SEO Score:", child.stdout)
+            for output in (render_markdown(data), render_html(data)):
+                self.assertIn("No score", output)
+                self.assertNotIn("None/100", output)
+                self.assertNotIn("None%", output)
+            from bs4 import BeautifulSoup
+            for row in BeautifulSoup(render_html(data), "html.parser").find_all(class_="catrow"):
+                self.assertIsNone(row.find(class_="cattrack"))
+                self.assertEqual(row.find(class_="catnum").get_text(), "No score")
+
 if __name__ == "__main__":
     unittest.main()

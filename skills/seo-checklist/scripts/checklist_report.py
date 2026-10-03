@@ -672,7 +672,7 @@ def trend_section(data: dict, L: "Lang | None" = None) -> list[str]:
                 f"| {str(row.get('started_at') or '')[:16]}"
                 f"{' *(' + L.t('this_run', 'this run') + ')*' if row.get('current') else ''} "
                 f"| {row.get('mode') or '?'} "
-                f"| {'—' if score is None else score} "
+                f"| {L.t('score_absent', 'No score') if score is None else score} "
                 f"| {'—' if row.get('weight_pct') is None else str(row['weight_pct']) + '%'} "
                 f"| {row.get('decided', '—')} |")
         out.append("")
@@ -1045,6 +1045,13 @@ def opportunity_section(data: dict, L: "Lang | None" = None) -> list[str]:
     return out
 
 
+def categories_in_report_order(scores: dict) -> list[tuple[str, dict]]:
+    """Keep unscored categories after scored ones on both report surfaces."""
+    return sorted(scores["by_category"].items(), key=lambda kv: (
+        kv[1]["score"] if kv[1]["score"] is not None else 101,
+        SEVERITY_ORDER.get(kv[1].get("worst_open"), 9)))
+
+
 def render_markdown(data: dict, L: Lang | None = None) -> str:
     s = data["scores"]
     mode = data.get("mode", "live")
@@ -1149,11 +1156,12 @@ def render_markdown(data: dict, L: Lang | None = None) -> str:
     out += ["", f"### {L.t('by_category', 'By category')}", "",
             f"| {L.t('category', 'Category')} | {L.t('score', 'Score')} | "
             f"{L.t('decided', 'Decided')} | {L.t('failed', 'Failed')} |", "|---|---|---|---|"]
-    for cat in s["by_category"].values():
+    for _, cat in categories_in_report_order(s):
         c = cat["counts"]
-        sc = f"{cat['score']}/100" if cat["score"] is not None else "—"
+        sc = (f"{cat['score']}/100" if cat["score"] is not None
+              else L.t("score_absent", "No score"))
         population = cat.get("score_population", cat["decided"])
-        if population != cat["decided"]:
+        if cat["score"] is not None and population != cat["decided"]:
             note = L.t(
                 "cat_score_population",
                 "scored over {scored} of them: {repeated} ask a question this "
@@ -1606,23 +1614,24 @@ def render_html(data: dict, L: Lang | None = None) -> str:
                  + "</div></section>")
 
     # -- Layer 2: where the problems are, as bars ------------------------------
-    cats = [(key, cat) for key, cat in s["by_category"].items() if cat["decided"]]
-    # Severity-weighted score, then the worst open severity as the tie-break: two
-    # categories on 80 are not equally urgent if one of them is holding a failing
-    # critical. Same ordering the fix list below uses, so the two layers agree
-    # about what to look at first.
-    cats.sort(key=lambda kv: (kv[1]["score"] if kv[1]["score"] is not None else 101,
-                              SEVERITY_ORDER.get(kv[1].get("worst_open"), 9)))
+    # An absent score cannot rank a category ahead of a measured problem.
+    cats = [(key, cat) for key, cat in categories_in_report_order(s) if cat["decided"]]
     if cats:
         parts.append(f'<section><h2>{html.escape(L.t("where", "Where the problems are"))}</h2>')
         for key, cat in cats:
             score = cat["score"]
-            tone = ("fail" if score < BAR_FAIL_SCORE
-                    else ("warn" if score < BAR_WARN_SCORE else "pass"))
+            tone = ""
+            if score is not None:
+                tone = ("fail" if score < BAR_FAIL_SCORE
+                        else ("warn" if score < BAR_WARN_SCORE else "pass"))
+            track = (f'<div class="cattrack"><i class="{tone}" '
+                     f'style="width:{score}%"></i></div>' if score is not None else "")
+            number = (f'{score}<small>/100</small>' if score is not None
+                      else html.escape(L.t("score_absent", "No score")))
             failed = cat["counts"].get(FAIL, 0) + cat["counts"].get(WARN, 0)
             population = cat.get("score_population", cat["decided"])
             population_note = ""
-            if population != cat["decided"]:
+            if score is not None and population != cat["decided"]:
                 population_note = " · " + L.t(
                     "cat_score_population",
                     "scored over {scored} of them: {repeated} ask a question this "
@@ -1631,9 +1640,9 @@ def render_html(data: dict, L: Lang | None = None) -> str:
                          repeated=cat["decided"] - population)
             parts.append(
                 f'<div class="catrow"><div class="catname">{html.escape(cat["label"])}</div>'
-                f'<div class="cattrack"><i class="{tone}" style="width:{score}%"></i></div>'
-                f'<div class="catnum">{score}<small>/100</small></div>'
-                f'<div class="catmeta">'
+                + track
+                + f'<div class="catnum">{number}</div>'
+                + '<div class="catmeta">'
                 + html.escape(L.t("cat_meta", "{decided} checked, {failed} need work")
                               .format(decided=cat["decided"], failed=failed))
                 + html.escape(population_note)
@@ -1726,7 +1735,7 @@ def render_html(data: dict, L: Lang | None = None) -> str:
                 f'<tr><td>{html.escape(str(r.get("started_at") or "")[:16])}'
                 f'{" <b>(" + html.escape(L.t("this_run", "this run")) + ")</b>" if r.get("current") else ""}</td>'
                 f'<td>{html.escape(str(r.get("mode") or "?"))}</td>'
-                f'<td>{"&mdash;" if r.get("seo_score") is None else r["seo_score"]}</td>'
+                f'<td>{html.escape(L.t("score_absent", "No score")) if r.get("seo_score") is None else r["seo_score"]}</td>'
                 f'<td>{"&mdash;" if r.get("weight_pct") is None else str(r["weight_pct"]) + "%"}</td>'
                 f'<td>{r.get("decided", "&mdash;")}</td></tr>' for r in history)
             block.append(
