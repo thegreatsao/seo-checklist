@@ -10,6 +10,46 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.143.0 — code nothing read is gone, and six behaviours it carried are named
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit writes
+changes.
+
+* **Nineteen cuts an audit of the whole tree had proved.** Every tracked Python file was
+  read on 3 October 2026, about 77,500 lines, for what could go. The nineteen findings it
+  could prove — a name nothing reads, or a hand-written loop the standard library already
+  is — are applied; the findings that rest on judgement wait to be checked one by one.
+  Gone from the scripts: `site_crawl._Ordered` (a `ThreadPoolExecutor` read in submission
+  order is the same thing), the `anchor_diversity` table `link_profile` built and never
+  returned, the alias `seo_common.USER_AGENT`, four `REPORT_RELATIVE` constants in the
+  calibration tools, and the hand-kept "seen" sets of `discover_urls`, `stride`,
+  `read_urls`, `env_loader` and `duplicate_content`, which are `dict.fromkeys` and
+  `itertools.combinations` now. In the tests, hand-written patch-and-restore blocks became
+  `mock.patch`, and three helpers nobody called were removed.
+
+* **What accepting the cuts showed: six behaviours no test held.** A rewrite was accepted
+  by undoing the behaviour it keeps and looking for a red test, first in the modules that
+  drive the function and then under the whole suite. Six times the suite stayed green: the
+  new line was equal to the old one, and the old one had never been required by anything.
+  Four have a test now, each seen red under its own breakage:
+  - a page listed under two spellings (`/a` and `/a/`) takes one place before the sample
+    is spread over the site — `SampledURLOrder.test_normalized_duplicates_take_one_slot_before_the_stride`;
+  - which pages a bounded crawl keeps is decided by the order links were found, not by
+    the order answers were read —
+    `OneCrawlForEveryoneWhoNeedsTheWholeSite.test_a_bounded_crawl_keeps_pages_in_link_discovery_order`;
+  - a near-duplicate pair is reported once —
+    `DuplicateAndThinContent.test_each_near_duplicate_pair_is_reported_once`;
+  - a MinHash signature has as many values as hash functions asked for —
+    `UnicodeMinHash.test_requested_hash_count_preserves_partial_shingle_similarity`.
+
+  Two are left exactly as they were and are still held by nothing: `stride`'s own
+  de-duplication, which cannot fire while its input is distinct, and the de-duplication of
+  the `.env` candidate paths, where reading one file twice changes nothing. Whether those
+  two lines stay is not decided.
+
+* **The calibration tools' `--check` runs in the suite.** CI ran the four as a workflow
+  step and nothing ran them here; `tests/test_calibration_reports.py` does.
+
 ## 0.142.0 — the HTML report's filters work in a sandboxed viewer
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit writes
