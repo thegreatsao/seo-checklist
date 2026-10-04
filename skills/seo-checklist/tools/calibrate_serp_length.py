@@ -30,7 +30,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
 SCRIPTS = os.path.join(SKILL_DIR, "scripts")
 REPORT = os.path.join(HERE, "calibration", "serp-length.json")
-REPORT_RELATIVE = "tools/calibration/serp-length.json"
 
 FONT_FILES = (
     {"name": "Arial", "path": "/System/Library/Fonts/Supplemental/Arial.ttf"},

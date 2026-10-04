@@ -17,6 +17,7 @@ Usage:
 """
 
 import argparse
+import itertools
 import json
 import sys
 from collections import defaultdict
@@ -195,44 +196,35 @@ def detect_duplicates(pages: dict, similarity_threshold: float = 0.85,
 
     # Step 2: Near-duplicates (MinHash Jaccard)
     near_dupes = []
-    urls = list(signatures.keys())
-    checked = set()
-
-    for i in range(len(urls)):
-        for j in range(i + 1, len(urls)):
-            pair = (urls[i], urls[j])
-            if pair in checked:
+    for url_a, url_b in itertools.combinations(signatures, 2):
+        sim = site_crawl.jaccard_from_minhash(signatures[url_a],
+                                              signatures[url_b])
+        if sim >= similarity_threshold:
+            # Skip if already in exact dupes
+            if any(url_a in ed["urls"] and url_b in ed["urls"] for ed in exact_dupes):
                 continue
-            checked.add(pair)
-
-            sim = site_crawl.jaccard_from_minhash(signatures[urls[i]],
-                                                  signatures[urls[j]])
-            if sim >= similarity_threshold:
-                # Skip if already in exact dupes
-                if any(urls[i] in ed["urls"] and urls[j] in ed["urls"] for ed in exact_dupes):
-                    continue
-                noindex_in_pair = (pages[urls[i]]["noindex"]
-                                   or pages[urls[j]]["noindex"])
-                near_dupes.append({
-                    "type": "near_duplicate",
-                    "severity": "Info" if noindex_in_pair else "Warning",
-                    "similarity": round(sim, 3),
-                    "url_a": urls[i],
-                    "url_b": urls[j],
-                    "word_count_a": pages[urls[i]]["word_count"],
-                    "word_count_b": pages[urls[j]]["word_count"],
-                    "noindex_in_pair": noindex_in_pair,
-                    "finding": (
-                        f"Pages are {sim:.0%} similar, but at least one page is noindex."
-                        if noindex_in_pair
-                        else f"Pages are {sim:.0%} similar — likely near-duplicate content."
-                    ),
-                    "fix": (
-                        "No action required for duplicate-content risk while noindex is intentional."
-                        if noindex_in_pair
-                        else "Differentiate content significantly, or set one as canonical and noindex the other."
-                    ),
-                })
+            noindex_in_pair = (pages[url_a]["noindex"]
+                               or pages[url_b]["noindex"])
+            near_dupes.append({
+                "type": "near_duplicate",
+                "severity": "Info" if noindex_in_pair else "Warning",
+                "similarity": round(sim, 3),
+                "url_a": url_a,
+                "url_b": url_b,
+                "word_count_a": pages[url_a]["word_count"],
+                "word_count_b": pages[url_b]["word_count"],
+                "noindex_in_pair": noindex_in_pair,
+                "finding": (
+                    f"Pages are {sim:.0%} similar, but at least one page is noindex."
+                    if noindex_in_pair
+                    else f"Pages are {sim:.0%} similar — likely near-duplicate content."
+                ),
+                "fix": (
+                    "No action required for duplicate-content risk while noindex is intentional."
+                    if noindex_in_pair
+                    else "Differentiate content significantly, or set one as canonical and noindex the other."
+                ),
+            })
 
     # Step 3: Thin content
     thin_pages = []

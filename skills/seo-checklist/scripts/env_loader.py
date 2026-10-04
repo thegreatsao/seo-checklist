@@ -44,15 +44,7 @@ def _candidate_paths() -> list[Path]:
         paths.append(Path(home) / ".agentic-seo" / ".env")
 
     # Deduplicate while preserving order.
-    seen = set()
-    unique: list[Path] = []
-    for p in paths:
-        key = str(p)
-        if key in seen:
-            continue
-        seen.add(key)
-        unique.append(p)
-    return unique
+    return [Path(key) for key in dict.fromkeys(map(str, paths))]
 
 
 def _parse_line(line: str) -> tuple[str, str] | None:

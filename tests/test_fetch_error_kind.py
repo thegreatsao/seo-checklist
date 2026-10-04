@@ -22,12 +22,6 @@ import seo_common  # noqa: E402
 from lib import safe_http  # noqa: E402
 
 
-def raising(exc):
-    def fail(*args, **kwargs):
-        raise exc
-    return fail
-
-
 class FetchErrorKinds(unittest.TestCase):
 
     def fetched(self, exc):

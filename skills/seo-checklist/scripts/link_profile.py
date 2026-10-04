@@ -117,17 +117,6 @@ def analyze_link_profile(graph: dict, crawled: set, base_domain: str,
         domain = urlparse(url).netloc
         external_domains[domain] += 1
 
-    # Anchor text analysis
-    anchor_diversity = {}
-    for url, anchors in graph["anchor_texts"].items():
-        unique = len(set(a.lower() for a in anchors))
-        total = len(anchors)
-        anchor_diversity[url] = {
-            "total_anchors": total,
-            "unique_anchors": unique,
-            "diversity_ratio": round(unique / max(total, 1), 2),
-        }
-
     # Internal link equity (simplified PageRank-like distribution)
     total_pages = len(pages)
     avg_internal_links = (

@@ -572,12 +572,9 @@ class PrivateAddresses(unittest.TestCase):
         the same class of lie as a fabricated score."""
         self.allow()
         err = io.StringIO()
-        saved, sys.stderr = sys.stderr, err
-        try:
+        with contextlib.redirect_stderr(err):
             for _ in range(3):
                 self.sh.assert_safe_url("http://127.0.0.1:8000/")
-        finally:
-            sys.stderr = saved
         self.assertEqual(err.getvalue().count("SEO_ALLOW_PRIVATE"), 1,
                          "the allowance must be stated, and stated once")
 
@@ -904,15 +901,10 @@ class Robots(unittest.TestCase):
         excludes robots refusals. A refusal arriving as a plain error would have
         manufactured their failure out of our own politeness."""
         import seo_common
-        saved = seo_common.safe_request
-
         def refuse(*a, **kw):
             raise self.sh.RobotsDisallowed("robots.txt disallows it")
-        seo_common.safe_request = refuse
-        try:
+        with mock.patch.object(seo_common, "safe_request", new=refuse):
             out = seo_common.fetch_url("https://example.com/x", respect_robots=True)
-        finally:
-            seo_common.safe_request = saved
         self.assertTrue(out["robots_blocked"])
         self.assertIn("robots.txt", out["error"])
         self.assertEqual(out["error_kind"], "robots")
@@ -1766,12 +1758,9 @@ class ProfilePrompt(unittest.TestCase):
         """CI, cron and background runs must not block on a question nobody sees."""
         def explode(prompt=""):
             raise AssertionError("prompted with no terminal attached")
-        stdin, real_input = sys.stdin, builtins.input
-        sys.stdin, builtins.input = io.StringIO(), explode
-        try:
+        with mock.patch.object(sys, "stdin", new=io.StringIO()), \
+                mock.patch.object(builtins, "input", new=explode):
             self.assertEqual(choose_profile("", True), "default")
-        finally:
-            sys.stdin, builtins.input = stdin, real_input
 
     def test_no_prompt_flag_skips_the_question(self):
         self.assertEqual(self.ask("2", interactive=False), "default")
@@ -1783,17 +1772,12 @@ class ProfilePrompt(unittest.TestCase):
             self.assertEqual(self.ask(answer), "default")
 
     def test_eof_is_treated_as_no_answer(self):
-        stdin, real_input = sys.stdin, builtins.input
-        sys.stdin = self._Tty()
-
         def eof(prompt=""):
             raise EOFError
 
-        builtins.input = eof
-        try:
+        with mock.patch.object(sys, "stdin", new=self._Tty()), \
+                mock.patch.object(builtins, "input", new=eof):
             self.assertEqual(choose_profile("", True), "default")
-        finally:
-            sys.stdin, builtins.input = stdin, real_input
 
 
 class Detection(unittest.TestCase):
@@ -1921,12 +1905,9 @@ class DetectedProfilePrompt(unittest.TestCase):
         def explode(prompt=""):
             raise AssertionError("--profile auto must not prompt")
 
-        stdin, real_input = sys.stdin, builtins.input
-        sys.stdin, builtins.input = self._Tty(), explode
-        try:
+        with mock.patch.object(sys, "stdin", new=self._Tty()), \
+                mock.patch.object(builtins, "input", new=explode):
             self.assertEqual(choose_profile("auto", True, d), "saas")
-        finally:
-            sys.stdin, builtins.input = stdin, real_input
 
     def test_the_silent_exits_widen_the_audit(self):
         """`openspec/specs/run-lifecycle/` RUN-14 and `openspec/specs/verdicts/`
@@ -1987,36 +1968,24 @@ class DetectedProfilePrompt(unittest.TestCase):
 
     def _said(self, call):
         stream = io.StringIO()
-        real = sys.stderr
-        sys.stderr = stream
-        try:
+        with contextlib.redirect_stderr(stream):
             call()
-        finally:
-            sys.stderr = real
         return stream.getvalue()
 
     def _exit_by(self, exc, detected):
-        stdin, real_input = sys.stdin, builtins.input
-
         def raises(prompt=""):
             raise exc
 
-        sys.stdin, builtins.input = self._Tty(), raises
-        try:
+        with mock.patch.object(sys, "stdin", new=self._Tty()), \
+                mock.patch.object(builtins, "input", new=raises):
             return choose_profile("", True, detected)
-        finally:
-            sys.stdin, builtins.input = stdin, real_input
 
     def test_detection_does_not_narrow_scope_without_a_terminal(self):
         """The suggestion is mentioned, never applied, when nobody can confirm."""
         d = {"profile": "ecommerce", "confidence": "high", "signals": {"ecommerce": ["x"]}}
-        stdin, real_input = sys.stdin, builtins.input
-        sys.stdin = io.StringIO()
-        builtins.input = lambda prompt="": "ecommerce"
-        try:
+        with mock.patch.object(sys, "stdin", new=io.StringIO()), \
+                mock.patch.object(builtins, "input", new=lambda prompt="": "ecommerce"):
             self.assertEqual(choose_profile("", True, d), "default")
-        finally:
-            sys.stdin, builtins.input = stdin, real_input
 
 
 class Sampling(unittest.TestCase):
@@ -2184,13 +2153,12 @@ github.io
         saved_path = cr.PSL_PATH
         cr.PSL_PATH = os.path.join(tempfile.mkdtemp(), "absent.dat")
         err = io.StringIO()
-        saved_stderr, sys.stderr = sys.stderr, err
         try:
-            # The heuristic's answer, and the warning that it is the heuristic's.
-            self.assertEqual(cr.registrable_domain("shop.bbc.co.uk"), "bbc.co.uk")
-            self.assertIn("public suffix list not found", err.getvalue())
+            with contextlib.redirect_stderr(err):
+                # The heuristic's answer, and the warning that it is the heuristic's.
+                self.assertEqual(cr.registrable_domain("shop.bbc.co.uk"), "bbc.co.uk")
+                self.assertIn("public suffix list not found", err.getvalue())
         finally:
-            sys.stderr = saved_stderr
             cr.PSL_PATH = saved_path
             cr._PSL_CACHE, cr._PSL_WARNED = saved_cache, saved_warned
 
@@ -4396,12 +4364,8 @@ class FetchCarriesTheDestination(unittest.TestCase):
     def _fetch(self, resp, **kw):
         import lib.safe_http as sh
         from checklist_runner import fetch_page
-        original = sh.safe_get
-        sh.safe_get = lambda url, **_: resp
-        try:
+        with mock.patch.object(sh, "safe_get", new=lambda url, **_: resp):
             return fetch_page("https://asked.example/", **kw)
-        finally:
-            sh.safe_get = original
 
     def test_the_final_url_is_reported(self):
         out = self._fetch(self._Resp(_page(), "https://landed.example/en/"))
@@ -4658,17 +4622,12 @@ class EvidenceArtifact(unittest.TestCase):
     def test_safe_browsing_request_errors_replace_the_key(self):
         import domain_safety_check as safety
         secret = "safe-browsing-secret-value"
-        saved = safety.requests.post
-
         def fail(*_args, **_kwargs):
             raise safety.requests.RequestException(
                 f"connection failed for {safety.SB_ENDPOINT}?key={secret}")
 
-        safety.requests.post = fail
-        try:
+        with mock.patch.object(safety.requests, "post", new=fail):
             out = safety.check_safe_browsing("https://example.com", secret, 10)
-        finally:
-            safety.requests.post = saved
         self.assertNotIn(secret, out["error"])
         self.assertIn("?key=<redacted>", out["error"])
 
@@ -4719,6 +4678,21 @@ class UnicodeMinHash(unittest.TestCase):
         return self.crawl.jaccard_from_minhash(
             self.crawl.minhash_signature(self.crawl.shingle(left)),
             self.crawl.minhash_signature(self.crawl.shingle(right)))
+
+    def test_requested_hash_count_preserves_partial_shingle_similarity(self):
+        left = self.crawl.shingle(" ".join(f"word{i}" for i in range(25)))
+        right = self.crawl.shingle(" ".join(f"word{i}" for i in range(7, 32)))
+        self.assertEqual(len(left & right) / len(left | right), 0.5)
+        for count in (7, 64):
+            with self.subTest(num_hashes=count):
+                left_signature = self.crawl.minhash_signature(left, num_hashes=count)
+                right_signature = self.crawl.minhash_signature(right, num_hashes=count)
+                self.assertEqual(len(left_signature), count)
+                self.assertEqual(len(right_signature), count)
+                similarity = self.crawl.jaccard_from_minhash(
+                    left_signature, right_signature)
+                self.assertGreater(similarity, 0.25)
+                self.assertLess(similarity, 0.75)
 
     def test_different_russian_texts_are_not_near_duplicates(self):
         left = "собирайте спелую чернику летом всей семьёй сегодня"

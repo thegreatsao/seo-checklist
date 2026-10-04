@@ -441,9 +441,6 @@ class ALocaleLivesInOnePartOfTheURL(unittest.TestCase):
         import hreflang_checker
         self.mod = hreflang_checker
 
-    def tags(self, *urls):
-        return [{"lang": f"l{n}", "url": u} for n, u in enumerate(urls)]
-
     def verdict(self, tags):
         """The item's own answer, through the runner's evaluator rather than by
         reading `passed` — the wiring between the script and the rule is half of what

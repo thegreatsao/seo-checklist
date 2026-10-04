@@ -22,7 +22,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
 SCRIPTS = os.path.join(SKILL_DIR, "scripts")
 REPORT = os.path.join(HERE, "calibration", "gsc-sample-floors.json")
-REPORT_RELATIVE = "tools/calibration/gsc-sample-floors.json"
 
 Z_SCORE = 1.96
 CONFIDENCE_LEVEL_PCT = 95

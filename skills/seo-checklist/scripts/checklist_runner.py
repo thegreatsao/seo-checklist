@@ -2653,13 +2653,7 @@ def stride(urls: list[str], limit: int) -> list[str]:
     # of the end, which leaves the tail of a large sitemap unreachable at any sample
     # size — the same blind spot as taking the first N, moved to the other end.
     last = len(urls) - 1
-    picked, seen = [], set()
-    for i in range(limit):
-        u = urls[round(i * last / (limit - 1))]
-        if u not in seen:
-            seen.add(u)
-            picked.append(u)
-    return picked
+    return list(dict.fromkeys(urls[round(i * last / (limit - 1))] for i in range(limit)))
 
 
 def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> list[str]:
@@ -2737,12 +2731,8 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
 
     # Deduplicate before striding, or the step lands repeatedly on the same page in
     # a sitemap that lists a URL under several paths.
-    unique, seen_raw = [], set()
-    for u in found:
-        norm = u.rstrip("/") or u
-        if norm != (base_url.rstrip("/") or base_url) and norm not in seen_raw:
-            seen_raw.add(norm)
-            unique.append(norm)
+    unique = list(dict.fromkeys(u.rstrip("/") or u for u in found))
+    unique = [u for u in unique if u != (base_url.rstrip("/") or base_url)]
 
     # `limit - 1` because the entry URL takes one of the slots below.
     candidates = stride(unique, max(limit - 1, 0))
@@ -2751,15 +2741,7 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
         print(f"  {len(candidates) - len(allowed)} sampled URL(s) skipped: "
               f"robots.txt disallows them", file=sys.stderr)
 
-    seen, out = set(), []
-    for u in [base_url] + allowed:
-        u = u.rstrip("/") or u
-        if u not in seen:
-            seen.add(u)
-            out.append(u)
-        if len(out) >= limit:
-            break
-    return out
+    return list(dict.fromkeys(u.rstrip("/") or u for u in [base_url] + allowed))[:max(1, limit)]
 
 
 PAGE_LEVEL = {req for req, gates in REQUIREMENT_GATES.items()

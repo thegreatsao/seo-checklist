@@ -661,17 +661,11 @@ def _shared_robots_cache() -> dict:
 
     origin = "http://127.0.0.1:49152"
     var = safe.RATE_LIMIT_DIR_VAR
-    saved = os.environ.get(var)
-    try:
-        os.environ[var] = os.path.join(_tempfile.gettempdir(), "probe-rate-dir")
+    with mock.patch.dict(os.environ,
+                         {var: os.path.join(_tempfile.gettempdir(), "probe-rate-dir")}):
         honours_environment = safe.rate_limit_dir() == os.environ[var]
         os.environ.pop(var, None)
         default = safe.rate_limit_dir()
-    finally:
-        if saved is None:
-            os.environ.pop(var, None)
-        else:
-            os.environ[var] = saved
 
     with open(os.path.join(ROOT, "tests", "harness.py"), encoding="utf-8") as stream:
         harness_source = stream.read()

@@ -22,6 +22,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
@@ -519,13 +520,9 @@ class SnippetControls(unittest.TestCase):
 
     def check(self, response):
         import indexability_matrix as ix
-        saved = ix.urls_from_sitemaps
-        ix.urls_from_sitemaps = lambda *a, **k: set()
-        try:
+        with mock.patch.object(ix, "urls_from_sitemaps", lambda *a, **k: set()):
             with served({"/": response}) as site, allow_loopback():
                 return ix.evaluate([site.url], site.url)
-        finally:
-            ix.urls_from_sitemaps = saved
 
     def test_meta_delivered_nosnippet_fails_and_reads_googlebot(self):
         html = PAGE.replace(

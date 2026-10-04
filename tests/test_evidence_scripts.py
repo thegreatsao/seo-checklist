@@ -1827,16 +1827,11 @@ class Redirects(unittest.TestCase):
         self.redirect_checker.safe_head = self.saved_safe_head
 
     def _stub_redirects(self, answers):
-        class Elapsed:
-            @staticmethod
-            def total_seconds():
-                return 0.001
-
         class Response:
             def __init__(self, status, location=None):
                 self.status_code = status
                 self.headers = {} if location is None else {"Location": location}
-                self.elapsed = Elapsed()
+                self.elapsed = timedelta(milliseconds=1)
 
         self.redirect_checker.safe_head = lambda url, **_kwargs: Response(*answers[url])
 
@@ -1945,12 +1940,8 @@ class Redirects(unittest.TestCase):
             calls.append(url)
             raise requests.exceptions.ConnectionError("refused")
 
-        original = redirect_checker.safe_head
-        redirect_checker.safe_head = refuse
-        try:
+        with mock.patch.object(redirect_checker, "safe_head", refuse):
             result = redirect_checker.check_redirects("https://example.test/")
-        finally:
-            redirect_checker.safe_head = original
 
         self.assertEqual(len(calls), 1)
         self.assertNotIn("has_loop", result)
@@ -2167,6 +2158,21 @@ class DuplicateAndThinContent(unittest.TestCase):
                 "meta_description": row.get("meta_description", f"Description {index}"),
             }
         return duplicate_content.detect_duplicates(pages)
+
+    def test_each_near_duplicate_pair_is_reported_once(self):
+        import duplicate_content
+        base = "https://e.test/"
+        pages = {
+            base + name: {"word_count": 500, "text_hash": name, "noindex": False,
+                          "signature": list(range(9)) + [tail] if name != "d"
+                          else [100] * 10}
+            for name, tail in (("d", 13), ("c", 12), ("b", 11), ("a", 10))
+        }
+        report = duplicate_content.detect_duplicates(pages)
+        self.assertEqual(
+            [(pair["url_a"], pair["url_b"]) for pair in report["near_duplicates"]],
+            [(base + "a", base + "b"), (base + "a", base + "c"),
+             (base + "b", base + "c")])
 
     def test_four_distinct_pages_are_not_duplicates_of_each_other(self):
         good = out("dupes")
@@ -5312,17 +5318,10 @@ class ImagesJudgedOneByOne(unittest.TestCase):
         later full fetch of the same URL gets the whole file."""
         import image_weight_audit
         from lib.safe_http import safe_get
-        saved = os.environ.get("SEO_ALLOW_PRIVATE")
-        os.environ["SEO_ALLOW_PRIVATE"] = "1"
-        try:
+        with mock.patch.dict(os.environ, {"SEO_ALLOW_PRIVATE": "1"}):
             header, _total = image_weight_audit._intrinsic_size(
                 self.base + "/wide-heavy.png", 10, len(self.HEAVY_WIDE))
             full = safe_get(self.base + "/wide-heavy.png", timeout=10)
-        finally:
-            if saved is None:
-                os.environ.pop("SEO_ALLOW_PRIVATE", None)
-            else:
-                os.environ["SEO_ALLOW_PRIVATE"] = saved
         self.assertEqual(header[1], 2000)
         self.assertEqual(full.content, self.HEAVY_WIDE)
 
@@ -6618,6 +6617,22 @@ class OneCrawlForEveryoneWhoNeedsTheWholeSite(unittest.TestCase):
     that wrote it — which is what these do.
     """
 
+    def test_a_bounded_crawl_keeps_pages_in_link_discovery_order(self):
+        import site_crawl
+        routes = {
+            "/": '<a href="/a">A</a><a href="/b">B</a>',
+            "/a": '<a href="/a1">A1</a>',
+            "/b": '<a href="/b1">B1</a>',
+            "/a1": "A1", "/b1": "B1",
+            "/robots.txt": (200, "User-agent: *\nAllow: /\n"),
+        }
+        with harness.allow_loopback(), served(routes) as site:
+            inventory = site_crawl.crawl(site.url, workers=2, max_pages=4,
+                                         use_sitemap=False, signatures=False)
+            expected = [site.url, site.base + "/a", site.base + "/b", site.base + "/a1"]
+            self.assertEqual(set(inventory["pages"]), set(expected))
+            self.assertEqual(list(inventory["pages"]), expected)
+
     def test_the_crawl_records_a_status_for_every_page_it_reached(self):
         crawl = out("crawl")
         self.assertGreater(crawl["summary"]["pages_fetched"], 3)
@@ -7015,12 +7030,9 @@ class AServiceRefusingIsNotAScriptFailing(unittest.TestCase):
 
     def drive(self, status):
         import pagespeed
-        original = pagespeed.safe_get
-        pagespeed.safe_get = lambda *a, **k: self.Resp(status)
-        try:
+        with mock.patch.object(pagespeed, "safe_get",
+                               side_effect=lambda *a, **k: self.Resp(status)):
             return pagespeed.get_pagespeed("https://example.com/", "mobile")
-        finally:
-            pagespeed.safe_get = original
 
     def test_a_rate_limit_is_the_service_refusing(self):
         """The row that started this: *"script failed: Rate limited by Google API"*,

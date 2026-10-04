@@ -187,15 +187,9 @@ def minhash_signature(shingles: set, num_hashes: int = MINHASH_FUNCTIONS) -> lis
     """
     if not shingles:
         return []
-    sig = []
-    for i in range(num_hashes):
-        min_hash = float("inf")
-        for s in shingles:
-            h = int(hashlib.md5(f"{i}:{s}".encode()).hexdigest(), 16)
-            if h < min_hash:
-                min_hash = h
-        sig.append(min_hash)
-    return sig
+    return [min(int(hashlib.md5(f"{i}:{s}".encode()).hexdigest(), 16)
+                for s in shingles)
+            for i in range(num_hashes)]
 
 
 def jaccard_from_minhash(sig1: list, sig2: list) -> float:
@@ -316,29 +310,6 @@ def load_sitemap_urls(site_url: str, sitemap_urls: list[str] | None = None,
 # ---------------------------------------------------------------------------
 # The crawl
 # ---------------------------------------------------------------------------
-
-class _Ordered:
-    """Submit in parallel, read in submission order.
-
-    `as_completed` would make the page set depend on which request finished first
-    once `max_pages` bites, and an inventory that differs between two runs of the
-    same site is one nobody can diff.
-    """
-
-    def __init__(self, workers: int):
-        self._pool = ThreadPoolExecutor(max_workers=max(1, workers))
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        self._pool.shutdown(wait=True)
-        return False
-
-    def map(self, fn, items):
-        for future in [self._pool.submit(fn, item) for item in items]:
-            yield future.result()
-
 
 def _read_page(fetched: dict, key: str, discovered_url: str, site_url: str,
                signatures: bool = True) -> dict:
@@ -528,9 +499,13 @@ def crawl(site_url: str, depth: int = DEFAULT_DEPTH,
         if not batch:
             break
 
-        with _Ordered(workers) as pool:
-            for (key, discovered_url, page_depth, source), fetched in pool.map(
-                    fetch_one, batch):
+        # Submit in parallel, read in submission order.
+        # `as_completed` would make the page set depend on which request finished first
+        # once `max_pages` bites, and an inventory that differs between two runs of the
+        # same site is one nobody can diff.
+        with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+            for future in [pool.submit(fetch_one, job) for job in batch]:
+                (key, discovered_url, page_depth, source), fetched = future.result()
                 if fetched.get("robots_blocked"):
                     robots_blocked[key] = fetched.get("error") or "robots.txt"
                     continue

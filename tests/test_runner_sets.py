@@ -226,5 +226,27 @@ class EveryMemberDoesItsJob(unittest.TestCase):
         self.assertFalse(hasattr(r, "SITEMAP_PATHS"), "a second copy survives")
 
 
+class SampledURLOrder(unittest.TestCase):
+    def test_normalized_duplicates_take_one_slot_before_the_stride(self):
+        import lib.safe_http as safe_http
+        base = "https://e.test/"
+        inventory = {"pages": {base + path: {"html": "page", "status": 200}
+                              for path in ("", "a", "a/", "b", "c", "c/", "d")}}
+        with mock.patch.object(safe_http, "robots_allows", return_value=(True, "")):
+            self.assertEqual(r.discover_urls(base, 4, inventory),
+                             ["https://e.test", base + "a", base + "c", base + "d"])
+
+    def test_normalized_duplicates_and_nonpositive_limits_keep_the_entry(self):
+        import lib.safe_http as safe_http
+        base = "https://e.test/"
+        inventory = {"pages": {url: {"html": "page", "status": 200} for url in
+                              (base, base + "a", base + "a/", base + "b")}}
+        with mock.patch.object(safe_http, "robots_allows", return_value=(True, "")):
+            for limit in (-1, 0, 1, 5):
+                expected = [base.rstrip("/")] if limit <= 1 else [
+                    base.rstrip("/"), base + "a", base + "b"]
+                self.assertEqual(r.discover_urls(base, limit, inventory), expected)
+
+
 if __name__ == "__main__":
     unittest.main()

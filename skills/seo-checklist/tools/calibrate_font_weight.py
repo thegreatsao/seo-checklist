@@ -26,7 +26,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
 SCRIPTS = os.path.join(SKILL_DIR, "scripts")
 REPORT = os.path.join(HERE, "calibration", "font-weight.json")
-REPORT_RELATIVE = "tools/calibration/font-weight.json"
 
 PACKAGES = (
     {"package": "@fontsource/inter", "version": "5.1.0", "arm": "A"},

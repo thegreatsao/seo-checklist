@@ -37,7 +37,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
 SCRIPTS = os.path.join(SKILL_DIR, "scripts")
 REPORT = os.path.join(HERE, "calibration", "css-minification.json")
-REPORT_RELATIVE = "tools/calibration/css-minification.json"
 
 PACKAGES = (
     {"package": "bootstrap", "version": "5.3.3", "group": "A"},

@@ -24,6 +24,7 @@ import sys
 import tempfile
 import unittest
 import zipfile
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL = os.path.join(ROOT, "skills", "seo-checklist")
@@ -1316,15 +1317,11 @@ class UrlInspection(unittest.TestCase):
             "pageFetchState": "SUCCESSFUL",
         }}}
         self.mod.build_service = lambda *a, **k: _Query(inspection=payload)
-        saved_argv = sys.argv
-        sys.argv = ["gsc_url_inspection.py", "https://example.com/",
-                    "--property", "sc-domain:example.com"]
         output = io.StringIO()
-        try:
+        with mock.patch.object(sys, "argv", ["gsc_url_inspection.py", "https://example.com/",
+                                            "--property", "sc-domain:example.com"]):
             with contextlib.redirect_stdout(output):
                 self.mod.main()
-        finally:
-            sys.argv = saved_argv
         self.assertIn("canon match:   unknown", output.getvalue())
 
 

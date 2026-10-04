@@ -148,12 +148,10 @@ class RegistryShape(unittest.TestCase):
         excuses nothing and reads as a decision somebody made about a live item."""
         sys.path.insert(0, os.path.join(SKILL, "tools"))
         import build_checklist
-        build_checklist.SUBJECT_ALWAYS_PRESENT["ZZ-998"] = "an item that is not here"
-        try:
+        with mock.patch.dict(build_checklist.SUBJECT_ALWAYS_PRESENT,
+                             {"ZZ-998": "an item that is not here"}):
             complaints = build_checklist.subject_is_declared_for_every_absence_passing_item(
                 ITEMS)
-        finally:
-            del build_checklist.SUBJECT_ALWAYS_PRESENT["ZZ-998"]
         self.assertEqual(complaints, ["ZZ-998 is excused and is not in the registry"])
 
     def test_the_two_tables_do_not_overlap_and_cover_the_candidates_exactly(self):
@@ -238,13 +236,9 @@ class RegistryShape(unittest.TestCase):
                                              "empty list"),
                                   ("CI-004", "withheld_key: every page has indexing "
                                              "directives, present or absent")):
-            original = table[item_id]
-            try:
-                table[item_id] = mutation
+            with mock.patch.dict(table, {item_id: mutation}):
                 complaints = build_checklist.reason_matches_what_the_checker_emits(
                     ITEMS)
-            finally:
-                table[item_id] = original
             with self.subTest(item=item_id):
                 self.assertEqual([c for c in complaints if c.startswith(item_id)],
                                  complaints, complaints)

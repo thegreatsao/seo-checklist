@@ -18,8 +18,7 @@ dependency handle, ``require_bs4``, ``html_parser``, ``parse_html``,
 sitemaps use ``fetch_robots``, ``parse_robots_txt``, ``robots_allowed``,
 ``discover_sitemap_urls`` and ``parse_sitemap_xml``. JSON-LD uses ``walk_json`` and
 ``as_list``. Output handling is ``issue`` and ``print_json_or_text``. The shared
-policy constants are ``USER_AGENT``,
-``HTML_CTYPES``, ``XML_CTYPES``, ``FETCH_ERROR_KINDS``,
+policy constants are ``HTML_CTYPES``, ``XML_CTYPES``, ``FETCH_ERROR_KINDS``,
 ``DEAD_FETCH_ERROR_KINDS``, ``BYLINE_CLASS_TOKENS``, ``THIN_CONTENT_WORDS``,
 ``LCP_MIN_AREA`` and ``CONVENTIONAL_SITEMAP_PATHS``.
 
@@ -53,13 +52,12 @@ except ImportError:  # pragma: no cover - exercised by users without deps
     BeautifulSoup = None
 
 try:
-    from lib.safe_http import (AGENTIC_SEO_USER_AGENT, HostResolutionError,
+    from lib.safe_http import (HostResolutionError,
                                RobotsDisallowed, SafeHTTPError, safe_get,
                                safe_request)
     from lib import robots_rules
 except ImportError:
-    from scripts.lib.safe_http import (AGENTIC_SEO_USER_AGENT,
-                                       HostResolutionError, RobotsDisallowed,
+    from scripts.lib.safe_http import (HostResolutionError, RobotsDisallowed,
                                        SafeHTTPError, safe_get, safe_request)
     from scripts.lib import robots_rules
 
@@ -69,7 +67,6 @@ except ImportError:  # pragma: no cover - requests normally supplies urllib3
     _NameResolutionError = None
 
 
-USER_AGENT = AGENTIC_SEO_USER_AGENT
 HTML_CTYPES = ("text/html", "application/xhtml+xml")
 XML_CTYPES = ("xml", "text/plain", "application/octet-stream")
 FETCH_ERROR_KINDS = (
@@ -441,21 +438,11 @@ def check_link_status(url: str, timeout: int = 15) -> dict:
 
 
 def read_urls(values: list[str] | None = None, file_path: str | None = None) -> list[str]:
-    urls: list[str] = []
-    for value in values or []:
-        if value:
-            urls.append(value.strip())
+    urls = [value.strip() for value in values or [] if value]
     if file_path:
         with open(file_path, "r", encoding="utf-8") as fh:
             urls.extend(line.strip() for line in fh if line.strip() and not line.lstrip().startswith("#"))
-    seen = set()
-    normalized = []
-    for url in urls:
-        nurl = normalize_url(url)
-        if nurl not in seen:
-            seen.add(nurl)
-            normalized.append(nurl)
-    return normalized
+    return list(dict.fromkeys(normalize_url(url) for url in urls))
 
 
 def load_html(source: str, timeout: int = 15) -> tuple[str, str, dict]:

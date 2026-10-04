@@ -367,13 +367,6 @@ class AnIdentifierMeansOneThingInTheSuite(unittest.TestCase):
     eight documents later than a `grep` would have caught it.
     """
 
-    def prefixes(self, pattern):
-        seen = {}
-        for name, lines, _ in DOCS:
-            for found in re.findall(pattern, "\n".join(lines)):
-                seen.setdefault(found, set()).add(name)
-        return seen
-
     def test_no_requirement_prefix_is_shared_by_two_documents(self):
         owners = {}
         for name, lines, _ in DOCS:
