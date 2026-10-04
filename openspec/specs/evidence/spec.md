@@ -255,9 +255,17 @@ and no number that decides a verdict may carry none.
 question about a `FAIL` is where the line came from. `inherited` is an honest answer and
 also a debt; the point of naming it is that the debt is countable.
 **Reader:** enforced. `tools/audit_thresholds.py --check` runs in CI over every number a
-verdict depends on and fails when one names no basis. It reports 146 such numbers today —
-11 `standard`, 11 `measured`, 47 `convention`, 77 `inherited`, and **0 with no basis**.
-The gate holds the floor; the 77 are the debt it makes visible.
+verdict depends on and fails when one names no basis. It reports 161 such numbers at
+0.144.0 — 19 `standard`, 11 `measured`, 54 `convention`, 77 `inherited`, and **0 with no
+basis**. The gate holds the floor; the 77 are the debt it makes visible. **Until 0.144.0
+nothing held the scan itself.** A constant becomes a threshold in four places — an
+ordering comparison, an argument of `min` or `max`, a multiplication, a looked-up table —
+and by the walk under each; any of the five could be removed with every test green,
+because a constant that carries a basis line is counted whether the scan sees it or not.
+`test_registry.EveryThresholdSaysWhatItRestsOn.test_each_threshold_use_without_basis_is_refused`
+holds all five, each seen red. Not held: the counts in this paragraph. They read 146 / 11
+/ 11 / 47 / 77 until 0.144.0, after the tool had moved; the ROADMAP's copies are read by
+`tests/test_prose_counts.py` and these are not.
 
 #### Scenario: a number decides a verdict
 - **WHEN** a threshold in a checker separates one verdict from another

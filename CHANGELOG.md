@@ -10,6 +10,78 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.144.0 — sixteen cuts that had to be shown first, and what showing them found
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit writes
+changes.
+
+* **The audit's findings that rested on judgement, checked one at a time — runner, report,
+  evidence scripts, tools.** The audit of 3 October 2026 could prove nineteen of its
+  findings by reading, and 0.143.0 applied them. Each of the others ended by naming what
+  would show it: the built registry by bytes, a rendered report by its text, a script's
+  output for every argument a caller passes. The eighteen outside `tests/` were run that
+  way. Sixteen held and are applied, one was struck, one was not worth its lines: 317
+  lines left sixteen files under `skills/` and 166 came in.
+  - *Report.* The three sections that list items beside their raw evidence render a row
+    through one `_row`. The report takes `_utf8_stdout` and `score` from the runner; its
+    own copy of the first and the wrapper round the second (`load_scoring`) are gone.
+  - *Scripts.* `seo_common.load_source` no longer looks for a file on disk itself:
+    `is_url` gives a file precedence, so `load_html` already opens it. The four E-E-A-T
+    link families are selected by one filter. `hreflang_checker.locale_lives_in` hands
+    its path-and-query tail to the helper that already had it. `parse_html` uses
+    `seo_common.is_responsive_fill_image`. `tls_certificate` prints once where two
+    branches printed the same thing; `--json` is still accepted.
+  - *Tools.* The four calibration tools read runtime constants and take percentiles
+    through a new `tools/calibration_common.py`, which imports nothing of the runtime,
+    and share their archive display path in `corpus_fetch`. `build_checklist` decorates
+    an entry in one place for both of its item tables, runs its five validators from one
+    loop and walks a check with `seo_common.walk_json`; the built `checklist.json` is the
+    same bytes after each. `audit_assertions` reads severities through
+    `audit_catalogue.severity_cases`, and `audit_thresholds._names_in` is one expression.
+
+* **Struck: one `_utf8_stdout` for the six evidence scripts that each carry a copy.**
+  Sharing it through `seo_common` puts the call behind that module's imports. Four of the
+  six set their streams before their other imports — two of them so that the message
+  about a missing dependency is itself readable — and `gsc_url_inspection` would begin
+  loading `requests` and `bs4` only to do it. The copies stay. **Not worth it:**
+  folding the report's zero-expected sentence branches, two lines.
+
+* **What showing them found: behaviours no test held, again.** Every cut that stayed was
+  broken once by the session that made it and once more at acceptance, with a different
+  breakage — twenty-four of those, twenty-two caught at the first run. Wherever nothing
+  went red a test was written and seen red. Sixteen tests came of it; the suite is 2214.
+  Held by nothing until now:
+  - **the thresholds audit could go blind and stay green.** `audit_thresholds.py` decides
+    that a constant is a threshold in four places — an ordering comparison, an argument
+    of `min` or `max`, a multiplication, a looked-up table — and by walking the
+    expression under each. Any of the five could be removed with every test and every
+    gate passing: a constant that already carries a `# basis:` line is counted whether
+    the scan sees it or not, so only a *new* number with no basis would have slipped
+    through, and nothing tried one.
+    `EveryThresholdSaysWhatItRestsOn.test_each_threshold_use_without_basis_is_refused`
+    holds all five (`evidence` EVD-6);
+  - merging answers re-scores the run. A person's answers (`--manual-answers`) could be
+    merged with the score left as it stood; a model's were held only by a crash on a key
+    the stale score lacked — `Merge.test_both_answer_merges_rescore_the_changed_items`;
+  - evidence text is escaped in all three row sections of the HTML report —
+    `EvidenceRowsKeepTheirContentAndOrder`;
+  - `parse_html` marks a fill image: all fourteen `ParseHtml` tests stayed green with
+    `is_responsive_fill` forced false;
+  - `tls_certificate` run without `--json` prints its result;
+  - the percentiles in the two committed calibration reports are what the tools compute
+    (`--check` compares constants, not arithmetic), and the paths they print are the
+    archive's.
+
+* **Two counts in the specification were stale, and one census moved without earning
+  it.** `evidence` EVD-6 and `governance` both said the thresholds audit counts 146
+  numbers; it counts 161 (19 `standard`, 11 `measured`, 54 `convention`, 77 `inherited`)
+  and 12 that decide only presentation. The ROADMAP's copies are read by a test and were
+  right; these two are read by none, and say so now. The census of hand-written sets
+  reads 182, 101 read, 81 unread: `calibrate_css_minification._RUNTIME`, an empty dict
+  the tool fills when it runs, counts as read because a new test fills it. Nothing
+  asserts what belongs in it. The ratchet is 81 and the record says the move was not
+  earned.
+
 ## 0.143.0 — code nothing read is gone, and six behaviours it carried are named
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit writes

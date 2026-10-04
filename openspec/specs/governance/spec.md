@@ -83,9 +83,10 @@ that decides only what is printed is marked as such and is not counted among the
 threshold with no stated basis cannot be argued with, and the honest answer "we do not know,
 it came with the code" is only available if somebody wrote it down.
 **Reader:** enforced. `audit_thresholds.py --check` runs in CI and fails when a
-verdict-deciding number names no basis. It counts 146 such numbers today — 11 `standard`,
-11 `measured`, 47 `convention`, **77 `inherited`**, 0 without a basis — plus 13 that decide
-only presentation.
+verdict-deciding number names no basis. It counts 161 such numbers at 0.144.0 — 19
+`standard`, 11 `measured`, 54 `convention`, **77 `inherited`**, 0 without a basis — plus 12
+that decide only presentation. No test reads the counts in this paragraph (`evidence`
+EVD-6 says what that cost).
 
 #### Scenario: a constant that can change a verdict
 - **WHEN** a number in a checker or the runner separates one verdict from another
@@ -208,6 +209,14 @@ said `low` under a `medium` floor.
 reader: `checklist_runner.PROFILE_KEYS`, the closed vocabulary of a profile (`registry`
 REG-13), and `build_checklist.RETIRED`, empty, held against the registry's whole history
 (`registry` REG-4).
+
+**At 0.144.0: 182 sets, 101 read, 81 unread — and the set that moved did not earn it.**
+`calibrate_css_minification._RUNTIME` is an empty dict the tool fills when it runs. It is
+in the census because it is written as a literal, and it counts as read because a new
+test fills it with `mock.patch.dict`: a test file that names a set is all this census can
+see. Nothing asserts what belongs in it, and it has no hand-kept members to assert. The
+ratchet is 81 for the reason given at 0.104.0 — it holds the best number the instrument
+can currently justify — and this paragraph is the record that the number flatters.
 
 Two lists were converted to derivations during this suite's writing — the notebook's spec
 manifest, and this document's own reader discovering documents by glob rather than by
