@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.141.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit does changes in this version. The check that runs before a push now verifies the commit that is pushed rather than whatever is on disk: a push with an uncommitted or an untracked file is refused, a push that only deletes a branch is not checked at all, and its "already verified" stamp can no longer miss a change to the runner. The version before it made the HTML report survive a site that could not be read.
+Version 0.142.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit decides changes in this version. The HTML report's filter buttons work again where the report is opened sandboxed — without storage, as a viewer should open a page built from a site's content — and a tick there lasts for the visit. The version before it made the check that runs before a push verify the commit that is pushed rather than whatever is on disk.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

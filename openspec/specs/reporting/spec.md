@@ -515,6 +515,32 @@ counting them is how a reader finds out.
 - **THEN** it is derived from the translation files rather than maintained by hand, so
   it cannot be right today and wrong in two releases
 
+### Requirement: REP-14 — the HTML report's script runs where the page has no storage
+
+The HTML report's script SHALL keep every control it wires — the filter buttons and the
+ticks — working when the page has no storage. A tick MAY then last only for the visit. No
+read or write of storage MAY stop the script.
+
+**Why:** a viewer that opens a report built from a site's content has every reason to
+sandbox it, and a sandboxed page has an opaque origin, where the first touch of
+`localStorage` throws. The script read it on its first line, so in such a viewer — Workbench
+on both of its builds since 3 October 2026 — nothing on the page answered a click: the
+filters were dead, not only the ticks. Storage is a convenience for the ticks; the filters
+never needed it, and a failure in one must not take the other down.
+**Reader:** enforced. `tests/test_report.py::ReportScriptWithoutStorage` runs the report's
+own script, unchanged, in node with a page whose storage throws and with one whose storage
+works, and clicks a filter and a tick in both. Probed on 4 October 2026 with the script as
+0.141.0 shipped it: the sandboxed run stops on the first line, no filter is wired, and the
+test fails; the run with storage passes, as it should.
+
+#### Scenario: a sandboxed viewer
+- **WHEN** the report is opened where reading `localStorage` throws
+- **THEN** the filter buttons still filter, and a tick still marks its row for the visit
+
+#### Scenario: a page with storage
+- **WHEN** storage works
+- **THEN** a tick is kept under the domain's key, as before
+
 ## 4. Invariants
 
 * **INV-P1** — every item in the results appears exactly once on every surface that lists
@@ -654,7 +680,8 @@ every such item back to `LLM_PENDING` on every audited site.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** REP-5 by six mutations on 16 September 2026, against the whole suite and then against its four readers (A.2); REP-3, REP-4, REP-6, REP-9, REP-10, REP-11, REP-12 and REP-13, by mutation, on 6 September 2026 — deleting the cache branch
+**Probed:** REP-14 by its own mutation on 4 October 2026 (the script as 0.141.0 shipped it);
+REP-5 by six mutations on 16 September 2026, against the whole suite and then against its four readers (A.2); REP-3, REP-4, REP-6, REP-9, REP-10, REP-11, REP-12 and REP-13, by mutation, on 6 September 2026 — deleting the cache branch
 from `provenance_warnings` reddens the membership reader from both sides, and — setting `EFFORT_COST['high']` to 1
 reddens three readers across two documents. The rest were derived by parsing the 1 280 test
 functions and reading the bodies that name each symbol: the executor running mutation probes
@@ -666,14 +693,14 @@ summary that bound is unusually tight, because there is no plausible way to exer
 
 | | requirements |
 |---|---|
-| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-5, REP-6, REP-7, REP-8, REP-9, REP-10, REP-11, REP-12, REP-13 |
+| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-5, REP-6, REP-7, REP-8, REP-9, REP-10, REP-11, REP-12, REP-13, REP-14 |
 | **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-P2 and INV-P3 enforced; INV-P1 partial; INV-P4 unread.
 
-**Thirteen enforced, nothing partial, nothing unread, of thirteen.**
+**Fourteen enforced, nothing partial, nothing unread, of fourteen.**
 
 The requirements are finished; the invariants INV-P1 and INV-P4 are not.
 

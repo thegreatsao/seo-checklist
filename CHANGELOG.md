@@ -10,6 +10,34 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.142.0 — the HTML report's filters work in a sandboxed viewer
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit writes
+changes except one script inside the HTML report.
+
+* **The report's script no longer dies on its first line where there is no storage.** It
+  read `localStorage` before doing anything else, and a page served sandboxed — an opaque
+  origin, which is how a viewer should open a report built from a site's content — throws
+  on that read. Every control on the page died with it, the filter buttons included.
+  Workbench sandboxes the report on both of its builds since 3 October 2026, so its filters
+  had stopped answering there. Storage is now touched only inside a `try`: without it a
+  tick lasts for the visit, and the filters, which never needed storage, work. A page with
+  storage keeps its ticks under the domain's key as before.
+
+* **Two tests no longer read the machine's own Search Console key.** "Nothing anywhere"
+  and "a named key that does not exist" asserted an empty answer with the bundled default
+  paths left real, so on an operator's machine that keeps a key at
+  `~/.config/gcloud/gv-sa-key.json` the real key answered and both failed — the push gate
+  refused every push from that machine. They point the defaults at a temporary folder
+  now; dropping the existence check still fails them.
+
+`openspec/specs/reporting/` gains **REP-14**, with two scenarios: 151 requirements,
+ledger 127/19/1/0/4. Held by `tests/test_report.py::ReportScriptWithoutStorage`, which runs
+the report's own script in node — a page whose storage throws, and one whose storage
+works — and clicks a filter and a tick in each. Probed with the script as 0.141.0 shipped
+it: the sandboxed run stops on the first line and the test fails. The test needs `node`
+and is skipped without it; CI's runners and both machines that build Workbench have it.
+
 ## 0.141.0 — the push gate verifies what the push sends
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit does
