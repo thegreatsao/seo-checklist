@@ -374,15 +374,7 @@ def locale_lives_in(lang: str, url: str) -> str:
         return "ccTLD"
     if len(labels) > 2 and labels[0] in tokens:
         return "subdomain"
-    segments = [s for s in parsed.path.split("/") if s]
-    if segments and segments[0].lower() in tokens:
-        return "subdirectory"
-    if parsed.query:
-        values = {v.lower() for pair in parsed.query.split("&")
-                  for v in pair.split("=")[1:]}
-        if values & tokens:
-            return "parameter"
-    return ""
+    return _locale_lives_in_path_or_query(lang, url)
 
 
 def _locale_lives_in_path_or_query(lang: str, url: str) -> str:

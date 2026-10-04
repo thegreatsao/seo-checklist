@@ -521,6 +521,47 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
                 status = at.main(["--check"], paths=[path])
         return status, stdout.getvalue(), stderr.getvalue()
 
+    def test_a_threshold_read_through_a_subscript_without_basis_is_refused(self):
+        status, stdout, stderr = self._run_check(
+            'LIMIT = {"good": 7}\ndef over(value):\n    return value > LIMIT["good"]\n')
+        self.assertEqual(status, 1, stdout + stderr)
+        self.assertIn("Named, and resting on nothing stated", stdout)
+        self.assertIn("LIMIT", stdout)
+        self.assertIn("Add a `# basis:", stderr)
+
+    def test_each_threshold_use_without_basis_is_refused(self):
+        # Keep uses that only one branch sees: arithmetic/lookup comparisons alone
+        # can hide a broken ordering branch, and declared bases hide a blind scan.
+        for use, assignment, expression in (
+                ("ordering bare", "LIMIT = 7", "value > LIMIT"),
+                ("ordering expression", "LIMIT = 7", "value > LIMIT + 2"),
+                ("ordering product", "LIMIT = 7", "value > LIMIT * 2"),
+                ("table comparison", 'LIMIT = {"a": {"b": 7}}', 'value > LIMIT["a"]["b"]'),
+                ("table lookup", 'LIMIT = {"a": {"b": 7}}', 'LIMIT["a"]["b"]'),
+                ("min bare", "LIMIT = 7", "min(value, LIMIT)"),
+                ("max bare", "LIMIT = 7", "max(value, LIMIT)"),
+                ("min expression", "LIMIT = 7", "min(value, LIMIT + 1)"),
+                ("max expression", "LIMIT = 7", "max(value, LIMIT + 1)"),
+                ("multiplication", "LIMIT = 7", "value * LIMIT"),
+                ("attribute expression", "LIMIT = 7", "(value + LIMIT).real"),
+                ("subscript expression", "LIMIT = 7", "[LIMIT][0]")):
+            with self.subTest(use=use):
+                status, stdout, stderr = self._run_check(
+                    f"{assignment}\ndef use(value):\n    return {expression}\n")
+                self.assertEqual(status, 1, stdout + stderr)
+                self.assertIn("Named, and resting on nothing stated", stdout)
+                self.assertIn("LIMIT", stdout)
+                self.assertIn("Add a `# basis:", stderr)
+
+    def test_attribute_names_are_not_resolved_to_local_constants(self):
+        # module.LIMIT contains the Name module and the attribute string LIMIT;
+        # this name-based scan does not resolve that string to a local constant.
+        status, stdout, stderr = self._run_check(
+            "LIMIT = 7\ndef over(value):\n    return value > module.LIMIT\n")
+        self.assertEqual(status, 0, stdout + stderr)
+        self.assertNotIn("Named, and resting on nothing stated", stdout)
+        self.assertIn("1 module-level numeric constant(s) are not in this inventory", stdout)
+
     def test_a_written_basis_is_counted_even_if_the_scan_cannot_see_it(self):
         at = self._tool()
         named, _ = at.scan()
@@ -3015,6 +3056,32 @@ class OneCheckCarriesWeightOnce(unittest.TestCase):
             self.assertTrue(all(i["scores_with"] == carriers[0]["id"]
                                 for i in group if i.get("scores_with")),
                             f"{ids} share a check but do not agree which one scores")
+
+
+class GeneratorValidationStopsAtTheFirstProblem(unittest.TestCase):
+    def test_each_validator_refuses_with_ordered_diagnostics_and_no_later_calls(self):
+        import build_checklist as builder
+        names = ("title_override_problems", "retired_problems", "missing_is_problems",
+                 "measures_problems", "entry_answer_problems")
+        prefixes = ("Invalid title override", "Retired id", "Invalid missing_is",
+                    "Invalid measures", "Invalid entry answer")
+        for failure in range(len(names)):
+            calls = []
+            def validate(index, *args, calls=calls, failure=failure):
+                calls.append(names[index])
+                self.assertLessEqual(index, failure, "a later validator was called")
+                return ["first problem", "second problem"] if index == failure else []
+            with self.subTest(validator=names[failure]), contextlib.ExitStack() as stack:
+                for index, name in enumerate(names):
+                    stack.enter_context(mock.patch.object(
+                        builder, name, side_effect=lambda *args, i=index: validate(i, *args)))
+                stack.enter_context(mock.patch.object(sys, "argv", ["build_checklist.py", "--check"]))
+                stderr = stack.enter_context(contextlib.redirect_stderr(io.StringIO()))
+                self.assertEqual(builder.main(), 1)
+                self.assertEqual(calls, list(names[:failure + 1]))
+                self.assertEqual(stderr.getvalue(),
+                                 f"{prefixes[failure]}: first problem\n"
+                                 f"{prefixes[failure]}: second problem\n")
 
 
 if __name__ == "__main__":

@@ -69,6 +69,7 @@ PAGE_DERIVED = {
     ("parse_html.py", "meta_robots"),
 }
 
+from audit_catalogue import severity_cases  # noqa: E402
 from scope_line import print_scope  # noqa: E402
 
 # What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
@@ -172,25 +173,8 @@ def severity_literals(script: str, scripts_dir: str = SCRIPTS) -> set[str]:
     that cannot fire — the same mistake that let fifteen dead patterns through the
     first version of this tool.
     """
-    with open(os.path.join(scripts_dir, script), encoding="utf-8") as f:
-        tree = ast.parse(f.read())
-    out: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Dict):
-            for key, value in zip(node.keys, node.values, strict=True):
-                if (isinstance(key, ast.Constant) and str(key.value).lower() == "severity"
-                        and isinstance(value, ast.Constant) and isinstance(value.value, str)):
-                    out.add(value.value.lower())
-        if isinstance(node, ast.Call):
-            name = getattr(node.func, "attr", None) or getattr(node.func, "id", None)
-            if name == "issue" and node.args and isinstance(node.args[0], ast.Constant):
-                if isinstance(node.args[0].value, str):
-                    out.add(node.args[0].value.lower())
-            for kw in node.keywords:
-                if (kw.arg == "severity" and isinstance(kw.value, ast.Constant)
-                        and isinstance(kw.value.value, str)):
-                    out.add(kw.value.value.lower())
-    return {SEVERITY_ALIAS.get(s, s) for s in out}
+    return {SEVERITY_ALIAS.get(s.lower(), s.lower())
+            for s in severity_cases(script, scripts_dir)}
 
 
 def severity_rules(registry_path: str = REGISTRY) -> list[dict]:

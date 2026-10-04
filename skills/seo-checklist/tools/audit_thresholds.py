@@ -164,11 +164,7 @@ def _names_in(node: ast.AST) -> set[str]:
     Google's LCP band, and a scan that only looked at bare `Name` nodes in a
     comparison would report it as absent while it decided three items.
     """
-    found = set()
-    for sub in ast.walk(node):
-        if isinstance(sub, ast.Name):
-            found.add(sub.id)
-    return found
+    return {sub.id for sub in ast.walk(node) if isinstance(sub, ast.Name)}
 
 
 def _basis_for(src_lines: list[str], lineno: int) -> tuple[str, str]:

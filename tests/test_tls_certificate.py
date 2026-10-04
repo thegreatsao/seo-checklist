@@ -15,6 +15,7 @@ expired yesterday passed it. The negative case below is the one that matters: a
 verdict that can only be True is not a verdict.
 """
 import json
+import os
 import subprocess
 import sys
 import unittest
@@ -42,6 +43,20 @@ def run(url: str, env: dict) -> dict:
 
 
 class TlsCertificate(unittest.TestCase):
+
+    def test_cli_prints_the_same_json_with_or_without_the_flag(self):
+        expected = {"url": "https:///nowhere", "host": None, "port": 443,
+                    "https": True,
+                    "issues": [{"severity": "critical", "message": "No host in URL"}]}
+        stdout = (json.dumps(expected, indent=2) + "\n").replace("\n", os.linesep).encode("utf-8")
+        for flags in ([], ["--json"], ["-j"]):
+            with self.subTest(flags=flags):
+                proc = subprocess.run([sys.executable, str(SCRIPT), "https:///nowhere", *flags],
+                                      capture_output=True, timeout=60, close_fds=False,
+                                      env=dict(os.environ, PYTHONIOENCODING="utf-8"))
+                self.assertEqual(proc.returncode, 0)
+                self.assertEqual(proc.stderr, b"")
+                self.assertEqual(proc.stdout, stdout)
 
     def test_a_trusted_certificate_sets_the_field_se_118_reads(self):
         """`valid` is True, and only after a handshake that verified."""

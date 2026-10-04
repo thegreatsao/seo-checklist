@@ -292,6 +292,19 @@ class ParseHtml(unittest.TestCase):
         import parse_html
         return parse_html.parse_html(html, url)
 
+    def test_fill_images_keep_their_flags_in_document_order(self):
+        out = self.parse('''<main>
+        <img src="native.png" data-nimg="fill">
+        <img src="styled.png" style="POSITION: absolute; WIDTH: 100%; HEIGHT: 100%">
+        <img src="partial.png" style="position:absolute; width:100%; height:99%">
+        <img src="plain.png" width="100" height="100"></main>''')
+        self.assertEqual([(image["src"], image["is_responsive_fill"])
+                          for image in out["images"]],
+                         [("https://example.com/native.png", True),
+                          ("https://example.com/styled.png", True),
+                          ("https://example.com/partial.png", False),
+                          ("https://example.com/plain.png", False)])
+
     def test_a_complete_page_satisfies_all_three_critical_items(self):
         out = self.parse(PAGE)
         for item_id in ("CI-004", "CN-065", "MB-093"):

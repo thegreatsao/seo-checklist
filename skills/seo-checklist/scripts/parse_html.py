@@ -29,7 +29,8 @@ except ImportError:
     from scripts.article_seo import META_MAX_CHARS, META_MIN_CHARS
     from scripts.lib.safe_http import safe_get
 
-from seo_common import favicon_href, html_parser, issue
+from seo_common import (favicon_href, html_parser,
+                        is_responsive_fill_image as _is_responsive_fill_image, issue)
 
 
 # The band MS-030 reads, in order of length.
@@ -145,13 +146,6 @@ def _structure_issues(soup) -> list[dict[str, Any]]:
     # needs a reliable "this looks like navigation" test, which nothing here has,
     # so the check says less rather than guessing.
     return issues
-
-
-def _is_responsive_fill_image(img) -> bool:
-    if img.get("data-nimg") == "fill":
-        return True
-    style = re.sub(r"\s+", "", (img.get("style") or "").lower())
-    return "position:absolute" in style and "width:100%" in style and "height:100%" in style
 
 
 def parse_html(

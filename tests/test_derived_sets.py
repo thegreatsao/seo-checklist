@@ -64,7 +64,11 @@ import audit_derived_sets  # noqa: E402
 # one-line pattern could not see (the second time this instrument under-counted its own
 # read column; 0.104.0 was aliases). The other four moved through
 # `tests/test_report_sets.py`.
-UNREAD_AT_MOST = 82
+# 81 at 0.144.0, and not earned: `calibrate_css_minification._RUNTIME` is an empty dict
+# the tool fills when it runs, never a hand-kept set, and it moved because
+# `tests/test_calibration_reports.py` fills it with `mock.patch.dict` — a mention, not a
+# reading of what belongs in it. Lowered anyway, for the reason given at 130.
+UNREAD_AT_MOST = 81
 
 
 class TheCensusDescribesThisTree(unittest.TestCase):

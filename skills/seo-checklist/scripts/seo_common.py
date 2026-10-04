@@ -471,22 +471,16 @@ def is_url(value: str) -> bool:
 
 
 def load_source(source: str, timeout: int = 15) -> tuple[str, str, dict]:
-    """`load_html`, but a path that exists on disk wins over anything else.
+    """The name a script resolves `--source` through. It is `load_html`.
 
-    `load_html` decides by shape: something matching `https?://`, or a dotted token
-    with no slash, is treated as a URL. That is right for a bare `example.com` and
-    wrong for `./example.com.html` or an archive directory whose name carries a dot —
-    both are files, and both would be fetched.
+    It used to look for a file on disk itself, because `load_html` decided by shape
+    alone — a dotted token with no slash is a URL — and a saved `example.com.html`
+    would have been fetched. `is_url` gives a file on disk precedence now, so
+    `load_html` opens it, and the second look is gone.
 
-    Eleven scripts carried this same five-line wrapper, byte for byte, because each
-    one accepts `--source` as either a URL or a saved page. Written once here so a
-    change to how a source is resolved is one change rather than eleven, and so the
-    next script that needs it has somewhere to find it.
+    The name stays: eleven scripts accept `--source` as either a URL or a saved page,
+    and a change to how a source is resolved is one change here rather than eleven.
     """
-    path = Path(source)
-    if path.is_file():
-        return (path.read_text(encoding="utf-8"), "",
-                {"url": source, "status": None, "headers": {}, "error": None})
     return load_html(source, timeout=timeout)
 
 

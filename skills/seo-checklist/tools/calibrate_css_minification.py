@@ -23,7 +23,6 @@ The second reads only that report and the classifier constants; it never uses ne
 from __future__ import annotations
 
 import argparse
-import ast
 import gzip
 import json
 import os
@@ -31,7 +30,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import PurePosixPath
 
-from corpus_fetch import CACHE, fetch_package, package_basename, tarball_url
+from corpus_fetch import CACHE, display_path as _display_path, fetch_package, tarball_url
+from calibration_common import literal_constants, percentile as _percentile
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
@@ -85,20 +86,9 @@ def _load_runtime() -> None:
 
 def _offline_constants() -> dict:
     """Read literal constants without importing optional checker dependencies."""
-    path = os.path.join(SCRIPTS, "css_minify_check.py")
-    with open(path, encoding="utf-8") as fh:
-        tree = ast.parse(fh.read(), filename=path)
-    values = {}
-    for node in tree.body:
-        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
-            continue
-        target = node.targets[0]
-        if isinstance(target, ast.Name) and target.id in CONSTANT_NAMES:
-            values[target.id] = ast.literal_eval(node.value)
-    missing = set(CONSTANT_NAMES) - values.keys()
-    if missing:
-        raise RuntimeError(f"could not read classifier constants: {sorted(missing)}")
-    return values
+    return literal_constants(os.path.join(SCRIPTS, "css_minify_check.py"),
+                             set(CONSTANT_NAMES),
+                             "could not read classifier constants: {missing}")
 
 
 def _label(path: str) -> str:
@@ -114,27 +104,8 @@ def _source_name(path: str) -> str | None:
     return None
 
 
-def _display_path(package: str, version: str, member_name: str) -> str:
-    parts = PurePosixPath(member_name).parts
-    if parts and parts[0] == "package":
-        parts = parts[1:]
-    return str(PurePosixPath(f"{package_basename(package)}-{version}", *parts))
-
-
 def _round(value: float) -> float:
     return round(value, 6)
-
-
-def _percentile(values: list[float], fraction: float) -> float:
-    """Linearly interpolated percentile, including both endpoints."""
-    ordered = sorted(values)
-    if not ordered:
-        raise ValueError("a distribution cannot be computed from no observations")
-    position = (len(ordered) - 1) * fraction
-    low = int(position)
-    high = min(low + 1, len(ordered) - 1)
-    weight = position - low
-    return ordered[low] * (1 - weight) + ordered[high] * weight
 
 
 def _distribution(values: list[float]) -> dict:

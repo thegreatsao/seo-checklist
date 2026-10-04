@@ -8,6 +8,7 @@ import os
 import sys
 import tarfile
 from collections.abc import Callable
+from pathlib import PurePosixPath
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -77,3 +78,10 @@ def fetch_package(
         "file_count": len(files),
     }
     return manifest, files
+
+
+def display_path(package: str, version: str, member_name: str) -> str:
+    parts = PurePosixPath(member_name).parts
+    if parts and parts[0] == "package":
+        parts = parts[1:]
+    return str(PurePosixPath(f"{package_basename(package)}-{version}", *parts))

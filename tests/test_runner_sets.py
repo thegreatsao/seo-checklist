@@ -18,6 +18,7 @@ import ast
 import json
 import os
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -122,6 +123,29 @@ class TheVocabulariesAreTheRegistrys(unittest.TestCase):
 
 
 class WhatScriptsEmitIsCovered(unittest.TestCase):
+
+    def test_severity_collectors_keep_case_and_normalize_every_literal_shape(self):
+        import audit_catalogue
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "fixture.py")
+            with open(path, "w", encoding="utf-8") as stream:
+                stream.write(
+                    '\"documentation says critical\"\n'
+                    'a = {"Severity": "Critical", "message": "high"}\n'
+                    'issue("warning", "medium")\n'
+                    'seo_common.issue("Fatal", "low")\n'
+                    'emit(severity="Warn")\n'
+                    'issue(dynamic, "info")\n'
+                    'emit(severity=3)\n'
+                    'b = {"severity": dynamic}\n')
+            with mock.patch.object(audit_catalogue, "SCRIPTS", tmp):
+                # The raw reader originally has only its module-level directory.
+                self.assertEqual(audit_catalogue.severity_cases("fixture.py"),
+                                 {"Critical", "warning", "Fatal", "Warn"})
+            self.assertEqual(audit_assertions.severity_literals("fixture.py", tmp),
+                             {"critical", "medium", "fatal"})
+            with self.assertRaises(FileNotFoundError):
+                audit_assertions.severity_literals("absent.py", tmp)
 
     def test_every_severity_word_a_script_emits_is_the_registrys_or_aliased(self):
         """Read without the alias, so the table is held against the raw words. The

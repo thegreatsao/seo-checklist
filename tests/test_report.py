@@ -74,6 +74,19 @@ def results(*items):
 
 
 class Merge(unittest.TestCase):
+    def test_both_answer_merges_rescore_the_changed_items(self):
+        for merge, status, source in ((merge_llm_answers, LLM_PENDING, "llm"),
+                                      (merge_manual_answers, MANUAL, "manual")):
+            with self.subTest(merge=merge.__name__):
+                data = results(item("CN-047", status, source=source),
+                               item("CI-001", FAIL, source="script"))
+                before = runner.score(data["items"])
+                data["scores"] = before
+                self.assertEqual(merge(data, {"CN-047": {"status": PASS,
+                                                       "evidence": "checked"}}), 1)
+                self.assertEqual(data["scores"], runner.score(data["items"]))
+                self.assertNotEqual(data["scores"], before)
+
     def test_fills_a_pending_item(self):
         data = results(item("CN-047", LLM_PENDING, source="llm"))
         n = merge_llm_answers(data, {"CN-047": {"status": PASS, "evidence": "clean"}})
@@ -916,6 +929,64 @@ class EveryStatusReachesEverySurface(unittest.TestCase):
             self.assertNotEqual(ru.t(key, "<english>"), "<english>",
                                 f"{key} falls back to English")
         self.assertNotEqual(ru.status(NEEDS_INPUT, "<english>"), "<english>")
+
+
+class ReportStreamsUseUTF8(unittest.TestCase):
+    def test_standalone_cached_runner_and_wrapped_streams(self):
+        for cached in (False, True):
+            with self.subTest(cached_runner=cached):
+                code = """
+import contextlib, io, sys
+sys.path.insert(0, sys.argv[1])
+if sys.argv[2] == 'True':
+    import checklist_runner
+sys.stdout.reconfigure(encoding='cp1252')
+sys.stderr.reconfigure(encoding='cp1252')
+import checklist_report
+assert sys.stdout.encoding == sys.stderr.encoding == 'utf-8'
+closed = io.TextIOWrapper(io.BytesIO())
+closed.close()
+with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(closed):
+    checklist_report._utf8_stdout()
+print('\u03b1\u0142')
+"""
+                child = subprocess.run([sys.executable, "-c", code,
+                                        os.path.join(SKILL, "scripts"), str(cached)],
+                                       capture_output=True, text=True, encoding="utf-8",
+                                       env=dict(os.environ, PYTHONIOENCODING="utf-8"),
+                                       stdin=subprocess.DEVNULL, close_fds=False, timeout=60)
+                self.assertEqual(child.returncode, 0, child.stderr)
+                self.assertEqual(child.stdout.strip(), "\u03b1\u0142")
+
+
+class EvidenceRowsKeepTheirContentAndOrder(unittest.TestCase):
+    def test_escaping_order_and_origins_in_all_three_sections(self):
+        from bs4 import BeautifulSoup
+        rows = [item("B-0", NO_DATA, severity="low", decided_by="claimed"),
+                item("B-1", NO_DATA, severity="critical"),
+                item("N-0", NEEDS_INPUT, severity="low", decided_by="model"),
+                item("N-1", NEEDS_INPUT, severity="critical", decided_by="claimed")]
+        for row in rows:
+            row.update(title='<title>&"', evidence='<evidence>&"' + row["id"])
+        data = results(*rows)
+        data["scores"] = runner.score(rows)
+        for language in ("en", "ru"):
+            with self.subTest(language=language):
+                output = render_html(data, Lang(language))
+                for row in rows:
+                    evidence = '<div class="ev">' + html_escape.escape(row["evidence"]) + '</div>'
+                    self.assertEqual(output.count(evidence), 2)
+                soup = BeautifulSoup(output, "html.parser")
+                sections = [section for section in soup.select("details.fold")
+                            if section.select(".row .ev")]
+                self.assertEqual(len(sections), 3)
+                self.assertEqual([[row.select_one(".sev").contents[-1]
+                                   for row in section.select(".row")]
+                                  for section in sections],
+                                 [["N-1", "N-0"], ["B-0", "B-1"],
+                                  ["B-1", "N-1", "B-0", "N-0"]])
+                self.assertEqual([len(section.select(".origin")) for section in sections],
+                                 [0, 0, 3])
 
 
 class WaitingOnYouKeepsItsHalvesVisible(unittest.TestCase):

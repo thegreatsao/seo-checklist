@@ -11,11 +11,12 @@ arithmetic. No corpus, credentials, property identifier, query or URL is read.
 from __future__ import annotations
 
 import argparse
-import ast
 import json
 import math
 import os
 import sys
+
+from calibration_common import literal_constants
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -63,20 +64,8 @@ UNCALIBRATED_FLOORS = (
 
 
 def _literal_constants(script_name: str, names: set[str]) -> dict[str, int | float]:
-    path = os.path.join(SCRIPTS, script_name)
-    with open(path, encoding="utf-8") as fh:
-        tree = ast.parse(fh.read(), filename=path)
-    values = {}
-    for node in tree.body:
-        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
-            continue
-        target = node.targets[0]
-        if isinstance(target, ast.Name) and target.id in names:
-            values[target.id] = ast.literal_eval(node.value)
-    missing = names - values.keys()
-    if missing:
-        raise RuntimeError(f"could not read {script_name} constants: {sorted(missing)}")
-    return values
+    return literal_constants(os.path.join(SCRIPTS, script_name), names,
+                             f"could not read {script_name} constants: {{missing}}")
 
 
 def _constants() -> dict[str, dict[str, int | float]]:

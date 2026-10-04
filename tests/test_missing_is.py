@@ -28,6 +28,8 @@ from __future__ import annotations
 import json
 import os
 import sys
+import io
+import contextlib
 import tempfile
 import unittest
 from unittest import mock
@@ -123,6 +125,30 @@ class AbsenceAnswersOnlyUnderSomethingPresent(unittest.TestCase):
 
 
 class TheBuildRefusesAbsenceAtTheRoot(unittest.TestCase):
+
+    def test_nested_declarations_are_rejected_in_parent_first_document_order(self):
+        root = {"path": "root", "missing_is": "pass",
+                "all": [{"path": "second", "missing_is": "fail"},
+                        {"wrapper": [{"path": "third", "missing_is": "pass"},
+                                     None, 7, "text"]},
+                        {"path": "parent.child", "missing_is": "pass"}]}
+        check = {"script": "parse_html.py", "assert": root,
+                 "warn": {"path": "fourth", "missing_is": "pass"}}
+        items = [{"id": "ZZ-999", "check": check}, {"id": "ZZ-998", "check": None}]
+        expected = [f"ZZ-999 declares missing_is on {path!r}: a key absent "
+                    "from the root of a script's output is the script not reporting."
+                    for path in ("root", "second", "third", "fourth")]
+        self.assertEqual(build_checklist.missing_is_problems(items), expected)
+        built = build_checklist.build()
+        built[0] = dict(built[0], check=check)
+        expected = [line.replace("ZZ-999", built[0]["id"]) for line in expected]
+        stderr = io.StringIO()
+        with mock.patch.object(build_checklist, "build", return_value=built), \
+                mock.patch.object(sys, "argv", ["build_checklist.py", "--check"]), \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(build_checklist.main(), 1)
+        self.assertEqual(stderr.getvalue(),
+                         "".join(f"Invalid missing_is: {line}\n" for line in expected))
 
     def item(self, **check) -> dict:
         return {"id": "ZZ-999", "check": {"script": "parse_html.py", **check}}

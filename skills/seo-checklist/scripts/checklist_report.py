@@ -97,15 +97,11 @@ PARTITION_NOTE = (
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
-def load_scoring():
-    from checklist_runner import score  # reuse the single scoring implementation
-    return score
-
-
-from checklist_runner import EFFORT_COST, SEVERITIES, SEVERITY_WEIGHT  # noqa: E402,F401 — single
-#  source of truth. Both tables live in the runner since 0.94.0 so that SCR-2 can stamp
-#  the instrument in one place; `EFFORT_COST` is re-exported here, where it lived until
-#  then, because tools/audit_score_sensitivity.py imports it from this module.
+from checklist_runner import (  # noqa: E402,F401
+    EFFORT_COST, SEVERITIES, SEVERITY_WEIGHT, _utf8_stdout, score)
+# A single source of truth. Both tables live in the runner since 0.94.0 so that SCR-2 can
+# stamp the instrument in one place; `EFFORT_COST` is re-exported here, where it lived
+# until then, because tools/audit_score_sensitivity.py imports it from this module.
 SEVERITY_ORDER = {severity: rank for rank, severity in enumerate(SEVERITIES)}
 
 
@@ -114,14 +110,6 @@ SEVERITY_ORDER = {severity: rank for rank, severity in enumerate(SEVERITIES)}
 # Greek query or a Polish name raises UnicodeEncodeError and the script produces
 # nothing at all. The runner now hands its children a UTF-8 environment; this is the
 # same guarantee for somebody running the script by hand.
-def _utf8_stdout() -> None:
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            stream.reconfigure(encoding="utf-8")
-        except (AttributeError, ValueError):  # already wrapped, or not a TextIO
-            pass
-
-
 _utf8_stdout()
 
 I18N_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -1555,6 +1543,17 @@ def _card(item: dict, L: Lang) -> str:
             + f'<details class="tech">{detail}</details></article>')
 
 
+def _row(item: dict, L: Lang, origin: str = "") -> str:
+    cls = item["status"].replace("/", "").replace(" ", "_")
+    marker = (f'<span class="origin">{html.escape(origin)}</span>'
+              if origin else "")
+    return (f'<div class="row" data-st="{item["status"]}">'
+            f'<div class="st {cls}">{STATUS_ICON[item["status"]]}{marker}</div>'
+            f'<div class="sev">{html.escape(L.sev(item["severity"]))}<br>{item["id"]}</div>'
+            f'<div><div class="ttl">{html.escape(L.title(item))}</div>'
+            f'<div class="ev">{html.escape(item.get("evidence", ""))}</div></div></div>')
+
+
 def render_html(data: dict, L: Lang | None = None) -> str:
     """Four layers, widest audience first.
 
@@ -1862,13 +1861,8 @@ def render_html(data: dict, L: Lang | None = None) -> str:
 
     needs = [i for i in data["items"] if i["status"] == NEEDS_INPUT]
     if needs:
-        rows = "".join(
-            f'<div class="row" data-st="NEEDS_INPUT">'
-            f'<div class="st NEEDS_INPUT">{STATUS_ICON[NEEDS_INPUT]}</div>'
-            f'<div class="sev">{html.escape(L.sev(i["severity"]))}<br>{i["id"]}</div>'
-            f'<div><div class="ttl">{html.escape(L.title(i))}</div>'
-            f'<div class="ev">{html.escape(i.get("evidence", ""))}</div></div></div>'
-            for i in sorted(needs, key=lambda x: SEVERITY_ORDER.get(x["severity"], 9)))
+        rows = "".join(_row(i, L) for i in sorted(
+            needs, key=lambda x: SEVERITY_ORDER.get(x["severity"], 9)))
         parts.append(fold(L.t("needs_input", "What this audit was not given"),
                           '<p class="note">'
                           + html.escape(L.t("needs_input_note",
@@ -1881,12 +1875,7 @@ def render_html(data: dict, L: Lang | None = None) -> str:
 
     blocked = [i for i in data["items"] if i["status"] == NO_DATA]
     if blocked:
-        rows = "".join(
-            f'<div class="row" data-st="NO_DATA"><div class="st NO_DATA">{STATUS_ICON[NO_DATA]}</div>'
-            f'<div class="sev">{html.escape(L.sev(i["severity"]))}<br>{i["id"]}</div>'
-            f'<div><div class="ttl">{html.escape(L.title(i))}</div>'
-            f'<div class="ev">{html.escape(i.get("evidence", ""))}</div></div></div>'
-            for i in blocked)
+        rows = "".join(_row(i, L) for i in blocked)
         parts.append(fold(L.t("undetermined", "Could not be determined"),
                           '<p class="note">'
                           + html.escape(L.t("undetermined_note",
@@ -1936,16 +1925,7 @@ def render_html(data: dict, L: Lang | None = None) -> str:
         full.append(f"<h3>{html.escape(label)}</h3>")
         for i in sorted(items, key=lambda x: (x["status"] != FAIL,
                                               SEVERITY_ORDER.get(x["severity"], 9))):
-            cls = i["status"].replace("/", "").replace(" ", "_")
-            origin = item_provenance(i, L)
-            marker = (f'<span class="origin">{html.escape(origin)}</span>'
-                      if origin else "")
-            full.append(
-                f'<div class="row" data-st="{i["status"]}">'
-                f'<div class="st {cls}">{STATUS_ICON[i["status"]]}{marker}</div>'
-                f'<div class="sev">{html.escape(L.sev(i["severity"]))}<br>{i["id"]}</div>'
-                f'<div><div class="ttl">{html.escape(L.title(i))}</div>'
-                f'<div class="ev">{html.escape(i.get("evidence", ""))}</div></div></div>')
+            full.append(_row(i, L, item_provenance(i, L)))
     parts.append(fold(L.t("full_checklist", "Every check, with its raw evidence"),
                       "".join(full), s["total_items"]))
 
@@ -1990,7 +1970,7 @@ def merge_llm_answers(data: dict, answers: dict) -> int:
         item["decided_by"] = "model"
         applied += 1
     if applied:
-        data["scores"] = load_scoring()(data["items"])
+        data["scores"] = score(data["items"])
     return applied
 
 
@@ -2042,7 +2022,7 @@ def merge_manual_answers(data: dict, answers: dict) -> int:
         item["decided_by"] = "claimed"
         applied += 1
     if applied:
-        data["scores"] = load_scoring()(data["items"])
+        data["scores"] = score(data["items"])
     return applied
 
 
@@ -2101,7 +2081,7 @@ def apply_llm_review(data: dict, review: dict) -> dict:
             item["source"] = "llm(contested)"
             stats["contested"] += 1
     if stats["contested"]:
-        data["scores"] = load_scoring()(data["items"])
+        data["scores"] = score(data["items"])
     return stats
 
 

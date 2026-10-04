@@ -167,10 +167,7 @@ def main() -> None:
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
     result = inspect(args.url, args.timeout)
-    if args.json:
-        print(json.dumps(result, indent=2))
-    else:
-        print(json.dumps(result, indent=2))
+    print(json.dumps(result, indent=2))
     sys.exit(0)
 
 

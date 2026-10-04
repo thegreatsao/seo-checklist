@@ -30,7 +30,7 @@ SKILL_DIR = os.path.dirname(HERE)
 # declaration to one and not the other.
 sys.path.insert(0, os.path.join(SKILL_DIR, "scripts"))
 from checklist_runner import EFFORT_COST, passes_by_absence  # noqa: E402
-from seo_common import STATUS_CLASSES  # noqa: E402
+from seo_common import STATUS_CLASSES, walk_json  # noqa: E402
 
 # The same AST reading `tools/audit_reachability.py` makes of a checker's source, for
 # a different question: not "can this rule ever fail" but "does this rule's key reach
@@ -1876,20 +1876,12 @@ def missing_is_problems(items: list[dict]) -> list[str]:
     """Name every root absence declaration anywhere under an item's check."""
     problems = []
 
-    def visit(node, item_id):
-        if isinstance(node, dict):
+    for item in items:
+        for node in walk_json(item.get("check")):
             if "missing_is" in node and "path" in node and "." not in node["path"]:
                 problems.append(
-                    f"{item_id} declares missing_is on {node['path']!r}: a key absent "
+                    f"{item['id']} declares missing_is on {node['path']!r}: a key absent "
                     "from the root of a script's output is the script not reporting.")
-            for value in node.values():
-                visit(value, item_id)
-        elif isinstance(node, list):
-            for value in node:
-                visit(value, item_id)
-
-    for item in items:
-        visit(item.get("check"), item["id"])
     return problems
 
 
@@ -2025,6 +2017,36 @@ def build(titles: dict[int, str] | None = None,
           overrides: dict[str, dict] | None = None) -> list[dict]:
     titles = load_titles() if titles is None else titles
     overrides = load_title_overrides() if overrides is None else overrides
+
+    def decorate(entry, script, args, rule, fix, warn):
+        item_id, source = entry["id"], entry["source"]
+        if source == S:
+            entry["check"] = {
+                "script": script,
+                "args": args,
+                "requires": ITEM_REQUIRES.get(
+                    item_id, REQUIRES.get(script, DEFAULT_REQUIRES)),
+                "assert": rule,
+            }
+            if item_id in APPLIES_WHEN:
+                entry["check"]["applies_when"] = APPLIES_WHEN[item_id]
+            if warn:
+                entry["check"]["warn"] = warn
+            if item_id in CANNOT_FAIL:
+                entry["check"]["cannot_fail"] = CANNOT_FAIL[item_id]
+            if item_id in ENTRY_ANSWERS:
+                entry["check"]["entry_answer"] = ENTRY_ANSWERS[item_id]
+        if source == L:
+            entry["lens"] = LENS_OF.get(entry["id"], "")
+        if item_id in MEASURES:
+            entry["measures"] = MEASURES[item_id]
+        if not entry.get("check") and item_id in APPLIES_IF:
+            entry["applies_if"] = APPLIES_IF[item_id]
+        entry["effort"] = effort_for(entry)
+        entry["fix"] = fix
+        if entry["id"] in SCORES_WITH:
+            entry["scores_with"] = SCORES_WITH[entry["id"]]
+
     out: list[dict] = []
     for key, prefix, label, (lo, hi) in CATEGORIES:
         for ref in range(lo, hi + 1):
@@ -2044,32 +2066,7 @@ def build(titles: dict[int, str] | None = None,
                 "severity": sev,
                 "source": source,
             }
-            if source == S:
-                entry["check"] = {
-                    "script": script,
-                    "args": args,
-                    "requires": ITEM_REQUIRES.get(
-                        item_id, REQUIRES.get(script, DEFAULT_REQUIRES)),
-                    "assert": rule,
-                }
-                if item_id in APPLIES_WHEN:
-                    entry["check"]["applies_when"] = APPLIES_WHEN[item_id]
-                if warn:
-                    entry["check"]["warn"] = warn
-                if item_id in CANNOT_FAIL:
-                    entry["check"]["cannot_fail"] = CANNOT_FAIL[item_id]
-                if item_id in ENTRY_ANSWERS:
-                    entry["check"]["entry_answer"] = ENTRY_ANSWERS[item_id]
-            if source == L:
-                entry["lens"] = LENS_OF.get(entry["id"], "")
-            if item_id in MEASURES:
-                entry["measures"] = MEASURES[item_id]
-            if not entry.get("check") and item_id in APPLIES_IF:
-                entry["applies_if"] = APPLIES_IF[item_id]
-            entry["effort"] = effort_for(entry)
-            entry["fix"] = fix
-            if entry["id"] in SCORES_WITH:
-                entry["scores_with"] = SCORES_WITH[entry["id"]]
+            decorate(entry, script, args, rule, fix, warn)
             out.append(entry)
 
     for row in EXTRA:
@@ -2088,32 +2085,7 @@ def build(titles: dict[int, str] | None = None,
             "severity": sev,
             "source": source,
         }
-        if source == S:
-            entry["check"] = {
-                "script": script,
-                "args": args,
-                "requires": ITEM_REQUIRES.get(
-                    eid, REQUIRES.get(script, DEFAULT_REQUIRES)),
-                "assert": rule,
-            }
-            if eid in APPLIES_WHEN:
-                entry["check"]["applies_when"] = APPLIES_WHEN[eid]
-            if warn:
-                entry["check"]["warn"] = warn
-            if eid in CANNOT_FAIL:
-                entry["check"]["cannot_fail"] = CANNOT_FAIL[eid]
-            if eid in ENTRY_ANSWERS:
-                entry["check"]["entry_answer"] = ENTRY_ANSWERS[eid]
-        if source == L:
-            entry["lens"] = LENS_OF.get(entry["id"], "")
-        if eid in MEASURES:
-            entry["measures"] = MEASURES[eid]
-        if not entry.get("check") and eid in APPLIES_IF:
-            entry["applies_if"] = APPLIES_IF[eid]
-        entry["effort"] = effort_for(entry)
-        entry["fix"] = fix
-        if entry["id"] in SCORES_WITH:
-            entry["scores_with"] = SCORES_WITH[entry["id"]]
+        decorate(entry, script, args, rule, fix, warn)
         out.append(entry)
     return out
 
@@ -2286,31 +2258,19 @@ def main() -> int:
     titles = load_titles()
     overrides = load_title_overrides()
     items = build(titles, overrides)
-    override_problems = title_override_problems(items, titles, overrides)
-    if override_problems:
-        for problem in override_problems:
-            print(f"Invalid title override: {problem}", file=sys.stderr)
-        return 1
-    retired = retired_problems(items)
-    if retired:
-        for problem in retired:
-            print(f"Retired id: {problem}", file=sys.stderr)
-        return 1
-    invalid_missing_is = missing_is_problems(items)
-    if invalid_missing_is:
-        for problem in invalid_missing_is:
-            print(f"Invalid missing_is: {problem}", file=sys.stderr)
-        return 1
-    invalid_measures = measures_problems(items)
-    if invalid_measures:
-        for problem in invalid_measures:
-            print(f"Invalid measures: {problem}", file=sys.stderr)
-        return 1
-    invalid_entry_answers = entry_answer_problems(items)
-    if invalid_entry_answers:
-        for problem in invalid_entry_answers:
-            print(f"Invalid entry answer: {problem}", file=sys.stderr)
-        return 1
+    validators = (
+        ("Invalid title override", lambda: title_override_problems(items, titles, overrides)),
+        ("Retired id", lambda: retired_problems(items)),
+        ("Invalid missing_is", lambda: missing_is_problems(items)),
+        ("Invalid measures", lambda: measures_problems(items)),
+        ("Invalid entry answer", lambda: entry_answer_problems(items)),
+    )
+    for prefix, validate in validators:
+        problems = validate()
+        if problems:
+            for problem in problems:
+                print(f"{prefix}: {problem}", file=sys.stderr)
+            return 1
     unlensed = [i["id"] for i in items if i["source"] == L and not i.get("lens")]
     if unlensed:
         print(f"LLM items with no lens: {', '.join(unlensed)} — add them to LENS, "

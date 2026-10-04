@@ -17,13 +17,14 @@ plain integer constants and keeps its three runtime dependencies.
 from __future__ import annotations
 
 import argparse
-import ast
 import hashlib
 import json
 import math
 import os
 import sys
 from datetime import datetime, timezone
+
+from calibration_common import literal_constants
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -85,20 +86,8 @@ def _round(value: float) -> float:
 
 def _offline_constants() -> dict[str, int]:
     """Read literal constants without importing article_seo or its dependencies."""
-    path = os.path.join(SCRIPTS, "article_seo.py")
-    with open(path, encoding="utf-8") as fh:
-        tree = ast.parse(fh.read(), filename=path)
-    values = {}
-    for node in tree.body:
-        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
-            continue
-        target = node.targets[0]
-        if isinstance(target, ast.Name) and target.id in CONSTANT_NAMES:
-            values[target.id] = ast.literal_eval(node.value)
-    missing = set(CONSTANT_NAMES) - values.keys()
-    if missing:
-        raise RuntimeError(f"could not read SERP constants: {sorted(missing)}")
-    return values
+    return literal_constants(os.path.join(SCRIPTS, "article_seo.py"),
+                             set(CONSTANT_NAMES), "could not read SERP constants: {missing}")
 
 
 def _sha256(path: str) -> str:

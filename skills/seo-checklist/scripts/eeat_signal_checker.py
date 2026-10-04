@@ -230,12 +230,13 @@ def check_eeat(source: str, timeout: int = 15) -> dict:
     credential_hits = _text_hits(patterns["credential"], body)
     experience_hits = _text_hits(patterns["first_hand"], body)
     links = parsed.get("links", [])
-    policy_links = [
-        link for link in links
-        if (_text_matches(patterns["policy"], link.get("text", ""))
-            or patterns["policy"]["href"].search(link.get("href", "")))
-        and not link["foreign_credit"]
-    ]
+    selected = {
+        c: [link for link in links
+            if (_text_matches(patterns[c], link.get("text", ""))
+                or patterns[c]["href"].search(link.get("href", "")))
+            and not link["foreign_credit"]] for c in HREF_CONCEPTS
+    }
+    policy_links = selected["policy"]
     contact_routes = [
         {"href": tag.get("href", "").strip(),
          "text": tag.get_text(" ", strip=True)[:160],
@@ -245,13 +246,8 @@ def check_eeat(source: str, timeout: int = 15) -> dict:
         and not under_foreign_credit(
             tag, claimed=parsed.get("foreign_itemref_ids"))
     ]
-    trust_links = [
-        link for link in links
-        if (_text_matches(patterns["trust"], link.get("text", ""))
-            or patterns["trust"]["href"].search(link.get("href", "")))
-        and not link["foreign_credit"]
-    ] + contact_routes
-    # Privacy specifically, kept apart from both of the above. `policy_links` means
+    trust_links = selected["trust"] + contact_routes
+    # Privacy specifically, kept apart from editorial policy and trust. `policy_links` means
     # editorial standards — fact-checking, corrections, ethics — while `trust_links`
     # is anything vaguely institutional, an "About" page included. CN-040 asks only
     # whether there is an up-to-date privacy policy, and it was asserting on
@@ -261,18 +257,8 @@ def check_eeat(source: str, timeout: int = 15) -> dict:
     # A route to the people behind the page: a link named or addressed as contact, or a
     # phone or email link. Not an About, Privacy or Terms link, which `trust_links` keeps
     # counting for CN-068's score.
-    contact_links = [
-        link for link in links
-        if (_text_matches(patterns["contact"], link.get("text", ""))
-            or patterns["contact"]["href"].search(link.get("href", "")))
-        and not link["foreign_credit"]
-    ] + contact_routes
-    privacy_links = [
-        link for link in links
-        if (_text_matches(patterns["privacy"], link.get("text", ""))
-            or patterns["privacy"]["href"].search(link.get("href", "")))
-        and not link["foreign_credit"]
-    ]
+    contact_links = selected["contact"] + contact_routes
+    privacy_links = selected["privacy"]
     page_host = urlparse(url).netloc if url else ""
     external_citations = [
         link for link in links

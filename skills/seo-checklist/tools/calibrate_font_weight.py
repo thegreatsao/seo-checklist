@@ -12,14 +12,16 @@ uses the network.
 from __future__ import annotations
 
 import argparse
-import ast
 import json
 import os
 import sys
 from datetime import datetime, timezone
 from pathlib import PurePosixPath
 
+from corpus_fetch import display_path as _display_path
 from corpus_fetch import CACHE, fetch_package, package_basename, tarball_url
+
+from calibration_common import literal_constants, percentile as _percentile
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -40,23 +42,8 @@ PACKAGES = (
 
 
 def _offline_constant() -> int:
-    path = os.path.join(SCRIPTS, "font_audit.py")
-    with open(path, encoding="utf-8") as fh:
-        tree = ast.parse(fh.read(), filename=path)
-    for node in tree.body:
-        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
-            continue
-        target = node.targets[0]
-        if isinstance(target, ast.Name) and target.id == "LARGE_FONT_BYTES":
-            return ast.literal_eval(node.value)
-    raise RuntimeError("could not read LARGE_FONT_BYTES")
-
-
-def _display_path(package: str, version: str, member_name: str) -> str:
-    parts = PurePosixPath(member_name).parts
-    if parts and parts[0] == "package":
-        parts = parts[1:]
-    return str(PurePosixPath(f"{package_basename(package)}-{version}", *parts))
+    return literal_constants(os.path.join(SCRIPTS, "font_audit.py"), {"LARGE_FONT_BYTES"},
+                             "could not read LARGE_FONT_BYTES", first=True)["LARGE_FONT_BYTES"]
 
 
 def _subset(package: str, path: str) -> str | None:
@@ -69,17 +56,6 @@ def _subset(package: str, path: str) -> str | None:
         return None
     parts = stem[len(prefix):].rsplit("-", 2)
     return parts[0] if len(parts) == 3 else None
-
-
-def _percentile(values: list[int], fraction: float) -> float:
-    ordered = sorted(values)
-    if not ordered:
-        raise ValueError("a distribution cannot be computed from no observations")
-    position = (len(ordered) - 1) * fraction
-    low = int(position)
-    high = min(low + 1, len(ordered) - 1)
-    weight = position - low
-    return ordered[low] * (1 - weight) + ordered[high] * weight
 
 
 def _rounded(value: float) -> int | float:

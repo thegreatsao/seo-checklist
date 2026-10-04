@@ -116,15 +116,17 @@ def issue_keys(body: str) -> list[str] | None:
     return None
 
 
-def severity_cases(script: str) -> set[str]:
-    """Every severity string the script can put in a dict, with its case kept.
+def severity_cases(script: str, scripts_dir: str | None = None) -> set[str]:
+    """Every severity string the script can put in a dict or hand to `issue`, case kept.
 
-    The same AST read `audit_assertions.severity_literals` performs — a regex over the
-    source finds every word in the file, which is the mistake that cleared fifteen dead
-    patterns in that tool's first version — except that this one does not lowercase, so
-    it can answer the question the catalogue's paragraph asks.
+    An AST read, not a regex over the source: a regex finds every word in the file, which
+    is the mistake that cleared fifteen dead patterns in the first version of
+    `audit_assertions`. That tool reads its severities through this function and
+    lowercases them itself; the catalogue's paragraph asks about case, so nothing is
+    lowered here.
     """
-    with open(os.path.join(SCRIPTS, script), encoding="utf-8") as stream:
+    with open(os.path.join(SCRIPTS if scripts_dir is None else scripts_dir, script),
+              encoding="utf-8") as stream:
         tree = ast.parse(stream.read())
     out: set[str] = set()
     for node in ast.walk(tree):
