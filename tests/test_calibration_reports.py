@@ -14,7 +14,8 @@ class CalibrationReports(unittest.TestCase):
             with self.subTest(tool=name):
                 result = subprocess.run(
                     [sys.executable, os.path.join(TOOLS, f"calibrate_{name}.py"), "--check"],
-                    capture_output=True, text=True, encoding="utf-8", close_fds=False)
+                    capture_output=True, text=True, encoding="utf-8", close_fds=False,
+                    env=dict(os.environ, PYTHONIOENCODING="utf-8"))
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
