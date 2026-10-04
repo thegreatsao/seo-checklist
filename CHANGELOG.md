@@ -10,6 +10,75 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.145.0 — thirty cuts inside the tests, each kept only while the tests still failed when they should
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit writes
+changes, and nothing under `skills/` changes: this release is `tests/` and two paragraphs
+of the specification.
+
+* **The audit's findings that rested on judgement, the half inside `tests/`.** 0.144.0
+  ran the eighteen outside it. Thirty-nine were left, every one a `reuse:` — one helper
+  where several copies stood. Here the code under change is the test, so a cut stayed
+  only if the tests it touched still failed when they should: for each class a cut
+  touched the code under test was broken and that class seen red; the shared helper was
+  broken once and every module that leans on it seen red; and the collected test ids
+  were compared before and after. Thirty held and are applied, seven were struck, two
+  were not worth their lines: 658 lines left 23 files under `tests/` and 313 came in.
+  The suite is the same 2214 tests.
+  - *Shared between modules.* `tests/registry_verdict.py` is the `verdict` seven test
+    modules each carried, and `tests/image_fixtures.py` the PNG builder two carried.
+    `tests/harness.py` gained `registry()` (the shipped registry, read afresh at every
+    call), `closed_port()` and `dead_url()`, `through_html()` (thirteen temporary-file
+    lifecycles in `test_evidence_scripts.py`) and `run_audit()`, moved from
+    `test_shapes.py` so that `test_parser.py` can use it.
+  - *Within a module.* `test_runner.py` starts its children in one place for the three
+    tests that launch several at once, and borrows one class's prompt fixture, artifact
+    writer, temporary working directory and whole-audit launcher for the class beside
+    it. `test_report.py` builds a scored result through one `scored_results`
+    (twenty-four places). `test_registry.py` loads a committed calibration report in one
+    place (ten) and writes its temporary `thresholds.py` in one (six). Two probes in
+    `known_issues.py` share a JSON-LD validation step and two a truncated-input row;
+    every recorded value is what it was.
+
+* **Struck, and why.**
+  - *Two fixtures that read alike are not one fixture* (three findings). Four
+    environment restorers in `test_safe_http.py` have the same six lines and belong to
+    four requirements, each free to change what it sets up without the other three.
+  - *A cut may not make a record say less* (one). `Served.stop` as an alias of
+    `_Site.stop` runs the same lines, and the known-issues probe that counts where a
+    fixture server forgets its origin went from 2 to 1 — a number that then reads the
+    same whether both kinds of server forget or one does.
+  - *A test module is not imported for a helper* (two): the import brings that module's
+    `sys.path` edits and fixtures with it. Both are open again now that the helpers they
+    wanted live in `harness`, with a third that was too small alone; they are not in
+    this release.
+  - *One page for two modules* (one), because the page is not what both say it is — next.
+
+* **What showing them found.**
+  - **Three fixtures say of themselves that they keep the thin-entry guard quiet, and
+    have 38 visible words against a threshold of 40** — one in `test_parser.py`, two in
+    `test_safe_http.py`; two more in `test_runner.py` sit at exactly 40. The tests pass.
+    What those audits measure with the guard raised is its own question and is not
+    answered here.
+  - The counts in `evidence` EVD-6 and in `governance` — how many numbers the thresholds
+    audit holds, by basis — were read by no test and had gone stale once already.
+    `tests/test_prose_counts.py` reads each of them off the tool now, and both paragraphs
+    say so.
+  - Two tests named for simultaneity pass without it:
+    `OneFetchPerUrl.test_eight_processes_asking_at_once_make_one_request` and
+    `test_robots_txt_is_fetched_once_however_many_ask` stay green when their children run
+    one after another. The third caller of the shared launcher, the pacing test, does
+    go red. Not repaired here.
+  - Every cut that stayed was broken once by the session that made it and once more at
+    acceptance with a different breakage — twenty-six of those. Twenty-two were caught by
+    a test of the class the cut touched. Three changed something nothing reads (a
+    temporary file's name; a list that is always empty for the documents a probe
+    builds). **One found a line no tracked test holds**: `_Origin.stop` in
+    `test_url_credentials.py` forgets a stopped origin's robots answer under its
+    credentialed spelling too, and the module is green without it. Whether any run can
+    still write that entry, since 0.136.0 splits the credential off where the URL comes
+    in, is undecided.
+
 ## 0.144.0 — sixteen cuts that had to be shown first, and what showing them found
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit writes

@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.144.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit decides changes in this version. It applies sixteen more cuts from the audit of the whole tree, each shown equal to what it replaced before it stayed, and gives a test to what showing them found unheld — among it, that the thresholds audit could stop seeing thresholds with every gate green. The version before it removed code nothing read.
+Version 0.145.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit decides changes in this version, and nothing under `skills/` changes. It applies thirty cuts inside the tests from the audit of the whole tree — one helper where several copies stood — each kept only after the tests it touched were seen to fail when they should. The version before it did the same for the runner, the report, the scripts and the tools.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

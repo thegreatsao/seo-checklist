@@ -85,8 +85,8 @@ it came with the code" is only available if somebody wrote it down.
 **Reader:** enforced. `audit_thresholds.py --check` runs in CI and fails when a
 verdict-deciding number names no basis. It counts 161 such numbers at 0.144.0 — 19
 `standard`, 11 `measured`, 54 `convention`, **77 `inherited`**, 0 without a basis — plus 12
-that decide only presentation. No test reads the counts in this paragraph (`evidence`
-EVD-6 says what that cost).
+that decide only presentation. `tests/test_prose_counts.py` reads the counts in this
+paragraph since 0.145.0 (`evidence` EVD-6 says what their going unread had cost).
 
 #### Scenario: a constant that can change a verdict
 - **WHEN** a number in a checker or the runner separates one verdict from another

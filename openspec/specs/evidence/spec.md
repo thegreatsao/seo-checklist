@@ -263,9 +263,9 @@ ordering comparison, an argument of `min` or `max`, a multiplication, a looked-u
 and by the walk under each; any of the five could be removed with every test green,
 because a constant that carries a basis line is counted whether the scan sees it or not.
 `test_registry.EveryThresholdSaysWhatItRestsOn.test_each_threshold_use_without_basis_is_refused`
-holds all five, each seen red. Not held: the counts in this paragraph. They read 146 / 11
-/ 11 / 47 / 77 until 0.144.0, after the tool had moved; the ROADMAP's copies are read by
-`tests/test_prose_counts.py` and these are not.
+holds all five, each seen red. The counts in this paragraph are read off the tool by
+`tests/test_prose_counts.py` since 0.145.0. They read 146 / 11 / 11 / 47 / 77 until
+0.144.0, after the tool had moved, while only the ROADMAP's copies were read.
 
 #### Scenario: a number decides a verdict
 - **WHEN** a threshold in a checker separates one verdict from another
