@@ -43,8 +43,7 @@ def _candidate_paths() -> list[Path]:
     if home:
         paths.append(Path(home) / ".agentic-seo" / ".env")
 
-    # Deduplicate while preserving order.
-    return [Path(key) for key in dict.fromkeys(map(str, paths))]
+    return paths
 
 
 def _parse_line(line: str) -> tuple[str, str] | None:

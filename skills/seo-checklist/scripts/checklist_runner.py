@@ -2653,7 +2653,7 @@ def stride(urls: list[str], limit: int) -> list[str]:
     # of the end, which leaves the tail of a large sitemap unreachable at any sample
     # size — the same blind spot as taking the first N, moved to the other end.
     last = len(urls) - 1
-    return list(dict.fromkeys(urls[round(i * last / (limit - 1))] for i in range(limit)))
+    return [urls[round(i * last / (limit - 1))] for i in range(limit)]
 
 
 def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> list[str]:

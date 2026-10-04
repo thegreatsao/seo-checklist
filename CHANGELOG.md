@@ -22,10 +22,11 @@ changes.
   Gone from the scripts: `site_crawl._Ordered` (a `ThreadPoolExecutor` read in submission
   order is the same thing), the `anchor_diversity` table `link_profile` built and never
   returned, the alias `seo_common.USER_AGENT`, four `REPORT_RELATIVE` constants in the
-  calibration tools, and the hand-kept "seen" sets of `discover_urls`, `stride`,
-  `read_urls`, `env_loader` and `duplicate_content`, which are `dict.fromkeys` and
-  `itertools.combinations` now. In the tests, hand-written patch-and-restore blocks became
-  `mock.patch`, and three helpers nobody called were removed.
+  calibration tools, and the hand-kept "seen" sets of `discover_urls`, `read_urls` and
+  `duplicate_content`, which are `dict.fromkeys` and `itertools.combinations` now, and of
+  `stride` and `env_loader`, which are deleted (below). In the tests, hand-written
+  patch-and-restore blocks became `mock.patch`, and three helpers nobody called were
+  removed.
 
 * **What accepting the cuts showed: six behaviours no test held.** A rewrite was accepted
   by undoing the behaviour it keeps and looking for a red test, first in the modules that
@@ -42,10 +43,11 @@ changes.
   - a MinHash signature has as many values as hash functions asked for —
     `UnicodeMinHash.test_requested_hash_count_preserves_partial_shingle_similarity`.
 
-  Two are left exactly as they were and are still held by nothing: `stride`'s own
-  de-duplication, which cannot fire while its input is distinct, and the de-duplication of
-  the `.env` candidate paths, where reading one file twice changes nothing. Whether those
-  two lines stay is not decided.
+  Two are deleted instead, because nothing could require them. `stride`'s own
+  de-duplication cannot fire while its input is distinct — with more URLs than picks the
+  step between two picks is above 1, so no index repeats — and its one caller
+  de-duplicates first. The de-duplication of the `.env` candidate paths changed nothing:
+  a second read of the same file sets no key, and a file that sets none is not listed.
 
 * **The calibration tools' `--check` runs in the suite.** CI ran the four as a workflow
   step and nothing ran them here; `tests/test_calibration_reports.py` does.
