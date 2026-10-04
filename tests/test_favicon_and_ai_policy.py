@@ -31,7 +31,6 @@ import os
 import struct
 import sys
 import unittest
-import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
@@ -41,35 +40,15 @@ sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from harness import allow_loopback, served  # noqa: E402
-from checklist_runner import FAIL, NO_DATA, PASS, WARN, evaluate  # noqa: E402
+from image_fixtures import valid_png as png  # noqa: E402
+from registry_verdict import verdict  # noqa: E402
+from checklist_runner import FAIL, NO_DATA, PASS, WARN  # noqa: E402
 
 
 def items() -> dict:
     with open(REGISTRY, encoding="utf-8") as handle:
         return {item["id"]: item for item in json.load(handle)["items"]}
 
-
-def verdict(item_id: str, output: dict) -> str:
-    check = items()[item_id]["check"]
-    ok, _ = evaluate(check["assert"], output)
-    if ok is None:
-        return NO_DATA
-    if ok:
-        return PASS
-    warn = check.get("warn")
-    if warn and evaluate(warn, output)[0]:
-        return WARN
-    return FAIL
-
-
-def png(width: int, height: int) -> bytes:
-    def chunk(kind: bytes, payload: bytes) -> bytes:
-        body = kind + payload
-        return struct.pack(">I", len(payload)) + body + struct.pack(">I", zlib.crc32(body))
-    rows = b"".join(b"\0" + b"\0\0\0\xff" * width for _ in range(height))
-    return (b"\x89PNG\r\n\x1a\n"
-            + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
-            + chunk(b"IDAT", zlib.compress(rows)) + chunk(b"IEND", b""))
 
 
 def bmp(width: int, height: int) -> bytes:

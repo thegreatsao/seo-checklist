@@ -48,6 +48,12 @@ VALID_EFFORT = {"low", "medium", "high"}
 VALID_REQUIRES = {"offline", "fetch", "crawl", "api", "gsc", "safe_browsing"}
 
 
+def calibration_report(basename):
+    path = os.path.join(TOOLS, "calibration", basename)
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
 class RegistryShape(unittest.TestCase):
     def test_ids_unique(self):
         ids = [i["id"] for i in ITEMS]
@@ -481,6 +487,15 @@ class DocsPointAtThingsThatExist(unittest.TestCase):
             self.assertNotIn("is not a sample", text, f"{rel} is out of date")
 
 
+@contextlib.contextmanager
+def threshold_source(source):
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "thresholds.py")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(source)
+        yield path
+
+
 class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
     """§2 of KNOWN-ISSUES.md, made checkable.
 
@@ -512,10 +527,7 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
 
     def _run_check(self, source):
         at = self._tool()
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "thresholds.py")
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(source)
+        with threshold_source(source) as path:
             stdout, stderr = io.StringIO(), io.StringIO()
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 status = at.main(["--check"], paths=[path])
@@ -731,10 +743,7 @@ from datetime import timedelta
 WINDOW_DAYS = 3
 CUTOFF = today + timedelta(days=WINDOW_DAYS)
 """
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "thresholds.py")
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(source)
+        with threshold_source(source) as path:
             named, _ = at.scan([path])
         rows = [row for row in named if row["name"] == "WINDOW_DAYS"]
         self.assertEqual(len(rows), 1, rows)
@@ -742,10 +751,7 @@ CUTOFF = today + timedelta(days=WINDOW_DAYS)
 
     def test_a_constant_with_no_basis_and_no_comparison_is_listed_not_counted(self):
         at = self._tool()
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "thresholds.py")
-            with open(path, "w", encoding="utf-8") as f:
-                f.write("SOMETHING = 7\n")
+        with threshold_source("SOMETHING = 7\n") as path:
             named, _ = at.scan([path])
             uncounted = at.scan_uncounted([path])
             stdout, stderr = io.StringIO(), io.StringIO()
@@ -761,10 +767,7 @@ CUTOFF = today + timedelta(days=WINDOW_DAYS)
 # basis: presentation — a short display window, for this test only
 DISPLAY_ROWS = 7
 """
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "thresholds.py")
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(source)
+        with threshold_source(source) as path:
             named, _ = at.scan([path])
         self.assertEqual([(row["name"], row["kind"]) for row in named],
                          [("DISPLAY_ROWS", "presentation")])
@@ -778,10 +781,7 @@ DISPLAY_ROWS = 7
 
 WINDOW = 7
 """
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "thresholds.py")
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(source)
+        with threshold_source(source) as path:
             named, _ = at.scan([path])
             uncounted = at.scan_uncounted([path])
         self.assertNotIn("WINDOW", {row["name"] for row in named})
@@ -852,10 +852,7 @@ WINDOW = 7
         # what makes it a witness that stays.
         self.assertIn("INVENTORY_VERSION", stdout.getvalue())
 
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "thresholds.py")
-            with open(path, "w", encoding="utf-8") as f:
-                f.write("# basis: conventions — invalid kind\nSOMETHING = 7\n")
+        with threshold_source("# basis: conventions — invalid kind\nSOMETHING = 7\n") as path:
             stdout, stderr = io.StringIO(), io.StringIO()
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 status = at.main(["--uncounted", "--check"], paths=[path])
@@ -989,9 +986,7 @@ def over(result):
         self.assertEqual(compared, 4)
 
     def test_a_measured_css_threshold_matches_its_committed_measurement(self):
-        report_path = os.path.join(TOOLS, "calibration", "css-minification.json")
-        with open(report_path, encoding="utf-8") as f:
-            report = json.load(f)
+        report = calibration_report("css-minification.json")
         sys.path.insert(0, SCRIPTS)
         import css_minify_check
 
@@ -1003,9 +998,7 @@ def over(result):
                              f"{name} drifted away from its committed measurement")
 
     def test_a_measured_css_constant_is_not_dominated_by_one_package(self):
-        report_path = os.path.join(TOOLS, "calibration", "css-minification.json")
-        with open(report_path, encoding="utf-8") as f:
-            report = json.load(f)
+        report = calibration_report("css-minification.json")
         sys.path.insert(0, SCRIPTS)
         import css_minify_check
 
@@ -1037,9 +1030,7 @@ def over(result):
                             "the constant reverted to the package-dominated pool")
 
     def test_the_calibration_report_names_a_real_corpus(self):
-        report_path = os.path.join(TOOLS, "calibration", "css-minification.json")
-        with open(report_path, encoding="utf-8") as f:
-            report = json.load(f)
+        report = calibration_report("css-minification.json")
         self.assertGreater(len(report["manifest"]), 0)
         datetime.datetime.strptime(report["generated"], "%Y-%m-%d")
         for entry in report["manifest"]:
@@ -1048,9 +1039,7 @@ def over(result):
             self.assertGreater(entry.get("css_file_count", 0), 0, entry)
 
     def test_the_font_threshold_matches_its_committed_measurement(self):
-        report_path = os.path.join(TOOLS, "calibration", "font-weight.json")
-        with open(report_path, encoding="utf-8") as f:
-            report = json.load(f)
+        report = calibration_report("font-weight.json")
         sys.path.insert(0, SCRIPTS)
         import font_audit
 
@@ -1059,9 +1048,7 @@ def over(result):
                          "LARGE_FONT_BYTES drifted away from its measurement")
 
     def test_the_font_calibration_report_names_a_real_corpus(self):
-        report_path = os.path.join(TOOLS, "calibration", "font-weight.json")
-        with open(report_path, encoding="utf-8") as f:
-            report = json.load(f)
+        report = calibration_report("font-weight.json")
         self.assertGreater(len(report["manifest"]), 0)
         datetime.datetime.strptime(report["generated"], "%Y-%m-%d")
         self.assertEqual({entry.get("arm") for entry in report["manifest"]},
@@ -1072,9 +1059,7 @@ def over(result):
             self.assertRegex(entry.get("sha256", ""), r"^[0-9a-f]{64}$", entry)
 
     def test_the_serp_length_thresholds_match_their_committed_measurement(self):
-        report_path = os.path.join(TOOLS, "calibration", "serp-length.json")
-        with open(report_path, encoding="utf-8") as f:
-            report = json.load(f)
+        report = calibration_report("serp-length.json")
         sys.path.insert(0, SCRIPTS)
         import article_seo
 
@@ -1088,9 +1073,7 @@ def over(result):
                              f"{name} does not implement the measured capacity")
 
     def test_the_serp_constants_come_from_one_selection_rule(self):
-        report_path = os.path.join(TOOLS, "calibration", "serp-length.json")
-        with open(report_path, encoding="utf-8") as f:
-            report = json.load(f)
+        report = calibration_report("serp-length.json")
         sys.path.insert(0, SCRIPTS)
         import article_seo
 
@@ -1130,9 +1113,7 @@ def over(result):
             self.assertEqual(getattr(article_seo, name), selected_capacity, name)
 
     def test_the_serp_report_names_its_assumed_inputs(self):
-        report_path = os.path.join(TOOLS, "calibration", "serp-length.json")
-        with open(report_path, encoding="utf-8") as f:
-            report = json.load(f)
+        report = calibration_report("serp-length.json")
 
         inputs = report["inputs"]
         self.assertEqual(inputs["pixel_budgets"]["status"],
@@ -1153,10 +1134,7 @@ def over(result):
             self.assertRegex(font["sha256"], r"^[0-9a-f]{64}$", font)
 
     def test_the_gsc_floors_match_their_committed_measurement(self):
-        report_path = os.path.join(
-            TOOLS, "calibration", "gsc-sample-floors.json")
-        with open(report_path, encoding="utf-8") as f:
-            report = json.load(f)
+        report = calibration_report("gsc-sample-floors.json")
         sys.path.insert(0, SCRIPTS)
         import gsc_checker
 
@@ -1171,10 +1149,7 @@ def over(result):
                              f"{name} drifted away from its measurement")
 
     def test_a_gsc_floor_delivers_the_precision_it_claims(self):
-        report_path = os.path.join(
-            TOOLS, "calibration", "gsc-sample-floors.json")
-        with open(report_path, encoding="utf-8") as f:
-            report = json.load(f)
+        report = calibration_report("gsc-sample-floors.json")
 
         rule = report["precision_rule"]
         self.assertEqual(
@@ -2366,11 +2341,7 @@ class MeasuresQualifications(unittest.TestCase):
         "GO-139": "Whether the site ranks first, with any of its pages, for its most-searched branded query in Search Console. The rest of the brand's results page — knowledge panel, reviews, other sites — is not read.",
     }
 
-    @staticmethod
-    def module():
-        sys.path.insert(0, os.path.join(SKILL, "tools"))
-        import build_checklist
-        return build_checklist
+    module = staticmethod(EveryRulelessItemSaysWhenItApplies.module)
 
     def test_the_registry_carries_exactly_the_thirty_one_qualifications_verbatim(self):
         build_checklist = self.module()

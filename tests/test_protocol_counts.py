@@ -37,7 +37,6 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL_DIR = os.path.join(ROOT, "skills", "seo-checklist")
 SCRIPTS = os.path.join(SKILL_DIR, "scripts")
 TOOLS = os.path.join(SKILL_DIR, "tools")
-REGISTRY = os.path.join(SKILL_DIR, "resources", "config", "checklist.json")
 README = os.path.join(ROOT, "README.md")
 SKILL = os.path.join(SKILL_DIR, "SKILL.md")
 
@@ -46,6 +45,7 @@ sys.path.insert(0, TOOLS)
 
 import audit_reachability  # noqa: E402
 import checklist_runner  # noqa: E402
+from harness import registry  # noqa: E402
 
 UNITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
          "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
@@ -73,11 +73,6 @@ def to_int(text: str) -> int:
         if tens in TENS and unit in UNITS[1:10]:
             return TENS[tens] + UNITS.index(unit)
     raise ValueError(f"{text!r} is not a number this module can read")
-
-
-def registry() -> dict:
-    with open(REGISTRY, encoding="utf-8") as stream:
-        return json.load(stream)
 
 
 DATA = registry()

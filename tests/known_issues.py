@@ -706,6 +706,18 @@ def _foreign_credit_keys() -> dict:
     }
 
 
+def _truncated_row(item, script, grade):
+    rule = item["check"]["assert"]
+    payload = {}
+    node = payload
+    for part in rule["path"].split(".")[:-1]:
+        node = node.setdefault(part, {})
+    node[rule["path"].split(".")[-1]] = 0 if rule.get("eq") == 0 else []
+    payload["truncated"] = True
+    key = (script, ())
+    return grade([item], {key: [item["id"]]}, {key: payload}, {}, False)[0]
+
+
 @probe("a_truncated_crawl_decides_the_whole_site")
 def _a_truncated_crawl_decides_the_whole_site() -> dict:
     """Which items would call a site clean from the part of it that was read.
@@ -728,15 +740,7 @@ def _a_truncated_crawl_decides_the_whole_site() -> dict:
         if script not in reporters:
             continue
         covered.append(item["id"])
-        parts = rule["path"].split(".")
-        payload, node = {}, None
-        node = payload
-        for part in parts[:-1]:
-            node = node.setdefault(part, {})
-        node[parts[-1]] = 0 if rule.get("eq") == 0 else []
-        payload["truncated"] = True
-        key = (script, ())
-        row = runner.grade([item], {key: [item["id"]]}, {key: payload}, {}, False)[0]
+        row = _truncated_row(item, script, runner.grade)
         if row["status"] != runner.NO_DATA:
             still_deciding.append("%s=%s" % (item["id"], row["status"]))
     return {
@@ -902,15 +906,7 @@ def _the_crawl_defaults_now_decide_whether_items_answer() -> dict:
         if script not in reporters:
             continue
         fed_by_the_crawl = item["check"].get("requires") == "crawl"
-        parts = rule["path"].split(".")
-        payload: dict = {}
-        node = payload
-        for part in parts[:-1]:
-            node = node.setdefault(part, {})
-        node[parts[-1]] = 0 if rule.get("eq") == 0 else []
-        payload["truncated"] = True
-        key = (script, ())
-        row = runner.grade([item], {key: [item["id"]]}, {key: payload}, {}, False)[0]
+        row = _truncated_row(item, script, runner.grade)
         if row["status"] != runner.NO_DATA:
             continue
         (silenced if fed_by_the_crawl else by_own_cap).append(item["id"])
@@ -928,6 +924,21 @@ def _the_crawl_defaults_now_decide_whether_items_answer() -> dict:
     }
 
 
+def _schema_validation(node):
+    import schema_required_props
+
+    html = ('<!doctype html><html lang="en"><head><title>t</title>'
+            '<script type="application/ld+json">' + json.dumps(node)
+            + "</script></head><body><h1>h</h1></body></html>")
+    handle = tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
+                                         encoding="utf-8")
+    handle.write(html)
+    handle.close()
+    documents, meta = schema_required_props.extract_schema_documents(handle.name)
+    return schema_required_props.validate_schema_required_props(
+        documents, None, meta.get("invalid_blocks"))
+
+
 @probe("go_143_asked_for_a_claim_that_was_not_true")
 def _go_143_asked_for_a_claim_that_was_not_true() -> dict:
     """What the item asks for now, graded rather than described.
@@ -940,16 +951,7 @@ def _go_143_asked_for_a_claim_that_was_not_true() -> dict:
     import schema_required_props
 
     def verdict(node: dict) -> str:
-        html = ('<!doctype html><html lang="en"><head><title>t</title>'
-                '<script type="application/ld+json">' + json.dumps(node)
-                + "</script></head><body><h1>h</h1></body></html>")
-        handle = tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                             encoding="utf-8")
-        handle.write(html)
-        handle.close()
-        documents, meta = schema_required_props.extract_schema_documents(handle.name)
-        data = schema_required_props.validate_schema_required_props(
-            documents, None, meta.get("invalid_blocks"))
+        data = _schema_validation(node)
         item = _items_by_id()["GO-143"]
         key = (item["check"]["script"], ())
         return runner.grade([item], {key: ["GO-143"]}, {key: data}, {}, False)[0]["status"]
@@ -1020,19 +1022,9 @@ def _a_placeholder_in_structured_data_almost_never_decides() -> dict:
     it is here so the removal cannot be forgotten, and it is expected to be quiet.
     """
     import checklist_runner as runner
-    import schema_required_props
 
     def verdicts(node: dict) -> dict:
-        html = ('<!doctype html><html lang="en"><head><title>t</title>'
-                '<script type="application/ld+json">' + json.dumps(node)
-                + "</script></head><body><h1>h</h1></body></html>")
-        handle = tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                             encoding="utf-8")
-        handle.write(html)
-        handle.close()
-        documents, meta = schema_required_props.extract_schema_documents(handle.name)
-        data = schema_required_props.validate_schema_required_props(
-            documents, None, meta.get("invalid_blocks"))
+        data = _schema_validation(node)
         out = {"warnings": data["summary"]["warnings"],
                "errors": data["summary"]["errors"]}
         for item_id in ("MS-032", "GO-143"):

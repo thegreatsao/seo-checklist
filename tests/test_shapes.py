@@ -23,7 +23,6 @@ Still offline: every origin here is loopback.
 import json
 import os
 import sys
-import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,11 +30,7 @@ SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from harness import served, spawn, tls_env  # noqa: E402
-
-RUNNER = os.path.join(SCRIPTS, "checklist_runner.py")
-REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
-                        "checklist.json")
+from harness import registry as load_registry, run_audit, served, tls_env  # noqa: E402
 
 # Imported rather than retyped. This line read
 # `PASS, FAIL, WARN, NO_DATA = "PASS", "FAIL", "WARN", "N/A"` until 0.95.2 — the
@@ -47,35 +42,7 @@ from checklist_runner import (  # noqa: E402
 
 def registry_items():
     """The shipped registry, read once per call site that needs it."""
-    with open(REGISTRY, encoding="utf-8") as stream:
-        return json.load(stream)["items"]
-
-
-def run_audit(url: str, *extra: str, env=None, only: str = "crawling_indexing") -> dict:
-    """One audit, through the runner, as an operator would get it.
-
-    `--only` by default: these tests are about what the runner does with a *shape* of
-    site, and a full registry pass costs ten seconds per case to re-verify checks that
-    other files already cover.
-    """
-    work = tempfile.mkdtemp(prefix="seo-shape-")
-    out = os.path.join(work, "results.json")
-    args = [sys.executable, RUNNER, url, "--allow-private", "--max-rps", "0",
-            "--no-history", "--no-prompt", "--quiet", "--timeout", "90",
-            "--json", out, *extra]
-    if only:
-        args += ["--only", only]
-    # `harness.spawn`, and no `cwd`: see its docstring for the macOS fork crash that
-    # makes that the only reliable way to start a child here. Every path passed to the
-    # runner is absolute for the same reason.
-    proc = spawn(args, env=env, timeout=600)
-    if proc.returncode != 0:
-        raise AssertionError(f"the audit exited {proc.returncode}\n"
-                             f"{proc.stdout[-2000:]}\n{proc.stderr[-2000:]}")
-    with open(out, encoding="utf-8") as f:
-        payload = json.load(f)
-    payload["_stdout"], payload["_stderr"] = proc.stdout, proc.stderr
-    return payload
+    return load_registry()["items"]
 
 
 DEFAULT_BODY = ("Body copy with enough words in it that the thin-entry guard stays "
@@ -220,7 +187,7 @@ class ASiteLargeEnoughToSample(unittest.TestCase):
 
     def build(self):
         routes = {}
-        locs = []
+        paths = []
         for index in range(self.PAGES):
             path = f"/p{index:02d}.html"
             # The last page carries a title over the 60-character limit, so the worst
@@ -231,14 +198,10 @@ class ASiteLargeEnoughToSample(unittest.TestCase):
                      else f"Page {index:02d} of a site with sixty of them")
             routes[path] = page(title, f"Body copy for page {index:02d}, with enough "
                                        "words to be a page rather than a stub.")
-            locs.append(f"<url><loc>__BASE__{path}</loc></url>")
+            paths.append(path)
         routes["/"] = page("The entry page of a sixty page site",
                            "One page links to the sitemap and the rest are found there.")
-        routes["/sitemap.xml"] = (
-            200, {"Content-Type": "application/xml"},
-            '<?xml version="1.0" encoding="UTF-8"?>'
-            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-            + "".join(locs) + "</urlset>")
+        routes["/sitemap.xml"] = ASampleMadeOfPages.sitemap(*paths)
         routes["/robots.txt"] = (200, {"Content-Type": "text/plain"},
                                  "User-agent: *\nDisallow:\n"
                                  "Sitemap: __BASE__/sitemap.xml\n")
@@ -296,8 +259,7 @@ class NarrowingIsAPartitionOfTheRegistry(unittest.TestCase):
         with served({"/": page("A small site",
                                "Some words that make this a real page. " * 8)}) as site:
             cls.payload = run_audit(site.url, only=cls.ONLY)
-        with open(REGISTRY, encoding="utf-8") as f:
-            cls.registry = json.load(f)["items"]
+        cls.registry = registry_items()
 
     def test_a_narrowed_run_still_reports_every_item_once(self):
         ids = [i["id"] for i in self.payload["items"]]

@@ -28,7 +28,6 @@ requested.
 """
 import json
 import os
-import socket
 import sys
 import unittest
 
@@ -41,8 +40,9 @@ SCRIPT = os.path.join(SCRIPTS, "security_headers.py")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, HERE)
 
-from checklist_runner import FAIL, NO_DATA, PASS, WARN, evaluate  # noqa: E402
-from harness import allow_loopback, offline_env, served, spawn, tls_env  # noqa: E402
+from registry_verdict import verdict as item_verdict  # noqa: E402
+from checklist_runner import FAIL, NO_DATA, PASS, WARN  # noqa: E402
+from harness import allow_loopback, closed_port, offline_env, served, spawn, tls_env  # noqa: E402
 import security_headers as sh  # noqa: E402
 
 OUTCOMES = {"permanent", "temporary", "not_listening", "not_redirected"}
@@ -54,17 +54,7 @@ def rule() -> dict:
 
 
 def verdict(output: dict) -> str:
-    """SE-117's real rule over a real output, graded the way the runner grades."""
-    check = rule()
-    ok, _ = evaluate(check["assert"], output)
-    if ok is None:
-        return NO_DATA
-    if ok:
-        return PASS
-    warn = check.get("warn")
-    if warn and evaluate(warn, output)[0]:
-        return WARN
-    return FAIL
+    return item_verdict("SE-117", output)
 
 
 def run(url: str, env: dict) -> dict:
@@ -76,14 +66,6 @@ def run(url: str, env: dict) -> dict:
 def page(*hrefs: str) -> str:
     links = "".join(f'<a href="{h}">link</a>\n' for h in hrefs)
     return f"<!doctype html><html><head><title>t</title></head><body>{links}</body></html>"
-
-
-def closed_port() -> int:
-    s = socket.socket()
-    s.bind(("127.0.0.1", 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
 
 
 class TheHttpAddressIsAsked(unittest.TestCase):

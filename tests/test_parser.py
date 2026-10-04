@@ -42,7 +42,6 @@ import json
 import os
 import pathlib
 import sys
-import tempfile
 import unittest
 from unittest import mock
 
@@ -54,7 +53,7 @@ import bs4  # noqa: E402
 import seo_common  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from harness import served, spawn  # noqa: E402
+from harness import run_audit, served  # noqa: E402
 
 PARSERS = ("lxml", "html.parser")
 
@@ -604,23 +603,12 @@ class TheRecordedParserReachesTheArtifactAndTheReader(unittest.TestCase):
 
     @classmethod
     def audit(cls, parser=None):
-        work = tempfile.mkdtemp(prefix="seo-parser-")
-        out = os.path.join(work, "results.json")
         env = dict(os.environ)
         env.pop("SEO_HTML_PARSER", None)
         if parser:
             env["SEO_HTML_PARSER"] = parser
         with served({"/": cls.PAGE}) as site:
-            proc = spawn([sys.executable, os.path.join(SCRIPTS, "checklist_runner.py"),
-                          site.url, "--allow-private", "--max-rps", "0", "--no-history",
-                          "--no-prompt", "--quiet", "--timeout", "90", "--json", out,
-                          "--only", "crawling_indexing"], env=env, timeout=600)
-        if proc.returncode != 0:
-            raise AssertionError("the audit exited %s\n%s\n%s"
-                                 % (proc.returncode, proc.stdout[-2000:],
-                                    proc.stderr[-2000:]))
-        with open(out, encoding="utf-8") as fh:
-            return json.load(fh)
+            return run_audit(site.url, env=env)
 
     @classmethod
     def setUpClass(cls):

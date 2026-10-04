@@ -15,6 +15,7 @@ import re
 import signal
 import socket
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -52,6 +53,14 @@ from cwv_metrics import read as cwv_read  # noqa: E402
 from rendered_audit import GENERAL_METRICS, MOBILE_METRICS  # noqa: E402
 from rendered_audit import read as rendered_read  # noqa: E402
 from detect_profile import detect  # noqa: E402
+
+
+def children(code, env, count):
+    procs = [subprocess.Popen([sys.executable, "-c", code], env=env,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              text=True, close_fds=False)
+             for _ in range(count)]
+    return [p.communicate(timeout=60) for p in procs]
 
 
 class Resolve(unittest.TestCase):
@@ -195,9 +204,7 @@ class PatternScopedToAField(unittest.TestCase):
                                   "none_matching": "x"}, {"seo_issues": []})[0])
 
     def test_the_two_keyword_items_are_judgements_now(self):
-        with open(os.path.join(SCRIPTS, "..", "resources", "config",
-                               "checklist.json"), encoding="utf-8") as f:
-            by_id = {i["id"]: i for i in json.load(f)["items"]}
+        by_id = {i["id"]: i for i in harness.registry()["items"]}
         for item_id in ("KW-072", "KW-073"):
             self.assertEqual(by_id[item_id]["source"], "llm", item_id)
             self.assertEqual(by_id[item_id]["lens"], "copy", item_id)
@@ -296,7 +303,6 @@ class RateLimiting(unittest.TestCase):
         which is why the slot file can hold one process's timestamp and another can
         compare against it, and why these numbers are comparable here.
         """
-        import subprocess
         # The child is told where the state lives the way the product tells it —
         # through `SEO_RATE_LIMIT_DIR`, inherited from this process. It used to be
         # told with `sh.RATE_LIMIT_DIR = os.environ['PACE_DIR']`, a line that existed
@@ -311,11 +317,7 @@ class RateLimiting(unittest.TestCase):
         )
         env = os.environ.copy()
         env["PACE_RPS"] = str(rps)
-        procs = [subprocess.Popen([sys.executable, "-c", code], env=env,
-                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                  text=True, close_fds=False)
-                 for _ in range(self.PACE_CHILDREN)]
-        outs = [p.communicate(timeout=60) for p in procs]
+        outs = children(code, env, self.PACE_CHILDREN)
         for out, err in outs:
             self.assertTrue(out.strip(), f"a child never paced: {err}")
         return sorted(float(out) for out, _ in outs)
@@ -1038,8 +1040,8 @@ class BrowserArtifacts(unittest.TestCase):
     the judgements the comparison itself makes.
     """
 
-    def _artifact(self, payload) -> str:
-        path = os.path.join(tempfile.mkdtemp(), "cwv.json")
+    def _artifact(self, payload, basename="cwv.json") -> str:
+        path = os.path.join(tempfile.mkdtemp(), basename)
         with open(path, "w", encoding="utf-8") as f:
             if isinstance(payload, str):
                 f.write(payload)
@@ -1107,9 +1109,7 @@ class BrowserArtifacts(unittest.TestCase):
     def test_the_items_that_read_an_artifact_are_the_ones_we_think(self):
         """Named by placeholder, not by script, so a new artifact-backed item is
         covered the day it is added rather than the day somebody remembers."""
-        with open(os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
-                               "checklist.json"), encoding="utf-8") as f:
-            registry = json.load(f)["items"]
+        registry = harness.registry()["items"]
         found = {i["id"] for i in registry if reads_artifact(i)}
         # TE-181 joined in 0.45.0: it validates the rendered DOM out of the same
         # rendered-page artifact rather than starting a browser inside the audit.
@@ -1687,9 +1687,7 @@ class Profiles(unittest.TestCase):
         three exclusion routes - by id, by category, by script - each build their
         own sentence, and a fixture profile would only exercise the one it was
         written for."""
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as f:
-            items = json.load(f)["items"]
+        items = harness.registry()["items"]
         profile = runner.load_profile("local")
         excluded = runner.profile_excludes(items, profile)
         self.assertTrue(excluded, "the local profile excludes nothing to read")
@@ -1709,9 +1707,7 @@ class Profiles(unittest.TestCase):
         one this test was written against. An item excluded by id falls back to
         "excluded by profile" when nobody wrote a reason, and that is the one
         exclusion a reader cannot reconstruct."""
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as f:
-            items = json.load(f)["items"]
+        items = harness.registry()["items"]
         for name in runner.all_profiles():
             reasons = runner.profile_excludes(items, runner.load_profile(name))
             for item_id, why in reasons.items():
@@ -1735,12 +1731,12 @@ class ProfilePrompt(unittest.TestCase):
         def isatty(self):
             return True
 
-    def ask(self, answer, interactive=True, tty=True):
+    def ask(self, answer, interactive=True, tty=True, detected=None):
         stdin, real_input = sys.stdin, builtins.input
         sys.stdin = self._Tty() if tty else io.StringIO()
         builtins.input = lambda prompt="": answer
         try:
-            return choose_profile("", interactive)
+            return choose_profile("", interactive, detected)
         finally:
             sys.stdin, builtins.input = stdin, real_input
 
@@ -1878,18 +1874,10 @@ class Detection(unittest.TestCase):
 
 
 class DetectedProfilePrompt(unittest.TestCase):
-    class _Tty(io.StringIO):
-        def isatty(self):
-            return True
+    _Tty = ProfilePrompt._Tty
 
     def ask(self, answer, detected):
-        stdin, real_input = sys.stdin, builtins.input
-        sys.stdin = self._Tty()
-        builtins.input = lambda prompt="": answer
-        try:
-            return choose_profile("", True, detected)
-        finally:
-            sys.stdin, builtins.input = stdin, real_input
+        return ProfilePrompt.ask(self, answer, detected=detected)
 
     def test_enter_accepts_the_detected_profile(self):
         d = {"profile": "local", "confidence": "high", "signals": {"local": ["x"]}}
@@ -2423,9 +2411,7 @@ class TheStatusNamesWhoCanAct(unittest.TestCase):
         Written as a set comparison on purpose: the failure message names the key
         that drifted, which a per-key loop over a hand list cannot do because the
         hand list is the thing that goes stale."""
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as f:
-            data = json.load(f)
+        data = harness.registry()
         produced = set()
         for it in data["items"]:
             for a in ((it.get("check") or {}).get("args") or []):
@@ -2469,9 +2455,7 @@ class TheStatusNamesWhoCanAct(unittest.TestCase):
         something else, and it stops holding the moment somebody adds the crawl to
         the list it consults. This asserts the thing the requirement says, so a list
         that grew cannot make it quiet."""
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as f:
-            data = json.load(f)
+        data = harness.registry()
         named = {(it.get("check") or {}).get("script") for it in data["items"]}
         self.assertNotIn("site_crawl.py", named,
                          "the crawl is an input; as a job it runs once per item that "
@@ -2609,9 +2593,7 @@ class TheModeTableIsTheContract(unittest.TestCase):
         and the one it argued for: a capability no mode carries is legitimate — `gsc`
         and `safe_browsing` are exactly that — so the rule is that every `requires` is
         either in some mode or is one of the twice-gated pair, and nothing else."""
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as stream:
-            registry = json.load(stream)
+        registry = harness.registry()
         asked = {(i.get("check") or {}).get("requires")
                  for i in registry["items"] if i.get("check")}
         asked.discard(None)
@@ -2929,9 +2911,7 @@ class ArchiveModeTouchesNothing(unittest.TestCase):
         every item there is. Anything a planned script could do offline is fine; what
         must be empty is the set of planned invocations whose item asked for the
         network."""
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as stream:
-            items = json.load(stream)["items"]
+        items = harness.registry()["items"]
         plan, skipped = build_plan(items, self.CTX, {"offline"}, "archive",
                                    has_gsc=True, has_safe_browsing=True)
         by_id = {i["id"]: i for i in items}
@@ -2945,9 +2925,7 @@ class ArchiveModeTouchesNothing(unittest.TestCase):
 
     def test_the_credentials_do_not_change_what_archive_plans(self):
         """The requirement's own words: *whatever credentials are present*."""
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as stream:
-            items = json.load(stream)["items"]
+        items = harness.registry()["items"]
         with_keys, skipped_with = build_plan(items, self.CTX, {"offline"}, "archive",
                                              has_gsc=True, has_safe_browsing=True)
         without, skipped_without = build_plan(items, self.CTX, {"offline"}, "archive",
@@ -3040,9 +3018,7 @@ class TheNormativeTablesAreReadFromTheDocument(unittest.TestCase):
         """Those columns are counts written as literals next to the thing they count —
         `specs/registry/` REG-12's shape in prose, and the drift this suite has now
         measured eight times."""
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as stream:
-            items = json.load(stream)["items"]
+        items = harness.registry()["items"]
         with open(self.SPEC, encoding="utf-8") as stream:
             text = stream.read()
         for field, heading in (("severity", "2.1"), ("effort", "2.3")):
@@ -3327,13 +3303,13 @@ class History(unittest.TestCase):
     entry the next diff would have compared against."""
 
     def setUp(self):
-        self.dir = tempfile.mkdtemp()
+        self.tmp = self.dir = tempfile.mkdtemp()
         self.cwd = os.getcwd()
         os.chdir(self.dir)
 
     def tearDown(self):
         os.chdir(self.cwd)
-        shutil.rmtree(self.dir, ignore_errors=True)
+        shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_the_stamp_is_sub_second(self):
         self.assertRegex(run_stamp(), r"^\d{8}T\d{9}Z$")
@@ -3688,11 +3664,7 @@ class LabCoreWebVitals(unittest.TestCase):
     misread unit turns a failing page into a passing one, and a metric nobody
     measured must not read as a perfect score."""
 
-    def _file(self, payload):
-        path = os.path.join(tempfile.mkdtemp(), "cwv.json")
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(payload if isinstance(payload, str) else json.dumps(payload))
-        return path
+    _file = BrowserArtifacts._artifact
 
     def test_good_metrics_are_rated(self):
         out = cwv_read(self._file({"url": "https://e.com/", "lcp_ms": 2100,
@@ -3754,9 +3726,7 @@ class LabCoreWebVitals(unittest.TestCase):
         """Separate items because they are separate claims. If a lab item ever
         started answering SP-108 or SP-113, one number would stand for both a
         controlled run and what real visitors got."""
-        with open(os.path.join(SCRIPTS, "..", "resources", "config",
-                               "checklist.json"), encoding="utf-8") as f:
-            items = json.load(f)["items"]
+        items = harness.registry()["items"]
         by_id = {i["id"]: i for i in items}
         for lab in ("SP-214", "SP-215", "SP-216"):
             self.assertEqual(by_id[lab]["check"]["script"], "cwv_metrics.py")
@@ -4083,10 +4053,7 @@ class RenderedPageMeasurements(unittest.TestCase):
     says nothing about whether a phone would have to scroll sideways."""
 
     def _file(self, payload):
-        path = os.path.join(tempfile.mkdtemp(), "rendered.json")
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(payload if isinstance(payload, str) else json.dumps(payload))
-        return path
+        return BrowserArtifacts._artifact(self, payload, "rendered.json")
 
     MOBILE = {"url": "https://e.com/", "viewport": {"width": 375, "height": 812},
               "text_nodes_below_12px": 0, "text_nodes_below_contrast": 0,
@@ -4212,9 +4179,7 @@ class RenderedPageMeasurements(unittest.TestCase):
         self.assertEqual(keys - self.NON_METRIC, expected)
 
     def test_the_registry_uses_it_for_the_eight_items(self):
-        with open(os.path.join(SCRIPTS, "..", "resources", "config",
-                               "checklist.json"), encoding="utf-8") as f:
-            by_id = {i["id"]: i for i in json.load(f)["items"]}
+        by_id = {i["id"]: i for i in harness.registry()["items"]}
         for item_id in ("CN-034", "CN-035", "CN-036", "CN-051", "MB-094", "MB-103",
                         "MB-107", "MB-108"):
             self.assertEqual(by_id[item_id]["source"], "script", item_id)
@@ -4224,9 +4189,7 @@ class RenderedPageMeasurements(unittest.TestCase):
     def test_the_three_judgement_items_stayed_judgements(self):
         """A close keyword variant and a localised title are not computed values —
         moving them to a measurement would be inventing one."""
-        with open(os.path.join(SCRIPTS, "..", "resources", "config",
-                               "checklist.json"), encoding="utf-8") as f:
-            by_id = {i["id"]: i for i in json.load(f)["items"]}
+        by_id = {i["id"]: i for i in harness.registry()["items"]}
         for item_id in ("KW-074", "KW-075", "LO-197"):
             self.assertEqual(by_id[item_id]["source"], "llm", item_id)
             self.assertTrue(by_id[item_id].get("lens"), item_id)
@@ -4824,11 +4787,7 @@ class OneFetchPerUrl(unittest.TestCase):
         """One refused connection must not become every item's refused connection.
         A cached error would turn a transient failure into a whole-audit failure,
         and NO_DATA on 106 items is not more honest for being consistent."""
-        import socket
-        probe = socket.socket()
-        probe.bind(("127.0.0.1", 0))
-        dead = probe.getsockname()[1]
-        probe.close()
+        dead = harness.closed_port()
         self._on()
         import requests
         for _ in range(2):
@@ -4973,7 +4932,6 @@ class OneFetchPerUrl(unittest.TestCase):
         would recurse — and its own disk cache had no lock, so 45 scripts starting
         together all missed it and all fetched. Five requests on a CI runner, one on
         a developer machine: a difference only a counted request shows."""
-        import subprocess
         with harness.served({"/": self.PAGE, "/a": self.PAGE,
                              "/robots.txt": (200, {"Content-Type": "text/plain"},
                                              "User-agent: *\nAllow: /\n")}) as site:
@@ -4989,12 +4947,7 @@ class OneFetchPerUrl(unittest.TestCase):
             # test used to rely instead on `served()` handing out a port nothing had
             # ever seen — an assumption an operating system that recycles ports
             # withdraws, and one this suite was measured breaking within a single run.
-            procs = [subprocess.Popen([sys.executable, "-c", code], env=env,
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE, text=True,
-                                      close_fds=False)
-                     for _ in range(6)]
-            outs = [p.communicate(timeout=60) for p in procs]
+            outs = children(code, env, 6)
             self.assertEqual([o.strip() for o, _ in outs], ["200"] * 6,
                              [e for _, e in outs])
             self.assertEqual(site.paths("GET").count("/robots.txt"), 1)
@@ -5061,18 +5014,12 @@ class OneFetchPerUrl(unittest.TestCase):
         all miss together and eight processes fetch the page the cache exists to
         fetch once. Separate processes, because that is what the audit is: an
         in-process cache would be no cache at all here."""
-        import subprocess
         with harness.served({"/": self.PAGE}) as site:
             code = ("import sys; sys.path.insert(0, %r);"
                     "from lib.safe_http import safe_get;"
                     "print(len(safe_get(%r).text))" % (SCRIPTS, site.url))
             env = harness.offline_env(**{self.sh.CACHE_DIR_VAR: self.dir})
-            procs = [subprocess.Popen([sys.executable, "-c", code], env=env,
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE, text=True,
-                                      close_fds=False)
-                     for _ in range(8)]
-            outs = [p.communicate(timeout=60) for p in procs]
+            outs = children(code, env, 8)
             self.assertEqual([o.strip() for o, _ in outs],
                              [str(len(self.PAGE))] * 8,
                              [e for _, e in outs])
@@ -5527,15 +5474,11 @@ class HistoryIsASeries(unittest.TestCase):
     """
 
     def setUp(self):
-        self.tmp = tempfile.mkdtemp()
-        self.cwd = os.getcwd()
-        os.chdir(self.tmp)
+        History.setUp(self)
         self.dir = os.path.join(self.tmp, ".seo-runs", "example.com")
         os.makedirs(self.dir)
 
-    def tearDown(self):
-        os.chdir(self.cwd)
-        shutil.rmtree(self.tmp, ignore_errors=True)
+    tearDown = History.tearDown
 
     def write(self, name, when, score, statuses):
         payload = {"started_at": when, "mode": "live", "registry_version": "test",
@@ -5945,18 +5888,7 @@ class AFileThatNamesNoPageIsUsedAndSaysSo(unittest.TestCase):
 
     @classmethod
     def audit(cls, url, *extra):
-        out = os.path.join(cls.work, "results-%d.json" % len(os.listdir(cls.work)))
-        proc = harness.spawn(
-            [sys.executable, os.path.join(SCRIPTS, "checklist_runner.py"), url,
-             "--allow-private", "--max-rps", "0", "--no-history", "--no-prompt",
-             "--quiet", "--timeout", "90", "--json", out, "--only", "speed", *extra],
-            timeout=600)
-        if proc.returncode != 0:
-            raise AssertionError("the audit exited %s\n%s\n%s"
-                                 % (proc.returncode, proc.stdout[-2000:],
-                                    proc.stderr[-2000:]))
-        with open(out, encoding="utf-8") as fh:
-            return json.load(fh)
+        return AStaleArtifactIsRefusedByAWholeRun.audit(url, cls.work, *extra)
 
     def test_a_file_naming_no_page_is_used_rather_than_refused(self):
         entry = self.anonymous["artifacts"]["cwv_json"]

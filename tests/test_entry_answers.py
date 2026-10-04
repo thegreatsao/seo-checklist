@@ -58,7 +58,8 @@ sys.path.insert(0, os.path.join(SKILL, "tools"))
 
 from harness import allow_loopback, offline_env, served, spawn, tree_served  # noqa: E402
 import checklist_runner as cr  # noqa: E402
-from checklist_runner import (FAIL, NO_DATA, PASS, WARN, build_plan, evaluate,  # noqa: E402
+from registry_verdict import verdict  # noqa: E402
+from checklist_runner import (FAIL, NO_DATA, PASS, WARN, build_plan,  # noqa: E402
                               grade, score, unreachable_skips)
 import seo_common  # noqa: E402
 
@@ -66,19 +67,6 @@ import seo_common  # noqa: E402
 def items() -> dict:
     with open(REGISTRY, encoding="utf-8") as handle:
         return {item["id"]: item for item in json.load(handle)["items"]}
-
-
-def verdict(item_id: str, output: dict) -> str:
-    check = items()[item_id]["check"]
-    ok, _ = evaluate(check["assert"], output)
-    if ok is None:
-        return NO_DATA
-    if ok:
-        return PASS
-    warn = check.get("warn")
-    if warn and evaluate(warn, output)[0]:
-        return WARN
-    return FAIL
 
 
 def declared() -> dict:

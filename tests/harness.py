@@ -93,6 +93,62 @@ sys.path.remove(TRIPWIRE)
 tripwire.install(fatal=False)
 
 
+def registry():
+    with open(os.path.join(SCRIPTS, "..", "resources", "config", "checklist.json"),
+              encoding="utf-8") as stream:
+        return json.load(stream)
+
+
+def run_audit(url: str, *extra: str, env=None, only: str = "crawling_indexing") -> dict:
+    """One audit, through the runner, as an operator would get it.
+
+    `--only` by default: the tests that call this are about what the runner does with
+    a *shape* of site, and a full registry pass costs ten seconds per case to re-verify
+    checks that other files already cover.
+    """
+    work = tempfile.mkdtemp(prefix="seo-shape-")
+    out = os.path.join(work, "results.json")
+    args = [sys.executable, os.path.join(SCRIPTS, "checklist_runner.py"), url,
+            "--allow-private", "--max-rps", "0",
+            "--no-history", "--no-prompt", "--quiet", "--timeout", "90",
+            "--json", out, *extra]
+    if only:
+        args += ["--only", only]
+    # `spawn`, and no `cwd`: see its docstring for the macOS fork crash that
+    # makes that the only reliable way to start a child here. Every path passed to the
+    # runner is absolute for the same reason.
+    proc = spawn(args, env=env, timeout=600)
+    if proc.returncode != 0:
+        raise AssertionError(f"the audit exited {proc.returncode}\n"
+                             f"{proc.stdout[-2000:]}\n{proc.stderr[-2000:]}")
+    with open(out, encoding="utf-8") as f:
+        payload = json.load(f)
+    payload["_stdout"], payload["_stderr"] = proc.stdout, proc.stderr
+    return payload
+
+
+def closed_port() -> int:
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+def dead_url():
+    return f"http://127.0.0.1:{closed_port()}/"
+
+
+def through_html(html, check):
+    """Read a closed UTF-8 HTML fixture and remove it even if its checker fails."""
+    with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
+                                     encoding="utf-8") as handle:
+        handle.write(html)
+        path = handle.name
+    try:
+        return check(path)
+    finally:
+        os.unlink(path)
+
+
 def with_tripwire(env: dict) -> dict:
     """`env` with the tripwire's directory first on `PYTHONPATH`."""
     env = dict(env)

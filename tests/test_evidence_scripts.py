@@ -34,7 +34,6 @@ import json
 import os
 import re
 import shutil
-import socket
 import struct
 import sys
 import tempfile
@@ -56,6 +55,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import harness  # noqa: E402
 from harness import served  # noqa: E402
 
+from image_fixtures import valid_png  # noqa: E402
+from registry_verdict import verdict  # noqa: E402
 from checklist_runner import (  # noqa: E402
     FAIL, NA, NEEDS_INPUT, NO_DATA, PASS, WARN, build_plan, evaluate,
     grade, input_truncated, passes_by_absence,
@@ -64,25 +65,6 @@ from rich_results_guard import guard_rich_results  # noqa: E402
 
 with open(REGISTRY, encoding="utf-8") as f:
     ITEMS = {i["id"]: i for i in json.load(f)["items"]}
-
-
-def verdict(item_id: str, output: dict) -> str:
-    """The item's real rule over a script's real output, graded as the runner grades.
-
-    The rule is read from the registry rather than restated here. A test that
-    hard-codes `{"path": "score", "gte": 70}` keeps passing after the registry stops
-    asking for it, which is exactly how a check goes quiet.
-    """
-    check = ITEMS[item_id]["check"]
-    ok, _ = evaluate(check["assert"], output)
-    if ok is None:
-        return NO_DATA
-    if ok:
-        return PASS
-    warn = check.get("warn")
-    if warn and evaluate(warn, output)[0]:
-        return WARN
-    return FAIL
 
 
 def graded_verdict(item_id: str, output: dict) -> str:
@@ -467,16 +449,6 @@ PNG = b"\x89PNG\r\n\x1a\n" + b"\0" * 900
 WEBP = b"RIFF\x00\x00\x00\x00WEBPVP8 " + b"\0" * 600
 
 
-def valid_png(width: int, height: int) -> bytes:
-    def chunk(kind: bytes, payload: bytes) -> bytes:
-        body = kind + payload
-        return struct.pack(">I", len(payload)) + body + struct.pack(">I", zlib.crc32(body))
-
-    rows = b"".join(b"\0" + b"\0\0\0\xff" * width for _ in range(height))
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
-            + chunk(b"IDAT", zlib.compress(rows)) + chunk(b"IEND", b""))
-
 
 def valid_ico(*sizes: tuple[int, int]) -> bytes:
     """A real ICO directory plus uncompressed 32-bit DIB payloads."""
@@ -787,19 +759,7 @@ RUNS = [
 ]
 
 
-def script_env() -> dict:
-    """Loopback permitted, pacing off, every credential cleared.
-
-    The credentials matter: a developer machine with a Search Console key must not
-    make these tests do something a CI runner cannot, and a Safe Browsing key would
-    turn an offline test into a paid API call.
-    """
-    env = dict(os.environ)
-    env.update({"SEO_ALLOW_PRIVATE": "1", "SEO_MAX_RPS": "0", "PYTHONPATH": SCRIPTS})
-    for key in ("GSC_CREDENTIALS_PATH", "GV_SA_KEY", "GOOGLE_SAFE_BROWSING_KEY",
-                "PAGESPEED_API_KEY", "INDEXNOW_KEY"):
-        env.pop(key, None)
-    return env
+script_env = harness.offline_env
 
 
 def setUpModule():
@@ -2388,14 +2348,7 @@ class EeatSignals(unittest.TestCase):
     @staticmethod
     def _check_html(html):
         import eeat_signal_checker
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8") as fh:
-            fh.write(html)
-            path = fh.name
-        try:
-            return eeat_signal_checker.check_eeat(path)
-        finally:
-            os.unlink(path)
+        return harness.through_html(html, eeat_signal_checker.check_eeat)
 
     @staticmethod
     def _schema_script(document):
@@ -3013,20 +2966,11 @@ class EeatSignals(unittest.TestCase):
         self.assertEqual(verdict("CN-057", result), FAIL)
 
     def test_phone_and_email_links_are_language_neutral_contact_routes(self):
-        import tempfile
-        import eeat_signal_checker
         html = """<!doctype html><html lang="lt"><body>
         <a href="tel:+37060000000">+370 600 00000</a>
         <a href="mailto:labas@example.lt">Rašykite mums</a>
         </body></html>"""
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8") as fh:
-            fh.write(html)
-            path = fh.name
-        try:
-            result = eeat_signal_checker.check_eeat(path)
-        finally:
-            os.unlink(path)
+        result = self._check_html(html)
         self.assertEqual(len(result["signals"]["trust_links"]), 2)
         self.assertEqual(verdict("CN-044", result), PASS)
 
@@ -3303,14 +3247,8 @@ class Freshness(unittest.TestCase):
         import freshness_checker
         html = ('<!doctype html><html><head><script type="application/ld+json">' +
                 json.dumps(document) + '</script></head><body>' + body + '</body></html>')
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8") as fh:
-            fh.write(html)
-            path = fh.name
-        try:
-            return freshness_checker.check_freshness(path, today=today)
-        finally:
-            os.unlink(path)
+        return harness.through_html(html, lambda path: freshness_checker.check_freshness(
+            path, today=today))
 
     @staticmethod
     def _check_html(markup, *, head="", today):
@@ -3318,14 +3256,8 @@ class Freshness(unittest.TestCase):
         html = ('<!doctype html><html><head>' + head + '</head><body>'
                 '<p>Bread rises when the yeast is warm.</p>' + markup +
                 '</body></html>')
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8") as fh:
-            fh.write(html)
-            path = fh.name
-        try:
-            return freshness_checker.check_freshness(path, today=today)
-        finally:
-            os.unlink(path)
+        return harness.through_html(html, lambda path: freshness_checker.check_freshness(
+            path, today=today))
 
     def test_a_date_a_comment_claims_by_itemref_is_not_the_pages_date(self):
         """The same `itemref` boundary as the byline one, through the other reader
@@ -3922,11 +3854,7 @@ class FaviconDisplay(unittest.TestCase):
         self.assertEqual(result["favicon"]["grade"], "fails")
 
     def test_an_unreachable_page_is_no_data(self):
-        probe = socket.socket()
-        probe.bind(("127.0.0.1", 0))
-        port = probe.getsockname()[1]
-        probe.close()
-        result = self.run_url(f"http://127.0.0.1:{port}/")
+        result = self.run_url(harness.dead_url())
         self.assertEqual(verdict("MB-104", result), NO_DATA)
         self.assertNotIn("grade", result["favicon"])
         self.assertIn("could not be fetched", result["favicon"]["reason"])
@@ -4032,14 +3960,7 @@ class CitationReadiness(unittest.TestCase):
     @staticmethod
     def _check_html(html):
         import citation_readiness
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8") as fh:
-            fh.write(html)
-            path = fh.name
-        try:
-            return citation_readiness.check_citation_readiness(path)
-        finally:
-            os.unlink(path)
+        return harness.through_html(html, citation_readiness.check_citation_readiness)
 
     def test_a_commenters_json_ld_author_adds_no_citation_score(self):
         publisher = ('<script type="application/ld+json">' + json.dumps({
@@ -4078,9 +3999,7 @@ class CitationReadiness(unittest.TestCase):
         self.assertGreater(byline["score"], layout["score"])
 
     def _ld(self, document):
-        return self._check_html(
-            '<!doctype html><html><head><script type="application/ld+json">' +
-            json.dumps(document) + '</script></head><body></body></html>')
+        return self._check_html(self._ld_html(document))
 
     @staticmethod
     def _messages(result):
@@ -4126,8 +4045,6 @@ class CitationReadiness(unittest.TestCase):
         self.assertNotIn(self.AUTHOR_FINDING, self._messages(result))
 
     def test_both_scripts_now_answer_the_same_question(self):
-        import eeat_signal_checker
-
         documents = {
             "R1 product name": self._ld_html(
                 {"@type": "Product", "name": "Tin"}),
@@ -4158,14 +4075,7 @@ class CitationReadiness(unittest.TestCase):
         for label, html in documents.items():
             with self.subTest(label):
                 citation = self._check_html(html)
-                with tempfile.NamedTemporaryFile(
-                        "w", suffix=".html", delete=False, encoding="utf-8") as fh:
-                    fh.write(html)
-                    path = fh.name
-                try:
-                    eeat = eeat_signal_checker.check_eeat(path)
-                finally:
-                    os.unlink(path)
+                eeat = EeatSignals._check_html(html)
                 self.assertEqual(
                     self.AUTHOR_FINDING not in self._messages(citation),
                     bool(eeat["signals"]["authors"]),
@@ -4406,15 +4316,8 @@ class CitationReadiness(unittest.TestCase):
         }
         html = ('<!doctype html><html><head><script type="application/ld+json">' +
                 json.dumps(document) + '</script></head><body></body></html>')
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8") as fh:
-            fh.write(html)
-            path = fh.name
-        try:
-            citation = self._check_html(html)
-            freshness = freshness_checker.check_freshness(path)
-        finally:
-            os.unlink(path)
+        citation = self._check_html(html)
+        freshness = harness.through_html(html, freshness_checker.check_freshness)
         self.assertEqual(freshness["dates"], [])
         self.assertIn(subject, citation["entity_signals"]["sameAs"])
         self.assertNotIn(contributor, citation["entity_signals"]["sameAs"])
@@ -4646,10 +4549,7 @@ class CitationReadiness(unittest.TestCase):
 
 
 class ArticleAuthorAndDate(unittest.TestCase):
-    @staticmethod
-    def _json_ld(document):
-        return ('<script type="application/ld+json">' + json.dumps(document) +
-                '</script>')
+    _json_ld = staticmethod(EeatSignals._schema_script)
 
     @classmethod
     def _content(cls, markup):
@@ -4940,8 +4840,6 @@ class AnAltThatExistsAndDescribesNothing(unittest.TestCase):
     """
 
     def inventory(self, alts):
-        import tempfile
-
         import image_inventory
         rows = "\n".join(
             f'<img src="/img/photo-{i}.jpg" alt="{alt}" width="800" height="600">'
@@ -4950,14 +4848,7 @@ class AnAltThatExistsAndDescribesNothing(unittest.TestCase):
             for i, alt in enumerate(alts))
         html = ('<!doctype html><html lang="en"><head><title>Alt</title></head>'
                 f"<body><h1>Alt</h1>{rows}</body></html>")
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8") as fh:
-            fh.write(html)
-            path = fh.name
-        try:
-            return image_inventory.inventory(path)
-        finally:
-            os.unlink(path)
+        return harness.through_html(html, image_inventory.inventory)
 
     def test_the_five_alts_that_measured_zero_now_fail_both_items(self):
         result = self.inventory(["image1.jpg", "IMG_0042", "untitled", "photo", "x"])
@@ -5033,21 +4924,13 @@ class AnAltThatExistsAndDescribesNothing(unittest.TestCase):
             self.assertIn(required, shapes)
 
     def test_an_img_without_src_is_skipped_and_reported(self):
-        import tempfile
         import image_inventory
         html = """<!doctype html><html><body>
         <img src="informative.jpg">
         <img src="decoration.svg" alt="">
         <img id="lightbox" alt="">
         </body></html>"""
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8") as fh:
-            fh.write(html)
-            path = fh.name
-        try:
-            result = image_inventory.inventory(path)
-        finally:
-            os.unlink(path)
+        result = harness.through_html(html, image_inventory.inventory)
         self.assertEqual(result["count"], 2)
         self.assertEqual(result["missing_alt"], 1)
         self.assertEqual(result["empty_alt"], 1)
@@ -5061,19 +4944,11 @@ class AnAltThatExistsAndDescribesNothing(unittest.TestCase):
         self.assertEqual(verdict("CN-054", lazy), PASS)
 
     def test_a_js_deferred_image_without_native_source_is_not_discoverable(self):
-        import tempfile
         import image_inventory
         html = """<!doctype html><html><body>
         <img data-src="hero.jpg" width="800" height="400" class="lazy">
         </body></html>"""
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8") as fh:
-            fh.write(html)
-            path = fh.name
-        try:
-            result = image_inventory.inventory(path)
-        finally:
-            os.unlink(path)
+        result = harness.through_html(html, image_inventory.inventory)
         self.assertEqual(result["summary"]["lazy_lcp_candidates"], 1)
         self.assertIs(result["images"][0]["discoverable"], False)
         self.assertEqual(verdict("CN-054", result), FAIL)
@@ -5083,17 +4958,9 @@ class AnAltThatExistsAndDescribesNothing(unittest.TestCase):
         self.assertEqual(out("images_bad")["count"], 2)
 
     def image_free(self) -> dict:
-        import tempfile
         import image_inventory
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8") as fh:
-            fh.write("<!doctype html><html><body><p>No images here.</p>"
-                     "</body></html>")
-            path = fh.name
-        try:
-            return image_inventory.inventory(path)
-        finally:
-            os.unlink(path)
+        return harness.through_html("<!doctype html><html><body><p>No images here.</p>"
+                                    "</body></html>", image_inventory.inventory)
 
     def test_an_image_free_page_decides_none_of_the_four_image_items(self):
         """The twin of `test_an_image_free_page_does_not_fail_responsive_images`
@@ -6284,14 +6151,7 @@ class MobileRender(unittest.TestCase):
         html = ("<!doctype html><html><head>"
                 '<meta name="viewport" content="width=device-width, initial-scale=1">'
                 f"</head><body>{fragment}</body></html>")
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8") as fh:
-            fh.write(html)
-            path = fh.name
-        try:
-            return mobile_render_checker.check_mobile_render(path)
-        finally:
-            os.unlink(path)
+        return harness.through_html(html, mobile_render_checker.check_mobile_render)
 
     def test_a_responsive_page_with_a_viewport_passes(self):
         self.assertEqual(verdict("MB-100", out("mobile")), PASS)
@@ -6363,14 +6223,7 @@ class Accessibility(unittest.TestCase):
     @staticmethod
     def check(markup):
         import a11y_seo_checker
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8") as fh:
-            fh.write(markup)
-            path = fh.name
-        try:
-            return a11y_seo_checker.checker(path)
-        finally:
-            os.unlink(path)
+        return harness.through_html(markup, a11y_seo_checker.checker)
 
     def test_two_images_without_alt_fail_even_when_the_score_would_pass(self):
         """The defect 0.117.0 repairs: 100 less 8 per issue is 84 here, and TE-180
@@ -6423,9 +6276,7 @@ class Accessibility(unittest.TestCase):
         """The item's subject moved to where a browser measured it. Both directions,
         because a reader that only sees the passing side cannot tell an assertion
         from a constant."""
-        with open(REGISTRY, encoding="utf-8") as f:
-            registry = json.load(f)
-        item = next(i for i in registry["items"] if i["id"] == "CN-036")
+        item = ITEMS["CN-036"]
         self.assertEqual(item["check"]["script"], "rendered_audit.py")
         self.assertEqual(item["check"]["assert"],
                          {"path": "text_nodes_below_contrast", "eq": 0})
@@ -6867,14 +6718,9 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        import socket
-        # A port nobody is on: bound to find a free one, then released. The refusal
-        # is instant, which is what makes running 40 scripts through this cheap.
-        probe = socket.socket()
-        probe.bind(("127.0.0.1", 0))
-        port = probe.getsockname()[1]
-        probe.close()
-        cls.DEAD = f"http://127.0.0.1:{port}/"
+        # A port nobody is on, released before anything asks it. The refusal is
+        # instant, which is what makes running 40 scripts through this cheap.
+        cls.DEAD = harness.dead_url()
 
         env = script_env()
         scripts = sorted(cls.url_taking_scripts())
@@ -6919,7 +6765,7 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
         "url_quality.py": "judges the URL it was given, and still decides it",
     }
 
-    def graded_status(self, item, script, payload):
+    def graded_status(self, item, payload):
         """The item's status as the *runner* would report it.
 
         Through `grade()` rather than `evaluate()` alone, because the difference
@@ -6927,10 +6773,7 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
         it, and `grade` is where a payload that says "I read nothing" has to become
         NO_DATA. Testing `evaluate` here would assert the bug.
         """
-        from checklist_runner import grade
-        key = (script, ())
-        rows = grade([item], {key: [item["id"]]}, {key: payload}, {}, False)
-        return rows[0]["status"]
+        return graded_verdict(item["id"], payload)
 
     def test_no_item_gets_a_verdict_from_a_site_that_answered_nothing(self):
         decided = []
@@ -6940,7 +6783,7 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
             for item in ITEMS.values():
                 if (item.get("check") or {}).get("script") != script:
                     continue
-                got = self.graded_status(item, script, payload)
+                got = self.graded_status(item, payload)
                 if got in (PASS, FAIL, WARN):
                     decided.append(f"{item['id']} ({item['severity']}, {script}) "
                                    f"= {got}")
@@ -6956,7 +6799,7 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
             self.assertIsNotNone(payload, f"{script} produced nothing: {reason}")
             items = [i for i in ITEMS.values()
                      if (i.get("check") or {}).get("script") == script]
-            statuses = {self.graded_status(i, script, payload) for i in items}
+            statuses = {self.graded_status(i, payload) for i in items}
             self.assertTrue(statuses & {PASS, FAIL, WARN},
                             f"{script} decided nothing, so the exemption is wrong: "
                             f"{reason}")
@@ -7156,7 +6999,6 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
         return payload
 
 
-
     def _covered(self):
         reporters = self._reporters()
         return [i for i in ITEMS.values()
@@ -7323,7 +7165,6 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
                          "a script carries the truncation key and cannot set it")
 
 
-
 class EveryCheckerHasSomethingThatJudgesIt(unittest.TestCase):
     """`openspec/specs/evidence/` EVD-7. Running is not the same as being right: a checker with
     no test and no settled declaration produces a verdict on every audit and nothing
@@ -7349,10 +7190,8 @@ class EveryCheckerHasSomethingThatJudgesIt(unittest.TestCase):
 
     @classmethod
     def registry_scripts(cls):
-        with open(REGISTRY, encoding="utf-8") as stream:
-            items = json.load(stream)["items"]
         out = {}
-        for item in items:
+        for item in ITEMS.values():
             script = (item.get("check") or {}).get("script")
             if script and script not in cls.NOT_A_CHECKER:
                 out.setdefault(script, set()).add(item["id"])

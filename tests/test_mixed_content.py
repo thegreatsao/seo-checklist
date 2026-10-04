@@ -35,7 +35,8 @@ REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, HERE)
 
-from checklist_runner import FAIL, NO_DATA, PASS, WARN, evaluate  # noqa: E402
+from registry_verdict import verdict as item_verdict  # noqa: E402
+from checklist_runner import FAIL, NO_DATA, PASS, WARN  # noqa: E402
 from harness import offline_env, served, spawn, tls_env  # noqa: E402
 import security_headers as sh  # noqa: E402
 
@@ -50,16 +51,7 @@ def rule() -> dict:
 
 
 def verdict(output: dict) -> str:
-    check = rule()
-    ok, _ = evaluate(check["assert"], output)
-    if ok is None:
-        return NO_DATA
-    if ok:
-        return PASS
-    warn = check.get("warn")
-    if warn and evaluate(warn, output)[0]:
-        return WARN
-    return FAIL
+    return item_verdict("TE-175", output)
 
 
 def page(body: str) -> str:

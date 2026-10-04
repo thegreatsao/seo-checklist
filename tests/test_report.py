@@ -73,6 +73,12 @@ def results(*items):
             "scores": {}, "runs": {}}
 
 
+def scored_results(*rows):
+    data = results(*rows)
+    data["scores"] = runner.score(data["items"])
+    return data
+
+
 class Merge(unittest.TestCase):
     def test_both_answer_merges_rescore_the_changed_items(self):
         for merge, status, source in ((merge_llm_answers, LLM_PENDING, "llm"),
@@ -174,8 +180,7 @@ class Queue(unittest.TestCase):
 
     def test_the_person_is_shown_the_applicability_question(self):
         question = "Does the business serve customers in a service area?"
-        data = results(item("LO-199", MANUAL, source="manual", applies_if=question))
-        data["scores"] = runner.score(data["items"])
+        data = scored_results(item("LO-199", MANUAL, source="manual", applies_if=question))
         for name, output in (("html", render_html(data)), ("markdown", render_markdown(data))):
             with self.subTest(surface=name):
                 self.assertIn(f"Applies only if: {question}", output)
@@ -197,17 +202,13 @@ class Localisation(unittest.TestCase):
             Lang("xx")
 
     def test_translated_report_renders_and_keeps_the_numbers(self):
-        data = results(item("A", FAIL))
-        from checklist_runner import score
-        data["scores"] = score(data["items"])
+        data = scored_results(item("A", FAIL))
         out = render_markdown(data, Lang("ru"))
         self.assertIn("Аудит по чеклисту", out)
         self.assertIn("A", out)
 
     def test_english_is_the_default_and_needs_no_file(self):
-        data = results(item("A", PASS))
-        from checklist_runner import score
-        data["scores"] = score(data["items"])
+        data = scored_results(item("A", PASS))
         self.assertIn("SEO Checklist Audit", render_markdown(data))
 
     def test_a_partly_translated_language_names_what_is_still_english(self):
@@ -301,8 +302,7 @@ class MeasuresDisclosure(unittest.TestCase):
 
     @staticmethod
     def rendered(row, lang=None):
-        data = results(row)
-        data["scores"] = runner.score(data["items"])
+        data = scored_results(row)
         L = Lang(lang) if lang else Lang()
         return render_markdown(data, L), render_html(data, L)
 
@@ -337,9 +337,7 @@ class SecondReading(unittest.TestCase):
     def answered(self, status=PASS, evidence="looked fine"):
         row = item("CN-047", status, source="llm(answered)",
                    evidence=f"LLM: {evidence}")
-        data = results(row)
-        from checklist_runner import score
-        data["scores"] = score(data["items"])
+        data = scored_results(row)
         return data
 
     def test_agreement_corroborates_and_keeps_the_verdict(self):
@@ -376,9 +374,7 @@ class SecondReading(unittest.TestCase):
     def test_it_cannot_touch_a_script_verdict(self):
         """A measurement is not an opinion. Letting a reviewer contest one would
         make every script result negotiable."""
-        data = results(item("CI-001", PASS, source="script"))
-        from checklist_runner import score
-        data["scores"] = score(data["items"])
+        data = scored_results(item("CI-001", PASS, source="script"))
         stats = apply_llm_review(data, {"CI-001": {"status": "FAIL", "evidence": "x"}})
         self.assertEqual(stats["skipped"], 1)
         self.assertEqual(data["items"][0]["status"], PASS)
@@ -386,9 +382,7 @@ class SecondReading(unittest.TestCase):
     def test_it_cannot_answer_an_unanswered_item(self):
         """That would make the reviewer the primary judge, with nobody deciding to
         promote it."""
-        data = results(item("CN-047", LLM_PENDING))
-        from checklist_runner import score
-        data["scores"] = score(data["items"])
+        data = scored_results(item("CN-047", LLM_PENDING))
         stats = apply_llm_review(data, {"CN-047": {"status": "PASS", "evidence": "x"}})
         self.assertEqual(stats["skipped"], 1)
         self.assertEqual(data["items"][0]["status"], LLM_PENDING)
@@ -418,9 +412,7 @@ class NoScoreSurvivesEveryRenderer(unittest.TestCase):
     which reads as a broken tool in the one file that gets handed to a client."""
 
     def _unread(self):
-        from checklist_runner import score
-        data = results(item("A", "NO_DATA"))
-        data["scores"] = score(data["items"])
+        data = scored_results(item("A", "NO_DATA"))
         data["entry_reachable"] = False
         data["entry_error"] = "soft 404: a 200 response titled '404 Not Found'"
         return data
@@ -429,9 +421,7 @@ class NoScoreSurvivesEveryRenderer(unittest.TestCase):
         """The case `openspec/specs/scoring/` A.4 names: the site answered, and no
         item reached a quality verdict. `score()` returns an absent headline for it,
         and every surface printed `None/100` because it asked a different question."""
-        from checklist_runner import score
-        data = results(item("A", "NO_DATA"))
-        data["scores"] = score(data["items"])
+        data = scored_results(item("A", "NO_DATA"))
         data["entry_reachable"] = True
         data["entry_error"] = ""
         return data
@@ -498,9 +488,7 @@ class NoScoreSurvivesEveryRenderer(unittest.TestCase):
         """The floor. A `why_no_score` that answered unconditionally would satisfy
         every assertion above and blank the score on a good run."""
         from checklist_report import why_no_score
-        data = results(item("A", PASS))
-        from checklist_runner import score
-        data["scores"] = score(data["items"])
+        data = scored_results(item("A", PASS))
         self.assertEqual(why_no_score(data), ("", "", ""))
 
     def test_the_markdown_says_why_instead_of_a_number(self):
@@ -530,9 +518,7 @@ class WhatWasAudited(unittest.TestCase):
     """
 
     def _scored(self, **extra):
-        from checklist_runner import score
-        data = results(item("A", PASS), item("B", FAIL))
-        data["scores"] = score(data["items"])
+        data = scored_results(item("A", PASS), item("B", FAIL))
         data["entry_reachable"] = True
         data.update(extra)
         return data
@@ -637,9 +623,7 @@ class HistoryReachesTheFile(unittest.TestCase):
     def test_no_baseline_means_no_section(self):
         """A first audit has nothing to compare with, and an empty "since last time"
         heading would imply there was a last time."""
-        from checklist_runner import score
-        data = results(item("CN-047", FAIL))
-        data["scores"] = score(data["items"])
+        data = scored_results(item("CN-047", FAIL))
         data["entry_reachable"] = True
         data["compared_with"] = None
         data["diff"] = None
@@ -811,8 +795,7 @@ class TheRenderedWorkPlanHasOneMembershipAndOrder(unittest.TestCase):
                 item("M-1", MANUAL, title="MANUAL-ACTION")]
 
     def rendered(self, rows):
-        data = results(*rows)
-        data["scores"] = runner.score(data["items"])
+        data = scored_results(*rows)
         data["entry_reachable"] = True
         markdown = render_markdown(data)
         md_plan = markdown.split("## What to do first", 1)[1].split(
@@ -909,9 +892,7 @@ class EveryStatusReachesEverySurface(unittest.TestCase):
         payload that exercises the history section, so the next renamed key cannot
         reach a reader through the untested half.
         """
-        data = results(item("A-1", PASS), item("A-2", FAIL))
-        from checklist_runner import score
-        data["scores"] = score(data["items"])
+        data = scored_results(item("A-1", PASS), item("A-2", FAIL))
         data["entry_reachable"] = True
         data["compared_with"] = {"started_at": "2026-07-01T09:30:00+00:00",
                                  "seo_score": 64, "weight_pct": 50,
@@ -968,8 +949,7 @@ class EvidenceRowsKeepTheirContentAndOrder(unittest.TestCase):
                 item("N-1", NEEDS_INPUT, severity="critical", decided_by="claimed")]
         for row in rows:
             row.update(title='<title>&"', evidence='<evidence>&"' + row["id"])
-        data = results(*rows)
-        data["scores"] = runner.score(rows)
+        data = scored_results(*rows)
         for language in ("en", "ru"):
             with self.subTest(language=language):
                 output = render_html(data, Lang(language))
@@ -993,10 +973,9 @@ class WaitingOnYouKeepsItsHalvesVisible(unittest.TestCase):
     """SCR-8 at the Markdown and HTML bucket a report reader sees."""
 
     def test_both_surfaces_show_the_total_and_the_two_different_subcounts(self):
-        data = results(item("P-1", PASS),
+        data = scored_results(item("P-1", PASS),
                        item("L-1", LLM_PENDING),
                        item("I-1", NEEDS_INPUT), item("I-2", NEEDS_INPUT))
-        data["scores"] = runner.score(data["items"])
         data["entry_reachable"] = True
         self.assertEqual(data["scores"]["partition"]["waiting_on_you"], 3)
         self.assertEqual(data["scores"]["waiting_on_you"],
@@ -1124,10 +1103,8 @@ class AnswersFromAPerson(unittest.TestCase):
         self.assertIn("person", line)
 
     def test_both_renderers_carry_the_disclosure(self):
-        from checklist_runner import score
-        data = results(item("A-1", PASS, decided_by="measured"),
+        data = scored_results(item("A-1", PASS, decided_by="measured"),
                        item("A-2", PASS, decided_by="claimed"))
-        data["scores"] = score(data["items"])
         data["entry_reachable"] = True
         self.assertEqual(data["scores"]["decided_by"], {"measured": 1, "claimed": 1})
         for name, text in (("markdown", render_markdown(data)),
@@ -1139,9 +1116,8 @@ class TheScoreDisclosesModelAnswers(unittest.TestCase):
     """SCR-10's model case, distinct from the claimed case above."""
 
     def test_a_model_only_decided_population_is_not_presented_as_wholly_measured(self):
-        data = results(item("A-1", PASS, decided_by="model"),
+        data = scored_results(item("A-1", PASS, decided_by="model"),
                        item("A-2", WARN, decided_by="model"))
-        data["scores"] = runner.score(data["items"])
         data["entry_reachable"] = True
         self.assertEqual(data["scores"]["decided_by"], {"model": 2})
         for name, text in (("markdown", render_markdown(data)),
@@ -1198,8 +1174,7 @@ class AModelIsAskedForARationaleAndNotRequiredOne(unittest.TestCase):
             with self.subTest(verdict=verdict):
                 row = item("CN-047", PASS, source="llm(answered)",
                            evidence="LLM: looked fine", decided_by="model")
-                data = results(row)
-                data["scores"] = runner.score(data["items"])
+                data = scored_results(row)
                 apply_llm_review(data, {"CN-047": {"status": verdict, "evidence": " "}})
                 evidence = data["items"][0]["evidence"]
                 self.assertIn(where, evidence)
@@ -1435,8 +1410,7 @@ class TheScoreNeverTravelsWithoutItsShare(unittest.TestCase):
     def payload(self, **override):
         rows = [item("A", PASS, severity="high"), item("B", FAIL, severity="high"),
                 item("C", NO_DATA, severity="low")]
-        data = results(*rows)
-        data["scores"] = runner.score(rows)
+        data = scored_results(*rows)
         data["scores"].update(override)
         data.update(url="https://example.com/", requested_url="", mode="page",
                     gsc_credentials_found=False, script_failures={})
@@ -1874,10 +1848,9 @@ class ACategoryBarSaysWhatItsScoreWasComputedFrom(unittest.TestCase):
         self.assertEqual(cat["score_population"], cat["decided"])
 
     def test_the_surfaces_say_so_when_the_two_numbers_differ(self):
-        data = results(*self.rows(("media", PASS, None),
+        data = scored_results(*self.rows(("media", PASS, None),
                                   ("media", FAIL, "X-0"),
                                   ("media", PASS, None)))
-        data["scores"] = runner.score(data["items"])
         row = next(ln for ln in render_markdown(data).splitlines()
                    if ln.startswith("| ") and "Media" in ln and "/100" in ln)
         self.assertIn("scored over 2", row,
@@ -1889,8 +1862,7 @@ class ACategoryBarSaysWhatItsScoreWasComputedFrom(unittest.TestCase):
         """Nine of twelve categories on a live run have nothing to disclose here, and a
         note printed on every bar is one a reader learns to skip — the same argument the
         parser caveat and the cache warning make."""
-        data = results(*self.rows(("meta", PASS, None), ("meta", FAIL, None)))
-        data["scores"] = runner.score(data["items"])
+        data = scored_results(*self.rows(("meta", PASS, None), ("meta", FAIL, None)))
         for surface in (render_markdown(data), render_html(data)):
             self.assertNotIn("ask a question this audit answers", surface)
 
@@ -2028,8 +2000,7 @@ class ContestingAnAnswerIsVisibleInTheCoverage(unittest.TestCase):
     def test_the_reader_is_shown_the_smaller_number(self):
         """Through the rendered surface, not the payload: the requirement is about what a
         reader sees, and a field nobody prints is the shape REP-4 and HTTP-8 were."""
-        data = results(*self.rows(PASS, PASS, NO_DATA))
-        data["scores"] = runner.score(data["items"])
+        data = scored_results(*self.rows(PASS, PASS, NO_DATA))
         pct = data["scores"]["weight_pct"]
         self.assertLess(pct, 100)
         for surface in (render_markdown(data), render_html(data)):
@@ -2187,9 +2158,8 @@ class DecidedCategoriesCanHaveNoScore(unittest.TestCase):
                 self.assertEqual(positions, sorted(positions))
 
     def test_a_twin_only_category_has_no_score_or_scored_population_claim(self):
-        data = results(item("A", PASS, category="meta", category_label="Scored"),
+        data = scored_results(item("A", PASS, category="meta", category_label="Scored"),
                        item("B", PASS, category_label="Unscored", scores_with="A"))
-        data["scores"] = runner.score(data["items"])
         cat = data["scores"]["by_category"]["content"]
         self.assertEqual(cat["decided"], 1)
         self.assertEqual(cat["score_population"], 0)

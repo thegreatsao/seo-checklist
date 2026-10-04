@@ -74,17 +74,17 @@ class CrawlImageReferences(unittest.TestCase):
         fetch.assert_not_called()
         self.assertEqual(result["summary"]["unique_images"], 0)
 
-    def inventory(self, pages: dict) -> str:
-        folder = tempfile.TemporaryDirectory(prefix="release-0740-crawl-")
+    def inventory(self, pages: dict, *, version=4, truncated=False) -> str:
+        folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         path = os.path.join(folder.name, "inventory.json")
         with open(path, "w", encoding="utf-8") as handle:
             json.dump({
-                "inventory_version": 4,
+                "inventory_version": version,
                 "site": "https://example.test/",
                 "entry": "https://example.test/",
                 "pages": pages,
-                "summary": {"truncated": False},
+                "summary": {"truncated": truncated},
                 "fetch_error": None,
             }, handle)
         return path
@@ -155,19 +155,8 @@ class SiteWideBrokenImages(unittest.TestCase):
             url = f"https://example.test/page-{index}"
             pages[url] = {"url": url, "final_url": url, "html": True,
                           "images": images}
-        folder = tempfile.TemporaryDirectory(prefix="release-0740-images-")
-        self.addCleanup(folder.cleanup)
-        path = os.path.join(folder.name, "inventory.json")
-        with open(path, "w", encoding="utf-8") as handle:
-            json.dump({
-                "inventory_version": version,
-                "site": "https://example.test/",
-                "entry": "https://example.test/",
-                "pages": pages,
-                "summary": {"truncated": truncated},
-                "fetch_error": None,
-            }, handle)
-        return path
+        return CrawlImageReferences.inventory(self, pages, version=version,
+                                              truncated=truncated)
 
     @staticmethod
     def response(status=200, error_kind=None):

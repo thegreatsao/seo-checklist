@@ -130,12 +130,8 @@ class _Origin:
         self.thread.start()
 
     def stop(self):
-        self.server.shutdown()
-        self.server.server_close()
-        self.thread.join(timeout=5)
-        # The port goes back to the system; what this origin said about robots must not
-        # outlive it, under either spelling of the origin.
-        harness.forget_robots(self.base)
+        harness._Site.stop(self)
+        # Its credential spelling must not keep an answer after this origin stopped.
         harness.forget_robots(self.base.replace("://", f"://{USERINFO}@", 1))
 
 

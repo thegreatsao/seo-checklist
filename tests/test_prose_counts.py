@@ -145,6 +145,21 @@ def specification(name: str) -> Callable[[], int]:
 
 
 CLAIMS = (
+    Claim("openspec/specs/evidence/spec.md", "verdict thresholds", r"It\s+reports\s+(?P<n>\d+)\s+such\s+numbers\s+at", threshold("counted")),
+    Claim("openspec/specs/evidence/spec.md", "standard thresholds", r"\u2014\s+(?P<n>\d+)\s+`standard`", threshold("standard")),
+    Claim("openspec/specs/evidence/spec.md", "measured thresholds", r"`standard`,\s+(?P<n>\d+)\s+`measured`", threshold("measured")),
+    Claim("openspec/specs/evidence/spec.md", "convention thresholds", r"`measured`,\s+(?P<n>\d+)\s+`convention`", threshold("convention")),
+    Claim("openspec/specs/evidence/spec.md", "inherited thresholds", r"`convention`,\s+\*{0,2}(?P<n>\d+)\s+`inherited`", threshold("inherited")),
+    Claim("openspec/specs/evidence/spec.md", "thresholds without basis", r"(?P<n>\d+)\s+with\s+no\s+basis", threshold("no basis")),
+    Claim("openspec/specs/evidence/spec.md", "inherited debt", r"gate\s+holds\s+the\s+floor;\s+the\s+(?P<n>\d+)\s+are\s+the\s+debt", threshold("inherited")),
+    Claim("openspec/specs/governance/spec.md", "verdict thresholds", r"It\s+counts\s+(?P<n>\d+)\s+such\s+numbers\s+at", threshold("counted")),
+    Claim("openspec/specs/governance/spec.md", "standard thresholds", r"\u2014\s+(?P<n>\d+)\s+`standard`", threshold("standard")),
+    Claim("openspec/specs/governance/spec.md", "measured thresholds", r"`standard`,\s+(?P<n>\d+)\s+`measured`", threshold("measured")),
+    Claim("openspec/specs/governance/spec.md", "convention thresholds", r"`measured`,\s+(?P<n>\d+)\s+`convention`", threshold("convention")),
+    Claim("openspec/specs/governance/spec.md", "inherited thresholds", r"`convention`,\s+\*{0,2}(?P<n>\d+)\s+`inherited`", threshold("inherited")),
+    Claim("openspec/specs/governance/spec.md", "thresholds without basis", r"(?P<n>\d+)\s+without\s+a\s+basis", threshold("no basis")),
+    Claim("openspec/specs/governance/spec.md", "presentation thresholds", r"plus\s+(?P<n>\d+)\s+that\s+decide\s+only\s+presentation", threshold("presentation")),
+
     Claim("README.md", "opening registry size", r"One fixed registry of (?P<n>\d+) checks", population("items")),
     Claim("README.md", "registry contract size", r"the contract: (?P<n>\d+) items", population("items")),
     Claim("README.md", "registry contents size", r"(?P<n>\d+) items: the \[Plerdy", population("items")),

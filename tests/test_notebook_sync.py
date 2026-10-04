@@ -300,14 +300,7 @@ class ASourceIsPastedRatherThanUploaded(unittest.TestCase):
         N.CONFIG.update(self.saved)
 
     def sync(self, cli, manifest):
-        old_nlm, old_manifest = N.nlm, N.manifest
-        N.nlm, N.manifest = cli, lambda repo: manifest
-        try:
-            with redirect_stdout(io.StringIO()) as out:
-                N.do_sync(REPO)
-            return out.getvalue()
-        finally:
-            N.nlm, N.manifest = old_nlm, old_manifest
+        return SyncDoesNotRemedyAFailureToLook.sync(self, cli, manifest)[1]
 
     def stale(self):
         """One manifest entry the notebook holds at the wrong stamp."""

@@ -819,12 +819,7 @@ class SystemPagesAreNotIndexable(unittest.TestCase):
     def tearDown(self):
         self.rpt.fetch_robots, self.rpt.safe_get = self.saved
 
-    def serve_robots(self, body, status=200):
-        from seo_common import parse_robots_txt
-        self.rpt.fetch_robots = lambda *a, **k: {
-            "url": "https://example.com/robots.txt",
-            "fetch": {"status": status},
-            "parsed": parse_robots_txt(body) if status == 200 else None}
+    serve_robots = RobotsPathTester.serve
 
     def serve_pages(self, by_path):
         """`{path: (status, body, headers)}`; anything unlisted is a 404."""

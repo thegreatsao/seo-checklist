@@ -171,10 +171,7 @@ class TheHoistedSubjectIsNotThePagesOwn(unittest.TestCase):
 class ThePagesOwnCreditsSurvive(unittest.TestCase):
     """Five shapes that answered correctly before this release and must still."""
 
-    def _assert(self, document, authors, publishers):
-        result = _eeat(document)
-        self.assertEqual(result["signals"]["authors"], authors)
-        self.assertEqual(result["signals"]["publishers"], publishers)
+    _assert = TheHoistedSubjectIsNotThePagesOwn._assert
 
     def test_a_nested_citation_was_already_excluded_by_key(self):
         """The control for the first shape: nesting is caught by `exclude`, not hoisting."""
