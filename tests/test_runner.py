@@ -2846,7 +2846,11 @@ class CredentialDiscoveryIsAnOrderedContract(unittest.TestCase):
         os.environ["GSC_CREDENTIALS_PATH"] = os.path.join(tempfile.gettempdir(),
                                                           "definitely-absent.json")
         os.environ.pop("GV_SA_KEY", None)
-        self.assertEqual(runner.find_gsc_credentials(""), "")
+        # the defaults too: on a machine that keeps a real key in one of them, the real
+        # key answered and the test failed for a reason that is not the code's (4 October 2026)
+        absent = [os.path.join(tempfile.gettempdir(), "definitely-absent-default.json")]
+        with mock.patch.object(runner, "GSC_FALLBACKS", absent):
+            self.assertEqual(runner.find_gsc_credentials(""), "")
 
 
 class OpportunitiesAreCarriedAndNeverScored(unittest.TestCase):
@@ -6066,7 +6070,9 @@ class TheSearchConsolePropertyAndItsFourSilences(unittest.TestCase):
         self.assertEqual(runner.find_gsc_credentials(""), real)
 
     def test_nothing_anywhere_is_the_empty_string_and_not_an_exception(self):
-        self.assertEqual(runner.find_gsc_credentials(""), "")
+        # "anywhere" includes the bundled defaults, which on an operator's machine may hold a real key
+        with mock.patch.object(runner, "GSC_FALLBACKS", [os.path.join(self.dir, "default.json")]):
+            self.assertEqual(runner.find_gsc_credentials(""), "")
 
     def test_the_fallback_paths_are_generic_rather_than_one_account(self):
         """The list ships with the tool, so a path naming somebody's account would send

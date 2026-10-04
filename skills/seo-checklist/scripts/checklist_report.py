@@ -1470,13 +1470,18 @@ code{font-size:.9em;background:var(--card);padding:.05rem .3rem;border-radius:4p
 """
 
 JS = """
+// A viewer that sandboxes the report gives it an opaque origin, and the first touch of
+// localStorage throws there. Until 0.142.0 that one line stopped the whole script, the
+// filters included. Without storage a tick lasts for the visit; nothing else needs it.
+const store = (() => { try { const s = window.localStorage; s.getItem('probe'); return s; } catch (e) { return null; } })();
 const key = 'seo-checklist-' + document.body.dataset.domain;
-const saved = JSON.parse(localStorage.getItem(key) || '{}');
+let saved = {};
+try { saved = JSON.parse((store && store.getItem(key)) || '{}'); } catch (e) {}
 document.querySelectorAll('input[type=checkbox][data-id]').forEach(cb => {
   if (saved[cb.dataset.id]) { cb.checked = true; cb.closest('.row').classList.add('done'); }
   cb.addEventListener('change', () => {
     saved[cb.dataset.id] = cb.checked;
-    localStorage.setItem(key, JSON.stringify(saved));
+    if (store) try { store.setItem(key, JSON.stringify(saved)); } catch (e) {}
     cb.closest('.row').classList.toggle('done', cb.checked);
   });
 });

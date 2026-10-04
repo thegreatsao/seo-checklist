@@ -10,7 +10,10 @@ import html as html_escape
 import io
 import json
 import os
+import shutil
+import subprocess
 import sys
+import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -26,6 +29,7 @@ from checklist_report import (  # noqa: E402
     phrase_measure, plain_summary, priority_of, provenance_line, render_html,
     render_llm_queue, render_markdown, why_no_score, write_fixes,
 )
+from checklist_report import JS as REPORT_JS  # noqa: E402
 
 I18N = os.path.join(SKILL, "resources", "i18n")
 
@@ -2178,6 +2182,75 @@ class DecidedCategoriesCanHaveNoScore(unittest.TestCase):
             for row in BeautifulSoup(render_html(data), "html.parser").find_all(class_="catrow"):
                 self.assertIsNone(row.find(class_="cattrack"))
                 self.assertEqual(row.find(class_="catnum").get_text(), "No score")
+
+# A page's environment small enough to read: the report's own script runs in it unchanged.
+# `mode` "sandbox" is what a viewer that sandboxes the report gives it — an opaque origin,
+# where reading localStorage throws. A browser throws a SecurityError; node's vm reports the
+# same failed read as a ReferenceError. Either stops a script that does not catch it.
+DOM = r"""
+const vm = require('vm'), fs = require('fs'), [file, mode] = process.argv.slice(2);
+const classes = () => { const s = new Set(); return {
+  add: c => s.add(c), contains: c => s.has(c),
+  toggle: (c, on) => { if (on === undefined) on = !s.has(c); on ? s.add(c) : s.delete(c); return on; } }; };
+const el = props => { const h = {}; return Object.assign({ classList: classes(), dataset: {},
+  addEventListener: (t, f) => (h[t] = h[t] || []).push(f), fire: t => (h[t] || []).forEach(f => f()),
+  has: t => !!h[t], setAttribute(k, v) { this[k] = String(v); } }, props); };
+const rows = [el({dataset: {st: 'FAIL'}}), el({dataset: {st: 'PASS'}})];
+const tick = el({dataset: {id: 'CI-007'}, checked: false, closest: () => rows[0]});
+const buttons = [el({dataset: {f: 'ALL'}}), el({dataset: {f: 'FAIL'}})];
+const section = el({querySelector: () => rows.find(r => !r.classList.contains('hidden')) || null});
+const document = {body: {dataset: {domain: 'example.com'}}, getElementById: () => null,
+  querySelectorAll: s => s.startsWith('input') ? [tick] : s === '.filters button' ? buttons
+    : s === '.row' ? rows : s === 'section' ? [section] : []};
+const memory = {}, storage = () => {
+  if (mode === 'sandbox') throw new Error('SecurityError: The operation is insecure.');
+  return {getItem: k => k in memory ? memory[k] : null, setItem: (k, v) => { memory[k] = v; }}; };
+const page = vm.createContext({document, JSON, Date, alert: () => {}, storage});
+// as in a browser: the global is the window, and localStorage is a getter on it, bare or not
+vm.runInContext("globalThis.window = globalThis;"
+  + "Object.defineProperty(globalThis, 'localStorage', {get: () => storage()});", page);
+let error = null;
+try { vm.runInContext(fs.readFileSync(file, 'utf8'), page); } catch (e) { error = String(e); }
+let filtered = null, ticked = null;
+if (buttons[1].has('click')) { buttons[1].fire('click'); filtered = rows.map(r => r.classList.contains('hidden')); }
+try { tick.checked = true; tick.fire('change'); ticked = rows[0].classList.contains('done'); } catch (e) { ticked = 'threw: ' + e; }
+console.log(JSON.stringify({error, filtered, ticked, stored: memory}));
+"""
+
+
+@unittest.skipUnless(shutil.which("node"), "needs node to run the report's script")
+class ReportScriptWithoutStorage(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-14: the report's own script runs where the page has
+    no storage. A viewer that sandboxes the report (an opaque origin: Workbench, on both of
+    its builds) makes the first touch of localStorage throw; until 0.142.0 that one line
+    stopped the script, and the filter buttons with it."""
+
+    def run_page(self, mode, script=REPORT_JS):
+        with tempfile.TemporaryDirectory() as d:
+            page, dom = os.path.join(d, "report.js"), os.path.join(d, "dom.js")
+            with open(page, "w", encoding="utf-8") as f:
+                f.write(script)
+            with open(dom, "w", encoding="utf-8") as f:
+                f.write(DOM)
+            # a full path and close_fds=False, so CPython spawns rather than forks: macOS can kill a forked child
+            # inside Apple's atfork handler (test_runner.AScriptTheOperatingSystemKilled)
+            out = subprocess.run([shutil.which("node"), dom, page, mode], capture_output=True, text=True,
+                                 stdin=subprocess.DEVNULL, close_fds=False, timeout=60)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        return json.loads(out.stdout)
+
+    def test_filters_and_ticks_work_without_storage(self):
+        got = self.run_page("sandbox")
+        self.assertIsNone(got["error"])
+        self.assertEqual(got["filtered"], [False, True])  # FAIL shown, PASS hidden
+        self.assertIs(got["ticked"], True)  # a tick lasts for the visit
+        self.assertEqual(got["stored"], {})
+
+    def test_ticks_are_kept_where_there_is_storage(self):
+        got = self.run_page("normal")
+        self.assertIsNone(got["error"])
+        self.assertEqual(json.loads(got["stored"]["seo-checklist-example.com"]), {"CI-007": True})
+
 
 if __name__ == "__main__":
     unittest.main()
