@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.149.0 — see [CHANGELOG.md](CHANGELOG.md). On a machine with an HTTP proxy configured — in the environment, or in the system settings of macOS or Windows — a plain-http site was sent a request written for the proxy, and a server that routes on the path answered 404 for pages it has. The connection never used the proxy and still does not; the request now says so. Found by running the suite on a Mac, which CI does not do.
+Version 0.150.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit decides changes in this version. On macOS and Linux the pre-push gate did not run at all — the hook was not recorded as executable, and git skips such a hook with a hint — and eight tests fetched from GitHub on every run of the suite. Both are repaired, and this release is pushed from a Mac, through that gate.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

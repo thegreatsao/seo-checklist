@@ -10,6 +10,58 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.150.0 — on macOS and Linux the push gate did not run, and the suite fetched from GitHub
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
+changes; nothing under `skills/` changes. This release is the push hook's recorded mode,
+`tests/` and the governance spec. **It is pushed from the Mac, through the gate it
+repairs.**
+
+* **The hook was not a program where a filesystem says what one is.**
+  `.githooks/pre-push` was recorded with mode 100644 from its first commit. Git for
+  Windows runs a hook whatever its mode. On macOS and Linux git ignores a hook without the
+  executable bit: it prints *"hook was ignored because it's not set as executable"* and
+  pushes, exit 0. GOV-11 already said that a push through git's own hook is rehearsed by
+  hand and not run by a test; every one of those rehearsals had been on Windows. The
+  first on a Mac pushed in no time and checked nothing.
+  - *Now.* The hook is recorded 100755. `test_the_hook_is_recorded_as_a_program` reads the
+    mode from the index, which is what a clone is given, and from the file where the
+    checkout has the bit. Red before the mode was set: `'100644' != '100755'`.
+  - *With the bit,* the same rehearsal ran every step this machine can run, twenty-seven,
+    in 297 seconds on that Mac, against about eighteen minutes on the Windows machine
+    these releases were pushed from.
+
+* **Eight tests ran `git fetch` in the real repository.** `notebook_sync.do_check` opens by
+  asking git how far the clone is behind `origin`, with a fetch, and the tests of the
+  notebook tool hand it this repository. So every run of the suite — in CI and under the
+  gate — reached GitHub and moved the clone's remote refs. GOV-7 says the suite reaches
+  nothing but the machine it runs on, and it had named the hole: its tripwire is a Python
+  hook, and *"a new binary would be unread"*. `git` was that binary.
+  - *How it was found.* The rehearsal on the Mac compares the repository's config, refs
+    and worktree list before and after the gate, as every rehearsal has. `origin/main`
+    had moved in between, because 0.149.0 was pushed while it ran.
+  - *Now, two layers.* `tests/harness.py` sets `GIT_ALLOW_PROTOCOL=file` for the suite
+    and every child: a git the suite starts has no transport but this disk.
+    `test_git_is_allowed_no_transport_but_this_disk` asks for a remote and requires the
+    refusal. And `tests/test_notebook_sync.py` supplies the clone's state for its whole
+    module and fails any test in it that starts git.
+  - *Probed, two of two.* Without the switch the new test is red. With the state no
+    longer supplied, eight tests fail with *a test of the notebook started git* — which
+    is how the count of eight was learned; two had been read off the source.
+  - *Still partial, and GOV-7 says so:* a test module that does not import the harness,
+    run alone, has no such switch.
+
+* **GOV-7 and GOV-11** each have the paragraph and a scenario: *a test starts git with a
+  remote to reach*, and *a clone on a filesystem that has an executable bit*. The
+  requirement count does not move.
+
+* **How it was accepted.** The whole suite on the Mac, then the Mac's own gate on the
+  push. The suite is 2236 tests: 2234 and the two new ones.
+
+* **Not in the tree, and worth knowing.** Over ssh a Mac's `PATH` has no Homebrew in it,
+  and one gate step needs `npm` and `openspec`; the release script adds it. The tool that
+  drives a release from another machine lives in `local/mac-run/`, which is not tracked.
+
 ## 0.149.0 — with a proxy configured, a plain-http site was sent a request written for the proxy
 
 Registry version: `90ba79b14b28`, unchanged. **What an audit reads from a plain-http
