@@ -452,6 +452,59 @@ report rather than to this checker and is not made here.
 - **THEN** the report says the user-agent strings were taken at their word
 - **AND** it does not present unverified counts as verified ones
 
+### Requirement: EVD-11 — body copy is what `<main>` holds
+
+Where a checker reads a page's body copy and the page has a `<main>`, the copy SHALL be
+read from `<main>`: all of it, and nothing beside it. An `<article>` inside `<main>` is
+part of that copy and MUST NOT stand for the whole of it. A page with no `<main>` is read
+from its first `<article>`; a page with neither, from the first element whose `id` or
+`class` names it as content; and a page with none of these, whole.
+
+**Why:** KW-076 asks whether the primary keyword is in the body copy, and `<main>` is the
+element HTML has for a page's dominant content. Until 0.148.0 `article_seo.py` took the
+first `<article>` before `<main>`. A post whose copy went on after `</article>` lost that
+copy, and a listing was read as its first card: both failed the item while saying the
+keyword in `<main>`. It was found by auditing the good fixture with every page sampled —
+`/blog/first-post.html` says "raises bread more slowly" in `<main>`, after its article.
+The declaration of KW-076 on that fixture had said "the corpus is h1, h2s, h3s and
+paragraphs inside `<main>`" since 0.48.0; the three pages it samples have no `<article>`,
+so the sentence was true of them and nothing compared it with the code.
+**Reader:** enforced, at 0.148.0, through the script as the runner starts it.
+`ArticleKeyword.test_body_copy_is_main_and_not_its_first_article` serves copy after the
+article and a listing whose second card says the keyword;
+`test_a_keyword_outside_the_body_copy_is_not_in_it` serves the keyword in a footer beside
+`<main>` and in a block beside a lone `<article>`;
+`test_a_page_with_no_main_falls_back_in_order` serves a container named by class, one
+named by id, and a page with no container at all. Six breakages of the order, one per
+step, each seen by the test of that step.
+
+**Outside this requirement, and held by nothing.** The rule is the reading of a page no
+template is recognised on. Where `article_seo.py` detects Blogger, WordPress or Ghost it
+picks the container by that template's class names first, and no test serves such a page.
+And body copy here is the container's `h1`–`h3` headings and its paragraphs of more than
+eight words: text in a list, a table or a short paragraph is not in it.
+
+#### Scenario: copy after the article
+- **WHEN** `<main>` holds an `<article>` and paragraphs after it
+- **THEN** those paragraphs are body copy
+
+#### Scenario: a listing
+- **WHEN** `<main>` holds several `<article>` elements
+- **THEN** every one of them is body copy, not the first alone
+
+#### Scenario: beside `<main>`
+- **WHEN** a word is in a header, a footer or an aside outside `<main>` and nowhere in it
+- **THEN** it is not in the body copy
+
+#### Scenario: no `<main>`
+- **WHEN** the page has an `<article>` and no `<main>`
+- **THEN** the first `<article>` is the body copy, and a block beside it is not
+
+#### Scenario: neither element
+- **WHEN** the page has no `<main>` and no `<article>`
+- **THEN** the first element whose `id` or `class` names it as content is read, and what
+  is beside it is not; with no such element the whole page is read
+
 ## 4. Invariants
 
 * **INV-E1** — every script the registry names is documented in the catalogue.
@@ -690,14 +743,16 @@ were.
 
 | | requirements |
 |---|---|
-| **enforced** | EVD-3, EVD-4, EVD-5, EVD-6, EVD-7, EVD-8, EVD-9 |
+| **enforced** | EVD-3, EVD-4, EVD-5, EVD-6, EVD-7, EVD-8, EVD-9, EVD-11 |
 | **partial** | EVD-1, EVD-2, EVD-10 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-E1 and INV-E2 enforced; INV-E3 and INV-E4 partial.
 
-**Seven enforced, three partial, none unread, of ten.**
+**Eight enforced, three partial, none unread, of eleven.**
+
+**Probed at 0.148.0:** EVD-11, written with its tests and broken afterwards.
 
 This is the best-read layer in the suite so far, and the reason is specific enough to be
 worth copying. Its three enforced requirements are all held by *generated* readers — a

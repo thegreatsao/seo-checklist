@@ -37,8 +37,8 @@ it was last written:
 
 | | count | what it means |
 |---|---|---|
-| requirements | 151 | across 12 documents |
-| enforced | 127 | held by something that fails when the requirement is violated |
+| requirements | 152 | across 12 documents |
+| enforced | 128 | held by something that fails when the requirement is violated |
 | partial | 19 | held for part of what the requirement says |
 | unread | 1 | held by nothing — `declarations` DEC-1 |
 | bounded | 4 | the subject is outside the program; no test could observe a violation |

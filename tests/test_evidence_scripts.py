@@ -523,6 +523,45 @@ GOOD_ROUTES = {
                     "<p>Seoul rewards patient travelers with neighborhood markets, "
                     "quiet paths, careful planning, and memorable meals each day."
                     "</p></main></body></html>"),
+    # KW-076, the three places a keyword can be when it is not in the first
+    # `<article>`: in `<main>` after the article, in a later card of a listing, and
+    # outside `<main>` altogether. The last page has no `<main>` at all.
+    "/after-article.html": ("<!doctype html><html><head><title>Starter notes</title>"
+                            "</head><body><main><article><h1>Starter notes</h1>"
+                            "<p>Flour, water and salt are measured on a scale, and time "
+                            "is the ingredient people try to skip.</p></article>"
+                            "<p>An acidic starter raises bread more slowly and tastes "
+                            "sharper than most people intend it to.</p></main>"
+                            "<footer><p>We deliver across Vilnius every weekday morning, "
+                            "before nine o'clock sharp.</p></footer></body></html>"),
+    "/listing.html": ("<!doctype html><html><head><title>Posts</title></head><body>"
+                      "<main><h1>Posts</h1><article><h2>Opening hours</h2>"
+                      "<p>The shop opens at seven on weekdays and at eight on both "
+                      "weekend days.</p></article><article><h2>Sourdough</h2>"
+                      "<p>How we bake bread with a starter that has been alive longer "
+                      "than the shop has.</p></article></main></body></html>"),
+    "/article-only.html": ("<!doctype html><html><head><title>Starter notes</title>"
+                           "</head><body><div><p>We deliver across Vilnius every "
+                           "weekday morning, before nine o'clock sharp.</p></div>"
+                           "<article><h1>Starter notes</h1><p>An acidic starter raises "
+                           "bread more slowly and tastes sharper than most people "
+                           "intend.</p></article></body></html>"),
+    "/named.html": ("<!doctype html><html><head><title>Starter notes</title></head>"
+                    "<body><div><p>We deliver across Vilnius every weekday morning, "
+                    "before nine o'clock sharp.</p></div><div class=\"content\">"
+                    "<h1>Starter notes</h1><p>An acidic starter raises bread more "
+                    "slowly and tastes sharper than most people intend.</p></div>"
+                    "</body></html>"),
+    "/named-by-id.html": ("<!doctype html><html><head><title>Starter notes</title>"
+                          "</head><body><div><p>We deliver across Vilnius every "
+                          "weekday morning, before nine o'clock sharp.</p></div>"
+                          "<div id=\"content\"><h1>Starter notes</h1><p>An acidic "
+                          "starter raises bread more slowly and tastes sharper than "
+                          "most people intend.</p></div></body></html>"),
+    "/plain.html": ("<!doctype html><html><head><title>Starter notes</title></head>"
+                    "<body><h1>Starter notes</h1><p>An acidic starter raises bread "
+                    "more slowly and tastes sharper than most people intend.</p>"
+                    "</body></html>"),
     "/about.html": ABOUT_PAGE,
     "/guide.html": GUIDE_PAGE,
     "/privacy.html": PRIVACY_PAGE,
@@ -651,6 +690,24 @@ RUNS = [
      ["{good}seoul.html", "--keyword", "seo", "--no-autocomplete"]),
     ("article_keyword_case", "article_seo.py",
      ["{good}seo-audit.html", "--keyword", "SEO Audit", "--no-autocomplete"]),
+    ("article_keyword_after_article", "article_seo.py",
+     ["{good}after-article.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_keyword_second_card", "article_seo.py",
+     ["{good}listing.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_keyword_outside_main", "article_seo.py",
+     ["{good}after-article.html", "--keyword", "Vilnius", "--no-autocomplete"]),
+    ("article_keyword_outside_article", "article_seo.py",
+     ["{good}article-only.html", "--keyword", "Vilnius", "--no-autocomplete"]),
+    ("article_keyword_in_lone_article", "article_seo.py",
+     ["{good}article-only.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_keyword_in_named_block", "article_seo.py",
+     ["{good}named.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_keyword_beside_named_block", "article_seo.py",
+     ["{good}named.html", "--keyword", "Vilnius", "--no-autocomplete"]),
+    ("article_keyword_beside_block_named_by_id", "article_seo.py",
+     ["{good}named-by-id.html", "--keyword", "Vilnius", "--no-autocomplete"]),
+    ("article_keyword_on_a_plain_page", "article_seo.py",
+     ["{good}plain.html", "--keyword", "bread", "--no-autocomplete"]),
     ("article_unfetched", "article_seo.py",
      ["http://127.0.0.1:1/unreachable", "--keyword", "sourdough starter",
       "--no-autocomplete"]),
@@ -662,6 +719,8 @@ RUNS = [
      ["{good}fixture/privacy.html", "--no-autocomplete"]),
     ("article_fixture_post", "article_seo.py",
      ["{good}fixture/blog/first-post.html", "--no-autocomplete"]),
+    ("article_fixture_post_keyword", "article_seo.py",
+     ["{good}fixture/blog/first-post.html", "--keyword", "bread", "--no-autocomplete"]),
     ("broken", "broken_links.py", ["{good}"]),
     ("broken_bad", "broken_links.py", ["{bad}"]),
     ("cache", "cache_compression_checker.py", ["{good}"]),
@@ -4721,6 +4780,41 @@ class ArticleKeyword(unittest.TestCase):
         check = ITEMS["KW-076"]["check"]
         _, evidence = evaluate(check["assert"], result)
         self.assertIn("technical SEO", evidence)
+
+    def test_body_copy_is_main_and_not_its_first_article(self):
+        """Until 0.148.0 the first `<article>` was read before `<main>`, so copy that
+        follows the article inside `<main>` was not body copy, and a listing was its
+        first card. Both pages say the keyword in `<main>` and failed, and so did the
+        good fixture's first post, where it was found: its only "bread" is in `<main>`
+        after `</article>`."""
+        for key in ("article_keyword_after_article", "article_keyword_second_card",
+                    "article_fixture_post_keyword"):
+            with self.subTest(page=key):
+                result = out(key)
+                self.assertGreater(result["keyword_usage"]["body_occurrences"], 0)
+                self.assertEqual(verdict("KW-076", result), PASS)
+
+    def test_a_keyword_outside_the_body_copy_is_not_in_it(self):
+        """The other direction, so that reading `<main>` cannot become reading the
+        page: a footer beside `<main>`, and a block beside a lone `<article>` on a
+        page that has no `<main>`."""
+        for key in ("article_keyword_outside_main", "article_keyword_outside_article"):
+            with self.subTest(page=key):
+                result = out(key)
+                self.assertEqual(result["keyword_usage"]["body_occurrences"], 0)
+                self.assertEqual(verdict("KW-076", result), FAIL)
+        self.assertEqual(verdict("KW-076", out("article_keyword_in_lone_article")), PASS)
+
+    def test_a_page_with_no_main_falls_back_in_order(self):
+        """With neither element, the block named as content by its class or its id is
+        the body copy and the block beside it is not; with no such block the page is
+        read whole."""
+        self.assertEqual(verdict("KW-076", out("article_keyword_in_named_block")), PASS)
+        for key in ("article_keyword_beside_named_block",
+                    "article_keyword_beside_block_named_by_id"):
+            with self.subTest(page=key):
+                self.assertEqual(verdict("KW-076", out(key)), FAIL)
+        self.assertEqual(verdict("KW-076", out("article_keyword_on_a_plain_page")), PASS)
 
     def test_an_unfetched_page_has_no_measurement_and_is_undecided(self):
         result = out("article_unfetched")

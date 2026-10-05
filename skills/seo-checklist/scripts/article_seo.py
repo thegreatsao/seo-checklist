@@ -264,9 +264,12 @@ def extract_content(parsed: dict, cms: str) -> dict:
         body_container = soup.find(attrs={"class": re.compile(r"gh-content|post-content|article-content", re.I)})
 
     else:  # generic
+        # `<main>` before `<article>`: an article is part of the body copy, not the
+        # whole of it. Read first, it dropped copy that follows it inside `<main>` and
+        # made a listing its first card (`openspec/specs/evidence/` EVD-11).
         body_container = (
-            soup.find("article")
-            or soup.find("main")
+            soup.find("main")
+            or soup.find("article")
             or soup.find(attrs={"id": re.compile(r"content|main|article", re.I)})
             or soup.find(attrs={"class": re.compile(r"content|article|post|entry", re.I)})
         )
