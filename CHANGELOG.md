@@ -10,6 +10,91 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.147.0 — two tests that named simultaneity hold it, and two decisions about robots.txt that nothing held
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit
+writes changes. Under `skills/` one file changes, the census tool
+`tools/audit_derived_sets.py`; the rest is `tests/`, the governance spec and the
+dependency declarations.
+
+* **"At once" is held.** `OneFetchPerUrl.test_eight_processes_asking_at_once_make_one_request`
+  and `test_robots_txt_is_fetched_once_however_many_ask` passed with their children run
+  one after another (0.145.0 found it, 0.146.0 left it open): the first child fetched,
+  the cache answered the rest, and one request was counted either way. Each child now
+  leaves a note just before it asks, the server holds its answer until every note is
+  there, and it records how many were asking each time it answers. The tests require
+  that record to be one answer with all of them asking — eight for the page, six for
+  robots.txt. For this a route's body in `tests/harness.py` may be a function, called
+  on the request's thread.
+  - *Probed, three of three.* Children run in turn: both tests red, `[1] != [8]` and
+    `[1] != [6]`. The response cache without its single-flight: eight answers where one
+    was required. robots.txt fetched without its lock: six.
+
+* **Rules in an answer that is not the file are not rules, and no test said so — twice.**
+  A robots.txt is fetched in two places, and each decides that a refusal carries no
+  policy. Both decisions could be removed with the tests green.
+  - `seo_common.fetch_robots` parses the body only when the answer carries content.
+    With every answer parsed, 1721 tests in the nineteen modules that name robots
+    passed: each test of a refused robots.txt replaces the fetch with a stub that makes
+    the decision itself. A 404 page whose text says `Disallow: /assets/` would then
+    fail CI-013 on a site that has no robots.txt and blocks nothing.
+    `RobotsPathTester.test_rules_in_an_answer_that_is_not_the_file_are_not_rules`
+    serves the same rules at 403, 404, 500 and 200 through the real fetch.
+  - `safe_http._fetch_robots` fails open on every answer that is not the file, a 5xx
+    included, and argues the choice in its docstring. With every answer obeyed, one
+    test went red, and it is the one about a redirect; with a redirect still read as
+    no rules and the body of a 4xx or a 5xx obeyed, `test_safe_http`,
+    `test_url_credentials`, `test_robots_rules` and `test_runner` passed.
+    `OneFetchPerUrl.test_rules_in_a_refused_robots_txt_are_not_obeyed` asks for a page
+    behind `Disallow: /` served at 403, 404, 500 and 503, and at 200 as the control.
+  - *Probed, six of six*: both removals, a 5xx alone obeyed, and the opposite mistake
+    in each place — no answer ever read as rules — which the 200 catches.
+
+* **The known-issue probes leave no file behind.** Thirteen `.html` pages stayed in the
+  temp directory after every run of `known_issues.measure()`, which the suite and CI's
+  `--check` both run. One writer, `_temp_html`, now makes them and removes them when
+  the process ends. `test_the_probes_leave_nothing_in_the_temp_directory` runs every
+  probe in a child whose temp directory is its own and requires it empty. The child
+  is given a pacing directory too: `safe_http` keeps that state under the temp
+  directory when a run names none, the suite names one and a module run alone does
+  not, and the first draft of this test was green alone and red in the suite for
+  that reason. Red with the removal taken out.
+
+* **The census of hand-written sets stops counting what nobody wrote.** GOV-3 counts
+  module-level literals because a hand-kept list cannot say what is missing from it. An
+  empty literal the module fills itself — an item assigned into it, a method that adds
+  called on it, or the name rebound from inside a function — has no hand-kept member.
+  Three were counted: `calibrate_css_minification._RUNTIME` and `build_checklist.MAP` in
+  the read column, `env_loader._LOADED_FROM` in the unread one. The census reads 179
+  sets, 99 read, 80 unread (182, 101, 81), and the ratchet is 80. An empty literal
+  nothing writes into is still counted — `build_checklist.RETIRED` is a hand-kept list
+  with no entry yet — and so is a literal with members. GOV-3 has the paragraph and two
+  scenarios.
+  - *Probed, five of five*: each of the three ways of filling removed in turn, the
+    exclusion widened to literals that have members, and to every empty literal.
+  - *Still flattering, and said in the spec:* `build_checklist.EXTRA` is in the read
+    column on the strength of one `mock.patch.object` that extends it for a test.
+
+* **PyYAML is declared.** `tools/ci_local.py` and `tests/test_ci_local.py` read the
+  workflow with it, CI installs it by hand, and no dependency file named it. It is in
+  the `dev` extra of `pyproject.toml` and in the development list of
+  `requirements.txt`; nothing shipped parses YAML, so it is not in the base set.
+
+* **Read and left as it is.** `tls_certificate.py` accepts `--json` and never reads it.
+  That is not a leftover: the runner appends `--json` to every script it starts, and
+  this one prints JSON whether asked or not.
+
+* **How it was accepted.** Every new test was run green, broken by a mutation of the
+  thing it is about, and run green again: fifteen mutations, fifteen caught, each by
+  the test written for it. The two removals that passed before those tests existed are
+  the findings above, not part of that count. The suite is 2227 tests: 2223 and the
+  four new ones.
+
+* **Still open.** Three tests compare a time against a threshold and go red on a loaded
+  machine: two whole-audit comparisons that include TECH-003, and
+  `RateLimiting.test_pacing_off_lets_the_processes_go_together`. And no test sees a
+  temporary root a test class leaves behind.
+
 ## 0.146.0 — what 0.145.0 left open: one reader of the registry for the tests, and fixtures that are what they say
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit writes
