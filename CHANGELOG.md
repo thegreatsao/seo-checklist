@@ -10,6 +10,55 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.149.0 — with a proxy configured, a plain-http site was sent a request written for the proxy
+
+Registry version: `90ba79b14b28`, unchanged. **What an audit reads from a plain-http
+address changes on a machine that has an HTTP proxy configured**, and on no other: there,
+any item whose script fetched such an address could be decided from an answer the site
+gave to a request no browser and no crawler sends.
+
+* **What was wrong.** `safe_http` pins every connection to the address its guard
+  validated, so a proxy is never asked — a proxy would resolve the name itself. But
+  Requests chooses the request target from the proxies it believes are in use, and for a
+  plain-http URL that target is the whole URL. So the origin received
+  `GET http://host/path HTTP/1.1` where it should have received `GET /path HTTP/1.1`. A
+  server that routes on the path answers 404 for a page it has.
+  - *Where it applies.* Wherever Python finds a proxy: `HTTP_PROXY` and its relatives in
+    the environment, and the system settings it reads by itself on macOS and on Windows.
+    An `https` address was not affected; Requests writes that target as a path.
+  - *What it did not do.* The proxy received nothing, before or after. And a credential
+    in the proxy's URL did not reach the origin: measured with one, the origin's request
+    carried no proxy header.
+
+* **How it was found.** CI runs on Ubuntu and on Windows, and neither has a proxy. Anton
+  asked for the suite on his Mac, whose system settings name a local one: 249 of 2230
+  tests failed there, every one of them a test that asks a server on loopback for a page,
+  and every one on this line. Reproduced on Windows with `HTTP_PROXY` set and nothing
+  else changed.
+
+* **The repair** is one method on the pinned adapter: the request target is computed as
+  if no proxy were configured, which is what the connection already assumes.
+
+* **HTTP-1 says it now**: a proxy is never asked, and the request is the one an origin is
+  sent. One paragraph and one scenario, *a proxy is configured*. The requirement count
+  does not move.
+
+* **How it is held.** `AProxyInTheEnvironmentIsNotInTheRequest` in `test_safe_http.py`
+  sets every proxy variable, removes every exemption, and listens where the proxy would
+  be. Four tests: a page, the robots fetch, each hop of a redirect — each requires the
+  path as the origin's request target and no connection to the proxy — and the adapter
+  asked for both schemes. All three that fetch were red before the repair. Two breakages:
+  the target written for the proxy again, seen by all four; the connection handed to the
+  proxy, seen by the three that fetch, the first of them with *the proxy was contacted*.
+  The suite is 2234 tests: 2230 and these four.
+
+* **On the Mac, after the repair:** the whole suite passes with the system proxy still
+  configured. macOS is still not a CI job; this was one run on one machine.
+
+* **Not decided here.** Whether the tool should be able to audit *through* a proxy that
+  the operator's network requires. Today it cannot, by construction, and this release
+  does not change that: it makes the request honest about it.
+
 ## 0.148.0 — body copy is what `<main>` holds: KW-076 no longer reads the first `<article>` alone
 
 Registry version: `90ba79b14b28`, unchanged. **One verdict can move: KW-076**, *Include
