@@ -115,6 +115,22 @@ The comment that explained the direct call named a real constraint and it still 
 is a mechanism one level below that, and `_validated_url` and `_PinnedAdapter` are both
 callable without touching robots at all — which is what the repair does.
 
+**A proxy is never asked, and until 0.149.0 the request was still written for one.** The
+pin is the connection: a proxy named in the environment, or in the system settings Python
+reads on macOS and Windows, would resolve the name itself and make the validated address
+irrelevant, so it is not used. The request SHALL therefore be the one an origin is sent.
+It was not. Requests chooses the request target from the proxies it believes are in use,
+and for a plain-http URL that target is the whole URL — `GET http://host/path` — which
+the pinned connection delivered to the origin. A server that routes on the path answered
+404 for a page it has. Nothing held it because no test and no CI job runs with a proxy
+configured; it was found by running the suite on a Mac whose system settings name one,
+where 249 tests failed on that line. `AProxyInTheEnvironmentIsNotInTheRequest` sets
+every proxy variable and no exemption, and requires the path as the origin's request
+target and no connection to the proxy, for a page, for the robots fetch and for each hop
+of a redirect. An `https` target was not affected — Requests writes it as a path, since a
+proxy would be tunnelled through — and `test_the_target_is_the_path_whatever_the_scheme`
+asks the adapter for both.
+
 #### Scenario: a name that answers the guard and the connection differently
 - **WHEN** a host resolves to a public address for the guard's lookup and to loopback for
   the one the transport would make
@@ -136,6 +152,13 @@ callable without touching robots at all — which is what the repair does.
 - **WHEN** the resolver returns more than one address and the first refuses the connection
 - **THEN** the remaining addresses are tried in resolver order
 - **AND** every one of them is an address this call validated, never one looked up again
+
+#### Scenario: a proxy is configured
+- **WHEN** the environment or the system settings name an HTTP proxy, and nothing
+  exempts the host
+- **THEN** the proxy receives no connection
+- **AND** the origin receives the request it would receive with no proxy configured: the
+  path as its target, for the page, for `robots.txt` and for every hop of a redirect
 
 ### Requirement: HTTP-2 — the private allowance is per-run, narrower than "not public", and announced
 

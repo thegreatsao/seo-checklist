@@ -1124,5 +1124,99 @@ class TheRobotsAsymmetryIsRead(unittest.TestCase):
                 else:
                     os.environ[name] = value
 
+
+class AProxyInTheEnvironmentIsNotInTheRequest(unittest.TestCase):
+    """The connection is pinned to the address the guard validated, so a proxy is
+    never asked. Until 0.149.0 the request still went out *written for* one: with a
+    proxy named, Requests sends a plain-http target in absolute form —
+    `GET http://host/path` — and the pin delivered that line to the origin. A server
+    that routes on the path answered 404 for a page it has.
+
+    Found by running the suite on a Mac whose system settings name a local proxy:
+    Python reads those as it reads `HTTP_PROXY`, and 249 tests failed on that one line.
+    """
+
+    PAGE = "<html><head><title>T</title></head><body><p>here</p></body></html>"
+
+    def setUp(self):
+        import harness
+        self.listener = socket.socket()
+        self.listener.bind(("127.0.0.1", 0))
+        self.listener.listen(5)
+        self.listener.settimeout(0.3)
+        self.addCleanup(self.listener.close)
+        proxy = "http://127.0.0.1:%d" % self.listener.getsockname()[1]
+        self.pacing = harness.own_rate_limit_dir()
+        self.pacing.__enter__()
+        self.addCleanup(self.pacing.__exit__, None, None, None)
+        self.loopback = harness.allow_loopback()
+        self.loopback.__enter__()
+        self.addCleanup(self.loopback.__exit__, None, None, None)
+        # Both spellings, and no exemption: `NO_PROXY=127.0.0.1` in the caller's
+        # environment would make this test pass without the repair.
+        patched = mock.patch.dict(os.environ, {
+            "HTTP_PROXY": proxy, "http_proxy": proxy,
+            "HTTPS_PROXY": proxy, "https_proxy": proxy, "ALL_PROXY": proxy})
+        patched.start()
+        self.addCleanup(patched.stop)
+        for name in ("NO_PROXY", "no_proxy", "SEO_HTTP_CACHE"):
+            os.environ.pop(name, None)
+
+    def _asked(self) -> bool:
+        try:
+            self.listener.accept()[0].close()
+        except socket.timeout:
+            return False
+        return True
+
+    def test_the_origin_is_sent_the_path_and_the_proxy_is_not_asked(self):
+        import requests
+        with served({"/page": self.PAGE}) as site:
+            # The stand-in never answers, so a request sent to it ends as a timeout.
+            # Kept, so that what fails below is the sentence about the proxy.
+            try:
+                status = sh.safe_get(site.base + "/page", timeout=2).status_code
+            except requests.exceptions.RequestException as exc:
+                status = type(exc).__name__
+            self.assertFalse(self._asked(), "the proxy was contacted")
+            self.assertEqual(status, 200)
+            self.assertEqual(site.paths("GET"), ["/page"])
+
+    def test_the_robots_fetch_is_sent_the_path_too(self):
+        """The one request the substrate makes on its own account, through the same
+        adapter and a different call."""
+        with served({"/page": self.PAGE,
+                     "/robots.txt": (200, {"Content-Type": "text/plain"},
+                                     "User-agent: *\nDisallow: /private/\n")}) as site:
+            got = sh.safe_get(site.base + "/page", timeout=5, respect_robots=True)
+            self.assertEqual(got.status_code, 200)
+            self.assertEqual(site.paths("GET"), ["/robots.txt", "/page"])
+            with self.assertRaises(sh.RobotsDisallowed):
+                sh.safe_get(site.base + "/private/x", respect_robots=True)
+        self.assertFalse(self._asked(), "the proxy was contacted")
+
+    def test_the_target_is_the_path_whatever_the_scheme(self):
+        """Asked of the adapter, because no fixture here serves TLS in this process.
+        Requests writes an `https` target as a path already; this holds that the
+        adapter does not depend on it."""
+        import requests
+        proxies = {"http": "http://127.0.0.1:9", "https": "http://127.0.0.1:9"}
+        for scheme in ("http", "https"):
+            with self.subTest(scheme=scheme):
+                url = f"{scheme}://example.com/page?x=1"
+                adapter = sh._PinnedAdapter(url, "93.184.216.34")
+                self.addCleanup(adapter.close)
+                request = requests.Request("GET", url).prepare()
+                self.assertEqual(adapter.request_url(request, proxies), "/page?x=1")
+
+    def test_each_hop_of_a_redirect_is_sent_its_own_path(self):
+        with served({"/hop": (301, {"Location": "/page"}, ""),
+                     "/page": self.PAGE}) as site:
+            got = sh.safe_get(site.base + "/hop", timeout=5)
+            self.assertEqual(got.status_code, 200)
+            self.assertEqual(site.paths("GET"), ["/hop", "/page"])
+        self.assertFalse(self._asked(), "the proxy was contacted")
+
+
 if __name__ == "__main__":
     unittest.main()

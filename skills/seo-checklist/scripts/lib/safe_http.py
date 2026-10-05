@@ -1284,6 +1284,16 @@ class _PinnedAdapter(HTTPAdapter):
         """Requests 2.31 adapter hook; retained for the declared dependency floor."""
         return self.pool
 
+    def request_url(self, request, proxies):
+        """The request target, as an origin is sent it: never written for a proxy.
+
+        Both hooks above ignore `proxies`, so the connection is to the origin. Requests
+        still decides the target from them, and with a proxy named — in the
+        environment, or in the system settings Python reads on macOS and Windows — a
+        plain-http target is the whole URL. The pin delivered that line to the origin.
+        """
+        return super().request_url(request, None)
+
     def close(self):
         self.pool.close()
         super().close()
