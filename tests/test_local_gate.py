@@ -227,6 +227,18 @@ class TheGateVerifiesWhatLeaves(unittest.TestCase):
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertEqual(done.stdout, "['--pushed']\n" + payload)
 
+    def test_the_hook_is_recorded_as_a_program(self):
+        """GOV-11: where a filesystem has the executable bit, git ignores a hook
+        without it — one hint, exit 0 — and the push is gated by nothing. The hook
+        was recorded 100644 from its first commit until 0.150.0, and every
+        rehearsal of it had been on Windows, where git runs a hook whatever its
+        mode. Read from the index, because that is what a clone is given; where
+        the checkout has the bit, the file is asked as well."""
+        recorded = git_checkout.git('ls-files', '-s', '--', '.githooks/pre-push')
+        self.assertEqual(recorded.split()[0], '100755', recorded)
+        if os.name == 'posix':
+            self.assertTrue(os.access(ROOT / '.githooks/pre-push', os.X_OK))
+
 
 class EveryGitReachesItsDirectory(unittest.TestCase):
     """GOV-11: cleanup belongs to the launcher, with deliberate environments preserved."""

@@ -378,6 +378,20 @@ child binary is held only if the script starting it consults the switch, as
 clears the switch for itself stands both layers down for whatever it starts; two did, and
 were given it back.
 
+**`git` was such a binary, and it was reaching GitHub.** Eight tests of the notebook tool
+hand `notebook_sync.do_check` this repository, and the check opens with `git fetch`. So
+every run of the suite — in CI and under the push gate — fetched from `origin` and moved
+the clone's remote refs. Neither layer could see it: the guard is in `safe_http` and the
+tripwire is a Python hook. It was found at 0.150.0 on a Mac, where a rehearsal of the
+push gate compares the repository's refs before and after the run, and `origin/main` had
+moved in between because a release went out while it ran. Two things hold it now.
+`tests/harness.py` sets `GIT_ALLOW_PROTOCOL=file` for the suite and every child, so a git
+the suite starts has no transport but this disk, and
+`test_git_is_allowed_no_transport_but_this_disk` asks for a remote and requires the
+refusal. And `tests/test_notebook_sync.py` supplies the clone's state for its whole
+module and fails any test in it that starts git. **Still partial:** a test module that
+does not import the harness, run alone, has no such switch.
+
 #### Scenario: the matrix runs with no network
 - **WHEN** any job in CI runs
 - **THEN** it completes without reaching the internet, the live path served from a
@@ -387,6 +401,12 @@ were given it back.
 - **WHEN** a check would depend on a third-party service being up
 - **THEN** it does not belong in the matrix, because a gate that fails for somebody
   else's outage teaches people to ignore it
+
+#### Scenario: a test starts git with a remote to reach
+- **WHEN** a test, or a tool a test runs, starts `git` for anything that is not on this
+  disk
+- **THEN** git refuses the transport, because the suite allows none but local paths
+- **AND** no ref of the repository the suite runs in is moved by the run
 
 ### Requirement: GOV-8 — a request-count ceiling is raised deliberately or not at all
 
@@ -532,6 +552,16 @@ there is git's list of refs, the thing the gate reads to know what is pushed.
 launcher and requires the command to return and the pipe's bytes to be still unread; the
 steps the gate runs are given no standard input either.
 
+**Where a filesystem says what a program is, the hook was not one.**
+`.githooks/pre-push` was recorded with mode 100644 from its first commit. Git for Windows
+runs a hook whatever its mode; on macOS and Linux git ignores one without the executable
+bit, prints a hint, and pushes with exit 0. Every rehearsal of this gate had been on
+Windows, and the first on a Mac, on 5 October 2026, pushed in no time and checked
+nothing. The hook is recorded 100755 as of 0.150.0, and
+`test_the_hook_is_recorded_as_a_program` reads the mode from the index — which is what a
+clone is given — and, where the checkout has the bit, from the file. With the bit, the
+same rehearsal ran every step on that Mac in under five minutes.
+
 Not held. A push through git's own hook is rehearsed by hand against a throwaway bare
 repository, not run by a test: in these tests the gate's steps are replaced. The
 comparison is made before the steps run, so bytes that change while they run are not
@@ -593,6 +623,13 @@ assembled at run time from a string is not a launch it can see.
 - **THEN** the command is given an empty input and returns, and what waits in the caller's
   input is still there to be read
 - **AND** the steps the gate runs are given no standard input either
+
+#### Scenario: a clone on a filesystem that has an executable bit
+- **WHEN** the repository is cloned on macOS or Linux and `core.hooksPath` names
+  `.githooks`
+- **THEN** git runs the hook on a push, because the hook is recorded as executable
+- **AND** recorded without the bit it would be skipped with a hint and exit 0: a push
+  nobody checked
 
 ## 4. Invariants
 

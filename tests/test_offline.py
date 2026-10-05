@@ -160,6 +160,22 @@ class AChildBinaryTheTripwireCannotSee(unittest.TestCase):
         self.assertFalse(out["checked"])
         self.assertIn("loopback-only", out["error"])
 
+    def test_git_is_allowed_no_transport_but_this_disk(self):
+        """`git` has transports of its own. Until 0.150.0 two tests of the notebook
+        tool ran `git fetch` in this repository on every run: the suite reached
+        GitHub and moved the clone's remote refs. It was found on a Mac, where a
+        rehearsal of the push gate compares the repository's refs before and after
+        and `origin/main` had moved in between.
+
+        `.invalid` never resolves, so without the switch the answer is a failed
+        lookup, and with it a refusal that asked nobody."""
+        import git_checkout
+        self.assertEqual(os.environ.get("GIT_ALLOW_PROTOCOL"), "file")
+        done = git_checkout._run_git(
+            ["ls-remote", "https://example.invalid/nothing.git"], timeout=60)
+        self.assertNotEqual(done.returncode, 0)
+        self.assertIn("not allowed", done.stderr)
+
 
 class ALookupNotAskedIsNotALookupThatFoundNothing(unittest.TestCase):
     """What the switch changes on a fixture audit: `entity_checker.py`'s Wikidata and

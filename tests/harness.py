@@ -84,6 +84,11 @@ PLACEHOLDER_EXTERNAL = "http://127.0.0.1:8001"
 # `PYTHONPATH` put its `sitecustomize` first.
 TRIPWIRE = os.path.join(HERE, "tripwire")
 os.environ["SEO_LOOPBACK_ONLY"] = "1"
+# `git` is a binary the tripwire cannot see, and it has transports of its own. With
+# only `file` allowed, a git this suite starts can read a repository on this disk and
+# nothing else. Until 0.150.0 two tests ran `git fetch` against the real `origin` on
+# every run of the suite.
+os.environ["GIT_ALLOW_PROTOCOL"] = "file"
 os.environ["PYTHONPATH"] = os.pathsep.join(
     [TRIPWIRE] + [p for p in os.environ.get("PYTHONPATH", "").split(os.pathsep)
                   if p and p != TRIPWIRE])

@@ -27,6 +27,7 @@ import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(ROOT, "skills", "seo-checklist", "tools")
@@ -37,6 +38,23 @@ import notebook_sync as N  # noqa: E402
 REPO = Path(ROOT)
 AUTH_ERROR = ("Unexpected error: Authentication expired or invalid.\n"
               "Run 'notebooklm login' to re-authenticate.")
+
+
+def setUpModule():
+    """`do_check` opens by asking git how far the clone is behind `origin`, with a
+    `git fetch`, and these tests hand it this repository: until 0.150.0 every run
+    of them fetched from GitHub and moved the clone's remote refs. They are about
+    what the notebook answered. For the whole module the state is supplied, and a
+    git the tool still starts is a failure, not a request."""
+    stand_ins = {
+        "git_state": lambda repo: ("0000000", "0"),
+        "_run_git": mock.Mock(side_effect=AssertionError(
+            "a test of the notebook started git")),
+    }
+    for name, stand_in in stand_ins.items():
+        patcher = mock.patch.object(N, name, stand_in)
+        patcher.start()
+        unittest.addModuleCleanup(patcher.stop)
 
 
 def result(code=0, out="", err=""):
