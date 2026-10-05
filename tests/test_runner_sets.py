@@ -15,7 +15,6 @@ on the tree as it stood. This is a reader for the next edit, not the repair of a
 from __future__ import annotations
 
 import ast
-import json
 import os
 import sys
 import tempfile
@@ -28,6 +27,7 @@ SCRIPTS = os.path.join(SKILL, "scripts")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.join(SKILL, "tools"))
 
+import harness  # noqa: E402
 import checklist_report  # noqa: E402
 import checklist_runner as r  # noqa: E402
 import seo_common  # noqa: E402
@@ -36,9 +36,7 @@ import audit_assertions  # noqa: E402
 # The module, not a class out of it: a TestCase imported here would run twice.
 import test_registry  # noqa: E402
 
-with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-          encoding="utf-8") as _stream:
-    REGISTRY = json.load(_stream)
+REGISTRY = harness.registry()
 ITEMS = REGISTRY["items"]
 CHECKS = [i["check"] for i in ITEMS if i.get("check")]
 REGISTRY_SCRIPTS = sorted({c["script"] for c in CHECKS if c.get("script")})

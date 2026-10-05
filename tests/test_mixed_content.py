@@ -30,13 +30,12 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
-REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
-                        "checklist.json")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, HERE)
 
 from registry_verdict import verdict as item_verdict  # noqa: E402
 from checklist_runner import FAIL, NO_DATA, PASS, WARN  # noqa: E402
+import harness  # noqa: E402
 from harness import offline_env, served, spawn, tls_env  # noqa: E402
 import security_headers as sh  # noqa: E402
 
@@ -46,8 +45,7 @@ PAGE_URL = "https://example.com/page"
 
 
 def rule() -> dict:
-    with open(REGISTRY, encoding="utf-8") as f:
-        return {i["id"]: i for i in json.load(f)["items"]}["TE-175"]["check"]
+    return {i["id"]: i for i in harness.registry()["items"]}["TE-175"]["check"]
 
 
 def verdict(output: dict) -> str:

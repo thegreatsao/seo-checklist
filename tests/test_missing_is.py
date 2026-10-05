@@ -39,14 +39,13 @@ SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 sys.path.insert(0, os.path.join(SKILL, "scripts"))
 sys.path.insert(0, os.path.join(SKILL, "tools"))
 
+import harness  # noqa: E402
 import build_checklist  # noqa: E402
 import checklist_runner as runner  # noqa: E402
 import parse_html  # noqa: E402
 import schema_required_props  # noqa: E402
 
-with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-          encoding="utf-8") as _stream:
-    ITEMS = {item["id"]: item for item in json.load(_stream)["items"]}
+ITEMS = {item["id"]: item for item in harness.registry()["items"]}
 
 
 def declarations(node, where: str = ""):

@@ -23,11 +23,10 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
-REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
-                        "checklist.json")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, HERE)
 
+import harness  # noqa: E402
 from registry_verdict import verdict as item_verdict  # noqa: E402
 from checklist_runner import FAIL, NO_DATA, PASS  # noqa: E402
 import article_seo  # noqa: E402
@@ -35,8 +34,7 @@ import parse_html as ph  # noqa: E402
 
 
 def rule() -> dict:
-    with open(REGISTRY, encoding="utf-8") as f:
-        return {i["id"]: i for i in json.load(f)["items"]}["MS-030"]["check"]
+    return {i["id"]: i for i in harness.registry()["items"]}["MS-030"]["check"]
 
 
 def verdict(output: dict) -> str:

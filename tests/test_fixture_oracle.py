@@ -23,12 +23,11 @@ import urllib.parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
-REGISTRY = os.path.join(
-    ROOT, "skills", "seo-checklist", "resources", "config", "checklist.json")
 MANIFEST = os.path.join(ROOT, "tests", "fixtures", "expectations.json")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import harness  # noqa: E402
 from harness import FixtureSite, spawn  # noqa: E402
 from checklist_report import STATUS_ORDER  # noqa: E402
 import checklist_runner as runner  # noqa: E402
@@ -293,9 +292,8 @@ class ADeclarationRecordsWhatItWasReasonedFrom(unittest.TestCase):
     """
 
     def test_every_declaration_stores_the_title_it_was_reasoned_from(self):
-        with open(REGISTRY, encoding="utf-8") as stream:
-            titles = {item["id"]: item["title"]
-                      for item in json.load(stream)["items"]}
+        titles = {item["id"]: item["title"]
+                  for item in harness.registry()["items"]}
         for label, declarations in manifest()["fixtures"].items():
             for item_id, declared in declarations.items():
                 with self.subTest(fixture=label, item=item_id):
@@ -347,8 +345,7 @@ class ManifestContract(unittest.TestCase):
 
     def test_metadata_matches_the_registry(self):
         declared = manifest()
-        with open(REGISTRY, encoding="utf-8") as stream:
-            registry_version = json.load(stream)["registry_version"]
+        registry_version = harness.registry()["registry_version"]
         # 2 since 0.104.0, when the manifest gained `fixture_digest` and `triage`.
         # DEC-8 asks that neither side of a disagreement move without a recorded
         # decision, and both fields are read by `tests/test_declaration_revisions.py`.
@@ -386,8 +383,7 @@ class ManifestContract(unittest.TestCase):
         is added, which is the day somebody can still declare it.
         """
         credentialed = {"gsc", "api", "safe_browsing"}
-        with open(REGISTRY, encoding="utf-8") as stream:
-            items = json.load(stream)["items"]
+        items = harness.registry()["items"]
         reachable = {item["id"] for item in items
                      if item.get("check")
                      and (item["check"].get("requires") or "offline") not in credentialed}

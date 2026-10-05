@@ -26,7 +26,6 @@ token is named but a scope is not, **FAIL** when none is. llms.txt is GEO-001's 
 GEO-002's, and leaves this item.
 """
 
-import json
 import os
 import struct
 import sys
@@ -34,11 +33,10 @@ import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
-REGISTRY = os.path.join(
-    ROOT, "skills", "seo-checklist", "resources", "config", "checklist.json")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import harness  # noqa: E402
 from harness import allow_loopback, served  # noqa: E402
 from image_fixtures import valid_png as png  # noqa: E402
 from registry_verdict import verdict  # noqa: E402
@@ -46,8 +44,7 @@ from checklist_runner import FAIL, NO_DATA, PASS, WARN  # noqa: E402
 
 
 def items() -> dict:
-    with open(REGISTRY, encoding="utf-8") as handle:
-        return {item["id"]: item for item in json.load(handle)["items"]}
+    return {item["id"]: item for item in harness.registry()["items"]}
 
 
 

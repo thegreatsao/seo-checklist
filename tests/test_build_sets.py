@@ -16,7 +16,6 @@ entry reads as a decision somebody made about something that is not there.
 """
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -27,14 +26,13 @@ SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 sys.path.insert(0, os.path.join(SKILL, "scripts"))
 sys.path.insert(0, os.path.join(SKILL, "tools"))
 
+import harness  # noqa: E402
 import audit_reachability  # noqa: E402
 import build_checklist as b  # noqa: E402
 import checklist_report  # noqa: E402
 import checklist_runner as r  # noqa: E402
 
-with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-          encoding="utf-8") as _stream:
-    ITEMS = {i["id"]: i for i in json.load(_stream)["items"]}
+ITEMS = {i["id"]: i for i in harness.registry()["items"]}
 CHECKS = {k: i["check"] for k, i in ITEMS.items() if i.get("check")}
 SCRIPTED = {k: c for k, c in CHECKS.items() if c.get("script")}
 CATEGORIES = {i["category"] for i in ITEMS.values()}

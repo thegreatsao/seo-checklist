@@ -45,9 +45,10 @@ def registry_items():
     return load_registry()["items"]
 
 
-DEFAULT_BODY = ("Body copy with enough words in it that the thin-entry guard stays "
-                "quiet, because a guard firing here would stop the audit before the "
-                "thing under test ran at all.")
+DEFAULT_BODY = ("Body copy with enough words to keep the thin-entry warning quiet. This check "
+                "warns without stopping the audit. These tests read redirects or TLS, so an "
+                "empty-shell caveat would be unrelated noise. The body has more than forty "
+                "words, and a few more than that, to leave room for small edits.")
 
 
 def page(title="A page that satisfies the basics", body="", head="", lang="en"):
@@ -78,14 +79,22 @@ class ACrossHostRedirect(unittest.TestCase):
     service account has no property for. Both fail *quietly*.
     """
 
-    def test_the_destination_is_audited_and_the_request_is_recorded(self):
+    @classmethod
+    def setUpClass(cls):
         with served({"/": page("The destination site"),
                      "/second.html": page("A second page on the destination")}) as dest:
             with served({"/": (301, {"Location": dest.url}, "")}) as entry:
-                payload = run_audit(entry.url)
-        self.assertEqual(payload["url"].rstrip("/"), dest.base,
+                cls.payload = run_audit(entry.url)
+        cls.destination, cls.entry = dest.base, entry.base
+
+    def test_the_entry_does_not_add_a_thin_page_warning(self):
+        self.assertFalse(self.payload["entry_thin"])
+
+    def test_the_destination_is_audited_and_the_request_is_recorded(self):
+        payload = self.payload
+        self.assertEqual(payload["url"].rstrip("/"), self.destination,
                          "the audit did not follow the redirect to the destination")
-        self.assertEqual(payload["requested_url"].rstrip("/"), entry.base,
+        self.assertEqual(payload["requested_url"].rstrip("/"), self.entry,
                          "the URL that was asked for is not recorded")
         self.assertTrue(payload["entry_reachable"], payload.get("entry_error"))
         self.assertIn("redirected", payload["_stdout"].lower() + payload["_stderr"].lower())
@@ -306,7 +315,15 @@ class HttpsAndHsts(unittest.TestCase):
             "Referrer-Policy": "strict-origin-when-cross-origin",
             "Permissions-Policy": "camera=()"}
 
-    def audit_over_tls(self, headers):
+    @classmethod
+    def setUpClass(cls):
+        cls.payload = cls.audit_over_tls(cls.HSTS)
+
+    def test_the_entry_does_not_add_a_thin_page_warning(self):
+        self.assertFalse(self.payload["entry_thin"])
+
+    @classmethod
+    def audit_over_tls(cls, headers):
         # `plain="redirect"`: SE-117 asks the page's http:// address from 0.118.0, and a
         # TLS-only port answers that with a broken connection, which is no verdict.
         body = page("A page served over TLS")
@@ -315,7 +332,7 @@ class HttpsAndHsts(unittest.TestCase):
             return run_audit(site.url, env=tls_env(), only="security")
 
     def test_a_real_handshake_satisfies_the_https_items(self):
-        payload = self.audit_over_tls(self.HSTS)
+        payload = self.payload
         statuses = {i["id"]: i["status"] for i in payload["items"]}
         for item_id in ("SE-117", "SE-118"):
             self.assertEqual(statuses.get(item_id), PASS,

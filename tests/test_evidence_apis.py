@@ -29,10 +29,10 @@ from unittest import mock
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 SCRIPTS = os.path.join(SKILL, "scripts")
-REGISTRY = os.path.join(SKILL, "resources", "config", "checklist.json")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import harness  # noqa: E402
 from checklist_runner import (  # noqa: E402
     FAIL,
     GSC_CREDENTIALS_ABSENT,
@@ -47,8 +47,7 @@ from checklist_runner import (  # noqa: E402
     passes_by_absence,
 )
 
-with open(REGISTRY, encoding="utf-8") as f:
-    ITEMS = {i["id"]: i for i in json.load(f)["items"]}
+ITEMS = {i["id"]: i for i in harness.registry()["items"]}
 
 
 def verdict(item_id: str, output: dict) -> str:

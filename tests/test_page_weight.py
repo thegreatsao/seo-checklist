@@ -16,7 +16,6 @@ Below the first is `light`; up to the second is `heavy`, a warning; past it is `
 
 No network: `parse_pagespeed_response` is the whole contract, as for the other PSI items.
 """
-import json
 import os
 import sys
 import unittest
@@ -24,11 +23,10 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
-REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
-                        "checklist.json")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, HERE)
 
+import harness  # noqa: E402
 from registry_verdict import verdict as item_verdict  # noqa: E402
 from checklist_runner import FAIL, NO_DATA, PASS, WARN  # noqa: E402
 import pagespeed as ps  # noqa: E402
@@ -37,8 +35,7 @@ KIB = 1024
 
 
 def rule() -> dict:
-    with open(REGISTRY, encoding="utf-8") as f:
-        return {i["id"]: i for i in json.load(f)["items"]}["MB-095"]["check"]
+    return {i["id"]: i for i in harness.registry()["items"]}["MB-095"]["check"]
 
 
 def verdict(output: dict) -> str:
@@ -110,8 +107,7 @@ class TheRuleReadsTheMobileRun(unittest.TestCase):
         self.assertEqual(set(check["assert"]["value_map"]), set(ps.PAGE_WEIGHT_BANDS))
         self.assertEqual(set(check["warn"]["value_map"]), set(ps.PAGE_WEIGHT_BANDS))
         # The same arguments as the Core Web Vitals items, so one PSI call serves all.
-        with open(REGISTRY, encoding="utf-8") as f:
-            items = {i["id"]: i for i in json.load(f)["items"]}
+        items = {i["id"]: i for i in harness.registry()["items"]}
         self.assertEqual(check["args"], items["SP-107"]["check"]["args"])
         self.assertEqual(check["requires"], items["SP-107"]["check"]["requires"])
 

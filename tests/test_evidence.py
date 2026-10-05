@@ -17,7 +17,6 @@ Offline: no fixture site, no network, no API key. The HTTP layer is stubbed at
 `seo_common.fetch_url` or `lib.safe_http.safe_get`, whichever the script uses.
 """
 import ast
-import json
 import os
 import sys
 import tempfile
@@ -26,12 +25,11 @@ from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
-REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
-                        "checklist.json")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from checklist_runner import NO_DATA, PASS, FAIL, WARN, evaluate  # noqa: E402
+import harness  # noqa: E402
 from harness import allow_loopback, served  # noqa: E402
 
 
@@ -42,8 +40,7 @@ def registry_rule(item_id: str) -> dict:
     `{"path": "title"}` keeps passing after the registry stops asking for `title`,
     which is precisely how a check goes quiet.
     """
-    with open(REGISTRY, encoding="utf-8") as f:
-        items = {i["id"]: i for i in json.load(f)["items"]}
+    items = {i["id"]: i for i in harness.registry()["items"]}
     return items[item_id]["check"]
 
 
@@ -1218,8 +1215,7 @@ class PageSpeed(unittest.TestCase):
         already pinned individually above; this is the invariant they are halves of.
         """
         import json
-        with open(REGISTRY, encoding="utf-8") as stream:
-            items = json.load(stream)["items"]
+        items = harness.registry()["items"]
         found = [i["id"] for i in items
                  if "field_cwv" in json.dumps((i.get("check") or {}).get("assert") or {})]
         self.assertGreaterEqual(len(found), 3, "the field-data items moved; re-read INP-5")
@@ -1275,8 +1271,7 @@ class PageSpeed(unittest.TestCase):
     def test_desktop_field_data_is_asserted_by_its_own_item(self):
         """SP-111's whole point after 0.25.0: nothing in the registry read desktop field
         data before, because it read Lighthouse's blended desktop score instead."""
-        with open(REGISTRY, encoding="utf-8") as f:
-            registry = {i["id"]: i for i in json.load(f)["items"]}
+        registry = {i["id"]: i for i in harness.registry()["items"]}
         self.assertIn("desktop", registry["SP-111"]["check"]["args"])
         self.assertEqual(registry["SP-111"]["check"]["assert"]["path"],
                          "field_cwv.verdict")
@@ -1603,8 +1598,7 @@ class EveryCriticalItemIsCovered(unittest.TestCase):
                "duplicate_content.py"}
 
     def test_every_script_deciding_a_critical_item_has_a_test_class(self):
-        with open(REGISTRY, encoding="utf-8") as f:
-            items = json.load(f)["items"]
+        items = harness.registry()["items"]
         deciders = {(i.get("check") or {}).get("script")
                     for i in items
                     if i["severity"] == "critical" and (i.get("check") or {}).get("script")}
@@ -1612,8 +1606,7 @@ class EveryCriticalItemIsCovered(unittest.TestCase):
                          "a script decides a critical item and nothing here tests it")
 
     def test_the_covered_list_holds_no_scripts_that_stopped_mattering(self):
-        with open(REGISTRY, encoding="utf-8") as f:
-            items = json.load(f)["items"]
+        items = harness.registry()["items"]
         deciders = {(i.get("check") or {}).get("script")
                     for i in items if i["severity"] == "critical"}
         self.assertEqual(self.COVERED - deciders, set(),

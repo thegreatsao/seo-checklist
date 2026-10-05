@@ -19,10 +19,9 @@ import json
 import os
 import unittest
 
+import harness  # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RECORD = os.path.join(ROOT, "tests", "inert-findings.json")
-REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
-                        "checklist.json")
 
 
 def load(path: str) -> dict:
@@ -34,7 +33,7 @@ class RecordedInertFindings(unittest.TestCase):
 
     def setUp(self):
         self.record = load(RECORD)
-        self.registry = load(REGISTRY)
+        self.registry = harness.registry()
 
     def test_it_describes_this_registry(self):
         self.assertEqual(self.record["registry_version"],

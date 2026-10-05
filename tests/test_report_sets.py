@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import ast
 import csv
-import json
 import os
 import sys
 import tempfile
@@ -35,15 +34,14 @@ SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 REPORT = os.path.join(SKILL, "scripts", "checklist_report.py")
 sys.path.insert(0, os.path.join(SKILL, "scripts"))
 
+import harness  # noqa: E402
 import checklist_runner as runner  # noqa: E402
 from checklist_report import (  # noqa: E402
     CATEGORY_HELP, DIRECTION_HEADING, DIRECTION_NOTE, FIX_COLUMNS, Lang, fix_rows,
     write_fixes,
 )
 
-with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-          encoding="utf-8") as _stream:
-    ITEMS = json.load(_stream)["items"]
+ITEMS = harness.registry()["items"]
 
 STATUSES = (runner.PASS, runner.WARN, runner.FAIL, runner.NO_DATA, runner.NEEDS_INPUT,
             runner.LLM_PENDING, runner.MANUAL, runner.NA)

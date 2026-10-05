@@ -48,7 +48,6 @@ from urllib.parse import urlsplit
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 SCRIPTS = os.path.join(SKILL, "scripts")
-REGISTRY = os.path.join(SKILL, "resources", "config", "checklist.json")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -63,8 +62,7 @@ from checklist_runner import (  # noqa: E402
 )
 from rich_results_guard import guard_rich_results  # noqa: E402
 
-with open(REGISTRY, encoding="utf-8") as f:
-    ITEMS = {i["id"]: i for i in json.load(f)["items"]}
+ITEMS = {i["id"]: i for i in harness.registry()["items"]}
 
 
 def graded_verdict(item_id: str, output: dict) -> str:

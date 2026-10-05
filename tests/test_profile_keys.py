@@ -29,12 +29,11 @@ sys.path.insert(0, os.path.join(SKILL, "scripts"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import checklist_runner as runner  # noqa: E402
+import harness  # noqa: E402
 from harness import served  # noqa: E402
 from test_shapes import page, run_audit  # noqa: E402
 
-with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-          encoding="utf-8") as _stream:
-    ITEMS = json.load(_stream)["items"]
+ITEMS = harness.registry()["items"]
 with open(runner.PROFILES, encoding="utf-8") as _stream:
     SHIPPED = json.load(_stream)["profiles"]
 

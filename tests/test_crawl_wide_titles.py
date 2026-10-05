@@ -30,8 +30,6 @@ from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
-REGISTRY = os.path.join(
-    ROOT, "skills", "seo-checklist", "resources", "config", "checklist.json")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -43,8 +41,7 @@ SITE = "https://example.test/"
 
 
 def items() -> dict:
-    with open(REGISTRY, encoding="utf-8") as handle:
-        return {item["id"]: item for item in json.load(handle)["items"]}
+    return {item["id"]: item for item in harness.registry()["items"]}
 
 
 def verdict(item_id: str, output: dict) -> str:

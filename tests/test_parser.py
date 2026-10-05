@@ -53,7 +53,7 @@ import bs4  # noqa: E402
 import seo_common  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from harness import run_audit, served  # noqa: E402
+from harness import PLAIN_PAGE, run_audit, served  # noqa: E402
 
 PARSERS = ("lxml", "html.parser")
 
@@ -593,13 +593,7 @@ class TheRecordedParserReachesTheArtifactAndTheReader(unittest.TestCase):
     that holds the sentence.
     """
 
-    PAGE = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
-            "<title>A page that satisfies the basics</title>"
-            "<meta name=\"description\" content=\"Enough of a page for the runner to reach "
-            "the end and write an artifact.\"></head><body><h1>A page</h1>"
-            "<p>Body copy with enough words in it that the thin-entry guard stays quiet, "
-            "because a guard firing here would stop the audit before the thing under test "
-            "ran at all.</p></body></html>")
+    PAGE = PLAIN_PAGE
 
     @classmethod
     def audit(cls, parser=None):
@@ -614,6 +608,12 @@ class TheRecordedParserReachesTheArtifactAndTheReader(unittest.TestCase):
     def setUpClass(cls):
         cls.default = cls.audit()
         cls.fallback = cls.audit("html.parser")
+
+    def test_the_entry_does_not_add_a_thin_page_warning(self):
+        for label, payload in (("default", self.default),
+                               ("fallback", self.fallback)):
+            with self.subTest(run=label):
+                self.assertFalse(payload["entry_thin"])
 
     def test_the_artifact_names_the_parser_that_produced_the_verdicts(self):
         self.assertEqual(self.default["html_parser"], seo_common.html_parser())

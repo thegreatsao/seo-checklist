@@ -22,19 +22,17 @@ not the registry's.
 from __future__ import annotations
 
 import collections
-import json
 import os
 import re
 import unittest
 
+import harness  # noqa: E402
 ROOT = os.path.dirname(os.path.abspath(__file__))
 while not os.path.isdir(os.path.join(ROOT, "openspec")):
     ROOT = os.path.dirname(ROOT)
 SPEC = os.path.join(ROOT, "openspec", "specs", "registry", "spec.md")
 
-with open(os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
-                       "checklist.json"), encoding="utf-8") as _stream:
-    ITEMS = json.load(_stream)["items"]
+ITEMS = harness.registry()["items"]
 
 # The fields REG-3 names, and where each one lives on an item. `requires` is the only one
 # that is not a top-level key.

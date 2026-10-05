@@ -36,6 +36,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
 sys.path.insert(0, SCRIPTS)
 
+import harness  # noqa: E402
 import anchor_text_audit  # noqa: E402
 import checklist_report  # noqa: E402
 import gsc_checker  # noqa: E402
@@ -446,9 +447,7 @@ class ALocaleLivesInOnePartOfTheURL(unittest.TestCase):
         reading `passed` — the wiring between the script and the rule is half of what
         broke here before."""
         import checklist_runner
-        with open(os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
-                               "checklist.json"), encoding="utf-8") as f:
-            rule = {i["id"]: i for i in json.load(f)["items"]}["IN-127"]["check"]
+        rule = {i["id"]: i for i in harness.registry()["items"]}["IN-127"]["check"]
         out = {"checks": {"url_structure": self.mod.check_url_structure(tags)}}
         ok, _ = checklist_runner.evaluate(rule["assert"], out)
         return {None: "NO_DATA", True: "PASS", False: "FAIL"}[ok]

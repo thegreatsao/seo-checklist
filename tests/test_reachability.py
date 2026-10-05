@@ -28,6 +28,7 @@ SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 TOOLS = os.path.join(SKILL, "tools")
 sys.path.insert(0, TOOLS)
 
+import harness  # noqa: E402
 import audit_reachability as R  # noqa: E402
 from audit_assertions import PATH_EXEMPT, SCRIPTS  # noqa: E402
 
@@ -35,8 +36,7 @@ REGISTRY = os.path.join(SKILL, "resources", "config", "checklist.json")
 EXPECTATIONS = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "fixtures", "expectations.json")
 
-with open(REGISTRY, encoding="utf-8") as f:
-    DATA = json.load(f)
+DATA = harness.registry()
 
 
 def a_registry(rule, script="probe.py", warn=None, cannot_fail=None, item_id="ZZ-001"):

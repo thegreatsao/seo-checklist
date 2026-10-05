@@ -22,10 +22,9 @@ import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "skills", "seo-checklist", "scripts"))
+import harness  # noqa: E402
 from checklist_report import STATUS_ORDER  # noqa: E402
 CENSUS = os.path.join(ROOT, "tests", "census.json")
-REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
-                        "checklist.json")
 
 
 def load(path: str) -> dict:
@@ -37,7 +36,7 @@ class RecordedCensus(unittest.TestCase):
 
     def setUp(self):
         self.census = load(CENSUS)
-        self.registry = load(REGISTRY)
+        self.registry = harness.registry()
 
     def test_it_describes_this_registry(self):
         """A census taken against an older contract describes a checklist that no

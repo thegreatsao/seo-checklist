@@ -39,7 +39,6 @@ from __future__ import annotations
 
 import json
 import os
-import socket
 import sys
 import tempfile
 import unittest
@@ -49,13 +48,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 SCRIPTS = os.path.join(SKILL, "scripts")
-REGISTRY = os.path.join(SKILL, "resources", "config", "checklist.json")
 RUNNER = os.path.join(SCRIPTS, "checklist_runner.py")
 GATE_OFF = os.path.join(HERE, "entry_gate_off.py")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(SKILL, "tools"))
 
+import harness  # noqa: E402
 from harness import allow_loopback, offline_env, served, spawn, tree_served  # noqa: E402
 import checklist_runner as cr  # noqa: E402
 from registry_verdict import verdict  # noqa: E402
@@ -65,8 +64,7 @@ import seo_common  # noqa: E402
 
 
 def items() -> dict:
-    with open(REGISTRY, encoding="utf-8") as handle:
-        return {item["id"]: item for item in json.load(handle)["items"]}
+    return {item["id"]: item for item in harness.registry()["items"]}
 
 
 def declared() -> dict:
@@ -162,9 +160,7 @@ class IndexabilityReadsEveryAnswer(unittest.TestCase):
 
     def test_nothing_answering_is_still_unread(self):
         import indexability_matrix
-        with socket.socket() as sock:
-            sock.bind(("127.0.0.1", 0))
-            port = sock.getsockname()[1]
+        port = harness.closed_port()
         with allow_loopback():
             out = indexability_matrix.evaluate([f"http://127.0.0.1:{port}/"], timeout=3)
         self.assertEqual(out["fetch_error"], "no URL could be read")
@@ -406,7 +402,7 @@ class TheGateHidesNoFailureItDoesNotAnswer(unittest.TestCase):
                               "body": f.read()}}
         tag = f"{state}-{gate}"
         if state == "dead":
-            return cls.launch(tag, gate, cls.dead_url(), [])
+            return cls.launch(tag, gate, harness.dead_url(), [])
         with tree_served("good", answers) as site:
             arts = tree_served.artifacts(site, "good", os.path.join(cls.work, tag))
             # Every artifact where the gate is off, so what the tree can provoke is
@@ -420,12 +416,6 @@ class TheGateHidesNoFailureItDoesNotAnswer(unittest.TestCase):
             extra = [arg for flag, name in names
                      for arg in (flag, os.path.join(arts, name))]
             return cls.launch(tag, gate, site.url, extra)
-
-    @staticmethod
-    def dead_url():
-        with socket.socket() as sock:
-            sock.bind(("127.0.0.1", 0))
-            return f"http://127.0.0.1:{sock.getsockname()[1]}/"
 
     @classmethod
     def launch(cls, tag, gate, url, extra):

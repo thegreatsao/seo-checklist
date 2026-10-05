@@ -9,15 +9,13 @@ from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
-REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
-                        "checklist.json")
 sys.path.insert(0, SCRIPTS)
 
+import harness  # noqa: E402
 import javascript_render_audit as render_audit  # noqa: E402
 from checklist_runner import evaluate  # noqa: E402
 
-with open(REGISTRY, encoding="utf-8") as registry_file:
-    ITEMS = {item["id"]: item for item in json.load(registry_file)["items"]}
+ITEMS = {item["id"]: item for item in harness.registry()["items"]}
 
 MB_105_ASSERTION = ITEMS["MB-105"]["check"]["assert"]
 URL = "https://example.com/"

@@ -5777,9 +5777,11 @@ class AStaleArtifactIsRefusedByAWholeRun(unittest.TestCase):
             "<title>A page with a stale export beside it</title>"
             "<meta name=\"description\" content=\"Enough of a page for the runner to reach "
             "the end.\"></head><body><h1>A page</h1>"
-            "<p>Body copy with enough words in it that the thin-entry guard stays quiet, "
-            "because a guard firing here would stop the audit before the thing under test "
-            "ran at all.</p></body></html>")
+            "<p>Body copy with enough words to keep the thin-entry warning quiet. This "
+            "check warns without stopping the audit. These tests read the age and refusal "
+            "of a supplied export, so an empty-shell caveat would be unrelated noise. The "
+            "body has more than forty words, and a few more than that, to leave room for "
+            "small edits.</p></body></html>")
 
     @classmethod
     def audit(cls, url, work, *extra):
@@ -5811,6 +5813,12 @@ class AStaleArtifactIsRefusedByAWholeRun(unittest.TestCase):
             cls.without = cls.audit(site.url, cls.work, "--cwv-json", cwv)
             cls.with_limit = cls.audit(site.url, cls.work, "--cwv-json", cwv,
                                        "--max-artifact-age", "30")
+
+    def test_the_entry_does_not_add_a_thin_page_warning(self):
+        for label, payload in (("no limit", self.without),
+                               ("limit", self.with_limit)):
+            with self.subTest(run=label):
+                self.assertFalse(payload["entry_thin"])
 
     def test_the_age_is_recorded_either_way(self):
         """The limit decides what is done about the age, never whether it is known."""
@@ -5866,9 +5874,11 @@ class AFileThatNamesNoPageIsUsedAndSaysSo(unittest.TestCase):
             "<title>A page with an anonymous export beside it</title>"
             "<meta name=\"description\" content=\"Enough of a page for the runner to reach "
             "the end.\"></head><body><h1>A page</h1>"
-            "<p>Body copy with enough words in it that the thin-entry guard stays quiet, "
-            "because a guard firing here would stop the audit before the thing under test "
-            "ran at all.</p></body></html>")
+            "<p>Body copy with enough words to keep the thin-entry warning quiet. This "
+            "check warns without stopping the audit. These tests read the provenance of a "
+            "supplied export, so an empty-shell caveat would be unrelated noise. The body "
+            "has more than forty words, and a few more than that, to leave room for small "
+            "edits.</p></body></html>")
 
     @classmethod
     def setUpClass(cls):
@@ -5889,6 +5899,12 @@ class AFileThatNamesNoPageIsUsedAndSaysSo(unittest.TestCase):
     @classmethod
     def audit(cls, url, *extra):
         return AStaleArtifactIsRefusedByAWholeRun.audit(url, cls.work, *extra)
+
+    def test_the_entry_does_not_add_a_thin_page_warning(self):
+        for label, payload in (("anonymous", self.anonymous),
+                               ("named", self.named)):
+            with self.subTest(run=label):
+                self.assertFalse(payload["entry_thin"])
 
     def test_a_file_naming_no_page_is_used_rather_than_refused(self):
         entry = self.anonymous["artifacts"]["cwv_json"]

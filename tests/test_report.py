@@ -20,6 +20,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 sys.path.insert(0, os.path.join(SKILL, "scripts"))
 
+import harness  # noqa: E402
 import checklist_runner as runner  # noqa: E402
 
 from checklist_report import (  # noqa: E402
@@ -279,9 +280,7 @@ class Localisation(unittest.TestCase):
         """The category explanation is the layer a non-specialist reads. A missing
         one silently falls back to English in the middle of a translated page,
         which is exactly the ambiguity `untranslated()` exists to remove."""
-        with open(os.path.join(SKILL, "resources", "config",
-                               "checklist.json"), encoding="utf-8") as f:
-            categories = {i["category"] for i in json.load(f)["items"]}
+        categories = {i["category"] for i in harness.registry()["items"]}
         for name in os.listdir(I18N):
             if not name.endswith(".json"):
                 continue
@@ -1255,11 +1254,9 @@ class TheRegistryIsTranslatedOrTheGapIsCounted(unittest.TestCase):
     """
 
     def setUp(self):
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as f:
-            items = json.load(f)["items"]
-            self.ids = {i["id"] for i in items}
-            self.measured_ids = {i["id"] for i in items if i.get("measures")}
+        items = harness.registry()["items"]
+        self.ids = {i["id"] for i in items}
+        self.measured_ids = {i["id"] for i in items if i.get("measures")}
         with open(os.path.join(I18N, "ru.json"), encoding="utf-8") as f:
             self.ru = json.load(f)
 
@@ -1384,9 +1381,7 @@ class ATranslationIsBoundToTheEnglishItTranslates(unittest.TestCase):
         unverifiable claim as one that has drifted, and reads as coverage."""
         with open(os.path.join(I18N, "ru.json"), encoding="utf-8") as f:
             stamped = set((json.load(f).get(self.mod.KEY) or {}))
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as f:
-            ids = {i["id"] for i in json.load(f)["items"]}
+        ids = {i["id"] for i in harness.registry()["items"]}
         self.assertEqual(sorted(ids - stamped), [])
 
 
@@ -1697,9 +1692,7 @@ class TheLensRoutingTableIsDerivedFromWhatItRoutes(unittest.TestCase):
 
     @classmethod
     def registry_lenses(cls):
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as fh:
-            items = json.load(fh)["items"]
+        items = harness.registry()["items"]
         return {lens for lens in
                 ((item.get("check") or {}).get("lens") or item.get("lens")
                  for item in items) if lens}

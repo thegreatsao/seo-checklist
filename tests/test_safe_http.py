@@ -19,7 +19,7 @@ SCRIPTS = ROOT / "skills/seo-checklist/scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from harness import served, spawn  # noqa: E402
+from harness import PLAIN_PAGE, served, spawn  # noqa: E402
 from lib import safe_http as sh  # noqa: E402
 
 
@@ -894,18 +894,12 @@ class ThePrivateEntryIsObservedAndCostsCoverage(unittest.TestCase):
     report the same weight coverage as a live one, which is a score that flatters exactly
     the run nobody outside can see.
 
-    One audit, read four ways. `--only crawling_indexing` keeps it to a few seconds, and the
+    One audit, read five ways. `--only crawling_indexing` keeps it to a few seconds, and the
     site is served on loopback, which is a genuinely private address rather than a
     simulation of one.
     """
 
-    PAGE = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
-            "<title>A page that satisfies the basics</title>"
-            "<meta name=\"description\" content=\"Enough of a page for the runner to reach "
-            "the end and write an artifact.\"></head><body><h1>A page</h1>"
-            "<p>Body copy with enough words in it that the thin-entry guard stays quiet, "
-            "because a guard firing here would stop the audit before the thing under test "
-            "ran at all.</p></body></html>")
+    PAGE = PLAIN_PAGE
 
     @classmethod
     def setUpClass(cls):
@@ -924,6 +918,9 @@ class ThePrivateEntryIsObservedAndCostsCoverage(unittest.TestCase):
             # Not `cls.run`: `run` is `TestCase.run`, and shadowing it makes every test
             # in the class die with "'dict' object is not callable" before it starts.
             cls.audit = json.load(fh)
+
+    def test_the_entry_does_not_add_a_thin_page_warning(self):
+        self.assertFalse(self.audit["entry_thin"])
 
     def test_the_run_found_out_by_resolving_rather_than_by_being_told(self):
         """`--allow-private` says what is permitted. `entry_private` says what happened,
@@ -1027,9 +1024,11 @@ class TheRobotsAsymmetryIsRead(unittest.TestCase):
             "<title>A page a robots rule forbids</title>"
             "<meta name=\"description\" content=\"Served behind Disallow: / so the audit "
             "has to decide whether to look at it.\"></head><body><h1>A page</h1>"
-            "<p>Body copy with enough words in it that the thin-entry guard stays quiet, "
-            "because a guard firing here would stop the audit before the thing under test "
-            "ran at all.</p></body></html>")
+            "<p>Body copy with enough words to keep the thin-entry warning quiet. This "
+            "check warns without stopping the audit. These tests read the robots "
+            "asymmetry, so an empty-shell caveat would be unrelated noise. The body has "
+            "more than forty words, and a few more than that, to leave room for small "
+            "edits.</p></body></html>")
 
     ROBOTS = "User-agent: *\nDisallow: /\n"
 
@@ -1069,6 +1068,9 @@ class TheRobotsAsymmetryIsRead(unittest.TestCase):
         found = [i for i in self.audit["items"] if i["id"] == item_id]
         self.assertEqual(len(found), 1, "%s is not in this run" % item_id)
         return found[0]
+
+    def test_the_entry_does_not_add_a_thin_page_warning(self):
+        self.assertFalse(self.audit["entry_thin"])
 
     def test_the_audited_url_is_fetched_even_though_robots_forbids_it(self):
         """The operator handed us this URL. Declining it would produce nothing, and the

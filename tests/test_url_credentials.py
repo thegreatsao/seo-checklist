@@ -718,6 +718,38 @@ class TheResponseCacheHoldsWhatTheSiteSaidAndNothingTheRunWasGiven(unittest.Test
                     self.assertNotIn(needle, content)
 
 
+class AStoppedCredentialedOriginLeavesNoRobotsAnswer(unittest.TestCase):
+    def test_a_later_test_reusing_the_port_reads_its_own_robots(self):
+        http = harness.safe_http()
+        with harness.allow_loopback(), harness.own_rate_limit_dir():
+            first = _Origin({"/robots.txt": (200, {}, "User-agent: *\nDisallow: /\n")},
+                            protected=True)
+            url = first.base.replace("://", f"://{USERINFO}@", 1) + "/page"
+            try:
+                self.assertFalse(http.robots_allows(url)[0])
+                self.assertTrue(os.path.exists(http._robots_cache_path(url.rsplit("/", 1)[0])))
+                port = first.port
+            finally:
+                first.stop()
+
+            bind = socketserver.ThreadingTCPServer.server_bind
+
+            def reuse_port(server):
+                server.server_address = ("127.0.0.1", port)
+                bind(server)
+
+            with mock.patch.object(socketserver.ThreadingTCPServer, "server_bind", reuse_port):
+                second = _Origin({"/robots.txt": (200, {}, "User-agent: *\nAllow: /\n")},
+                                 protected=True)
+            try:
+                self.assertEqual(second.port, port)
+                self.assertTrue(http.robots_allows(url)[0],
+                                "the next test inherited the stopped origin's Disallow")
+                self.assertEqual(second.seen, [("/robots.txt", True, True)])
+            finally:
+                second.stop()
+
+
 class WhichRequestsCarryTheCredential(unittest.TestCase):
     """`safe_http.url_credentials(url)`: the pair for a request to the origin the operator
     typed, nothing for any other. The evidence scripts are separate processes, so the

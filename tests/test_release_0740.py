@@ -9,8 +9,6 @@ from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
-REGISTRY = os.path.join(
-    ROOT, "skills", "seo-checklist", "resources", "config", "checklist.json")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -21,8 +19,7 @@ from checklist_runner import FAIL, PASS, evaluate  # noqa: E402
 
 
 def verdict(item_id: str, output: dict) -> str:
-    with open(REGISTRY, encoding="utf-8") as handle:
-        items = {item["id"]: item for item in json.load(handle)["items"]}
+    items = {item["id"]: item for item in harness.registry()["items"]}
     ok, _evidence = evaluate(items[item_id]["check"]["assert"], output)
     return PASS if ok else FAIL
 
@@ -372,8 +369,7 @@ class PageModeCompatibility(unittest.TestCase):
 
 class RegistryScope(unittest.TestCase):
     def items(self) -> dict:
-        with open(REGISTRY, encoding="utf-8") as handle:
-            return {item["id"]: item for item in json.load(handle)["items"]}
+        return {item["id"]: item for item in harness.registry()["items"]}
 
     def test_md_187_is_the_site_wide_image_item(self):
         check = self.items()["MD-187"]["check"]

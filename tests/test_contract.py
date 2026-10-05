@@ -32,10 +32,10 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 SCRIPTS = os.path.join(SKILL, "scripts")
-REGISTRY = os.path.join(SKILL, "resources", "config", "checklist.json")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import harness  # noqa: E402
 from harness import FixtureSite, spawn  # noqa: E402
 
 FAIL, PASS, WARN = "FAIL", "PASS", "WARN"
@@ -130,8 +130,7 @@ def registry() -> dict:
     silently yielded None for every item — and a filter keyed on None excludes
     nothing, which made a passing test out of an empty comparison.
     """
-    with open(REGISTRY, encoding="utf-8") as f:
-        return {i["id"]: i for i in json.load(f)["items"]}
+    return {i["id"]: i for i in harness.registry()["items"]}
 
 
 REG = registry()
@@ -847,8 +846,7 @@ class NothingIsDecidedWithoutEvidence(unittest.TestCase):
         self.assertEqual(empty, [])
 
     def test_no_item_is_missing_from_either_run(self):
-        with open(REGISTRY, encoding="utf-8") as f:
-            expected = {i["id"] for i in json.load(f)["items"]}
+        expected = {i["id"] for i in harness.registry()["items"]}
         for label in ("good", "broken"):
             self.assertEqual({i["id"] for i in RESULTS[label]["items"]}, expected,
                              f"{label} did not report on every registry item")
@@ -900,8 +898,7 @@ class NothingIsDecidedWithoutEvidence(unittest.TestCase):
         against `total_items`, because a `total_items` derived from the same rows would
         move with the defect.
         """
-        with open(REGISTRY, encoding="utf-8") as f:
-            expected = len(json.load(f)["items"])
+        expected = len(harness.registry()["items"])
         for label in ("good", "broken"):
             scores = RESULTS[label]["scores"]
             partition = scores["partition"]

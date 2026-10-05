@@ -99,12 +99,25 @@ def registry():
         return json.load(stream)
 
 
+# One page for the tests that need a live audit of *something* and read what the run
+# records about itself. Each class that serves it reads `entry_thin` off its artifact.
+PLAIN_PAGE = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+              "<title>A page that satisfies the basics</title>"
+              "<meta name=\"description\" content=\"Enough of a page for the runner to reach "
+              "the end and write an artifact.\"></head><body><h1>A page</h1>"
+              "<p>Body copy with enough words to keep the thin-entry warning quiet. This "
+              "check warns without stopping the audit. These tests read parser recording, "
+              "private-address coverage or the scoring instrument, so an empty-shell caveat "
+              "would be unrelated noise. The body has more than forty words, and a few more "
+              "than that, to leave room for small edits.</p></body></html>")
+
+
 def run_audit(url: str, *extra: str, env=None, only: str = "crawling_indexing") -> dict:
     """One audit, through the runner, as an operator would get it.
 
-    `--only` by default: the tests that call this are about what the runner does with
-    a *shape* of site, and a full registry pass costs ten seconds per case to re-verify
-    checks that other files already cover.
+    `--only` by default: callers need a live run, and one category suffices for
+    the artifact fields and site shapes they assert. A full registry pass costs ten
+    seconds per case to re-verify checks that other files already cover.
     """
     work = tempfile.mkdtemp(prefix="seo-shape-")
     out = os.path.join(work, "results.json")

@@ -38,8 +38,7 @@ PROFILES = os.path.join(SKILL, "resources", "config", "profiles.json")
 TITLE_OVERRIDES = os.path.join(
     SKILL, "resources", "config", "title-overrides.json")
 
-with open(REGISTRY, encoding="utf-8") as f:
-    DATA = json.load(f)
+DATA = harness.registry()
 ITEMS = DATA["items"]
 
 VALID_SOURCES = {"script", "llm", "manual", "gsc"}
@@ -2698,9 +2697,7 @@ class ProbeCoversWhatTheRegistryReads(unittest.TestCase):
         return namespace["registry_jobs"](ctx)
 
     def registry_scripts(self, placeholders_available):
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as f:
-            items = json.load(f)["items"]
+        items = harness.registry()["items"]
         out = set()
         for item in items:
             check = item.get("check") or {}

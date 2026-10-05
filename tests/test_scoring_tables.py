@@ -40,7 +40,6 @@ import json
 import os
 import re
 import sys
-import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -51,9 +50,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import checklist_runner as runner  # noqa: E402
 from checklist_runner import diff_runs  # noqa: E402
-from harness import served, spawn  # noqa: E402
-
-RUNNER = os.path.join(SCRIPTS, "checklist_runner.py")
+import harness  # noqa: E402
+from harness import run_audit, served  # noqa: E402
 
 DECLARATION = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            "scoring-tables.json")
@@ -227,9 +225,7 @@ class TheTablesAreUsedAndNotOnlyDeclared(unittest.TestCase):
         `priority_of`, and it would sit in the fix list looking like a decision somebody
         made."""
         from checklist_runner import EFFORT_COST
-        with open(os.path.join(SKILL, "resources", "config", "checklist.json"),
-                  encoding="utf-8") as fh:
-            items = json.load(fh)["items"]
+        items = harness.registry()["items"]
         self.assertEqual(set(EFFORT_COST), {i["effort"] for i in items})
 
     def test_the_headline_is_the_credit_table_applied_to_the_weight_table(self):
@@ -307,29 +303,15 @@ class TheArtifactRecordsTheInstrument(unittest.TestCase):
     compared against next month, which is the obligation SCR-2 is about.
     """
 
-    PAGE = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
-            "<title>A page that satisfies the basics</title>"
-            "<meta name=\"description\" content=\"Enough of a page for the runner to "
-            "reach the end and write an artifact.\"></head><body><h1>A page</h1>"
-            "<p>Body copy with enough words in it that the thin-entry guard stays quiet, "
-            "because a guard firing here would stop the audit before the thing under "
-            "test ran at all.</p></body></html>")
+    PAGE = harness.PLAIN_PAGE
 
     @classmethod
     def setUpClass(cls):
-        work = tempfile.mkdtemp(prefix="seo-scoring-")
-        out = os.path.join(work, "results.json")
         with served({"/": cls.PAGE}) as site:
-            proc = spawn([sys.executable, RUNNER, site.url, "--allow-private",
-                          "--max-rps", "0", "--no-history", "--no-prompt", "--quiet",
-                          "--timeout", "90", "--json", out, "--only", "crawling_indexing"],
-                         timeout=600)
-        if proc.returncode != 0:
-            raise AssertionError("the audit exited %s\n%s\n%s"
-                                 % (proc.returncode, proc.stdout[-2000:],
-                                    proc.stderr[-2000:]))
-        with open(out, encoding="utf-8") as fh:
-            cls.payload = json.load(fh)
+            cls.payload = run_audit(site.url)
+
+    def test_the_entry_does_not_add_a_thin_page_warning(self):
+        self.assertFalse(self.payload["entry_thin"])
 
     def test_the_run_carries_the_stamp_of_the_tables_that_scored_it(self):
         self.assertEqual(self.payload["scoring_tables"]["stamp"], runner.scoring_stamp())
