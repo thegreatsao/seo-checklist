@@ -5143,7 +5143,10 @@ class CacheOwnerLifetime(unittest.TestCase):
 import os, time, checklist_runner as r
 p = r.open_http_cache()
 with open(os.path.join(p, 'answer'), 'wb') as f: f.write(b'private answer')
-with open(os.environ['TMPDIR'] + '/ready', 'w') as f: f.write(p)
+# Renamed into place: the parent polls for the name and reads it at once, and a file
+# opened for writing exists before it holds anything.
+with open(os.environ['TMPDIR'] + '/ready.part', 'w') as f: f.write(p)
+os.replace(os.environ['TMPDIR'] + '/ready.part', os.environ['TMPDIR'] + '/ready')
 deadline = time.monotonic() + 40
 while not os.path.exists(os.environ['TMPDIR'] + '/finish'):
     if time.monotonic() > deadline: raise RuntimeError('parent never finished')

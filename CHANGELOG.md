@@ -58,12 +58,21 @@ changes, and nothing under `skills/` changes: this release is `tests/`.
     `harness.run_audit()`.
 
 * **How it was accepted.** As in 0.145.0: each cut broken by the session that made it,
-  and again by a mutation of mine. The registry loader losing its last item is seen by
+  and again at acceptance with a different breakage. The registry loader losing its last
+  item is seen by
   twelve of the thirty-one modules that read through it — those whose question is about
   the whole population; a doctored registry reddens a caller in every one. The eight new
   tests are red with the threshold raised above every fixture, and three of them with
   the shared page's body cut back under forty words. The suite is 2223 tests: 2214, the
   one for the eviction, and the eight.
+
+* **The first push of this release was refused by a test it had not touched.**
+  `CacheOwnerLifetime.test_a_live_run_keeps_its_bytes_and_its_held_lock` (0.138.0) waits
+  for a file its child process writes and reads it the moment the name exists. A file
+  opened for writing exists before it holds anything, so the test could read an empty
+  path — and did, once, at this release's gate. With a pause between the child's `open`
+  and its `write` it fails every time. The child now writes beside the name and renames
+  the file into place; with the same pause before the rename the test passes.
 
 * **Still open.** `OneFetchPerUrl.test_eight_processes_asking_at_once_make_one_request`
   and `test_robots_txt_is_fetched_once_however_many_ask` pass when their children run
