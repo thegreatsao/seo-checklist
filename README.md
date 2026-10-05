@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.147.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit decides changes in this version. Two tests that said "at once" now fail when their processes run one after another; two decisions about a refused robots.txt, which no test held, each have one; the known-issue probes remove the files they write; and the census of hand-written sets no longer counts an empty literal the module fills itself.
+Version 0.148.0 — see [CHANGELOG.md](CHANGELOG.md). One verdict can move in this version: KW-076, *Include the Primary Keyword in Body Copy*. The body copy of a page is now what its `<main>` holds; until now the first `<article>` was read instead, so copy that followed the article, and every card of a listing but the first, was not counted.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

@@ -10,6 +10,58 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.148.0 — body copy is what `<main>` holds: KW-076 no longer reads the first `<article>` alone
+
+Registry version: `90ba79b14b28`, unchanged. **One verdict can move: KW-076**, *Include
+the Primary Keyword in Body Copy*, the only item that reads `article_seo.py`.
+
+* **What was wrong.** On a page no template is recognised on, `article_seo.py` took the
+  first `<article>` as the body copy, and `<main>` only when there was no article. Two
+  shapes of page say the keyword in `<main>` and failed the item:
+  - copy that goes on after `</article>` inside `<main>` was not read;
+  - a listing was read as its first card.
+
+  It was found by auditing the good fixture with every page sampled:
+  `/blog/first-post.html` says "raises bread more slowly" in `<main>`, after its article,
+  and nowhere else. The declaration of KW-076 on that fixture has said "the corpus is h1,
+  h2s, h3s and paragraphs inside `<main>`" since 0.48.0. The three pages it samples have
+  no `<article>`, so the sentence was true of them and nothing compared it with the code.
+
+* **What it does now.** `<main>` first, then the first `<article>`, then the first
+  element whose `id` or `class` names it as content, then the whole page — the same four
+  steps, with the first two exchanged.
+  - *FAIL becomes PASS* where the keyword is in `<main>` and not in its first `<article>`.
+  - *PASS becomes FAIL* where the keyword is in an `<article>` that stands outside
+    `<main>` and not in `<main>`. None of the fixtures has that shape.
+  - The script's other fields are read from the same element — headings, paragraphs,
+    images, and the readability and issue lists computed from them — so on a page with an
+    article inside `<main>` they now describe `<main>`. No registry item reads them.
+
+* **EVD-11, new: body copy is what `<main>` holds.** The rule, the reason, and five
+  scenarios — copy after the article, a listing, a word beside `<main>`, a page with no
+  `<main>`, a page with neither element. 151 requirements become 152, and the ledger is
+  128 enforced, 19 partial, 1 unread, 0 opposed, 4 bounded. Named there as outside the
+  requirement and held by nothing: the Blogger, WordPress and Ghost branches choose their
+  container by class name before this rule is reached, and no test serves such a page.
+
+* **How it is held.** Three tests in `ArticleKeyword`, each through the script as the
+  runner starts it, over seven served pages: the two shapes above and the fixture's own
+  post; the keyword in a footer beside `<main>` and in a block beside a lone `<article>`,
+  which must stay a FAIL so that reading `<main>` cannot become reading the page; and the
+  two last steps of the order. The first test was red before the change on all three of
+  its pages. Six breakages of the order, one per step, each seen by the test of that
+  step. The suite is 2230 tests: 2227 and these three.
+
+* **Read against a recorded decision and left.** The same measurement called seven more
+  cells "the checker is wrong": MD-184 on a page with no image and CI-013 on a page with
+  no asset both answer NO_DATA. Both are decisions with a written reason and a test —
+  the comment in `image_inventory.py`, and
+  `test_a_page_with_no_blockable_asset_is_undecided` — so that a sampled page with
+  nothing to judge leaves the item to the pages that have something. Whether a
+  single-page audit of an imageless page should say FAIL to *Confirm the Page References
+  at Least One Image* is a question that reason does not answer, and it is not decided
+  here.
+
 ## 0.147.0 — two tests that named simultaneity hold it, and two decisions about robots.txt that nothing held
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit
