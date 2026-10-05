@@ -10,6 +10,65 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.146.0 — what 0.145.0 left open: one reader of the registry for the tests, and fixtures that are what they say
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit writes
+changes, and nothing under `skills/` changes: this release is `tests/`.
+
+* **Four fixtures said the thin-entry guard stays quiet and were thin; 0.145.0 counted
+  three.** The fourth is in `test_scoring_tables.py`. Six pages and one page body carried
+  the sentence *"enough words in it that the thin-entry guard stays quiet, because a
+  guard firing here would stop the audit"*. Four of the pages had 38 visible words
+  against a threshold of 40 and two had exactly 40; served inside its page, the body
+  made 36 words in one class and 40 in another. And the check stops nothing: it warns,
+  writes `entry_thin` and `entry_visible_words` into the artifact, and the report turns
+  those into one warning. What refuses a page is `page_guard`, a different check.
+  - *What it had cost: nothing, and that was measured before anything was edited.* Each
+    of the eight classes was run with the warning taken out where its tests read the
+    run — the artifact's flag and the paragraph on stderr — and every existing test
+    passed as before, as it does now that the pages no longer raise it. No assertion
+    passed because of the warning or failed without it.
+  - *Now.* Every one of the pages carries more than fifty visible words, and its text
+    says what the check does and why the test wants it quiet. Each of the eight classes has a test that reads
+    `entry_thin` off the artifact it already had; none starts an audit of its own (in
+    `test_shapes.py` two classes run theirs in `setUpClass` so that it outlives one
+    test). Three of the pages were the same page and are `harness.PLAIN_PAGE`.
+
+* **The line no tracked test held is reachable, and is held.** 0.145.0 left it
+  undecided whether any run can still write a robots answer under the credentialed
+  spelling of an origin. It can: `safe_http.normalize_url` keeps userinfo, a link the
+  crawl discovers can carry it, and the robots cache is keyed by the origin as spelled.
+  `AStoppedCredentialedOriginLeavesNoRobotsAnswer` serves `Disallow` behind a
+  credential, stops, starts another origin on the same port that allows, and requires
+  the second answer: without the eviction the later origin inherits the first one's
+  refusal.
+
+* **The three findings that were open again, shown.** A test module is still not
+  imported for a helper; the helpers live in `tests/harness.py` now.
+  - *One reader of the shipped registry.* Forty-two reads in twenty-eight files —
+    twenty-seven test modules and `registry_verdict.py` — go through
+    `harness.registry()`, derived by the operation (every `open` of `checklist.json`
+    under `tests/`), not from the two modules the finding named: 68 lines. Three reads
+    stay their own because they hold a tool's path and not the file's contents:
+    `runner.REGISTRY` in `test_runner.py`, `i18n_digest.REGISTRY` in `test_report.py`,
+    and `test_reachability.py`'s for its calls into the tool. The four standalone
+    programs under `tests/` keep theirs.
+  - `test_entry_answers.py` takes its unanswered address from `harness.closed_port()`
+    and `harness.dead_url()`; `test_scoring_tables.py` starts its audit through
+    `harness.run_audit()`.
+
+* **How it was accepted.** As in 0.145.0: each cut broken by the session that made it,
+  and again by a mutation of mine. The registry loader losing its last item is seen by
+  twelve of the thirty-one modules that read through it — those whose question is about
+  the whole population; a doctored registry reddens a caller in every one. The eight new
+  tests are red with the threshold raised above every fixture, and three of them with
+  the shared page's body cut back under forty words. The suite is 2223 tests: 2214, the
+  one for the eviction, and the eight.
+
+* **Still open.** `OneFetchPerUrl.test_eight_processes_asking_at_once_make_one_request`
+  and `test_robots_txt_is_fetched_once_however_many_ask` pass when their children run
+  one after another (0.145.0).
+
 ## 0.145.0 — thirty cuts inside the tests, each kept only while the tests still failed when they should
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves; nothing an audit writes

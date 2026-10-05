@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.145.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit decides changes in this version, and nothing under `skills/` changes. It applies thirty cuts inside the tests from the audit of the whole tree — one helper where several copies stood — each kept only after the tests it touched were seen to fail when they should. The version before it did the same for the runner, the report, the scripts and the tools.
+Version 0.146.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit decides changes in this version, and nothing under `skills/` changes. It closes what the version before it left open in the tests: every test module reads the shipped registry through one loader, a line no test held has one, and six fixtures that said the thin-entry warning stays quiet — four of which raised it — now are what they say, with a test in each class that reads it off the run.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
