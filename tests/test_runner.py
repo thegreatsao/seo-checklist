@@ -4728,6 +4728,33 @@ class OneFetchPerUrl(unittest.TestCase):
 
     PAGE = "<html><head><title>One</title></head><body><p>only once</p></body></html>"
 
+    def _held_until_all_ask(self, count, body):
+        """`body`, held by the server until `count` children are each about to ask.
+
+        Returns the route's body, the statement a child runs just before its request,
+        and the list the server writes into, at each answer, how many were asking.
+        That number is what holds "at once". Without it these tests are green with
+        the children run one after another: the first fetches, the cache answers the
+        rest, and one request is counted either way.
+        """
+        notes = tempfile.mkdtemp(prefix="test-asking-")
+        self.addCleanup(shutil.rmtree, notes, ignore_errors=True)
+        asking = []
+
+        def answer():
+            # Eight seconds, under the ten `_fetch_robots` gives its request: children
+            # run one after another are then answered, with one asking, and the test
+            # fails on that number rather than on a timeout.
+            deadline = time.monotonic() + 8
+            while len(os.listdir(notes)) < count and time.monotonic() < deadline:
+                time.sleep(0.01)
+            asking.append(len(os.listdir(notes)))
+            return body
+
+        note = ("import os; open(os.path.join(%r, str(os.getpid())), 'w').close();"
+                % notes)
+        return answer, note, asking
+
     def test_nothing_is_cached_unless_a_run_asks_for_it(self):
         """The default is no cache at all. A script run by hand a minute after the
         last one must read the site, not a directory left behind by an audit."""
@@ -4927,18 +4954,38 @@ class OneFetchPerUrl(unittest.TestCase):
             with self.assertRaises(self.sh.RobotsDisallowed):
                 self.sh.safe_get(site.base + "/open", respect_robots=True)
 
+    def test_rules_in_a_refused_robots_txt_are_not_obeyed(self):
+        """`_fetch_robots` fails open on every answer that is not the file, a 5xx
+        included, and argues it in its docstring. Nothing held the decision: with the
+        body of a 4xx or a 5xx obeyed, every module that fetches through `safe_http`
+        stayed green until 0.147.0 — only the redirect had a test. The 200 is the
+        control: the same body, served as the file, refuses the page."""
+        def robots(status):
+            return {"/a": self.PAGE,
+                    "/robots.txt": (status, {"Content-Type": "text/plain"},
+                                    "User-agent: *\nDisallow: /\n")}
+
+        for status in (403, 404, 500, 503):
+            with self.subTest(status=status), harness.served(robots(status)) as site:
+                got = self.sh.safe_get(site.base + "/a", respect_robots=True)
+                self.assertEqual(got.status_code, 200)
+        with harness.served(robots(200)) as site:
+            with self.assertRaises(self.sh.RobotsDisallowed):
+                self.sh.safe_get(site.base + "/a", respect_robots=True)
+
     def test_robots_txt_is_fetched_once_however_many_ask(self):
         """It does not go through the response cache — `_fetch_robots` cannot, or it
         would recurse — and its own disk cache had no lock, so 45 scripts starting
         together all missed it and all fetched. Five requests on a CI runner, one on
         a developer machine: a difference only a counted request shows."""
+        rules, note, asking = self._held_until_all_ask(6, "User-agent: *\nAllow: /\n")
         with harness.served({"/": self.PAGE, "/a": self.PAGE,
                              "/robots.txt": (200, {"Content-Type": "text/plain"},
-                                             "User-agent: *\nAllow: /\n")}) as site:
+                                             rules)}) as site:
             code = ("import sys; sys.path.insert(0, %r);"
-                    "from lib.safe_http import safe_get;"
+                    "from lib.safe_http import safe_get;" + note +
                     "print(safe_get(%r, respect_robots=True).status_code)"
-                    % (SCRIPTS, site.base + "/a"))
+                    ) % (SCRIPTS, site.base + "/a")
             env = harness.offline_env(**{self.sh.CACHE_DIR_VAR: self.dir})
             # The robots cache is keyed on the origin and lives in the rate-limit
             # directory rather than the run's response cache, so the six children have
@@ -4950,6 +4997,7 @@ class OneFetchPerUrl(unittest.TestCase):
             outs = children(code, env, 6)
             self.assertEqual([o.strip() for o, _ in outs], ["200"] * 6,
                              [e for _, e in outs])
+            self.assertEqual(asking, [6], "robots.txt was not asked for by all at once")
             self.assertEqual(site.paths("GET").count("/robots.txt"), 1)
 
     def test_a_child_process_caches_robots_where_it_was_told_to(self):
@@ -5014,15 +5062,17 @@ class OneFetchPerUrl(unittest.TestCase):
         all miss together and eight processes fetch the page the cache exists to
         fetch once. Separate processes, because that is what the audit is: an
         in-process cache would be no cache at all here."""
-        with harness.served({"/": self.PAGE}) as site:
+        page, note, asking = self._held_until_all_ask(8, self.PAGE)
+        with harness.served({"/": page}) as site:
             code = ("import sys; sys.path.insert(0, %r);"
-                    "from lib.safe_http import safe_get;"
-                    "print(len(safe_get(%r).text))" % (SCRIPTS, site.url))
+                    "from lib.safe_http import safe_get;" + note +
+                    "print(len(safe_get(%r).text))") % (SCRIPTS, site.url)
             env = harness.offline_env(**{self.sh.CACHE_DIR_VAR: self.dir})
             outs = children(code, env, 8)
             self.assertEqual([o.strip() for o, _ in outs],
                              [str(len(self.PAGE))] * 8,
                              [e for _, e in outs])
+            self.assertEqual(asking, [8], "the page was not asked for by all at once")
             self.assertEqual(len(site.paths("GET")), 1)
 
     def test_the_runner_removes_its_cache_when_the_run_ends(self):

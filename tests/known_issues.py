@@ -41,6 +41,7 @@ were in section 6, which is where entries written in the present tense collect.
 from __future__ import annotations
 
 import argparse
+import atexit
 import json
 import os
 import re
@@ -100,12 +101,20 @@ def _page(body: str) -> str:
             + CANONICAL + "</head><body>" + body + "</body></html>")
 
 
-def _temp_page(body: str) -> str:
+def _temp_html(text: str) -> str:
+    """`text` in a file, for the scripts that read a path. The file goes when the
+    process does: thirteen of them stayed in the temp directory after every run of
+    the probes until 0.147.0."""
     handle = tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
                                          encoding="utf-8")
-    handle.write(_page(body))
+    handle.write(text)
     handle.close()
+    atexit.register(os.unlink, handle.name)
     return handle.name
+
+
+def _temp_page(body: str) -> str:
+    return _temp_html(_page(body))
 
 
 # A script that can *set* the truncation key, not one that mentions it.
@@ -330,11 +339,7 @@ def _eeat_reviewed_languages() -> dict:
     read = {}
     for lang in ("en", "de", "lt"):
         page = _page(body).replace('<html lang="en">', '<html lang="%s">' % lang)
-        handle = tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                             encoding="utf-8")
-        handle.write(page)
-        handle.close()
-        result = eeat_signal_checker.check_eeat(handle.name)
+        result = eeat_signal_checker.check_eeat(_temp_html(page))
         signals = result["signals"]
         read[lang] = {"score": result["score"],
                       "credential_markers": len(signals["credential_markers"]),
@@ -930,11 +935,7 @@ def _schema_validation(node):
     html = ('<!doctype html><html lang="en"><head><title>t</title>'
             '<script type="application/ld+json">' + json.dumps(node)
             + "</script></head><body><h1>h</h1></body></html>")
-    handle = tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
-                                         encoding="utf-8")
-    handle.write(html)
-    handle.close()
-    documents, meta = schema_required_props.extract_schema_documents(handle.name)
+    documents, meta = schema_required_props.extract_schema_documents(_temp_html(html))
     return schema_required_props.validate_schema_required_props(
         documents, None, meta.get("invalid_blocks"))
 

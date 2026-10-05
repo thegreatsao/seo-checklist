@@ -218,6 +218,18 @@ see. Nothing asserts what belongs in it, and it has no hand-kept members to asse
 ratchet is 81 for the reason given at 0.104.0 — it holds the best number the instrument
 can currently justify — and this paragraph is the record that the number flatters.
 
+**At 0.147.0: 179 sets, 99 read, 80 unread, and no set was read.** The census stopped
+counting an empty literal the module fills itself — an item assigned into it, a method
+that adds called on it, or the name rebound from inside a function. Such a name holds
+what a run found; it has no hand-kept member to forget, which is the only thing this
+requirement is about. Three left: `calibrate_css_minification._RUNTIME` and
+`build_checklist.MAP` from the read column, `env_loader._LOADED_FROM` from the unread
+one. An empty literal nothing writes into stays — `build_checklist.RETIRED` is a
+hand-kept list with no entry yet — and so does a literal with members, whatever is added
+to it later. Still open, measured the same day: `build_checklist.EXTRA` is in the read
+column on the strength of one `mock.patch.object` that extends it for a test, the other
+half of what the 0.144.0 paragraph describes.
+
 Two lists were converted to derivations during this suite's writing — the notebook's spec
 manifest, and this document's own reader discovering documents by glob rather than by
 name — and neither conversion was required by anything. That is what the census now
@@ -237,6 +249,17 @@ makes visible: not that a list is wrong, but that nothing would notice if it wer
 - **WHEN** an entry is forgotten
 - **THEN** nothing fires, because the reader that would have noticed is the same line
   that was forgotten — which is why derivation is preferred to a reader over a list
+
+#### Scenario: an empty literal the module fills itself
+- **WHEN** a module-level name is bound to an empty literal and the module writes into
+  it — an item assigned, a method that adds, the name rebound from inside a function
+- **THEN** the census does not count it: it holds what a run found and has no hand-kept
+  member, and counting it lets a column move without a set being read
+
+#### Scenario: an empty literal nothing writes into
+- **WHEN** a module-level name is bound to an empty literal and no line of the module
+  writes into it
+- **THEN** it is counted: it is a hand-kept list with no entry yet
 
 ### Requirement: GOV-4 — a ledger records a decision; it never excuses a defect
 

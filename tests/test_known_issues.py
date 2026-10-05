@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
+import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -102,6 +104,29 @@ class RecordedKnownIssues(unittest.TestCase):
         is what makes a stale entry a failure somebody sees before pushing.
         """
         self.assertEqual(known_issues.differences(self.record), [])
+
+    def test_the_probes_leave_nothing_in_the_temp_directory(self):
+        """In a child whose temp directory is its own, because nothing else can tell
+        a probe's file from the thousands already there. Thirteen pages stayed behind
+        after every run until 0.147.0.
+
+        The child is given a pacing directory as well. `safe_http` keeps that state
+        under the temp directory when a run names none, and whether one is named is
+        this process's environment: the suite names one, a module run alone does not.
+        """
+        import lib.safe_http as safe
+        with tempfile.TemporaryDirectory(prefix="test-probe-temp-") as own, \
+                tempfile.TemporaryDirectory(prefix="test-probe-pacing-") as pacing:
+            done = subprocess.run(
+                [sys.executable, "-c",
+                 "import sys; sys.path.insert(0, %r); import known_issues; "
+                 "known_issues.measure()" % os.path.join(ROOT, "tests")],
+                stdin=subprocess.DEVNULL, close_fds=False,
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                env=dict(os.environ, TEMP=own, TMP=own, TMPDIR=own,
+                         **{safe.RATE_LIMIT_DIR_VAR: pacing}))
+            self.assertEqual(done.returncode, 0, done.stderr)
+            self.assertEqual(os.listdir(own), [])
 
     def test_the_file_is_still_asking_more_than_it_is_guarding(self):
         """A probe on a closed entry guards a repair; a probe on an open one is the

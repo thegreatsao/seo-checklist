@@ -3,7 +3,7 @@
 # which Python versions the code actually runs on, and how the linter is configured.
 [project]
 name = "seo-checklist"
-version = "0.146.0"
+version = "0.147.0"
 description = "Deterministic SEO audit against a fixed 217-item registry"
 license = "MIT"
 # Measured, not guessed. `duplicate_content.py`, `link_profile.py` and
@@ -27,7 +27,9 @@ dependencies = [
 # without the google packages rather than failing, which is the point of keeping
 # them out of the base set.
 gsc = ["google-auth>=2.29", "google-api-python-client>=2.125"]
-dev = ["ruff>=0.5"]
+# PyYAML is how `tools/ci_local.py` and `tests/test_ci_local.py` read the workflow.
+# Nothing shipped parses YAML, so it is here and not in the base set.
+dev = ["ruff>=0.5", "pyyaml>=6.0"]
 
 [tool.ruff]
 line-length = 100

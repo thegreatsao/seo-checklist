@@ -32,6 +32,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -68,7 +69,10 @@ import audit_derived_sets  # noqa: E402
 # the tool fills when it runs, never a hand-kept set, and it moved because
 # `tests/test_calibration_reports.py` fills it with `mock.patch.dict` — a mention, not a
 # reading of what belongs in it. Lowered anyway, for the reason given at 130.
-UNREAD_AT_MOST = 81
+# 80 at 0.147.0, and no set was read: the census stopped counting an empty literal the
+# module fills itself. Three left it — `_RUNTIME` and `build_checklist.MAP` from the read
+# column, `env_loader._LOADED_FROM` from this one.
+UNREAD_AT_MOST = 80
 
 
 class TheCensusDescribesThisTree(unittest.TestCase):
@@ -111,6 +115,29 @@ class TheCensusDescribesThisTree(unittest.TestCase):
             if isinstance(value, audit_derived_sets.LITERALS):
                 found.append(node.targets[0].id)
         self.assertEqual(found, ["LITERAL"])
+
+    def test_an_empty_literal_the_module_fills_is_not_a_hand_written_set(self):
+        """It holds what a run found and has no member a hand could forget. Each way
+        of filling it is here once, beside the two that must stay counted: an empty
+        list nobody writes into is hand-kept with no entry yet, and a literal with
+        members is hand-written whatever is added to it later."""
+        source = ("KEPT = {}\n"
+                  "ASSIGNED = {}\n"
+                  "ASSIGNED['a'] = 1\n"
+                  "CALLED = []\n"
+                  "REBOUND = []\n"
+                  "GROWN = ['a']\n"
+                  "GROWN.append('b')\n"
+                  "def run():\n"
+                  "    global REBOUND\n"
+                  "    CALLED.append(1)\n"
+                  "    REBOUND = [1]\n")
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "module.py")
+            with open(path, "w", encoding="utf-8") as stream:
+                stream.write(source)
+            self.assertEqual(audit_derived_sets.literal_sets(path),
+                             [("KEPT", 0), ("GROWN", 1)])
 
     def test_the_scan_finds_the_sets_this_suite_already_knows_about(self):
         """A floor. Every count above would read as good news if the scan quietly

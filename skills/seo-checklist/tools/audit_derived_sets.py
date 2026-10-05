@@ -19,6 +19,12 @@ upper case and whose value is a list, tuple, set or dict **literal**. A literal 
 whole point: a collection built by a comprehension or a function call is derived from
 something, which is what the requirement asks for, so it is out of scope by construction.
 
+**An empty literal the module fills itself is out as well** (0.147.0). `_RUNTIME = {}`
+followed by `_RUNTIME.update(...)` is where a run keeps what it found, not a list anybody
+wrote: it has no hand-kept member to forget. Three were counted until then, and one of
+them moved the unread column at 0.144.0 without a set being read. An empty literal nothing
+writes into stays in — `build_checklist.RETIRED` is a hand-kept list with no entry yet.
+
 **What "read" means here, exactly.** That a test file imports the name from its module —
 `from <module> import <NAME>` or `<module>.<NAME>`, including where that test bound the
 module to an alias. That is the strictest of the three
@@ -63,8 +69,27 @@ DOES_NOT_ESTABLISH = (
 
 
 
+def filled_by_the_module(tree: ast.Module, name: str) -> bool:
+    """Whether the module writes into `name` itself: an item assigned, a method that
+    adds called on it, or the name rebound from inside a function."""
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Subscript) and isinstance(node.ctx, ast.Store)
+                and getattr(node.value, "id", None) == name):
+            return True
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                and getattr(node.func.value, "id", None) == name
+                and node.func.attr in ("update", "setdefault", "append", "extend",
+                                       "insert", "add")):
+            return True
+        if isinstance(node, ast.Global) and name in node.names:
+            return True
+    return False
+
+
 def literal_sets(path: str) -> list[tuple[str, int]]:
-    """Upper-case module-level names bound to a collection literal, with their size."""
+    """Upper-case module-level names bound to a collection literal, with their size.
+
+    An empty one the module fills itself is left out: see the module docstring."""
     with open(path, encoding="utf-8") as stream:
         tree = ast.parse(stream.read())
     out = []
@@ -81,6 +106,8 @@ def literal_sets(path: str) -> list[tuple[str, int]]:
             name = getattr(target, "id", None)
             if name and name.isupper():
                 size = len(value.keys) if isinstance(value, ast.Dict) else len(value.elts)
+                if size == 0 and filled_by_the_module(tree, name):
+                    continue
                 out.append((name, size))
     return out
 

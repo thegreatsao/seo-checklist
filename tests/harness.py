@@ -673,6 +673,8 @@ class _Routed(http.server.BaseHTTPRequestHandler):
             return
 
         status, headers, body = found
+        if callable(body):
+            body = body()
         raw = body.encode("utf-8") if isinstance(body, str) else body
         self.send_response(status)
         sent = {k.lower() for k in headers}
@@ -745,6 +747,10 @@ class Served:
         "/"             : "<html>…"                     → 200, text/html
         "/robots.txt"   : (200, "User-agent: *")        → 200, text/html
         "/x"            : (301, {"Location": "/y"}, "") → status, headers, body
+
+    A body may be a function of no arguments: it is called for each request, on that
+    request's thread, and what it returns is sent. That is how a test holds an answer
+    back until something else has happened.
 
     Anything not routed is a real 404 — which is usually what a test wants, because
     "the site does not have a robots.txt" is a case, not an oversight.
@@ -865,7 +871,7 @@ class Served:
 
 
 def _normalise(value) -> tuple:
-    if isinstance(value, (str, bytes)):
+    if isinstance(value, (str, bytes)) or callable(value):
         return (200, {}, value)
     if len(value) == 2:
         status, rest = value

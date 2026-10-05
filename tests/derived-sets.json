@@ -1,9 +1,9 @@
 {
   "measured": "module-level upper-case names bound to a list, tuple, set or dict literal in scripts/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 182,
-  "read": 101,
-  "unread": 81,
+  "total": 179,
+  "read": 99,
+  "unread": 80,
   "modules": {
     "ai_crawler_policy_matrix": {
       "read": [
@@ -269,10 +269,6 @@
           "entries": 31
         },
         {
-          "name": "MAP",
-          "entries": 0
-        },
-        {
           "name": "RENDERED",
           "entries": 1
         },
@@ -309,12 +305,7 @@
       ]
     },
     "calibrate_css_minification": {
-      "read": [
-        {
-          "name": "_RUNTIME",
-          "entries": 0
-        }
-      ],
+      "read": [],
       "unread": [
         {
           "name": "PACKAGES",
@@ -614,15 +605,6 @@
         }
       ],
       "unread": []
-    },
-    "env_loader": {
-      "read": [],
-      "unread": [
-        {
-          "name": "_LOADED_FROM",
-          "entries": 0
-        }
-      ]
     },
     "faceted_nav_audit": {
       "read": [],

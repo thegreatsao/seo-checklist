@@ -791,6 +791,34 @@ class RobotsPathTester(unittest.TestCase):
         self.assertNotIn("blocked_urls", out)
         self.assertEqual(verdict("CI-013", out), NO_DATA)
 
+    def test_rules_in_an_answer_that_is_not_the_file_are_not_rules(self):
+        """Through the real `fetch_robots`, which every other test here replaces.
+
+        An error page can say `Disallow:` — a block page quoting the rule it applied,
+        a 404 template listing the site's paths. Read as policy, a 404's body would
+        fail CI-013 on a site that has no robots.txt and so blocks nothing. Until
+        0.147.0 nothing held it: with the fetch parsing every answer, 1721 tests in
+        the nineteen modules that name robots stayed green, because the stub above
+        makes the decision itself. The 200 is here so that a fetch that failed
+        altogether cannot pass for a refusal that was read correctly.
+        """
+        import seo_common
+        rules = "User-agent: *\nDisallow: /assets/\n"
+
+        def asked(status):
+            with served({"/robots.txt": (status, {"Content-Type": "text/plain"},
+                                         rules)}) as site, allow_loopback():
+                return (seo_common.fetch_robots(site.url)["parsed"],
+                        self.rpt.test_paths(site.url, ["/assets/site.css"], ["Googlebot"]))
+
+        for status in (403, 404, 500):
+            with self.subTest(status=status):
+                self.assertIsNone(asked(status)[0])
+        parsed, out = asked(200)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(len(out["blocked_urls"]), 1)
+        self.assertEqual(asked(404)[1]["blocked_urls"], [])
+
 
 class SystemPagesAreNotIndexable(unittest.TestCase):
     """CI-019 (high): the same script as CI-013, read in the opposite direction.
