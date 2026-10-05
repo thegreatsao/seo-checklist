@@ -139,6 +139,32 @@ class TheStepsComeFromTheWorkflow(unittest.TestCase):
         self.assertTrue(any("unittest discover" in s for s in scripts),
                         "ci_local would not run the suite; the workflow parse is broken")
 
+    def test_the_suite_runs_on_linux_macos_and_windows(self):
+        """Read out of `ci.yml`: where every job that runs the suite runs, a matrix
+        leg counted as the runner it names.
+
+        The tool is run on all three, and until 0.151.0 CI ran it on two. The third
+        was a person's machine: the first afternoon the suite and the push ran on a
+        Mac found a request line, a hook git would not start and a `git fetch` in the
+        suite. Equal and not a subset, so a platform dropped or added is a decision
+        somebody makes here.
+        """
+        runners = set()
+        for job in ci_local.load_jobs().values():
+            if not any("unittest discover" in step.get("run", "")
+                       for step in job.get("steps", [])):
+                continue
+            if "matrix" not in str(job["runs-on"]):
+                runners.add(job["runs-on"])
+                continue
+            matrix = job["strategy"]["matrix"]
+            runners.update(matrix.get("os", []))
+            runners.update(leg["os"] for leg in matrix.get("include", [])
+                           if "os" in leg)
+        self.assertEqual(sorted(name.split("-")[0] for name in runners),
+                         ["macos", "ubuntu", "windows"],
+                         f"the suite runs on {sorted(runners)}")
+
     def test_the_workflow_parser_is_installed_where_this_module_runs(self):
         """Read out of `ci.yml` rather than discovered by a crash.
 

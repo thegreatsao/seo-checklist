@@ -67,7 +67,7 @@ the thing it describes, or it has a reader that says what belongs in it.**
 | inert-findings ledger | findings no rule can act on | yes |
 | registry audits (`tools/audit_*.py`) | rules that cannot fire, unreachable verdicts, titles, readings; each closes on what it does not establish | yes |
 | score-sensitivity report | how much of the score one weight decides | reports only |
-| CI matrix | everything above, three Pythons and Windows | — |
+| CI matrix | everything above, three Pythons, macOS and Windows | — |
 | `tests/test_specs.py` | the documents in `openspec/specs/` | yes |
 
 ## Requirements
@@ -640,12 +640,23 @@ assembled at run time from a string is not a launch it can see.
   default output paths out of the tools' own argparse definitions and asserts `git
   check-ignore` covers every one, having twice been added to after an output escaped.
 * **INV-G3** — the Python floor CI tests is the floor the package declares.
-  *Reader:* **none.** The matrix names 3.10, 3.11 and 3.13 and the package requires ≥3.10;
-  nothing compares them, and a package that raised its floor would keep being tested on the
-  old one.
+  *Reader: enforced* — `test_registry.TheDeclaredPythonFloorIsExercised` reads the matrix's
+  list and `requires-python` and requires the lowest of the one to be the other. This line
+  said *none* until 0.151.0, "nothing compares them"; the test is from 0.7.0, a month older
+  than the line, and a floor raised to 3.11 fails it with `'3.10' != '3.11'`.
 * **INV-G4** — every ledger entry names a marker that exists in the tree.
   *Reader: enforced* — the ledger's `--check` resolves each entry's probe by name and fails
   on one it cannot find.
+* **INV-G5** — CI runs the suite on each platform the tool is run on: Linux, macOS and
+  Windows. *Reader: enforced* —
+  `test_ci_local…test_the_suite_runs_on_linux_macos_and_windows` reads where every job
+  that runs the suite runs, a matrix leg counted as the runner it names, and requires
+  exactly those three. macOS is a leg of the `test` job as of 0.151.0, so every step of
+  that job runs there and not the shorter list Windows has. Until then the third platform
+  was a person's machine, and the first afternoon the suite and the push ran on one found
+  three defects (0.149.0, 0.150.0). Not held: the leg runs one Python; and a runner is not
+  that machine — it has no system proxy, which is the condition that found the first of
+  the three.
 
 ## 5. What this document does not decide
 
@@ -794,7 +805,7 @@ rest were derived by reading the gates and their tests.
 | **none** | — none |
 | **opposed** | — none |
 
-Invariants: INV-G2 and INV-G4 enforced; INV-G1 partial; INV-G3 unread.
+Invariants: INV-G2, INV-G3, INV-G4 and INV-G5 enforced; INV-G1 partial.
 
 **Six enforced, five partial, none unread, of eleven.**
 

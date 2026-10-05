@@ -12,6 +12,8 @@ What it deliberately does not do, and says so on every run:
   runs a 3.10/3.11/3.13 matrix. The floor is a real floor (three scripts use PEP
   604 unions with no `__future__` import), so a green local run does not promise
   a green 3.10 leg;
+* it runs on one platform — this machine's — where CI runs the suite on Linux,
+  macOS and Windows;
 * it skips `uses:` steps, which are checkout and setup, and names each one;
 * it skips a step whose every line installs a package, because this machine runs
   out of its checked-out venv and re-running pip on each push buys nothing. That
@@ -318,7 +320,7 @@ def main() -> int:
     for job in jobs:
         if job not in wanted:
             print(f"  not run: the whole {job} job")
-    print("  not run: the 3.10 and 3.11 matrix legs")
+    print("  not run: the 3.10 and 3.11 matrix legs, and every platform but this one")
 
     if failures:
         print(f"\n{len(failures)} step(s) failed. Nothing was pushed.")
