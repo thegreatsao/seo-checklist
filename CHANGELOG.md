@@ -10,6 +10,43 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.151.0 — CI runs the suite on macOS
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
+changes. This release is the workflow, one test, two lines the local gate says about
+itself, and the governance spec.
+
+* **macOS was the platform only a person ran.** The tool is run on Linux, macOS and
+  Windows, and CI ran the suite on two of them. The first afternoon the suite and the
+  push ran on a Mac found three defects: a request line written for a proxy (0.149.0), a
+  hook git would not start, and a `git fetch` inside the suite (0.150.0).
+  - *Now.* The `test` job has a fourth leg, `macos-latest` on Python 3.13. It is a leg
+    and not a job of its own, so every step of `test` runs there — the live path against
+    the served fixture included — and not the shorter list `test-windows` has. `fail-fast`
+    is off for the job: each leg answers its own question, and a red macOS leg that
+    cancelled the Linux ones would hide which platform a failure belongs to.
+  - *Held* by `test_ci_local…test_the_suite_runs_on_linux_macos_and_windows`, which reads
+    where every job that runs the suite runs, a matrix leg counted as the runner it
+    names, and requires exactly the three. Red before the leg:
+    `['ubuntu', 'windows'] != ['macos', 'ubuntu', 'windows']`. Governance has it as
+    INV-G5.
+  - *What the leg is not.* It is not that Mac. A runner has no system proxy, which is the
+    condition that found the first of the three; the second is a push, which CI does not
+    make; the third was seen by a rehearsal that compares the repository's refs. So the
+    leg would have shown none of them by itself. It is there for what comes next, and
+    the suite and the push still run on the Mac.
+
+* **The local gate names the platforms it did not run.** `ci_local.py` closed by naming
+  the 3.10 and 3.11 legs; it names every platform but its own as well, and its docstring
+  says so.
+
+* **INV-G3 had a reader and said it had none.** The governance spec read, of the Python
+  floor CI tests and the floor the package declares, "nothing compares them".
+  `test_registry.TheDeclaredPythonFloorIsExercised` has compared them since 0.7.0, a
+  month before that line was written: with the declared floor raised to 3.11 it fails,
+  `'3.10' != '3.11'`. The line says *enforced*. Found while writing the invariant beside
+  it.
+
 ## 0.150.0 — on macOS and Linux the push gate did not run, and the suite fetched from GitHub
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes

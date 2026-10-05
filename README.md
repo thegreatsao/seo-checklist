@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.150.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit decides changes in this version. On macOS and Linux the pre-push gate did not run at all — the hook was not recorded as executable, and git skips such a hook with a hint — and eight tests fetched from GitHub on every run of the suite. Both are repaired, and this release is pushed from a Mac, through that gate.
+Version 0.151.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit decides changes in this version. CI runs every step of its `test` job on macOS as well as on Linux; until now the suite ran there only when a person ran it, and the first afternoon somebody did found three defects. A test holds the three platforms.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -720,10 +720,10 @@ python3 -m unittest discover -s tests -v
 
 Everything runs offline — no live site, no API key, no Search Console property.
 
-**Run CI's own checks here before pushing them there.** CI is five jobs — measured on the
-0.101.0 push at about seven minutes of wall clock and **twenty-two of runner time**,
-since four of the five run in parallel — and most of what it finds this machine could
-have said first:
+**Run CI's own checks here before pushing them there.** CI is six jobs — five of them
+measured on the 0.101.0 push at about seven minutes of wall clock and **twenty-two of
+runner time**, the sixth being the macOS leg of 0.151.0 — and most of what it finds this
+machine could have said first:
 
 ```bash
 python3 skills/seo-checklist/tools/ci_local.py          # test + census, ~10 min
@@ -733,11 +733,11 @@ git config core.hooksPath .githooks                     # once, to arm the pre-p
 
 The steps are **read out of `.github/workflows/ci.yml`**, so this is not a second copy
 of the check list to fall out of step with the first. It names everything it did not
-run — the `uses:` steps, the dependency installs, the 3.10 and 3.11 matrix legs — and a
+run — the `uses:` steps, the dependency installs, the 3.10 and 3.11 matrix legs, every platform but this one — and a
 step it cannot execute is a failure rather than a skip. A tree it already verified is
 instant, keyed on the tree hash and stamped inside `.git/`, so pushing an unchanged tree
 to `main` after a fast-forward merge costs nothing. `git push --no-verify` is the way
-out; the local run does not replace the CI run, because only CI runs the Python floor.
+out; the local run does not replace the CI run, because only CI runs the Python floor and the other platforms.
 
 The hook hands the gate what git is about to push. A push that sends no commit — deleting
 a branch — is not checked. A push whose commit is not what is on disk is refused before
