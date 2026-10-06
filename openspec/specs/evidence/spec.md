@@ -458,7 +458,11 @@ Where a checker reads a page's body copy and the page has a `<main>`, the copy S
 read from `<main>`: all of it, and nothing beside it. An `<article>` inside `<main>` is
 part of that copy and MUST NOT stand for the whole of it. A page with no `<main>` is read
 from its first `<article>`; a page with neither, from the first element whose `id` or
-`class` names it as content; and a page with none of these, whole.
+`class` names it as content; and a page with none of these, whole. Where the page is
+recognised as Blogger, WordPress or Ghost and that template names blocks of post content
+on it, those blocks SHALL be the body copy instead: every one of them, and a block inside
+another read once. Where the template names none, the page MUST be read by the order
+above and not whole.
 
 **Why:** KW-076 asks whether the primary keyword is in the body copy, and `<main>` is the
 element HTML has for a page's dominant content. Until 0.148.0 `article_seo.py` took the
@@ -478,11 +482,24 @@ article and a listing whose second card says the keyword;
 named by id, and a page with no container at all. Six breakages of the order, one per
 step, each seen by the test of that step.
 
-**Outside this requirement, and held by nothing.** The rule is the reading of a page no
-template is recognised on. Where `article_seo.py` detects Blogger, WordPress or Ghost it
-picks the container by that template's class names first, and no test serves such a page.
-And body copy here is the container's `h1`–`h3` headings and its paragraphs of more than
-eight words: text in a list, a table or a short paragraph is not in it.
+**The recognised templates were outside this requirement until 0.152.0, and wrong in the
+two ways it had just repaired.** `article_seo.py` took the *first* block a template names —
+`itemprop="articleBody"` or `post-body` on Blogger, `entry-content` and its kin on
+WordPress and Ghost — so a listing of posts was its first card. And where the template
+named nothing on the page, the page was read whole: a footer was body copy. Of the
+thirteen pages the test below serves, the released script read eight wrong, one of them a
+page with no generator at all, which a single `ghost-` class on a button had made "Ghost". The template's blocks still come
+before `<main>` — a post's `entry-content` leaves out the comments `<main>` holds beside
+it — but all of them are read, and a page that has none is read as any other page.
+`ArticleKeyword.test_a_recognised_template_names_the_body_copy` serves them
+through the script and requires, of each, the template the script says it found, the
+number of paragraphs in the body copy, the keyword once, and nothing from beside it.
+
+**Outside this requirement, and held by nothing.** What makes a page a Blogger, WordPress
+or Ghost page is not decided here: `detect_cms` reads the generator, then class names,
+and one class is enough. And body copy here is the container's `h1`–`h3` headings and its
+paragraphs of more than eight words: text in a list, a table or a short paragraph is not
+in it.
 
 #### Scenario: copy after the article
 - **WHEN** `<main>` holds an `<article>` and paragraphs after it
@@ -504,6 +521,22 @@ eight words: text in a list, a table or a short paragraph is not in it.
 - **WHEN** the page has no `<main>` and no `<article>`
 - **THEN** the first element whose `id` or `class` names it as content is read, and what
   is beside it is not; with no such element the whole page is read
+
+#### Scenario: a post on a recognised template
+- **WHEN** the page is recognised as Blogger, WordPress or Ghost and the template names
+  one block of post content
+- **THEN** that block is the body copy, and comments beside it inside `<main>` are not
+
+#### Scenario: a listing on a recognised template
+- **WHEN** the template names several blocks of post content on the page
+- **THEN** every one of them is body copy, not the first alone
+- **AND** a named block inside another named block is read once
+
+#### Scenario: a recognised template that names nothing
+- **WHEN** the page is recognised as one of the three and has none of the blocks that
+  template names
+- **THEN** it is read as a page no template is recognised on: `<main>` first
+- **AND** a footer beside `<main>` is not body copy
 
 ## 4. Invariants
 
@@ -752,7 +785,9 @@ Invariants: INV-E1 and INV-E2 enforced; INV-E3 and INV-E4 partial.
 
 **Eight enforced, three partial, none unread, of eleven.**
 
-**Probed at 0.148.0:** EVD-11, written with its tests and broken afterwards.
+**Probed at 0.148.0:** EVD-11, written with its tests and broken afterwards. And at
+0.152.0, on the recognised templates: eight breakages of that reading, each seen on the
+pages it was expected on.
 
 This is the best-read layer in the suite so far, and the reason is specific enough to be
 worth copying. Its three enforced requirements are all held by *generated* readers — a

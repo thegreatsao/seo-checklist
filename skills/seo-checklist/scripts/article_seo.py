@@ -229,15 +229,17 @@ def extract_content(parsed: dict, cms: str) -> dict:
     if og_desc:
         result["og_description"] = og_desc.get("content", "")
 
-    # ── CMS-specific body container ────────────────────────────────────────
-    body_container = None
+    # ── CMS-specific body containers ───────────────────────────────────────
+    # Every block the template names, not the first of them: read first-only, a
+    # listing was its first card (`openspec/specs/evidence/` EVD-11).
+    containers = []
 
     if cms == "blogger":
-        # Primary: itemprop=articleBody
-        body_container = soup.find(attrs={"itemprop": "articleBody"})
-        if not body_container:
-            # Fallback: Blogger classic template
-            body_container = soup.find(attrs={"class": re.compile(r"post-body|entry-content", re.I)})
+        # Primary: itemprop=articleBody. Fallback: Blogger classic template
+        containers = (
+            soup.find_all(attrs={"itemprop": "articleBody"})
+            or soup.find_all(attrs={"class": re.compile(r"post-body|entry-content", re.I)})
+        )
         # Labels (Blogger categories)
         for label_a in soup.find_all("a", attrs={"class": re.compile(r"label-link|goog-label", re.I)}):
             label_text = label_a.get_text(strip=True)
@@ -249,10 +251,8 @@ def extract_content(parsed: dict, cms: str) -> dict:
             result["title"] = post_title.get_text(strip=True)
 
     elif cms == "wordpress":
-        body_container = (
-            soup.find(attrs={"class": re.compile(r"entry-content|post-content|article-content", re.I)})
-            or soup.find("article")
-        )
+        containers = soup.find_all(
+            attrs={"class": re.compile(r"entry-content|post-content|article-content", re.I)})
         # WP categories/tags
         for cat in soup.find_all(attrs={"class": re.compile(r"cat-links|tags-links|post-categories", re.I)}):
             for a in cat.find_all("a"):
@@ -261,48 +261,48 @@ def extract_content(parsed: dict, cms: str) -> dict:
                     result["labels"].append(t)
 
     elif cms == "ghost":
-        body_container = soup.find(attrs={"class": re.compile(r"gh-content|post-content|article-content", re.I)})
+        containers = soup.find_all(
+            attrs={"class": re.compile(r"gh-content|post-content|article-content", re.I)})
 
-    else:  # generic
+    # A named block inside another is part of the outer one, and is read once.
+    named = {id(c) for c in containers}
+    containers = [c for c in containers if not any(id(p) in named for p in c.parents)]
+
+    if not containers:
+        # No template, or one that names nothing on this page — which until 0.152.0
+        # was read whole, footer and all.
         # `<main>` before `<article>`: an article is part of the body copy, not the
         # whole of it. Read first, it dropped copy that follows it inside `<main>` and
         # made a listing its first card (`openspec/specs/evidence/` EVD-11).
-        body_container = (
+        containers = [
             soup.find("main")
             or soup.find("article")
             or soup.find(attrs={"id": re.compile(r"content|main|article", re.I)})
             or soup.find(attrs={"class": re.compile(r"content|article|post|entry", re.I)})
-        )
+            or soup
+        ]
 
-    # ── Headings ──────────────────────────────────────────────────────────
-    search_scope = body_container if body_container else soup
+    for scope in containers:
+        # ── Headings ──────────────────────────────────────────────────────
+        for tag, key in (("h1", "h1"), ("h2", "h2s"), ("h3", "h3s")):
+            result[key] += [h.get_text(strip=True) for h in scope.find_all(tag)
+                            if h.get_text(strip=True)]
 
-    h1_tags = search_scope.find_all("h1")
-    result["h1"] = [h.get_text(strip=True) for h in h1_tags if h.get_text(strip=True)]
+        # ── Paragraphs ────────────────────────────────────────────────────
+        for p in scope.find_all("p"):
+            text = p.get_text(" ", strip=True)
+            if len(text.split()) > MIN_PARAGRAPH_WORDS:  # skip tiny fragments
+                result["paragraphs"].append(text)
 
-    h2_tags = search_scope.find_all("h2")
-    result["h2s"] = [h.get_text(strip=True) for h in h2_tags if h.get_text(strip=True)]
-
-    h3_tags = search_scope.find_all("h3")
-    result["h3s"] = [h.get_text(strip=True) for h in h3_tags if h.get_text(strip=True)]
-
-    # ── Paragraphs ────────────────────────────────────────────────────────
-    para_scope = body_container if body_container else soup
-    for p in para_scope.find_all("p"):
-        text = p.get_text(" ", strip=True)
-        if len(text.split()) > MIN_PARAGRAPH_WORDS:  # skip tiny fragments
-            result["paragraphs"].append(text)
-
-    # ── Images ────────────────────────────────────────────────────────────
-    img_scope = body_container if body_container else soup
-    for img in img_scope.find_all("img"):
-        result["images"].append({
-            "src": img.get("src", img.get("data-src", "")),
-            "alt": img.get("alt", ""),
-            "width": img.get("width", ""),
-            "height": img.get("height", ""),
-            "loading": img.get("loading", ""),
-        })
+        # ── Images ────────────────────────────────────────────────────────
+        for img in scope.find_all("img"):
+            result["images"].append({
+                "src": img.get("src", img.get("data-src", "")),
+                "alt": img.get("alt", ""),
+                "width": img.get("width", ""),
+                "height": img.get("height", ""),
+                "loading": img.get("loading", ""),
+            })
 
     return result
 

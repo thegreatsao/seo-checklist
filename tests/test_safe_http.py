@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import socket
 import sys
 import tempfile
@@ -1163,11 +1164,40 @@ class AProxyInTheEnvironmentIsNotInTheRequest(unittest.TestCase):
             os.environ.pop(name, None)
 
     def _asked(self) -> bool:
-        try:
-            self.listener.accept()[0].close()
-        except socket.timeout:
-            return False
-        return True
+        """Whether anything but a port probe connected to the stand-in."""
+        import harness
+        while True:
+            try:
+                connection = self.listener.accept()[0]
+            except socket.timeout:
+                return False
+            with connection:
+                connection.settimeout(0.3)
+                try:
+                    head = connection.recv(4096).decode("latin-1")
+                except OSError:
+                    head = ""
+            agent = re.search(r"^User-Agent: (.*?)\r?$", head, re.I | re.M)
+            if not (agent and harness.is_stranger(agent.group(1))):
+                return True
+
+    def test_a_port_probe_is_not_the_proxy_being_asked(self):
+        """The stand-in is a bare listener, so a probe of its port is a connection
+        too. On 6 October 2026 one arrived while this class ran, and "the proxy was
+        contacted" was said of a request that never left for it. A probe is told by
+        what it sends (`harness.is_stranger`); anything else still counts, and so does
+        a connection that says nothing."""
+        def knock(request: bytes):
+            with socket.create_connection(self.listener.getsockname(), timeout=2) as s:
+                s.sendall(request)
+
+        knock(b"GET / HTTP/1.1\r\nHost: 127.0.0.1\r\nUser-Agent: Workbench\r\n"
+              b"Connection: close\r\n\r\n")
+        self.assertFalse(self._asked())
+        knock(b"GET http://127.0.0.1/page HTTP/1.1\r\nUser-Agent: curl/8\r\n\r\n")
+        self.assertTrue(self._asked())
+        knock(b"")
+        self.assertTrue(self._asked())
 
     def test_the_origin_is_sent_the_path_and_the_proxy_is_not_asked(self):
         import requests

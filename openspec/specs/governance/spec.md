@@ -657,6 +657,38 @@ assembled at run time from a string is not a launch it can see.
   three defects (0.149.0, 0.150.0). Not held: the leg runs one Python; and a runner is not
   that machine — it has no system proxy, which is the condition that found the first of
   the three.
+* **INV-G6** — the suite leaves nothing in the machine's temporary directory.
+  *Reader: partial* — `tests/harness.py` makes one directory, `SUITE_TEMP`, the temporary
+  directory of the process that imports it and, through `TMPDIR`, `TEMP` and `TMP`, of every
+  child that process starts, and removes it whole when the process ends.
+  `tests/test_suite_temp.py` holds the three halves: this process, a child, and a second
+  process that leaves a directory and a file behind and ends with its sandbox empty.
+  Measured on a Mac on 6 October 2026, the whole suite and then each of its sixty modules
+  alone, each against an empty directory: 136 entries left by the suite before 0.152.0 and
+  146 by the modules, none by either after; on Windows nothing named as the suite names its
+  directories appeared while it ran. Until then sixty lines in `tests/` made a temporary
+  path by hand, each to remember its own removal, and the temporary directory of the
+  machine the suite is developed on held eleven thousand `seo-shape-*` directories. Not
+  held: a process that is killed runs no exit handler and leaves its one directory; the
+  fifteen test modules that do not import the harness have no such directory when run
+  alone, and left nothing when measured; a child whose environment a test builds from
+  nothing is not told.
+* **INV-G7** — a request the audit did not send is not counted as the audit's.
+  *Reader: enforced* — where the suite is run, another program may ask every newly
+  listening loopback port for `/`: measured on the Windows machine on 2 October 2026
+  (`User-Agent: Workbench`) and on the Mac on 6 October, where the same program's name
+  carries three version numbers and the one exact name the harness knew did not match it.
+  There a run of the whole suite read four requests where a test had made two; and on
+  Windows a test said its stand-in proxy had been contacted, of a request that passes
+  alone — any connection to that stand-in counted, and the probe is its likeliest caller.
+  `harness.is_stranger` knows the exact name and the Mac's whole shape, and nothing
+  looser: `tests/test_harness_strangers.py` requires a part of the shape, or the shape
+  with anything before or after it, to be counted still, and a request with no
+  User-Agent at all. The three places that count requests each have a test of it — the
+  harness's origins, the credential origin of `test_url_credentials`, and the proxy
+  stand-in of `test_safe_http`, where a connection that says nothing is counted too. Not
+  held: a prober nobody has measured, and a count taken by a server a test writes for
+  itself.
 
 ## 5. What this document does not decide
 
@@ -805,7 +837,8 @@ rest were derived by reading the gates and their tests.
 | **none** | — none |
 | **opposed** | — none |
 
-Invariants: INV-G2, INV-G3, INV-G4 and INV-G5 enforced; INV-G1 partial.
+Invariants: INV-G2, INV-G3, INV-G4, INV-G5 and INV-G7 enforced; INV-G1 and INV-G6
+partial.
 
 **Six enforced, five partial, none unread, of eleven.**
 

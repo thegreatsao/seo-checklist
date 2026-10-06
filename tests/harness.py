@@ -52,6 +52,7 @@ import http.server
 import io
 import json
 import os
+import re
 import shutil
 import socket
 import socketserver
@@ -64,6 +65,22 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 FIXTURES = os.path.join(HERE, "fixtures")
 SCRIPTS = os.path.join(os.path.dirname(HERE), "skills", "seo-checklist", "scripts")
 PLACEHOLDER = "http://127.0.0.1:8000"
+
+# One directory for everything this suite, and every child it starts, puts in "the
+# temporary directory" — removed when the process ends.
+#
+# Measured on 6 October 2026: one run of the suite left 136 entries in the machine's
+# temporary directory, thirty of them roots `run_audit` below makes and eighty-five
+# with no prefix at all, and no test could see one. Sixty lines in `tests/` make a
+# temporary path by hand, and a rule each of them has to remember is a rule the next
+# one forgets. So nothing here has to remember: `tempfile` in this process and the
+# three variables a child reads all name this directory, and it goes as a whole.
+# Registered before anything else, so it is removed after everything else has stopped.
+SUITE_TEMP = tempfile.mkdtemp(prefix="seo-suite-")
+atexit.register(shutil.rmtree, SUITE_TEMP, True)
+tempfile.tempdir = SUITE_TEMP
+for _variable in ("TMPDIR", "TEMP", "TMP"):
+    os.environ[_variable] = SUITE_TEMP
 
 # The *other* fixture origin, so a page can carry a genuinely external link without
 # the suite touching the network. Several checks — outbound citations, external link
@@ -640,11 +657,29 @@ class FixtureSite:
 # and is.
 STRANGERS = ("Workbench",)
 
+# Measured on 6 October 2026 on the Mac the push gate has run on since 0.150.0
+# (`local/leftovers-0152/who_knocks.py`, outside git): the same probe there is a native
+# app, and its User-Agent is `Workbench%20Native/1.4.2 CFNetwork/3896.100.1.1.1
+# Darwin/27.0.0`. The exact name above never matched it, so on that machine every probe
+# was the audit's: a run of the whole suite there read four requests where
+# `test_the_request_made_again_after_a_retry_after` had made two. Three version numbers
+# cannot be an exact name, so this is the whole shape and nothing looser — a part of
+# it, or it with anything before or after, is still counted.
+STRANGER_SHAPES = (
+    re.compile(r"Workbench%20Native/[\d.]+ CFNetwork/[\d.]+ Darwin/[\d.]+"),
+)
+
+
+def is_stranger(agent: str | None) -> bool:
+    """Whether a request with this User-Agent is a port probe and not the audit."""
+    return agent in STRANGERS or any(
+        shape.fullmatch(agent or "") for shape in STRANGER_SHAPES)
+
 
 def _log_of(handler) -> list:
     """The list a request is recorded in: the audit's, or the strangers'."""
     kind = type(handler)
-    return kind.strangers if handler.headers.get("User-Agent") in STRANGERS else kind.seen
+    return kind.strangers if is_stranger(handler.headers.get("User-Agent")) else kind.seen
 
 
 class _Routed(http.server.BaseHTTPRequestHandler):

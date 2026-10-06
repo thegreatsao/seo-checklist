@@ -28,6 +28,7 @@ credential still reaches the site, all of the site, and nothing else; and the hi
 the site's, whatever was typed in front of the host.
 """
 import base64
+import http.client
 import http.server
 import json
 import os
@@ -89,8 +90,8 @@ class _Origin:
             def _answer(self, body_too):
                 given = self.headers.get("Authorization")
                 # A local port probe is answered and not counted, as in the harness
-                # (`harness.STRANGERS`): it carries no credential and is not the audit.
-                if self.headers.get("User-Agent") not in harness.STRANGERS:
+                # (`harness.is_stranger`): it carries no credential and is not the audit.
+                if not harness.is_stranger(self.headers.get("User-Agent")):
                     seen.append((self.path, given is not None, given == expect))
                 status, headers, body = 404, {}, "not found"
                 if protected and given != expect:
@@ -453,6 +454,21 @@ class EveryWayARequestLeavesCarriesIt(unittest.TestCase):
                                           {}, 10, {}, ())
         self.assertEqual(answer.status_code, 200)
         self.assertEqual(self.origin.seen, [("/", True, True)])
+
+    def test_a_port_probe_is_answered_and_is_not_one_of_them(self):
+        """This origin counts every request, so a probe of its port is one more. On the
+        Mac the push gate runs on, the probe's User-Agent was not the one name the
+        harness knew, and the test below read four requests where two were made."""
+        for agent in ("Workbench",
+                      "Workbench%20Native/1.4.2 CFNetwork/3896.100.1.1.1 Darwin/27.0.0"):
+            connection = http.client.HTTPConnection("127.0.0.1", self.origin.port,
+                                                    timeout=10)
+            try:
+                connection.request("GET", "/", headers={"User-Agent": agent})
+                self.assertEqual(connection.getresponse().status, 401)
+            finally:
+                connection.close()
+        self.assertEqual(self.origin.seen, [])
 
     def test_the_request_made_again_after_a_retry_after(self):
         answer = self.http._paced_request(self.session, "GET", self.origin.base + "/busy",

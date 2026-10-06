@@ -511,6 +511,65 @@ def _fixture_html(*parts):
     with open(os.path.join(ROOT, "tests", "fixtures", *parts), encoding="utf-8") as fh:
         return fh.read()
 
+# KW-076 on a page `article_seo.py` recognises as Blogger, WordPress or Ghost
+# (`openspec/specs/evidence/` EVD-11). Every page says "bread" once, where its body
+# copy is, and "Vilnius" beside it; a listing's other card says when the shop opens.
+_COPY = ("<p>An acidic starter raises bread more slowly and tastes sharper than most "
+         "people intend it to.</p>")
+_CARD = ("<p>The shop opens at seven on weekdays and at eight on both weekend days "
+         "of the week.</p>")
+_BESIDE = ("<p>We deliver across Vilnius every weekday morning, before nine o'clock "
+           "sharp.</p>")
+
+
+def _templated(body, generator="", body_class=""):
+    head = f'<meta name="generator" content="{generator}">' if generator else ""
+    attrs = f' class="{body_class}"' if body_class else ""
+    return (f"<!doctype html><html><head><title>Notes</title>{head}</head>"
+            f"<body{attrs}>{body}</body></html>")
+
+
+TEMPLATED = {
+    "blogger-post": _templated(
+        f'<main><div itemprop="articleBody">{_COPY}</div>'
+        f'<div class="comments">{_BESIDE}</div></main>', "blogger"),
+    "blogger-classic": _templated(
+        f'<div class="post-body entry-content">{_COPY}</div><div>{_BESIDE}</div>',
+        "blogger"),
+    "blogger-listing": _templated(
+        f'<main><div class="post-body">{_CARD}</div><div class="post-body">{_COPY}'
+        f"</div></main><footer>{_BESIDE}</footer>", "blogger"),
+    "blogger-unnamed": _templated(
+        f"<main>{_COPY}</main><footer>{_BESIDE}</footer>", "blogger"),
+    "wordpress-post": _templated(
+        f'<main><article><div class="entry-content">{_COPY}</div></article>'
+        f'<div class="comments">{_BESIDE}</div></main>', body_class="wp-singular"),
+    "wordpress-listing": _templated(
+        f'<main><article><div class="entry-content">{_CARD}</div></article>'
+        f'<article><div class="entry-content">{_COPY}</div></article></main>'
+        f"<footer>{_BESIDE}</footer>", body_class="wp-home"),
+    "wordpress-nested": _templated(
+        f'<main><div class="post-content"><div class="entry-content">{_COPY}</div>'
+        f"</div></main><footer>{_BESIDE}</footer>", body_class="wp-singular"),
+    "wordpress-articles": _templated(
+        f"<main><article>{_CARD}</article><article>{_COPY}</article></main>"
+        f"<footer>{_BESIDE}</footer>", body_class="wp-home"),
+    "wordpress-unnamed": _templated(
+        f"<main>{_COPY}</main><footer>{_BESIDE}</footer>", body_class="wp-home"),
+    "ghost-post": _templated(
+        f'<main><section class="gh-content">{_COPY}</section>'
+        f'<section class="comments">{_BESIDE}</section></main>', "Ghost 5.0"),
+    "ghost-listing": _templated(
+        f'<main><div class="post-content">{_CARD}</div><div class="post-content">'
+        f"{_COPY}</div></main><footer>{_BESIDE}</footer>", "Ghost 5.0"),
+    "ghost-unnamed": _templated(
+        f"<main>{_COPY}</main><footer>{_BESIDE}</footer>", "Ghost 5.0"),
+    # No generator: one class on a button is all that makes this page "Ghost".
+    "ghost-by-a-class": _templated(
+        f'<main>{_COPY}<a class="ghost-button">More</a></main>'
+        f"<footer>{_BESIDE}</footer>"),
+}
+
 GOOD_ROUTES = {
     "/": GOOD_PAGE,
     "/seo-audit.html": ("<!doctype html><html><head><title>seo audit guide</title>"
@@ -562,6 +621,7 @@ GOOD_ROUTES = {
                     "<body><h1>Starter notes</h1><p>An acidic starter raises bread "
                     "more slowly and tastes sharper than most people intend.</p>"
                     "</body></html>"),
+    **{f"/cms/{name}.html": html for name, html in TEMPLATED.items()},
     "/about.html": ABOUT_PAGE,
     "/guide.html": GUIDE_PAGE,
     "/privacy.html": PRIVACY_PAGE,
@@ -708,6 +768,32 @@ RUNS = [
      ["{good}named-by-id.html", "--keyword", "Vilnius", "--no-autocomplete"]),
     ("article_keyword_on_a_plain_page", "article_seo.py",
      ["{good}plain.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_blogger_post", "article_seo.py",
+     ["{good}cms/blogger-post.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_blogger_classic", "article_seo.py",
+     ["{good}cms/blogger-classic.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_blogger_listing", "article_seo.py",
+     ["{good}cms/blogger-listing.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_blogger_unnamed", "article_seo.py",
+     ["{good}cms/blogger-unnamed.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_wordpress_post", "article_seo.py",
+     ["{good}cms/wordpress-post.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_wordpress_listing", "article_seo.py",
+     ["{good}cms/wordpress-listing.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_wordpress_nested", "article_seo.py",
+     ["{good}cms/wordpress-nested.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_wordpress_articles", "article_seo.py",
+     ["{good}cms/wordpress-articles.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_wordpress_unnamed", "article_seo.py",
+     ["{good}cms/wordpress-unnamed.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_ghost_post", "article_seo.py",
+     ["{good}cms/ghost-post.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_ghost_listing", "article_seo.py",
+     ["{good}cms/ghost-listing.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_ghost_unnamed", "article_seo.py",
+     ["{good}cms/ghost-unnamed.html", "--keyword", "bread", "--no-autocomplete"]),
+    ("article_cms_ghost_by_a_class", "article_seo.py",
+     ["{good}cms/ghost-by-a-class.html", "--keyword", "bread", "--no-autocomplete"]),
     ("article_unfetched", "article_seo.py",
      ["http://127.0.0.1:1/unreachable", "--keyword", "sourdough starter",
       "--no-autocomplete"]),
@@ -4815,6 +4901,40 @@ class ArticleKeyword(unittest.TestCase):
             with self.subTest(page=key):
                 self.assertEqual(verdict("KW-076", out(key)), FAIL)
         self.assertEqual(verdict("KW-076", out("article_keyword_on_a_plain_page")), PASS)
+
+    def test_a_recognised_template_names_the_body_copy(self):
+        """Blogger, WordPress and Ghost, which no test served until 0.152.0. Where the
+        template names its content, that is the body copy — every block of it, so a
+        listing is not its first card, and a block inside another is read once. Where
+        it names none, the page is read as any other page is and not whole: until then
+        a footer was body copy on such a page, and one `ghost-` class on a button was
+        enough to make a page such a page."""
+        # run: (the template the script says it found, paragraphs of body copy)
+        expected = {
+            "article_cms_blogger_post": ("blogger", 1),
+            "article_cms_blogger_classic": ("blogger", 1),
+            "article_cms_blogger_listing": ("blogger", 2),
+            "article_cms_blogger_unnamed": ("blogger", 1),
+            "article_cms_wordpress_post": ("wordpress", 1),
+            "article_cms_wordpress_listing": ("wordpress", 2),
+            "article_cms_wordpress_nested": ("wordpress", 1),
+            "article_cms_wordpress_articles": ("wordpress", 2),
+            "article_cms_wordpress_unnamed": ("wordpress", 1),
+            "article_cms_ghost_post": ("ghost", 1),
+            "article_cms_ghost_listing": ("ghost", 2),
+            "article_cms_ghost_unnamed": ("ghost", 1),
+            "article_cms_ghost_by_a_class": ("ghost", 1),
+        }
+        self.assertEqual(len(expected), len(TEMPLATED))
+        for key, (template, paragraphs) in expected.items():
+            with self.subTest(page=key):
+                result = out(key)
+                self.assertEqual(result["cms_detected"], template)
+                self.assertEqual(len(result["paragraphs"]), paragraphs,
+                                 result["paragraphs"])
+                self.assertNotIn("Vilnius", " ".join(result["paragraphs"]))
+                self.assertEqual(result["keyword_usage"]["body_occurrences"], 1)
+                self.assertEqual(verdict("KW-076", result), PASS)
 
     def test_an_unfetched_page_has_no_measurement_and_is_undecided(self):
         result = out("article_unfetched")
