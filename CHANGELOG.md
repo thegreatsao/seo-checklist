@@ -10,6 +10,75 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.154.0 — a test's verdict does not rest on how fast the machine is
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
+changes; nothing under `skills/` changes. This release is `tests/` and one invariant,
+INV-G8.
+
+Three tests had gone red on a loaded machine since 4 October, with or without a change,
+and each could refuse a push falsely: two whole-audit comparisons that include TECH-003,
+and the control of the pacing pair. On 6 October the load was produced on request —
+twenty-four busy processes on twelve cores, on Windows — and each was red under it
+before anything was changed.
+
+* **The fixture server was slow, not the machine.** TECH-003 holds the time a page's
+  first byte took against 800 ms. Timed inside the server, an answer from a table took
+  0.1 to 0.3 ms and the same page read from disk 20 to 170 ms at rest and 851 ms
+  loaded. Two costs, both the harness's own. It rewrites a tree's URLs just before it
+  serves the tree, and on Windows the first read of a rewritten file is slow: 10 to
+  60 ms a file, against 1 ms for a file that was only copied. And the first content type
+  a process asks `mimetypes` for reads the registry, 105 ms.
+  - *Now* the harness reads each file back as it writes it and loads the table when it
+    is imported. The same page from disk: 0.5 ms, loaded or not. Why Windows charges for
+    that first read is not established.
+
+* **Two runs were compared on a clock.** "The same bytes at 203 get the same verdicts"
+  compared every verdict, the band of TECH-003 among them, and so did "every failure an
+  error entry provokes". A tree does not decide how long the machine takes to serve it.
+  - *Now* `harness.CLOCK_READ` names the items whose band is a time the run measured —
+    one — and two live runs are compared on such an item as far as that it was timed. A
+    run that stopped timing is still a difference. The fixture pair in `test_contract` is
+    compared the same way: its recorded reason, "the same server answers both, so TTFB
+    does not differ", was not true of one process answering two origins, 922 ms and
+    72 ms.
+  - *The set is derived.* `tests/test_clock_read.py` serves the good tree with its entry
+    answered at once, and with the same answer held back two seconds. TECH-003 fails
+    there by the 2004 ms it measured, which is the first time a test saw it fail, and
+    no other verdict moves. The test that said it showed the time was measured, a
+    hard-coded 0 being unable to pass, passes with a hard-coded 0.
+
+* **The pacing pair timed three interpreters starting.** Three children were started and
+  the times they proceeded compared. Loaded, they came up 1.2 to 4.1 s apart: the
+  control — unpaced, they go together — was red in ten rounds of ten, and the test that
+  they queue behind each other passed a limiter that shares nothing in four rounds of
+  eight, the slow start having spaced them for it.
+  - *Now* the children load everything first and ask on one signal. Under the same load:
+    0.056 s at most between the unpaced three in twenty rounds, against a bound of 0.2,
+    and the limiter that shares nothing refused in eight rounds of eight.
+
+* **Four tests timed a call that waits for nothing**, against bounds of 0.05 to 0.5 s;
+  one asked, in effect, that two calls begin within 50 ms of each other. They read the
+  wait `pace` reports. One is stricter for it: a stale slot honoured for 0.3 s was inside
+  the old bound of half a second.
+
+* **How it was accepted.** Ten breakages, ten seen at the first run, each by the test
+  written for it. And each of the two comparisons run with one side answering two
+  seconds late: red compared on the band, green as it is now. The suite is 2259 tests,
+  2251 and eight new.
+
+* **Not held, and said in INV-G8.** Nothing makes a new comparison of two runs go
+  through `across_runs`. And two tests still hold TECH-003's band on one live run: the
+  fixture oracle's declaration, and the contract's rule that nothing accuses the good
+  tree. They were found by running the suite with every time to first byte five seconds
+  longer, which reddens those two and nothing else. Each says PASS of a machine at rest.
+
+* **Seen on the way, not changed.** On Windows a process that finds the pacing slot held
+  waits for it in steps of a second: three processes at five requests a second proceeded
+  0.2 s and then 0.8 s apart, where the rate asks for 0.2 and 0.2. The lock is
+  `msvcrt.locking` in its blocking mode. Never faster than asked; slower than an audit
+  has to be.
+
 ## 0.153.0 — five things left after the URL credential, and a refused host that was called public
 
 Registry version: `90ba79b14b28`, unchanged. Two verdicts can move, each in a corner:

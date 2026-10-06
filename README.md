@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.153.0 — see [CHANGELOG.md](CHANGELOG.md). Both reports now say when an audit was made with a credential typed into the URL, and a run refused by a host only this machine reaches no longer calls that host public. A short credential is no longer cut out of every word that ends with it, and a script started by hand takes the host of the URL and not its user name. Two verdicts can move in corners: IN-127 where an hreflang alternate carries userinfo, TE-179 where the audited host is an address.
+Version 0.154.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit does or writes changes: this release is the suite. Three tests could refuse a release on a busy machine with nothing wrong in the tree; a test's verdict no longer rests on how fast the machine that runs it is. The fixture server answers a page from disk in 0.5 ms where it took up to 851, two runs are no longer compared on a time one of them measured, and TECH-003 is seen to fail for the first time, on a site that answers late.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
