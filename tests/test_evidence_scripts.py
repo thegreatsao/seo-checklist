@@ -6345,12 +6345,14 @@ class LcpSubparts(unittest.TestCase):
     """TECH-003 `subparts.ttfb_ms`."""
 
     def test_ttfb_is_measured_as_a_number_of_milliseconds(self):
-        """Loopback answers in about a millisecond, so this can only ever pass here.
-        What it does prove is that the field is measured rather than defaulted — a
-        hard-coded 0 would make TECH-003 unable to fail on any site."""
+        """The field is a number and the item is decided on it. Which band it lands in
+        is the machine's (`harness.CLOCK_READ`), and that the number is measured is not
+        shown here: until 0.154.0 this said a hard-coded 0 could not get through, and
+        one does. `test_clock_read` holds both, on an origin that answers late."""
         lcp = out("lcp")
         self.assertIsInstance(lcp["subparts"]["ttfb_ms"], (int, float))
-        self.assertEqual(verdict("TECH-003", lcp), PASS)
+        self.assertEqual(harness.across_runs("TECH-003", verdict("TECH-003", lcp)),
+                         harness.TIMED)
 
 
 class MobileRender(unittest.TestCase):

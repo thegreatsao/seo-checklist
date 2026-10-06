@@ -215,7 +215,12 @@ SAME_ON_BOTH = {
     "TE-179": "no loopback fixture host has a whois record, so neither side can be dated",
     "SP-109": "neither fixture loads a third-party script",
     "TECH-002": "neither fixture loads a web font",
-    "TECH-003": "the same server answers both, so TTFB does not differ",
+    # Until 0.154.0: "the same server answers both, so TTFB does not differ". One
+    # process answering two origins took 922 ms for one and 72 ms for the other on
+    # 6 October 2026, with every core busy. The pair cannot differ on this item because
+    # `differing` does not compare a time between two runs, not because times agree.
+    "TECH-003": "both trees are timed by this machine; which band a time lands in is "
+                "not the tree's (`harness.CLOCK_READ`)",
     "CO-191": "competitor comparison has no data path at all yet",
     "CO-192": "competitor comparison has no data path at all yet",
     "CO-193": "competitor comparison has no data path at all yet",
@@ -424,7 +429,8 @@ class EveryCheckCanTellTheSitesApart(unittest.TestCase):
 
     def differing(self):
         return {i["id"] for i in self.script_backed
-                if self.good[i["id"]]["status"] != self.broken[i["id"]]["status"]}
+                if harness.across_runs(i["id"], self.good[i["id"]]["status"])
+                != harness.across_runs(i["id"], self.broken[i["id"]]["status"])}
 
     def test_most_script_items_differ_between_the_two_sites(self):
         differ = self.differing()

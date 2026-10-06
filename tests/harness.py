@@ -51,6 +51,7 @@ import gzip
 import http.server
 import io
 import json
+import mimetypes
 import os
 import re
 import shutil
@@ -60,6 +61,7 @@ import ssl
 import sys
 import tempfile
 import threading
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIXTURES = os.path.join(HERE, "fixtures")
@@ -119,6 +121,35 @@ def registry():
     with open(os.path.join(SCRIPTS, "..", "resources", "config", "checklist.json"),
               encoding="utf-8") as stream:
         return json.load(stream)
+
+
+# The items whose band is a time this run measured, each with what it times.
+#
+# A fixture decides what a page says and what its server answers. It does not decide
+# how long this machine takes to say it, so between two live runs of one tree such an
+# item can land in two bands with nothing about the tree or the tool having moved:
+# under seven suites at once on 4 October 2026 TECH-003 failed one run of a pair in
+# five suites of seven, and an answer served from a table took 1276 ms. What a test
+# can hold is that the item was decided, and that it fails when the answer is held
+# back for longer than its budget. `test_clock_read` holds both and derives this set
+# by the operation: the same site answering late moves these verdicts and no other.
+CLOCK_READ = {
+    "TECH-003": "`subparts.ttfb_ms`, how long the run's fetch of the page waited for "
+                "its first byte, against a budget of 800 ms",
+}
+TIMED = "TIMED"
+
+
+def across_runs(item_id: str, status: str) -> str:
+    """`status` as two live runs can be compared on it.
+
+    PASS, WARN and FAIL of an item in `CLOCK_READ` are one answer here, `TIMED`:
+    which of them a run got is the machine's. NO_DATA and the rest stay themselves,
+    so a run that stopped measuring is still a difference.
+    """
+    if item_id in CLOCK_READ and status in ("PASS", "WARN", "FAIL"):
+        return TIMED
+    return status
 
 
 # One page for the tests that need a live audit of *something* and read what the run
@@ -310,6 +341,21 @@ def substitute(root: str, needle: str, replacement: str) -> None:
             if needle in text:
                 with open(path, "w", encoding="utf-8") as f:
                     f.write(text.replace(needle, replacement))
+                # Read back, and not to check the write. On Windows the first read of
+                # a file after it is rewritten is slow: 10 to 60 ms a file on 6 October
+                # 2026, against 1 ms for a file that was only copied and under 0.2 ms
+                # for a second read. That first read used to be the fixture server's,
+                # inside the answer whose time TECH-003 holds against 800 ms, and with
+                # every core busy it took 851 ms. Why the system charges it is not
+                # established here; that it is charged once is measured.
+                with open(path, "rb") as f:
+                    f.read()
+
+
+# The same kind of cost, once a process: `SimpleHTTPRequestHandler` asks `mimetypes`
+# for a content type, and the first question reads the table from the Windows
+# registry — 105 ms on that day, inside the first answer any origin here gave.
+mimetypes.init()
 
 
 class _Quiet(http.server.SimpleHTTPRequestHandler):
@@ -361,6 +407,9 @@ class _Quiet(http.server.SimpleHTTPRequestHandler):
         answer = self.route_answers.get(request_path)
         if answer is not None:
             body = answer["body"].encode("utf-8")
+            # Before the status line, so the wait is in the client's time to first
+            # byte. `delay` is seconds, and only `tree_served` callers set it.
+            time.sleep(answer.get("delay", 0))
             self.send_response(answer["status"])
             self.send_header("Content-Type", answer["content_type"])
             self.send_header("Content-Length", str(len(body)))
@@ -986,7 +1035,8 @@ class tree_served:
     bound port — so a body read from `site_dir` is the body that tree would have served.
     Added at 0.130.0 for the entry-answer derivation, which serves the good tree with
     only `/` changed: the same index under another status, so a verdict that moves is
-    the status's doing and not the content's.
+    the status's doing and not the content's. A route may carry `delay`, the seconds
+    its answer is held back (0.154.0, for `test_clock_read`).
 
     `.base` is the origin without a trailing slash, as on `_Site`; `.url` is the entry.
     """

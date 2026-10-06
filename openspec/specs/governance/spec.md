@@ -689,6 +689,41 @@ assembled at run time from a string is not a launch it can see.
   stand-in of `test_safe_http`, where a connection that says nothing is counted too. Not
   held: a prober nobody has measured, and a count taken by a server a test writes for
   itself.
+* **INV-G8** — a test's verdict does not rest on how fast the machine that runs it is.
+  *Reader: partial* — on 4 October 2026, seven suites at once on the Windows machine,
+  three tests refused a tree nothing was wrong with. On 6 October the same was produced
+  on request, twenty-four busy processes on twelve cores, and each cause measured.
+  *The fixture server.* `harness.substitute` rewrites a tree's URLs just before the tree
+  is served, and on Windows the first read of a rewritten file took 10 to 60 ms at rest.
+  That read was the server's, inside the answer TECH-003 holds against 800 ms, and loaded
+  it took 851 ms. The harness now reads each file back as it writes it and loads the
+  content-type table when it is imported: 0.5 ms, loaded or not.
+  *Two runs compared.* `harness.CLOCK_READ` names the items whose band is a time the run
+  measured — one, TECH-003 — and `harness.across_runs` compares two live runs on such an
+  item only as far as that it was timed. `tests/test_clock_read.py` derives the set by the
+  operation: the good tree with its entry answered at once, and the same answer held back
+  two seconds. Every item in the set fails there by the time it measured, which is the
+  first time a test saw TECH-003 fail, and no verdict outside the set moves. Three
+  comparisons go through it: the same bytes at 200 and at 203, the failures an error
+  entry provokes, and the good tree against the broken one.
+  *The pacing pair.* Three children were started and timed from their start. Loaded, the
+  interpreters came up 1.2 to 4.1 s apart: the control that they go together when pacing
+  is off was red in ten rounds of ten, and the test that they queue passed a limiter that
+  shares nothing in four rounds of eight. They now load everything and ask on one signal:
+  0.056 s at most between the unpaced three in twenty loaded rounds, against a bound of
+  0.2, and the limiter that shares nothing refused in eight of eight.
+  *A call that waits for nothing* is read off the wait `pace` reports, in four tests that
+  had timed it against bounds of 0.05 to 0.5 s.
+  Not held: nothing makes a new comparison of two runs go through `across_runs` —
+  `test_clock_read` finds an item that begins to read a clock, not a test that begins to
+  compare one. Two tests still hold TECH-003's band on one live run, found by running the
+  suite with every time to first byte five seconds longer: the fixture oracle's
+  declaration and the contract's rule that nothing accuses the good tree. Each says PASS
+  of a machine at rest, and a machine slow enough can refuse a release through either;
+  after the repair a tree served from disk was timed at 3 to 14 ms at rest and 12 to
+  60 ms loaded. The pacing
+  control still holds 0.2 s over three processes let go together. Not examined: the two
+  to fifteen seconds a test gives a loopback request or a child to answer.
 
 ## 5. What this document does not decide
 
@@ -837,8 +872,8 @@ rest were derived by reading the gates and their tests.
 | **none** | — none |
 | **opposed** | — none |
 
-Invariants: INV-G2, INV-G3, INV-G4, INV-G5 and INV-G7 enforced; INV-G1 and INV-G6
-partial.
+Invariants: INV-G2, INV-G3, INV-G4, INV-G5 and INV-G7 enforced; INV-G1, INV-G6 and
+INV-G8 partial.
 
 **Six enforced, five partial, none unread, of eleven.**
 

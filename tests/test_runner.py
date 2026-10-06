@@ -55,11 +55,13 @@ from rendered_audit import read as rendered_read  # noqa: E402
 from detect_profile import detect  # noqa: E402
 
 
-def children(code, env, count):
+def children(code, env, count, once_started=None):
     procs = [subprocess.Popen([sys.executable, "-c", code], env=env,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                               text=True, close_fds=False)
              for _ in range(count)]
+    if once_started:
+        once_started(procs)
     return [p.communicate(timeout=60) for p in procs]
 
 
@@ -269,11 +271,14 @@ class RateLimiting(unittest.TestCase):
         self.assertGreaterEqual(time.monotonic() - start, 0.05)
 
     def test_different_hosts_do_not_queue_behind_each_other(self):
-        """One slow site must not pace requests to an unrelated API."""
+        """One slow site must not pace requests to an unrelated API.
+
+        Read off the wait `pace` reports, as the two tests further down are since
+        0.154.0. Each used to time the call against a bound — 0.2 s here — and how long
+        a call that waits for nothing takes is the machine's to say.
+        """
         self.sh.pace("a.example", rps=2)
-        start = time.monotonic()
-        self.sh.pace("b.example", rps=2)
-        self.assertLess(time.monotonic() - start, 0.2)
+        self.assertEqual(self.sh.pace("b.example", rps=2), 0.0)
 
     def test_the_lock_helper_excludes_and_releases(self):
         path = os.path.join(self.dir, "exclusive.lock")
@@ -290,14 +295,24 @@ class RateLimiting(unittest.TestCase):
             os.close(second)
 
     # Three processes at 5 rps: each must wait 0.2s behind the one before it, so the
-    # run costs ~0.4s. Low enough to keep the suite quick, long enough that process
-    # startup jitter cannot manufacture the spacing on its own — startup is tens of
-    # milliseconds and the tolerance below is 0.16s.
+    # run costs ~0.4s. Low enough to keep the suite quick.
+    #
+    # Until 0.154.0 this comment went on to say that process startup jitter could not
+    # manufacture the spacing, startup being tens of milliseconds. That is this machine
+    # at rest (0.012 s at most in ten rounds). With every core busy the three
+    # interpreters came up 1.2 to 4.1 s apart in each of ten rounds, so the control
+    # below refused a release the limiter had nothing to do with; and the paced test
+    # passed a limiter that shares nothing in four rounds of eight, the slow start
+    # having spaced the children for it. The children now load everything first and
+    # ask together, on one signal: starting an interpreter is outside what either
+    # test times. Under the same load the unpaced three then proceeded within 0.056 s
+    # in twenty rounds, and the limiter that shares nothing was refused in eight of
+    # eight.
     PACE_CHILDREN = 3
     PACE_RPS = 5.0
 
     def _paced_at(self, rps: float) -> list:
-        """Start the children together, return the monotonic times they proceeded.
+        """Let the children ask together, return the monotonic times they proceeded.
 
         `time.monotonic()` is CLOCK_MONOTONIC — one clock per boot, not per process —
         which is why the slot file can hold one process's timestamp and another can
@@ -312,12 +327,31 @@ class RateLimiting(unittest.TestCase):
             "import os, sys, time\n"
             f"sys.path.insert(0, {SCRIPTS!r})\n"
             "import lib.safe_http as sh\n"
+            "gate = os.environ['PACE_GATE']\n"
+            "open(os.path.join(gate, str(os.getpid())), 'w').close()\n"
+            "while not os.path.exists(os.path.join(gate, 'go')):\n"
+            "    time.sleep(0.001)\n"
             "sh.pace('shared.example', rps=float(os.environ['PACE_RPS']))\n"
             "print(time.monotonic())\n"
         )
+        gate = tempfile.mkdtemp(prefix="pace-gate-")
+        self.addCleanup(shutil.rmtree, gate, ignore_errors=True)
+
+        def release(procs):
+            # Every child has left its note, or one died before it could: either way
+            # nobody is still loading. A dead child is reported by the assertion below,
+            # with its stderr, once the others have been let go.
+            deadline = time.monotonic() + 60
+            while (len(os.listdir(gate)) < len(procs)
+                   and all(p.poll() is None for p in procs)
+                   and time.monotonic() < deadline):
+                time.sleep(0.005)
+            open(os.path.join(gate, "go"), "w").close()
+
         env = os.environ.copy()
         env["PACE_RPS"] = str(rps)
-        outs = children(code, env, self.PACE_CHILDREN)
+        env["PACE_GATE"] = gate
+        outs = children(code, env, self.PACE_CHILDREN, release)
         for out, err in outs:
             self.assertTrue(out.strip(), f"a child never paced: {err}")
         return sorted(float(out) for out, _ in outs)
@@ -350,11 +384,11 @@ class RateLimiting(unittest.TestCase):
 
     def test_pacing_off_lets_the_processes_go_together(self):
         """The other half, so the test above is known to measure pacing rather than
-        the cost of starting three interpreters."""
+        whatever else stands between three processes let go on one signal."""
         times = self._paced_at(0)
         self.assertLess(times[-1] - times[0], 1.0 / self.PACE_RPS,
                         "unpaced processes were spaced anyway; the test above cannot "
-                        "tell pacing from startup")
+                        "tell pacing from the machine")
 
     def test_the_state_directory_defaults_to_one_shared_by_the_machine(self):
         """Not per run, and not per process. Pacing is a promise to somebody else's
@@ -389,10 +423,7 @@ class RateLimiting(unittest.TestCase):
     def test_zero_switches_pacing_off(self):
         os.environ["SEO_MAX_RPS"] = "0"
         self.assertEqual(self.sh.max_rps(), 0.0)
-        start = time.monotonic()
-        for _ in range(5):
-            self.sh.pace("example.com")
-        self.assertLess(time.monotonic() - start, 0.05)
+        self.assertEqual([self.sh.pace("example.com") for _ in range(5)], [0.0] * 5)
 
     def test_a_nonsense_limit_falls_back_to_the_default(self):
         """Never to "no limit": a typo in an env var must not silently remove the
@@ -407,9 +438,7 @@ class RateLimiting(unittest.TestCase):
         os.makedirs(self.dir, exist_ok=True)
         with open(path, "w") as f:
             f.write(str(time.monotonic() + 10_000))
-        start = time.monotonic()
-        self.sh.pace("example.com", rps=50)
-        self.assertLess(time.monotonic() - start, 0.5)
+        self.assertEqual(self.sh.pace("example.com", rps=50), 0.0)
 
     def test_a_corrupt_slot_never_raises(self):
         """The bug this guards: the slot was opened "a+", and in append mode POSIX

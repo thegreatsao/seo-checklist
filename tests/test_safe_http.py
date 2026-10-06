@@ -11,6 +11,7 @@ import re
 import socket
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -797,10 +798,19 @@ class TheDefaultRateIsANumberSomebodyChose(unittest.TestCase):
 
     def test_a_second_request_to_one_host_waits_a_quarter_of_a_second(self):
         """What the number means, measured rather than restated: 4 per second is a 250 ms
-        interval, and the wait `pace` reports is what a checker actually spends."""
+        interval, and the wait `pace` reports is what a checker actually spends.
+
+        Until 0.154.0 the reported wait had to be above 0.2 s, which asks the second
+        call to begin within 50 ms of the first: a bound on the machine. That the two
+        requests end up 0.2 s apart or more — the interval, less what a coarse clock
+        loses — is a bound no load can break, and an interval of a tenth of a second
+        still fails it.
+        """
+        start = time.monotonic()
         self.assertEqual(sh.pace("paced.example"), 0.0, "the first request waits for nothing")
         waited = sh.pace("paced.example")
-        self.assertGreater(waited, 0.2)
+        self.assertGreaterEqual(time.monotonic() - start, 0.2)
+        self.assertGreater(waited, 0)
         self.assertLessEqual(waited, 0.25)
 
 

@@ -440,9 +440,9 @@ class TheGateHidesNoFailureItDoesNotAnswer(unittest.TestCase):
 
     def provoked(self, state):
         base = {i for i, (s, _) in self.RESULTS[("baseline", "off")]["items"].items()
-                if s == FAIL}
+                if harness.across_runs(i, s) == FAIL}
         return {i for i, (s, _) in self.RESULTS[(state, "off")]["items"].items()
-                if s == FAIL} - base
+                if harness.across_runs(i, s) == FAIL} - base
 
     def test_the_runs_are_the_runs_they_claim_to_be(self):
         self.assertTrue(self.RESULTS[("baseline", "off")]["payload"]["entry_reachable"])

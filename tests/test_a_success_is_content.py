@@ -40,7 +40,7 @@ RUNNER = os.path.join(SCRIPTS, "checklist_runner.py")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, HERE)
 
-from harness import offline_env, spawn, tree_served  # noqa: E402
+from harness import across_runs, offline_env, spawn, tree_served  # noqa: E402
 import seo_common  # noqa: E402
 
 
@@ -209,8 +209,8 @@ class ASiteAnswering203IsTheSameSite(unittest.TestCase):
 
     def moved(self):
         base, other = self.RESULTS["at200"], self.RESULTS["at203"]
-        return {i: (base[i][0], other[i][0], other[i][1][:100])
-                for i in base if base[i][0] != other[i][0]}
+        return {i: (base[i][0], other[i][0], other[i][1][:100]) for i in base
+                if across_runs(i, base[i][0]) != across_runs(i, other[i][0])}
 
     def test_the_same_bytes_at_203_get_the_same_verdicts(self):
         unexplained = {i: v for i, v in self.moved().items() if i not in TITLE_NAMES_200}
