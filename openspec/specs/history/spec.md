@@ -56,8 +56,10 @@ A run writes one JSON file per audit under a directory keyed by the site's domai
 timestamp. The series a trend is computed from is the most recent twelve, and the current
 run is excluded from the series used to compute how long something has been open.
 
-The payload of every run carries: the comparison against its predecessor, which run that
+The results of every run carry: the comparison against its predecessor, which run that
 predecessor was, the series, and for each still-failing item how long it has been failing.
+The file stored for the run does not. It is written before the run is compared and holds
+what the run measured; what the store says about the run is in the results only (HST-4).
 
 `--no-history` stops the writing. `--diff` controls only whether the comparison is
 *printed* — the comparison happens either way, because the payload carries it.
@@ -252,6 +254,26 @@ care.
 `test_the_current_run_is_excluded_by_name` pin it from two directions — by content and by
 filename — and nine test functions cover the series construction, including that it is
 ordered by the timestamp inside the file rather than by the name.
+
+**The stored run and the results file are not one document, and until 0.153.0 nothing
+said so.** A run is filed, and then compared with what was filed before it. So the
+results hold five keys the stored run does not — `compared_with`, `diff`, `diff_note`,
+`history`, `open_since` — measured on 4 October 2026 by a reader who found no sentence
+saying which five, or that it was meant. It is meant. Each of the five is something the
+store says about the run: stored inside the run it describes, it would be handed to the
+next run as part of what this one measured, and would fix in the file a series the next
+`--history-limit` reads differently. A report rendered from a stored run leaves the two
+sections out; it does not say there was nothing to compare.
+`test_the_stored_run_is_what_was_measured_and_nothing_the_store_says_about_it` holds the
+difference to exactly those five, and every key the two share to one value.
+
+#### Scenario: what the stored run holds
+- **WHEN** a run has been filed and compared with the runs before it
+- **THEN** the stored run holds what the run measured, and the results hold that and
+  five keys more: the comparison, its note, the baseline it names, the series and the
+  streaks
+- **AND** every key the two share has one value, so a later run that reads the stored
+  run reads what the results said
 
 #### Scenario: the run being reported is not part of its own history
 - **WHEN** a trend is computed for a run already written to disk

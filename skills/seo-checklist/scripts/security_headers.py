@@ -110,21 +110,21 @@ MANY_MISSING_HEADERS = 3
 
 
 def http_form(url: str) -> str:
-    """Return the plain-HTTP form of ``url`` without its fragment."""
+    """Return the plain-HTTP form of ``url`` without its fragment or its userinfo.
+
+    A credential typed for `https://` is not put on a plain wire: `safe_http` asks a
+    URL that carries userinfo of its own as written, so the form must not carry it.
+    """
     parsed = urlparse(url)
     if parsed.scheme.lower() == "http":
         return url
     hostname = parsed.hostname or ""
     if ":" in hostname and not hostname.startswith("["):
         hostname = f"[{hostname}]"
-    userinfo = ""
-    if "@" in parsed.netloc:
-        userinfo = parsed.netloc.rsplit("@", 1)[0] + "@"
     port = parsed.port
     if port not in (None, 443):
         hostname = f"{hostname}:{port}"
-    return parsed._replace(scheme="http", netloc=userinfo + hostname,
-                           fragment="").geturl()
+    return parsed._replace(scheme="http", netloc=hostname, fragment="").geturl()
 
 
 def walk_http_to_https(url: str, timeout: int = 15) -> dict:

@@ -258,6 +258,10 @@ mutation: it reddens 22 sub-tests of the status assertion, and the denominator f
 - **THEN** it records the entry host as private because that is where the name resolved
 - **AND** a public host audited with the allowance on is not recorded as private, and a
   host that does not resolve is unreachable rather than private
+- **AND** an entry that failed is asked as well: a staging host that answered 401 is
+  where it resolves, whatever it answered. Until 0.153.0 it was not asked, the record
+  said such a host was not private, and the report of that run said the host it audited
+  was public — `test_the_run_that_was_refused_still_says_where_the_host_is`
 
 #### Scenario: the reader of the report is told
 - **WHEN** a report is produced for such a run

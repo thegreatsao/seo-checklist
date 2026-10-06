@@ -452,6 +452,31 @@ shown red under its own mutation. The real audit had also never been handed the 
 of the credential by the site, so losing the Basic token from the secret set was seen
 only by the test of the list; the fixture page hands it back now and the sweep sees it.
 
+**Four things a second reader left on 4 October 2026, each measured again at 0.152.0.**
+*The reports did not say it.* `url_credentials` was in the record and on neither report,
+and the reader the scenario below is written for holds a report; it is a row of the
+provenance list now (`reporting` REP-3). *A form was replaced wherever its letters
+stood.* A URL typed as `http://a@host/` made `a@` a secret, and every page the audit read
+had `anna@example.com` written out as `ann<redacted>example.com`; its Basic token, four
+letters, was cut out of the middle of longer runs of base64. The forms are patterns
+now: one begins where a name can begin, and the token is a whole run.
+`WhatIsAddedToTheSecretSet` holds them by what is and is not replaced, an address
+whose name merely ends like the credential among the second. *A script started by hand
+took the user name for the host.* Three scripts cut the authority at its first colon.
+Under the runner the URL has no credential by then; by hand, `domain_safety_check.py`
+sent the user name — a token, for all it knew — to a registry's whois server and to the
+resolver, and `security_headers.py` carried the credential into the plain-http form of
+the address, which `safe_http` asks as written. Both read the host as the URL parser
+gives it now, and the plain-http form carries no credential:
+`AScriptStartedByHandTakesTheHostAndNothingElse`. The same cut read `[` as the host of
+`http://[::1]:8080/`, and whois was asked about that, and about `113.5` for the address
+`203.0.113.5`; an address is not looked up in a registry at all.
+
+**Not held, and said here so that it is not found again as a surprise:** this
+requirement is about a run. A script started by hand is handed what was typed, and one
+that gives the address to an outside service — `pagespeed.py`, the Safe Browsing lookup
+of `domain_safety_check.py` — gives it whole, credential included.
+
 #### Scenario: a key passed as an argument
 - **WHEN** a secret was given on the command line, so a script's argv carries it into the
   run log
@@ -537,12 +562,24 @@ only by the test of the list; the fixture page hands it back now and the sweep s
   the userinfo as typed, the same percent-decoded, and the Basic token
 - **AND** the bare password is not one of those forms, because a short one would be
   replaced inside every word of the record
+- **AND** a form is removed where it stands whole: not from the end of a longer name in
+  front of an `@`, and not from the middle of a longer run of base64
 
 #### Scenario: the record says a credential was used
 - **WHEN** a run was made with a credential from the URL
 - **THEN** the record says so, and a run without one says that it was not — a reader
   comparing an audit of the site with an audit of its 401 page needs to know which is which
+- **AND** both reports say so, because that reader holds a report
 - **AND** the operator is told on stderr what became of it
+
+#### Scenario: a script started by hand
+- **WHEN** a script is started by itself with a URL that carries a credential
+- **THEN** the host it works on is the URL's host: whois and the resolver are not asked
+  about the user name
+- **AND** the plain-http form of the address, which the HTTPS-redirect check asks on
+  purpose, carries no credential
+- **AND** beyond that the script is handed what was typed: one that gives the address
+  to an outside service gives it whole, and this requirement does not hold for it
 
 #### Scenario: a secret nobody added to the list
 - **WHEN** a new key-valued input reaches the run and is not added to the set of values

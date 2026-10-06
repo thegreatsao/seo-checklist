@@ -164,8 +164,9 @@ rendered, and how.
 ### Requirement: REP-3 — provenance appears wherever the score does
 
 Whatever makes a run less than a full measurement — a private host, an overridden
-guard, a thin entry page, a non-default parser, an artifact that was refused — SHALL be
-stated on every surface that shows the score.
+guard, a thin entry page, a non-default parser, an artifact that was refused, a
+credential that came with the URL — SHALL be stated on every surface that shows the
+score.
 
 **Why:** these are the facts that change what the number is *about*, and a reader who sees
 the number without them has been told something untrue by omission.
@@ -178,6 +179,7 @@ The list is normative, and it is this:
 | `w_synthetic` | `synthetic_metrics` | a Core Web Vitals rating came from one synthetic load rather than from real visitors |
 | `w_private_host` | `entry_private` | the host is reachable only from the auditing machine |
 | `w_private` | `allow_private`, `mode` | a private address could have been reached while crawling |
+| `w_url_credentials` | `url_credentials` | the site was read as somebody it lets in reads it |
 | `w_guard` | `entry_guard`, `entry_guard_enforced` | the entry page looked like an interstitial and was scored anyway |
 | `w_thin` | `entry_thin`, `entry_visible_words`, `entry_reachable` | the entry page may be an empty shell |
 | `w_artifacts` | `artifacts` | some verdicts come from measurements supplied with the run |
@@ -187,7 +189,10 @@ The list is normative, and it is this:
 **Reader:** enforced. `tests/test_report.py` holds it in two halves this line used to say
 were one. Ten test functions cover `provenance_warnings`, pinning each caveat's presence and —
 importantly — its absence when it does not apply, so the surface cannot become noise. That
-is the mechanism.
+is the mechanism. The caveat about a credential, added at 0.153.0, is held where a run is
+really made with one: `tests/test_url_credentials.py` reads both reports of that run, and
+of a run of the same site without it. The record had carried the fact since 0.136.0 and
+neither report said it.
 
 The *membership* is read by `tests/test_report.py::TheProvenanceListIsTheOneThisDocumentNames`,
 which walks the function's AST for the warning identifiers it emits and the payload fields
@@ -196,6 +201,12 @@ here reddens, and so does writing one here without adding it — which is the di
 matters, because the way the last member came to be missing was that nothing anywhere
 enumerated them. `openspec/specs/http/` HTTP-8 was that member: the response cache appeared
 in no warning and in no test until 0.94.1.
+
+#### Scenario: a run made with a credential from the URL
+- **WHEN** the audited URL carried a credential
+- **THEN** every surface showing the score says the site was read as somebody it lets
+  in reads it, and that the same address without one may be a sign-in page or a refusal
+- **AND** a run made without one says nothing of it
 
 #### Scenario: a run that scored an interstitial
 - **WHEN** the page guard was overridden and the entry page was a bot challenge

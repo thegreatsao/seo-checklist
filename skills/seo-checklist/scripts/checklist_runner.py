@@ -1932,7 +1932,7 @@ SAFE_BROWSING_ENV_KEYS = ("GOOGLE_SAFE_BROWSING_KEY", "SAFE_BROWSING_API_KEY")
 REDACTED = "<redacted>"
 
 
-def redact(value, secrets: tuple[str, ...]):
+def redact(value, secrets: tuple):
     """Replace every secret value anywhere in a JSON-serialisable structure.
 
     Applied to the whole payload rather than to the run log alone: a script that
@@ -1942,7 +1942,9 @@ def redact(value, secrets: tuple[str, ...]):
         return value
     if isinstance(value, str):
         for s in secrets:
-            if s:
+            if isinstance(s, re.Pattern):
+                value = s.sub(REDACTED, value)
+            elif s:
                 value = value.replace(s, REDACTED)
         return value
     if isinstance(value, dict):
@@ -1959,16 +1961,26 @@ def artifact_secrets(ctx: dict) -> tuple[str, ...]:
                     if (value := os.environ.get(key))))
 
 
-def url_credential_secrets(userinfo: str) -> tuple[str, ...]:
-    """Forms of URL credentials a site may echo into shared artifacts."""
+def url_credential_secrets(userinfo: str) -> tuple[re.Pattern, ...]:
+    """Forms of URL credentials a site may echo into shared artifacts.
+
+    Patterns and not strings: a form is the whole of what stood in front of the `@`,
+    so it begins where a name can begin, and the Basic token is a whole run of
+    base64. Replaced wherever its letters stood, `a@` — a URL typed as
+    `http://a@host/` — cut the end off `anna@example.com` in every page the audit
+    read, and its four-letter token was taken out of the middle of longer ones.
+    """
     if not userinfo:
         return ()
     user, colon, password = userinfo.partition(":")
     user, password = unquote(user), unquote(password)
     decoded = user + (":" + password if colon else "") + "@"
     basic = base64.b64encode(f"{user}:{password}".encode()).decode()
-    # redact replaces substrings: a bare short password would alter every word.
-    return tuple(dict.fromkeys((userinfo + "@", decoded, basic)))
+    # No bare password among them: a short one would alter every word.
+    typed = tuple(re.compile(r"(?<![\w.%+:-])" + re.escape(form))
+                  for form in dict.fromkeys((userinfo + "@", decoded)))
+    return typed + (re.compile(r"(?<![A-Za-z0-9+/])" + re.escape(basic)
+                               + r"(?![A-Za-z0-9+/=])"),)
 
 
 # The gates below are read off this table, so a new `requires` value is decided
@@ -3553,8 +3565,12 @@ def main() -> int:
     # it resolves, not on whether --allow-private was passed: the flag permits a
     # private address, it does not make a public site private, and treating the two
     # as the same thing would drop the external-API checks on an ordinary audit.
+    #
+    # Asked whatever the entry answered. Until 0.153.0 an entry that failed was not
+    # asked, so a staging host that answered 401 was recorded as not private, and the
+    # report of that run said the host it audited was public.
     entry_private = False
-    if mode != "archive" and not entry_error:
+    if mode != "archive":
         from lib.safe_http import is_private_host
         entry_private = is_private_host(audit_url)
 

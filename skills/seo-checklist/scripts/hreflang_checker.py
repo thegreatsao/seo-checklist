@@ -368,7 +368,7 @@ def locale_lives_in(lang: str, url: str) -> str:
     """
     tokens = locale_tokens(lang)
     parsed = urlparse(url)
-    host = parsed.netloc.lower().rstrip(".").split(":")[0]
+    host = (parsed.hostname or "").rstrip(".")
     labels = host.split(".")
     if len(labels) > 1 and labels[-1] in tokens:
         return "ccTLD"

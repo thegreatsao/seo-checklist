@@ -232,6 +232,12 @@ def setUpModule():
                                "--json", os.path.join(work, "bare.json")],
                               env=stale, timeout=600)
         RUN["bare_seen"] = site.seen[len(RUN["site_seen"]):]
+        if RUN["second"].returncode == 0:
+            RUN["bare_report"] = spawn(
+                [sys.executable, REPORT, os.path.join(work, "bare.json"),
+                 "--markdown", os.path.join(work, "bare.md"),
+                 "--html", os.path.join(work, "bare.html"),
+                 "--llm-queue", os.path.join(work, "bare-queue.md")], timeout=300)
         # `--quiet` asks for nothing but warnings on stderr, and the line about the
         # credential is not one.
         RUN["quiet"] = spawn([sys.executable, RUNNER, with_credential, *common, "--quiet",
@@ -340,6 +346,40 @@ class TheRecordNamesTheSiteAndSaysACredentialWasUsed(unittest.TestCase):
 
     def test_a_run_without_one_says_so_as_well(self):
         self.assertIs(payload("bare.json").get("url_credentials"), False)
+
+    def test_both_reports_say_so_too(self):
+        """The reader this sentence is for holds a report, not the JSON. Until 0.153.0
+        the fact was in the record and on neither surface."""
+        from checklist_report import Lang, provenance_warnings
+        for name in ("report.md", "report.html"):
+            with self.subTest(report=name):
+                with open(os.path.join(RUN["work"], name), encoding="utf-8") as stream:
+                    self.assertEqual(stream.read().count("credential typed into the URL"), 1)
+        self.assertIn("credential typed into the URL", RUN["report"].stdout)
+        # Both surfaces take the sentence from one list, and so does the translation.
+        russian = provenance_warnings(payload("results.json"), Lang("ru"))
+        self.assertEqual(sum("учётными данными из URL" in line for line in russian), 1)
+
+    def test_a_report_of_a_run_without_one_does_not(self):
+        self.assertEqual(RUN["bare_report"].returncode, 0, RUN["bare_report"].stderr[-2000:])
+        for name in ("bare.md", "bare.html"):
+            with self.subTest(report=name):
+                with open(os.path.join(RUN["work"], name), encoding="utf-8") as stream:
+                    self.assertNotIn("credential typed into the URL", stream.read())
+        self.assertNotIn("credential typed into the URL", RUN["bare_report"].stdout)
+
+    def test_the_run_that_was_refused_still_says_where_the_host_is(self):
+        """The audit without the credential met the site's 401, on a host only this
+        machine reaches. Until 0.153.0 an entry that failed was not asked where it
+        resolves: the record said the host was not private, and the report of the 401
+        page said "the host it audited was public, so the verdicts stand"."""
+        bare = payload("bare.json")
+        self.assertIs(bare["entry_reachable"], False, "the bare run was let in")
+        self.assertIs(bare["entry_private"], True)
+        with open(os.path.join(RUN["work"], "bare.md"), encoding="utf-8") as stream:
+            report = stream.read()
+        self.assertIn("only reachable from the machine", report)
+        self.assertNotIn("was public", report)
 
     def test_the_operator_is_told_what_became_of_it(self):
         self.assertIn("credential from the URL", RUN["first"].stderr)
@@ -661,14 +701,51 @@ class WhatIsAddedToTheSecretSet(unittest.TestCase):
     bare password is not among them, because a password of one letter would then be
     replaced in every word of the record."""
 
+    @staticmethod
+    def written(userinfo: str, text: str) -> str:
+        """`text` as the run would write it after a URL carrying `userinfo`."""
+        return runner.redact(text, runner.url_credential_secrets(userinfo))
+
     def test_the_forms(self):
-        self.assertEqual(set(runner.url_credential_secrets("u:p%40ss")),
-                         {"u:p%40ss@", "u:p@ss@",
-                          base64.b64encode(b"u:p@ss").decode()})
+        token = base64.b64encode(b"u:p@ss").decode()
+        for said, kept in (("http://u:p%40ss@host/x", "http://<redacted>host/x"),
+                           ("signed in as u:p@ss@host", "signed in as <redacted>host"),
+                           (f"/about?asked-with={token}", "/about?asked-with=<redacted>"),
+                           (f"Authorization: Basic {token}", "Authorization: Basic <redacted>")):
+            with self.subTest(said=said):
+                self.assertEqual(self.written("u:p%40ss", said), kept)
 
     def test_a_token_alone(self):
-        self.assertEqual(set(runner.url_credential_secrets("tok3n")),
-                         {"tok3n@", base64.b64encode(b"tok3n:").decode()})
+        token = base64.b64encode(b"tok3n:").decode()
+        self.assertEqual(self.written("tok3n", "https://tok3n@host/"),
+                         "https://<redacted>host/")
+        self.assertEqual(self.written("tok3n", f"sent {token}."), "sent <redacted>.")
+
+    def test_a_form_is_the_whole_of_what_stood_before_the_at(self):
+        """Until 0.153.0 a form was replaced wherever its letters stood. A URL typed as
+        `http://a@host/` turned `anna@example.com` into `ann<redacted>example.com` in
+        every page the audit read, and its four-letter token was cut out of the middle
+        of any longer run of base64. A form begins where a name can begin, and the token
+        is a whole run."""
+        for said in ("anna@example.com", "data@host", "write to j.a@example.com",
+                     "user:a@host", "xYTo=y", "aGVsbG8YTo="):
+            with self.subTest(left_alone=said):
+                self.assertEqual(self.written("a", said), said)
+        for said, kept in (("http://a@host/", "http://<redacted>host/"),
+                           ("mail a@example.com", "mail <redacted>example.com"),
+                           ("Basic YTo=", "Basic <redacted>"),
+                           ("token=YTo=&next", "token=<redacted>&next")):
+            with self.subTest(said=said):
+                self.assertEqual(self.written("a", said), kept)
+        self.assertEqual(self.written("admin", "sysadmin@example.com"),
+                         "sysadmin@example.com")
+        self.assertEqual(self.written("admin", "admin@example.com"),
+                         "<redacted>example.com")
+        # The other end of a run: `u:p@ss` encodes with no padding, so a longer value
+        # can begin with its token, and that value is not the credential either.
+        longer = base64.b64encode(b"u:p@ssextra").decode()
+        self.assertTrue(longer.startswith(base64.b64encode(b"u:p@ss").decode()))
+        self.assertEqual(self.written("u:p%40ss", longer), longer)
 
     def test_nothing_typed_nothing_added(self):
         self.assertEqual(tuple(runner.url_credential_secrets("")), ())
@@ -820,6 +897,81 @@ class WhichRequestsCarryTheCredential(unittest.TestCase):
             os.environ.pop(self.http.URL_CREDENTIALS_VAR, None)
             self.assertIsNone(self.http.url_credentials("https://host.example/"))
         self.assertIsNone(self.asked("", "https://host.example/"))
+
+
+class AScriptStartedByHandTakesTheHostAndNothingElse(unittest.TestCase):
+    """Under the runner a script is never handed a URL with a credential in it. Started
+    by hand it is handed what was typed, and three of them took the host out of that by
+    cutting at a colon: the user name of `https://user:pw@host/`, and `[` of
+    `http://[::1]:8080/`. One sent what it found to a registry's whois server and to the
+    resolver; another carried the credential into the plain-http form of the address it
+    then asked. Measured at 0.152.0."""
+
+    HOSTS = {"https://example.com/": "example.com",
+             "https://example.com:8443/": "example.com",
+             "https://user:pw@example.com/": "example.com",
+             "https://tok3n@example.com:8443/": "example.com",
+             "http://[::1]:8080/page": "::1",
+             "https://[2001:db8::1]/": "2001:db8::1",
+             "http://203.0.113.5:8080/": "203.0.113.5"}
+
+    def asked_by_domain_safety(self, url: str) -> dict:
+        import domain_safety_check as safety
+        asked = {"whois": [], "resolver": []}
+
+        def whois(argv, **_kwargs):
+            asked["whois"].append(argv[1:])
+            return mock.Mock(stdout="", returncode=0)
+
+        def resolve(name):
+            asked["resolver"].append(name)
+            raise OSError("not asked")
+
+        reachable = {"reachable": True, "status": 200, "response_ms": 1, "error": None}
+        with mock.patch.dict(os.environ), \
+                mock.patch.object(safety.subprocess, "run", whois), \
+                mock.patch.object(safety.shutil, "which", lambda name: "whois"), \
+                mock.patch.object(safety.socket, "gethostbyname", resolve), \
+                mock.patch.object(safety, "check_uptime", lambda *a: reachable), \
+                mock.patch.object(safety, "check_safe_browsing",
+                                  lambda *a: {"checked": False}):
+            # whois is not started at all in a loopback-only process; this test is
+            # about what it would be asked, and the recorder above is what it reaches.
+            os.environ.pop("SEO_LOOPBACK_ONLY", None)
+            asked["domain"] = safety.check(url)["domain"]
+        return asked
+
+    def test_whois_and_the_resolver_are_asked_about_the_host(self):
+        for url, host in self.HOSTS.items():
+            with self.subTest(url=url):
+                asked = self.asked_by_domain_safety(url)
+                self.assertEqual(asked["domain"], host)
+                self.assertEqual(asked["resolver"], [host])
+                # An address has no registration of its own: the registry is not asked.
+                named = not host[0].isdigit() and ":" not in host
+                self.assertEqual(asked["whois"], [[host]] if named else [])
+
+    def test_a_locale_is_looked_for_in_the_host(self):
+        import hreflang_checker
+        for url, where in (("https://example.de/", "ccTLD"),
+                           ("https://de.example.com/", "subdomain"),
+                           ("https://user:pw@example.de/", "ccTLD"),
+                           ("https://de:pw@example.com/", ""),
+                           ("https://user:pw@de.example.com:8443/", "subdomain"),
+                           ("https://[2001:db8::de]/", "")):
+            with self.subTest(url=url):
+                self.assertEqual(hreflang_checker.locale_lives_in("de", url), where)
+
+    def test_the_plain_http_form_carries_no_credential(self):
+        """INP-7, *the credential is sent nowhere else*: typed for `https://`, it is not
+        given to the same host over `http://`. `safe_http` asks a URL that carries
+        userinfo of its own as written, so the form itself must not carry it."""
+        import security_headers
+        for url, plain in (("https://user:pw@example.com/a#f", "http://example.com/a"),
+                           ("https://tok3n@example.com:8443/", "http://example.com:8443/"),
+                           ("https://user:pw@[::1]:8443/", "http://[::1]:8443/")):
+            with self.subTest(url=url):
+                self.assertEqual(security_headers.http_form(url), plain)
 
 
 if __name__ == "__main__":

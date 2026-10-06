@@ -863,6 +863,14 @@ def provenance_warnings(data: dict, L: "Lang | None" = None) -> list[str]:
                        "(--allow-private). The host it audited was public, so the "
                        "verdicts stand — but a staging or local copy may have been "
                        "reached while crawling."))
+    if data.get("url_credentials"):
+        # The record has said so since 0.136.0 and neither report did: the reader who
+        # compares this audit with one that met the site's 401 holds a report.
+        out.append(L.t("w_url_credentials",
+                       "This audit was made with a credential typed into the URL, so "
+                       "it describes what the site serves to somebody it lets in. "
+                       "The same address audited without one may be answered with "
+                       "a sign-in page, or refused."))
     guard = data.get("entry_guard")
     if guard and not data.get("entry_guard_enforced"):
         out.append(L.t("w_guard",

@@ -1049,6 +1049,37 @@ class TheRecordDoesNotDependOnHowItWasInvoked(unittest.TestCase):
         self.assertNotIn("Changed since previous run", stdout)
         self.assertNotIn("Diff:", stdout)
 
+    # What the results file says that the stored run does not: each is something the
+    # store says about the run, computed after the run is in it (HST-4).
+    FROM_THE_STORE = {"compared_with", "diff", "diff_note", "history", "open_since"}
+
+    def test_the_stored_run_is_what_was_measured_and_nothing_the_store_says_about_it(self):
+        """`openspec/specs/history/` HST-4. A run is filed before it is compared, so the
+        file in `.seo-runs/` and the results file are not the same document: measured on
+        4 October 2026, five keys apart, with nothing written down that said which five
+        or that it was meant. Everything else is the same, value for value."""
+        home = os.getcwd()
+        self.addCleanup(os.chdir, home)
+        work = tempfile.mkdtemp(prefix="seo-history-")
+        self.addCleanup(shutil.rmtree, work, True)
+        os.chdir(work)
+        self.audit_into("stored-first.json")
+        results, _ = self.audit_into("stored-second.json")
+
+        (folder,) = os.listdir(os.path.join(work, ".seo-runs"))
+        runs = sorted(os.listdir(os.path.join(work, ".seo-runs", folder)))
+        self.assertEqual(len(runs), 2, runs)
+        with open(os.path.join(work, ".seo-runs", folder, runs[-1]),
+                  encoding="utf-8") as f:
+            stored = json.load(f)
+        self.assertEqual(stored["started_at"], results["started_at"],
+                         "this is not the stored copy of the second run")
+        self.assertEqual(set(results) - set(stored), self.FROM_THE_STORE)
+        self.assertEqual(set(stored) - set(results), set())
+        self.assertEqual([key for key in stored if stored[key] != results[key]], [])
+        self.assertIsNotNone(results["compared_with"],
+                             "nothing was compared, so the five keys held nothing")
+
 
 
 class EveryStatusCarriesEvidenceIncludingTheTwoNobodyChecked(unittest.TestCase):

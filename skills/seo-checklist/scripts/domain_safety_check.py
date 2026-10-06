@@ -17,6 +17,7 @@ Usage:
 """
 
 import argparse
+import ipaddress
 import json
 import os
 import re
@@ -136,6 +137,14 @@ def check_whois(domain: str, timeout: int) -> dict:
     if loopback_only():
         out["error"] = "whois not asked: this process is loopback-only (SEO_LOOPBACK_ONLY)"
         return out
+    # An address has no registration of its own. Its labels reduced as a name's are,
+    # `203.0.113.5` became `113.5`, and a registry was asked about that.
+    try:
+        ipaddress.ip_address(domain)
+        out["error"] = "whois not asked: an address has no domain registration"
+        return out
+    except ValueError:
+        pass
     binary = shutil.which("whois")
     if not binary:
         out["error"] = "whois binary not available"
@@ -201,7 +210,10 @@ def check_neighbors(domain: str) -> dict:
 
 
 def check(url: str, timeout: int = 20) -> dict:
-    domain = urlparse(url).netloc.split(":")[0]
+    # `hostname`, not the netloc cut at a colon: that cut read `[` out of
+    # `http://[::1]:8080/` and the user name out of `https://user:pw@host/`, and
+    # both went to whois and to the resolver.
+    domain = urlparse(url).hostname or ""
     api_key = (os.environ.get("GOOGLE_SAFE_BROWSING_KEY")
                or os.environ.get("SAFE_BROWSING_API_KEY") or "")
 
