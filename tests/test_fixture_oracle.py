@@ -194,7 +194,10 @@ def comparison() -> tuple[dict[str, dict[str, int]], list[dict[str, str]]]:
         for item_id, declared in declarations.items():
             expected = declared["expect"]
             actual = RESULTS[label][item_id]
-            if actual == expected:
+            # Through `across_runs`: a declaration of an item whose band is a time the
+            # run measured is held as far as that the item was timed (DEC-7).
+            if (harness.across_runs(item_id, actual)
+                    == harness.across_runs(item_id, expected)):
                 counts["matched"] += 1
             else:
                 counts["disagreed"] += 1
@@ -490,6 +493,35 @@ class FixtureOracle(unittest.TestCase):
                          "the comparison read fewer declarations than the manifest "
                          "carries; a declaration nobody compares is counted as coverage "
                          "and checks nothing")
+
+    def test_a_timed_declaration_is_held_as_timed_and_no_further(self):
+        """DEC-7's one narrowing. A declaration says PASS of TECH-003, and a run on a
+        slow machine answers FAIL of a tree nothing is wrong with: with every time to
+        first byte five seconds longer this oracle refused the tree
+        (`local/clock-0154/mac-census-slow-clock.txt`). So the comparison holds such a
+        declaration as far as that the item was timed, and this holds the comparison
+        to exactly that: either band agrees, and a run that took no time does not.
+
+        The answers are put into `RESULTS` and taken out again, because the run
+        cannot be made to give them at will.
+        """
+        declared = [(label, item_id, rows[item_id]["expect"])
+                    for label, rows in manifest()["fixtures"].items()
+                    for item_id in rows if item_id in harness.CLOCK_READ]
+        self.assertTrue(declared, "no timed item is declared; this reads nothing")
+        for label, item_id, expected in declared:
+            self.assertIn(expected, ("PASS", "WARN", "FAIL"), f"{label} {item_id}")
+            answered = RESULTS[label][item_id]
+            try:
+                for status, differs in (("PASS", False), ("FAIL", False),
+                                        ("NO_DATA", True)):
+                    RESULTS[label][item_id] = status
+                    rows = [d for d in comparison()[1]
+                            if (d["fixture"], d["item"]) == (label, item_id)]
+                    with self.subTest(fixture=label, item=item_id, answered=status):
+                        self.assertEqual(bool(rows), differs)
+            finally:
+                RESULTS[label][item_id] = answered
 
 
 if __name__ == "__main__":

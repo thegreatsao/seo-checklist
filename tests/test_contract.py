@@ -589,22 +589,44 @@ class NothingAccusesTheGoodSiteWithoutAReason(unittest.TestCase):
         self.script_backed = [i for i in RESULTS["good"]["items"]
                               if REG[i["id"]].get("source") == "script"]
 
-    def test_no_item_accuses_the_good_fixture_without_a_written_reason(self):
+    def accused(self, good):
+        """Through `across_runs`: a time this machine measured over its budget is not
+        the check answering backwards, and not the fixture being wrong."""
         accused = []
         for item in self.script_backed:
             item_id = item["id"]
             if item_id in self.ACCUSED_ON_PURPOSE:
                 continue
-            status = self.good[item_id]["status"]
-            if status in (FAIL, WARN):
+            status = good[item_id]["status"]
+            if harness.across_runs(item_id, status) in (FAIL, WARN):
                 accused.append(f"{item_id} ({item['severity']}, "
                                f"{script_of(item_id)}) {status} — "
-                               f"{(self.good[item_id].get('evidence') or '')[:90]}")
+                               f"{(good[item_id].get('evidence') or '')[:90]}")
+        return accused
+
+    def test_no_item_accuses_the_good_fixture_without_a_written_reason(self):
+        accused = self.accused(self.good)
         self.assertEqual(accused, [],
                          "these items report a defect in the fixture the pair calls "
                          "good. Either the check answers backwards, or the fixture "
                          "really is wrong and this list should say so:\n"
                          + "\n".join(f"  {a}" for a in accused))
+
+    def test_a_slow_machine_accuses_nothing_and_a_failing_check_still_does(self):
+        """Both halves, on answers put in by hand: the run cannot be made slow at will.
+        A timed item over its budget is not an accusation; any other item that passed
+        and now fails is, so the rule above has not been switched off."""
+        timed = [i for i in harness.CLOCK_READ if i in self.good]
+        passing = next(i["id"] for i in self.script_backed
+                       if i["id"] not in harness.CLOCK_READ
+                       and self.good[i["id"]]["status"] == PASS)
+        self.assertTrue(timed, "no timed item was audited; this reads nothing")
+        slow = dict(self.good)
+        for item_id in timed:
+            slow[item_id] = dict(self.good[item_id], status=FAIL)
+        self.assertEqual(self.accused(slow), [])
+        slow[passing] = dict(self.good[passing], status=FAIL)
+        self.assertEqual([line.split()[0] for line in self.accused(slow)], [passing])
 
     def test_every_reason_still_describes_something(self):
         """An accusation that stops happening leaves a reason nobody is checking."""

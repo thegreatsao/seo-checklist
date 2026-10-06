@@ -452,6 +452,23 @@ ninth word", so twenty-seven declarations exempted themselves from the compariso
 being counted as coverage. That exemption was DEC-2's to remove, and removing it closed
 this row without a second repair — which is what its old line predicted.
 
+One narrowing, since 0.155.0, and it is not an exemption: the row is read and counted. A
+declaration of an item whose band is a time the run measured — `harness.CLOCK_READ`, one
+item, TECH-003 — is compared as far as that the item was timed. The declaration says
+`PASS` of a tree served from loopback, and which band the time lands in is the machine's:
+with every time to first byte five seconds longer the comparison refused a tree nothing
+was wrong with. `test_a_timed_declaration_is_held_as_timed_and_no_further` holds the
+comparison to that — either band agrees, and a run that took no time does not. What it
+gives up is said: a declaration of `FAIL` for such an item would agree with a run that
+passed. That the item can fail at all is held elsewhere, on an origin that answers late
+(`tests/test_clock_read.py`).
+
+#### Scenario: the declared band is a time the run measured
+- **WHEN** a declared `PASS` of an item in `harness.CLOCK_READ` meets an answered `FAIL`
+- **THEN** the comparison agrees, because the tree does not decide how long the machine
+  takes to serve it
+- **AND** an answer that is no verdict — the run took no time — still fails the suite
+
 #### Scenario: the comparison declines to make a comparison
 - **WHEN** a declaration carries a value the comparison skips rather than compares
 - **THEN** this requirement is violated
@@ -662,7 +679,8 @@ longer in the registry, in the registry and never recorded.
 
 ### Requirement: DEC-12 — a recording is reproducible, and a stale one fails a gate
 
-Re-taking the census on an unchanged tree SHALL produce the same record. A record that
+Re-taking the census on an unchanged tree SHALL produce the same record, an answer that
+is a time the run measured being compared as far as that it was given. A record that
 differs from a fresh one MUST fail, in CI, on its own job.
 
 **Why:** a measurement nobody can reproduce is an anecdote. This is also the only thing
@@ -670,6 +688,24 @@ standing between the record and a hand edit, since every value in it is plausibl
 **Reader:** enforced. `verdict_census.py --check` compares the stored record with a fresh
 one and exits 1 on any difference; the `census` job in CI runs exactly that. The
 manifest has no equivalent and needs none — it is a prediction, not a recording.
+
+Reproducible is not said of a band that is a measured time. Until 0.155.0 the record's
+`PASS` for TECH-003 on five trees was compared like any other answer, and on a tree whose
+every time to first byte was five seconds longer the gate exited 1 with nothing changed
+but the clock. `--check` now compares two records on an item in `harness.CLOCK_READ` as
+far as that it was timed. The record keeps the word the recording machine got, so
+DEC-10's vocabulary is as it was. `tests/test_census.py` holds the comparison, in
+`test_a_census_from_a_slow_machine_is_in_step_and_nothing_else_is`: the other band of
+that item is in step, the item taking no time is not, and the other band of any other
+item is not. What it gives up is said: the band of such an item in the
+record is not protected from a hand.
+
+#### Scenario: the census is re-taken on a slower machine
+- **WHEN** a fresh census answers the other band for an item whose band is a time the
+  run measured
+- **THEN** the two records are in step
+- **AND** the stored word stays the recording machine's, which no gate can hold another
+  machine to
 
 #### Scenario: the record has drifted from the tree
 - **WHEN** a fresh census differs from the stored record in any field

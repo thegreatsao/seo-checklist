@@ -714,16 +714,21 @@ assembled at run time from a string is not a launch it can see.
   0.2, and the limiter that shares nothing refused in eight of eight.
   *A call that waits for nothing* is read off the wait `pace` reports, in four tests that
   had timed it against bounds of 0.05 to 0.5 s.
-  Not held: nothing makes a new comparison of two runs go through `across_runs` —
-  `test_clock_read` finds an item that begins to read a clock, not a test that begins to
-  compare one. Two tests still hold TECH-003's band on one live run, found by running the
-  suite with every time to first byte five seconds longer: the fixture oracle's
-  declaration and the contract's rule that nothing accuses the good tree. Each says PASS
-  of a machine at rest, and a machine slow enough can refuse a release through either;
-  after the repair a tree served from disk was timed at 3 to 14 ms at rest and 12 to
-  60 ms loaded. The pacing
-  control still holds 0.2 s over three processes let go together. Not examined: the two
-  to fifteen seconds a test gives a loopback request or a child to answer.
+  *One run held to a band.* Three places held TECH-003's PASS on a single live run: the
+  fixture oracle's declaration, the contract's rule that nothing accuses the good tree,
+  and the verdict census's record. At 0.154.0 this line named the first two and said
+  there was nothing else. They had been listed by running the suite with every time to
+  first byte five seconds longer, and the census's check is a step of the workflow and of
+  the local gate, not a test: on such a tree it exits 1. Since 0.155.0 all three go
+  through `across_runs`, each with a test that holds it to exactly that — either band
+  agrees, an item that took no time does not (DEC-7 and DEC-12 of
+  `openspec/specs/declarations/`). Every step of the workflow that starts the runner was
+  then read: the suite, the live path, which asserts no band, and the census.
+  Not held: nothing makes a new comparison of two runs, or a new record of one, go
+  through `across_runs` — `test_clock_read` finds an item that begins to read a clock,
+  not a reader that begins to hold one. The pacing control still holds 0.2 s over three
+  processes let go together. Not examined: the two to fifteen seconds a test gives a
+  loopback request or a child to answer.
 
 ## 5. What this document does not decide
 

@@ -38,7 +38,7 @@ REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
                         "checklist.json")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from harness import FixtureSite, _Site, offline_env, spawn  # noqa: E402
+from harness import FixtureSite, _Site, across_runs, offline_env, spawn  # noqa: E402
 
 # The operator-supplied inputs, exactly as the fixture oracle hands them over. The
 # first census run omitted these and reported 43 items as "never answered on any
@@ -203,6 +203,27 @@ def report(record: dict) -> list[str]:
     return lines
 
 
+def as_held(record: dict) -> dict:
+    """`record` as a census taken on another machine, or at another hour, can hold it.
+
+    The record says what each item answered where it was recorded, in the audit's
+    own words. For an item whose band is a time the run measured that word is the
+    recording machine's (`harness.CLOCK_READ`): with every time to first byte five
+    seconds longer `--check` refused a tree nothing was wrong with. So two records
+    are compared on such an answer as far as that the item was timed.
+    """
+    held = json.loads(json.dumps(record, sort_keys=True))
+    for item_id, row in held["items"].items():
+        row["answers"] = {site: across_runs(item_id, answer)
+                          for site, answer in row["answers"].items()}
+        row["distinct"] = sorted(set(row["answers"].values()))
+    return held
+
+
+def in_step(stored: dict, fresh: dict) -> bool:
+    return as_held(stored) == as_held(fresh)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", help="write the JSON record here")
@@ -220,7 +241,7 @@ def main() -> int:
     if args.check:
         with open(args.check, encoding="utf-8") as stream:
             stored = json.load(stream)
-        if stored != json.loads(json.dumps(record, sort_keys=True)):
+        if not in_step(stored, record):
             print(f"\n{args.check} is out of step with a fresh census", file=sys.stderr)
             return 1
         print(f"\n{args.check} is in step")

@@ -23,6 +23,7 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "skills", "seo-checklist", "scripts"))
 import harness  # noqa: E402
+import verdict_census  # noqa: E402
 from checklist_report import STATUS_ORDER  # noqa: E402
 CENSUS = os.path.join(ROOT, "tests", "census.json")
 
@@ -159,6 +160,43 @@ class RecordedCensus(unittest.TestCase):
 
         with open(CENSUS, encoding="utf-8") as stream:
             json.load(stream, object_pairs_hook=reject_duplicates)
+
+    def test_a_census_from_a_slow_machine_is_in_step_and_nothing_else_is(self):
+        """DEC-12's one narrowing, on the comparison `--check` makes. A fresh census
+        that answers the other band for an item whose band is a measured time
+        (`harness.CLOCK_READ`) agrees with the record. One in which that item took no
+        time does not, and neither does the other band of any other item.
+
+        The fresh census is this record with one answer changed, because a slow
+        machine cannot be had at will; the live half was measured once, in
+        `local/timed-0155/`.
+        """
+        def fresh(item_id, answer):
+            record = json.loads(json.dumps(self.census))
+            row = record["items"][item_id]
+            row["answers"][sorted(row["answers"])[0]] = answer
+            row["distinct"] = sorted(set(row["answers"].values()))
+            return record
+
+        other = {"PASS": "FAIL", "FAIL": "PASS"}
+        self.assertTrue(verdict_census.in_step(self.census, load(CENSUS)))
+        timed = [i for i in harness.CLOCK_READ if i in self.census["items"]]
+        self.assertTrue(timed, "no timed item is recorded; this reads nothing")
+        for item_id in timed:
+            first = self.census["items"][item_id]["answers"]
+            answered = first[sorted(first)[0]]
+            with self.subTest(item=item_id):
+                self.assertIn(answered, other, "recorded as never timed")
+                self.assertTrue(verdict_census.in_step(
+                    self.census, fresh(item_id, other[answered])))
+                self.assertFalse(verdict_census.in_step(
+                    self.census, fresh(item_id, "NO_DATA")))
+        for item_id, row in self.census["items"].items():
+            answered = row["answers"][sorted(row["answers"])[0]]
+            if item_id not in harness.CLOCK_READ and answered in other:
+                with self.subTest(item=item_id):
+                    self.assertFalse(verdict_census.in_step(
+                        self.census, fresh(item_id, other[answered])))
 
 
 class TheHarnessSaysWhatItCannotExercise(unittest.TestCase):
