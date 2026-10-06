@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.155.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit does or writes changes: this release and the one before it are the suite. A test's verdict no longer rests on how fast the machine that runs it is: the fixture server answers a page from disk in 0.5 ms where it took up to 851, and TECH-003, whose band is a time the run measures, is compared between runs, declared and recorded only as far as that it was timed. 0.154.0 said two places still held that band on a single run; there were three, the third a step of the workflow and not a test, and all three are repaired.
+Version 0.156.0 — see [CHANGELOG.md](CHANGELOG.md). On Windows an audit is shorter, by about half for the fixture site on loopback, and nothing it reports changes. Two locks in the fetch layer — the pacing slot and the count of cache hits — were waited for in steps of a whole second whenever somebody held them, however briefly; one audit of the fixture tree spent 42 to 79 seconds that way. They are asked for again every few milliseconds now: the same audit takes 26 to 28 seconds at the default rate where it took 52 to 54, and requests are still never closer together than the rate allows. Linux and macOS were not affected.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

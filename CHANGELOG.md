@@ -10,6 +10,58 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.156.0 — on Windows, a lock somebody held cost a second
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves and no report changes. On
+Windows an audit of the fixture tree takes about half as long. That is a site on
+loopback, where nothing else takes time; on a real site the same waiting comes out of a
+longer run, and how much was not measured. On Linux and macOS nothing changes.
+
+* **The defect.** Two things in the fetch layer are guarded by a lock on a small file:
+  the pacing slot of a host, and the count of answers taken from the cache. On Windows
+  the lock was the C runtime's blocking one, which sleeps a whole second after an
+  attempt that finds the region held, however briefly, and tries ten times. Seen in
+  0.154.0 from the side: three processes pacing at five requests a second proceeded
+  0.2 s and then 0.8 s apart, where the rate asks for 0.2 and 0.2. Never faster than
+  asked, so nothing was rude; an audit was slow.
+
+* **Sized on a whole audit before anything was changed**: the good fixture tree, three
+  sampled pages, every operator artifact, each run twice.
+  - At the default rate, four requests a second: 52 and 54 s. 28 requests were paced,
+    and 5 or 6 of them waited a second or more for the slot's lock, 9 to 10 s in all.
+  - The larger part was not pacing. The cache-hit count was locked 232 times, held for
+    microseconds each time, and 36 to 47 of those locks cost a second: 42 to 79 s of
+    waiting across the processes of one audit. It is taken with pacing switched off too,
+    which is how every test runs: 41 and 52 s.
+  - No call gave up on the lock and paced alone.
+
+* **The repair.** The lock is asked for again every five milliseconds, for the ten
+  seconds the old one would wait; a process that never gets it paces alone as before.
+  The same audit: 26 and 28 s at the default rate, 23 and 24 s with pacing off. The
+  count's locks cost 0.4 to 0.7 s in all. The paced requests went out 1.1 a second where
+  they had gone 0.55, and no two closer than the quarter second the rate allows, before
+  or after. The three processes at five requests a second: 0.2 s and 0.2 s.
+
+* **Held, with nothing timed**, in `tests/test_runner.py` `RateLimiting`: while the lock
+  is held the waiter asks again; the mode that sleeps a second is never passed to the C
+  runtime; each wait between attempts is the stated one, and that number is at most a
+  tenth of the default interval; a lock that is never released is given up on. Five
+  breakages, five seen at the first run, each by the test written for it.
+  - A test of the outcome — what three processes that ask at once are told — was
+    written first and is not in the suite. With every core busy it was red in one round
+    of twelve with the limiter right, because a process that asks late is told to wait
+    for nothing too; INV-G8 is two releases old. The outcome is measured instead, before
+    and after, and HTTP-4 says so.
+
+* **What it does not do.** The suite on the same Windows machine took 954 s before and
+  875 s after, one run each: most tests start one script at a time and never contend.
+  The ten-second bound is as it was. And on POSIX the lock is `flock`, which the kernel
+  waits for; nothing there was slow and nothing there changed.
+
+* **Two new numbers, listed and not counted**: the ten seconds and the five
+  milliseconds. Neither decides a verdict, so neither is among the 161 that do; the
+  listing of module-level numbers outside that inventory goes from 15 to 17.
+
 ## 0.155.0 — three places held one run to a band, and 0.154.0 had named two
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
