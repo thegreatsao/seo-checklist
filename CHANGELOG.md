@@ -10,6 +10,80 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.152.0 — body copy on Blogger, WordPress and Ghost; a suite that leaves nothing behind
+
+Registry version: `90ba79b14b28`, unchanged. **One verdict can move: KW-076**, and only on
+a page `article_seo.py` recognises as Blogger, WordPress or Ghost. Everything else here
+is `tests/` and the spec.
+
+* **A recognised template was read wrong in the two ways 0.148.0 repaired everywhere
+  else.** That release made `<main>` the body copy and said, in EVD-11, that the three
+  templates were outside it and that no test served such a page. Thirteen do now, and the
+  released script read eight of them wrong.
+  - *A listing was its first post.* The script took the first block the template names —
+    `itemprop="articleBody"` or `post-body` on Blogger, `entry-content` and its kin on
+    WordPress and Ghost. On a page of several posts the keyword in the second was not in
+    the body copy: FAIL where the page says it.
+  - *A page with none of those blocks was read whole.* A footer was body copy, so a
+    keyword in the footer alone passed. One of the pages has no generator at all: a
+    single `ghost-` class on a button was enough to make it "Ghost", and so to have it
+    read whole.
+  - *Now.* Every block the template names is read, a block inside another once; a page
+    with none is read as a page no template is recognised on, `<main>` first. The
+    template's blocks still come before `<main>`: a post's `entry-content` leaves out
+    the comments `<main>` holds beside it.
+  - *Which way the verdict moves.* FAIL → PASS where the keyword is in a later post of a
+    listing. PASS → FAIL where it is only outside `<main>` on a page with none of the
+    template's blocks. A single post that has its block reads as before.
+  - *Held* by `ArticleKeyword.test_a_recognised_template_names_the_body_copy`, through the
+    script as the runner starts it: of each page, the template the script says it found,
+    the number of paragraphs in the body copy, the keyword once, nothing from beside it.
+    Eight breakages of the reading, each seen on the pages it was expected on. EVD-11 has
+    the rule and three scenarios; the requirement count does not move.
+  - *Not decided here.* What makes a page a Blogger, WordPress or Ghost page. The script
+    still says "ghost" of that page; it no longer reads it differently for it.
+
+* **The suite left 136 entries in the temporary directory on every run.** Measured on the
+  Mac: the whole suite against an empty directory, then each module alone. Thirty roots
+  of `harness.run_audit`, eighty-five with no prefix, the rest under twelve other prefixes;
+  on the Windows machine these releases are written on, eleven thousand `seo-shape-*`
+  directories had collected. Sixty lines in `tests/` make a temporary path by hand, each
+  to remember its own removal.
+  - *Now nothing has to remember.* `tests/harness.py` makes one directory the temporary
+    directory of the process — `tempfile` there, and `TMPDIR`, `TEMP` and `TMP` for every
+    child — and removes it whole at exit. The same two measurements after: 0 and 0. On
+    Windows, the whole suite: nothing named as the suite names its directories appeared
+    in the temporary directory while it ran.
+  - *Held* by `tests/test_suite_temp.py`, three tests: this process, a child, and a
+    second process that leaves a directory and a file and ends with its sandbox empty.
+    Three breakages, three seen. Governance has it as INV-G6, partial: a killed process
+    leaves its one directory, and a child whose environment a test builds from nothing
+    is not told.
+  - *Closed by reading, without a change:* the known-issue probes were recorded as
+    writing three pacing files into the machine-wide directory when run outside the
+    suite. Run that way on the released tree they write none.
+
+* **A port probe was counted as the audit's, on the Mac and in one place on Windows.**
+  0.135.0 taught the harness that something on the development machine asks every newly
+  listening loopback port for `/` with `User-Agent: Workbench`, and to keep such a request
+  apart. On the Mac the same program's User-Agent is `Workbench%20Native/1.4.2
+  CFNetwork/… Darwin/…`, the exact name never matched it, and the push gate has run on
+  that Mac since 0.150.0. The first whole-suite run of this release there read four
+  requests where `test_the_request_made_again_after_a_retry_after` had made two.
+  - *Now* `harness.is_stranger` knows the exact name and the Mac's whole shape — three
+    version numbers cannot be an exact name — and nothing looser: a part of the shape, or
+    it with anything before or after, is counted still.
+  - *And the proxy stand-in of 0.149.0 was a bare listener*, so any connection to it was
+    "the proxy was contacted". In the Windows run of this release one of its tests said
+    so, of a request that passes alone and on the Mac; the probe is the likeliest caller
+    and was not caught in the act. The stand-in now reads what a connection says: a probe
+    is passed over, and a connection that says nothing still counts.
+  - *Held* by `tests/test_harness_strangers.py` and by one test beside each of the two
+    other places that count: the credential origin and the stand-in. Seven breakages,
+    seven seen. Governance has it as INV-G7.
+  - *How the Mac's name was measured:* by listening on a loopback port for twenty
+    seconds on 6 October and printing what arrived.
+
 ## 0.151.0 — CI runs the suite on macOS
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
