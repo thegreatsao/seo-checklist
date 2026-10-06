@@ -10,6 +10,80 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.153.0 — five things left after the URL credential, and a refused host that was called public
+
+Registry version: `90ba79b14b28`, unchanged. Two verdicts can move, each in a corner:
+IN-127 where an hreflang alternate is written with userinfo, and TE-179 where the audited
+host is an address. What the reports say changes for a run made with a credential, and
+for a run that was refused by a host only this machine reaches.
+
+The five were handed over on 4 October by the session that closed INP-7 at 0.136.0,
+measured against 0.142.0 and not acted on. Each was measured again at 0.152.0 before
+anything was changed.
+
+* **The reports did not say an audit was made with a credential.** The record has said so
+  since 0.136.0, for the reader who compares an audit of a site with an audit of its 401
+  page. That reader holds a report, and neither report said it.
+  - *Now* it is a line of the provenance list, on both surfaces, in the terminal summary
+    and in the Russian: the site was read as somebody it lets in reads it, and the same
+    address without the credential may be a sign-in page or a refusal. A run without one
+    says nothing. REP-3 has the row and a scenario.
+
+* **A credential of one letter was cut out of every word that ended with it.** Redaction
+  replaced a form of the credential wherever its letters stood. A URL typed as
+  `http://a@host/` made `a@` such a form: `anna@example.com` was written as
+  `ann<redacted>example.com` in everything the audit recorded, and the Basic token of
+  `a:`, four letters, was cut out of the middle of longer runs of base64. Any user name
+  given without a password did the same to an address ending in it.
+  - *Now* the forms are patterns. One begins where a name can begin, and the token is a
+    whole run. `admin@example.com` is still removed for a URL typed as `admin@host`: it
+    is the credential, followed by an `@`. `sysadmin@example.com` is not.
+
+* **Three scripts read the host of a URL as whatever stood before its first colon.**
+  Under the runner a script is never handed a credential, so this showed only by hand
+  and on an IPv6 address. Measured, with whois and the resolver replaced by recorders:
+  - `domain_safety_check.py https://user:pw@example.com/` asked a registry's whois
+    server, and the resolver, about `user`. A token typed as the user name went to both.
+  - `http://[::1]:8080/` was the host `[`, and whois was asked about that. An IPv4
+    address had its labels reduced as a name's are: `203.0.113.5` was asked about as
+    `113.5`. TE-179 reads what comes back.
+  - `hreflang_checker.py` looked for a locale in the user name of an alternate written
+    with one, so `https://user:pw@example.de/` was not a ccTLD.
+  - *Now* each reads the host as the URL parser gives it, and an address is not looked
+    up in a registry at all: TE-179 is undecided there, where it used to be decided by
+    whatever a registry said about two labels of the address.
+
+* **The plain-http form of an address carried its credential.** `security_headers.py`
+  builds `http://…` from the audited URL to read the redirect to HTTPS, and kept the
+  userinfo. `safe_http` asks a URL that carries userinfo of its own as written, so by
+  hand a password typed for `https://` went out on a plain wire — what INP-7 already
+  forbids a run to do. The form carries none now.
+
+* **The stored run is not the results file, and nothing said so.** A run is filed and
+  then compared, so the results hold five keys the file in `.seo-runs/` does not:
+  `compared_with`, `diff`, `diff_note`, `history`, `open_since`. No code changes. It is
+  how the store is meant to work — each of the five is what the store says about the
+  run, not what the run measured — and HST-4 says so now, with a test that holds the
+  difference to exactly those five and every shared key to one value.
+
+* **A host that refused the audit was recorded as public.** Found while writing the test
+  for the first item: the same staging site audited without its credential answered 401,
+  on a loopback address, and the report of that run said *"the host it audited was
+  public, so the verdicts stand"*. An entry that failed was not asked where it resolves.
+  It is asked now, whatever it answered; a host that does not resolve is still
+  unreachable and not private. HTTP-3 has it in the scenario about resolving.
+
+* **Held** by `tests/test_url_credentials.py` — both reports of a run with a credential
+  and of one without, the forms by what is and is not replaced, three scripts by what
+  they ask about, the record of the refused run — and by one test in
+  `tests/test_contract.py` for the stored run. Eleven breakages: ten seen at the first
+  run. The eleventh, the token found at the start of a longer run of base64, was seen
+  once the test had a value that begins with one.
+
+* **Not held, and said in INP-7:** the requirement is about a run. A script started by
+  hand is handed what was typed, and one that gives the address to an outside service —
+  `pagespeed.py`, the Safe Browsing lookup — gives it whole.
+
 ## 0.152.0 — body copy on Blogger, WordPress and Ghost; a suite that leaves nothing behind
 
 Registry version: `90ba79b14b28`, unchanged. **One verdict can move: KW-076**, and only on

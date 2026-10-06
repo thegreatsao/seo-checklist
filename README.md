@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.152.0 — see [CHANGELOG.md](CHANGELOG.md). One verdict can change: KW-076, on a page recognised as Blogger, WordPress or Ghost. A listing of posts there was read as its first post, and a page with none of the template's own blocks was read whole, footer included; both are now read as body copy is read everywhere else. The suite no longer leaves anything in the machine's temporary directory, and no longer counts a port probe as a request of the audit.
+Version 0.153.0 — see [CHANGELOG.md](CHANGELOG.md). Both reports now say when an audit was made with a credential typed into the URL, and a run refused by a host only this machine reaches no longer calls that host public. A short credential is no longer cut out of every word that ends with it, and a script started by hand takes the host of the URL and not its user name. Two verdicts can move in corners: IN-127 where an hreflang alternate carries userinfo, TE-179 where the audited host is an address.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
