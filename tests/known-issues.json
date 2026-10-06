@@ -926,6 +926,8 @@
           "SOCKET_TIMEOUT",
           "TEMPORARY_REDIRECTS",
           "TOP_N",
+          "WINDOWS_LOCK_PATIENCE",
+          "WINDOWS_LOCK_POLL",
           "_CACHE_POLL"
         ],
         "unnamed": 0

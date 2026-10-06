@@ -146,6 +146,15 @@ DEFAULT_MAX_RPS = 4.0
 DEFAULT_RATE_LIMIT_DIR = os.path.join(tempfile.gettempdir(), "seo-checklist-rate")
 RATE_LIMIT_DIR_VAR = "SEO_RATE_LIMIT_DIR"
 CACHE_HIT_COUNTER = "http-cache-hits.count"
+# How a lock somebody holds is waited for on Windows, where `_lock_exclusive` has to do
+# the waiting itself. Ten seconds is the bound the C runtime's own blocking lock has,
+# ten attempts a second apart: past it the caller is told the lock was not taken, which
+# for pacing means pacing alone — slower, and never a hang. Five milliseconds between
+# attempts is short beside any pacing interval and costs a waiting process nothing to
+# speak of. Neither decides a verdict; like `_CACHE_POLL` and `ROBOTS_FETCH_WAIT` below
+# they are budgets of the fetch layer, so neither carries a basis line.
+WINDOWS_LOCK_PATIENCE = 10.0
+WINDOWS_LOCK_POLL = 0.005
 # basis: convention — 30s. A server that says 'come back in an hour' is not worth
 #  waiting for inside an audit; past this the item reports NO_DATA with the reason,
 #  which is more useful than a run that appears to hang
@@ -203,12 +212,28 @@ def _lock_exclusive(fd, *, blocking: bool) -> bool:
         # length; otherwise unlocking silently misses the region and leaks the lock
         # until the descriptor closes.
         os.lseek(fd, 0, os.SEEK_SET)
-        # LK_LOCK retries for about ten seconds and then raises; unlike LOCK_EX it
-        # does not wait forever. For pacing, that bounded failure deliberately falls
-        # back to this process's own delay instead of hanging the audit.
-        mode = msvcrt.LK_LOCK if blocking else msvcrt.LK_NBLCK
-        msvcrt.locking(fd, mode, 1)
-        return True
+        if not blocking:
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+            return True
+        # Not `LK_LOCK`, which is how this waited until 0.156.0. The C runtime's
+        # blocking lock sleeps a whole second after an attempt that finds the region
+        # held, however briefly it is held, and gives up after ten. Measured on four
+        # audits of the fixture tree on 6 October 2026: of the 232 locks of the
+        # cache-hit counter, which is held for microseconds, 36 to 47 each cost a
+        # second, pacing on or off; and three processes pacing at five requests a
+        # second proceeded 0.2 s and then 0.8 s apart. So the attempt is repeated here, a few
+        # milliseconds apart, and what is kept of `LK_LOCK` is its bound: unlike
+        # `LOCK_EX` this does not wait forever, and a lock that is never got sends the
+        # caller back to its own delay instead of hanging the audit.
+        deadline = time.monotonic() + WINDOWS_LOCK_PATIENCE
+        while True:
+            try:
+                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                return True
+            except OSError:
+                if time.monotonic() >= deadline:
+                    return False
+                time.sleep(WINDOWS_LOCK_POLL)
     except OSError:
         return False
 

@@ -293,6 +293,37 @@ waits a quarter of a second. Probed by setting the constant to 40, which reddens
 run. That is about who may change it, and is not an argument against a gate: a calibration
 nobody can change by accident is what makes the choice somebody's rather than nobody's.
 
+How a held slot is waited for is part of the rate, and on Windows it was wrong until
+0.156.0, in the slow direction. The lock was the C runtime's blocking one, which sleeps a
+whole second after an attempt that finds the region held and tries ten times. A process
+that found the slot held came back after its turn had gone: three processes at five
+requests a second proceeded 0.2 s and then 0.8 s apart, where the rate asks for 0.2 and
+0.2. The test of shared state passed throughout, since it asks that no gap be shorter
+than the interval. And the same lock guards the count of cache hits (HTTP-8), which is
+held for microseconds: in an audit of the fixture tree on 6 October 2026, pacing on or
+off, 36 to 47 of its 232 locks each cost a second. The lock is now asked for again every
+few milliseconds, for the ten seconds the old one would wait, and a process that never
+gets it paces alone as before. One audit of that tree took 52 to 54 s at the default rate
+and 26 to 28 s after; with pacing off, 41 to 52 s and 23 to 24 s.
+
+What `RateLimiting` holds of this is the mechanism, on Windows, with nothing timed: while
+the lock is held the waiter asks again; the mode that sleeps a second is never passed to
+the C runtime; each wait between attempts is the stated one, and that number is at most a
+tenth of the default interval; a lock that is never released is given up on. The outcome —
+what three processes that ask at once are told, and when they proceed — is measured and
+not held. A test of it was written first, and with every core busy it was red in one
+round of twelve with the limiter right, because a process that asks late is told to wait
+for nothing too (INV-G8 of `openspec/specs/governance/`). Not held: on POSIX the lock is
+`flock`, which the kernel waits for without a bound.
+
+#### Scenario: a process finds the slot held
+- **WHEN** a checker asks for the pacing slot while another holds it and waits out its
+  interval
+- **THEN** it is let in when the slot is released, with the rest of its own interval
+  still to wait
+- **AND** it is not put off by a sleep longer than the interval, which makes the
+  machine's combined rate lower than the configured one and the audit longer for nothing
+
 #### Scenario: separate processes queue behind each other
 - **WHEN** several checkers, each its own process, pace themselves against one host
 - **THEN** each waits behind the one before it, so the machine's combined rate is the

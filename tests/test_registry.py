@@ -704,7 +704,11 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         })
         self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 161)
         self.assertEqual(len(named), 173)
-        self.assertEqual(len(uncounted), 15)
+        # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
+        # `lib/safe_http.py`, how long and how often a held lock is asked for on
+        # Windows. Listed and not counted, beside `ROBOTS_FETCH_WAIT` and `_CACHE_POLL`,
+        # which are the same two kinds of number: no verdict depends on either.
+        self.assertEqual(len(uncounted), 17)
         # 169 -> 170: the outbound-link check's cap was a default argument value,
         # which is a place no instrument here can see. Promoting it to a module
         # constant is what made it countable at all; 0.107.0 moved that definition
@@ -731,8 +735,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 190 -> 186: the four orderings above at 0.126.0, derived from tuples.
         # 186 -> 187: `MAX_TARGET_FETCHES` in `canonical_checker.py` at 0.128.0.
         # 187 -> 188: MB-104's one floor became Google's two tiers at 0.129.0.
+        # 188 -> 190: the two lock numbers above at 0.156.0, uncounted.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 188)
+                             for path in at._script_paths()), 190)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -804,8 +809,9 @@ WINDOW = 7
         # 0.118.0 adds the numeric redirect-code tuples `PERMANENT_REDIRECTS` and
         # `TEMPORARY_REDIRECTS`; `HTTP_SAMPLE_PAGES` is counted by its convention
         # basis, so the uncounted total moves from 13 to 15.
+        # 0.156.0 adds the two Windows lock numbers of `lib/safe_http.py`: 15 to 17.
         self.assertRegex(output, r"(?m)^  .*site_crawl\.py:\d+  INVENTORY_VERSION$")
-        self.assertIn("\n15 module-level numeric constant(s) not in the inventory\n",
+        self.assertIn("\n17 module-level numeric constant(s) not in the inventory\n",
                       output)
         listed = {line.strip() for line in output.splitlines() if line.startswith("  ")}
         for row in named:
@@ -826,7 +832,8 @@ WINDOW = 7
         # that makes a number visible to it.
         # 0.118.0 adds `PERMANENT_REDIRECTS` and `TEMPORARY_REDIRECTS` in
         # `security_headers.py`, taking this uncounted census from 13 to 15.
-        self.assertIn("15 module-level numeric constant(s) are not in this inventory",
+        # 0.156.0: the two Windows lock numbers of `lib/safe_http.py`, 15 to 17.
+        self.assertIn("17 module-level numeric constant(s) are not in this inventory",
                       output)
         self.assertIn("1 basis line(s) name something that is not a module-level "
                       "numeric constant", output)

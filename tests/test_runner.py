@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from urllib.parse import urlparse
@@ -389,6 +390,103 @@ class RateLimiting(unittest.TestCase):
         self.assertLess(times[-1] - times[0], 1.0 / self.PACE_RPS,
                         "unpaced processes were spaced anyway; the test above cannot "
                         "tell pacing from the machine")
+
+    # --- how a held lock is waited for on Windows -------------------------------
+    #
+    # Until 0.156.0 it was the C runtime's blocking lock, which sleeps a whole second
+    # after an attempt that finds the region held and tries ten times. So a process
+    # that found the pacing slot held came back after its turn had gone: three at
+    # five requests a second proceeded 0.2 s and then 0.8 s apart, where the rate
+    # asks for 0.2 and 0.2, and the test of the shared state above passed all the
+    # while, since it asks that the gaps be no shorter than the interval. Nothing was
+    # rude; an audit was slow. And the same lock guards the count of cache hits, held
+    # for microseconds: in an audit of the fixture tree, pacing on or off, 36 to 47 of
+    # its 232 locks each cost a second (`local/lock-0156/`).
+    #
+    # What is held here is how the lock is waited for, and nothing is timed. A test
+    # of what the three children end up being told was written first and is not here:
+    # with every core busy it was red in one round of twelve with the limiter right,
+    # because a child that asks late is told to wait for nothing too. The outcome is
+    # measured in `local/lock-0156/` and said in the changelog.
+
+    @unittest.skipUnless(os.name == "nt", "flock waits for a lock without being asked twice")
+    def test_a_held_lock_is_asked_for_again_and_never_slept_a_second_on(self):
+        """While the lock is held the waiter keeps asking, a few milliseconds apart,
+        and gets it once it is released. `LK_LOCK`, the mode that sleeps a second, is
+        never passed to the C runtime, and every wait between attempts is the stated
+        one."""
+        path = os.path.join(self.dir, "asked-again.lock")
+        first = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+        second = os.open(path, os.O_RDWR)
+        asked, slept, answers = [], [], []
+        locking, sleep = self.sh.msvcrt.locking, time.sleep
+
+        def recorded_locking(fd, mode, nbytes):
+            asked.append(mode)
+            return locking(fd, mode, nbytes)
+
+        def recorded_sleep(seconds):
+            slept.append(seconds)
+            sleep(seconds)
+
+        try:
+            self.assertTrue(self.sh._lock_exclusive(first, blocking=True))
+            with mock.patch.object(self.sh.msvcrt, "locking", recorded_locking), \
+                    mock.patch.object(self.sh.time, "sleep", recorded_sleep):
+                waiter = threading.Thread(
+                    target=lambda: answers.append(
+                        self.sh._lock_exclusive(second, blocking=True)), daemon=True)
+                waiter.start()
+                deadline = time.monotonic() + 30
+                while len(asked) < 3 and waiter.is_alive() and time.monotonic() < deadline:
+                    sleep(0.001)
+                while_held = list(asked)
+                self.sh._unlock(first)
+                waiter.join(timeout=30)
+            self.assertGreaterEqual(len(while_held), 3,
+                                    "a held lock was asked for once and slept on")
+            self.assertEqual(answers, [True], "the lock was released and never got")
+            self.assertEqual(set(asked), {self.sh.msvcrt.LK_NBLCK, self.sh.msvcrt.LK_UNLCK})
+            self.assertEqual(set(slept), {self.sh.WINDOWS_LOCK_POLL})
+            self.sh._unlock(second)
+        finally:
+            os.close(first)
+            os.close(second)
+
+    def test_the_wait_between_attempts_is_short_beside_the_interval(self):
+        """The number the test above reads, held against the one it has to stay small
+        beside: at most a tenth of the default interval. A second here is the defect
+        again, by another road."""
+        self.assertLessEqual(self.sh.WINDOWS_LOCK_POLL * 10, 1.0 / self.sh.DEFAULT_MAX_RPS)
+
+    @unittest.skipUnless(os.name == "nt", "flock waits for as long as it takes")
+    def test_a_lock_that_is_never_released_is_given_up_on(self):
+        """The bound `LK_LOCK` had, kept by the loop that replaced it: a held lock is
+        waited for and, past the patience, reported as not taken — which sends `pace`
+        to its own delay. The patience is shortened here; the rule is not.
+
+        On a thread, so that a loop that never gives up is a failure here after half
+        a minute and not a suite that never ends."""
+        path = os.path.join(self.dir, "held.lock")
+        first = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+        second = os.open(path, os.O_RDWR)
+        try:
+            self.assertTrue(self.sh._lock_exclusive(first, blocking=True))
+            answers = []
+            with mock.patch.object(self.sh, "WINDOWS_LOCK_PATIENCE", 0.05):
+                waiter = threading.Thread(
+                    target=lambda: answers.append(
+                        self.sh._lock_exclusive(second, blocking=True)), daemon=True)
+                waiter.start()
+                waiter.join(timeout=30)
+            self.assertEqual(answers, [False],
+                             "still waiting for a lock nobody is going to release")
+            self.sh._unlock(first)
+            self.assertTrue(self.sh._lock_exclusive(second, blocking=True))
+            self.sh._unlock(second)
+        finally:
+            os.close(first)
+            os.close(second)
 
     def test_the_state_directory_defaults_to_one_shared_by_the_machine(self):
         """Not per run, and not per process. Pacing is a promise to somebody else's
