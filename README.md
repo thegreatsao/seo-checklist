@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.154.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit does or writes changes: this release is the suite. Three tests could refuse a release on a busy machine with nothing wrong in the tree; a test's verdict no longer rests on how fast the machine that runs it is. The fixture server answers a page from disk in 0.5 ms where it took up to 851, two runs are no longer compared on a time one of them measured, and TECH-003 is seen to fail for the first time, on a site that answers late.
+Version 0.155.0 — see [CHANGELOG.md](CHANGELOG.md). Nothing an audit does or writes changes: this release and the one before it are the suite. A test's verdict no longer rests on how fast the machine that runs it is: the fixture server answers a page from disk in 0.5 ms where it took up to 851, and TECH-003, whose band is a time the run measures, is compared between runs, declared and recorded only as far as that it was timed. 0.154.0 said two places still held that band on a single run; there were three, the third a step of the workflow and not a test, and all three are repaired.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

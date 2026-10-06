@@ -10,6 +10,52 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.155.0 — three places held one run to a band, and 0.154.0 had named two
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
+changes; nothing under `skills/` changes. This release is `tests/` and the text of DEC-7,
+DEC-12 and INV-G8.
+
+* **0.154.0 was wrong by one.** Its entry below, and INV-G8, say that two tests still
+  hold TECH-003's `PASS` on a single live run and that nothing else does. The holders had
+  been listed by running the suite with every time to first byte five seconds longer.
+  The verdict census's check is not in the suite: it is a job of its own in CI and a
+  step of the local gate. `tests/census.json` records `PASS` for TECH-003 on five trees,
+  and on such a tree `verdict_census.py --check` exits 1. Found the same day, on being
+  asked whether anything had been missed. Every step of the workflow that starts the
+  runner was then read: the suite, the live path, which asserts no band, and the census.
+
+* **All three now hold the item as far as that it was timed**, through
+  `harness.across_runs`: the fixture oracle's comparison, the contract's rule that
+  nothing accuses the good tree, and the comparison `--check` makes between the record
+  and a fresh census. A declaration still says `PASS` and the record still keeps the word
+  the recording machine got, so the vocabulary of DEC-3 and DEC-10 is as it was. What
+  changed is what two of those words are compared on.
+
+* **Each has a test that holds the narrowing to exactly that**, on answers put in by
+  hand, a slow machine not being something a test can ask for:
+  `test_a_timed_declaration_is_held_as_timed_and_no_further`,
+  `test_a_slow_machine_accuses_nothing_and_a_failing_check_still_does`, and
+  `test_a_census_from_a_slow_machine_is_in_step_and_nothing_else_is`. Either band of
+  TECH-003 agrees; TECH-003 taking no time does not; the other band of any other item
+  does not.
+
+* **What it gives up is said**, in DEC-7 and DEC-12: a declaration of `FAIL` for TECH-003
+  would agree with a run that passed, and the item's band in the census record is not
+  protected from a hand. That the item can fail is held where 0.154.0 put it, on an
+  origin that answers late.
+
+* **How it was accepted.** With every time to first byte five seconds longer: the oracle
+  and the contract green, where 0.154.0 was red in both, and the census's check in step,
+  where it exited 1. The same clock with two words compared as written again: red in the
+  oracle, in the contract and in all three new tests. With no time taken at all: the
+  oracle red on TECH-003 and the census's check out of step. The suite is 2262 tests,
+  2259 and the three.
+
+* **Not held**, as INV-G8 says: nothing makes a new comparison of two runs, or a new
+  record of one, go through `across_runs`. And the census still lists TECH-003 among the
+  items it never saw fail: no tree it serves answers late.
+
 ## 0.154.0 — a test's verdict does not rest on how fast the machine is
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
