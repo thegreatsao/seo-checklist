@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.156.0 — see [CHANGELOG.md](CHANGELOG.md). On Windows an audit is shorter, by about half for the fixture site on loopback, and nothing it reports changes. Two locks in the fetch layer — the pacing slot and the count of cache hits — were waited for in steps of a whole second whenever somebody held them, however briefly; one audit of the fixture tree spent 42 to 79 seconds that way. They are asked for again every few milliseconds now: the same audit takes 26 to 28 seconds at the default rate where it took 52 to 54, and requests are still never closer together than the rate allows. Linux and macOS were not affected.
+Version 0.157.0 — see [CHANGELOG.md](CHANGELOG.md). Five repairs for a program that starts audits and reads what they leave, each reported by the Workbench session and each reproduced before it was changed. The report's files are written beside the results they were made from, not wherever the command was started. The HTML report's export button puts the answers on the page as well as offering them as a file, so it works in a viewer that sandboxes the report, where it did nothing at all. A results file is replaced whole or left as it was, by the runner and by each merge of answers. `--history-dir` says where the history is kept, which until now only the working directory could. And what Workbench reads from this plugin — paths, flags, keys — is a test. No verdict moves.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -238,7 +238,11 @@ crawl" must never read as "the site failed".
 Deliverables: `CHECKLIST-REPORT.md`, `CHECKLIST.html` (filterable; manual items are
 checkboxes persisted in the browser), `LLM-QUEUE*.md`, and
 `checklist-results.json`, also archived under `.seo-runs/<domain>/` (a port is
-written `_3000`, not `:3000`, so the folder can exist on Windows).
+written `_3000`, not `:3000`, so the folder can exist on Windows). The reports and the
+queue are written beside the results file unless a path is named for them. The archive
+is `.seo-runs` in the directory the runner was started in, or the folder
+`--history-dir` names: give two runs the same one and the second is compared with the
+first wherever each was started.
 
 History filenames carry milliseconds, and a run never writes over an existing
 file: at second precision two `--only` runs finished inside the same second and

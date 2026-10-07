@@ -10,6 +10,102 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.157.0 — five repairs for a program that starts audits
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves. Where the report's files
+are written changes when no path is given for them and the command is started somewhere
+other than beside the results; the export button of the HTML report behaves differently;
+the runner takes one new flag. Everything else an audit writes is byte for byte what it
+was.
+
+Workbench, the dashboard most audits here are started from, runs the two scripts with no
+model in between and reads what they leave. Its session sent five proposals on 4 October.
+Each was checked against 0.156.0 and against Workbench's own source on 7 October, and
+reproduced where it could be, before anything was changed.
+
+* **1. What Workbench reads is now a test** (GOV-12, `tests/test_consumers.py`). Nothing
+  in this repository said that another program depends on it: a search for its name
+  found this file and one sentence in REP-14. The new module holds the paths Workbench
+  finds the plugin by, every scope, profile and language its form can send, and the keys
+  it reads from a results file with the types it accepts; and it starts two audits of a
+  local copy and their reports with Workbench's own command lines, from the working
+  directory Workbench starts them in, and reads the results, the history, the report's
+  language and a merge of answers the way Workbench does. Eleven of its names were
+  renamed or retyped one at a time; each reddens it.
+  - The list was taken from Workbench's source, at its commit `54eddd8`, and not from the
+    list its session sent: that one was a key short. Workbench reads `started_at` as
+    well.
+  - Two of the eleven breakages were first tried in a form that changed nothing
+    Workbench would notice, and the module stayed green, rightly: `--lang` renamed to
+    `--language` is still taken by the parser as an abbreviation, and `lang` renamed to
+    `data-lang` is still found by the expression Workbench reads the page with.
+  - What it cannot hold is that the list is still what Workbench reads. That is another
+    repository. GOV-12 is `partial` for that reason and says so.
+
+* **2. A report file nobody named goes beside the results** (REP-15). The Markdown
+  report, the HTML report and the queue were written to the working directory unless a
+  path was given. Reproduced with the reported command — the results and the Markdown
+  path named, the queue not, started from another folder: five `LLM-QUEUE*.md` where the
+  command was started. This checkout held twelve such files, hidden from `git status`
+  by the ignore rules. They are written in the results file's folder now. A path that
+  is named is used as written, and the per-lens queues follow the queue. Started beside
+  its results, as SKILL.md starts it, the script writes where it always did. Workbench
+  names every path and is not affected.
+
+* **3. The export button says what it did on the page** (REP-16). It said "nothing is
+  ticked" in a dialog and handed the answers over as a download. A sandboxed viewer
+  ignores `alert` without `allow-modals` and drops a download without
+  `allow-downloads`, and neither raises anything a script can catch. Reproduced in a
+  report served with the Windows build's own `Content-Security-Policy`: the console
+  recorded the ignored `alert`; with an item ticked the click reached the download and
+  no file appeared. The second half was seen in one browser with no control run outside
+  the sandbox. The button now writes the answers into a text box on the page and says
+  so beside itself, and still offers the file; "nothing is ticked" is said on the page
+  too, and in Russian where the report is. The proposal named the download; the dialog
+  was found while reproducing it.
+
+* **4. `--history-dir PATH`** (HST-9). The history a second run is compared with was
+  `.seo-runs` in whatever directory the runner was started in, and nothing else could
+  say where. It still is by default. Given the flag, two runs started in two places
+  share one history. Workbench chooses its working directory for this reason alone and
+  can stop.
+
+* **5. A results file is replaced whole or left as it was** (RUN-21). The three merges
+  of answers each emptied the results file and wrote into it, so a merge that was killed
+  left the first part of a JSON document as the only copy of an audit. Listing every
+  write of that file found two more: the runner writes its results, and the stored run,
+  the same way. All five now write beside the target and take its name in one step
+  (`scripts/lib/whole_file.py`). The bytes are the ones `json.dump` wrote. When the new
+  file cannot take the old one's place the old one is untouched and the error names the
+  file that holds the new contents.
+  - Windows refuses to replace a file another program has open, where the old writer
+    would have written straight through a reader. A refusal there is asked about again
+    every 50 ms for ten seconds. Held with a clock that only moves when it is slept on;
+    not tried against a real viewer holding the file.
+  - The reports, the queue, the fix list, the crawl inventory and the evidence artifact
+    are still written in place.
+
+* **Held by** 36 tests in three modules, and 33 breakages, each caught by the test
+  written for it once the two above were replaced by real ones: nine for RUN-21, three
+  for REP-15, five for REP-16, five for HST-9, eleven for GOV-12
+  (`local/wbfive/probe_0157.py`, outside git). Of the twenty-five tests outside the
+  contract module, fifteen fail against the runner and the report as 0.156.0 shipped
+  them; the ten that pass are seven of the new writer by itself and three controls.
+
+* **Two more numbers, listed and not counted**: the ten seconds and the 50 ms. Neither
+  decides a verdict; the listing outside the inventory goes from 17 to 19. Five more
+  requirements: 157 in twelve documents, 132 enforced, 20 partial.
+
+* **0.156.0, measured on a real site.** Its entry below says a real site was not
+  measured. On 7 October: four whole audits of `greenvalleymoletai.lt` from one Windows
+  machine, three pages sampled, the default rate, 0.155.0 and 0.156.0 in turn. Each
+  made 268 paced requests from 27 processes. Before: 271 and 181 s, 19 and 26 requests
+  that waited a second or more for the slot's lock, 41 and 49 s of such waiting, and 56
+  to 62 s more on the cache-hit count. After: 159 and 164 s, none, 6 s, and 0.6 s. No
+  two requests to the site were closer than a quarter second in any of the four. The
+  two runs before are 89 s apart from each other, so the wall time is the weaker
+  number and the count of one-second steps the stronger.
+
 ## 0.156.0 — on Windows, a lock somebody held cost a second
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves and no report changes. On
