@@ -10,6 +10,58 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.158.0 — the suite runs on Python 3.14, where audits were already being run
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
+changes; nothing under `skills/seo-checklist/scripts/` changes. This release is the CI
+workflow, the local gate's last lines, and INV-G9.
+
+* **What was missing.** The plugin installed on the Mac runs on Python 3.14.8: every
+  audit started there, by hand or by Workbench, ran on it. CI ran the suite on 3.10,
+  3.11 and 3.13; the Mac's own test and release clones ran 3.12. No leg and no machine
+  had run the suite on the version in use. Found when Anton asked which Python
+  everything runs on.
+
+* **Measured before anything was changed.** The suite as 0.157.0 has it, on that Mac,
+  on 3.14.8, in an environment of its own: 2301 tests, all pass, 264 s, six skipped —
+  the same six as on 3.12, which took 253 s; one run each, on a machine twice as busy
+  during the first. Nothing had to be repaired. Windows and Linux on 3.14 were first run
+  by this release's own CI.
+
+* **CI.** The Linux matrix is 3.10, 3.11, 3.13 and 3.14. The macOS leg moves from 3.13
+  to 3.14. The Windows job runs 3.13, which is what the Windows machine this is
+  developed on has, and 3.14. Eight jobs where there were six.
+
+* **The floor stays 3.10.** Nothing here needs a newer Python, and the legs on old
+  versions have found defects that exist only there (0.109.0). The oldest version and
+  the newest are each run because a version nothing runs is a guess; the ones between
+  are a choice.
+
+* **INV-G9: the newest Python CI runs, it runs on every platform.** Held by
+  `tests/test_ci_local.py` `CIsLegsAreReadOutOfTheWorkflow`, which reads every leg that
+  runs the suite out of the workflow. A version added to one platform's legs and not
+  the others' now fails.
+
+* **The local gate names what it read.** `ci_local.py` closed every run with "not run:
+  the 3.10 and 3.11 matrix legs, and every platform but this one", a sentence kept by
+  hand in a tool whose point is to keep no list. On the Mac, where every release is
+  gated, the interpreter was 3.12 and the sentence already left 3.13 out. The lines are
+  derived now (`suite_legs`, `legs_not_run`): every leg but this machine's own, by
+  platform, and one line more when this machine's pair of platform and Python is one CI
+  does not run at all.
+
+* **Five breakages, each caught**: the macOS leg put back on 3.13, the Windows job on
+  3.13 only, 3.14 taken off the Linux list, `include` entries not read, the hand-kept
+  sentence put back.
+
+* **Outside the repository**, on the Mac: the test clone and the release clone run
+  3.14 from this release on, so the gate a push goes through is on the version audits
+  run on. The Windows machine stays on 3.13.
+
+* **Seen and not taken up.** On 3.14 the suite prints three `ResourceWarning`s that
+  3.12 does not: an HTTP error object from `urllib` that a test lets go without
+  closing. Nothing fails.
+
 ## 0.157.0 — five repairs for a program that starts audits
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves. Where the report's files

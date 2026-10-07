@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.157.0 — see [CHANGELOG.md](CHANGELOG.md). Five repairs for a program that starts audits and reads what they leave, each reported by the Workbench session and each reproduced before it was changed. The report's files are written beside the results they were made from, not wherever the command was started. The HTML report's export button puts the answers on the page as well as offering them as a file, so it works in a viewer that sandboxes the report, where it did nothing at all. A results file is replaced whole or left as it was, by the runner and by each merge of answers. `--history-dir` says where the history is kept, which until now only the working directory could. And what Workbench reads from this plugin — paths, flags, keys — is a test. No verdict moves.
+Version 0.158.0 — see [CHANGELOG.md](CHANGELOG.md). The suite runs on Python 3.14, on Linux, macOS and Windows. Audits were already being run on it — the plugin installed on the Mac has 3.14 — and nothing had ever run the tests there; they pass, all of them, unchanged. Python 3.10 is still the oldest version supported and still the oldest one CI runs. Nothing an audit does or writes changes. 0.157.0, the release before, is five repairs for a program that starts audits and reads what they leave: the report's files go beside the results they were made from, the HTML report's export button works in a sandboxed viewer, a results file is replaced whole or left as it was, `--history-dir` says where the history is kept, and what Workbench reads from this plugin is a test.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -724,9 +724,10 @@ python3 -m unittest discover -s tests -v
 
 Everything runs offline — no live site, no API key, no Search Console property.
 
-**Run CI's own checks here before pushing them there.** CI is six jobs — five of them
+**Run CI's own checks here before pushing them there.** CI is eight jobs — five of them
 measured on the 0.101.0 push at about seven minutes of wall clock and **twenty-two of
-runner time**, the sixth being the macOS leg of 0.151.0 — and most of what it finds this
+runner time**, the sixth being the macOS leg of 0.151.0, the seventh and eighth the
+Python 3.14 legs on Linux and Windows of 0.158.0 — and most of what it finds this
 machine could have said first:
 
 ```bash
@@ -737,7 +738,7 @@ git config core.hooksPath .githooks                     # once, to arm the pre-p
 
 The steps are **read out of `.github/workflows/ci.yml`**, so this is not a second copy
 of the check list to fall out of step with the first. It names everything it did not
-run — the `uses:` steps, the dependency installs, the 3.10 and 3.11 matrix legs, every platform but this one — and a
+run — the `uses:` steps, the dependency installs, every leg of CI but this machine's own pair of platform and Python, read out of the workflow — and a
 step it cannot execute is a failure rather than a skip. A tree it already verified is
 instant, keyed on the tree hash and stamped inside `.git/`, so pushing an unchanged tree
 to `main` after a fast-forward merge costs nothing. `git push --no-verify` is the way
@@ -775,7 +776,8 @@ a `CHANGELOG.md` entry naming the shipped `registry_version` and must match
 `pyproject.toml`, the 200 borrowed titles must record their source in the file that
 holds them, every category must have a plain-language explanation in every shipped
 language, and the lowest Python in the CI matrix must be the floor `pyproject.toml`
-declares. CI runs the suite on 3.10, 3.11 and 3.13, along with `ruff`, the gates and
+declares. CI runs the suite on 3.10, 3.11, 3.13 and 3.14, the newest of them on Linux,
+macOS and Windows, along with `ruff`, the gates and
 four offline end-to-end audits, and a job of its own re-takes the recorded verdict
 census over all five served trees and compares it with the one in the tree.
 
