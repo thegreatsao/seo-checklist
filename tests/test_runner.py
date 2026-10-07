@@ -6302,5 +6302,255 @@ class ALabRatingSaysItIsALabRating(unittest.TestCase):
             [w for w in provenance_warnings({"html_parser": "lxml"}) if "synthetic" in w],
             [])
 
+
+# The runner with every whole-file replacement written down, and nothing else changed:
+# the target of each goes, one a line, into the file `REPLACED` names.
+RECORDING_RUNNER = """
+import os, sys
+sys.path.insert(0, sys.argv[1])
+import lib.whole_file as whole_file
+plain = whole_file._replace
+def recorded(tmp, path):
+    plain(tmp, path)
+    with open(os.environ["REPLACED"], "a", encoding="utf-8") as f:
+        f.write(os.path.abspath(path) + "\\n")
+whole_file._replace = recorded
+import checklist_runner
+sys.argv = [os.path.join(sys.argv[1], "checklist_runner.py")] + sys.argv[2:]
+sys.exit(checklist_runner.main())
+"""
+
+
+class AResultsFileIsWrittenWholeOrNotAtAll(unittest.TestCase):
+    """`openspec/specs/run-lifecycle/` RUN-21. A results file is the only copy of what
+    an audit found. The runner and the three merges opened it for writing, which empties
+    it, and then wrote: a process that died in between left the first part of a JSON
+    document where the results had been (reported by a Workbench session on 4 October
+    2026, which rewrites that file on every save of an answer)."""
+
+    def setUp(self):
+        from lib import whole_file
+        self.whole_file = whole_file
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir, True)
+        self.path = os.path.join(self.dir, "checklist-results.json")
+        with open(self.path, "w", encoding="utf-8") as f:
+            f.write('{"the run": "before"}')
+
+    def before(self):
+        with open(self.path, encoding="utf-8") as f:
+            return f.read() == '{"the run": "before"}'
+
+    def beside(self):
+        return sorted(n for n in os.listdir(self.dir) if n != "checklist-results.json")
+
+    def test_a_replacement_that_is_refused_leaves_the_file_and_keeps_the_new_one(self):
+        with mock.patch.object(self.whole_file.os, "replace",
+                               side_effect=OSError("refused for the test")):
+            with self.assertRaises(OSError) as raised:
+                self.whole_file.write_json_whole(self.path, {"the run": "after"})
+        self.assertTrue(self.before(), "the file was written into")
+        kept = self.beside()
+        self.assertEqual(len(kept), 1)
+        self.assertIn(kept[0], str(raised.exception))
+        self.assertFalse(kept[0].endswith(".json"),
+                         "a stored run is every `.json` in its folder: a part of one "
+                         "left there would be read as a run")
+        with open(os.path.join(self.dir, kept[0]), encoding="utf-8") as f:
+            self.assertEqual(json.load(f), {"the run": "after"})
+
+    def test_a_payload_that_will_not_serialise_touches_nothing(self):
+        with self.assertRaises(TypeError):
+            self.whole_file.write_json_whole(self.path, {"the run": object()})
+        self.assertTrue(self.before())
+        self.assertEqual(self.beside(), [])
+
+    def test_a_writer_stopped_before_the_end_leaves_the_file_and_no_part_of_a_new_one(self):
+        with mock.patch.object(self.whole_file.os, "fsync",
+                               side_effect=OSError("the disk is full")):
+            with self.assertRaises(OSError):
+                self.whole_file.write_json_whole(self.path, {"the run": "after"})
+        self.assertTrue(self.before())
+        self.assertEqual(self.beside(), [])
+
+    def test_the_bytes_are_the_ones_json_dump_wrote(self):
+        """A reader of the results file is owed the same file: this changes how it
+        arrives, not what it holds."""
+        payload = {"url": "https://example.com/é", "items": [{"id": "A-1", "n": 1.5}], "x": None}
+        plain = os.path.join(self.dir, "plain.json")
+        with open(plain, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        self.whole_file.write_json_whole(self.path, payload)
+        with open(plain, "rb") as a, open(self.path, "rb") as b:
+            self.assertEqual(a.read(), b.read())
+        self.assertEqual(self.beside(), ["plain.json"])
+
+    def clock(self):
+        """`whole_file`'s clock, replaced by one that only moves when it is slept on."""
+        now, slept = [0.0], []
+
+        def sleep(seconds):
+            slept.append(seconds)
+            now[0] += seconds
+        fake = mock.Mock(monotonic=lambda: now[0], sleep=sleep)
+        patcher = mock.patch.object(self.whole_file, "time", fake)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return slept
+
+    def test_a_file_somebody_has_open_is_asked_for_again(self):
+        """Windows refuses to replace a file another process has open, and a viewer
+        reading the results is such a process. Asked again, not failed on the spot."""
+        slept, plain, asked = self.clock(), os.replace, []
+
+        def replace(tmp, path):
+            asked.append(path)
+            if len(asked) < 3:
+                raise PermissionError(13, "the file is open elsewhere")
+            plain(tmp, path)
+        with mock.patch.object(self.whole_file, "ASKS_AGAIN", True), \
+                mock.patch.object(self.whole_file.os, "replace", side_effect=replace):
+            self.whole_file.write_json_whole(self.path, {"the run": "after"})
+        self.assertEqual(len(asked), 3)
+        self.assertEqual(slept, [self.whole_file.REPLACE_POLL] * 2)
+        self.assertFalse(self.before())
+        self.assertEqual(self.beside(), [])
+
+    def test_a_file_never_released_is_given_up_on_and_said(self):
+        slept = self.clock()
+        with mock.patch.object(self.whole_file, "ASKS_AGAIN", True), \
+                mock.patch.object(self.whole_file.os, "replace",
+                                  side_effect=PermissionError(13, "still open")):
+            with self.assertRaises(OSError) as raised:
+                self.whole_file.write_json_whole(self.path, {"the run": "after"})
+        self.assertAlmostEqual(sum(slept), self.whole_file.REPLACE_PATIENCE, places=6)
+        self.assertTrue(self.before())
+        self.assertIn(self.beside()[0], str(raised.exception))
+
+    def test_where_an_open_file_can_be_replaced_a_refusal_is_final(self):
+        slept = self.clock()
+        refused = mock.Mock(side_effect=PermissionError(13, "not yours"))
+        with mock.patch.object(self.whole_file, "ASKS_AGAIN", False), \
+                mock.patch.object(self.whole_file.os, "replace", refused):
+            with self.assertRaises(OSError):
+                self.whole_file.write_json_whole(self.path, {"the run": "after"})
+        self.assertEqual(refused.call_count, 1)
+        self.assertEqual(slept, [])
+
+    def test_the_runner_writes_its_results_and_the_stored_run_that_way(self):
+        """The two files a run leaves, by a run: a host the run refuses, so nothing is
+        fetched and both are written within a second. A write that went back to
+        `open(path, "w")` is missing from the record."""
+        here = os.getcwd()
+        self.addCleanup(os.chdir, here)
+        os.chdir(self.dir)
+        record = os.path.join(self.dir, "replaced.txt")
+        env = harness.offline_env(REPLACED=record)
+        env.pop("SEO_ALLOW_PRIVATE", None)
+        proc = harness.spawn(
+            [sys.executable, "-c", RECORDING_RUNNER, SCRIPTS, "http://127.0.0.1:8123/",
+             "--json", os.path.join("out", "checklist-results.json"), "--no-prompt",
+             "--mode", "page"], env=env, timeout=120)
+        self.assertEqual(proc.returncode, 0, proc.stderr[-2000:])
+        with open(record, encoding="utf-8") as f:
+            replaced = [os.path.realpath(line) for line in f.read().splitlines()]
+        stored = os.path.join(self.dir, ".seo-runs", "127.0.0.1_8123")
+        self.assertEqual(
+            sorted(replaced),
+            sorted(os.path.realpath(p) for p in (
+                os.path.join(self.dir, "out", "checklist-results.json"),
+                os.path.join(stored, os.listdir(stored)[0]))))
+        for path in replaced:
+            with open(path, encoding="utf-8") as f:
+                self.assertFalse(json.load(f)["entry_reachable"])
+
+
+class HistoryIsKeptWhereTheRunWasTold(unittest.TestCase):
+    """`openspec/specs/history/` HST-9: `--history-dir` names the folder runs are filed
+    in and read from. Until 0.157.0 the working directory was the only way to say
+    where, so a program that starts audits kept one history by choosing where it
+    started them (Workbench does; its session asked for the flag on 4 October 2026)."""
+
+    def setUp(self):
+        self.dir = os.path.realpath(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.dir, True)
+        here = os.getcwd()
+        self.addCleanup(os.chdir, here)
+        os.chdir(self.dir)
+
+    def stored(self, root, score):
+        folder = os.path.join(root, "e.com")
+        os.makedirs(folder, exist_ok=True)
+        with open(os.path.join(folder, "20260803T094000000Z.json"), "w", encoding="utf-8") as f:
+            json.dump({"started_at": "2026-08-03T09:40:00+00:00", "domain": "e.com",
+                       "scores": {"seo_score": score}}, f)
+
+    def test_unsaid_it_is_the_working_directory_and_follows_it(self):
+        self.assertEqual(os.path.realpath(runner.history_root()),
+                         os.path.join(self.dir, ".seo-runs"))
+        os.mkdir("elsewhere")
+        os.chdir("elsewhere")
+        self.assertEqual(os.path.realpath(runner.history_root()),
+                         os.path.join(self.dir, "elsewhere", ".seo-runs"))
+
+    def test_a_named_folder_is_where_a_run_is_filed_and_where_the_last_one_is_read(self):
+        kept = os.path.join(self.dir, "kept")
+        self.stored(kept, 41)
+        self.stored(os.path.join(self.dir, ".seo-runs"), 99)  # the working directory's own
+        with mock.patch.object(runner, "HISTORY_ROOT", kept):
+            self.assertEqual(previous_run("e.com", "")["scores"]["seo_score"], 41)
+            self.assertEqual([r["seo_score"] for r in run_series("e.com", "")], [41])
+            filed = history_path("e.com", run_stamp())
+        self.assertEqual(os.path.dirname(filed), os.path.join(kept, "e.com"))
+        self.assertEqual(previous_run("e.com", "")["scores"]["seo_score"], 99)
+
+    def test_a_relative_folder_is_settled_where_the_run_started(self):
+        """Named from one directory, it is still that folder from another."""
+        self.addCleanup(runner.use_history_dir, "")
+        os.mkdir("elsewhere")
+        runner.use_history_dir("kept")
+        os.chdir("elsewhere")
+        self.assertEqual(os.path.realpath(runner.history_root()),
+                         os.path.join(self.dir, "kept"))
+        runner.use_history_dir("")
+        self.assertEqual(os.path.realpath(runner.history_root()),
+                         os.path.join(self.dir, "elsewhere", ".seo-runs"))
+
+    def audit(self, *history):
+        """A run the runner refuses (a private host, not allowed): nothing is fetched,
+        and the run is filed and compared all the same."""
+        env = harness.offline_env()
+        env.pop("SEO_ALLOW_PRIVATE", None)
+        proc = harness.spawn(
+            [sys.executable, os.path.join(SCRIPTS, "checklist_runner.py"),
+             "http://127.0.0.1:8123/", "--json", "checklist-results.json", "--no-prompt",
+             "--mode", "page", *history], env=env, timeout=120)
+        self.assertEqual(proc.returncode, 0, proc.stderr[-2000:])
+        with open("checklist-results.json", encoding="utf-8") as f:
+            return json.load(f)
+
+    def test_two_runs_started_in_two_places_share_the_history_they_were_given(self):
+        for name in ("first", "second"):
+            os.mkdir(name)
+        os.chdir("first")
+        # Relative here: the folder is settled against where the run started.
+        self.assertIsNone(self.audit("--history-dir", os.path.join("..", "kept"))["compared_with"])
+        os.chdir(os.path.join("..", "second"))
+        compared = self.audit("--history-dir", os.path.join(self.dir, "kept"))["compared_with"]
+        self.assertIsInstance(compared, dict, "the second run did not find the first")
+        self.assertEqual(len(os.listdir(os.path.join(self.dir, "kept", "127.0.0.1_8123"))), 2)
+        for name in ("first", "second"):
+            self.assertEqual(os.listdir(os.path.join(self.dir, name)), ["checklist-results.json"])
+
+    def test_without_the_flag_two_places_are_two_histories(self):
+        """The control for the test above, and what the flag is for."""
+        for name in ("first", "second"):
+            os.mkdir(name)
+            os.chdir(name)
+            self.assertIsNone(self.audit()["compared_with"])
+            self.assertEqual(sorted(os.listdir(".")), [".seo-runs", "checklist-results.json"])
+            os.chdir("..")
+
+
 if __name__ == "__main__":
     unittest.main()

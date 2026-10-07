@@ -1097,6 +1097,58 @@ requirement was written about, and it now costs two red tests.
 - **AND** without this case, an implementation answering `N/A` to everything satisfies
   the other three
 
+### Requirement: RUN-21 — a results file is replaced whole or left as it was
+
+The results file a run writes, the copy of it the run stores, and every rewrite of a
+results file by a merge of answers SHALL arrive at their path complete: whoever opens the
+path, at any moment, finds the file as it was before or the whole new one. A writer that
+is stopped SHALL leave the file as it was. When the new file cannot take the old one's
+place, the old one SHALL be left untouched and the error SHALL name where the complete new
+contents are. Where the operating system refuses to replace a file another program has
+open, the replacement SHALL be asked for again for a stated time before it is given up.
+What the file holds is not changed by any of this: the bytes are the ones written before.
+
+This is required of results files only. The reports, the queue, the fix list, the crawl
+inventory and the evidence artifact are written in place: each can be made again from the
+results, or belongs to one run and is never rewritten.
+
+**Why:** the results file is the only copy of what an audit found, and an audit of a real
+site is minutes of requests to somebody else's server. Opening a file for writing empties
+it before the first byte of the new contents exists, so a process killed between the two
+left the first part of a JSON document where the results had been. The runner wrote its
+results and the stored run that way, and each of the three merges rewrote the results
+that way again; a program that merges on every saved answer does it many times a run.
+Reported by a Workbench session on 4 October 2026 for the merges; the runner's own two
+writes were found by listing every write of that file. On Windows a reader that has the
+file open makes the replacement fail outright, which is why a refusal there is asked
+about again instead of ending a run that has already finished its audit.
+**Reader:** enforced. `tests/test_runner.py::AResultsFileIsWrittenWholeOrNotAtAll` refuses
+the replacement at its last step, stops the writer before it, gives it a payload that will
+not serialise, and holds the file open in each of the two ways an operating system
+answers; it compares the bytes with the ones the old writer produced; and it starts a
+real run with every replacement written down and requires the results and the stored run
+to be on that record. `tests/test_report.py::AMergeReplacesTheResultsWholeOrNotAtAll` runs
+the report's own entry point for each of the three merges with the replacement refused,
+and requires the results file to hold the bytes it held. Measured on 7 October 2026 by
+putting back, one at a time, each of the five writes as 0.156.0 made them, and by four
+breakages of the writer itself: every one reddens its reader.
+
+#### Scenario: a merge is stopped while writing
+- **WHEN** a merge of answers cannot put the new results in place
+- **THEN** the results file holds exactly what it held, and the error names a file beside
+  it that holds the merged results whole
+
+#### Scenario: a viewer has the results open
+- **WHEN** another program holds the results file open on a system that refuses to replace
+  an open file
+- **THEN** the replacement is asked for again until the file is released, and given up
+  with the same error after the stated time
+
+#### Scenario: nothing goes wrong
+- **WHEN** a run or a merge completes
+- **THEN** the results file is byte for byte what the previous writer would have written,
+  and nothing is left beside it
+
 ## 4. Invariants
 
 * **INV-L1** — every registry item ends a run with exactly one status, whether it was
@@ -1535,14 +1587,14 @@ requests, even though the suite does not).
 
 | | requirements |
 |---|---|
-| **enforced** | RUN-1, RUN-2, RUN-3, RUN-4, RUN-5, RUN-6, RUN-7, RUN-8, RUN-9, RUN-10, RUN-11, RUN-12, RUN-13, RUN-14, RUN-15, RUN-16, RUN-17, RUN-18, RUN-19, RUN-20 |
+| **enforced** | RUN-1, RUN-2, RUN-3, RUN-4, RUN-5, RUN-6, RUN-7, RUN-8, RUN-9, RUN-10, RUN-11, RUN-12, RUN-13, RUN-14, RUN-15, RUN-16, RUN-17, RUN-18, RUN-19, RUN-20, RUN-21 |
 | **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-L1 enforced; INV-L2, INV-L3 and INV-L4 partial.
 
-**Twenty enforced, nothing partial, nothing unread, of twenty.**
+**Twenty-one enforced, nothing partial, nothing unread, of twenty-one.**
 
 RUN-6, RUN-8 and RUN-17 moved at 0.96.6, together, because their gaps were one gap in
 three costumes: a requirement about what the program *does*, read through what the program

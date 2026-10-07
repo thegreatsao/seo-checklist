@@ -60,6 +60,7 @@ PLUGIN_JSON = os.path.join(os.path.dirname(os.path.dirname(SKILL_DIR)),
 sys.path.insert(0, SCRIPT_DIR)
 
 from seo_common import carries_content, fetch_error_kind, status_class  # noqa: E402
+from lib.whole_file import write_json_whole  # noqa: E402
 
 
 def plugin_version() -> str:
@@ -2144,11 +2145,38 @@ def history_folder(domain: str) -> str:
     return name or "unknown"
 
 
+# Where `--history-dir` put the history for this process; empty means it was not
+# given. Set once, by `main`, before anything is read or written.
+HISTORY_ROOT = ""
+
+
+def history_root() -> str:
+    """The folder every site's runs are filed under.
+
+    `.seo-runs` in the working directory unless `--history-dir` named another. The
+    working directory was the only way to say where until 0.157.0, so a program that
+    starts audits had to choose its own working directory to keep one history: the
+    place a second run looks for the first was a side effect of where it was started.
+    Read at each call, because the default follows the working directory.
+    """
+    return HISTORY_ROOT or os.path.join(os.getcwd(), ".seo-runs")
+
+
+def use_history_dir(path: str) -> None:
+    """Take `--history-dir` as given; nothing given means the default.
+
+    Made absolute here, once: the folder a run was told to use is the one named
+    from where the run started, and does not move with the working directory.
+    """
+    global HISTORY_ROOT
+    HISTORY_ROOT = os.path.abspath(os.path.expanduser(path)) if path else ""
+
+
 def history_dirs(domain: str) -> list[str]:
     """Read the current and legal verbatim folders, then credential-named children.
     Older folders are read in place and are never written to or moved.
     """
-    root = os.path.join(os.getcwd(), ".seo-runs")
+    root = history_root()
     names = dict.fromkeys((history_folder(domain),))
     joined = os.path.abspath(os.path.join(root, domain))
     if (domain and os.path.dirname(joined) == os.path.abspath(root)
@@ -2174,7 +2202,7 @@ def history_path(domain: str, stamp: str) -> str:
     second-precision version was justified too, and the cost of being wrong is
     destroying a previous audit.
     """
-    d = os.path.join(os.getcwd(), ".seo-runs", history_folder(domain))
+    d = os.path.join(history_root(), history_folder(domain))
     os.makedirs(d, exist_ok=True)
     path = os.path.join(d, f"{stamp}.json")
     n = 2
@@ -2252,7 +2280,7 @@ def stored_runs(domain: str, exclude: str) -> list[str]:
     written to: a file of the same name in the older folder is another run.
     """
     skip = os.path.basename(exclude) if exclude else ""
-    current = os.path.join(os.getcwd(), ".seo-runs", history_folder(domain))
+    current = os.path.join(history_root(), history_folder(domain))
     found = []
     for d in history_dirs(domain):
         found += [os.path.join(d, name) for name in sorted(os.listdir(d))
@@ -3174,6 +3202,11 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--timeout", type=int, default=180)
     ap.add_argument("--diff", action="store_true", help="compare against the previous run")
     ap.add_argument("--no-history", action="store_true")
+    ap.add_argument("--history-dir", default="", metavar="PATH",
+                    help="the folder this site's earlier runs are read from and this "
+                         "run is filed in (default: .seo-runs in the working "
+                         "directory). Give the same folder to every run that should "
+                         "share one history, wherever each is started from.")
     ap.add_argument("--quiet", action="store_true")
     ap.add_argument("--mode", choices=sorted(MODE_CAPS), default="",
                     help="; ".join(f"{k}: {v}" for k, v in MODE_HELP.items())
@@ -3423,6 +3456,8 @@ def main() -> int:
     else:
         os.environ.pop(URL_CREDENTIALS_VAR, None)
 
+    use_history_dir(a.history_dir)
+
     # Passed to the evidence scripts through the environment, because they are
     # separate processes and the pacing they share is keyed on it.
     if a.max_rps is not None:
@@ -3557,10 +3592,11 @@ def main() -> int:
             name = os.path.basename(folder)
             if "@" in name:
                 tail = name.rsplit("@", 1)[-1]
-                print(f"  history: older runs of this site are in .seo-runs/***@{tail}, "
+                kept = a.history_dir or ".seo-runs"
+                print(f"  history: older runs of this site are in {kept}/***@{tail}, "
                       f"a folder whose name carries a credential from a URL. They are "
                       f"read and left where they are; rename or remove that folder "
-                      f"before sharing .seo-runs/.", file=sys.stderr)
+                      f"before sharing {kept}/.", file=sys.stderr)
     # Whether the audited host is one only this machine can reach. Keyed on where
     # it resolves, not on whether --allow-private was passed: the flag permits a
     # private address, it does not make a public site private, and treating the two
@@ -4001,8 +4037,7 @@ def main() -> int:
     hist = ""
     if not a.no_history:
         hist = history_path(domain, stamp)
-        with open(hist, "w", encoding="utf-8") as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2)
+        write_json_whole(hist, payload)
 
     # Computed whenever there is a previous run, not only under `--diff`.
     #
@@ -4068,8 +4103,7 @@ def main() -> int:
     # `--json out/results.json` with no `out/` yet died here, after the audit had
     # finished and its history file was already written.
     os.makedirs(os.path.dirname(os.path.abspath(a.json_out)), exist_ok=True)
-    with open(a.json_out, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
+    write_json_whole(a.json_out, payload)
 
     print_report(payload, a, hist, crawl_path, diff_note)
     return 0

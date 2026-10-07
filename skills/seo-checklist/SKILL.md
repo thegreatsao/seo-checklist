@@ -557,6 +557,9 @@ A `PASS` with nothing beside it is refused with its id: thirty-one ticks would m
 the score with nothing for a reader to argue with. The HTML report's "Needs a person"
 section exports the ticked items as a starting file — a tick claims `PASS` and carries
 no reason, so the exported evidence says so and has to be replaced before it merges.
+The button shows the answers on the page and offers them as `manual-answers.json` as
+well: a viewer that sandboxes the report drops the download without saying so, and the
+text on the page is then what there is to copy.
 
 **Every decided item records `decided_by`** — `measured`, `model` or `claimed` — and
 the report prints the breakdown whenever anything was not measured:
@@ -815,6 +818,12 @@ report was reshaped. Run it after the LLM queue is answered.
 - `CHECKLIST.html` — filterable view; `MANUAL` items are checkboxes persisted in localStorage
 - `LLM-QUEUE.md` + one file per lens — the model's work list
 - `checklist-results.json` — machine-readable; also archived to `.seo-runs/<domain>/<timestamp>.json` (`localhost:3000` is filed as `localhost_3000`)
+
+The three report files are written beside the results file they were made from unless
+a path is named (`--markdown`, `--html`, `--llm-queue`); started beside its results, as
+above, the report script writes into the working directory. The archive is `.seo-runs`
+in the directory the runner was started in; `--history-dir PATH` names another folder,
+and runs given the same one share a history wherever each is started.
 
 Every result carries the `registry_version` it was produced from. `--diff` warns
 when two runs came from different registry versions, profiles or modes — without

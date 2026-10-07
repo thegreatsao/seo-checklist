@@ -37,9 +37,9 @@ it was last written:
 
 | | count | what it means |
 |---|---|---|
-| requirements | 152 | across 12 documents |
-| enforced | 128 | held by something that fails when the requirement is violated |
-| partial | 19 | held for part of what the requirement says |
+| requirements | 157 | across 12 documents |
+| enforced | 132 | held by something that fails when the requirement is violated |
+| partial | 20 | held for part of what the requirement says |
 | unread | 1 | held by nothing — `declarations` DEC-1 |
 | bounded | 4 | the subject is outside the program; no test could observe a violation |
 
@@ -115,7 +115,7 @@ modules read; no number is bound by both. It is narrower than the ask it answers
 2. **REG-6's second reader** — the readings exist and are held against the registry;
    what would close the row is a check of whether each reading is true that is not the
    word of the person who wrote it.
-3. **The 19 `partial` requirements and DEC-1**, each either held or narrowed to what is
+3. **The 20 `partial` requirements and DEC-1**, each either held or narrowed to what is
    held.
 4. **The 143 unclaimed assertions**, reduced by extending the detectors
    `audit_reachability.py` already has rather than by asserting reachability in prose.

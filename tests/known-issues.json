@@ -922,6 +922,8 @@
           "JPEG_SOF_MARKERS",
           "MAX_ICON_BYTES",
           "PERMANENT_REDIRECTS",
+          "REPLACE_PATIENCE",
+          "REPLACE_POLL",
           "ROBOTS_FETCH_WAIT",
           "SOCKET_TIMEOUT",
           "TEMPORARY_REDIRECTS",

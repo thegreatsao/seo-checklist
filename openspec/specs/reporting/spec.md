@@ -552,6 +552,84 @@ test fails; the run with storage passes, as it should.
 - **WHEN** storage works
 - **THEN** a tick is kept under the domain's key, as before
 
+### Requirement: REP-15 — a report file nobody named is written beside the results
+
+The report script writes three files without being asked for them: the Markdown report,
+the HTML report and the model's queue, with one more queue file per lens. Each of the
+three that was not named on the command line SHALL be written in the folder of the results
+file the report was made from. A path that was named SHALL be used as it was written,
+relative to the working directory, and the per-lens queue files SHALL be written next to
+the queue they are cut from. Whether a path was named is decided by its having been typed,
+not by its words: the default's own words, typed, name a file in the working directory.
+
+**Why:** the files belong to a run, and the results file is the one thing every invocation
+names. They went to the working directory instead, which is the same folder only when the
+script is started beside its results. A Workbench session reported the other case on
+4 October 2026: a report made for a run kept elsewhere, with the Markdown path named and
+the queue not, left five `LLM-QUEUE*.md` in the git tree the command was started from. The
+checkout of this repository held twelve such files on 7 October, hidden from `git status`
+by the ignore rules written for exactly this.
+**Reader:** enforced. `tests/test_report.py::AFileNobodyNamedGoesBesideTheResults` starts
+the script from a folder that is not the run's and lists both folders afterwards: with
+nothing named, with the reported command, with a relative path named, and started beside
+its results as the protocol starts it. Probed on 7 October 2026 against the script as
+0.156.0 shipped it: the cases that are not started beside the results fail, and the
+one that is passes, as it should. And by three breakages of the script as it is now,
+each caught.
+
+#### Scenario: a run reported from somewhere else
+- **WHEN** the script is started in one folder with a results file in another, and no
+  output is named
+- **THEN** the two reports, the queue and its per-lens files are in the results file's
+  folder, and the folder it was started in is as it was
+
+#### Scenario: started beside its results
+- **WHEN** the script is started in the folder that holds the results
+- **THEN** it writes where it always did
+
+#### Scenario: one path named, the others not
+- **WHEN** `--html named.html` is given and nothing else
+- **THEN** `named.html` is in the working directory, and the Markdown report and the
+  queue are beside the results
+
+### Requirement: REP-16 — what the export button has to say, it says on the page
+
+The button that exports ticked items as answers SHALL put the answers on the page, as
+text a person can copy, whenever at least one item is ticked, and SHALL say on the page
+that nothing is ticked when nothing is. It MAY offer the answers as a file as well. It
+SHALL NOT depend on a dialog or on a download for either: a failure to open one, or an
+error raised while offering the other, MUST leave the answers on the page.
+
+**Why:** a page cannot find out whether a dialog was shown or a download happened. A viewer
+that sandboxes the report ignores `alert` where the sandbox has no `allow-modals` and drops
+a download where it has no `allow-downloads`, and neither raises anything a script can
+catch. The button said "nothing is ticked" in a dialog and handed the answers over as a
+download only, so in such a viewer — Workbench, on both of its builds — it did nothing at
+all, ticked or not. Seen on 7 October 2026 in a report served with the Windows build's own
+`Content-Security-Policy`: the browser's console recorded the ignored `alert`, and with one
+item ticked the click reached the download and no file appeared.
+**Reader:** enforced. `tests/test_report.py::TheExportButtonSaysWhatItDidOnThePage` runs
+the report's own script, unchanged, in node and clicks the button: with nothing ticked,
+with a tick where a download is dropped without a word, with a tick where the download
+works, and with a tick where offering the download throws.
+`tests/test_report.py::TheReportCarriesWhatItsExportButtonSpeaksThrough` reads the
+rendered page, in both shipped languages, for the three elements the script speaks
+through.
+Probed on 7 October 2026 with the script as 0.156.0 shipped it: every one of those
+clicks fails the test. And by five breakages of the script as it is now, each caught.
+
+#### Scenario: nothing is ticked
+- **WHEN** the button is clicked with no item ticked
+- **THEN** the page says so beside the button, and no dialog is asked for
+
+#### Scenario: a viewer that drops downloads
+- **WHEN** an item is ticked and the button is clicked where a download does nothing
+- **THEN** the answers are shown on the page, in the form `--manual-answers` reads
+
+#### Scenario: a viewer that allows downloads
+- **WHEN** the same click happens where a download works
+- **THEN** a file `manual-answers.json` is offered, and it holds the text the page shows
+
 ## 4. Invariants
 
 * **INV-P1** — every item in the results appears exactly once on every surface that lists
@@ -691,7 +769,8 @@ every such item back to `LLM_PENDING` on every audited site.
 
 ## Appendix B — how much of this document is enforced
 
-**Probed:** REP-14 by its own mutation on 4 October 2026 (the script as 0.141.0 shipped it);
+**Probed:** REP-15 and REP-16 on 7 October 2026, each against the script as 0.156.0 shipped it;
+REP-14 by its own mutation on 4 October 2026 (the script as 0.141.0 shipped it);
 REP-5 by six mutations on 16 September 2026, against the whole suite and then against its four readers (A.2); REP-3, REP-4, REP-6, REP-9, REP-10, REP-11, REP-12 and REP-13, by mutation, on 6 September 2026 — deleting the cache branch
 from `provenance_warnings` reddens the membership reader from both sides, and — setting `EFFORT_COST['high']` to 1
 reddens three readers across two documents. The rest were derived by parsing the 1 280 test
@@ -704,14 +783,14 @@ summary that bound is unusually tight, because there is no plausible way to exer
 
 | | requirements |
 |---|---|
-| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-5, REP-6, REP-7, REP-8, REP-9, REP-10, REP-11, REP-12, REP-13, REP-14 |
+| **enforced** | REP-1, REP-2, REP-3, REP-4, REP-5, REP-6, REP-7, REP-8, REP-9, REP-10, REP-11, REP-12, REP-13, REP-14, REP-15, REP-16 |
 | **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-P2 and INV-P3 enforced; INV-P1 partial; INV-P4 unread.
 
-**Fourteen enforced, nothing partial, nothing unread, of fourteen.**
+**Sixteen enforced, nothing partial, nothing unread, of sixteen.**
 
 The requirements are finished; the invariants INV-P1 and INV-P4 are not.
 

@@ -50,7 +50,11 @@ CLASSES = ("enforced", "partial", "none", "opposed", "bounded")
 NUMBER = {"nothing": 0, "no": 0, "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
           "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
           "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
-          "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20}
+          "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
+          # `run-lifecycle` reached twenty-one at 0.157.0. Read as one word with its
+          # hyphen: read as letters only, "Twenty-one enforced" says one.
+          "twenty-one": 21, "twenty-two": 22, "twenty-three": 23, "twenty-four": 24,
+          "twenty-five": 25}
 
 # `none` in the table is spelled `unread` in the summary sentence: the table names the
 # reader's state and the sentence names the requirement's. Both appear in all five.
@@ -177,7 +181,8 @@ def summary(lines: list[str]) -> dict:
             continue
         counts = {}
         for word, label in ((w, c) for c in CLASSES for w in [SUMMARY_WORD[c]]):
-            found = re.search(r"\b([A-Za-z]+)\s+(?:fully\s+)?" + word + r"\b", line)
+            found = re.search(r"\b([A-Za-z]+(?:-[A-Za-z]+)?)\s+(?:fully\s+)?" + word + r"\b",
+                              line)
             if found and found.group(1).lower() in NUMBER:
                 counts[label] = NUMBER[found.group(1).lower()]
         if counts.get("enforced") is not None and "partial" in counts:

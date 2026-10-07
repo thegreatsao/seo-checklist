@@ -2286,5 +2286,260 @@ class ReportScriptWithoutStorage(unittest.TestCase):
         self.assertEqual(json.loads(got["stored"]["seo-checklist-example.com"]), {"CI-007": True})
 
 
+# The export button's page: two ticks, the button, and the two places it speaks. `mode` is
+# a comma-separated set. "ticked": the first box is ticked. "sandbox": what a sandboxed
+# viewer gives the page — storage throws, and a download is dropped without a word (the
+# anchor's click does nothing). "refused": the download machinery itself throws. `alert`
+# records what it was asked to say; a sandbox without allow-modals shows none of it.
+EXPORT_DOM = r"""
+const vm = require('vm'), fs = require('fs'), [file, mode] = process.argv.slice(2);
+const flags = new Set((mode || '').split(','));
+const el = props => { const h = {}; return Object.assign({ dataset: {},
+  classList: { add() {}, contains: () => false, toggle() {} },
+  addEventListener: (t, f) => (h[t] = h[t] || []).push(f), fire: t => (h[t] || []).forEach(f => f()),
+  setAttribute(k, v) { this[k] = String(v); } }, props); };
+const row = el({});
+const boxes = [el({dataset: {id: 'CI-007'}, checked: flags.has('ticked'), closest: () => row}),
+               el({dataset: {id: 'CI-008'}, checked: false, closest: () => row})];
+const button = el({dataset: {nothing: 'NOTHING TICKED', shown: 'SHOWN BELOW'}});
+const said = el({hidden: true, textContent: ''}), text = el({hidden: true, value: ''});
+const byId = {'export-manual': button, 'export-manual-said': said, 'export-manual-text': text};
+const alerts = [], blobs = [], downloads = [];
+const document = {body: {dataset: {domain: 'example.com'}}, getElementById: id => byId[id] || null,
+  querySelectorAll: s => s.startsWith('input') ? boxes : [],
+  createElement: () => ({ click() { if (!flags.has('sandbox')) downloads.push({name: this.download, text: blobs[blobs.length - 1]}); } })};
+const URL = {createObjectURL: b => { if (flags.has('refused')) throw new Error('refused'); blobs.push(b.text); return 'blob:null/1'; },
+  revokeObjectURL: () => {}};
+class Blob { constructor(parts) { this.text = parts.join(''); } }
+const storage = () => { if (flags.has('sandbox')) throw new Error('SecurityError: The operation is insecure.');
+  return {getItem: () => null, setItem: () => {}}; };
+const page = vm.createContext({document, JSON, Date, URL, Blob, Object, alert: m => { alerts.push(String(m)); }, storage});
+vm.runInContext("globalThis.window = globalThis;"
+  + "Object.defineProperty(globalThis, 'localStorage', {get: () => storage()});", page);
+let error = null;
+try { vm.runInContext(fs.readFileSync(file, 'utf8'), page); button.fire('click'); } catch (e) { error = String(e); }
+console.log(JSON.stringify({error, alerts, downloads, said: said.textContent, saidHidden: said.hidden,
+  text: text.value, textHidden: text.hidden}));
+"""
+
+
+@unittest.skipUnless(shutil.which("node"), "needs node to run the report's script")
+class TheExportButtonSaysWhatItDidOnThePage(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-16: what the export button has to say, it says on
+    the page. Until 0.157.0 it said "nothing is ticked" in a dialog and handed the answers
+    over as a download, and a sandboxed viewer drops both without a word; seen on
+    7 October 2026 in a page served with Workbench's own Content-Security-Policy."""
+
+    def click(self, mode):
+        with tempfile.TemporaryDirectory() as d:
+            page, dom = os.path.join(d, "report.js"), os.path.join(d, "dom.js")
+            with open(page, "w", encoding="utf-8") as f:
+                f.write(REPORT_JS)
+            with open(dom, "w", encoding="utf-8") as f:
+                f.write(EXPORT_DOM)
+            # spawned, not forked: see ReportScriptWithoutStorage.run_page
+            out = subprocess.run([shutil.which("node"), dom, page, mode], capture_output=True, text=True,
+                                 stdin=subprocess.DEVNULL, close_fds=False, timeout=60)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        got = json.loads(out.stdout)
+        self.assertIsNone(got["error"])
+        return got
+
+    def test_nothing_ticked_is_said_on_the_page_and_never_in_a_dialog(self):
+        for mode in ("sandbox", ""):
+            with self.subTest(mode=mode):
+                got = self.click(mode)
+                self.assertEqual(got["alerts"], [])
+                self.assertEqual((got["said"], got["saidHidden"]), ("NOTHING TICKED", False))
+                self.assertIs(got["textHidden"], True)
+                self.assertEqual(got["downloads"], [])
+
+    def test_the_answers_are_on_the_page_where_a_download_is_dropped(self):
+        got = self.click("ticked,sandbox")
+        self.assertEqual(got["downloads"], [])  # the sandbox took it, and said nothing
+        self.assertEqual(got["alerts"], [])
+        self.assertEqual((got["said"], got["saidHidden"]), ("SHOWN BELOW", False))
+        self.assertIs(got["textHidden"], False)
+        answers = json.loads(got["text"])
+        self.assertEqual(list(answers), ["CI-007"])
+        self.assertEqual(answers["CI-007"]["status"], "PASS")
+        self.assertTrue(answers["CI-007"]["evidence"].startswith("ticked in the HTML report on "))
+
+    def test_the_file_is_still_offered_and_holds_what_the_page_shows(self):
+        got = self.click("ticked")
+        self.assertEqual([d["name"] for d in got["downloads"]], ["manual-answers.json"])
+        self.assertEqual(got["downloads"][0]["text"], got["text"])
+        self.assertIs(got["textHidden"], False)
+
+    def test_a_download_that_throws_does_not_take_the_answers_with_it(self):
+        got = self.click("ticked,refused")
+        self.assertEqual(got["downloads"], [])
+        self.assertIs(got["textHidden"], False)
+        self.assertEqual(list(json.loads(got["text"])), ["CI-007"])
+
+
+class TheReportCarriesWhatItsExportButtonSpeaksThrough(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-16, the page's half, and it needs no node: the
+    class above runs the script against a page this file wrote, so a report rendered
+    without one of the elements would pass all of it."""
+
+    def test_the_page_carries_the_places_the_script_speaks_in(self):
+        """The script finds three elements by id and reads two sentences off the button."""
+        from bs4 import BeautifulSoup
+        data = scored_results(item("M-1", MANUAL))
+        for lang, nothing in (("en", "Nothing is ticked yet."), ("ru", "Пока ничего не отмечено.")):
+            with self.subTest(lang=lang):
+                soup = BeautifulSoup(render_html(data, Lang(lang)), "html.parser")
+                button = soup.find(id="export-manual")
+                self.assertEqual(button["data-nothing"], nothing)
+                self.assertIn("manual-answers.json", button["data-shown"])
+                for name, tag in (("export-manual-said", "div"), ("export-manual-text", "textarea")):
+                    found = soup.find(id=name)
+                    self.assertEqual(found.name, tag)
+                    self.assertTrue(found.has_attr("hidden"))
+                self.assertTrue(soup.find(id="export-manual-text").has_attr("readonly"))
+        self.assertNotIn("alert(", REPORT_JS)
+
+
+class AFileNobodyNamedGoesBesideTheResults(unittest.TestCase):
+    """`openspec/specs/reporting/` REP-15: the report's default outputs are filed with
+    the results they were made from, not in the working directory. Reproduced on
+    7 October 2026 with the command a Workbench session had reported: five
+    `LLM-QUEUE*.md` in the folder the command was started from."""
+
+    REPORT = os.path.join(SKILL, "scripts", "checklist_report.py")
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir, True)
+        self.run_dir, self.cwd = os.path.join(self.dir, "run"), os.path.join(self.dir, "cwd")
+        os.makedirs(self.run_dir)
+        os.makedirs(self.cwd)
+        self.results = os.path.join(self.run_dir, "checklist-results.json")
+        with open(self.results, "w", encoding="utf-8") as f:
+            json.dump(scored_results(item("M-1", MANUAL), item("P-1", PASS),
+                                     item("L-1", LLM_PENDING, lens="copy")), f)
+        here = os.getcwd()
+        self.addCleanup(os.chdir, here)
+        os.chdir(self.cwd)
+
+    def report(self, *args):
+        proc = harness.spawn([sys.executable, self.REPORT, *args], env=harness.offline_env())
+        self.assertEqual(proc.returncode, 0, proc.stderr[-2000:])
+        return proc
+
+    def test_a_run_reported_from_somewhere_else_leaves_nothing_there(self):
+        """The reported command: the results and the Markdown named, the queue not."""
+        self.report(self.results, "--no-html", "--markdown",
+                    os.path.join(self.run_dir, "REPORT.md"))
+        self.assertEqual(os.listdir(self.cwd), [])
+        self.assertEqual(sorted(os.listdir(self.run_dir)),
+                         ["LLM-QUEUE-copy.md", "LLM-QUEUE.md", "REPORT.md",
+                          "checklist-results.json"])
+
+    def test_every_default_output_is_beside_the_results(self):
+        self.report(self.results)
+        self.assertEqual(os.listdir(self.cwd), [])
+        self.assertEqual(sorted(os.listdir(self.run_dir)),
+                         ["CHECKLIST-REPORT.md", "CHECKLIST.html", "LLM-QUEUE-copy.md",
+                          "LLM-QUEUE.md", "checklist-results.json"])
+
+    def test_started_beside_its_results_it_writes_where_it_always_did(self):
+        """How the protocol starts it: `checklist_report.py checklist-results.json`."""
+        os.chdir(self.run_dir)
+        self.report("checklist-results.json")
+        self.assertIn("CHECKLIST.html", os.listdir(self.run_dir))
+        self.assertEqual(os.listdir(self.cwd), [])
+
+    def test_a_path_somebody_named_is_theirs(self):
+        """Relative to the working directory, like any path on a command line — and the
+        lens files follow the queue they are cut from, not the results."""
+        self.report(self.results, "--html", "named.html", "--llm-queue",
+                    os.path.join("queues", "Q.md"))
+        self.assertEqual(sorted(os.listdir(self.cwd)), ["named.html", "queues"])
+        self.assertEqual(sorted(os.listdir(os.path.join(self.cwd, "queues"))),
+                         ["Q-copy.md", "Q.md"])
+        self.assertEqual(sorted(os.listdir(self.run_dir)),
+                         ["CHECKLIST-REPORT.md", "checklist-results.json"])
+
+    def test_a_default_typed_out_is_a_named_path(self):
+        """`--html CHECKLIST.html` is somebody naming a file in the working directory.
+        The words are the default's; that they were typed is what decides."""
+        from checklist_report import build_parser, output_paths
+        parser = build_parser()
+        a = parser.parse_args([self.results, "--html", "CHECKLIST.html"])
+        output_paths(a, parser)
+        self.assertEqual(a.html, "CHECKLIST.html")
+        self.assertEqual(a.markdown, os.path.join(self.run_dir, "CHECKLIST-REPORT.md"))
+        self.assertEqual(a.llm_queue, os.path.join(self.run_dir, "LLM-QUEUE.md"))
+
+
+class AMergeReplacesTheResultsWholeOrNotAtAll(unittest.TestCase):
+    """`openspec/specs/run-lifecycle/` RUN-21, the report's half: each of the three
+    merges rewrites the results file, which is the only copy of what the audit found.
+    Each emptied it first and wrote into it, so a merge that died while writing left
+    the first part of a JSON document. The replacement is refused here at its last
+    step, where a writer that dies has also not replaced anything."""
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir, True)
+        self.results = os.path.join(self.dir, "checklist-results.json")
+
+    def merge(self, flag, row, answers):
+        """Run the report's `main` with the replacement refused; → what was raised."""
+        import checklist_report
+        from unittest import mock
+        with open(self.results, "w", encoding="utf-8") as f:
+            json.dump(scored_results(row), f)
+        with open(self.results, "rb") as f:
+            before = f.read()
+        answers_path = os.path.join(self.dir, "answers.json")
+        with open(answers_path, "w", encoding="utf-8") as f:
+            json.dump(answers, f)
+        argv = ["checklist_report.py", self.results, flag, answers_path]
+        with mock.patch("lib.whole_file.os.replace", side_effect=OSError("refused for the test")), \
+                mock.patch.object(sys, "argv", argv), \
+                contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(OSError) as raised:
+                checklist_report.main()
+        with open(self.results, "rb") as f:
+            self.assertEqual(f.read(), before, "the results file was written into")
+        return str(raised.exception)
+
+    def test_each_merge_leaves_the_results_as_they_were_when_it_cannot_replace_them(self):
+        answer = {"status": PASS, "evidence": "read on the page", "rationale": "it is there"}
+        cases = (("--manual-answers", item("Q-1", MANUAL), {"Q-1": answer}),
+                 ("--llm-answers", item("Q-1", LLM_PENDING, lens="copy"), {"Q-1": answer}),
+                 ("--llm-review", item("Q-1", PASS, source="llm", lens="copy"), {"Q-1": answer}))
+        for flag, row, answers in cases:
+            with self.subTest(flag=flag):
+                said = self.merge(flag, row, answers)
+                # The merged results are not lost with the refusal: the error names
+                # the file that holds them, whole.
+                kept = [n for n in os.listdir(self.dir) if n.endswith(".tmp")]
+                self.assertEqual(len(kept), 1, os.listdir(self.dir))
+                self.assertIn(kept[0], said)
+                with open(os.path.join(self.dir, kept[0]), encoding="utf-8") as f:
+                    self.assertEqual(json.load(f)["items"][0]["id"], "Q-1")
+                os.unlink(os.path.join(self.dir, kept[0]))
+
+    def test_a_merge_that_goes_through_replaces_the_file_and_leaves_nothing_beside_it(self):
+        import checklist_report
+        from unittest import mock
+        with open(self.results, "w", encoding="utf-8") as f:
+            json.dump(scored_results(item("Q-1", MANUAL)), f)
+        answers_path = os.path.join(self.dir, "answers.json")
+        with open(answers_path, "w", encoding="utf-8") as f:
+            json.dump({"Q-1": {"status": PASS, "evidence": "read on the page"}}, f)
+        argv = ["checklist_report.py", self.results, "--manual-answers", answers_path]
+        with mock.patch.object(sys, "argv", argv), \
+                contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(checklist_report.main(), 0)
+        with open(self.results, encoding="utf-8") as f:
+            self.assertEqual(json.load(f)["items"][0]["status"], PASS)
+        self.assertEqual([n for n in os.listdir(self.dir) if n.endswith(".tmp")], [])
+
+
 if __name__ == "__main__":
     unittest.main()

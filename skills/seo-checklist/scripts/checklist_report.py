@@ -99,6 +99,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from checklist_runner import (  # noqa: E402,F401
     EFFORT_COST, SEVERITIES, SEVERITY_WEIGHT, _utf8_stdout, score)
+from lib.whole_file import write_json_whole  # noqa: E402
 # A single source of truth. Both tables live in the runner since 0.94.0 so that SCR-2 can
 # stamp the instrument in one place; `EFFORT_COST` is re-exported here, where it lived
 # until then, because tools/audit_score_sensitivity.py imports it from this module.
@@ -1401,6 +1402,8 @@ border-bottom:1px solid var(--line);align-items:start}
 .NO_DATA,.LLM_PENDING,.NEEDS_INPUT{color:var(--none)}.MANUAL{color:var(--fg)}.NA{color:var(--na)}
 .sev{font-size:.7rem;color:var(--mut);padding-top:.2rem}
 .ttl{font-weight:500}.ev{color:var(--mut);font-size:.83rem;margin-top:.15rem;word-break:break-word}
+#export-manual-text{width:100%;margin-top:.4rem;font:.8rem ui-monospace,monospace;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:.4rem}
+[hidden]{display:none!important}
 .fix{font-size:.83rem;margin-top:.2rem}
 .row.done .ttl{opacity:.45;text-decoration:line-through}
 label.chk{display:inline-flex;gap:.4rem;align-items:center;cursor:pointer}
@@ -1482,6 +1485,8 @@ document.querySelectorAll('input[type=checkbox][data-id]').forEach(cb => {
   });
 });
 const exportBtn = document.getElementById('export-manual');
+const exportSaid = document.getElementById('export-manual-said');
+const exportText = document.getElementById('export-manual-text');
 if (exportBtn) exportBtn.addEventListener('click', () => {
   // A tick says "passes" and cannot say anything else, so the evidence field is
   // seeded rather than invented: it states what actually happened, which is that
@@ -1495,13 +1500,26 @@ if (exportBtn) exportBtn.addEventListener('click', () => {
                 + ' — replace this with what was checked'};
   });
   const n = Object.keys(out).length;
-  if (!n) { alert('Nothing is ticked yet.'); return; }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)],
-                                        {type: 'application/json'}));
-  a.download = 'manual-answers.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
+  // Everything this button has to say is said on the page. Until 0.157.0 it said
+  // "nothing is ticked" in a dialog and handed the answers over as a download, and a
+  // sandboxed viewer drops both without a word: `alert` is ignored where the sandbox
+  // has no allow-modals, a download where it has no allow-downloads. The button did
+  // nothing at all there, ticked or not.
+  const say = text => { if (exportSaid) { exportSaid.textContent = text; exportSaid.hidden = false; } };
+  if (!n) { if (exportText) exportText.hidden = true; say(exportBtn.dataset.nothing); return; }
+  const text = JSON.stringify(out, null, 2);
+  // Shown, and offered as a file as well. A page cannot find out whether a download
+  // happened — a blocked one raises nothing a script can catch — so the answers are
+  // never only in the download.
+  if (exportText) { exportText.value = text; exportText.hidden = false; }
+  say(exportBtn.dataset.shown);
+  try {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], {type: 'application/json'}));
+    a.download = 'manual-answers.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch (e) {}
 });
 document.querySelectorAll('.filters button').forEach(b => {
   b.addEventListener('click', () => {
@@ -1832,8 +1850,16 @@ def render_html(data: dict, L: Lang | None = None) -> str:
                f'{html.escape(i["applies_if"])}</div>' if i.get("applies_if") else '')
             + '</div></div>'
             for i in sorted(manual, key=lambda x: SEVERITY_ORDER.get(x["severity"], 9)))
-        rows += (f'<div class="row"><div class="st"></div><div class="sev"></div>'
-                 f'<div><button id="export-manual" type="button">'
+        rows += ('<div class="row"><div class="st"></div><div class="sev"></div>'
+                 '<div><button id="export-manual" type="button" data-nothing="'
+                 + html.escape(L.t("export_manual_nothing", "Nothing is ticked yet."))
+                 + '" data-shown="'
+                 + html.escape(L.t("export_manual_shown",
+                                   "The answers are below, and were offered as "
+                                   "manual-answers.json as well. If no file was "
+                                   "saved, this viewer does not allow downloads: copy "
+                                   "the text into a file of that name."))
+                 + '">'
                  f'{html.escape(L.t("export_manual", "Export ticked items as answers"))}'
                  f'</button> <span class="ev">'
                  + html.escape(L.t("export_manual_note",
@@ -1843,7 +1869,9 @@ def render_html(data: dict, L: Lang | None = None) -> str:
                                    "per item before merging, and write any FAIL by "
                                    "hand. The run records these as claimed, never as "
                                    "measured."))
-                 + '</span></div></div>')
+                 + '</span><div id="export-manual-said" class="ev" role="status" '
+                   'hidden></div><textarea id="export-manual-text" readonly hidden '
+                   'rows="10" spellcheck="false"></textarea></div></div>')
         parts.append(fold(L.t("requires_human", "Needs a person"),
                           '<p class="note">'
                           + html.escape(L.t("manual_note",
@@ -2102,12 +2130,56 @@ def write(path: str, text: str) -> str:
     return os.path.abspath(path)
 
 
-def main() -> int:
+class _Named(argparse.Action):
+    """Store a path and remember that somebody named it.
+
+    A default cannot be told from the same words typed on the command line once
+    argparse has stored either, and the two go to different places: a path somebody
+    named is theirs, a file nobody named goes beside the results (`output_paths`).
+    """
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        namespace.named = getattr(namespace, "named", ()) + (self.dest,)
+
+
+def output_paths(a, parser) -> None:
+    """Put every output nobody named beside the results file.
+
+    They went to the working directory until 0.157.0. A report made for a run that
+    lives somewhere else — `checklist_report.py <run>/checklist-results.json
+    --markdown <run>/REPORT.md` — left its queue, and one more file per lens,
+    wherever the command happened to be started; in a source checkout that is five
+    files in the tree. The results file is the one thing every invocation names, so
+    what belongs to a run is filed with it. Started beside its results, as the
+    protocol starts it, the script writes where it always did.
+
+    A path that was named is used as it was written, relative to the working
+    directory like any other.
+
+    Which outputs these are is read off the parser: every argument declared with
+    `_Named`. `--fixes` is written only when it is named, so it has no default to
+    place and is not one of them.
+    """
+    beside = os.path.dirname(os.path.abspath(a.results))
+    named = getattr(a, "named", ())
+    for action in parser._actions:
+        if isinstance(action, _Named) and action.dest not in named:
+            setattr(a, action.dest, os.path.join(beside, getattr(a, action.dest)))
+
+
+def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Render checklist audit deliverables")
     ap.add_argument("results", help="checklist-results.json from checklist_runner.py")
-    ap.add_argument("--markdown", default="CHECKLIST-REPORT.md")
-    ap.add_argument("--html", default="CHECKLIST.html")
-    ap.add_argument("--llm-queue", default="LLM-QUEUE.md")
+    ap.add_argument("--markdown", default="CHECKLIST-REPORT.md", action=_Named,
+                    help="the Markdown report (default: CHECKLIST-REPORT.md beside "
+                         "the results file)")
+    ap.add_argument("--html", default="CHECKLIST.html", action=_Named,
+                    help="the HTML report (default: CHECKLIST.html beside the "
+                         "results file)")
+    ap.add_argument("--llm-queue", default="LLM-QUEUE.md", action=_Named,
+                    help="the model's work list; one more file per lens is written "
+                         "next to it (default: LLM-QUEUE.md beside the results file)")
     ap.add_argument("--llm-answers", default="", help="JSON of LLM verdicts to merge back")
     ap.add_argument("--manual-answers", default="", metavar="PATH",
                     help="JSON of verdicts a person reached, {id: {status, "
@@ -2130,25 +2202,32 @@ def main() -> int:
     ap.add_argument("--lang", default="en",
                     help="language for the report chrome (en, ru); item titles "
                          "stay in the registry's wording unless translated")
-    a = ap.parse_args()
+    return ap
+
+
+def main() -> int:
+    parser = build_parser()
+    a = parser.parse_args()
+    output_paths(a, parser)
 
     with open(a.results, encoding="utf-8") as f:
         data = json.load(f)
 
+    # Each merge replaces the results file whole (`lib/whole_file.py`): it is the
+    # only copy of what the audit found, and a merge that died while writing it
+    # used to leave the first half of one.
     if a.llm_answers:
         with open(a.llm_answers, encoding="utf-8") as f:
             answers = json.load(f)
         n = merge_llm_answers(data, answers)
-        with open(a.results, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        write_json_whole(a.results, data)
         print(f"Merged {n} LLM verdict(s) into {a.results}")
 
     if a.manual_answers:
         with open(a.manual_answers, encoding="utf-8") as f:
             answered = json.load(f)
         n = merge_manual_answers(data, answered)
-        with open(a.results, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        write_json_whole(a.results, data)
         print(f"Merged {n} answer(s) from a person into {a.results}; "
               f"each is recorded as claimed rather than measured")
 
@@ -2156,8 +2235,7 @@ def main() -> int:
         with open(a.llm_review, encoding="utf-8") as f:
             review = json.load(f)
         stats = apply_llm_review(data, review)
-        with open(a.results, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        write_json_whole(a.results, data)
         print(f"Second reading: {stats['corroborated']} corroborated, "
               f"{stats['contested']} contested (back to NO_DATA), "
               f"{stats['skipped']} ignored")

@@ -631,6 +631,54 @@ assembled at run time from a string is not a launch it can see.
 - **AND** recorded without the bit it would be skipped with a hint and exit 0: a push
   nobody checked
 
+### Requirement: GOV-12 — what another program reads from this tool is listed, and the list is held
+
+Where a program other than the operator starts this tool's scripts and reads what they
+leave, the names it depends on SHALL be written down in this repository as a test: the
+paths it finds the tool by, the flags and values it can send, the keys it reads from a
+results file with the types it accepts, and what it reads from a report. A change that
+renames, removes or retypes one of them MUST fail that test. The list SHALL be taken from
+the other program's source, and SHALL say which source and when.
+
+**Why:** a consumer that is a program breaks without a word. Workbench, the dashboard this
+tool is most often started from, composes the two command lines itself and reads the
+results file key by key, with a default for anything missing: a renamed key is shown as a
+zero, a renamed flag as a run that never finishes. None of it was written down here — a
+search of this repository for the program's name found a changelog and one reason in a
+requirement — so the suite stayed green through any such change. Its session sent a list
+on 4 October 2026. The list was one key short, and that is the reason the list is taken
+from source and not from a message.
+**Reader:** partial. `tests/test_consumers.py` is the list, read on 7 October 2026 from
+Workbench at its commit `54eddd8`. It reads the paths off the tree; gives every scope,
+profile and language the form offers, and the rest of the form, to the parsers the two
+scripts parse with; and starts two audits of a local copy and their reports with
+Workbench's own command lines, from the working directory Workbench starts them in, then
+reads the results, the history, the report's language and a merge of answers the way
+Workbench reads them. Measured on 7 October 2026 by renaming or retyping, one at a time,
+eleven of the names it holds: every one reddens it. Two of the eleven were first tried
+in a form that changed nothing Workbench would notice — a flag renamed to a longer word
+that the parser still takes the old one for, an attribute renamed to one Workbench's own
+expression still finds — and stayed green, rightly. Not held, and what keeps this
+`partial`: that the list is still what Workbench reads. That program is another
+repository; nothing here can open it, and a name it starts to read tomorrow is absent
+from the list until somebody adds it. The procedure is in the module's first lines: tell
+the Workbench session before changing a name the module holds.
+
+#### Scenario: a key Workbench reads is renamed
+- **WHEN** a key of the results file that the list names is renamed, removed, or given a
+  value of another type
+- **THEN** the module fails, naming the key
+
+#### Scenario: a flag Workbench sends is renamed
+- **WHEN** a flag, or one of the values the form offers for it, is no longer accepted by
+  the script it is sent to
+- **THEN** the module fails before any audit is started
+
+#### Scenario: Workbench starts reading something new
+- **WHEN** the other program begins to depend on a name the list does not hold
+- **THEN** nothing here fails, and the name is unprotected until it is added: the limit
+  this requirement is `partial` for
+
 ## 4. Invariants
 
 * **INV-G1** — every gate CI runs is runnable locally with the same command.
@@ -867,20 +915,21 @@ than one mechanism inside one.
 
 **Probed:** GOV-1 and GOV-10 by running the tools — the threshold gate reports its five
 counts and zero without a basis; the calibration search over the workflow returns nothing.
-GOV-8 and INV-G2 by reading the workflow and the test that reads argparse defaults. The
-rest were derived by reading the gates and their tests.
+GOV-8 and INV-G2 by reading the workflow and the test that reads argparse defaults.
+GOV-12 by eleven renames on 7 October 2026. The rest were derived by reading the gates and
+their tests.
 
 | | requirements |
 |---|---|
 | **enforced** | GOV-1, GOV-4, GOV-8, GOV-9, GOV-10, GOV-11 |
-| **partial** | GOV-2, GOV-3, GOV-5, GOV-6, GOV-7 |
+| **partial** | GOV-2, GOV-3, GOV-5, GOV-6, GOV-7, GOV-12 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-G2, INV-G3, INV-G4, INV-G5 and INV-G7 enforced; INV-G1, INV-G6 and
 INV-G8 partial.
 
-**Six enforced, five partial, none unread, of eleven.**
+**Six enforced, six partial, none unread, of twelve.**
 
 The two unread requirements are the two that ask the machinery to be *governed* rather than
 to govern. GOV-2 asks that an admission not become a justification; GOV-3 asks that lists be

@@ -64,6 +64,9 @@ what the run measured; what the store says about the run is in the results only 
 `--no-history` stops the writing. `--diff` controls only whether the comparison is
 *printed* — the comparison happens either way, because the payload carries it.
 
+The directories are kept in one folder: `.seo-runs` in the working directory, unless
+`--history-dir` names another (HST-9).
+
 ## Requirements
 
 ### Requirement: HST-1 — a status change is classified as improvement, regression, or loss of evidence
@@ -494,6 +497,44 @@ document is about had never run end to end in CI on any platform.
 - **WHEN** a run is given `--no-history`
 - **THEN** nothing is written, and no comparison is claimed
 
+### Requirement: HST-9 — where the history is kept can be said, and is the working directory's when it is not
+
+A run SHALL file itself in, and read its predecessors from, the folder `--history-dir`
+names. Without the flag that folder SHALL be `.seo-runs` in the directory the run was
+started in, as it always was. A relative path SHALL be settled once, against the directory
+the run was started in. The flag moves the folder and nothing else: how a site's directory
+is named inside it (HST-6), which runs are read, and what `--no-history` stops are as
+they are without it.
+
+**Why:** the history is what makes a second run a comparison, and the only way to say where
+it lived was to choose the directory a run was started in. A person who audits from one
+folder never notices. A program that starts audits does: Workbench keeps each run's files
+in a folder of its own and starts every runner in one common directory for no reason but
+this one, so that the second run finds the first, and its session asked on 4 October 2026
+for the place to be something a run is told.
+**Reader:** enforced. `tests/test_runner.py::HistoryIsKeptWhereTheRunWasTold` starts two
+runs in two directories with one `--history-dir`, the first naming it by a relative path,
+and requires the second to name the first as what it was compared with and neither
+directory to have gained a `.seo-runs`; a control starts the same two runs without the
+flag and requires two histories and no comparison. Three more tests hold the default to
+the working directory, a named folder against a decoy history beside it, and a relative
+path to the directory it was named from. Probed on 7 October 2026 against the runner as
+0.156.0 shipped it: the flag is refused and the four tests that need it fail; the control
+passes, as it should. And by five breakages of the runner as it is now, each caught.
+
+#### Scenario: two runs started in two places
+- **WHEN** two runs of one site are started in different directories and given the same
+  `--history-dir`
+- **THEN** the second is compared with the first, and neither directory holds a history
+
+#### Scenario: nothing is said
+- **WHEN** a run is started without the flag
+- **THEN** its history is `.seo-runs` in the directory it was started in
+
+#### Scenario: a history beside the named one
+- **WHEN** the working directory has a `.seo-runs` of its own and another folder is named
+- **THEN** the named folder is the one read and written, and the other is left alone
+
 ## 4. Invariants
 
 * **INV-HS1** — a run compares against a run of the same site. *Reader: enforced, at
@@ -630,21 +671,22 @@ form: **a breakage has to be the shape of the violation, not merely upstream of 
 
 **Probed:** HST-1 by mutation, 5 September 2026 — `NO_DATA` added to `VERDICT_RANK`, which
 reddens the sweep six ways. HST-2, HST-3 and HST-6 by mutation at 0.96.7, twelve
-breakages across three rounds. The remaining rows were derived by parsing the test
+breakages across three rounds. HST-9 on 7 October 2026, against the runner as 0.156.0
+shipped it. The remaining rows were derived by parsing the test
 functions and reading the bodies that name each symbol, then reading the implementation;
 the executor that had been running mutation probes for this suite ran out of credits
 before it reached them, and A.3 is what that turned out to have cost.
 
 | | requirements |
 |---|---|
-| **enforced** | HST-1, HST-2, HST-3, HST-4, HST-5, HST-6, HST-7, HST-8 |
+| **enforced** | HST-1, HST-2, HST-3, HST-4, HST-5, HST-6, HST-7, HST-8, HST-9 |
 | **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-HS1 and INV-HS2 enforced; INV-HS3 partial; INV-HS4 unread.
 
-**Eight enforced of eight, nothing partial, nothing unread.**
+**Nine enforced of nine, nothing partial, nothing unread.**
 
 HST-2, HST-3 and HST-6 moved at 0.96.7, and only one of the three needed the tree to move
 at all — see A.3. INV-HS4 is now the document's whole remaining debt: nothing writes to an

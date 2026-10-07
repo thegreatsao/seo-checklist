@@ -32,22 +32,22 @@
         "enforced": 6,
         "none": 0,
         "opposed": 0,
-        "partial": 5
+        "partial": 6
       },
       "opposed": [],
-      "requirements": 11,
+      "requirements": 12,
       "unread": []
     },
     "history": {
       "counts": {
         "bounded": 0,
-        "enforced": 8,
+        "enforced": 9,
         "none": 0,
         "opposed": 0,
         "partial": 0
       },
       "opposed": [],
-      "requirements": 8,
+      "requirements": 9,
       "unread": []
     },
     "http": {
@@ -101,25 +101,25 @@
     "reporting": {
       "counts": {
         "bounded": 0,
-        "enforced": 14,
+        "enforced": 16,
         "none": 0,
         "opposed": 0,
         "partial": 0
       },
       "opposed": [],
-      "requirements": 14,
+      "requirements": 16,
       "unread": []
     },
     "run-lifecycle": {
       "counts": {
         "bounded": 0,
-        "enforced": 20,
+        "enforced": 21,
         "none": 0,
         "opposed": 0,
         "partial": 0
       },
       "opposed": [],
-      "requirements": 20,
+      "requirements": 21,
       "unread": []
     },
     "scoring": {
@@ -149,10 +149,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 128,
+    "enforced": 132,
     "none": 1,
     "opposed": 0,
-    "partial": 19,
-    "requirements": 152
+    "partial": 20,
+    "requirements": 157
   }
 }
