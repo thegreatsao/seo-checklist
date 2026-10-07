@@ -6,6 +6,7 @@ between "failed", "could not be decided" and "out of scope", because every one
 of those collapses into a plausible-looking number if it goes wrong.
 """
 import argparse
+import ast
 import builtins
 import contextlib
 import io
@@ -57,13 +58,37 @@ from detect_profile import detect  # noqa: E402
 
 
 def children(code, env, count, once_started=None):
-    procs = [subprocess.Popen([sys.executable, "-c", code], env=env,
+    procs = [subprocess.Popen([sys.executable, "-c", code],
+                              env=dict(env, PYTHONIOENCODING="utf-8"),
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                              text=True, close_fds=False)
+                              encoding="utf-8", close_fds=False)
              for _ in range(count)]
     if once_started:
         once_started(procs)
     return [p.communicate(timeout=60) for p in procs]
+
+
+SPAWNS = ("run", "Popen", "call", "check_call", "check_output")
+
+
+def spawn_calls(folders):
+    """(file, line, call node) for every `subprocess.<spawn>` in `folders`."""
+    found = []
+    for folder in folders:
+        for entry in sorted(os.listdir(folder)):
+            if not entry.endswith(".py"):
+                continue
+            path = os.path.join(folder, entry)
+            with open(path, encoding="utf-8") as f:
+                tree = ast.parse(f.read())
+            for node in ast.walk(tree):
+                if (isinstance(node, ast.Call)
+                        and isinstance(node.func, ast.Attribute)
+                        and node.func.attr in SPAWNS
+                        and isinstance(node.func.value, ast.Name)
+                        and node.func.value.id == "subprocess"):
+                    found.append((os.path.basename(path), node.lineno, node))
+    return found
 
 
 class Resolve(unittest.TestCase):
@@ -780,11 +805,11 @@ class PrivateAddresses(unittest.TestCase):
                  "https://nothing-resolves-here.invalid/", "--mode", "page",
                  "--allow-private", "--no-history", "--no-prompt", "--quiet",
                  "--timeout", "20", "--json", out],
-                capture_output=True, text=True, timeout=300, close_fds=False,
+                capture_output=True, encoding="utf-8", timeout=300, close_fds=False,
                 # This class clears the loopback-only switch to classify public
                 # literals; the run it starts must not resolve a name on the
                 # network, so the child gets it back.
-                env=dict(os.environ, SEO_LOOPBACK_ONLY="1"))
+                env=dict(os.environ, SEO_LOOPBACK_ONLY="1", PYTHONIOENCODING="utf-8"))
             self.assertEqual(proc.returncode, 0, proc.stderr[-2000:])
             with open(out, encoding="utf-8") as f:
                 payload = json.load(f)
@@ -818,7 +843,8 @@ class PrivateAddresses(unittest.TestCase):
                 [sys.executable, os.path.join(SCRIPTS, "checklist_runner.py"),
                  "https://example.com/", "--archive", site, "--allow-private",
                  "--no-history", "--no-prompt", "--quiet", "--json", out],
-                capture_output=True, text=True, timeout=300, close_fds=False)
+                capture_output=True, encoding="utf-8", timeout=300, close_fds=False,
+                env=dict(os.environ, PYTHONIOENCODING="utf-8"))
             self.assertEqual(proc.returncode, 0, proc.stderr[-2000:])
             with open(out, encoding="utf-8") as f:
                 payload = json.load(f)
@@ -882,29 +908,11 @@ class AScriptTheOperatingSystemKilled(unittest.TestCase):
     # the `except` around it reported `SkipTest("openssl unavailable")`, so **the TLS
     # site shape 0.14.0 announced as exercised live had never run on macOS at all**,
     # and the message blamed a binary that was installed and working.
-    SPAWNS = ("run", "Popen", "call", "check_call", "check_output")
-
     def _spawn_calls(self):
         """(file, line, call node) for every `subprocess.<spawn>` in the tree."""
-        import ast
-        found = []
-        for folder in (SCRIPTS, os.path.join(SCRIPTS, "lib"),
-                       os.path.join(ROOT, "skills", "seo-checklist", "tools"),
-                       os.path.dirname(os.path.abspath(__file__))):
-            for entry in sorted(os.listdir(folder)):
-                if not entry.endswith(".py"):
-                    continue
-                path = os.path.join(folder, entry)
-                with open(path, encoding="utf-8") as f:
-                    tree = ast.parse(f.read())
-                for node in ast.walk(tree):
-                    if (isinstance(node, ast.Call)
-                            and isinstance(node.func, ast.Attribute)
-                            and node.func.attr in self.SPAWNS
-                            and isinstance(node.func.value, ast.Name)
-                            and node.func.value.id == "subprocess"):
-                        found.append((os.path.basename(path), node.lineno, node))
-        return found
+        return spawn_calls((SCRIPTS, os.path.join(SCRIPTS, "lib"),
+                            os.path.join(ROOT, "skills", "seo-checklist", "tools"),
+                            os.path.dirname(os.path.abspath(__file__))))
 
     def test_every_child_in_the_tree_is_started_without_forking(self):
         """Rule one: `close_fds=False`, everywhere, not only in the two functions
@@ -941,6 +949,101 @@ class AScriptTheOperatingSystemKilled(unittest.TestCase):
                 bad.append(f"{name}:{line} {first.value!r}")
         self.assertEqual(bad, [], "a bare name on PATH has no dirname, so CPython "
                                   "forks; resolve it with shutil.which first")
+
+
+class AChildIsReadTheSameOnEveryMachine(unittest.TestCase):
+    """`openspec/specs/governance/` INV-G10: what a test reads from a child does not
+    depend on the machine it runs on, or on who started the suite.
+
+    Two halves, and either alone is the defect. A parent that passes `text=True` reads
+    with the console's codepage: cp1252 on Windows, UTF-8 elsewhere. A Python child
+    writes with that same codepage unless its environment says otherwise or it
+    reconfigures its own stdout, and it never reconfigures stderr. At 0.143.0 a new
+    test named UTF-8 for its read and nothing for the child. It was green on the Mac,
+    green under the local gate on Windows, which gave every step `PYTHONIOENCODING`
+    until 0.159.0, and red on CI's Windows leg at byte 0x97, an em dash in cp1252.
+
+    So a call in `tests/` that decodes a child's output names UTF-8 for the read, and
+    one that takes a Python child's output at all hands it `PYTHONIOENCODING="utf-8"`
+    in the same call: bytes taken now are decoded by somebody three lines later. Both
+    are spelled at the call, as `close_fds` is: a helper, or a name bound three lines
+    up, is where a scan stops seeing.
+    """
+
+    DECODES = ("text", "universal_newlines", "encoding", "errors")
+    TAKES = ("capture_output", "stdout", "stderr")
+
+    @staticmethod
+    def passes(node, keywords):
+        """A `**` counts for any keyword: it may carry a `text=True` this scan cannot
+        see."""
+        return any(kw.arg in keywords or kw.arg is None for kw in node.keywords)
+
+    def readers(self):
+        """The calls in `tests/` that decode what the child wrote."""
+        return [(name, line, node)
+                for name, line, node in spawn_calls((os.path.dirname(os.path.abspath(__file__)),))
+                if self.passes(node, self.DECODES)]
+
+    def takers(self):
+        """The calls in `tests/` that take what the child wrote, decoded there or not.
+        `check_output` takes it with no keyword saying so."""
+        return [(name, line, node)
+                for name, line, node in spawn_calls((os.path.dirname(os.path.abspath(__file__)),))
+                if node.func.attr == "check_output"
+                or self.passes(node, self.DECODES + self.TAKES)]
+
+    @staticmethod
+    def starts_another_program(node):
+        """True when the program is named as `shutil.which("<name>")` and the name is
+        not Python's: `node` writes UTF-8 whatever the variable says."""
+        argv = node.args[0] if node.args else None
+        first = argv.elts[0] if isinstance(argv, (ast.List, ast.Tuple)) and argv.elts else None
+        return (isinstance(first, ast.Call) and ast.unparse(first.func) == "shutil.which"
+                and len(first.args) == 1 and isinstance(first.args[0], ast.Constant)
+                and "python" not in str(first.args[0].value))
+
+    @staticmethod
+    def says_utf8(value):
+        return isinstance(value, ast.Constant) and value.value == "utf-8"
+
+    def test_a_read_of_a_child_names_utf8(self):
+        readers = self.readers()
+        self.assertGreater(len(readers), 8, "the scan found almost nothing")
+        self.assertIn("harness.py", {name for name, _, _ in readers},
+                      "`harness.spawn` is the road most tests take and the scan lost it")
+        bad = [f"{name}:{line}" for name, line, node in readers
+               if not any(kw.arg == "encoding" and self.says_utf8(kw.value)
+                          for kw in node.keywords)]
+        self.assertEqual(bad, [], "these read a child with whatever codepage the "
+                                  'machine has; pass encoding="utf-8" at the call')
+
+    def test_a_python_child_that_is_read_is_told_to_write_utf8(self):
+        asked, bad = 0, []
+        for name, line, node in self.takers():
+            if self.starts_another_program(node):
+                continue
+            asked += 1
+            env = next((kw.value for kw in node.keywords if kw.arg == "env"), None)
+            told = (isinstance(env, ast.Call) and isinstance(env.func, ast.Name)
+                    and env.func.id == "dict"
+                    and any(kw.arg == "PYTHONIOENCODING" and self.says_utf8(kw.value)
+                            for kw in env.keywords))
+            if not told:
+                bad.append(f"{name}:{line}")
+        self.assertGreater(asked, 8, "nearly every reader was taken for another program")
+        self.assertEqual(bad, [], "these read a Python child as UTF-8 and leave what it "
+                                  "writes to the machine; pass "
+                                  'env=dict(<the environment>, PYTHONIOENCODING="utf-8")')
+
+    def test_spawn_reads_what_the_child_wrote_whatever_environment_it_was_given(self):
+        """The outcome, on the road most tests take. No single-byte codepage holds all
+        three letters, and the environment handed over says cp1252, which is what a
+        Windows console gives a child that is told nothing."""
+        got = harness.spawn([sys.executable, "-c", r"print('ρ — с')"],
+                            env=dict(os.environ, PYTHONIOENCODING="cp1252"))
+        self.assertEqual(got.returncode, 0, got.stderr)
+        self.assertEqual(got.stdout.strip(), "ρ — с")
 
 
 class Robots(unittest.TestCase):
@@ -5154,9 +5257,9 @@ class OneFetchPerUrl(unittest.TestCase):
                     "print(safe_get(%r, respect_robots=True).status_code)"
                     % (SCRIPTS, site.base + "/a"))
             proc = subprocess.Popen([sys.executable, "-c", code],
-                                    env=harness.offline_env(),
+                                    env=dict(harness.offline_env(), PYTHONIOENCODING="utf-8"),
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                    text=True, close_fds=False)
+                                    encoding="utf-8", close_fds=False)
             out, err = proc.communicate(timeout=60)
             self.assertEqual(out.strip(), "200", err)
             self.assertIn(entry, os.listdir(self.pacing_dir),

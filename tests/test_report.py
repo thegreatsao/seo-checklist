@@ -2268,7 +2268,7 @@ class ReportScriptWithoutStorage(unittest.TestCase):
                 f.write(DOM)
             # a full path and close_fds=False, so CPython spawns rather than forks: macOS can kill a forked child
             # inside Apple's atfork handler (test_runner.AScriptTheOperatingSystemKilled)
-            out = subprocess.run([shutil.which("node"), dom, page, mode], capture_output=True, text=True,
+            out = subprocess.run([shutil.which("node"), dom, page, mode], capture_output=True, encoding="utf-8",
                                  stdin=subprocess.DEVNULL, close_fds=False, timeout=60)
         self.assertEqual(out.returncode, 0, out.stderr)
         return json.loads(out.stdout)
@@ -2338,7 +2338,7 @@ class TheExportButtonSaysWhatItDidOnThePage(unittest.TestCase):
             with open(dom, "w", encoding="utf-8") as f:
                 f.write(EXPORT_DOM)
             # spawned, not forked: see ReportScriptWithoutStorage.run_page
-            out = subprocess.run([shutil.which("node"), dom, page, mode], capture_output=True, text=True,
+            out = subprocess.run([shutil.which("node"), dom, page, mode], capture_output=True, encoding="utf-8",
                                  stdin=subprocess.DEVNULL, close_fds=False, timeout=60)
         self.assertEqual(out.returncode, 0, out.stderr)
         got = json.loads(out.stdout)

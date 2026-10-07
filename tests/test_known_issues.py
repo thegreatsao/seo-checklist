@@ -124,6 +124,7 @@ class RecordedKnownIssues(unittest.TestCase):
                 stdin=subprocess.DEVNULL, close_fds=False,
                 capture_output=True, text=True, encoding="utf-8", errors="replace",
                 env=dict(os.environ, TEMP=own, TMP=own, TMPDIR=own,
+                         PYTHONIOENCODING="utf-8",
                          **{safe.RATE_LIMIT_DIR_VAR: pacing}))
             self.assertEqual(done.returncode, 0, done.stderr)
             self.assertEqual(os.listdir(own), [])

@@ -133,6 +133,27 @@ def legs_not_run(legs: list[tuple[str, str]], platform: str, python: str) -> lis
     return lines
 
 
+def gate_env(environ) -> dict:
+    """What every step starts from: this process's environment, and the interpreter
+    that is running first on `PATH`. Nothing else.
+
+    Until 0.159.0 a step was also given `PYTHONIOENCODING="utf-8"`, which CI gives no
+    step. A test that read a child's output as UTF-8 while the child wrote the
+    machine's codepage was green here for that and red on CI's Windows leg (0.143.0:
+    byte 0x97, an em dash in cp1252). The line had come with the file, with no reason
+    written beside it. Run without it on Windows on 7 October 2026, twenty-six steps
+    of twenty-seven passed, the suite among them, and the one that did not had counted
+    the requests another program on that machine sent to the fixture's port. A
+    variable CI does not set is the defect `step_env` names from the other side: a
+    different run passing under the same name.
+    """
+    env = dict(environ)
+    # CI calls the interpreter `python`; on Windows the venv ships `python.exe`
+    # but a bare `python` may be a store stub, so the running one is named.
+    env["PATH"] = os.path.dirname(sys.executable) + os.pathsep + env["PATH"]
+    return env
+
+
 def step_env(base: dict, workflow: dict, job: dict, step: dict) -> dict:
     """The environment CI gives this step: the workflow's `env`, then the job's, then
     the step's own, each over the last — GitHub's order.
@@ -338,10 +359,7 @@ def main() -> int:
                       f"green here. Nothing changed, so nothing is rerun.")
                 return 0
 
-    env = dict(os.environ, PYTHONIOENCODING="utf-8")
-    # CI calls the interpreter `python`; on Windows the venv ships `python.exe`
-    # but a bare `python` may be a store stub, so the running one is named.
-    env["PATH"] = os.path.dirname(sys.executable) + os.pathsep + env["PATH"]
+    env = gate_env(os.environ)
 
     runnable = [(j, s) for j, s in steps
                 if "run" in s and not only_installs(s["run"])]

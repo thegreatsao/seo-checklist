@@ -65,7 +65,7 @@ class TheGateLeavesTheHookBehind(unittest.TestCase):
             encoding="utf-8")
         body = source[source.index("def main() -> int:"):]
         call = body.index("leave_the_hook_behind(os.environ)")
-        for later in ("load_workflow()", "tree_hash()", "dict(os.environ", "run_step("):
+        for later in ("load_workflow()", "tree_hash()", "gate_env(os.environ", "run_step("):
             with self.subTest(later=later):
                 self.assertGreater(body.index(later), call)
 

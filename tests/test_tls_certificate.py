@@ -36,7 +36,8 @@ def run(url: str, env: dict) -> dict:
     # -11. The four tests passed alone and segfaulted inside the full suite until this
     # line was right.
     proc = subprocess.run([sys.executable, str(SCRIPT), url, "--json"],
-                          capture_output=True, text=True, env=env, timeout=60,
+                          capture_output=True, encoding="utf-8",
+                          env=dict(env, PYTHONIOENCODING="utf-8"), timeout=60,
                           close_fds=False)
     assert proc.returncode == 0, f"exited {proc.returncode}: {proc.stderr[-400:]}"
     return json.loads(proc.stdout)

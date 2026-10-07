@@ -794,6 +794,37 @@ the Workbench session before changing a name the module holds.
   a machine the tool is run on has a leg at all, which the gate says at the end of a
   run and no test requires; and the floor and the newest are held, the versions between
   them are a choice.
+* **INV-G10** — what a test reads from a child process does not depend on the machine
+  the suite runs on, and the local gate gives a step no variable CI does not give it.
+  *Reader: enforced* — `tests/test_runner.py` `AChildIsReadTheSameOnEveryMachine` scans
+  every `subprocess` call in `tests/`: one that decodes the child's output names
+  `encoding="utf-8"` at the call, and one that takes the output of a child not named as
+  another program hands it `PYTHONIOENCODING="utf-8"` in an `env=dict(...)` at the same
+  call; and it starts a child through `harness.spawn` with an environment that says
+  cp1252 and requires a Greek letter, a dash and a Cyrillic letter back.
+  `tests/test_ci_local.py` `AStepGetsTheEnvironmentCIGivesIt` holds the gate's half:
+  `gate_env` changes `PATH` alone, and every step of a run is handed that and the
+  workflow's `env`. Until 0.159.0 the gate gave every step `PYTHONIOENCODING="utf-8"`
+  and CI gave none. At 0.143.0 a test that read a child as UTF-8 while the child wrote
+  the machine's codepage passed the suite on the Mac and the gate on Windows, and
+  failed CI's Windows leg at byte 0x97, an em dash in cp1252; since then a rule kept by
+  hand asked for such a test to be run once with the variable unset. The line had come
+  with the file (0.101.0) with no reason beside it. Measured on 7 October 2026: with
+  both encoding variables unset the Mac's Python is in UTF-8 mode, so the gate a push
+  goes through there could not see the defect with the line or without it; on Windows the
+  gate without the line ran twenty-six steps of twenty-seven green, the suite among
+  them, and the twenty-seventh, the live path, counted four requests another program
+  on that machine sent to the fixture's port. Nine calls read a child with
+  `text=True` alone, `harness.spawn` among them, which most tests go through; two of
+  them read `node`, which writes UTF-8 whatever the console is. Not held: `scripts/` and
+  `tools/` are not scanned — every call there names UTF-8 today, one of them
+  (`git_checkout.py`) through a `**` the rule would not accept; a child started by
+  anything but a call written `subprocess.<name>(...)`; and a child `harness.spawn`
+  starts is now always told to write UTF-8, as the runner tells the scripts it starts,
+  so the suite no longer shows on Windows a script that cannot encode its own output
+  when it is started with no such variable. For a script that prints raw JSON
+  `test_every_script_printing_raw_unicode_can_encode_it` holds that; for one that
+  prints prose nothing does.
 
 ## 5. What this document does not decide
 
@@ -943,8 +974,8 @@ their tests.
 | **none** | — none |
 | **opposed** | — none |
 
-Invariants: INV-G2, INV-G3, INV-G4, INV-G5, INV-G7 and INV-G9 enforced; INV-G1, INV-G6
-and INV-G8 partial.
+Invariants: INV-G2, INV-G3, INV-G4, INV-G5, INV-G7, INV-G9 and INV-G10 enforced; INV-G1,
+INV-G6 and INV-G8 partial.
 
 **Six enforced, six partial, none unread, of twelve.**
 

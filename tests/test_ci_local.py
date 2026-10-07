@@ -301,5 +301,53 @@ class CIsLegsAreReadOutOfTheWorkflow(unittest.TestCase):
         self.assertNotIn("matrix legs, and every platform but this one", source)
 
 
+class AStepGetsTheEnvironmentCIGivesIt(unittest.TestCase):
+    """`openspec/specs/governance/` INV-G10, the gate's half: a step is started with
+    this process's environment, the workflow's `env`, and the running interpreter
+    first on `PATH`. Nothing CI does not give it.
+
+    Until 0.159.0 every step also got `PYTHONIOENCODING="utf-8"`. CI sets no such
+    variable, so a test that read a child's output as UTF-8 while the child wrote the
+    machine's codepage passed this gate on Windows and failed CI's Windows leg.
+    """
+
+    def test_the_base_differs_from_this_environment_by_the_path_alone(self):
+        mine = {"PATH": "elsewhere", "HOME": "somewhere", "PYTHONIOENCODING": "cp1252"}
+        env = ci_local.gate_env(mine)
+        self.assertEqual({key for key in set(env) | set(mine) if env.get(key) != mine.get(key)},
+                         {"PATH"})
+        self.assertEqual(env["PATH"].split(os.pathsep),
+                         [os.path.dirname(sys.executable), "elsewhere"])
+        self.assertEqual(mine["PATH"], "elsewhere", "the caller's environment was edited")
+
+    def test_a_run_hands_every_step_that_and_the_workflows_own(self):
+        """Through `main`, since a variable can be added after the base is built as
+        easily as inside it. No step is run: `run_step` is replaced and what it was
+        handed is compared with what the workflow and this process say."""
+        workflow = ci_local.load_workflow()
+        handed = []
+
+        def step(name, script, env):
+            handed.append((name, env))
+            return True, 0.0, ""
+
+        with mock.patch.object(sys, "argv", ["ci_local.py", "--no-cache"]), \
+                mock.patch.object(ci_local, "tree_hash", return_value=None), \
+                mock.patch.object(ci_local, "untracked", return_value=set()), \
+                mock.patch.object(ci_local, "run_step", side_effect=step), \
+                mock.patch("builtins.print"):
+            self.assertEqual(ci_local.main(), 0)
+        expected = [(s.get("name", "(unnamed)"),
+                     ci_local.step_env(ci_local.gate_env(os.environ), workflow, job, s))
+                    for job in (workflow["jobs"][name] for name in ("test", "census"))
+                    for s in job["steps"]
+                    if "run" in s and not ci_local.only_installs(s["run"])]
+        self.assertGreater(len(handed), 20, "the run started almost nothing")
+        self.assertEqual(handed, expected)
+        for name, env in handed:
+            self.assertEqual(env.get("PYTHONIOENCODING"), os.environ.get("PYTHONIOENCODING"),
+                             f"{name}: the gate set what CI does not")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1215,15 +1215,23 @@ def spawn(args, env=None, timeout=600, stdin_text=None):
     if args and isinstance(args[0], str) and not os.path.dirname(args[0]):
         import shutil
         args[0] = shutil.which(args[0]) or args[0]
-    kwargs = {"capture_output": True, "text": True, "timeout": timeout,
-              "env": with_tripwire(env or offline_env())}
+    kwargs = {"capture_output": True, "timeout": timeout}
     if stdin_text is not None:
         kwargs["input"] = stdin_text
     import subprocess
     # `close_fds` spelled out at the call rather than folded into `kwargs`, so the
     # tree-wide rule in `test_runner.py` can see it. A guard that a helper can hide
     # from is a guard that stops at the helper.
-    return subprocess.run(args, close_fds=False, **kwargs)
+    #
+    # The two halves of the encoding are spelled out here for the same reason, and
+    # together because either alone is a read that depends on the machine: the child is
+    # told to write UTF-8 and this side reads UTF-8, which is how `run_script` starts
+    # the same scripts. `text=True` alone read a child with the console's codepage,
+    # and on Windows that is cp1252 whatever the child wrote.
+    return subprocess.run(args, close_fds=False, encoding="utf-8",
+                          env=dict(with_tripwire(env or offline_env()),
+                                   PYTHONIOENCODING="utf-8"),
+                          **kwargs)
 
 
 def offline_env(**extra) -> dict:

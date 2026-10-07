@@ -2677,7 +2677,8 @@ class GeneratorIsInStep(unittest.TestCase):
     def test_registry_matches_its_generator(self):
         r = subprocess.run([sys.executable,
                             os.path.join(SKILL, "tools", "build_checklist.py"),
-                            "--check"], capture_output=True, text=True,
+                            "--check"], capture_output=True, encoding="utf-8",
+                           env=dict(os.environ, PYTHONIOENCODING="utf-8"),
                            close_fds=False)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
