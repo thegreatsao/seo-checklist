@@ -10,6 +10,76 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.159.0 — a test reads a child the same on every machine, and the gate gives a step what CI gives it
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
+changes; nothing under `skills/seo-checklist/scripts/` changes. This release is one line
+of the local gate, how the tests start and read a child process, and INV-G10.
+
+* **What was wrong.** `tools/ci_local.py` gave every step `PYTHONIOENCODING="utf-8"`.
+  CI gives no step that variable. At 0.143.0 a new test read a child's output as UTF-8
+  while the child wrote the machine's codepage: it passed the suite on the Mac, passed
+  the gate on Windows, and failed CI's Windows leg at byte 0x97, an em dash in cp1252.
+  Since then a rule kept by hand asked for such a test to be run once with the variable
+  unset. Asked of Anton on 4 October whether the gate should stop setting it; answered
+  on 7 October: remove the line and write the test.
+
+* **Looked for before anything was changed.** *Why the line was there*: it came with
+  the file (`d8c212f`, 0.101.0), and no comment, commit message or changelog entry
+  gives a reason; no test read it. *What it does on the Mac*, where a push is gated:
+  nothing — with both encoding variables unset that Python is in UTF-8 mode, so the gate
+  there could not see the defect with the line or without it. *What breaks on Windows
+  without it*: the whole gate was run there with the line removed (27 steps, 919 s,
+  Python 3.13.15): 26 green, the suite among them, and one red, the live path, which
+  counted `GET /` five times where one is allowed. The four more came five seconds
+  apart; a listener put on the empty port afterwards was asked for `/` with
+  `User-Agent: Workbench`. So that step is red on that machine while Workbench runs,
+  with the line or without it, and the run does not show what is behind that red.
+
+* **The gate.** `gate_env` is what a step starts from: this process's environment and
+  the running interpreter first on `PATH`. The variable is gone.
+
+* **Removing the line was not enough**, because only a Windows machine would then see
+  the defect and pushes are gated on the Mac. What decides it is in the tests: a parent
+  that passes `text=True` reads with the console's codepage, and a Python child writes
+  with it unless its environment says otherwise. Nine calls in `tests/` read that way,
+  `harness.spawn` among them, which most tests go through; two of the nine read `node`.
+  Each names `encoding="utf-8"` now, and each that starts Python hands the child
+  `PYTHONIOENCODING="utf-8"` in the same call, which is how the runner starts its
+  scripts. One more call named the read and not the child.
+
+* **INV-G10: what a test reads from a child does not depend on the machine.** Five
+  tests. Held by
+  `tests/test_runner.py` `AChildIsReadTheSameOnEveryMachine`: a call in `tests/` that
+  decodes a child's output names UTF-8 at the call; one that takes the output of a
+  child not named as another program passes `env=dict(..., PYTHONIOENCODING="utf-8")`
+  at the call; and `harness.spawn`, handed an environment that says cp1252, returns a
+  Greek letter, a dash and a Cyrillic letter. And by `tests/test_ci_local.py`
+  `AStepGetsTheEnvironmentCIGivesIt`: the gate's base changes `PATH` alone, and a run
+  hands every step that and the workflow's `env`. A test written as the one of 0.143.0
+  was is red on every machine now.
+
+* **Nine breakages, each caught by the tests named for it and no other**: the variable
+  put back in the gate's base; added after the base is built; `harness.spawn` not
+  telling the child; `harness.spawn` reading with `text=True` alone; both halves folded
+  into a dict the scan cannot read; a test reading Python with `text=True` alone; the
+  shape of 0.143.0; bytes taken from a child that is told nothing; a read of `node`
+  back on `text=True`.
+
+* **Given up, and said in INV-G10.** A child `harness.spawn` starts is always told to
+  write UTF-8 now. Before, on Windows, the suite would have shown a script that cannot
+  encode its own output when started with no such variable. For a script that prints
+  raw JSON a test holds that from the source; for one that prints prose nothing does.
+  `scripts/` and `tools/` are not scanned: every call there names UTF-8 today.
+
+* **Outside the repository**, on 7 October: the Windows machine this is developed on
+  moved to Python 3.14.7, so 0.158.0's "the Windows machine stays on 3.13" is no longer
+  so and no machine runs the suite on 3.13; CI's Windows 3.13 leg is unchanged.
+
+* **Seen and not taken up.** The gate leaves the report files of its smoke steps in the
+  checkout's root: `sweep` moves what git calls untracked, and those seven names are
+  ignored.
+
 ## 0.158.0 — the suite runs on Python 3.14, where audits were already being run
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
