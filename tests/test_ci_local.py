@@ -18,6 +18,7 @@ every sent commit before it starts checking; hand runs still verify the disk.
 from __future__ import annotations
 
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -232,6 +233,72 @@ class ItObeysTheRulesItEnforcesOnEverythingElse(unittest.TestCase):
         that imports nothing from the harness is a test module somebody will later run
         outside it."""
         self.assertTrue(callable(spawn))
+
+
+class CIsLegsAreReadOutOfTheWorkflow(unittest.TestCase):
+    """`openspec/specs/governance/` INV-G9: the newest Python CI runs the suite on, it
+    runs on every platform, and the local gate names the legs it did not run by reading
+    them, not by remembering them.
+
+    Until 0.158.0 the newest was 3.13 and the plugin installed on the Mac ran audits on
+    3.14, which no leg and no machine had ever run the suite on. And the gate closed
+    every run with "the 3.10 and 3.11 matrix legs", a sentence written by hand: on the
+    Mac, whose gate ran 3.12, it left 3.13 out, and it would have left 3.14 out too.
+    """
+
+    LEGS = [("ubuntu", "3.10"), ("ubuntu", "3.14"), ("macos", "3.14"), ("windows", "3.13")]
+
+    def legs(self):
+        return ci_local.suite_legs(ci_local.load_jobs())
+
+    def test_every_python_the_matrix_lists_is_a_leg_on_linux(self):
+        """Against the file as text, which is how `TheDeclaredPythonFloorIsExercised`
+        reads the same list: two readings of one line have to agree."""
+        with open(ci_local.WORKFLOW, encoding="utf-8") as stream:
+            listed = re.search(r"python-version: \[([^\]]+)\]", stream.read())
+        self.assertEqual([python for runner, python in self.legs() if runner == "ubuntu"],
+                         [v.strip().strip('"') for v in listed.group(1).split(",")])
+
+    def test_the_newest_python_is_run_on_every_platform(self):
+        """Equal on all three, so a version added to one platform's legs and not to
+        the others' is a decision somebody makes here."""
+        legs = self.legs()
+        newest = max((python for _, python in legs),
+                     key=lambda v: tuple(int(part) for part in v.split(".")))
+        for runner in ("ubuntu", "macos", "windows"):
+            with self.subTest(runner=runner):
+                self.assertIn((runner, newest), legs,
+                              f"CI runs {newest} and not on {runner}")
+
+    def test_a_run_names_every_leg_but_its_own(self):
+        self.assertEqual(
+            ci_local.legs_not_run(self.LEGS, "darwin", "3.14"),
+            ["  not run: CI's other legs — ubuntu 3.10, 3.14; windows 3.13"])
+        self.assertEqual(
+            ci_local.legs_not_run(self.LEGS, "linux", "3.10"),
+            ["  not run: CI's other legs — ubuntu 3.14; macos 3.14; windows 3.13"])
+
+    def test_a_machine_ci_has_no_leg_for_is_told_so(self):
+        """A Mac on 3.12 was where every release was gated, and CI had no such leg."""
+        lines = ci_local.legs_not_run(self.LEGS, "darwin", "3.12")
+        self.assertEqual(lines[0], "  not run: CI's other legs — ubuntu 3.10, 3.14; "
+                                   "macos 3.14; windows 3.13")
+        self.assertEqual(len(lines), 2)
+        self.assertIn("no macos 3.12 leg", lines[1])
+
+    def test_every_platform_the_gate_can_name_is_one_ci_runs(self):
+        """`RUNNER_OF` turns what Python calls this machine into what the workflow
+        calls a runner. A name in it that no leg has would make every run on that
+        platform say CI has no leg for it."""
+        self.assertEqual(sorted(set(ci_local.RUNNER_OF.values())),
+                         sorted({runner for runner, _ in self.legs()}))
+
+    def test_the_gate_closes_with_what_it_read(self):
+        with open(os.path.join(ROOT, "skills", "seo-checklist", "tools", "ci_local.py"),
+                  encoding="utf-8") as stream:
+            source = stream.read()
+        self.assertIn("legs_not_run(suite_legs(jobs), sys.platform,", source)
+        self.assertNotIn("matrix legs, and every platform but this one", source)
 
 
 if __name__ == "__main__":

@@ -27,15 +27,20 @@ jobs:
         # the push ran on one (0.149.0, 0.150.0) found three defects. What this leg is
         # not is that machine: a runner has no system proxy, the condition that found
         # the first of them. A test holds the three platforms.
+        # 0.158.0: on 3.14, which is the Python the plugin installed on that Mac runs.
         include:
           - os: macos-latest
-            python-version: "3.13"
+            python-version: "3.14"
         # 3.10 is the floor declared in pyproject.toml, and it is here because a
         # declared floor nothing runs is a guess. It is a real floor: three scripts
         # annotate with PEP 604 unions and no `from __future__ import annotations`,
         # so on 3.9 they raise TypeError at import — before any check runs and with
         # nothing in the message about SEO. A test ties this list to that string.
-        python-version: ["3.10", "3.11", "3.13"]
+        # 3.14 since 0.158.0, for the other end: audits were being run on it — the
+        # installed plugin's own environment on the Mac — and no leg, here or on that
+        # machine, had ever run the suite on it. The newest is here for the reason
+        # the floor is: a version nothing runs is a guess.
+        python-version: ["3.10", "3.11", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v5
         with:
@@ -535,6 +540,12 @@ jobs:
 
   test-windows:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Two since 0.158.0: 3.13 is what the Windows machine this tool is developed
+        # on runs, and 3.14 is the newest, which nothing ran on Windows at all.
+        python-version: ["3.13", "3.14"]
     steps:
       - uses: actions/checkout@v5
         with:
@@ -548,10 +559,10 @@ jobs:
           fetch-depth: 0
 
       # This job answers a platform question, not the Python-floor syntax question
-      # already covered by the Linux matrix, so one current Python version is enough.
+      # already covered by the Linux matrix, so the floor is not among its versions.
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |

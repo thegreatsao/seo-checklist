@@ -777,6 +777,23 @@ the Workbench session before changing a name the module holds.
   not a reader that begins to hold one. The pacing control still holds 0.2 s over three
   processes let go together. Not examined: the two to fifteen seconds a test gives a
   loopback request or a child to answer.
+* **INV-G9** — the newest Python CI runs the suite on, it runs on every platform; and the
+  local gate names the legs of CI it did not run by reading them out of the workflow.
+  *Reader: enforced* — `tests/test_ci_local.py` reads every leg that runs the suite
+  (`ci_local.suite_legs`: a job's operating systems times its Pythons, and each `include`
+  entry) and requires the newest version to be a leg on Linux, macOS and Windows; and it
+  holds the gate's closing lines for a machine that is one of CI's legs and for one that
+  is not. As of 0.158.0 that version is 3.14. Until then the newest was 3.13 while the
+  plugin installed on the Mac ran audits on 3.14.8, which no leg and no machine had run
+  the suite on: run there on 7 October 2026, all 2301 tests pass. The gate's closing line
+  was a sentence kept by hand, "the 3.10 and 3.11 matrix legs", and on the Mac, whose
+  gate ran 3.12, it already left 3.13 out. Measured by five breakages: the macOS leg put
+  back on 3.13, the Windows job on 3.13 only, 3.14 taken off the Linux list, `include`
+  entries not read, and the hand-kept sentence put back; each reddens it. Not held:
+  which patch release a leg gets, which is whatever the runner offers on the day; that
+  a machine the tool is run on has a leg at all, which the gate says at the end of a
+  run and no test requires; and the floor and the newest are held, the versions between
+  them are a choice.
 
 ## 5. What this document does not decide
 
@@ -926,8 +943,8 @@ their tests.
 | **none** | — none |
 | **opposed** | — none |
 
-Invariants: INV-G2, INV-G3, INV-G4, INV-G5 and INV-G7 enforced; INV-G1, INV-G6 and
-INV-G8 partial.
+Invariants: INV-G2, INV-G3, INV-G4, INV-G5, INV-G7 and INV-G9 enforced; INV-G1, INV-G6
+and INV-G8 partial.
 
 **Six enforced, six partial, none unread, of twelve.**
 

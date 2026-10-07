@@ -1,8 +1,8 @@
 {
   "measured": "module-level upper-case names bound to a list, tuple, set or dict literal in scripts/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 179,
-  "read": 99,
+  "total": 180,
+  "read": 100,
   "unread": 80,
   "modules": {
     "ai_crawler_policy_matrix": {
@@ -510,6 +510,15 @@
         {
           "name": "PAGE_SUBJECT_ARTIFACT_KEYS",
           "entries": 2
+        }
+      ],
+      "unread": []
+    },
+    "ci_local": {
+      "read": [
+        {
+          "name": "RUNNER_OF",
+          "entries": 3
         }
       ],
       "unread": []

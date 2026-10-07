@@ -8,12 +8,14 @@ the line somebody would have had to edit to avoid it. So this tool has no list.
 
 What it deliberately does not do, and says so on every run:
 
-* it runs one Python — the interpreter it was started with — where the `test` job
-  runs a 3.10/3.11/3.13 matrix. The floor is a real floor (three scripts use PEP
-  604 unions with no `__future__` import), so a green local run does not promise
-  a green 3.10 leg;
+* it runs one Python — the interpreter it was started with — where CI runs several,
+  from the declared floor to the newest. The floor is a real floor (three scripts
+  use PEP 604 unions with no `__future__` import), so a green local run does not
+  promise a green leg on it;
 * it runs on one platform — this machine's — where CI runs the suite on Linux,
-  macOS and Windows;
+  macOS and Windows. Which legs those are is read out of the workflow and named at
+  the end of every run (`suite_legs`), and so is the case where this machine's own
+  pair of platform and Python is one CI does not run;
 * it skips `uses:` steps, which are checkout and setup, and names each one;
 * it skips a step whose every line installs a package, because this machine runs
   out of its checked-out venv and re-running pip on each push buys nothing. That
@@ -77,6 +79,58 @@ def load_workflow() -> dict:
 
 def load_jobs() -> dict:
     return load_workflow()["jobs"]
+
+
+def suite_legs(jobs: dict) -> list[tuple[str, str]]:
+    """(platform, Python) for every leg of CI that runs the suite, in workflow order.
+
+    Read out of the workflow like the steps are. The closing line of a run named
+    "the 3.10 and 3.11 matrix legs" in so many words until 0.158.0, which was a list
+    kept here by hand: it was already short of the truth on a machine whose Python
+    is not 3.13, and adding a version to the matrix would have left it shorter.
+
+    A job's legs are its matrix's operating systems times its Pythons, plus every
+    `include` entry; a job with no matrix is one leg, on the runner it names and the
+    Python its `setup-python` step is given.
+    """
+    legs = []
+    for job in jobs.values():
+        steps = job.get("steps", [])
+        if not any("unittest discover" in step.get("run", "") for step in steps):
+            continue
+        matrix = (job.get("strategy") or {}).get("matrix") or {}
+        given = next((str(step["with"]["python-version"]) for step in steps
+                      if str(step.get("uses", "")).startswith("actions/setup-python")
+                      and "python-version" in (step.get("with") or {})), "")
+        runners = matrix.get("os") or [job["runs-on"]]
+        pythons = matrix.get("python-version") or [given]
+        found = [(runner, python) for runner in runners for python in pythons]
+        found += [(leg.get("os", runners[0]), leg.get("python-version", pythons[0]))
+                  for leg in matrix.get("include", [])]
+        legs += [(str(runner).split("-")[0], str(python)) for runner, python in found]
+    return legs
+
+
+# What a runner is called in the workflow, for the platform Python reports.
+RUNNER_OF = {"win32": "windows", "darwin": "macos", "linux": "ubuntu"}
+
+
+def legs_not_run(legs: list[tuple[str, str]], platform: str, python: str) -> list[str]:
+    """The lines a run closes with: CI's other legs, and whether this one is CI's too."""
+    here = (RUNNER_OF.get(platform, platform), python)
+    others, order = {}, []
+    for runner, version in legs:
+        if (runner, version) == here:
+            continue
+        if runner not in others:
+            order.append(runner)
+        others.setdefault(runner, []).append(version)
+    lines = ["  not run: CI's other legs — "
+             + "; ".join(f"{runner} {', '.join(others[runner])}" for runner in order)]
+    if here not in legs:
+        lines.append(f"  note: CI runs no {here[0]} {here[1]} leg, so this run is the "
+                     f"only one on this machine's pair")
+    return lines
 
 
 def step_env(base: dict, workflow: dict, job: dict, step: dict) -> dict:
@@ -320,7 +374,9 @@ def main() -> int:
     for job in jobs:
         if job not in wanted:
             print(f"  not run: the whole {job} job")
-    print("  not run: the 3.10 and 3.11 matrix legs, and every platform but this one")
+    for line in legs_not_run(suite_legs(jobs), sys.platform,
+                             f"{sys.version_info.major}.{sys.version_info.minor}"):
+        print(line)
 
     if failures:
         print(f"\n{len(failures)} step(s) failed. Nothing was pushed.")
