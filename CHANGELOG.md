@@ -10,6 +10,68 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.160.0 — the gate leaves no file of its own in the tree, and its live step counts the audit's requests
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
+changes; nothing under `skills/seo-checklist/scripts/` changes. This release is the local
+gate's sweep, the server the workflow's live-path step starts, INV-G11 and a fourth place
+in INV-G7. Both defects were seen on 7 October while 0.159.0 was being measured, and
+taken up on Anton's word.
+
+* **The gate left report files in the root.** `sweep` moves what a run's steps wrote into
+  `local/ci-local-debris/`. It asked git for untracked files, and a file `.gitignore`
+  covers is not on that list. The offline smoke step writes seven such — the results
+  file, the report and five queue files — and where the filesystem ignores case the same
+  shape covers the live step's five `live-queue*.md`. Twelve lay in the Windows checkout
+  from 3 to 7 October and nobody knew whose they were; one run in a clean worktree left
+  seven. Now `untracked` asks for ignored paths too (`--ignored=matching`, which names
+  an ignored directory as one line and nothing under it), and `sweep` moves them with
+  the rest. Nothing read `sweep` before this.
+
+* **The live-path step counted somebody else's requests.** It serves the good fixture,
+  runs one audit and counts the lines of the server's log: the entry page once, nothing
+  three times. `python -m http.server` logs the request line and not who sent it. Where
+  another program asks freshly opened loopback ports for `/` — the port probe INV-G7
+  already describes — the step counted that as the audit's: on 7 October the gate on
+  Windows read five `GET /` for one, the other four five seconds apart. The step now
+  starts `tests/serve_fixture.py`, the same server with the User-Agent at the end of
+  each log line, and counts with its `counted`, which sets aside what
+  `harness.is_stranger` names and says how many there were. A request with no
+  User-Agent is still the audit's.
+
+* **Measured on the Windows machine on 8 October**, through the gate's own functions
+  (`local/gatepc/two_steps.py`, outside git). The offline smoke step and the live step,
+  then the sweep: both green, twenty-two files moved, twelve of them ones git ignores
+  there, nothing new left in the tree. The
+  probe was not running that morning — a listener on port 8000 heard nothing in twelve
+  seconds — so a stand-in asked `/` with `User-Agent: Workbench` every few seconds
+  during a second run of the live step: green, "21 requests for 18 distinct (method,
+  path) pairs; 8 more came from a port probe". The run of 7 October, with the real
+  probe and the standard server, is the red one this is compared with.
+
+* **INV-G11: a run of the local gate leaves no file of its own in the working tree.**
+  Four tests, in a repository of their own (`test_ci_local`
+  `ARunLeavesNoFileOfItsOwnInTheTree`). **INV-G7** gains the workflow's step as the
+  fourth place that counts requests: five tests (`tests/test_serve_fixture.py`), one of
+  them read off the workflow — every step that names `server.log` serves and counts
+  through the new module.
+
+* **Nine breakages, each caught by the tests named for it and no other**: the sweep
+  seeing untracked files only; ignored directories listed file by file; the list of
+  what was there taken after the steps; the server's standard log line; the count
+  taking a probe for the audit; a request with no User-Agent set aside; anything that
+  names the probe set aside; the workflow starting the standard server; the workflow
+  counting by a pattern of its own. For the first I had predicted two red tests and
+  three were, rightly.
+
+* **Not held, and said in INV-G11.** A directory an ignore pattern covers is a cache and
+  stays; a file that was in the tree before the run and that a step overwrote stays; a
+  run that is killed moves nothing.
+
+* **Seen and not taken up.** The audit's own count for that one command was 22, then 21,
+  in two runs minutes apart, and 23 on 7 October once the probe's four are taken off.
+  The step allows forty. What moves it was not looked for.
+
 ## 0.159.0 — a test reads a child the same on every machine, and the gate gives a step what CI gives it
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes

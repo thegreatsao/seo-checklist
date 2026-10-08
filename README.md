@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.159.0 — see [CHANGELOG.md](CHANGELOG.md). The local gate no longer gives the steps it runs a variable CI does not give them, and what a test reads from a child process no longer depends on the machine: the read names UTF-8 and the child is told to write it, at the call, and a test holds both for every call in `tests/`. A test once passed everywhere but on CI's Windows leg for this. Nothing an audit does or writes changes. 0.158.0, the release before, runs the suite on Python 3.14, on Linux, macOS and Windows, where audits were already being run and nothing had run the tests; Python 3.10 is still the oldest version supported and the oldest one CI runs.
+Version 0.160.0 — see [CHANGELOG.md](CHANGELOG.md). Two repairs to the local gate, both found by running it on a machine where other things run too. It moves the report files its smoke steps write out of the checkout's root, which it had left there because git ignores them; and its live-path step counts the requests the audit made, not the ones a port probe on the same machine sent to the fixture's port. Nothing an audit does or writes changes. 0.159.0, the release before, stopped the gate giving its steps a variable CI does not give them, and made what a test reads from a child process the same on every machine.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
