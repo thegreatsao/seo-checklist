@@ -732,11 +732,18 @@ the Workbench session before changing a name the module holds.
   `harness.is_stranger` knows the exact name and the Mac's whole shape, and nothing
   looser: `tests/test_harness_strangers.py` requires a part of the shape, or the shape
   with anything before or after it, to be counted still, and a request with no
-  User-Agent at all. The three places that count requests each have a test of it — the
-  harness's origins, the credential origin of `test_url_credentials`, and the proxy
-  stand-in of `test_safe_http`, where a connection that says nothing is counted too. Not
-  held: a prober nobody has measured, and a count taken by a server a test writes for
-  itself.
+  User-Agent at all. The three places in the suite that count requests each have a test
+  of it — the harness's origins, the credential origin of `test_url_credentials`, and the
+  proxy stand-in of `test_safe_http`, where a connection that says nothing is counted
+  too. The fourth place was not in the suite: the workflow's live-path step counted the
+  lines of `python -m http.server`'s log, which does not say who asked, and on 7 October
+  2026 the local gate on Windows read five `GET /` where the audit had sent one. Since
+  0.160.0 that step serves through `tests/serve_fixture.py`, whose log line ends with the
+  User-Agent, and counts with its `counted`, which asks `harness.is_stranger`;
+  `tests/test_serve_fixture.py` holds the probe answered and set aside, a request with no
+  User-Agent and a near-name counted, a 404 counted once, and every workflow step that
+  names `server.log` serving and counting through it. Not held: a prober nobody has
+  measured, and a count taken by a server a test writes for itself.
 * **INV-G8** — a test's verdict does not rest on how fast the machine that runs it is.
   *Reader: partial* — on 4 October 2026, seven suites at once on the Windows machine,
   three tests refused a tree nothing was wrong with. On 6 October the same was produced
@@ -825,6 +832,22 @@ the Workbench session before changing a name the module holds.
   when it is started with no such variable. For a script that prints raw JSON
   `test_every_script_printing_raw_unicode_can_encode_it` holds that; for one that
   prints prose nothing does.
+* **INV-G11** — a run of the local gate leaves no file of its own in the working tree.
+  *Reader: enforced* — `tests/test_ci_local.py` `ARunLeavesNoFileOfItsOwnInTheTree`, in a
+  repository of its own: a file a step wrote is moved to `local/ci-local-debris/` whether
+  git lists it as untracked or a shape in `.gitignore` covers it; a file that was there
+  before the run, a tracked file and anything under an ignored directory are left; what
+  lies under `local/` is never listed file by file; and a whole run through `main` moves
+  what its one step wrote. Until 0.160.0 `sweep` asked git for untracked files, and an
+  ignored file is not on that list: the offline smoke step's results file, report and
+  five queue files stayed in the root after every run, with the live step's five
+  `live-queue*.md` where the filesystem ignores case. Twelve of them lay in the Windows
+  checkout from 3 to 7 October 2026 and nobody knew whose they were; seven more were
+  counted in a worktree after one run on 7 October. Nothing read
+  `sweep`. INV-G2 holds the other half, that such a file is never one git would commit.
+  Not held: a directory an ignore pattern covers, which is a cache and stays (`.ruff_cache`,
+  `__pycache__`); a file that was in the tree before the run and that a step overwrote;
+  and a run that is killed moves nothing.
 
 ## 5. What this document does not decide
 
@@ -974,8 +997,8 @@ their tests.
 | **none** | — none |
 | **opposed** | — none |
 
-Invariants: INV-G2, INV-G3, INV-G4, INV-G5, INV-G7, INV-G9 and INV-G10 enforced; INV-G1,
-INV-G6 and INV-G8 partial.
+Invariants: INV-G2, INV-G3, INV-G4, INV-G5, INV-G7, INV-G9, INV-G10 and INV-G11 enforced;
+INV-G1, INV-G6 and INV-G8 partial.
 
 **Six enforced, six partial, none unread, of twelve.**
 

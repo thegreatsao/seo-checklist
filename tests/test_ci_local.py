@@ -349,5 +349,104 @@ class AStepGetsTheEnvironmentCIGivesIt(unittest.TestCase):
                              f"{name}: the gate set what CI does not")
 
 
+class ARunLeavesNoFileOfItsOwnInTheTree(unittest.TestCase):
+    """What the steps wrote is moved to `local/ci-local-debris/`, whether git lists it
+    as untracked or says nothing about it because a shape in `.gitignore` covers it.
+
+    Until 0.160.0 `sweep` saw the first kind only. The offline smoke step's results
+    file, report and five queue files are the second, and twelve such files lay in the
+    checkout's root for four days and nobody knew whose they were. Nothing read `sweep`.
+    """
+
+    IGNORE = "local/\n__pycache__/\n*QUEUE*.md\nchecklist-results*\n"
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="seo-sweep-")
+        self.addCleanup(self.temp.cleanup)
+        # As git spells it: a runner's temporary directory has a short name too.
+        self.repo = os.path.realpath(self.temp.name)
+        self.git("init")
+        self.write(".gitignore", self.IGNORE)
+        self.write("tracked.txt")
+        self.git("add", ".")
+        self.git("-c", "user.name=Gate test", "-c", "user.email=gate@example.invalid",
+                 "commit", "-m", "first")
+        # There before the run, so not the run's: one git ignores, one it does not,
+        # and one under a directory it ignores.
+        for path in ("old-QUEUE.md", "notes.txt", "local/kept.txt"):
+            self.write(path)
+
+    def git(self, *args):
+        from pathlib import Path
+        return test_git_worktrees.GitOwnsTheCheckoutLocations.run_git(Path(self.repo), *args)
+
+    def write(self, path, text="x\n"):
+        full = os.path.join(self.repo, *path.split("/"))
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        with open(full, "w", encoding="utf-8") as stream:
+            stream.write(text)
+
+    def there(self, path):
+        return os.path.isfile(os.path.join(self.repo, *path.split("/")))
+
+    def test_a_file_git_ignores_is_moved_with_the_ones_it_does_not(self):
+        wrote = ["LLM-QUEUE.md", "checklist-results.json", "dead.json", "out/live-QUEUE.md"]
+        with mock.patch.object(ci_local, "ROOT", self.repo):
+            before = ci_local.untracked()
+            for path in (*wrote, "local/new.txt", "pkg/__pycache__/module.pyc"):
+                self.write(path)
+            moved = ci_local.sweep(before)
+            left = ci_local.untracked() - before
+        self.assertEqual(moved, sorted(wrote))
+        for path in wrote:
+            with self.subTest(path=path):
+                self.assertFalse(self.there(path), "still where the step wrote it")
+                self.assertTrue(self.there("local/ci-local-debris/" + path.replace("/", "__")))
+        for path in ("old-QUEUE.md", "notes.txt", "local/kept.txt", "local/new.txt",
+                     "pkg/__pycache__/module.pyc", "tracked.txt"):
+            with self.subTest(kept=path):
+                self.assertTrue(self.there(path), "moved, and it was not the run's to move")
+        self.assertEqual(left, {"pkg/__pycache__/"},
+                         "a directory git ignores is a cache, and is left as one line")
+
+    def test_what_lies_under_an_ignored_directory_is_never_listed(self):
+        """`local/` holds the debris itself and every record that is outside git. Listed
+        file by file, the next run would move what the last one put there."""
+        for number in range(3):
+            self.write(f"local/ci-local-debris/earlier-{number}.json")
+        with mock.patch.object(ci_local, "ROOT", self.repo):
+            listed = ci_local.untracked()
+        self.assertIn("local/", listed)
+        self.assertEqual({path for path in listed if path.startswith("local/") and path != "local/"},
+                         set())
+
+    def test_a_whole_run_moves_what_its_step_wrote(self):
+        """Through `main`: what was there is listed before the first step and compared
+        after the last. The one step here writes a file git ignores."""
+        def step(name, script, env):
+            self.write("LLM-QUEUE.md")
+            return True, 0.0, ""
+
+        with mock.patch.object(ci_local, "ROOT", self.repo), \
+                mock.patch.object(sys, "argv", ["ci_local.py", "--no-cache"]), \
+                mock.patch.object(ci_local, "load_workflow", return_value={
+                    "jobs": {"test": {"steps": [{"name": "witness", "run": "witness"}]},
+                             "census": {"steps": []}}}), \
+                mock.patch.object(ci_local, "tree_hash", return_value=None), \
+                mock.patch.object(ci_local, "run_step", side_effect=step), \
+                mock.patch("builtins.print") as said:
+            self.assertEqual(ci_local.main(), 0)
+        self.assertFalse(self.there("LLM-QUEUE.md"))
+        self.assertTrue(self.there("local/ci-local-debris/LLM-QUEUE.md"))
+        self.assertTrue(self.there("old-QUEUE.md"))
+        self.assertIn("  moved to local/ci-local-debris/: LLM-QUEUE.md",
+                      [call.args[0] for call in said.call_args_list if call.args])
+
+    def test_a_run_that_wrote_nothing_moves_nothing(self):
+        with mock.patch.object(ci_local, "ROOT", self.repo):
+            self.assertEqual(ci_local.sweep(ci_local.untracked()), [])
+        self.assertFalse(os.path.isdir(os.path.join(self.repo, "local", "ci-local-debris")))
+
+
 if __name__ == "__main__":
     unittest.main()

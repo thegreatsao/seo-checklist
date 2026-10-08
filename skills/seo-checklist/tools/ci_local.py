@@ -255,8 +255,23 @@ def run_step(name: str, script: str, env: dict) -> tuple[bool, float, str]:
 
 
 def untracked() -> set[str]:
-    r = _run_git(["status", "--porcelain", "--untracked-files=all"], root=ROOT)
-    return {ln[3:] for ln in r.stdout.splitlines() if ln.startswith("?? ")}
+    """What git does not track in this tree, and that includes what it ignores.
+
+    Until 0.160.0 this asked for `??` lines alone, and an ignored file is not one of
+    them. The offline smoke step writes seven that `.gitignore` covers by shape — the
+    results file, the report and five queue files — and where the filesystem ignores
+    case the same shape covers the live step's five `live-queue*.md`, so `sweep`
+    never saw them and every run left them in the root: twelve lay in this
+    checkout from 3 October to 7 October 2026 and nobody knew whose they were.
+
+    `--ignored=matching` names a directory that matches a pattern and nothing under
+    it, so `local/`, a virtualenv and a bytecode cache are a line each, and `sweep`
+    moves files only. Without `=matching`, `--untracked-files=all` lists every file
+    under them.
+    """
+    r = _run_git(["status", "--porcelain", "--untracked-files=all", "--ignored=matching"],
+                 root=ROOT)
+    return {ln[3:] for ln in r.stdout.splitlines() if ln.startswith(("?? ", "!! "))}
 
 
 def sweep(before: set[str]) -> list[str]:
@@ -267,6 +282,8 @@ def sweep(before: set[str]) -> list[str]:
     working tree dirty after every push. `.gitignore` here is deliberately made of
     shapes rather than filenames, and a list of these names would be the second
     kind — so they are moved instead, into `local/`, which is already outside git.
+    The ones a shape in `.gitignore` already covers are moved with the rest: git
+    saying nothing about a file is not the file being gone (`untracked`).
 
     Moved and not deleted, and only paths that were absent when the run started:
     each one appeared during it, and a file somebody happened to create meanwhile

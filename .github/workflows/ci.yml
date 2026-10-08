@@ -299,7 +299,10 @@ jobs:
           if curl -s -o /dev/null http://127.0.0.1:8000/; then
             echo "port 8000 is already served by another process; stop it and rerun"; exit 1
           fi
-          python -m http.server 8000 --directory tests/fixtures/good > server.log 2>&1 &
+          # `python -m http.server`, with the User-Agent on every line of its log: the
+          # count below is of the audit's requests, and on a machine where something
+          # else asks a freshly opened port (0.160.0) the log has to say who asked.
+          python tests/serve_fixture.py 8000 tests/fixtures/good > server.log 2>&1 &
           SERVER=$!
           trap 'kill $SERVER' EXIT
           for _ in $(seq 1 20); do
@@ -335,20 +338,22 @@ jobs:
           grep -q "SEO Score" live.log || {
             echo "no score"; cat live.log; tail -40 server.log; exit 1; }
           python - <<'PY'
-          import collections, re, sys
+          import sys
+          sys.path.insert(0, "tests")
+          from serve_fixture import counted
 
           # The request fan-out, asserted rather than printed: a number in a green
           # build is a number nobody reads. It went 97 (0.8.0) -> 201 -> 20 for this
           # exact command, as the shared crawl and then the response cache landed;
           # see KNOWN-ISSUES 1 for the table. Raise these deliberately or not at all.
-          seen = collections.Counter()
-          for line in open("server.log"):
-              m = re.search(r'"(GET|HEAD) (\S+) HTTP', line)
-              if m:
-                  seen[m.groups()] += 1
+          #
+          # `counted` sets aside a request whose User-Agent is a known port probe's and
+          # says how many there were; a request with no User-Agent is still the audit's.
+          seen, strangers = counted(open("server.log"))
           total = sum(seen.values())
           print(f"one audit of a 6-page site, 3 pages sampled, made {total} "
-                f"requests for {len(seen)} distinct (method, path) pairs")
+                f"requests for {len(seen)} distinct (method, path) pairs"
+                + (f"; {strangers} more came from a port probe" if strangers else ""))
           for (method, path), n in sorted(seen.items(), key=lambda kv: -kv[1]):
               print(f"    {n:>3}  {method} {path}")
           bad = []
