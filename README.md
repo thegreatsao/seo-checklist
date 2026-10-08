@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.160.0 — see [CHANGELOG.md](CHANGELOG.md). Two repairs to the local gate, both found by running it on a machine where other things run too. It moves the report files its smoke steps write out of the checkout's root, which it had left there because git ignores them; and its live-path step counts the requests the audit made, not the ones a port probe on the same machine sent to the fixture's port. Nothing an audit does or writes changes. 0.159.0, the release before, stopped the gate giving its steps a variable CI does not give them, and made what a test reads from a child process the same on every machine.
+Version 0.161.0 — see [CHANGELOG.md](CHANGELOG.md). Every script and tool here writes UTF-8 when its output goes to a pipe or a file, whatever codepage the machine has. Started by hand on a Japanese or Korean Windows, thirteen of them died printing their own `--help`; the runner had always told the scripts it starts what to write, so an audit was not affected. No verdict moves. What a script started by hand writes to a pipe on Windows is now UTF-8 where it was the machine's codepage. 0.160.0, the release before, is two repairs to the local gate: it moves the report files its smoke steps write out of the checkout's root, and its live-path step counts the audit's requests and not a port probe's.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

@@ -10,6 +10,60 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.161.0 — a program writes UTF-8 to a pipe, whatever codepage the machine has
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves, and nothing changes for an
+audit: the runner has told the scripts it starts to write UTF-8 since KNOWN-ISSUES 4.
+**What changes is a program started by hand whose output goes to a pipe or a file on
+Windows**: it wrote the machine's ANSI codepage and now writes UTF-8. Seventy-two files
+under `skills/seo-checklist/` gain two lines each.
+
+* **What was not held.** 0.159.0 said it: a script that prints prose, started with no
+  encoding variable, could fail to encode its own output, and nothing looked. Taken up
+  on Anton's word.
+
+* **Measured before anything was changed**, on Windows on 8 October. Each of the
+  eighty-one programs — every file with a `__main__` guard in `scripts/` and `tools/` —
+  was started with `--help`, its output a pipe, once under each of the fourteen ANSI
+  codepages Windows has and once under ASCII. Under cp1252, which is that machine's
+  codepage and CI's Windows runner's, none died: every character of every help text is
+  in it, which is why nothing here had seen this. Under cp932 and cp949 — Japanese and
+  Korean Windows — thirteen died of `UnicodeEncodeError`, eight scripts and five tools,
+  on the em dash in their own description; two of them under cp874 as well. The other
+  eleven codepages: none. Twenty programs print something outside ASCII in their help,
+  and nine of the eighty-one named UTF-8 for their own streams.
+
+* **The repair is for all of them, not the thirteen.** A help text is only what could be
+  measured without a site: any of these can print a page's title. `utf8_streams()`
+  (`scripts/lib/utf8_streams.py`) reconfigures stdout and stderr; the seventy-two
+  programs that did nothing call it first under `if __name__ == "__main__":`, so that
+  importing one changes nobody's streams. The tools load the same function from its
+  file (`tools/utf8_streams.py`) and have no second copy. The edit was made by a script
+  (`local/utf8out/add_guard_call.py`, outside git): two lines in each file, nothing else.
+
+* **INV-G12: a program of this tree writes UTF-8 to a pipe or a file, whatever codepage
+  the machine has.** Held by `tests/test_program_streams.py`, four tests. Every program
+  is started as `python <program> --help` would start it, in an environment that names
+  ASCII, and asked what its two streams write by the time its parser has left. It is
+  the outcome that is asked and not a spelling, so the eight scripts that reconfigure
+  when imported pass as they are; and a program that names nothing is started the same
+  way as a control and answers `ascii`. Eighty-one children, eight at a time: the
+  module takes about twenty seconds on the Windows machine.
+
+* **INV-G10 learned one thing from it.** A call that sends a child's streams to
+  `subprocess.DEVNULL` does not take them, so it need not tell the child UTF-8: this
+  test tells its children ASCII on purpose and reads what they answer from a file.
+
+* **Seven breakages, each caught by the tests named for it and no other**: a script
+  without the call; a tool without it; the function telling no stream; telling stdout
+  and not stderr; dying of a stream that is not there; the tools given a function of
+  their own; and a test reading through a pipe a child it told to write ASCII, which
+  INV-G10 refuses.
+
+* **Not held, and said in INV-G12.** The eight scripts that already did this still do it
+  when imported. Only the streams' encoding is asked, at the parser: a program that
+  set it back later would not be seen. A file a program opens itself is not a stream.
+
 ## 0.160.0 — the gate leaves no file of its own in the tree, and its live step counts the audit's requests
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
