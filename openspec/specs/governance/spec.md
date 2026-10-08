@@ -829,9 +829,11 @@ the Workbench session before changing a name the module holds.
   anything but a call written `subprocess.<name>(...)`; and a child `harness.spawn`
   starts is now always told to write UTF-8, as the runner tells the scripts it starts,
   so the suite no longer shows on Windows a script that cannot encode its own output
-  when it is started with no such variable. For a script that prints raw JSON
-  `test_every_script_printing_raw_unicode_can_encode_it` holds that; for one that
-  prints prose nothing does.
+  when it is started with no such variable. That was held for a script that prints raw
+  JSON and for nothing else until 0.161.0; INV-G12 holds it for every program since. A
+  call that sends the child's streams to `subprocess.DEVNULL` is not one that takes
+  them (0.161.0): the test of INV-G12 names ASCII for its children on purpose and
+  reads none of them through a pipe.
 * **INV-G11** — a run of the local gate leaves no file of its own in the working tree.
   *Reader: enforced* — `tests/test_ci_local.py` `ARunLeavesNoFileOfItsOwnInTheTree`, in a
   repository of its own: a file a step wrote is moved to `local/ci-local-debris/` whether
@@ -848,6 +850,29 @@ the Workbench session before changing a name the module holds.
   Not held: a directory an ignore pattern covers, which is a cache and stays (`.ruff_cache`,
   `__pycache__`); a file that was in the tree before the run and that a step overwrote;
   and a run that is killed moves nothing.
+* **INV-G12** — a program of this tree writes UTF-8 to a pipe or a file, whatever
+  codepage the machine it is started on has. *Reader: enforced* —
+  `tests/test_program_streams.py` starts every file with a `__main__` guard in
+  `scripts/`, `scripts/lib/` and `tools/` as `python <program> --help` would, in an
+  environment that names ASCII for its streams, and requires both streams to write
+  UTF-8 by the time its parser has printed its help; a program that names nothing is
+  started the same way as the control and answers `ascii`. The runner tells the scripts
+  it starts what to write; a program started by hand is told nothing, and on Windows a
+  pipe then gets the machine's ANSI codepage. Eight scripts, every one that prints raw
+  JSON among them, have reconfigured their own streams since the Greek ρ of
+  KNOWN-ISSUES 4, and the local gate its own; seventy-two programs did nothing. Measured on 8 October 2026 on Windows:
+  each of the eighty-one started with `--help` and its output a pipe, under each of the
+  fourteen ANSI codepages Windows has and under ASCII. None died under cp1252, the
+  codepage of that machine and of CI's Windows runner. Thirteen — eight scripts and
+  five tools — died of `UnicodeEncodeError` under cp932 and cp949, on the em dash of
+  their own description, and two of those under cp874 as well. Since 0.161.0 the
+  seventy-two call `utf8_streams()` (`scripts/lib/utf8_streams.py`; the tools load that
+  same function) first under their guard, and not when they are imported. Not held:
+  those eight scripts still reconfigure when they are imported, so a process that
+  imports one of them has its streams changed by it; what a program
+  writes after its parser — only its streams' encoding is asked, and a program that set
+  it back would not be seen; a file a program opens itself; and a program started with
+  no stdout at all is left as it is.
 
 ## 5. What this document does not decide
 
@@ -997,8 +1022,8 @@ their tests.
 | **none** | — none |
 | **opposed** | — none |
 
-Invariants: INV-G2, INV-G3, INV-G4, INV-G5, INV-G7, INV-G9, INV-G10 and INV-G11 enforced;
-INV-G1, INV-G6 and INV-G8 partial.
+Invariants: INV-G2, INV-G3, INV-G4, INV-G5, INV-G7, INV-G9, INV-G10, INV-G11 and INV-G12
+enforced; INV-G1, INV-G6 and INV-G8 partial.
 
 **Six enforced, six partial, none unread, of twelve.**
 

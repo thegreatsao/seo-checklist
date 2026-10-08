@@ -203,4 +203,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    from utf8_streams import utf8_streams
+    utf8_streams()
     main()

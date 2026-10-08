@@ -560,4 +560,6 @@ def main(argv: list[str] | None = None, paths: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    from utf8_streams import utf8_streams
+    utf8_streams()
     sys.exit(main())

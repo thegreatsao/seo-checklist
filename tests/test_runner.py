@@ -971,7 +971,6 @@ class AChildIsReadTheSameOnEveryMachine(unittest.TestCase):
     """
 
     DECODES = ("text", "universal_newlines", "encoding", "errors")
-    TAKES = ("capture_output", "stdout", "stderr")
 
     @staticmethod
     def passes(node, keywords):
@@ -985,13 +984,24 @@ class AChildIsReadTheSameOnEveryMachine(unittest.TestCase):
                 for name, line, node in spawn_calls((os.path.dirname(os.path.abspath(__file__)),))
                 if self.passes(node, self.DECODES)]
 
+    @staticmethod
+    def sends_somewhere(node):
+        """Whether the call has what the child writes captured, or sent to a pipe or a
+        file. A stream sent to `subprocess.DEVNULL` is thrown away, and nobody decodes
+        what was thrown away: `test_program_streams` starts every program with an
+        environment that names ASCII, on purpose, and reads none of them."""
+        return any(kw.arg == "capture_output"
+                   or (kw.arg in ("stdout", "stderr")
+                       and ast.unparse(kw.value) != "subprocess.DEVNULL")
+                   for kw in node.keywords)
+
     def takers(self):
         """The calls in `tests/` that take what the child wrote, decoded there or not.
         `check_output` takes it with no keyword saying so."""
         return [(name, line, node)
                 for name, line, node in spawn_calls((os.path.dirname(os.path.abspath(__file__)),))
-                if node.func.attr == "check_output"
-                or self.passes(node, self.DECODES + self.TAKES)]
+                if node.func.attr == "check_output" or self.sends_somewhere(node)
+                or self.passes(node, self.DECODES)]
 
     @staticmethod
     def starts_another_program(node):
