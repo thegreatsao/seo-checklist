@@ -548,9 +548,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Two since 0.158.0: 3.13 is what the Windows machine this tool is developed
-        # on runs, and 3.14 is the newest, which nothing ran on Windows at all.
-        python-version: ["3.13", "3.14"]
+        # The floor and the newest since 0.162.0, the two ends the Linux list has.
+        # From 0.158.0 the lower of the two was 3.13, which the Windows machine this
+        # tool is developed on ran until 7 October 2026; no machine runs it now, and
+        # nothing had run the floor on Windows at all. A test holds the floor here.
+        python-version: ["3.10", "3.14"]
     steps:
       - uses: actions/checkout@v5
         with:
@@ -563,8 +565,11 @@ jobs:
           # this is what keeps it from having to.
           fetch-depth: 0
 
-      # This job answers a platform question, not the Python-floor syntax question
-      # already covered by the Linux matrix, so the floor is not among its versions.
+      # Until 0.162.0 this said the floor was a syntax question the Linux matrix
+      # already answers, and left it out. The floor is a question of the standard
+      # library as well: robots.txt read one way on 3.10 and another on 3.13
+      # (0.109.0), which Linux found because that module is the same on every
+      # platform. The paths that are Windows' own had no leg on the floor.
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}

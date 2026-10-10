@@ -270,6 +270,19 @@ class CIsLegsAreReadOutOfTheWorkflow(unittest.TestCase):
                 self.assertIn((runner, newest), legs,
                               f"CI runs {newest} and not on {runner}")
 
+    def test_the_oldest_python_is_run_on_linux_and_on_windows(self):
+        """The oldest leg is the floor `pyproject.toml` declares:
+        `TheDeclaredPythonFloorIsExercised` holds the lowest of the Linux list to it.
+        Until 0.162.0 Windows ran 3.13 and 3.14. Not on macOS, whose leg is one Python,
+        the newest."""
+        legs = self.legs()
+        oldest = min((python for _, python in legs),
+                     key=lambda v: tuple(int(part) for part in v.split(".")))
+        for runner in ("ubuntu", "windows"):
+            with self.subTest(runner=runner):
+                self.assertIn((runner, oldest), legs,
+                              f"CI runs {oldest} and not on {runner}")
+
     def test_a_run_names_every_leg_but_its_own(self):
         self.assertEqual(
             ci_local.legs_not_run(self.LEGS, "darwin", "3.14"),

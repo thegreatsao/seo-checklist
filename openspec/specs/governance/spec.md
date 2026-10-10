@@ -784,8 +784,9 @@ the Workbench session before changing a name the module holds.
   not a reader that begins to hold one. The pacing control still holds 0.2 s over three
   processes let go together. Not examined: the two to fifteen seconds a test gives a
   loopback request or a child to answer.
-* **INV-G9** — the newest Python CI runs the suite on, it runs on every platform; and the
-  local gate names the legs of CI it did not run by reading them out of the workflow.
+* **INV-G9** — the newest Python CI runs the suite on, it runs on every platform, and the
+  oldest on Linux and on Windows; and the local gate names the legs of CI it did not run
+  by reading them out of the workflow.
   *Reader: enforced* — `tests/test_ci_local.py` reads every leg that runs the suite
   (`ci_local.suite_legs`: a job's operating systems times its Pythons, and each `include`
   entry) and requires the newest version to be a leg on Linux, macOS and Windows; and it
@@ -796,11 +797,19 @@ the Workbench session before changing a name the module holds.
   was a sentence kept by hand, "the 3.10 and 3.11 matrix legs", and on the Mac, whose
   gate ran 3.12, it already left 3.13 out. Measured by five breakages: the macOS leg put
   back on 3.13, the Windows job on 3.13 only, 3.14 taken off the Linux list, `include`
-  entries not read, and the hand-kept sentence put back; each reddens it. Not held:
-  which patch release a leg gets, which is whatever the runner offers on the day; that
-  a machine the tool is run on has a leg at all, which the gate says at the end of a
-  run and no test requires; and the floor and the newest are held, the versions between
-  them are a choice.
+  entries not read, and the hand-kept sentence put back; each reddens it.
+  Since 0.162.0 the same test requires the oldest version to be a leg on Linux and on
+  Windows. From 0.158.0 the Windows job ran 3.13 and 3.14, the lower being what the
+  machine this is developed on ran until 7 October 2026, and the workflow said why the
+  floor was not there: it was a syntax question the Linux list answers. It is one of the
+  standard library too (`openspec/specs/http/`, robots.txt on 3.10 and on 3.13), and
+  nothing had run the paths that are Windows' own on 3.10. Three breakages: the Windows
+  list put back to 3.13 and 3.14, the Windows list as 3.10 alone, and 3.10 taken off the
+  Linux list; the first and third redden the new test, the second the one for the newest.
+  Not held: which patch release a leg gets, which is whatever the runner offers on the
+  day; that a machine the tool is run on has a leg at all, which the gate says at the end
+  of a run and no test requires; the oldest on macOS, whose leg is one Python; and the
+  floor and the newest are held, the versions between them are a choice.
 * **INV-G10** — what a test reads from a child process does not depend on the machine
   the suite runs on, and the local gate gives a step no variable CI does not give it.
   *Reader: enforced* — `tests/test_runner.py` `AChildIsReadTheSameOnEveryMachine` scans
