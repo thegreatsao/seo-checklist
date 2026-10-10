@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.161.0 — see [CHANGELOG.md](CHANGELOG.md). Every script and tool here writes UTF-8 when its output goes to a pipe or a file, whatever codepage the machine has. Started by hand on a Japanese or Korean Windows, thirteen of them died printing their own `--help`; the runner had always told the scripts it starts what to write, so an audit was not affected. No verdict moves. What a script started by hand writes to a pipe on Windows is now UTF-8 where it was the machine's codepage. 0.160.0, the release before, is two repairs to the local gate: it moves the report files its smoke steps write out of the checkout's root, and its live-path step counts the audit's requests and not a port probe's.
+Version 0.162.0 — see [CHANGELOG.md](CHANGELOG.md). CI runs the suite on Windows on Python 3.10, the floor this tool declares, where it ran 3.13: the Windows job is now the floor and the newest, the two ends Linux has. Until now the floor was run on Linux alone, on the reasoning that it is a question of syntax; a robots.txt read differently on 3.10 and on 3.13 had already shown it is one of the standard library too. No verdict moves and nothing an audit does or writes changes. 0.161.0, the release before, made every script and tool here write UTF-8 when its output goes to a pipe or a file, whatever codepage the machine has.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -777,7 +777,7 @@ a `CHANGELOG.md` entry naming the shipped `registry_version` and must match
 holds them, every category must have a plain-language explanation in every shipped
 language, and the lowest Python in the CI matrix must be the floor `pyproject.toml`
 declares. CI runs the suite on 3.10, 3.11, 3.13 and 3.14, the newest of them on Linux,
-macOS and Windows, along with `ruff`, the gates and
+macOS and Windows and the oldest on Linux and Windows, along with `ruff`, the gates and
 four offline end-to-end audits, and a job of its own re-takes the recorded verdict
 census over all five served trees and compares it with the one in the tree.
 

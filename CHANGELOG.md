@@ -10,6 +10,46 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.162.0 — CI runs the suite on Windows on the Python floor
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
+changes; nothing under `skills/seo-checklist/` changes. This release is the CI workflow,
+one test and INV-G9.
+
+* **What was missing.** The Windows job ran 3.13 and 3.14. 3.13 was there because the
+  Windows machine this is developed on ran it (0.158.0); that machine moved to 3.14.7 on
+  7 October, so the leg stood for no machine. And the floor, 3.10, was run on Linux
+  alone: no leg and no machine had run the suite on Windows on it. Taken up on Anton's
+  word.
+
+* **Why it had been left out, and what that reason does not cover.** The workflow said
+  the Windows job "answers a platform question, not the Python-floor syntax question
+  already covered by the Linux matrix". Syntax is the same on every platform, so as far
+  as that goes it holds. The floor is not only syntax: at 0.109.0 `urllib.robotparser`
+  read a robots.txt one way on 3.10 and another on 3.13. Linux found that because the
+  module is the same code on every platform. What the standard library does on Windows
+  alone had no leg on 3.10.
+
+* **CI.** The Windows job runs 3.10 and 3.14, the floor and the newest: the two ends of
+  the Linux list. Eight jobs, as before. 3.13 is still run, on Linux.
+
+* **INV-G9 holds it.** `tests/test_ci_local.py`
+  `test_the_oldest_python_is_run_on_linux_and_on_windows` reads every leg that runs the
+  suite out of the workflow and requires the oldest version among them to be a leg on
+  both. That version is the declared floor: INV-G3 holds the lowest of the Linux list to
+  `requires-python`.
+
+* **Three breakages, each caught**: the Windows list put back to 3.13 and 3.14, and 3.10
+  taken off the Linux list, each redden the new test, the second INV-G3's as well; the
+  Windows list as 3.10 alone reddens the test for the newest.
+
+* **Windows on 3.10 was first run by this release's own CI**, on the branch, before
+  `main` moved. It was not run sooner: the Windows machine this is developed on has 3.13
+  and 3.14 installed and no 3.10.
+
+* **Not held, and said in INV-G9.** The oldest on macOS, whose leg is one Python, the
+  newest. The versions between the two ends are a choice, as they were.
+
 ## 0.161.0 — a program writes UTF-8 to a pipe, whatever codepage the machine has
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves, and nothing changes for an
