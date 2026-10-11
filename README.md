@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.162.0 — see [CHANGELOG.md](CHANGELOG.md). CI runs the suite on Windows on Python 3.10, the floor this tool declares, where it ran 3.13: the Windows job is now the floor and the newest, the two ends Linux has. Until now the floor was run on Linux alone, on the reasoning that it is a question of syntax; a robots.txt read differently on 3.10 and on 3.13 had already shown it is one of the standard library too. No verdict moves and nothing an audit does or writes changes. 0.161.0, the release before, made every script and tool here write UTF-8 when its output goes to a pipe or a file, whatever codepage the machine has.
+Version 0.163.0 — see [CHANGELOG.md](CHANGELOG.md). A script started by hand with a credential in its URL, `https://user:password@host/`, now splits it off where it comes in, as the runner does, and gives it to that site and to nobody else. Measured over every program here at 0.162.0, PageSpeed, Safe Browsing, the W3C validator and IndexNow were handed it, and with a token alone the site itself was never presented it. No verdict moves and nothing an audit under the runner does or writes changes. 0.162.0, the release before, made CI run the suite on Windows on Python 3.10, the floor this tool declares.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

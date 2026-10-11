@@ -10,6 +10,114 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.163.0 — a script started by hand gives a typed credential to its site and to nobody else
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves, and nothing an audit under the
+runner sends, writes or scores changes: the runner hands every script a URL with no
+credential in it, and a script's entrance leaves such a URL, and the environment, as they
+came. **What changes is a script started by itself with `https://user:password@host/`**:
+it was handed the credential inside the URL, and gave it to whoever it gave the URL to.
+
+* **Measured on 11 October 2026 at 0.162.0** (`local/urlhand/before-27fead6.json`, read in
+  `before-27fead6.summary.txt`). Each of the 61 programs in `scripts/` was started with a
+  user and a password in the URL and again with a token alone, in its required arguments
+  and then in each argument that takes text: 248 starts, every request captured where it
+  leaves the process and answered on this machine. Nineteen requests gave the credential
+  to another origin, eight hosts: PageSpeed, Safe Browsing, the W3C validator, IndexNow at
+  Bing, and — where the URL was typed into `--entity`, `--kg-api-key` or `--keyword` —
+  Wikidata, Wikipedia, the Knowledge Graph and Google's autocomplete. 140 requests to the
+  site went without it: Requests reads no credential out of `tok@host`, so with a token
+  alone no script presented one, and the crawlers asked for the sitemap the site's
+  robots.txt names, written without the credential, as written. 136 of the starts printed
+  it. INP-7 named two of these scripts.
+
+* **A script does at its entrance what the runner does at its own.**
+  `scripts/lib/typed_credential.py` is new and holds `split_userinfo`, moved out of
+  `checklist_runner.py` and read by both; `credential_beside`, the split and the
+  variable, which the runner's `main` now calls; and `credentials_beside_argv`, which
+  splits every argument holding an http(s) URL with userinfo — alone, after an `=`, or
+  after a short option's letter — and sets the credential beside it in
+  `SEO_URL_CREDENTIALS`. Each of the 60 scripts calls it under its `__main__` guard,
+  after `utf8_streams()`, where 0.161.0 put that; `seo_common.read_urls` applies it to the
+  lines of a URL file. From there `safe_http.url_credentials` scopes the credential as it
+  does under the runner. A process carries one credential: two URLs carrying different
+  ones on the command line, or a URL file naming another than the command line, are
+  refused before anything is asked. It is not in `safe_http` because it opens nothing: the first
+  placement was there, and `NetworkAccessGoesThroughTheGuard`, which reads an import of
+  `safe_http` as a script's connections reaching the guard, found three exempt scripts
+  that now looked guarded and were not.
+
+* **Measured again after** (`local/urlhand/after-repair.json`): no request to another
+  origin carries the credential, no request to the site goes without it, no start prints
+  it.
+
+* **Held by `tests/test_url_credentials.py`.**
+  `EveryProgramStartedByHandGivesTheCredentialToItsSiteAlone` starts every program with a
+  `__main__` guard in `scripts/`, read off the directory, as `python <program>
+  <arguments>`, and reads every request through `tests/hand_capture/`. It runs without
+  `SEO_LOOPBACK_ONLY`, which refuses another origin before a request is built — a request
+  never attempted is not one made clean — and the capture is the fence: a child that gets
+  past it ends with its exit code. A control starts the same programs with the entrance
+  taken out and has to see the credential leave. On 0.162.0's code three of its five
+  tests are red (`local/urlhand/red-on-27fead6.txt`). `WhatAScriptStartedByHandWasTyped`
+  holds the entrance shape by shape, and that an argument without a credential leaves the
+  runner's where it is. The suite is about 28 seconds longer on the Mac; on Anton's
+  Windows PC, at this release's tree, the class with the shape tests took 145 to 161 s in
+  six runs on 11 October and the whole suite 933 s.
+
+* **Eleven breakages, each run under the whole suite** (`local/urlhand/breakages/`, 11
+  October 2026, 12:47 to 14:47), and each reddened what it had to: the entrance taken
+  out of `pagespeed.py` alone, the leak and the printing tests; the entrance doing
+  nothing, the leak, site and printing tests and the shape tests; the scope
+  function giving the credential to any host on the written port, the by-hand leak test
+  and `WhichRequestsCarryTheCredential`'s; the site no longer given it, the by-hand site
+  test and fourteen of the runner's; a new program that takes a URL and gives it to
+  another origin, the leak test and nothing else — no list names it; the entrance
+  clearing a credential it was not handed, its own test, the by-hand site test and three
+  audits under the runner, which is what a script started *by the runner* would do; a
+  `--site=` argument left whole, the shape test; two credentials let through, the
+  refusal; a second split in the runner, the one-function test; a capture that writes
+  nothing down, the control and the site test; a program that connects past the
+  capture, the fence test, and `test_program_streams` because the probe called no
+  `utf8_streams`. A first run of the refusal's breakage spelled it with a new number and
+  reddened two threshold censuses as well; spelled without one it reddens the refusal
+  alone.
+
+* **Acceptance on Windows found the capture losing what it saw.** Every process of a
+  started program appended its lines to one file, and on Windows an append is not
+  atomic: eight processes writing 1500 lines each left 9120 of 12000, seven of them
+  unreadable, and the class ended in `setUpClass` with a `JSONDecodeError` in four of
+  eleven runs on the PC; the suite there ran 2330 tests with that one error. On the Mac
+  nothing showed. Now each process writes a file of its own, which no other process
+  opens, and closes it with an `end` line; the test reads a start only when the program
+  has ended within its time and every file is whole, and a start that timed out or left
+  a file unfinished is a failure, not a read. The fake `whois` writes through the same
+  capture. `WhatTheCaptureWritesIsReadWholeAndOnce` starts eight processes of two threads
+  writing 750 lines each and counts every line back once. Run in acceptance on the PC at
+  this release's tree (Python 3.14.7, 11 October): that class OK in five runs of five;
+  the by-hand class set up and ran in eleven runs of eleven, where at the first round's
+  tree it ended in `setUpClass` in four of eleven; the whole suite `Ran 2338 tests`, OK
+  (skipped=6). An observer of the PC's own, replacing `urllib3`'s pool, saw no credential
+  go to another origin and the site given it on every request, 109 of 109 with a user and
+  password and 108 of 108 with a token alone. Five breakages, each run under the
+  three classes it can touch: a line dropped, the writer sharing one file and writing a
+  line in two halves, no `end` line, the reader taking an unfinished file as whole, the
+  file-and-command-line refusal removed — each reddened the test written for it, and the
+  shared file and the missing `end` the by-hand class as well
+  (`local/urlhand/breakages-r2.txt`).
+
+* **Not held, and said in INP-7.** A URL typed without a scheme, `user:password@host` or
+  `tok@host`, is split by neither entrance and gains `https://` later: measured the same
+  day (`local/urlhand/schemeless-after-repair.json`), the runner gave it to Safe
+  Browsing. A URL typed into another of the runner's options, `--only` or
+  `--history-dir`, is printed, and written where the option is a path. What the `gsc_*`
+  scripts send to Google was not observed: its client is not installed on the Mac. A
+  process a program starts and does not wait for, still loading when the program ends,
+  would not be seen by the capture; every program that starts one today waits for it.
+
+* **Corrected.** `AScriptStartedByHandTakesTheHostAndNothingElse` said a script started by
+  hand is handed what was typed.
+
 ## 0.162.0 — CI runs the suite on Windows on the Python floor
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves and nothing an audit writes
