@@ -61,6 +61,7 @@ sys.path.insert(0, SCRIPT_DIR)
 
 from seo_common import carries_content, fetch_error_kind, status_class  # noqa: E402
 from lib.whole_file import write_json_whole  # noqa: E402
+from lib.typed_credential import split_userinfo  # noqa: E402
 
 
 def plugin_version() -> str:
@@ -540,24 +541,6 @@ def page_guard(html: str) -> tuple[str, str]:
         return "soft_404", (f"soft 404: a 200 response titled "
                             f"{raw_title.strip()[:60]!r}")
     return "", ""
-
-
-def split_userinfo(url: str) -> tuple[str, str]:
-    """Remove only the authority's userinfo, preserving the rest as typed."""
-    try:
-        netloc = urlparse(url).netloc
-    except ValueError:
-        return url, ""
-    if "@" not in netloc:
-        return url, ""
-    userinfo = netloc.rsplit("@", 1)[0]
-    # Map parser-stripped controls back to positions in the original string.
-    positions = [i for i, char in enumerate(url) if char not in "\t\r\n"]
-    parsed_text = "".join(url[i] for i in positions)
-    authority = parsed_text.index("//") + 2
-    start = positions[authority]
-    end = positions[authority + len(userinfo)] + 1
-    return url[:start] + url[end:], userinfo
 
 
 def audit_target(requested: str, final_url: str) -> str:
@@ -3446,15 +3429,12 @@ def print_report(payload, a, hist, crawl_path, diff_note) -> None:
 
 def main() -> int:
     a = build_parser().parse_args()
-    a.url, userinfo = split_userinfo(a.url)
-    from lib.safe_http import URL_CREDENTIALS_VAR
+    from lib.typed_credential import URL_CREDENTIALS_VAR, credential_beside
     # The scripts are separate processes, so the credential travels beside the URL.
-    if userinfo:
-        parsed = urlparse(a.url)
-        scheme, hostport = parsed.scheme.lower(), parsed.netloc
-        os.environ[URL_CREDENTIALS_VAR] = f"{scheme}://{userinfo}@{hostport}"
-    else:
-        os.environ.pop(URL_CREDENTIALS_VAR, None)
+    os.environ.pop(URL_CREDENTIALS_VAR, None)
+    a.url, userinfo = credential_beside(a.url)
+    parsed = urlparse(a.url)
+    scheme, hostport = parsed.scheme.lower(), parsed.netloc
 
     use_history_dir(a.history_dir)
 

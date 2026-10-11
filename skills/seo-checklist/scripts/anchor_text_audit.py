@@ -312,4 +312,6 @@ def main() -> None:
 if __name__ == "__main__":
     from lib.utf8_streams import utf8_streams
     utf8_streams()
+    from lib.typed_credential import credentials_beside_argv
+    credentials_beside_argv()
     main()

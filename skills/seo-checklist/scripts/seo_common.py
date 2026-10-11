@@ -55,10 +55,12 @@ try:
     from lib.safe_http import (HostResolutionError,
                                RobotsDisallowed, SafeHTTPError, safe_get,
                                safe_request)
+    from lib.typed_credential import credentials_beside_argv
     from lib import robots_rules
 except ImportError:
     from scripts.lib.safe_http import (HostResolutionError, RobotsDisallowed,
                                        SafeHTTPError, safe_get, safe_request)
+    from scripts.lib.typed_credential import credentials_beside_argv
     from scripts.lib import robots_rules
 
 try:
@@ -441,7 +443,11 @@ def read_urls(values: list[str] | None = None, file_path: str | None = None) -> 
     urls = [value.strip() for value in values or [] if value]
     if file_path:
         with open(file_path, "r", encoding="utf-8") as fh:
-            urls.extend(line.strip() for line in fh if line.strip() and not line.lstrip().startswith("#"))
+            listed = [""] + [line.strip() for line in fh
+                             if line.strip() and not line.lstrip().startswith("#")]
+        # A file of URLs is typed as the command line is, and split as it is.
+        credentials_beside_argv(listed)
+        urls.extend(listed[1:])
     return list(dict.fromkeys(normalize_url(url) for url in urls))
 
 

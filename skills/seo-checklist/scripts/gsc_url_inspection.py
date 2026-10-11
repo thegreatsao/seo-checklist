@@ -266,4 +266,6 @@ def main():
 
 
 if __name__ == "__main__":
+    from lib.typed_credential import credentials_beside_argv
+    credentials_beside_argv()
     main()

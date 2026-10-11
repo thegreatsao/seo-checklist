@@ -19,8 +19,10 @@ from urllib.parse import unquote, urljoin, urlparse, urlunparse
 
 try:
     from lib import robots_rules
+    from lib.typed_credential import URL_CREDENTIALS_VAR
 except ImportError:
     from scripts.lib import robots_rules
+    from scripts.lib.typed_credential import URL_CREDENTIALS_VAR
 
 try:
     import fcntl
@@ -970,7 +972,6 @@ def _consume_capped(response, max_response_bytes: int | None):
 #     replaying a submission from disk would report something that did not happen.
 CACHE_DIR_VAR = "SEO_HTTP_CACHE"
 CACHE_OWNER_LOCK_SUFFIX = ".lock"
-URL_CREDENTIALS_VAR = "SEO_URL_CREDENTIALS"
 # basis: convention — 15 minutes, bounding the age of a usable answer even in a
 #  live run. Dead owners are swept by the next run; legacy lockless residue is kept
 #  until its top-level directory and every file's modification time are older than this

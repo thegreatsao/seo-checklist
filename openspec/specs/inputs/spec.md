@@ -472,10 +472,47 @@ gives it now, and the plain-http form carries no credential:
 `http://[::1]:8080/`, and whois was asked about that, and about `113.5` for the address
 `203.0.113.5`; an address is not looked up in a registry at all.
 
-**Not held, and said here so that it is not found again as a surprise:** this
-requirement is about a run. A script started by hand is handed what was typed, and one
-that gives the address to an outside service — `pagespeed.py`, the Safe Browsing lookup
-of `domain_safety_check.py` — gives it whole, credential included.
+**A script started by hand, measured on 11 October 2026 at 0.162.0.** Until 0.163.0 this
+requirement was about a run, and a script started by itself was handed what was typed.
+Each of the 61 programs in `scripts/` was started with `https://user:password@host/` and
+with a token alone, in its required arguments and then in each argument that takes text,
+248 starts, every request captured where it leaves the process and answered on the Mac
+that ran them (`local/urlhand/measure.py`). Nineteen requests gave the credential to another
+origin: PageSpeed (`pagespeed.py`), Safe Browsing (`domain_safety_check.py`), the W3C
+validator (`html_validator.py`), IndexNow at Bing (`indexnow_checker.py --ping`), and
+Wikidata, Wikipedia, the Knowledge Graph and Google's autocomplete where the URL was typed
+into a text argument of `entity_checker.py` or `article_seo.py`. A hundred and forty
+requests to the site went without it — Requests reads no credential out of `tok@host`, and
+a sitemap address the site writes without one was asked as written — and 136 starts printed
+it. A script now does at its entrance what the runner does at its own:
+`typed_credential.credentials_beside_argv`, under every `__main__` guard, splits the
+userinfo off every argument that holds an http(s) URL, and `seo_common.read_urls` off
+every line of a URL file, and sets it beside the URL in `SEO_URL_CREDENTIALS`; from there
+`url_credentials` scopes it as it does under the runner. `split_userinfo` is one function,
+read by both. A process carries one credential: two different ones typed on the command
+line, or a URL file naming another than the command line, are refused before anything is
+asked. Measured again after: none of the three. Held by
+`EveryProgramStartedByHandGivesTheCredentialToItsSiteAlone`, which starts every program
+with a `__main__` guard in `scripts/` as an operator does — the set is read off the
+directory — and reads every request it makes, with a control that sees the credential
+leave once the entrance is taken out; and by `WhatAScriptStartedByHandWasTyped`, shape by
+shape. Each process the capture sees writes a file of its own, closed with an `end` line,
+and a start is read only when every file is whole: eight processes appending to one file
+on Windows were measured on 11 October 2026 keeping 9120 of 12000 lines.
+`WhatTheCaptureWritesIsReadWholeAndOnce` counts every line back.
+
+**Not held, and said here so that it is not found again as a surprise.** A URL typed
+without a scheme — `user:password@host`, `tok@host` — is split by neither entrance, and
+`safe_http` puts `https://` in front of it later: measured the same day, the runner gave
+such a credential to Safe Browsing. The runner splits only the URL it audits: a URL typed
+into another of its options (`--only`, `--registry`, `--history-dir`) is printed as typed,
+and written where the option names a path. And Search Console's client is not installed
+on the Mac where this was measured, so what the `gsc_*` scripts send to Google was not
+observed; they are handed the URL without its credential like every other script. The
+capture reads a start once the program has ended and every process that wrote has closed
+its file; a process the program started, did not wait for, and that had not yet loaded
+the capture when the program ended would not be seen. Every program that starts one
+today waits for it.
 
 #### Scenario: a key passed as an argument
 - **WHEN** a secret was given on the command line, so a script's argv carries it into the
@@ -578,8 +615,12 @@ of `domain_safety_check.py` — gives it whole, credential included.
   about the user name
 - **AND** the plain-http form of the address, which the HTTPS-redirect check asks on
   purpose, carries no credential
-- **AND** beyond that the script is handed what was typed: one that gives the address
-  to an outside service gives it whole, and this requirement does not hold for it
+- **AND** the credential is split off where the script comes in, as the runner splits it
+  where it comes in: the site is given it with the runner's scope, and no request to
+  another origin carries it — not one to an outside service the script hands the address
+  to, and not one to a service handed a URL typed where text was asked for
+- **AND** a URL typed without a scheme is not split, and this requirement does not hold
+  for it
 
 #### Scenario: a secret nobody added to the list
 - **WHEN** a new key-valued input reaches the run and is not added to the set of values

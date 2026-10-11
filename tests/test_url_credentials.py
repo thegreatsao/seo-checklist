@@ -27,18 +27,23 @@ carries the credential; the record names the site and says that a credential was
 credential still reaches the site, all of the site, and nothing else; and the history is
 the site's, whatever was typed in front of the host.
 """
+import ast
 import base64
+from concurrent.futures import ThreadPoolExecutor
 import http.client
 import http.server
+import importlib.util
 import json
 import os
 import shutil
 import socketserver
+import subprocess
 import sys
 import tempfile
 import threading
 import unittest
 from unittest import mock
+from urllib.parse import unquote
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
@@ -689,9 +694,95 @@ class TheUrlIsSplitWhereItComesIn(unittest.TestCase):
     )
 
     def test_each_shape(self):
+        from lib.typed_credential import split_userinfo
         for typed, clean, userinfo in self.CASES:
             with self.subTest(typed=typed):
-                self.assertEqual(runner.split_userinfo(typed), (clean, userinfo))
+                self.assertEqual(split_userinfo(typed), (clean, userinfo))
+
+    def test_the_runner_and_the_scripts_split_with_one_function(self):
+        from lib import typed_credential
+        self.assertIs(runner.split_userinfo, typed_credential.split_userinfo)
+
+
+class WhatAScriptStartedByHandWasTyped(unittest.TestCase):
+    """`typed_credential.credentials_beside_argv` is the runner's entrance for a script started by hand:
+    every argument holding an http(s) URL with userinfo is split where it stands, and
+    the userinfo goes beside it in the environment. One that holds none changes nothing,
+    and that is every argument a script is given by the runner."""
+
+    def test_an_argument_is_split_where_it_stands(self):
+        from lib import typed_credential
+        argv = ["p.py", "https://u:p%40ss@host.example:8443/a?q=1", "--site=HTTPS://u:p%40ss@host.example:8443/",
+                "-uhttps://u:p%40ss@host.example:8443/b", "plain", "https://other.example/?x=a@b",
+                "host.example/a@b"]
+        with mock.patch.dict(os.environ):
+            os.environ.pop(typed_credential.URL_CREDENTIALS_VAR, None)
+            typed_credential.credentials_beside_argv(argv)
+            self.assertEqual(os.environ[typed_credential.URL_CREDENTIALS_VAR],
+                             "https://u:p%40ss@host.example:8443")
+        self.assertEqual(argv, ["p.py", "https://host.example:8443/a?q=1",
+                                "--site=HTTPS://host.example:8443/",
+                                "-uhttps://host.example:8443/b", "plain",
+                                "https://other.example/?x=a@b", "host.example/a@b"])
+
+    def test_nothing_typed_leaves_the_runners_credential_where_it_is(self):
+        from lib import typed_credential
+        argv = ["p.py", "https://host.example/", "--json"]
+        with mock.patch.dict(os.environ, {typed_credential.URL_CREDENTIALS_VAR: "https://u:p@host.example"}):
+            typed_credential.credentials_beside_argv(argv)
+            self.assertEqual(os.environ[typed_credential.URL_CREDENTIALS_VAR],
+                             "https://u:p@host.example")
+        with mock.patch.dict(os.environ):
+            os.environ.pop(typed_credential.URL_CREDENTIALS_VAR, None)
+            typed_credential.credentials_beside_argv(argv)
+            self.assertNotIn(typed_credential.URL_CREDENTIALS_VAR, os.environ)
+        self.assertEqual(argv, ["p.py", "https://host.example/", "--json"])
+
+    def test_two_credentials_are_refused_before_anything_is_asked(self):
+        from lib import typed_credential
+        for second in ("https://v:q@host.example/", "http://u:p@host.example/",
+                       "https://u:p@other.example/"):
+            with self.subTest(second=second), mock.patch.dict(os.environ):
+                os.environ.pop(typed_credential.URL_CREDENTIALS_VAR, None)
+                with self.assertRaises(SystemExit) as refused:
+                    typed_credential.credentials_beside_argv(
+                        ["p.py", "https://u:p@host.example/", second])
+                self.assertNotIn(":p@", str(refused.exception))
+                self.assertNotIn(typed_credential.URL_CREDENTIALS_VAR, os.environ)
+        argv = ["p.py", "https://u:p@host.example/", "https://u:p@host.example/b"]
+        with mock.patch.dict(os.environ):
+            typed_credential.credentials_beside_argv(argv)
+            self.assertEqual(os.environ[typed_credential.URL_CREDENTIALS_VAR], "https://u:p@host.example")
+
+    def test_a_url_file_naming_another_credential_is_refused_as_the_command_line_is(self):
+        """`read_urls` splits a file of URLs after the command line has been split. A
+        file naming another credential used to replace the command line's silently,
+        and the site typed there was asked without its own."""
+        import seo_common
+        from lib import typed_credential
+        folder = tempfile.mkdtemp(prefix="seo-urlfile-")
+        self.addCleanup(shutil.rmtree, folder, ignore_errors=True)
+        for listed, refused in (("https://v:q@host.example/a", True),
+                                ("https://u:p@other.example/a", True),
+                                ("https://u:p@host.example/a", False),
+                                ("https://host.example/a", False)):
+            url_file = os.path.join(folder, "urls.txt")
+            with open(url_file, "w", encoding="utf-8") as f:
+                f.write(listed + "\n")
+            with self.subTest(listed=listed), mock.patch.dict(os.environ):
+                os.environ.pop(typed_credential.URL_CREDENTIALS_VAR, None)
+                argv = ["p.py", "https://u:p@host.example/"]
+                typed_credential.credentials_beside_argv(argv)
+                if refused:
+                    with self.assertRaises(SystemExit) as said:
+                        seo_common.read_urls(argv[1:], url_file)
+                    self.assertNotIn(":p@", str(said.exception))
+                    self.assertNotIn(":q@", str(said.exception))
+                else:
+                    self.assertEqual(seo_common.read_urls(argv[1:], url_file),
+                                     ["https://host.example/", "https://host.example/a"])
+                self.assertEqual(os.environ[typed_credential.URL_CREDENTIALS_VAR],
+                                 "https://u:p@host.example")
 
 
 class WhatIsAddedToTheSecretSet(unittest.TestCase):
@@ -900,12 +991,14 @@ class WhichRequestsCarryTheCredential(unittest.TestCase):
 
 
 class AScriptStartedByHandTakesTheHostAndNothingElse(unittest.TestCase):
-    """Under the runner a script is never handed a URL with a credential in it. Started
-    by hand it is handed what was typed, and three of them took the host out of that by
-    cutting at a colon: the user name of `https://user:pw@host/`, and `[` of
-    `http://[::1]:8080/`. One sent what it found to a registry's whois server and to the
-    resolver; another carried the credential into the plain-http form of the address it
-    then asked. Measured at 0.152.0."""
+    """Three scripts took the host out of a URL by cutting at a colon: the user name of
+    `https://user:pw@host/`, and `[` of `http://[::1]:8080/`. One sent what it found to a
+    registry's whois server and to the resolver; another carried the credential into the
+    plain-http form of the address it then asked. Measured at 0.152.0, when a script
+    started by hand was handed what was typed. From 0.163.0 it is not: its entrance splits
+    the credential off as the runner's does (`EveryProgramStartedByHandGivesTheCredential
+    ToItsSiteAlone`). These still hold the reading of the host itself, which no longer
+    depends on the entrance to be right."""
 
     HOSTS = {"https://example.com/": "example.com",
              "https://example.com:8443/": "example.com",
@@ -972,6 +1065,350 @@ class AScriptStartedByHandTakesTheHostAndNothingElse(unittest.TestCase):
                            ("https://user:pw@[::1]:8443/", "http://[::1]:8443/")):
             with self.subTest(url=url):
                 self.assertEqual(security_headers.http_form(url), plain)
+
+
+# The parser of a program, read without running the program: `parse_args` answers with
+# the parser's own description of what it takes and the program ends there.
+SLOTS = r"""
+import argparse, json, os, runpy, sys
+program, answer = sys.argv[1], sys.argv[2]
+FLAGS = (argparse._StoreTrueAction, argparse._StoreFalseAction, argparse._StoreConstAction,
+         argparse._CountAction, argparse._AppendConstAction, argparse._HelpAction,
+         argparse._VersionAction)
+def described(parser, *args, **kwargs):
+    with open(answer, "w", encoding="utf-8") as f:
+        json.dump([dict(options=action.option_strings, dest=action.dest,
+                        takes_text=not isinstance(action, FLAGS) and not action.choices
+                                   and getattr(action.type, "__name__", "str") == "str",
+                        required=(action.required if action.option_strings
+                                  else action.nargs not in ("?", "*")))
+                   for action in parser._actions], f)
+    raise SystemExit(0)
+argparse.ArgumentParser.parse_args = described
+argparse.ArgumentParser.parse_known_args = described
+sys.argv = [program]
+sys.path.insert(0, os.path.dirname(program))
+runpy.run_path(program, run_name="__main__")
+"""
+
+# The control: the same program, the same argv, the same observer, and the entrance
+# taken out. It is started through `runpy` because that is the one place it can be
+# taken out from outside the program.
+WITHOUT_ENTRANCE = r"""
+import os, runpy, sys
+program = sys.argv[1]
+sys.argv = sys.argv[1:]
+sys.path.insert(0, os.path.dirname(program))
+from lib import typed_credential
+typed_credential.credentials_beside_argv = lambda argv=None: None
+runpy.run_path(program, run_name="__main__")
+"""
+
+CAPTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hand_capture")
+# Loaded by path and under another name: as `sitecustomize` it is what a child loads.
+_spec = importlib.util.spec_from_file_location("hand_capture",
+                                               os.path.join(CAPTURE, "sitecustomize.py"))
+hand_capture = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(hand_capture)
+
+
+class EveryProgramStartedByHandGivesTheCredentialToItsSiteAlone(unittest.TestCase):
+    """INP-7, *a script started by hand*. Under the runner a script is handed the URL
+    without its credential and the credential beside it, and `url_credentials` gives it
+    to the site alone. Started by hand, every program was handed what was typed, and
+    measured on 11 October 2026 at 0.162.0 (`local/urlhand/`) four gave it to somebody
+    else's server: PageSpeed, Safe Browsing, the W3C validator and IndexNow — and a token
+    alone never reached the site, because Requests reads no credential out of
+    `tok@host`.
+
+    Every program with a `__main__` guard in `scripts/` is started here as an operator
+    starts it, `python <program> <arguments>`, with a credentialed URL in its required
+    arguments and then in each argument that takes text, one at a time; an argument
+    whose name says it is a file gets a file holding the URL. Nothing names a program:
+    one added tomorrow is in the set the day it is added. `tests/hand_capture/` sees
+    every request the program makes and answers it on this machine. It cannot run under
+    `SEO_LOOPBACK_ONLY`, which would refuse the other origins before a request was
+    built — a request never attempted is not a request made clean — so the capture is
+    the fence instead, and a child that gets past it ends with its exit code.
+    """
+
+    USER, PASSWORD = "handuser5k", "Hp-9wQ%2Fz"   # `%2F`: the password is `Hp-9wQ/z`
+    TOKEN = "H4ndTok3nOnly"
+    SITE = "https://staging.example"
+    maxDiff = None
+
+    @classmethod
+    def forms(cls, userinfo: str) -> tuple[str, ...]:
+        user, _, password = userinfo.partition(":")
+        basic = base64.b64encode(f"{unquote(user)}:{unquote(password)}".encode()).decode()
+        return tuple(f for f in {user, password, unquote(password), userinfo, basic} if f)
+
+    @staticmethod
+    def found(text: str, forms) -> list[str]:
+        # Percent-encoded once or twice is the same secret: a URL put in a query is.
+        # Lowercased too: Google's autocomplete lowercases what it is asked.
+        readings = [r.lower() for r in (text, unquote(text), unquote(unquote(text)))]
+        return sorted({f for f in forms for reading in readings if f.lower() in reading})
+
+    @staticmethod
+    def programs() -> list[str]:
+        found = []
+        for entry in sorted(os.listdir(SCRIPTS)):
+            if not entry.endswith(".py"):
+                continue
+            with open(os.path.join(SCRIPTS, entry), encoding="utf-8") as f:
+                tree = ast.parse(f.read())
+            if any(isinstance(node, ast.If) and "__name__" in ast.unparse(node.test)
+                   for node in tree.body):
+                found.append(entry)
+        return found
+
+    @classmethod
+    def slots(cls, program: str) -> list[dict]:
+        answer = os.path.join(cls.folder, program + ".slots.json")
+        env = dict(harness.offline_env(), HOME=cls.folder, USERPROFILE=cls.folder)
+        subprocess.run([sys.executable, "-c", SLOTS, os.path.join(SCRIPTS, program), answer],
+                       stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL, close_fds=False, timeout=180,
+                       env=dict(env, PYTHONIOENCODING="utf-8"))
+        if not os.path.exists(answer):
+            return []
+        with open(answer, encoding="utf-8") as f:
+            return json.load(f)
+
+    @staticmethod
+    def argvs(slots: list[dict], url: str, url_file: str) -> list[list[str]]:
+        """The required arguments with the URL, then each argument that takes text."""
+        base = []
+        for slot in slots:
+            if slot["required"] and slot["takes_text"]:
+                base += [url] if not slot["options"] else [slot["options"][0], url]
+        runs = [base]
+        for slot in slots:
+            if slot["required"] or not slot["takes_text"]:
+                continue
+            value = url_file if "file" in slot["dest"] else url
+            runs.append(base + slot["options"][:1] + [value])
+        return runs
+
+    @classmethod
+    def started(cls, job) -> dict:
+        program, argv, userinfo, control, required = job
+        work = tempfile.mkdtemp(prefix="run-", dir=cls.folder)
+        log = tempfile.mkdtemp(prefix="capture-", dir=cls.folder)
+        user, _, password = userinfo.partition(":")
+        basic = base64.b64encode(f"{unquote(user)}:{unquote(password)}".encode()).decode()
+        env = dict(harness.offline_env(), PYTHONPATH=CAPTURE, PYTHONDONTWRITEBYTECODE="1",
+                   HOME=work, USERPROFILE=work,
+                   PATH=cls.bin + os.pathsep + os.environ.get("PATH", ""),
+                   SEO_CAPTURE_LOG=log, SEO_CAPTURE_SITE=cls.SITE,
+                   SEO_CAPTURE_AUTH=f"Basic {basic}", SEO_CAPTURE_CWD=work,
+                   SEO_CAPTURE_ROOT=os.path.join(harness.FIXTURES, "good"),
+                   SEO_RATE_LIMIT_DIR=os.path.join(work, "rate"),
+                   GOOGLE_API_KEY="k-google", PAGESPEED_API_KEY="k-psi",
+                   GOOGLE_SAFE_BROWSING_KEY="k-sb", SAFE_BROWSING_API_KEY="k-sb",
+                   GOOGLE_KG_API_KEY="k-kg", INDEXNOW_KEY="k-indexnow")
+        for name in ("SEO_LOOPBACK_ONLY", "SEO_ALLOW_PRIVATE", "SEO_HTTP_CACHE",
+                     "SEO_URL_CREDENTIALS"):
+            env.pop(name, None)
+        path = os.path.join(SCRIPTS, program)
+        command = ([sys.executable, "-c", WITHOUT_ENTRANCE, path] if control
+                   else [sys.executable, path])
+        try:
+            done = subprocess.run(command + argv, stdin=subprocess.DEVNULL,
+                                  capture_output=True, close_fds=False, timeout=300,
+                                  encoding="utf-8", errors="replace",
+                                  env=dict(env, PYTHONIOENCODING="utf-8"))
+            code, printed = done.returncode, done.stdout + done.stderr
+        except subprocess.TimeoutExpired as e:
+            code, printed = "timeout", f"{e.stdout or ''}{e.stderr or ''}"
+        # A program that ended has waited for what it started: both that start one
+        # (`domain_safety_check`, the runner) wait in `subprocess.run`. One killed
+        # at the timeout may leave its children writing, so its log is not read.
+        requests_seen, unfinished = ([], ["timed out"]) if code == "timeout" \
+            else hand_capture.read(log)
+        written = []
+        for folder, dirs, files in os.walk(work):
+            for name in dirs + files:
+                where = os.path.join(folder, name)
+                written.append(os.path.relpath(where, work))
+                if name in files:
+                    with open(where, encoding="utf-8", errors="replace") as f:
+                        written.append(f.read())
+        return dict(program=program, argv=argv, userinfo=userinfo, exit=code,
+                    requests=requests_seen, unfinished=unfinished, printed=printed, written="\n".join(written),
+                    required=required)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.folder = tempfile.mkdtemp(prefix="seo-urlhand-")
+        cls.addClassCleanup(shutil.rmtree, cls.folder, ignore_errors=True)
+        # `whois` is a program the capture cannot see into; this one writes down what
+        # it was asked, and is found on `PATH` before any real one.
+        cls.bin = os.path.join(cls.folder, "bin")
+        os.makedirs(cls.bin)
+        recorder = os.path.join(cls.bin, "whois_recorder.py")
+        with open(recorder, "w", encoding="utf-8") as f:
+            # The capture is this process's `sitecustomize` too: its own file.
+            f.write("import sys, sitecustomize\n"
+                    "sitecustomize.record('whois', origin='whois',"
+                    " target=' '.join(sys.argv[1:]))\n")
+        if os.name == "nt":
+            with open(os.path.join(cls.bin, "whois.cmd"), "w", encoding="utf-8") as f:
+                f.write(f'@"{sys.executable}" "{recorder}" %*\n')
+        else:
+            whois = os.path.join(cls.bin, "whois")
+            with open(whois, "w", encoding="utf-8") as f:
+                f.write(f"#!{sys.executable}\nimport runpy\n"
+                        f"runpy.run_path({recorder!r}, run_name='__main__')\n")
+            os.chmod(whois, 0o755)
+        cls.every = cls.programs()
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            slots = dict(zip(cls.every, pool.map(cls.slots, cls.every), strict=True))
+        jobs, controls = [], []
+        for userinfo in (f"{cls.USER}:{cls.PASSWORD}", cls.TOKEN):
+            url = f"https://{userinfo}@staging.example/"
+            url_file = os.path.join(cls.folder, f"urls-{len(jobs)}.txt")
+            with open(url_file, "w", encoding="utf-8") as f:
+                f.write(url + "\n")
+            for program in cls.every:
+                # Which argument a URL arrives in is asked with the pair; the token,
+                # and the control, as the URL to work on — where it is typed.
+                required, *optional = cls.argvs(slots[program], url, url_file)
+                jobs.append((program, required, userinfo, False, True))
+                if userinfo == cls.TOKEN:
+                    continue
+                controls.append((program, required, userinfo, True, True))
+                jobs += [(program, argv, userinfo, False, False) for argv in optional]
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            cls.runs = list(pool.map(cls.started, jobs))
+            cls.controls = list(pool.map(cls.started, controls))
+
+    def to_the_site(self, request) -> bool:
+        """The site is the scheme, host and port that were typed. `http://` of the same
+        host is not it: a URL typed as `https://` keeps its credential off plain http."""
+        return (request["kind"] == "http" and request["scheme"] == "https"
+                and request["origin"] == "staging.example")
+
+    def leaks(self, runs) -> list[str]:
+        said = []
+        for run in runs:
+            forms = self.forms(run["userinfo"])
+            for request in run["requests"]:
+                if self.to_the_site(request):
+                    continue
+                text = " ".join((request.get("origin", ""), request.get("target", ""),
+                                 json.dumps(request.get("headers", {})),
+                                 request.get("body", "")))
+                if self.found(text, forms):
+                    said.append(f"{run['program']} {' '.join(run['argv'])} -> "
+                                f"{request['kind']} {request.get('origin')}")
+        return sorted(set(said))
+
+    def test_the_whole_set_was_started_and_nothing_got_past_the_capture(self):
+        self.assertGreater(len(self.every), 50, "the scan found almost no program")
+        escaped = [f"{run['program']} {run['argv']}" for run in self.runs + self.controls
+                   if run["exit"] == 97
+                   or any(r["kind"] == "escaped" for r in run["requests"])]
+        self.assertEqual(escaped, [])
+        unfinished = [f"{run['program']} {run['argv']}: {run['unfinished']}"
+                      for run in self.runs + self.controls if run["unfinished"]]
+        self.assertEqual(unfinished, [], "a log read before every process of its start "
+                                         "had finished writing it")
+
+    def test_no_request_to_another_origin_carries_the_credential(self):
+        self.assertEqual(self.leaks(self.runs), [],
+                         "call `credentials_beside_argv()` first under "
+                         '`if __name__ == "__main__":`, after `utf8_streams()`')
+
+    def test_the_site_is_given_it_on_every_request(self):
+        asked, refused = set(), []
+        for run in self.runs:
+            user, _, password = run["userinfo"].partition(":")
+            basic = base64.b64encode(f"{unquote(user)}:{unquote(password)}".encode()).decode()
+            for request in run["requests"]:
+                if self.to_the_site(request):
+                    asked.add(run["program"])
+                    if request["headers"].get("authorization") != f"Basic {basic}":
+                        refused.append(f"{run['program']} {' '.join(run['argv'])} -> "
+                                       f"{request['target']}")
+        self.assertGreater(len(asked), 30, "almost no program asked the site at all")
+        self.assertEqual(sorted(set(refused)), [])
+
+    def test_nothing_it_prints_or_writes_carries_the_credential(self):
+        """Not part of the requirement, which is about requests, and held because the
+        entrance makes it so at no cost: handed the URL to work on, a program never
+        holds the credential in anything it was handed. Only that URL: the runner,
+        which splits its own, echoes a URL typed where it takes a path or a category
+        (`--history-dir`, `--only`), and that is named in INP-7 as not held."""
+        said = [f"{run['program']} {' '.join(run['argv'])}: {where}"
+                for run in self.runs if run["required"]
+                for where in ("printed", "written")
+                if self.found(run[where], self.forms(run["userinfo"]))]
+        self.assertEqual(said, [])
+
+    def test_the_control_sees_the_credential_leave_without_the_entrance(self):
+        """Without this the tests above could pass because the observer is blind."""
+        self.assertNotEqual(self.leaks(self.controls), [])
+
+
+HAMMER = r"""
+import sys, threading, sitecustomize
+who, lines = sys.argv[1], int(sys.argv[2])
+def write(thread):
+    for n in range(lines):
+        sitecustomize.record("http", origin="x.example", target="/p?" + "a" * 700,
+                             who=who, thread=thread, n=n)
+threads = [threading.Thread(target=write, args=(t,)) for t in range(2)]
+for t in threads: t.start()
+for t in threads: t.join()
+"""
+
+
+class WhatTheCaptureWritesIsReadWholeAndOnce(unittest.TestCase):
+    """The capture above is the observer: a line it loses is a request nobody saw. On
+    Windows an append is not atomic, and eight processes appending to one file were
+    measured on 11 October 2026 keeping 9120 of 12000 lines and tearing seven. So each
+    process writes a file of its own and closes it with an `end` line, and the reader
+    says which files are not whole. Counted, not timed: every line written is read
+    back once, whatever the order the processes ran in."""
+
+    PROCESSES, THREADS, LINES = 8, 2, 750
+
+    def capture_env(self, log):
+        return dict(harness.offline_env(), PYTHONPATH=CAPTURE, SEO_CAPTURE_LOG=log,
+                    PYTHONDONTWRITEBYTECODE="1")
+
+    def test_many_processes_writing_at_once_lose_and_tear_nothing(self):
+        log = tempfile.mkdtemp(prefix="seo-capture-")
+        self.addCleanup(shutil.rmtree, log, ignore_errors=True)
+        env = self.capture_env(log)
+        children = [subprocess.Popen([sys.executable, "-c", HAMMER, str(who), str(self.LINES)],
+                                     env=env, stdin=subprocess.DEVNULL, close_fds=False)
+                    for who in range(self.PROCESSES)]
+        self.assertEqual([child.wait(timeout=300) for child in children],
+                         [0] * self.PROCESSES)
+        lines, unfinished = hand_capture.read(log)
+        self.assertEqual(unfinished, [])
+        self.assertEqual(len(os.listdir(log)), self.PROCESSES)
+        seen = sorted((line["who"], line["thread"], line["n"]) for line in lines)
+        self.assertEqual(seen, [(str(who), thread, n) for who in range(self.PROCESSES)
+                                for thread in range(self.THREADS) for n in range(self.LINES)])
+        self.assertTrue(all(line["target"] == "/p?" + "a" * 700 for line in lines))
+
+    def test_a_process_that_did_not_finish_is_named_not_read_as_whole(self):
+        log = tempfile.mkdtemp(prefix="seo-capture-")
+        self.addCleanup(shutil.rmtree, log, ignore_errors=True)
+        killed = ("import os, signal, sitecustomize\n"
+                  "sitecustomize.record('http', origin='x.example')\n"
+                  "os.kill(os.getpid(), signal.SIGTERM)\n")
+        subprocess.run([sys.executable, "-c", killed], env=self.capture_env(log),
+                       stdin=subprocess.DEVNULL, close_fds=False, timeout=60)
+        with open(os.path.join(log, "torn.jsonl"), "w", encoding="utf-8") as f:
+            f.write('{"kind": "start"}\n{"kind": "http", "orig')
+        lines, unfinished = hand_capture.read(log)
+        self.assertEqual(len(unfinished), 2)
+        self.assertIn("torn.jsonl", unfinished)
 
 
 if __name__ == "__main__":
