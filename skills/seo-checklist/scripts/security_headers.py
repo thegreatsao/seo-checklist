@@ -27,11 +27,13 @@ except ImportError:
 
 try:
     from lib.safe_http import default_headers, robots_allows, safe_get
+    from lib.typed_credential import scheme_added
     from redirect_checker import MAX_REDIRECT_HOPS
     import seo_common
     from seo_common import connection_refused, html_parser
 except ImportError:
     from scripts.lib.safe_http import default_headers, robots_allows, safe_get
+    from scripts.lib.typed_credential import scheme_added
     from scripts.redirect_checker import MAX_REDIRECT_HOPS
     from scripts import seo_common
     from scripts.seo_common import connection_refused, html_parser
@@ -269,7 +271,7 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
     """
     parsed = urlparse(url)
     if not parsed.scheme:
-        url = f"https://{url}"
+        url = scheme_added(url)
         parsed = urlparse(url)
 
     result = {

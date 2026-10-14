@@ -37,8 +37,10 @@ except ImportError:
 
 try:
     from lib.safe_http import default_headers, loopback_only, safe_get
+    from lib.typed_credential import read_as_url
 except ImportError:
     from scripts.lib.safe_http import default_headers, loopback_only, safe_get
+    from scripts.lib.typed_credential import read_as_url
 
 # basis: inherited — three labels, present at import, and definitional rather than
 #  calibratable: a whois lookup needs the registrable domain, and a multi-label public
@@ -274,6 +276,7 @@ def main():
     parser.add_argument("--timeout", type=int, default=20)
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
 
     result = check(args.url, args.timeout)
 

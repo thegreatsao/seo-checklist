@@ -237,6 +237,11 @@ def main():
                         help="Path to GSC service account credentials (optional). Falls back to GSC_CREDENTIALS_PATH env var or .env file.")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
+    try:
+        from lib.typed_credential import read_as_url
+    except ImportError:
+        from scripts.lib.typed_credential import read_as_url
+    args.url = read_as_url(args.url)
 
     from env_loader import get_env
     gsc_credentials = args.gsc_credentials or get_env("GSC_CREDENTIALS_PATH")

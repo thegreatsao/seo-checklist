@@ -23,8 +23,10 @@ except ImportError:
 
 try:
     from lib.safe_http import default_headers, safe_head
+    from lib.typed_credential import scheme_added
 except ImportError:
     from scripts.lib.safe_http import default_headers, safe_head
+    from scripts.lib.typed_credential import scheme_added
 
 
 HEADERS = default_headers()
@@ -55,7 +57,7 @@ def check_redirects(url: str, max_redirects: int = MAX_REDIRECT_HOPS,
     """
     parsed = urlparse(url)
     if not parsed.scheme:
-        url = f"https://{url}"
+        url = scheme_added(url)
 
     result = {
         "url": url,

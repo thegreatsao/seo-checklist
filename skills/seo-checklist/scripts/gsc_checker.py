@@ -342,6 +342,12 @@ def main():
     parser.add_argument("--inspect", default="", help="URL to inspect for indexing status")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
+    try:
+        from lib.typed_credential import read_as_url
+    except ImportError:
+        from scripts.lib.typed_credential import read_as_url
+    args.site_url = read_as_url(args.site_url)
+    args.inspect = read_as_url(args.inspect)
 
     from env_loader import get_env
     credentials_path = args.credentials or get_env("GSC_CREDENTIALS_PATH")

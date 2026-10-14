@@ -501,10 +501,47 @@ and a start is read only when every file is whole: eight processes appending to 
 on Windows were measured on 11 October 2026 keeping 9120 of 12000 lines.
 `WhatTheCaptureWritesIsReadWholeAndOnce` counts every line back.
 
-**Not held, and said here so that it is not found again as a surprise.** A URL typed
-without a scheme — `user:password@host`, `tok@host` — is split by neither entrance, and
-`safe_http` puts `https://` in front of it later: measured the same day, the runner gave
-such a credential to Safe Browsing. The runner splits only the URL it audits: a URL typed
+**A URL typed without a scheme, measured on 14 October 2026 at 0.163.0.** `user:password@host/`,
+`tok@host/` and `tok@host` were split by neither entrance, and a scheme was put in front
+of them after both. The 61 programs were started on the Mac as above, 263 starts
+(`local/schemeless/measure.py`, `before-756a427.json`): 25 requests gave the credential to
+another origin — PageSpeed, Safe Browsing, the W3C validator and IndexNow at Bing; the
+runner, handed the pair, gave it to Safe Browsing, named the site `unknown`, recorded no
+credential and wrote the pair into its results, its history, both reports and the LLM
+queues, and handed a token wrote it into its results and history; and no request to the
+site carried the credential, out of 126. Now the entrances read such a URL as the URL it
+is: `typed_credential.schemeless`, one function, recognises a string with no `scheme://`
+whose authority holds userinfo and gives it `https://`, the scheme every program put in
+front of it; `credential_beside`, the runner's, and `credentials_beside_argv`, a script's,
+split it there, as typed with its scheme. `name@host` with nothing after the host is an
+e-mail address as much as a URL, and only the slot it was typed in tells which: the
+entrance leaves it as typed, and where a program reads it as a URL —
+`typed_credential.scheme_added`, through which both normalisers and every program that
+puts a scheme in front of a typed string do it, or `read_as_url`, where a program hands a
+typed URL to a service as it is — it is that URL with a token, split and carried as one.
+Typed as text, `--entity me@example.com`, it never comes there and stays text. A string
+nobody typed — a link, a canonical — is given its scheme and nothing else. Measured
+again after (`after.json`): no request to another origin carries it, every request to the
+site does (440, 129 and 122 of them), and the runner's record, reports and history are
+what they are for the same URL typed with `https://`. Held by
+`EveryProgramStartedByHandGivesASchemelessCredentialToItsSiteAlone`, the class above
+started with the three spellings and with `me@example.com` in every argument that takes
+text, whose control takes the recognition out; and by `WhatIsNotASchemelessCredentialIsReadAsBefore`,
+which pins what both normalisers, `is_url` and the entrance make of a URL typed with its
+scheme, of one without userinfo and of an address, to their values at 0.163.0.
+
+**Not held, and said here so that it is not found again as a surprise.** A program
+started by hand with `tok@host`, nothing after the host, prints what it was given before
+it reads it as a URL: 18 of the 61 did on 14 October 2026. An address typed into an
+argument that a program neither gives a scheme nor hands on through `read_as_url` stays
+as typed: of the arguments read on that day, none such reaches another origin, and the
+`gsc_*` scripts and `link_profile.py` read theirs through `read_as_url` without having
+been observed. Text shaped `user:password@host`, with no whitespace, typed into an argument
+that takes text is read as a URL: rewritten to `https://host…`, its userinfo set as the
+process's credential, as 0.163.0 does for text holding a URL typed with its scheme. And a
+short option and its value in one argument, `-xVALUE`, is read as the option and the
+value, so a text argument that begins with `-` and holds `a:b@host` is read as a URL too.
+The runner splits only the URL it audits: a URL typed
 into another of its options (`--only`, `--registry`, `--history-dir`) is printed as typed,
 and written where the option names a path. And Search Console's client is not installed
 on the Mac where this was measured, so what the `gsc_*` scripts send to Google was not
@@ -619,8 +656,11 @@ today waits for it.
   where it comes in: the site is given it with the runner's scope, and no request to
   another origin carries it — not one to an outside service the script hands the address
   to, and not one to a service handed a URL typed where text was asked for
-- **AND** a URL typed without a scheme is not split, and this requirement does not hold
-  for it
+- **AND** a URL typed without a scheme, `user:password@host/` or `tok@host:8443/a`, is
+  read as typed with `https://`, and split where it comes in as such a URL is
+- **AND** `name@host` with nothing after the host is split where the program reads it as a
+  URL, and typed where text is asked for it is sent as the text it is and sets no
+  credential
 
 #### Scenario: a secret nobody added to the list
 - **WHEN** a new key-valued input reaches the run and is not added to the set of values

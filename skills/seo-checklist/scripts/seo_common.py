@@ -55,12 +55,12 @@ try:
     from lib.safe_http import (HostResolutionError,
                                RobotsDisallowed, SafeHTTPError, safe_get,
                                safe_request)
-    from lib.typed_credential import credentials_beside_argv
+    from lib.typed_credential import credentials_beside_argv, scheme_added
     from lib import robots_rules
 except ImportError:
     from scripts.lib.safe_http import (HostResolutionError, RobotsDisallowed,
                                        SafeHTTPError, safe_get, safe_request)
-    from scripts.lib.typed_credential import credentials_beside_argv
+    from scripts.lib.typed_credential import credentials_beside_argv, scheme_added
     from scripts.lib import robots_rules
 
 try:
@@ -209,7 +209,7 @@ def normalize_url(url: str, base: str | None = None, default_scheme: str = "http
         url = urljoin(base, url)
     parsed = urlparse(url)
     if not parsed.scheme and not base:
-        url = f"{default_scheme}://{url}"
+        url = scheme_added(url, default_scheme)
         parsed = urlparse(url)
     if parsed.scheme in ("http", "https"):
         path = parsed.path or "/"

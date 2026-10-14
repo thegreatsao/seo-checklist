@@ -19,10 +19,10 @@ from urllib.parse import unquote, urljoin, urlparse, urlunparse
 
 try:
     from lib import robots_rules
-    from lib.typed_credential import URL_CREDENTIALS_VAR
+    from lib.typed_credential import URL_CREDENTIALS_VAR, scheme_added
 except ImportError:
     from scripts.lib import robots_rules
-    from scripts.lib.typed_credential import URL_CREDENTIALS_VAR
+    from scripts.lib.typed_credential import URL_CREDENTIALS_VAR, scheme_added
 
 try:
     import fcntl
@@ -117,7 +117,7 @@ def normalize_url(url: str, default_scheme: str = "https") -> str:
         raise SafeHTTPError("URL is required")
     parsed = urlparse(url)
     if not parsed.scheme:
-        url = f"{default_scheme}://{url}"
+        url = scheme_added(url, default_scheme)
         parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise SafeHTTPError(f"Invalid URL scheme: {parsed.scheme}")

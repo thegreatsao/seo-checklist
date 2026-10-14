@@ -43,7 +43,7 @@ import tempfile
 import threading
 import unittest
 from unittest import mock
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse, urlunparse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
@@ -725,6 +725,50 @@ class WhatAScriptStartedByHandWasTyped(unittest.TestCase):
                                 "-uhttps://host.example:8443/b", "plain",
                                 "https://other.example/?x=a@b", "host.example/a@b"])
 
+    def test_a_url_typed_without_a_scheme_is_split_where_it_stands(self):
+        """With the scheme every program gives it, `https://`. Only `name@host` with
+        nothing after the host is left as typed: it is an e-mail address as much as a
+        URL, and only where a scheme is put in front of it is it read as the URL."""
+        from lib import typed_credential
+        argv = ["p.py", "u:p%40ss@host.example:8443/a?q=1", "--site=u:p%40ss@host.example:8443/",
+                "-uu:p%40ss@host.example:8443/b", "tok@host.example", "--entity=tok@host.example"]
+        with mock.patch.dict(os.environ), \
+                mock.patch.object(typed_credential, "_maybe_text", set(), create=True):
+            os.environ.pop(typed_credential.URL_CREDENTIALS_VAR, None)
+            typed_credential.credentials_beside_argv(argv)
+            self.assertEqual(os.environ[typed_credential.URL_CREDENTIALS_VAR],
+                             "https://u:p%40ss@host.example:8443")
+            self.assertEqual(argv, ["p.py", "https://host.example:8443/a?q=1",
+                                    "--site=https://host.example:8443/",
+                                    "-uhttps://host.example:8443/b", "tok@host.example",
+                                    "--entity=tok@host.example"])
+        for typed in ("tok@host.example/", "tok@host.example:8443", "tok@host.example?x=1"):
+            argv = ["p.py", typed]
+            with self.subTest(typed=typed), mock.patch.dict(os.environ):
+                os.environ.pop(typed_credential.URL_CREDENTIALS_VAR, None)
+                typed_credential.credentials_beside_argv(argv)
+                self.assertEqual(argv[1], "https://" + typed.replace("tok@", ""))
+                self.assertEqual(os.environ[typed_credential.URL_CREDENTIALS_VAR],
+                                 "https://tok@" + typed[4:].split("/")[0].split("?")[0])
+
+    def test_an_address_kept_as_typed_is_a_credential_where_it_is_read_as_a_url(self):
+        import seo_common
+        from lib import safe_http, typed_credential
+        for normalise, read in ((safe_http.normalize_url, "https://host.example/"),
+                                (seo_common.normalize_url, "https://host.example/")):
+            with self.subTest(normalise=normalise.__module__), mock.patch.dict(os.environ), \
+                    mock.patch.object(typed_credential, "_maybe_text", set(), create=True):
+                os.environ.pop(typed_credential.URL_CREDENTIALS_VAR, None)
+                typed_credential.credentials_beside_argv(["p.py", "tok@host.example",
+                                                          "--entity", "me@example.com"])
+                self.assertNotIn(typed_credential.URL_CREDENTIALS_VAR, os.environ)
+                self.assertEqual(normalise("tok@host.example"), read)
+                self.assertEqual(os.environ[typed_credential.URL_CREDENTIALS_VAR],
+                                 "https://tok@host.example")
+                # The other address was typed too, and a second credential is refused.
+                with self.assertRaises(SystemExit):
+                    normalise("me@example.com")
+
     def test_nothing_typed_leaves_the_runners_credential_where_it_is(self):
         from lib import typed_credential
         argv = ["p.py", "https://host.example/", "--json"]
@@ -783,6 +827,84 @@ class WhatAScriptStartedByHandWasTyped(unittest.TestCase):
                                      ["https://host.example/", "https://host.example/a"])
                 self.assertEqual(os.environ[typed_credential.URL_CREDENTIALS_VAR],
                                  "https://u:p@host.example")
+
+
+class WhatIsNotASchemelessCredentialIsReadAsBefore(unittest.TestCase):
+    """A URL typed with its scheme, one without userinfo, and an e-mail address are read
+    exactly as at 0.163.0 (756a427) by both normalisers, by `is_url`, and by the
+    entrance, which leaves the arguments and the environment as they were. The values
+    below were taken at 0.163.0 on 3.14 and 3.10.20; the one the standard library
+    writes differently from one patch release to another is computed as 0.163.0
+    computed it. A normaliser handed a string nobody typed reads it as it
+    did, credential-shaped or not: a page's link is not the operator's credential."""
+
+    AT_0163 = (
+        # typed, safe_http.normalize_url, seo_common.normalize_url, is_url
+        ("staging.example", "https://staging.example/", "https://staging.example/", True),
+        ("staging.example/", "https://staging.example/", "https://staging.example/", False),
+        ("staging.example:8443/a", "Invalid URL scheme: staging.example",
+         "staging.example:8443/a", False),
+        ("localhost:8000", "Invalid URL scheme: localhost", "localhost:8000", False),
+        ("Staging.Example/a?q=1#f", "https://Staging.Example/a?q=1#f",
+         "https://Staging.Example/a?q=1", False),
+        ("https://u:p@staging.example/", "https://u:p@staging.example/",
+         "https://u:p@staging.example/", True),
+        ("http://tok@staging.example:8080/x", "http://tok@staging.example:8080/x",
+         "http://tok@staging.example:8080/x", True),
+        ("https://staging.example/?next=a@b", "https://staging.example/?next=a@b",
+         "https://staging.example/?next=a@b", True),
+        ("staging.example/a@b", "https://staging.example/a@b", "https://staging.example/a@b",
+         False),
+        ("me@example.com", "https://me@example.com/", "https://me@example.com/", True),
+        ("mailto:me@example.com", "Invalid URL scheme: mailto", "mailto:me@example.com", True),
+        # 0.163.0 put `https:` in front and wrote the parse back with `urlunparse`, which
+        # keeps the empty authority on 3.10.20 and 3.14 and drops it on 3.10.11, CI's
+        # Windows leg: the value is what that expression gives on this interpreter.
+        ("//staging.example/x", "URL must include a hostname",
+         urlunparse(urlparse("https:////staging.example/x")), False),
+        ("user:pw@staging.example/", "Invalid URL scheme: user", "user:pw@staging.example/",
+         False),
+        ("tok@staging.example", "https://tok@staging.example/", "https://tok@staging.example/",
+         True),
+    )
+
+    def test_the_normalisers_read_what_nobody_typed_as_they_did(self):
+        import seo_common
+        from lib import safe_http, typed_credential
+        for typed, strict, lenient, url in self.AT_0163:
+            with self.subTest(typed=typed), mock.patch.dict(os.environ), \
+                    mock.patch.object(typed_credential, "_maybe_text", set(), create=True):
+                os.environ.pop(typed_credential.URL_CREDENTIALS_VAR, None)
+                try:
+                    self.assertEqual(safe_http.normalize_url(typed), strict)
+                except safe_http.SafeHTTPError as refused:
+                    self.assertEqual(str(refused), strict)
+                self.assertEqual(seo_common.normalize_url(typed), lenient)
+                self.assertIs(seo_common.is_url(typed), url)
+                self.assertNotIn(typed_credential.URL_CREDENTIALS_VAR, os.environ)
+
+    def test_the_entrance_leaves_them_as_typed(self):
+        from lib import typed_credential
+        for typed, *_ in self.AT_0163:
+            if "://" in typed and "@" in typed.split("/")[2] or typed.startswith("user:"):
+                continue                # split at 0.163.0 already, or meant to be now
+            argv = ["p.py", typed, f"--entity={typed}", "--keyword", typed]
+            with self.subTest(typed=typed), mock.patch.dict(os.environ):
+                os.environ.pop(typed_credential.URL_CREDENTIALS_VAR, None)
+                typed_credential.credentials_beside_argv(argv)
+                self.assertEqual(argv, ["p.py", typed, f"--entity={typed}", "--keyword", typed])
+                self.assertNotIn(typed_credential.URL_CREDENTIALS_VAR, os.environ)
+
+    def test_a_url_typed_with_its_scheme_is_split_as_it_was(self):
+        from lib import typed_credential
+        argv = ["p.py", "https://u:p@staging.example/", "--entity=http://tok@staging.example:8080/x"]
+        with mock.patch.dict(os.environ):
+            os.environ.pop(typed_credential.URL_CREDENTIALS_VAR, None)
+            with self.assertRaises(SystemExit):
+                typed_credential.credentials_beside_argv(list(argv))
+            typed_credential.credentials_beside_argv(argv[:2])
+            self.assertEqual(os.environ[typed_credential.URL_CREDENTIALS_VAR],
+                             "https://u:p@staging.example")
 
 
 class WhatIsAddedToTheSecretSet(unittest.TestCase):
@@ -1212,7 +1334,7 @@ class EveryProgramStartedByHandGivesTheCredentialToItsSiteAlone(unittest.TestCas
                      "SEO_URL_CREDENTIALS"):
             env.pop(name, None)
         path = os.path.join(SCRIPTS, program)
-        command = ([sys.executable, "-c", WITHOUT_ENTRANCE, path] if control
+        command = ([sys.executable, "-c", control, path] if control
                    else [sys.executable, path])
         try:
             done = subprocess.run(command + argv, stdin=subprocess.DEVNULL,
@@ -1235,9 +1357,13 @@ class EveryProgramStartedByHandGivesTheCredentialToItsSiteAlone(unittest.TestCas
                 if name in files:
                     with open(where, encoding="utf-8", errors="replace") as f:
                         written.append(f.read())
+        results = os.path.join(work, "checklist-results.json")
+        if os.path.isfile(results):          # the runner's record
+            with open(results, encoding="utf-8") as f:
+                results = json.load(f)
         return dict(program=program, argv=argv, userinfo=userinfo, exit=code,
                     requests=requests_seen, unfinished=unfinished, printed=printed, written="\n".join(written),
-                    required=required)
+                    required=required, record=results if isinstance(results, dict) else None)
 
     @classmethod
     def setUpClass(cls):
@@ -1264,25 +1390,38 @@ class EveryProgramStartedByHandGivesTheCredentialToItsSiteAlone(unittest.TestCas
             os.chmod(whois, 0o755)
         cls.every = cls.programs()
         with ThreadPoolExecutor(max_workers=8) as pool:
-            slots = dict(zip(cls.every, pool.map(cls.slots, cls.every), strict=True))
-        jobs, controls = [], []
-        for userinfo in (f"{cls.USER}:{cls.PASSWORD}", cls.TOKEN):
-            url = f"https://{userinfo}@staging.example/"
-            url_file = os.path.join(cls.folder, f"urls-{len(jobs)}.txt")
-            with open(url_file, "w", encoding="utf-8") as f:
-                f.write(url + "\n")
-            for program in cls.every:
-                # Which argument a URL arrives in is asked with the pair; the token,
-                # and the control, as the URL to work on — where it is typed.
-                required, *optional = cls.argvs(slots[program], url, url_file)
-                jobs.append((program, required, userinfo, False, True))
-                if userinfo == cls.TOKEN:
-                    continue
-                controls.append((program, required, userinfo, True, True))
-                jobs += [(program, argv, userinfo, False, False) for argv in optional]
+            cls.slots_of = dict(zip(cls.every, pool.map(cls.slots, cls.every), strict=True))
+        jobs, controls = cls.jobs()
         with ThreadPoolExecutor(max_workers=8) as pool:
             cls.runs = list(pool.map(cls.started, jobs))
             cls.controls = list(pool.map(cls.started, controls))
+
+    @classmethod
+    def url_file(cls, url: str) -> str:
+        path = tempfile.mkstemp(prefix="urls-", suffix=".txt", dir=cls.folder)
+        os.close(path[0])
+        with open(path[1], "w", encoding="utf-8") as f:
+            f.write(url + "\n")
+        return path[1]
+
+    @classmethod
+    def jobs(cls) -> tuple[list, list]:
+        """`(program, argv, userinfo, control, required)` for every start, and the
+        controls: `control` is the code the program is started through, or False."""
+        jobs, controls = [], []
+        for userinfo in (f"{cls.USER}:{cls.PASSWORD}", cls.TOKEN):
+            url = f"https://{userinfo}@staging.example/"
+            url_file = cls.url_file(url)
+            for program in cls.every:
+                # Which argument a URL arrives in is asked with the pair; the token,
+                # and the control, as the URL to work on — where it is typed.
+                required, *optional = cls.argvs(cls.slots_of[program], url, url_file)
+                jobs.append((program, required, userinfo, False, True))
+                if userinfo == cls.TOKEN:
+                    continue
+                controls.append((program, required, userinfo, WITHOUT_ENTRANCE, True))
+                jobs += [(program, argv, userinfo, False, False) for argv in optional]
+        return jobs, controls
 
     def to_the_site(self, request) -> bool:
         """The site is the scheme, host and port that were typed. `http://` of the same
@@ -1350,6 +1489,134 @@ class EveryProgramStartedByHandGivesTheCredentialToItsSiteAlone(unittest.TestCas
     def test_the_control_sees_the_credential_leave_without_the_entrance(self):
         """Without this the tests above could pass because the observer is blind."""
         self.assertNotEqual(self.leaks(self.controls), [])
+
+
+# The control of the class below: the same program, and the recognition of a URL typed
+# without a scheme taken out, so that the entrances are what they were at 0.163.0.
+WITHOUT_SCHEMELESS = r"""
+import os, runpy, sys
+program = sys.argv[1]
+sys.argv = sys.argv[1:]
+sys.path.insert(0, os.path.dirname(program))
+from lib import typed_credential
+typed_credential.schemeless = lambda typed: None
+runpy.run_path(program, run_name="__main__")
+"""
+
+
+class EveryProgramStartedByHandGivesASchemelessCredentialToItsSiteAlone(
+        EveryProgramStartedByHandGivesTheCredentialToItsSiteAlone):
+    """INP-7, *a URL typed without a scheme*. The class above, with the credential typed
+    as an operator often types an address: `user:password@host/`, `tok@host/`, and
+    `tok@host` with nothing after the host. Measured on 14 October 2026 at 0.163.0
+    (`local/schemeless/`), neither entrance split them: `pagespeed.py`,
+    `domain_safety_check.py`, `html_validator.py` and `indexnow_checker.py --ping` gave
+    them to Google, Safe Browsing, the W3C and Bing; the runner gave the pair to Safe
+    Browsing and wrote both forms into its results and its history; and the site was
+    never given either, because a scheme was put in front of the URL after the entrance.
+
+    Every test of the class above runs again on these starts. `me@example.com` is the
+    counter-case: typed where text is asked for, it is an e-mail address, and it stays
+    one — it is sent as the text it is and sets no credential.
+    """
+
+    EMAIL = "me@example.com"
+
+    @classmethod
+    def jobs(cls) -> tuple[list, list]:
+        jobs, controls = [], []
+        pair = f"{cls.USER}:{cls.PASSWORD}"
+        url = f"{pair}@staging.example/"
+        url_file = cls.url_file(url)
+        for program in cls.every:
+            slots = cls.slots_of[program]
+            required, *optional = cls.argvs(slots, url, url_file)
+            jobs.append((program, required, pair, False, True))
+            jobs += [(program, argv, pair, False, False) for argv in optional]
+            controls.append((program, required, pair, WITHOUT_SCHEMELESS, True))
+            # `tok@host/` is split at the entrance, and nothing the program prints or
+            # writes holds it. `tok@host` could be an e-mail address until the program
+            # reads it as a URL, and a program prints what it was given before that.
+            for typed, whole in ((f"{cls.TOKEN}@staging.example/", True),
+                                 (f"{cls.TOKEN}@staging.example", False)):
+                jobs.append((program, cls.argvs(slots, typed, url_file)[0], cls.TOKEN,
+                             False, whole))
+        cls.texts = []
+        for program in cls.every:
+            slots = cls.slots_of[program]
+            base = cls.argvs(slots, f"{cls.SITE}/", "")[0]
+            cls.texts += [(program, base + slot["options"][:1] + [cls.EMAIL], "", False, False)
+                          for slot in slots if not slot["required"] and slot["takes_text"]
+                          and "file" not in slot["dest"]]
+        return jobs, controls
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            cls.text_runs = list(pool.map(cls.started, cls.texts))
+
+    def test_the_runner_records_that_a_credential_was_used(self):
+        """The record says so and names the site by host, as it does for a URL typed
+        with its scheme; at 0.163.0 it said no credential was used, and named the pair's
+        site `unknown`."""
+        records = [(run["argv"][0], run["record"] and {
+                        key: run["record"].get(key) for key in ("url", "domain", "url_credentials")})
+                   for run in self.runs if run["program"] == "checklist_runner.py"
+                   and len(run["argv"]) == 1]
+        self.assertEqual(len(records), 3)
+        for typed, record in records:
+            with self.subTest(typed=typed):
+                self.assertEqual(record, {"url": "https://" + typed.rpartition("@")[2],
+                                          "domain": "staging.example", "url_credentials": True})
+
+    def test_an_email_address_typed_as_text_stays_text(self):
+        """Typed where text is asked for, it goes out as the text it was, and the run
+        that sent it so presents no credential anywhere. Typed where a URL is asked for
+        (`urls`, `--site`, `--fetch`), it is the URL of `example.com` with `me` as a
+        token, and that token is presented to `example.com` and to nobody else."""
+        self.assertGreater(len(self.text_runs), 50)
+        self.assertEqual([f"{run['program']} {run['argv']}" for run in self.text_runs
+                          if run["exit"] == 97 or run["unfinished"]], [])
+
+        def sent_as_text(run):
+            return {request["origin"] for request in run["requests"]
+                    if self.EMAIL in unquote(request.get("target", ""))
+                    or self.EMAIL in request.get("body", "")}
+
+        def presented(run):
+            return {request["origin"] for request in run["requests"]
+                    if request.get("headers", {}).get("authorization")}
+
+        as_text = set().union(*map(sent_as_text, self.text_runs))
+        self.assertTrue({"www.wikidata.org", "suggestqueries.google.com"} <= as_text, as_text)
+        said = sorted(f"{run['program']} {' '.join(run['argv'])} -> {sorted(presented(run))}"
+                      for run in self.text_runs if sent_as_text(run) and presented(run))
+        self.assertEqual(said, [])
+        token = "Basic " + base64.b64encode(b"me:").decode()
+        elsewhere = sorted({f"{run['program']} {' '.join(run['argv'])} -> {request.get('origin')}"
+                            for run in self.text_runs for request in run["requests"]
+                            if request.get("headers", {}).get("authorization")
+                            and (request.get("origin") != "example.com"
+                                 or request["headers"]["authorization"] != token)})
+        self.assertEqual(elsewhere, [])
+        as_userinfo = sorted({f"{run['program']} {' '.join(run['argv'])} -> {request.get('origin')}"
+                              for run in self.text_runs for request in run["requests"]
+                              if request.get("origin") != "example.com"
+                              and "://me@" in unquote(unquote(request.get("target", "")
+                                                              + request.get("body", "")))})
+        self.assertEqual(as_userinfo, [])
+
+    def test_the_control_sees_the_credential_leave_without_the_entrance(self):
+        """Without the recognition the credential leaves as it did at 0.163.0, and the
+        program started is never seen giving it to the site: the observer is not blind,
+        and the repair is what moved. A child the runner starts is a program of its own,
+        with its own entrance, and the control does not reach into it."""
+        self.assertNotEqual(self.leaks(self.controls), [])
+        self.assertEqual([f"{run['program']} -> {request['target']}" for run in self.controls
+                          for request in run["requests"]
+                          if request["program"] == run["program"] and self.to_the_site(request)
+                          and request["headers"].get("authorization")], [])
 
 
 HAMMER = r"""

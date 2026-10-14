@@ -625,6 +625,11 @@ def main():
                              "Without it the names the homepage publishes are used")
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     args = parser.parse_args()
+    try:
+        from lib.typed_credential import read_as_url
+    except ImportError:
+        from scripts.lib.typed_credential import read_as_url
+    args.site_url = read_as_url(args.site_url)
 
     creds = (args.credentials or os.environ.get("GSC_CREDENTIALS_PATH")
              or os.environ.get("GV_SA_KEY")

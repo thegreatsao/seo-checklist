@@ -36,8 +36,10 @@ except ImportError:
 
 try:
     from lib.safe_http import safe_get
+    from lib.typed_credential import read_as_url
 except ImportError:
     from scripts.lib.safe_http import safe_get
+    from scripts.lib.typed_credential import read_as_url
 
 
 PSI_API = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
@@ -465,6 +467,7 @@ def main():
     parser.add_argument("--api-key", help="Google API key for higher rate limits")
 
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
     api_key = args.api_key or get_env("PAGESPEED_API_KEY", "GOOGLE_API_KEY")
 
     if args.strategy == "both":

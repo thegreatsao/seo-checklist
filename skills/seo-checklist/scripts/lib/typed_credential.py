@@ -39,13 +39,50 @@ def split_userinfo(url: str) -> tuple[str, str]:
     return url[:start] + url[end:], userinfo
 
 
+_SCHEME = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
+_AUTHORITY_END = re.compile(r"[/?#]")
+
+
+def schemeless(typed: str) -> tuple[str, bool] | None:
+    """`typed` read as a URL typed without a scheme whose authority carries userinfo —
+    `user:password@host`, `tok@host:8443/a` — with the scheme every program puts in
+    front of such a URL, `https://`, and whether it could as well be an e-mail address:
+    `name@host` with nothing after the host, which only the slot it was typed in can
+    tell apart. None for anything else, a URL typed with its scheme included.
+
+    Measured on 14 October 2026 at 0.163.0 (`local/schemeless/`), neither entrance split
+    such a URL, and the scheme was put in front of it after both: `pagespeed.py` gave the
+    credential to Google, the runner gave it to Safe Browsing and wrote it into its
+    results, and the site was never given it.
+    """
+    if (not typed or _SCHEME.match(typed) or any(char.isspace() for char in typed)
+            or typed.lower().startswith("mailto:")):
+        return None
+    authority = _AUTHORITY_END.split(typed, 1)[0]
+    if not authority.rpartition("@")[0]:
+        return None
+    url = f"https://{typed}"
+    try:
+        parsed = urlparse(url)
+        _ = parsed.port                 # a port that is not a number raises
+    except ValueError:
+        return None
+    if not parsed.hostname:
+        return None
+    return url, authority == typed and ":" not in typed
+
+
 def credential_beside(url: str) -> tuple[str, str]:
     """`split_userinfo`, and the userinfo named in `URL_CREDENTIALS_VAR` for this
     process and its children, where `url_credentials` gives it to the URL's own site.
 
     The runner calls it where the URL comes in; a script started by hand, through
-    `credentials_beside_argv`, for what was typed.
+    `credentials_beside_argv`, for what was typed. The runner's URL is a URL whatever
+    its shape, so one typed without a scheme is given the scheme here first.
     """
+    read = schemeless(url)
+    if read:
+        url = read[0]
     clean, userinfo = split_userinfo(url)
     if userinfo:
         os.environ[URL_CREDENTIALS_VAR] = _credential(clean, userinfo)
@@ -58,6 +95,19 @@ def _credential(clean: str, userinfo: str) -> str:
 
 
 _TYPED_URL = re.compile(r"https?://", re.IGNORECASE)
+# Typed, and shaped like an e-mail address as much as like a URL: see `scheme_added`.
+_maybe_text: set[str] = set()
+
+
+def _option_value(argument: str) -> tuple[str, str]:
+    """`argument` as the option it names and the value typed with it: `--site=VALUE`,
+    `-sVALUE`, or a value alone."""
+    if argument.startswith("--"):
+        name, equals, value = argument.partition("=")
+        return (name + equals, value) if equals else (argument, "")
+    if argument.startswith("-"):
+        return argument[:2], argument[2:]
+    return "", argument
 
 
 def credentials_beside_argv(argv: list[str] | None = None) -> None:
@@ -74,7 +124,10 @@ def credentials_beside_argv(argv: list[str] | None = None) -> None:
 
     So every argument that holds an http(s) URL with userinfo, alone or after an
     `=` or a short option's letter, is split where it stands, and the userinfo goes
-    beside it as the runner would put it. From there the script is in the state the
+    beside it as the runner would put it. So is one typed without a scheme
+    (`schemeless`), which gets `https://` in front of it as it would have later; but
+    `name@host` with nothing after the host is an e-mail address as much as a URL,
+    and is left as typed until a scheme is put in front of it (`scheme_added`). From there the script is in the state the
     runner leaves it in. Called under a `__main__` guard and never on import, like
     `utf8_streams`, and before the parser reads `sys.argv`. An argument without one
     changes nothing, the environment included: under the runner that is every one.
@@ -90,9 +143,17 @@ def credentials_beside_argv(argv: list[str] | None = None) -> None:
     named = {}
     for index in range(1, len(argv)):
         found = _TYPED_URL.search(argv[index])
-        if not found:
-            continue
-        before, typed = argv[index][:found.start()], argv[index][found.start():]
+        if found:
+            before, typed = argv[index][:found.start()], argv[index][found.start():]
+        else:
+            before, typed = _option_value(argv[index])
+            read = schemeless(typed)
+            if not read:
+                continue
+            if read[1]:
+                _maybe_text.add(typed)
+                continue
+            typed = read[0]
         clean, userinfo = split_userinfo(typed)
         if userinfo:
             argv[index] = before + clean
@@ -106,3 +167,26 @@ def credentials_beside_argv(argv: list[str] | None = None) -> None:
                          + ", ".join(sorted(named.values())))
     if named:
         os.environ[URL_CREDENTIALS_VAR] = next(iter(named))
+
+
+def read_as_url(typed: str, scheme: str = "https") -> str:
+    """`typed`, which the program is about to read as a URL, as that URL.
+
+    An address the entrance kept as typed because it could be an e-mail address is a
+    URL from here on: `scheme://` goes in front of it, its userinfo is split off and
+    goes beside it as a credential typed with its scheme does, and the one-credential
+    rule holds for it. Anything else comes back as it is. Typed where text was asked
+    for, an address never comes here and stays text.
+    """
+    if typed not in _maybe_text:
+        return typed
+    argv = ["", f"{scheme}://{typed}"]
+    credentials_beside_argv(argv)
+    return argv[1]
+
+
+def scheme_added(url: str, scheme: str = "https") -> str:
+    """`scheme://url`: how every place that gives a typed string its scheme gives it,
+    `read_as_url` included. A string nobody typed is given its scheme and nothing
+    else: a page's link is not the operator's credential."""
+    return read_as_url(url, scheme) if url in _maybe_text else f"{scheme}://{url}"

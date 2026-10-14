@@ -27,9 +27,11 @@ except ImportError:
 try:
     from lib.safe_http import (MAX_RETRY_AFTER_WAIT, default_headers, pace,
                                retry_after_seconds)
+    from lib.typed_credential import read_as_url
 except ImportError:
     from scripts.lib.safe_http import (MAX_RETRY_AFTER_WAIT, default_headers, pace,
                                        retry_after_seconds)
+    from scripts.lib.typed_credential import read_as_url
 
 NU_ENDPOINT = "https://validator.w3.org/nu/"
 # basis: inherited — more than 10 validation warnings, present at import. Warnings are
@@ -203,6 +205,7 @@ def main():
                              "instead of the HTML the server sends")
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
 
     result = validate(args.url, args.timeout, args.rendered_json)
 

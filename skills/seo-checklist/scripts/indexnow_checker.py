@@ -251,6 +251,12 @@ def main():
     parser.add_argument("--engine", default="bing", choices=INDEXNOW_ENDPOINTS.keys(),
                         help="Search engine to ping (default: bing)")
     args = parser.parse_args()
+    try:
+        from lib.typed_credential import read_as_url
+    except ImportError:
+        from scripts.lib.typed_credential import read_as_url
+    args.url = read_as_url(args.url)
+    args.ping = args.ping and [read_as_url(url) for url in args.ping]
 
     report = run_indexnow_check(args.url, args.key)
 

@@ -33,8 +33,10 @@ from urllib.parse import urlparse
 # stdlib-only property that lets it run where `requests` is not installed.
 try:
     from lib.safe_http import SafeHTTPError, assert_safe_url
+    from lib.typed_credential import scheme_added
 except ImportError:
     from scripts.lib.safe_http import SafeHTTPError, assert_safe_url
+    from scripts.lib.typed_credential import scheme_added
 
 # basis: convention — the point of asking is to renew before it bites, and a month
 # is the shortest notice on which a human process (procurement, a change window)
@@ -65,7 +67,7 @@ def _flatten(pairs: object) -> dict:
 
 
 def inspect(url: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
-    target = url if "://" in url else f"https://{url}"
+    target = url if "://" in url else scheme_added(url)
     parsed = urlparse(target)
     host = parsed.hostname
     port = parsed.port or 443

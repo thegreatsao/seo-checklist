@@ -21,9 +21,11 @@ except ImportError:
 try:
     from lib.safe_http import default_headers, safe_get
     from lib import robots_rules
+    from lib.typed_credential import scheme_added
 except ImportError:
     from scripts.lib.safe_http import default_headers, safe_get
     from scripts.lib import robots_rules
+    from scripts.lib.typed_credential import scheme_added
 
 try:
     from seo_common import carries_content
@@ -111,7 +113,7 @@ def fetch_robots_txt(url: str, timeout: int = 15) -> dict:
     """Fetch and parse robots.txt from a domain."""
     parsed = urlparse(url)
     if not parsed.scheme:
-        url = f"https://{url}"
+        url = scheme_added(url)
         parsed = urlparse(url)
 
     robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"

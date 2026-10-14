@@ -229,6 +229,11 @@ def main():
     parser.add_argument("--language", default="en-US")
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     args = parser.parse_args()
+    try:
+        from lib.typed_credential import read_as_url
+    except ImportError:
+        from scripts.lib.typed_credential import read_as_url
+    args.url = read_as_url(args.url)
 
     creds = (args.credentials or os.environ.get("GSC_CREDENTIALS_PATH")
              or os.environ.get("GV_SA_KEY")

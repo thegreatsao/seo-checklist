@@ -23,8 +23,10 @@ except ImportError:
 
 try:
     from lib.safe_http import default_headers, safe_get
+    from lib.typed_credential import scheme_added
 except ImportError:
     from scripts.lib.safe_http import default_headers, safe_get
+    from scripts.lib.typed_credential import scheme_added
 
 try:
     from seo_common import carries_content
@@ -58,7 +60,7 @@ def check_llms_txt(url: str, timeout: int = 15) -> dict:
 
     parsed = urlparse(url)
     if not parsed.scheme:
-        url = f"https://{url}"
+        url = scheme_added(url)
         parsed = urlparse(url)
 
     base = f"{parsed.scheme}://{parsed.netloc}"
