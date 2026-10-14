@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.163.0 — see [CHANGELOG.md](CHANGELOG.md). A script started by hand with a credential in its URL, `https://user:password@host/`, now splits it off where it comes in, as the runner does, and gives it to that site and to nobody else. Measured over every program here at 0.162.0, PageSpeed, Safe Browsing, the W3C validator and IndexNow were handed it, and with a token alone the site itself was never presented it. No verdict moves and nothing an audit under the runner does or writes changes. 0.162.0, the release before, made CI run the suite on Windows on Python 3.10, the floor this tool declares.
+Version 0.164.0 — see [CHANGELOG.md](CHANGELOG.md). A credential typed in a URL without a scheme, `user:password@host/` or `tok@host`, is now read as the same URL typed with `https://`: the runner and every script split it off where it comes in and give it to that site and to nobody else. Measured over every program here at 0.163.0, such a URL was split nowhere: PageSpeed, Safe Browsing, the W3C validator and IndexNow were handed it, the site was never presented it, and the runner audited the pair as a site it could not read. An e-mail address typed as text stays text. No verdict of an audit of a URL typed with its scheme, or without a credential, moves. 0.163.0, the release before, made a script started by hand split a credential typed with its scheme as the runner does.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

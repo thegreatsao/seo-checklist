@@ -10,6 +10,96 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.164.0 — a credential typed in a URL without a scheme is split like one typed with it
+
+Registry version: `90ba79b14b28`, unchanged. No verdict of an audit of a URL typed with its
+scheme, or of one without userinfo, moves, and nothing such an audit sends, writes or
+prints changes. **What changes is an audit of `user:password@host/`, `tok@host/` or
+`tok@host`, typed without a scheme**, by the runner or by a script started by hand. It
+was an audit of something else: the runner read the pair as a URL whose scheme was the
+user name, could not read the site, named it `unknown`, recorded that no credential was
+used and scored a site it never read; a token reached the site without being presented;
+and both forms were handed to outside services. Now such a URL is audited as the same URL
+typed with `https://` is, and sends, writes and scores what that audit does.
+
+* **Measured on 14 October 2026 at 0.163.0, on the Mac** (`local/schemeless/before-756a427.json`,
+  read in `before-756a427.summary.txt` and, for what the runner writes file by file,
+  `runner-before-756a427.txt`). The 61 programs in `scripts/` were started as in 0.163.0,
+  with `user:password@host/` in the required arguments and in each argument that takes
+  text, and with `tok@host/` and `tok@host` in the required arguments: 263 starts, every
+  request captured and answered on the Mac. Twenty-five requests gave the credential to
+  another origin: PageSpeed, Safe Browsing, the W3C validator and IndexNow at Bing. None
+  of the 126 requests to the site carried it. The runner, handed the pair, gave it to
+  Safe Browsing and wrote it into its results and stored run, and through them into
+  both reports and the five LLM queues; handed a token, it wrote the token into its
+  results and stored run. 172 of the starts printed it.
+
+* **One function says what such a URL is.** `typed_credential.schemeless` recognises a
+  string with no `scheme://` whose authority holds userinfo and gives it `https://`, the
+  scheme every program put in front of it. The runner's entrance, `credential_beside`,
+  and a script's, `credentials_beside_argv`, read it so and split it where they split a
+  URL typed with its scheme; `split_userinfo` is unchanged and still the one split.
+  `name@host` with nothing after the host is an e-mail address as much as a URL, and
+  only the slot it was typed in can tell: the entrance leaves it, and where a program
+  reads it as a URL it is split there. Two places say where: `scheme_added`, through
+  which both normalisers and the five programs that put `https://` in front of a typed
+  string themselves (`llms_txt_checker`, `redirect_checker`, `robots_checker`,
+  `security_headers`, `tls_certificate`) now do it; and `read_as_url`, which
+  `pagespeed`, `domain_safety_check`, `html_validator`, `indexnow_checker`,
+  `link_profile` and the four `gsc_*` scripts apply to the URL they hand a service as it
+  is. Typed where text is asked for, an address never reaches either and stays text; a
+  string nobody typed is given its scheme and nothing more. Which places those are was
+  read off the code, not off a spelling (`REPORT.md`, the census).
+
+* **Measured again after** (`local/schemeless/after.json`, `runner-after.txt`): no request to
+  another origin carries the credential; every request to the site does, 440, 129 and
+  122 of them for the three spellings; the runner's record names `staging.example`, says
+  a credential was used, and nothing it writes carries it. `me@example.com` typed into
+  each argument that takes text went out as text to Wikidata, Wikipedia, the Knowledge
+  Graph and Google's autocomplete as before, and was presented to nobody; typed where a
+  URL is asked for (`urls`, `--site`, `--fetch`), it is `example.com` with a token, and
+  was presented to `example.com` alone.
+
+* **Held by `tests/test_url_credentials.py`.**
+  `EveryProgramStartedByHandGivesASchemelessCredentialToItsSiteAlone` runs every test of
+  0.163.0's by-hand class on the three spellings, with `me@example.com` in every argument
+  that takes text, and asks the runner's record; its control takes the recognition out
+  and sees the credential leave. `WhatIsNotASchemelessCredentialIsReadAsBefore` pins what
+  both normalisers, `is_url` and the entrance make of fourteen strings — a URL with its
+  scheme, without userinfo, an address — to their values at 0.163.0, and that a string
+  nobody typed is read as before. CI's Windows 3.10 leg found, in this release's first
+  push (run 38593555878), that one of those values, `//host/x` written back by
+  `urlunparse`, differs between Python 3.10.11 and 3.10.20: the test's defect, not the
+  code's, and that value is now computed on the interpreter that runs the test. Two shape tests join `WhatAScriptStartedByHandWasTyped`.
+  On 0.163.0's code eight of the new tests' assertions fail and one errors
+  (`local/schemeless/red-at-756a427.txt`). Run alone on the Mac, the new class took 28 s, the module's start-up included (`class-time.txt`).
+  No test asserted the old behaviour; the 0.163.0 class's start-up was split into
+  methods the new class overrides. On Anton's Windows PC, at this release's tree, under
+  Python 3.14 (`local/schemeless/pc/`, 14 October 2026), the whole suite ran 18:20 to
+  18:37, `Ran 2350 tests in 991.424s`, OK (skipped=6), where 0.163.0's took 933 s; the
+  five by-hand classes, 23 tests, were OK in three runs of 277 to 280 s each.
+
+* **Five breakages, each run under `test_url_credentials`** (`local/schemeless/breakages/`,
+  14 October 2026), the one module that starts a program with such a URL or calls the
+  recognition: the recognition taken out of the runner's entrance reddened the runner's
+  record, the site and the printing tests; out of a script's, the leak, site, printing and
+  shape tests; a new program that puts `https://` in front of its URL itself and hands it
+  to a service, the leak test and nothing else — no list names it; the e-mail shape read
+  as a token everywhere, the text test, the shape tests and the pinned entrance test; the
+  split kept and the credential carried nowhere, the site test and the shape tests. The
+  0.163.0 class was red under none of them.
+
+* **Not held, and said in INP-7.** A program started by hand with `tok@host`, nothing
+  after the host, prints what it was given before it reads it as a URL: 18 of the 61 did.
+  The `gsc_*` scripts and `link_profile.py` read their URL through `read_as_url`, and what
+  they send to Google is still not observed: its client is not installed on the Mac. A
+  URL typed into another of the runner's options is printed as typed, as before. Text
+  shaped `user:password@host`, with no whitespace, typed into an argument that takes text
+  is read as a URL — rewritten to `https://host…` and its userinfo set as the process's
+  credential — as 0.163.0 does for text holding a URL typed with its scheme. A short
+  option and its value in one argument, `-xVALUE`, is read as option and value, so a text
+  argument that begins with `-` and holds `a:b@host` is read as a URL too.
+
 ## 0.163.0 — a script started by hand gives a typed credential to its site and to nobody else
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves, and nothing an audit under the
