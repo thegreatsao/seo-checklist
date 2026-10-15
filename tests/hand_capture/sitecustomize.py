@@ -81,7 +81,11 @@ def record(kind: str, **fields) -> None:
 
 def _end() -> None:
     if _owner == os.getpid():
-        record("end")
+        # Whether the process ended carrying a credential the operator typed: a
+        # program that read what was typed as a URL with userinfo in it carries one
+        # (`lib/typed_credential.py`), and one that read it as a file name or as text
+        # does not. The tests start every program with it cleared.
+        record("end", credential=bool(os.environ.get("SEO_URL_CREDENTIALS")))
 
 
 def read(directory: str) -> tuple[list[dict], list[str]]:
@@ -99,6 +103,21 @@ def read(directory: str) -> tuple[list[dict], list[str]]:
             unfinished.append(name)
         lines += [line for line in written if line["kind"] not in ("start", "end")]
     return lines, unfinished
+
+
+def carried(directory: str) -> bool:
+    """Whether a process of the start ended carrying a credential (see `_end`)."""
+    for name in os.listdir(directory):
+        with open(os.path.join(directory, name), encoding="utf-8") as f:
+            text = f.read()
+        for line in text.splitlines():
+            try:
+                written = json.loads(line)
+            except ValueError:
+                continue
+            if written["kind"] == "end" and written.get("credential"):
+                return True
+    return False
 
 
 def _is_name(host) -> bool:

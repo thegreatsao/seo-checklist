@@ -25,8 +25,10 @@ except ImportError:
 
 try:
     from lib.safe_http import safe_get
+    from lib.typed_credential import read_as_url
 except ImportError:
     from scripts.lib.safe_http import safe_get
+    from scripts.lib.typed_credential import read_as_url
 
 # gtag('config', 'G-XXXX') and the gtag.js loader query string both carry the ID.
 RE_CONFIG = re.compile(r"""gtag\s*\(\s*['"]config['"]\s*,\s*['"](G-[A-Z0-9]+)['"]""", re.I)
@@ -129,6 +131,7 @@ def main():
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
 
     result = check(args.url, args.timeout)
 

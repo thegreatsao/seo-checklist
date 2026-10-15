@@ -10,7 +10,7 @@ from typing import Any
 import site_crawl
 from lib.schema_types import is_local_business_type
 from schema_required_props import extract_schema_documents, find_schema_nodes, load_source_html
-from seo_common import parse_html, print_json_or_text, issue
+from seo_common import read_source, parse_html, print_json_or_text, issue
 
 
 PHONE_RE = re.compile(r"(\+?\d[\d\s().-]{7,}\d)")
@@ -116,6 +116,7 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true", help="Output JSON")
     args = parser.parse_args()
+    args.source = read_source(args.source)
     if args.inventory:
         result = check_local_business_inventory(args.source, args.inventory)
     else:

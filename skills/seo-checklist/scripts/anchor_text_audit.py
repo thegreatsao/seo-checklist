@@ -11,7 +11,7 @@ import argparse
 from collections import Counter, defaultdict
 
 import site_crawl
-from seo_common import (carries_content, normalize_url, primary_language,
+from seo_common import (read_as_url, carries_content, normalize_url, primary_language,
                         print_json_or_text)
 
 
@@ -291,6 +291,7 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=15, help="Request timeout in seconds")
     parser.add_argument("--json", "-j", action="store_true", help="Output JSON")
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
 
     result = audit_anchor_text(args.url, depth=args.depth, max_pages=args.max_pages,
                               timeout=args.timeout, inventory_path=args.inventory)

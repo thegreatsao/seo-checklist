@@ -8,7 +8,7 @@ import json
 from collections import defaultdict
 
 import site_crawl
-from seo_common import (carries_content, fetch_url, issue, normalize_url,
+from seo_common import (read_as_url, carries_content, fetch_url, issue, normalize_url,
                         parse_html, read_urls, same_host)
 
 
@@ -194,6 +194,7 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
+    args.urls = [read_as_url(url) for url in args.urls]
     if args.inventory:
         if len(args.urls) != 1 or args.url_file:
             parser.error("--inventory requires one positional URL")

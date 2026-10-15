@@ -33,12 +33,12 @@ except ImportError:
 
 try:
     from lib.safe_http import safe_get
-    from seo_common import (THIN_CONTENT_WORDS, declared_publication_dates,
+    from seo_common import (read_as_url, THIN_CONTENT_WORDS, declared_publication_dates,
                             fetch_html, page_author_names, parse_html,
                             primary_language)
 except ImportError:
     from scripts.lib.safe_http import safe_get
-    from scripts.seo_common import (THIN_CONTENT_WORDS,
+    from scripts.seo_common import (read_as_url, THIN_CONTENT_WORDS,
                                     declared_publication_dates, fetch_html,
                                     page_author_names, parse_html,
                                     primary_language)
@@ -629,6 +629,7 @@ def main():
     parser.add_argument("--json", action="store_true", help="Output full JSON result")
     parser.add_argument("--no-autocomplete", action="store_true", help="Skip Google Autocomplete lookup")
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
 
     html = fetch_html(args.url, timeout=15)[0]
     if not html:

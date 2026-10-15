@@ -10,7 +10,7 @@ import re
 from bs4 import BeautifulSoup, NavigableString
 
 import site_crawl
-from seo_common import (
+from seo_common import (read_as_url,
     discover_sitemap_urls,
     fetch_robots,
     fetch_url,
@@ -205,6 +205,8 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
+    args.urls = [read_as_url(url) for url in args.urls]
+    args.site = read_as_url(args.site)
     if args.inventory:
         site = args.site or (args.urls[0] if args.urls else "")
         result = evaluate_inventory(site, args.inventory)

@@ -8,7 +8,7 @@ import re
 from typing import Any
 
 from schema_required_props import extract_schema_documents, find_schema_nodes
-from seo_common import as_list, issue, print_json_or_text
+from seo_common import read_source, as_list, issue, print_json_or_text
 
 
 ISO_DURATION_RE = re.compile(r"^P(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)$")
@@ -55,6 +55,7 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true", help="Output JSON")
     args = parser.parse_args()
+    args.source = read_source(args.source)
     documents, meta = extract_schema_documents(args.source, timeout=args.timeout)
     result = check_video_schema(documents)
     result.update({"source": args.source, "final_url": meta["final_url"],

@@ -127,7 +127,7 @@ def credentials_beside_argv(argv: list[str] | None = None) -> None:
     beside it as the runner would put it. So is one typed without a scheme
     (`schemeless`), which gets `https://` in front of it as it would have later; but
     `name@host` with nothing after the host is an e-mail address as much as a URL,
-    and is left as typed until a scheme is put in front of it (`scheme_added`). From there the script is in the state the
+    and is left as typed until the program reads it as a URL (`read_as_url`). From there the script is in the state the
     runner leaves it in. Called under a `__main__` guard and never on import, like
     `utf8_streams`, and before the parser reads `sys.argv`. An argument without one
     changes nothing, the environment included: under the runner that is every one.
@@ -177,12 +177,34 @@ def read_as_url(typed: str, scheme: str = "https") -> str:
     goes beside it as a credential typed with its scheme does, and the one-credential
     rule holds for it. Anything else comes back as it is. Typed where text was asked
     for, an address never comes here and stays text.
+
+    A program calls it once for each argument it reads as a URL, where it takes its
+    arguments, and uses what it returns from there on (`seo_common.read_source` for
+    one that reads a URL or a saved page). Measured on 15 October 2026 at 0.164.0
+    (`local/printtok/`), programs that read it only where they fetched went on showing
+    what was typed — eighteen of them printed `tok@host`, token and all — and some went
+    on using it, `internal_links.py` naming no domain.
     """
     if typed not in _maybe_text:
         return typed
     argv = ["", f"{scheme}://{typed}"]
     credentials_beside_argv(argv)
     return argv[1]
+
+
+def read_as_file(typed: str) -> str:
+    """`typed`, which the program is about to open as a file, as that file name: never a
+    URL from here on. `name@host` kept as typed because it could be an e-mail address
+    stops being a candidate, so that wherever the program goes on to give the name a
+    scheme — the page's address, the base its links are resolved against — it is given
+    the scheme and nothing else, as a string nobody typed is.
+
+    Measured on 15 October 2026 at 0.165.0 (`local/printtok/saved-before-758f419.txt`),
+    eight programs handed a saved page named `tok@host` read the page and then, taking its
+    name for the page's address, ended carrying `tok` as the credential of `host`.
+    """
+    _maybe_text.discard(typed)
+    return typed
 
 
 def scheme_added(url: str, scheme: str = "https") -> str:

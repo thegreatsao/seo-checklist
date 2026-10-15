@@ -295,6 +295,7 @@ def main():
                     help="request same-host top-linked pages and report dead targets")
     ap.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     args = ap.parse_args()
+    args.site = seo_common.read_as_url(args.site)
 
     result = analyze(args.path, args.site, check_targets=args.check_targets)
     if args.json:

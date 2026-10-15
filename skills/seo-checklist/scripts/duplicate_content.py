@@ -23,7 +23,7 @@ import sys
 from collections import defaultdict
 
 import site_crawl
-from seo_common import THIN_CONTENT_WORDS, carries_content, normalize_url
+from seo_common import read_as_url, THIN_CONTENT_WORDS, carries_content, normalize_url
 
 # basis: inherited — 100 words, present at import. Splits a thin page into two
 #  severities: under a hundred words the page is closer to empty than to short, which is
@@ -317,6 +317,7 @@ def main():
                              "something to explain.")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
 
     inventory = site_crawl.inventory_for(args.url, args.inventory, depth=args.depth,
                                          max_pages=args.max_pages)

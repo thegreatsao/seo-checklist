@@ -29,7 +29,7 @@ except ImportError:
     from scripts.article_seo import META_MAX_CHARS, META_MIN_CHARS
     from scripts.lib.safe_http import safe_get
 
-from seo_common import (favicon_href, html_parser,
+from seo_common import (read_as_url, favicon_href, html_parser,
                         is_responsive_fill_image as _is_responsive_fill_image, issue)
 
 
@@ -450,6 +450,8 @@ def main():
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
 
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
+    args.fetch = read_as_url(args.fetch)
 
     headers = {}
     final_url = args.url

@@ -33,10 +33,10 @@ from urllib.parse import urlparse
 # stdlib-only property that lets it run where `requests` is not installed.
 try:
     from lib.safe_http import SafeHTTPError, assert_safe_url
-    from lib.typed_credential import scheme_added
+    from lib.typed_credential import read_as_url, scheme_added
 except ImportError:
     from scripts.lib.safe_http import SafeHTTPError, assert_safe_url
-    from scripts.lib.typed_credential import scheme_added
+    from scripts.lib.typed_credential import read_as_url, scheme_added
 
 # basis: convention — the point of asking is to renew before it bites, and a month
 # is the shortest notice on which a human process (procurement, a change window)
@@ -168,6 +168,7 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT)
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
     result = inspect(args.url, args.timeout)
     print(json.dumps(result, indent=2))
     sys.exit(0)

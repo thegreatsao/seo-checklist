@@ -32,9 +32,9 @@ except ImportError:
     from scripts.lib.safe_http import default_headers, safe_get
 
 try:
-    from seo_common import carries_content, html_parser
+    from seo_common import read_as_url, carries_content, html_parser
 except ImportError:
-    from scripts.seo_common import carries_content, html_parser
+    from scripts.seo_common import read_as_url, carries_content, html_parser
 
 
 # basis: presentation — 60 characters of a tag's value in the console listing. The
@@ -226,6 +226,7 @@ def main():
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
 
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
     result = check_social_meta(args.url)
 
     if args.json:

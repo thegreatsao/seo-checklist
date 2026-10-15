@@ -35,10 +35,10 @@ except ImportError:
 
 try:
     from lib.safe_http import safe_head
-    from seo_common import fetch_html, html_parser
+    from seo_common import read_as_url, fetch_html, html_parser
 except ImportError:
     from scripts.lib.safe_http import safe_head
-    from scripts.seo_common import fetch_html, html_parser
+    from scripts.seo_common import read_as_url, fetch_html, html_parser
 
 
 # ---------------------------------------------------------------------------
@@ -788,6 +788,7 @@ def main():
         help="Fetch each alternate URL to verify bidirectional return tags (slower, makes HTTP requests)",
     )
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
 
     report = run_hreflang_check(args.url, verify_returns=args.verify_returns)
 

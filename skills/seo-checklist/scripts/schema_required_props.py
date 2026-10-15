@@ -10,7 +10,8 @@ import re
 from collections.abc import Iterable
 from typing import Any
 
-from seo_common import as_list, issue, load_html, parse_html, print_json_or_text
+from seo_common import (read_source, as_list, issue, load_html, parse_html, print_json_or_text,
+                        read_as_file)
 
 
 REQUIRED_PROPS: dict[str, set[str]] = {
@@ -121,7 +122,7 @@ def iter_schema_nodes(data: Any, path: str = "$") -> Iterable[tuple[str, dict[st
 def load_source_html(source: str, timeout: int = 15) -> tuple[str, str, dict[str, Any]]:
     """Load local files before falling back to seo_common URL detection."""
     if os.path.isfile(source):
-        with open(source, "r", encoding="utf-8") as fh:
+        with open(read_as_file(source), "r", encoding="utf-8") as fh:
             return fh.read(), source, {"url": source, "status": None, "headers": {}, "error": None}
     return load_html(source, timeout=timeout)
 
@@ -271,6 +272,7 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true", help="Output JSON")
     args = parser.parse_args()
+    args.source = read_source(args.source)
 
     documents, meta = extract_schema_documents(args.source, timeout=args.timeout)
     result = validate_schema_required_props(documents, args.schema_type,

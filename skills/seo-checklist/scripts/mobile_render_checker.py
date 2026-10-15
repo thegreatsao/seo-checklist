@@ -9,9 +9,9 @@ import re
 import sys
 
 try:
-    from seo_common import load_html, parse_html
+    from seo_common import read_source, load_html, parse_html
 except ImportError:
-    from scripts.seo_common import load_html, parse_html
+    from scripts.seo_common import read_source, load_html, parse_html
 
 # basis: inherited — 390 CSS pixels, present at import. The viewport width of the
 #  iPhone 14/15 class of device, so a fixed width above it guarantees a horizontal
@@ -90,6 +90,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
+    args.source = read_source(args.source)
 
     report = check_mobile_render(args.source, timeout=args.timeout)
     if args.json:

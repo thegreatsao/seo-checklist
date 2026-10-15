@@ -21,7 +21,7 @@ from urllib.parse import urlparse
 import requests
 
 import site_crawl
-from seo_common import (
+from seo_common import (read_source,
     DEAD_FETCH_ERROR_KINDS,
     carries_content,
     fetch_url,
@@ -530,6 +530,7 @@ def main() -> None:
                              f"first; 0 for no limit (default: {DEFAULT_MAX_IMAGES})")
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
+    args.source = read_source(args.source)
 
     if args.inventory:
         result = audit_inventory(args.source, args.inventory, args.timeout,

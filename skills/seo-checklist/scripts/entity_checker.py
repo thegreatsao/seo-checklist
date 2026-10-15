@@ -31,12 +31,12 @@ try:
     from lib.schema_types import (LOCAL_BUSINESS_TYPES, is_local_business_type,
                                   schema_types)
     from lib.safe_http import safe_get, safe_head
-    from seo_common import fetch_html, html_parser
+    from seo_common import read_as_url, fetch_html, html_parser
 except ImportError:
     from scripts.lib.schema_types import (LOCAL_BUSINESS_TYPES,
                                           is_local_business_type, schema_types)
     from scripts.lib.safe_http import safe_get, safe_head
-    from scripts.seo_common import fetch_html, html_parser
+    from scripts.seo_common import read_as_url, fetch_html, html_parser
 
 # Authoritative sameAs targets (ranked by KG signal strength)
 SAMEAS_PLATFORMS = {
@@ -622,6 +622,7 @@ def main():
     parser.add_argument("--kg-api-key", default="", help="Google Knowledge Graph API key (optional). Falls back to GOOGLE_KG_API_KEY / GOOGLE_API_KEY env vars or .env file.")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
 
     from env_loader import get_env
     kg_api_key = args.kg_api_key or get_env("GOOGLE_KG_API_KEY", "GOOGLE_API_KEY")

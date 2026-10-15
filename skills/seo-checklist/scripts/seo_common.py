@@ -55,12 +55,14 @@ try:
     from lib.safe_http import (HostResolutionError,
                                RobotsDisallowed, SafeHTTPError, safe_get,
                                safe_request)
-    from lib.typed_credential import credentials_beside_argv, scheme_added
+    from lib.typed_credential import (credentials_beside_argv, read_as_file, read_as_url,
+                                      scheme_added)
     from lib import robots_rules
 except ImportError:
     from scripts.lib.safe_http import (HostResolutionError, RobotsDisallowed,
                                        SafeHTTPError, safe_get, safe_request)
-    from scripts.lib.typed_credential import credentials_beside_argv, scheme_added
+    from scripts.lib.typed_credential import (credentials_beside_argv, read_as_file,
+                                              read_as_url, scheme_added)
     from scripts.lib import robots_rules
 
 try:
@@ -455,7 +457,7 @@ def load_html(source: str, timeout: int = 15) -> tuple[str, str, dict]:
     if is_url(source):
         fetched = fetch_url(source, timeout=timeout)
         return fetched.get("text") or "", fetched.get("url") or normalize_url(source), fetched
-    with open(source, "r", encoding="utf-8") as fh:
+    with open(read_as_file(source), "r", encoding="utf-8") as fh:
         html = fh.read()
     return html, "", {"url": source, "status": None, "headers": {}, "error": None}
 
@@ -474,6 +476,18 @@ def is_url(value: str) -> bool:
     if Path(value).is_file():
         return False
     return urlparse(value).scheme in ("http", "https") or ("." in value and "/" not in value)
+
+
+def read_source(source: str) -> str:
+    """`--source`, a URL or a saved page, as the program will read it: a URL as
+    `read_as_url` reads it, anything else as typed.
+
+    Called once, where the program takes its arguments, so that what it shows of
+    the source is what it read: measured on 15 October 2026 (`local/printtok/`),
+    `tok@host` typed here was fetched as `https://host` with its token beside it and
+    shown as typed, in the heading and in the result's `source`.
+    """
+    return read_as_url(source) if source and is_url(source) else read_as_file(source)
 
 
 def load_source(source: str, timeout: int = 15) -> tuple[str, str, dict]:

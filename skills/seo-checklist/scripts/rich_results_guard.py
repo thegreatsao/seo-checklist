@@ -7,7 +7,7 @@ import argparse
 from typing import Any
 
 from schema_required_props import extract_schema_documents, find_schema_nodes, schema_type_names
-from seo_common import issue, print_json_or_text
+from seo_common import read_source, issue, print_json_or_text
 
 
 DEPRECATED_TYPES = {
@@ -84,6 +84,7 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true", help="Output JSON")
     args = parser.parse_args()
+    args.source = read_source(args.source)
     documents, meta = extract_schema_documents(args.source, timeout=args.timeout)
     result = guard_rich_results(documents, meta.get("invalid_blocks"))
     result.update({"source": args.source, "final_url": meta["final_url"],

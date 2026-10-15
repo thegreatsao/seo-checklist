@@ -14,7 +14,7 @@ try:
 except ImportError:
     from scripts.lib.safe_http import safe_request
 
-from seo_common import is_url, load_source, normalize_url, parse_html
+from seo_common import read_source, is_url, load_source, normalize_url, parse_html
 
 
 # basis: inherited — 100, present at import, and a unit guess rather than a limit:
@@ -180,6 +180,7 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
+    args.source = read_source(args.source)
 
     if not args.source and not args.lighthouse_json:
         parser.error("provide a source or --lighthouse-json")

@@ -18,7 +18,7 @@ from urllib.parse import urljoin, urlsplit
 
 from bs4 import BeautifulSoup
 
-from seo_common import carries_content, fetch_robots, html_parser, normalize_url, robots_allowed
+from seo_common import read_as_url, carries_content, fetch_robots, html_parser, normalize_url, robots_allowed
 
 try:
     from lib.safe_http import default_headers, safe_get
@@ -227,6 +227,7 @@ def main() -> None:
                              "whether it carries noindex")
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
+    args.site = read_as_url(args.site)
     if not args.paths and not args.discover_assets:
         parser.error("provide one or more paths or use --discover-assets")
     paths = args.paths

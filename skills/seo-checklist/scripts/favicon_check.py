@@ -25,10 +25,10 @@ except ImportError:
     from scripts.lib.safe_http import safe_get
 
 try:
-    from seo_common import (favicon_href, fetch_robots, html_parser, issue,
+    from seo_common import (read_as_url, favicon_href, fetch_robots, html_parser, issue,
                             origin, robots_allowed)
 except ImportError:
-    from scripts.seo_common import (favicon_href, fetch_robots, html_parser, issue,
+    from scripts.seo_common import (read_as_url, favicon_href, fetch_robots, html_parser, issue,
                                     origin, robots_allowed)
 
 try:
@@ -170,6 +170,7 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
     result = check(args.url, args.timeout)
     if args.json:
         print(json.dumps(result, indent=2))

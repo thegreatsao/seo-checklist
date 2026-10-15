@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urljoin, urlparse
 
 import site_crawl
-from seo_common import (DEAD_FETCH_ERROR_KINDS, carries_content, check_link_status,
+from seo_common import (read_as_url, DEAD_FETCH_ERROR_KINDS, carries_content, check_link_status,
                         fetch_error_kind, html_parser)
 
 try:
@@ -467,6 +467,7 @@ def main():
                              f"limit (default: {DEFAULT_MAX_LINKS})")
 
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
     if args.inventory:
         result = links_from_inventory(site_crawl.inventory_for(args.url,
                                                                args.inventory),

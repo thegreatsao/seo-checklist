@@ -1202,6 +1202,7 @@ def described(parser, *args, **kwargs):
         json.dump([dict(options=action.option_strings, dest=action.dest,
                         takes_text=not isinstance(action, FLAGS) and not action.choices
                                    and getattr(action.type, "__name__", "str") == "str",
+                        flag=isinstance(action, FLAGS[:5]),
                         required=(action.required if action.option_strings
                                   else action.nargs not in ("?", "*")))
                    for action in parser._actions], f)
@@ -1315,8 +1316,11 @@ class EveryProgramStartedByHandGivesTheCredentialToItsSiteAlone(unittest.TestCas
 
     @classmethod
     def started(cls, job) -> dict:
-        program, argv, userinfo, control, required = job
+        program, argv, userinfo, control, required, *files = job
         work = tempfile.mkdtemp(prefix="run-", dir=cls.folder)
+        for name, text in (files[0] if files else {}).items():   # files the start reads
+            with open(os.path.join(work, name), "w", encoding="utf-8") as f:
+                f.write(text)
         log = tempfile.mkdtemp(prefix="capture-", dir=cls.folder)
         user, _, password = userinfo.partition(":")
         basic = base64.b64encode(f"{unquote(user)}:{unquote(password)}".encode()).decode()
@@ -1363,6 +1367,7 @@ class EveryProgramStartedByHandGivesTheCredentialToItsSiteAlone(unittest.TestCas
                 results = json.load(f)
         return dict(program=program, argv=argv, userinfo=userinfo, exit=code,
                     requests=requests_seen, unfinished=unfinished, printed=printed, written="\n".join(written),
+                    carried=code != "timeout" and hand_capture.carried(log),
                     required=required, record=results if isinstance(results, dict) else None)
 
     @classmethod
@@ -1503,6 +1508,27 @@ typed_credential.schemeless = lambda typed: None
 runpy.run_path(program, run_name="__main__")
 """
 
+# The control of the bare-token starts below: `tok@host` is still read as a URL where
+# the program reads it — the credential is split off and goes beside it — but what
+# the program is handed back is what was typed, as at 0.164.0, where the reading came
+# after the program had shown it.
+WITHOUT_REPAIR = r"""
+import os, runpy, sys
+program = sys.argv[1]
+sys.argv = sys.argv[1:]
+sys.path.insert(0, os.path.dirname(program))
+from lib import typed_credential
+read = typed_credential.read_as_url
+def read_and_dropped(typed, scheme="https"):
+    read(typed, scheme)
+    return typed
+def scheme_added(url, scheme="https"):
+    return read(url, scheme) if url in typed_credential._maybe_text else f"{scheme}://{url}"
+typed_credential.read_as_url = read_and_dropped
+typed_credential.scheme_added = scheme_added
+runpy.run_path(program, run_name="__main__")
+"""
+
 
 class EveryProgramStartedByHandGivesASchemelessCredentialToItsSiteAlone(
         EveryProgramStartedByHandGivesTheCredentialToItsSiteAlone):
@@ -1518,9 +1544,22 @@ class EveryProgramStartedByHandGivesASchemelessCredentialToItsSiteAlone(
     Every test of the class above runs again on these starts. `me@example.com` is the
     counter-case: typed where text is asked for, it is an e-mail address, and it stays
     one — it is sent as the text it is and sets no credential.
+
+    `tok@host` is started once more in each argument that takes text, one at a time,
+    and once with each flag after the first of those. Measured on 15 October 2026 at
+    0.164.0 (`local/printtok/`), where a program read it as a URL it went on showing
+    what was typed: in a heading, a JSON field, the `source` of a result — and some
+    went on using it, so that `internal_links.py` named no domain and
+    `robots_path_tester.py --discover-assets` tested paths without their site. Where it
+    was typed into an argument that takes a file or text, it is a file name or text.
+    Which of the two a start was is read off the process: one that read it as a URL
+    ends carrying the credential, and one that did not, does not.
     """
 
     EMAIL = "me@example.com"
+    # A saved page, with nothing in it that a program would go and fetch.
+    PAGE = ("<!doctype html><html lang=en><head><title>A saved page</title></head>"
+            "<body><h1>A saved page</h1><p>Words on a page saved to disk.</p></body></html>")
 
     @classmethod
     def jobs(cls) -> tuple[list, list]:
@@ -1535,8 +1574,9 @@ class EveryProgramStartedByHandGivesASchemelessCredentialToItsSiteAlone(
             jobs += [(program, argv, pair, False, False) for argv in optional]
             controls.append((program, required, pair, WITHOUT_SCHEMELESS, True))
             # `tok@host/` is split at the entrance, and nothing the program prints or
-            # writes holds it. `tok@host` could be an e-mail address until the program
-            # reads it as a URL, and a program prints what it was given before that.
+            # writes holds it. `tok@host` here is typed into every required argument,
+            # `indexnow_checker.py --key` among them, where it is text and is printed as
+            # typed; what a program shows of it is read below, one argument at a time.
             for typed, whole in ((f"{cls.TOKEN}@staging.example/", True),
                                  (f"{cls.TOKEN}@staging.example", False)):
                 jobs.append((program, cls.argvs(slots, typed, url_file)[0], cls.TOKEN,
@@ -1548,13 +1588,111 @@ class EveryProgramStartedByHandGivesASchemelessCredentialToItsSiteAlone(
             cls.texts += [(program, base + slot["options"][:1] + [cls.EMAIL], "", False, False)
                           for slot in slots if not slot["required"] and slot["takes_text"]
                           and "file" not in slot["dest"]]
+        cls.bare, cls.bare_controls, cls.saved = [], [], []
+        typed = f"{cls.TOKEN}@staging.example"
+        for program in cls.every:
+            slots = cls.slots_of[program]
+            texts = [slot for slot in slots if slot["takes_text"]]
+            starts = [cls.typed_in(slots, slot, typed) for slot in texts]
+            if starts:
+                starts += [starts[0] + slot["options"][:1] for slot in slots
+                           if slot["flag"] and slot["options"]]
+                cls.bare_controls.append((program, starts[0], cls.TOKEN, WITHOUT_REPAIR, False))
+            cls.bare += [(program, argv, cls.TOKEN, False, False) for argv in starts]
+            # The first argument that takes text, naming a saved page that is there:
+            # once as `saved.html`, and once named `tok@host`.
+            cls.saved += [(program, cls.typed_in(slots, texts[0], name), cls.TOKEN, False,
+                           False, {name: cls.PAGE}) for name in ("saved.html", typed)
+                          if texts]
         return jobs, controls
+
+    @classmethod
+    def typed_in(cls, slots: list[dict], slot: dict, typed: str,
+                 given: tuple[list[dict], str] | None = None) -> list[str]:
+        """`typed` in `slot`, and the site, with no credential, in every other required
+        argument that takes text: so what the start shows of `typed` is that slot's.
+        `given`, arguments and a value, puts that value in each of them instead."""
+        argv = []
+        for other in slots:
+            if given and any(other is one for one in given[0]):
+                value = given[1]
+            elif other is slot or (other["required"] and other["takes_text"]):
+                value = typed if other is slot else f"{cls.SITE}/"
+            else:
+                continue
+            argv += [value] if not other["options"] else [other["options"][0], value]
+        return argv
+
+    @classmethod
+    def inputs(cls) -> dict[str, str]:
+        """What programs read from a file, one of each: nothing at all, a crawl
+        inventory of another site, a saved page that links to its own site, an access
+        log, the sheet of a links export that names pages on the site. Each reaches a
+        path an empty name or a missing file does not, and some of those show the URL
+        a program was given."""
+        import site_crawl
+        return {
+            "empty.txt": "",
+            "inventory.json": json.dumps({"inventory_version": site_crawl.INVENTORY_VERSION,
+                                          "site": "https://elsewhere.example/",
+                                          "pages": {}, "summary": {}}),
+            "page.html": cls.PAGE.replace("<p>", '<a href="/about">About</a><p>'),
+            "access.log": '203.0.113.9 - - [14/Oct/2026:10:00:00 +0000] "GET / HTTP/1.1" '
+                          '200 512 "-" "Mozilla/5.0"\n',
+            # Search Console's links export names its sheets; this is the one of the
+            # pages linked to, which a program checks on the site it was given.
+            "linked-pages.csv": "Top linked pages,Incoming links\n"
+                                "https://staging.example/,3\nhttps://staging.example/about,1\n",
+        }
+
+    @classmethod
+    def with_files(cls) -> list:
+        """`tok@host` in an argument, and the other arguments that take text given a
+        file in the run directory: an argument that reads a file reads it, one that
+        writes a file writes over it, and `written` reads what is there after.
+
+        For each argument a program read `tok@host` in as a URL, each other argument
+        is given each input, one at a time. And for every argument that takes text,
+        read or not, all the others are given one input at once: a program may read
+        what was typed only after it has read a file it was given — a log, an export,
+        a page — so which arguments it reads as a URL cannot be told from the start
+        without one. Each start once as it is and once with every flag the program
+        has, `--json` among them: a program that shows what it was given on such a path
+        may show it only in its JSON."""
+        typed = f"{cls.TOKEN}@staging.example"
+        read = {(run["program"], tuple(run["argv"])) for run in cls.bare_runs if run["carried"]}
+        jobs, seen = [], set()
+        for program in cls.every:
+            slots = cls.slots_of[program]
+            texts = [slot for slot in slots if slot["takes_text"]]
+            flags = [slot["options"][0] for slot in slots if slot["flag"] and slot["options"]]
+            for slot in texts:
+                others = [other for other in texts if other is not slot]
+                if not others:
+                    continue
+                groups = [others]
+                if (program, tuple(cls.typed_in(slots, slot, typed))) in read:
+                    groups += [[other] for other in others]
+                for group in groups:
+                    for name, text in cls.inputs().items():
+                        for with_flags in ([], flags):
+                            argv = cls.typed_in(slots, slot, typed, (group, name)) + with_flags
+                            if (program, tuple(argv)) not in seen:
+                                seen.add((program, tuple(argv)))
+                                jobs.append((program, argv, cls.TOKEN, False, False,
+                                             {name: text}))
+        return jobs
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         with ThreadPoolExecutor(max_workers=8) as pool:
             cls.text_runs = list(pool.map(cls.started, cls.texts))
+            cls.bare_runs = list(pool.map(cls.started, cls.bare))
+            cls.bare_controls = list(pool.map(cls.started, cls.bare_controls))
+            cls.saved_runs = list(pool.map(cls.started, cls.saved))
+            cls.file_runs = list(pool.map(cls.started, cls.with_files()))
+        cls.bare_runs += cls.file_runs
 
     def test_the_runner_records_that_a_credential_was_used(self):
         """The record says so and names the site by host, as it does for a URL typed
@@ -1607,6 +1745,84 @@ class EveryProgramStartedByHandGivesASchemelessCredentialToItsSiteAlone(
                                                               + request.get("body", "")))})
         self.assertEqual(as_userinfo, [])
 
+    def test_a_token_typed_alone_and_read_as_a_url_is_shown_as_the_url_read(self):
+        """Where the program reads `tok@host` as a URL, nothing it prints or writes
+        carries the token, nobody else is given it, and what it shows is the URL it
+        read, `https://host`, as it shows `https://tok@host` typed with its scheme."""
+        self.assertEqual([f"{run['program']} {run['argv']}"
+                          for run in self.bare_runs + self.bare_controls
+                          if run["exit"] in (97, "timeout") or run["unfinished"]], [])
+        read = [run for run in self.bare_runs if run["carried"]]
+        self.assertGreater(len({run["program"] for run in read}), 40)
+        forms = self.forms(self.TOKEN)
+        said = sorted({f"{run['program']} {' '.join(run['argv'])}: {where}"
+                       for run in read for where in ("printed", "written")
+                       if self.found(run[where], forms)})
+        self.assertEqual(said, [], "read what was typed once, after `parse_args`: "
+                                   "`read_as_url`, or `seo_common.read_source`")
+        self.assertEqual(self.leaks(read), [])
+        shown = {run["program"] for run in read if self.SITE in run["printed"]}
+        self.assertGreater(len(shown), 20)
+
+    def test_a_token_typed_where_a_file_or_text_is_asked_for_is_shown_as_typed(self):
+        """The counter-case. Typed where a file is asked for, `tok@host` is a file
+        name, and a program that cannot find it says so with the name as typed;
+        typed where text is asked for, it is that text. Neither sets a credential."""
+        typed = f"{self.TOKEN}@staging.example".lower()
+        unread = [run for run in self.bare_runs if not run["carried"]
+                  and self.found(run["printed"] + run["written"], self.forms(self.TOKEN))]
+        self.assertGreater(len({run["program"] for run in unread}), 5)
+        self.assertEqual(sorted({f"{run['program']} {' '.join(run['argv'])}" for run in unread
+                                 if typed not in (run["printed"] + run["written"]).lower()}), [])
+        self.assertEqual(sorted({f"{run['program']} {' '.join(run['argv'])} -> {r.get('origin')}"
+                                 for run in unread for r in run["requests"]
+                                 if r.get("headers", {}).get("authorization")}), [])
+
+    def test_a_saved_page_named_like_an_address_is_read_as_the_page_it_is(self):
+        """A file on disk wins over any spelling (`seo_common.is_url`), and
+        `read_source` reads a source as a URL only where `is_url` says so. The programs
+        that both fetch a URL and read a page saved to disk in their first argument —
+        handed `tok@host` they ask the site, handed an existing `saved.html` they ask
+        nobody — handed an existing page named `tok@host` read it: they ask nobody,
+        end carrying no credential, and show the name as typed where they show it.
+        Measured on 15 October 2026 at 0.165.0's first build, eight of them took the
+        name on for the page's address and ended carrying `tok` as the credential of
+        `host`; a name read as a file is a file name from there on
+        (`typed_credential.read_as_file`)."""
+        typed = f"{self.TOKEN}@staging.example"
+        self.assertEqual([f"{run['program']} {run['argv']}" for run in self.saved_runs
+                          if run["exit"] in (97, "timeout") or run["unfinished"]], [])
+        fetches = {run["program"] for run in self.bare_runs
+                   if run["argv"] == self.typed_in(self.slots_of[run["program"]],
+                                                   self.first_text(run["program"]), typed)
+                   and any(self.to_the_site(request) for request in run["requests"])}
+        saved = {(run["program"], "saved.html" if "saved.html" in run["argv"] else typed): run
+                 for run in self.saved_runs}
+        reads_pages = sorted(program for program in fetches
+                             if saved[(program, "saved.html")]["exit"] == 0
+                             and not saved[(program, "saved.html")]["requests"])
+        self.assertGreater(len(reads_pages), 10)
+        said = []
+        for program in reads_pages:
+            run = saved[(program, typed)]
+            shown = run["printed"] + run["written"]
+            if (run["exit"] != 0 or run["requests"] or run["carried"]
+                    or (self.found(shown, self.forms(self.TOKEN))
+                        and typed.lower() not in shown.lower())):
+                said.append(f"{program} {' '.join(run['argv'])}: exit {run['exit']}, "
+                            f"asked {sorted({r.get('origin') for r in run['requests']})}, "
+                            f"carried {run['carried']}")
+        self.assertEqual(said, [])
+
+    def first_text(self, program: str) -> dict:
+        return next(slot for slot in self.slots_of[program] if slot["takes_text"])
+
+    def test_the_control_sees_the_token_shown_as_typed_without_the_repair(self):
+        """Without this the first test above could pass because the observer is blind."""
+        self.assertNotEqual([run["program"] for run in self.bare_controls if run["carried"]
+                             and self.found(run["printed"] + run["written"],
+                                            self.forms(self.TOKEN))], [])
+
     def test_the_control_sees_the_credential_leave_without_the_entrance(self):
         """Without the recognition the credential leaves as it did at 0.163.0, and the
         program started is never seen giving it to the site: the observer is not blind,
@@ -1617,6 +1833,53 @@ class EveryProgramStartedByHandGivesASchemelessCredentialToItsSiteAlone(
                           for request in run["requests"]
                           if request["program"] == run["program"] and self.to_the_site(request)
                           and request["headers"].get("authorization")], [])
+
+
+class TwoArgumentsTheSweepCannotTellFromText(unittest.TestCase):
+    """INP-7, *a script started by hand*, for two arguments named here on purpose.
+
+    `server_log_audit.py --url` is the site a log belongs to, and `parse_html.py --url`
+    the base a saved page's links are resolved against. Neither program asks anything of
+    that URL: at 0.164.0 the first wrote it into its JSON as `base_url`, the second handed
+    it to `urljoin`, and nothing read it as a URL, so `tok@host` typed there was shown, or
+    used, as typed. Each now reads it once after `parse_args`, as every program does an
+    argument it reads as a URL. The derived sweep above cannot see either: it tells an
+    argument read as a URL from text by the credential the process ends carrying, and
+    with the read taken out nothing reads these as a URL, so the start looks like one of
+    text — measured on the PC on 15 October 2026, taking either read out left every test
+    of that sweep green (`local/printtok/pc/round3/`). Do not fold these into it.
+    """
+
+    SWEEP = EveryProgramStartedByHandGivesASchemelessCredentialToItsSiteAlone
+    TOKEN, SITE = SWEEP.TOKEN, SWEEP.SITE
+    started = classmethod(SWEEP.started.__func__)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.folder = tempfile.mkdtemp(prefix="seo-urlhand-")
+        cls.addClassCleanup(shutil.rmtree, cls.folder, ignore_errors=True)
+        cls.bin = os.path.join(cls.folder, "bin")
+        os.makedirs(cls.bin)
+        typed, inputs = f"{cls.TOKEN}@staging.example", cls.SWEEP.inputs()
+        cls.log = cls.started(("server_log_audit.py", ["access.log", "--url", typed, "--json"],
+                               cls.TOKEN, False, False, {"access.log": inputs["access.log"]}))
+        cls.page = cls.started(("parse_html.py", ["page.html", "--url", typed, "--json"],
+                                cls.TOKEN, False, False, {"page.html": inputs["page.html"]}))
+
+    def shown_and_presented(self, run) -> tuple[list[str], list[str]]:
+        self.assertEqual((run["exit"], run["unfinished"]), (0, []), run["printed"][-600:])
+        shown = self.SWEEP.found(run["printed"] + run["written"], self.SWEEP.forms(self.TOKEN))
+        presented = sorted({request.get("origin") for request in run["requests"]
+                            if request.get("headers", {}).get("authorization")})
+        return shown, presented
+
+    def test_a_log_names_the_site_it_belongs_to_as_read(self):
+        self.assertEqual(self.shown_and_presented(self.log), ([], []))
+        self.assertIn(f'"base_url": "{self.SITE}"', self.log["printed"])
+
+    def test_a_saved_page_resolves_its_links_against_the_url_as_read(self):
+        self.assertEqual(self.shown_and_presented(self.page), ([], []))
+        self.assertIn(f'"href": "{self.SITE}/about"', self.page["printed"])
 
 
 HAMMER = r"""

@@ -530,9 +530,127 @@ text, whose control takes the recognition out; and by `WhatIsNotASchemelessCrede
 which pins what both normalisers, `is_url` and the entrance make of a URL typed with its
 scheme, of one without userinfo and of an address, to their values at 0.163.0.
 
-**Not held, and said here so that it is not found again as a surprise.** A program
-started by hand with `tok@host`, nothing after the host, prints what it was given before
-it reads it as a URL: 18 of the 61 did on 14 October 2026. An address typed into an
+**What a program started by hand shows of `tok@host`, measured on 15 October 2026 at
+0.164.0.** This requirement said at 0.164.0 that such a program prints what it was given
+before it reads it as a URL, 18 of the 61. Measured on Anton's Windows PC that morning, each
+program started once with it in its first argument (`local/printtok/pc/before-36f7a16-token-bare.txt`),
+the 18 were of two kinds: twelve read it as a URL — eleven gave the site the token, and
+`tls_certificate.py` asks through a socket of its own — and then printed what was typed, in a heading or a JSON field; six had
+been handed it where they take a file and said the file was not there. Measured on the Mac
+the same day (`local/printtok/measure.py`, `before-36f7a16.json`), each program started with
+`tok@host` and with `https://tok@host` in its required arguments, then once for each
+optional one — a file name and the typed URL for one that takes text, each flag, each
+choice — 614 starts, both streams and every file left in the run's directory read: 99
+starts of 35 programs printed or wrote the token. 40 of them, in 16 programs, had read it as
+a URL: the twelve, `favicon_check.py`, `internal_links.py` and `mobile_render_checker.py`
+in their JSON, and `sitemap_checker.py --sitemap`. The other 59, in 21 programs, had it
+where a file or text is asked for. Some went on using what was typed: `internal_links.py`
+named no domain, `broken_links.py` checked six links fewer, `robots_path_tester.py
+--discover-assets` tested paths without their site, and `sitemap_checker.py` resolved a
+relative `--sitemap` against a host of that name. No request gave another origin the token
+typed where a URL is read; four starts gave it to Google, Wikidata or Wikipedia as what was
+typed into `--keyword`, `--entity`, `--api-key` or `--kg-api-key`. Now a program that shows
+or uses what was typed in such an argument beyond reading it reads it once, right after
+`parse_args` — `typed_credential.read_as_url`, or `seo_common.read_source` for one that
+takes a URL or a saved page — and uses what that returns from there on, as `pagespeed.py`
+and the eight that hand a URL to a service already did: 28 programs. That is the 16 above;
+`robots_path_tester.py`; `detect_profile.py` and `lcp_subparts.py`, seen by the sweep
+below; and nine whose typed value is shown only on a path the measurement did not take,
+found by reading and, for eight, started on 15 October at both trees
+(`local/printtok/reasons.py`, `reasons-36f7a16.txt`): an inventory of another site or one
+that cannot be read (`anchor_text_audit.py`, `duplicate_content.py`,
+`image_weight_audit.py`, `canonical_checker.py`, `indexability_matrix.py`), a links export
+(`gsc_links_csv.py --site`) and an access log (`server_log_audit.py --url`) printed the
+token at 0.164.0, `parse_html.py --url` resolved a page's links against what was typed,
+and `hreflang_checker.py` names the URL as typed when it cannot fetch it. In 20 other
+programs the typed value goes straight into `normalize_url`, `scheme_added`, `read_urls` or
+`load_html`, which read it, and nothing else; they are left as they were. The runner reads
+its own at its entrance. Measured again after (`after.json`): the 40 starts print and write
+nothing that carries it, the 59 are as they were, and for every argument read as a URL what
+a program prints and writes for `tok@host` is what it does for `https://tok@host`, times
+apart. The forms typed with a scheme ask what they asked; `tok@host` now also asks the
+site, with the token, for what the typed spelling had lost — six links in `broken_links.py`,
+a stylesheet in `css_minify_check.py` — and `sitemap_checker.py` asks the site for a relative
+`--sitemap` instead of a host named after it (`requests-before-after.txt`). Held by
+`EveryProgramStartedByHandGivesASchemelessCredentialToItsSiteAlone`, which starts every
+program with `tok@host` in each argument that takes text, one at a time, the site in the
+other required ones, and with each flag after the first, and reads off the process whether
+a start read it as a URL: one that did ends carrying the credential, and the capture writes
+so on its `end` line. In those nothing printed or written carries the token — at 0.164.0, 31
+starts of 18 programs did, `detect_profile.py` and `lcp_subparts.py` among them under
+`--json` (`red-36f7a16.txt`); in the others it is shown as typed and no credential is
+presented; and a control that hands each program back what was typed sees it printed.
+The same class pins that a file on disk wins over the spelling: the 20 programs that, in
+their first argument, both fetch a URL and read an existing `saved.html` without asking
+anyone, handed an existing page named `tok@host`, read the page, ask nobody, end carrying
+no credential, and show the name as typed; `read_source` made to read every source as a
+URL turns it red.
+
+**A name read as a file, and the files the sweep gives, 15 October 2026.** Measured at
+`758f419` (`local/printtok/saved_compare.py`, `saved-before-758f419.txt`), eight of those 20
+— `collection_page_checker.py`, `javascript_render_audit.py`, `lcp_subparts.py`,
+`local_seo_checker.py`, `rich_results_guard.py`, `schema_required_props.py`,
+`topical_cluster_mapper.py`, `video_schema_checker.py` — read the page named `tok@host`
+and then, taking its name for the page's address, ended carrying `tok` as the credential of
+`host`. Where a program opens what was typed as a file — `seo_common.load_html`,
+`read_source`, `schema_required_props.load_source_html` — `typed_credential.read_as_file`
+now takes it out of the candidates, so that anything later gives the name a scheme and
+nothing else. After (`saved-after.txt`): none of the 20 carries a credential or asks
+anyone; their output, plain and `--json`, with a page that links to its site, is what it
+was, but for `topical_cluster_mapper.py --json`, whose `hub` is now the name given a
+scheme, `https://H4ndTok3nOnly@staging.example/`, where it was the site the name had been
+read as, `https://staging.example/` (`saved-linked-json-diff.txt`). The pin asserts that no
+credential is carried; `read_as_file` made to keep the name a candidate turns it red.
+The sweep also gives files. With `tok@host` in an argument, the other arguments that take
+text are given a file in the run directory — one at a time where the program read it as a
+URL, and all at once in every argument that takes text, read or not, since a program may
+read the URL only after a file it was given — each of five: an empty file, a crawl
+inventory of another site, a page that links to its site, an access log line, the sheet of
+a links export that names pages on the site; each start as it is and with every flag. An
+argument that reads a file reads it; one that writes writes over it, and what is there
+after is read. 1620 starts, 930 of them reading the token as a URL; the class took 174 s on
+the Mac where it took 42 s (`round3-file-starts.txt`, `round3-class.txt`). They reach six
+of the seven paths above: the read taken out of `anchor_text_audit.py`,
+`duplicate_content.py`, `canonical_checker.py`, `image_weight_audit.py`,
+`indexability_matrix.py` or `gsc_links_csv.py` turns the first test red. On Anton's
+Windows PC that day, at this tree, `tests.test_url_credentials` ran 82 tests in 1251 s, OK,
+where the class had taken about 6.5 minutes before the files
+(`local/printtok/pc/round3/round3-module.txt`); every row of `local/printtok/breakages3.py`
+was as expected (`round3-breakages*.txt`) — each of the six reads taken out reddened the
+first test, the name read as a file kept a candidate reddened the saved-page pin, and
+0.164.0's scripts reddened both — and `read_source` reading every source as a URL reddened
+the pin alone (`round3-pc-breakages.txt`). Python 3.10 was left to CI. The two
+arguments of the seven that the sweep cannot tell from text — `server_log_audit.py --url`,
+which the program writes into its JSON as `base_url`, and `parse_html.py --url`, the base
+`urljoin` resolves a saved page's links against: nothing reads either as a URL once the
+read after `parse_args` is taken out, so the start looks like one of text, and taking
+either read out left that sweep green on the PC — are held by a test each, named for its
+program: `TwoArgumentsTheSweepCannotTellFromText` starts each by hand with `tok@host`, a
+log and a saved page, and asserts that nothing printed or written carries the token, that
+`base_url` is `https://staging.example` and the page's link `https://staging.example/about`,
+and that nobody is presented a credential.
+
+**Not held, and said here so that it is not found again as a surprise.** `tok@host` typed
+where a program takes a file or text is shown as typed — a file name a program cannot find,
+a `--keyword`, a `--key` — and goes out as typed where text goes out: `--keyword` to Google's
+autocomplete, `--api-key` and `--kg-api-key` to the API they are keys for. Which arguments a
+program reads as a URL is read off what it does. A program that put `https://` in front of
+its typed URL itself, without `read_as_url`, and asked the site through Requests would give
+the site no token, and the sweep's test that the site is given it on every request is red
+for it (shown on the PC on 15 October, `local/printtok/pc/pc-own-scheme-full.txt`). One that does so and asks nothing through the
+captured path — no request, or a socket of its own as `tls_certificate.py` opens — and
+prints what was typed ends carrying no credential, and the sweep takes the start for one of
+a file or text: a probe doing exactly that, started on 15 October, left every test green
+(`breakage-own-scheme-socket.txt`). A saved page named `tok@host` handed to
+`topical_cluster_mapper.py --json` is named in its `hub` as
+`https://H4ndTok3nOnly@staging.example/`: the mapper gives a local file name a scheme
+(`https://page.html/` for `page.html`), a defect of its own queued as its own item; no
+request is made with it. `hreflang_checker.py` names the URL as typed when its fetch fails, and no start reaches
+that: the capture answers every fetch. The sweep gives files only alongside `tok@host` in
+another argument, from the five inputs above, and gives a flag after the first argument
+that takes text or, with files, every flag at once.
+The Search Console properties (`--property`, `--gsc-property`) are text, handed to Google as
+typed, and not observed. An address typed into an
 argument that a program neither gives a scheme nor hands on through `read_as_url` stays
 as typed: of the arguments read on that day, none such reaches another origin, and the
 `gsc_*` scripts and `link_profile.py` read theirs through `read_as_url` without having
@@ -661,6 +779,10 @@ today waits for it.
 - **AND** `name@host` with nothing after the host is split where the program reads it as a
   URL, and typed where text is asked for it is sent as the text it is and sets no
   credential
+- **AND** where a program reads `tok@host` as a URL, nothing it prints or writes carries the
+  token: where it shows the URL it shows the URL it read, `https://host`, as it does for
+  `https://tok@host`; typed where a file is asked for it is a file name, and a program that
+  cannot find it says so with the name as typed
 
 #### Scenario: a secret nobody added to the list
 - **WHEN** a new key-valued input reaches the run and is not added to the set of values

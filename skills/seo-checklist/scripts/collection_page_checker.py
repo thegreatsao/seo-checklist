@@ -7,7 +7,7 @@ import argparse
 from urllib.parse import parse_qs, urlparse
 
 from schema_required_props import load_source_html
-from seo_common import issue, parse_html, print_json_or_text
+from seo_common import read_source, issue, parse_html, print_json_or_text
 
 
 # basis: inherited — 150 words, present at import, and deliberately below the 300 a
@@ -89,6 +89,7 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true", help="Output JSON")
     args = parser.parse_args()
+    args.source = read_source(args.source)
     result = check_collection_page(args.source, timeout=args.timeout)
     lines = [
         f"Collection page check for {args.source}",

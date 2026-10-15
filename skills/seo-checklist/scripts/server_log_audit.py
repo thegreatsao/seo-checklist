@@ -51,10 +51,10 @@ from urllib.parse import parse_qsl, urlsplit
 
 try:
     import site_crawl
-    from seo_common import carries_content
+    from seo_common import read_as_url, carries_content
 except ImportError:  # pragma: no cover - path shim, as everywhere else here
     from scripts import site_crawl
-    from scripts.seo_common import carries_content
+    from scripts.seo_common import read_as_url, carries_content
 
 # ---------------------------------------------------------------------------
 # Who is asking
@@ -895,6 +895,7 @@ def main() -> int:
                          "are re-attributed out of the crawl-budget figures")
     ap.add_argument("--json", "-j", action="store_true")
     a = ap.parse_args()
+    a.url = read_as_url(a.url)
 
     result = audit(a.log, a.inventory, a.url, a.max_lines,
                    checker=AddressCheck() if a.verify_bots else None)

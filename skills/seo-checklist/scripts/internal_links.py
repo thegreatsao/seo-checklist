@@ -21,6 +21,7 @@ from collections import Counter
 from urllib.parse import urlparse
 
 import site_crawl
+from seo_common import read_as_url
 
 
 # basis: inherited — under three outgoing internal links from a page, present at
@@ -184,6 +185,7 @@ def main():
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
 
     args = parser.parse_args()
+    args.url = read_as_url(args.url)
     inventory = site_crawl.inventory_for(
         args.url, args.inventory, depth=args.depth, max_pages=args.max_pages,
         signatures=False)

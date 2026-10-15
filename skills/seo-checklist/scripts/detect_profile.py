@@ -57,9 +57,9 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from seo_common import html_parser
+    from seo_common import read_as_url, html_parser
 except ImportError:
-    from scripts.seo_common import html_parser
+    from scripts.seo_common import read_as_url, html_parser
 
 # schema.org @type -> (profile, weight, why). Structured data is the strongest
 # signal available because the site author declared it on purpose.
@@ -263,6 +263,7 @@ def main():
     ap.add_argument("--html", default="", help="local HTML file instead of fetching")
     ap.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     a = ap.parse_args()
+    a.url = read_as_url(a.url)
 
     html = ""
     if a.html:

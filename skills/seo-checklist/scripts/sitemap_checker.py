@@ -7,7 +7,7 @@ import argparse
 import re
 from datetime import datetime, timezone
 
-from seo_common import (
+from seo_common import (read_as_url,
     carries_content,
     discover_sitemap_urls,
     fetch_robots,
@@ -277,6 +277,8 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true", help="Output JSON")
     args = parser.parse_args()
+    args.site = read_as_url(args.site)
+    args.sitemap = args.sitemap and [read_as_url(url) for url in args.sitemap]
     result = check_sitemaps(args.site, args.sitemap, args.fetch_urls, args.timeout, args.max_urls)
     lines = [
         f"Sitemap check for {result['site']}",
