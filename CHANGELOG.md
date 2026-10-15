@@ -10,6 +10,166 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.165.0 — a program started by hand shows the URL it read, not the token typed with it
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves, and nothing an audit of a
+URL typed with its scheme, or without userinfo, sends, writes or prints changes. **What
+changes is a program started by hand with `tok@host`, nothing after the host, in an
+argument it reads as a URL.** It read that as `https://host` with the token beside it and
+gave the site the token, and then showed what was typed — `Social Meta Tags —
+tok@host`, `"url": "tok@host"` — token and all. Now it shows `https://host`, as it does for
+`https://tok@host`.
+
+* **What 0.164.0 said, and what was true.** Its entry and INP-7 said that such a program
+  "prints what it was given before it reads it as a URL: 18 of the 61 did". Measured on
+  Anton's Windows PC on 15 October 2026 at 08:46, at 0.164.0 under Python 3.14.7, each
+  program started once with `tok@host` in its first argument
+  (`local/printtok/pc/before-36f7a16-token-bare.txt`): the 18 were two kinds, and neither
+  printed it before reading it. Twelve read it as a URL and then printed what was typed:
+  `article_seo`, `broken_links`, `collection_page_checker`, `css_minify_check`,
+  `entity_checker`, `ga4_tag_checker`, `local_seo_checker`, `rich_results_guard`,
+  `schema_required_props`, `social_meta`, `video_schema_checker`, and `tls_certificate` in
+  its JSON. Six had been handed it where they take a file, and said the file was not
+  there: `checklist_report`, `cwv_metrics`, `gsc_links_csv`, `parse_html`,
+  `rendered_audit`, `server_log_audit` — a file name, not a leak.
+
+* **Measured on the Mac the same day at 0.164.0, under Python 3.14.8**
+  (`local/printtok/measure.py`, `before-36f7a16.json`, read in
+  `before-36f7a16.analysis.txt` and `counts.txt`). Each of the 61 programs was started with
+  `tok@host` and with `https://tok@host` in its required arguments, then once for each
+  optional one — a file name and the typed URL for one that takes text, each flag, each
+  choice — 614 starts, both streams and every file left in the run's directory read. 99
+  starts of 35 programs printed or wrote the token. 40, in 16 programs, had read it as a
+  URL: the twelve, `favicon_check`, `internal_links` and `mobile_render_checker` in their
+  JSON, and `sitemap_checker --sitemap`. 59, in 21 programs, had it where a file or text is
+  asked for. Some programs also went on using what was typed: `internal_links` named no
+  domain, `broken_links` checked six links fewer, `robots_path_tester --discover-assets`
+  tested paths without their site, and `sitemap_checker` resolved a relative `--sitemap`
+  against a host of that name. No request gave another origin the token typed where a URL
+  is read; four starts gave it to Google, Wikidata or Wikipedia as what was typed into
+  `--keyword`, `--entity`, `--api-key` or `--kg-api-key`, as before and after.
+
+* **The decision is made once, where a program takes its arguments.** Each of 28 programs
+  that shows or uses what was typed in an argument it reads as a URL, beyond reading it,
+  now reads that argument right after `parse_args` — `typed_credential.read_as_url`, or
+  the new `seo_common.read_source` for an argument that takes a URL or a saved page, which
+  reads it as a URL where `is_url` does — and uses what that returns from there on, the
+  fetch, the heading and the JSON alike; `pagespeed` and the eight others that hand a URL
+  to a service already did, and the runner reads its own at its entrance. A value that is
+  not `name@host` comes back as typed. The 28 are the 16 above, `robots_path_tester`,
+  `detect_profile` and `lcp_subparts` (seen by the sweep), and nine whose typed value is
+  shown only on a path the measurement did not take, found by reading the code and, for
+  eight, started at both trees on 15 October (`local/printtok/reasons.py`,
+  `reasons-36f7a16.txt`): handed an inventory of another site or one it cannot read,
+  `anchor_text_audit`, `duplicate_content`, `image_weight_audit`, `canonical_checker` and
+  `indexability_matrix` printed the token at 0.164.0, as did `gsc_links_csv --site` with a
+  links export and `server_log_audit --url` with a log; `parse_html --url` resolved a
+  page's links against what was typed; `hreflang_checker` names the URL as typed when it
+  cannot fetch it. In 20 other programs the typed value goes straight into
+  `normalize_url`, `scheme_added`, `read_urls` or `load_html` and nowhere else; an edit
+  there changed nothing the measurement saw, and they are left as they were
+  (`local/printtok/unobserved.txt`, `REPORT.md`, round 2).
+
+* **Measured again after** (`after.json`, `counts.txt`, `requests-before-after.txt`): the
+  40 starts print and write nothing carrying the token; the 59 are as they were; and for
+  every argument read as a URL, what a program prints and writes for `tok@host` is what it
+  does for `https://tok@host`, times apart. The forms typed with a scheme ask what they
+  asked; `tok@host` now also asks the site, with the token, for what the typed spelling had
+  lost — six links in `broken_links`, a stylesheet in `css_minify_check` — and
+  `sitemap_checker` asks the site for a relative `--sitemap` instead of a host named after
+  it.
+
+* **Held by `tests/test_url_credentials.py`.**
+  `EveryProgramStartedByHandGivesASchemelessCredentialToItsSiteAlone` now starts every
+  program with `tok@host` in each argument that takes text, one at a time, and with each
+  flag after the first, and reads off the process whether the start read it as a URL: the
+  capture (`tests/hand_capture/`) writes on its `end` line whether the process ended
+  carrying the credential. Four tests: where it was read as a URL, nothing printed or
+  written carries it, nobody else is given it, and the URL read is shown; where it was not,
+  it is shown as typed and no credential is presented; and a control that hands each
+  program back what was typed sees it printed; and a pin that a file on disk wins over the
+  spelling — the 20 programs that fetch a URL in their first argument and read an
+  existing `saved.html` there without asking anyone, handed an existing page named
+  `tok@host`, read the page, ask nobody, end carrying no credential, and show the name as
+  typed. The sweep also gives files: with `tok@host` in an argument, the other arguments
+  that take text are given a file in the run directory — one at a time where the program
+  read it as a URL, all at once for every argument — each of five (empty, a crawl
+  inventory of another site, a page linking to its site, an access log line, the sheet of
+  a links export naming pages on the site), with and without every flag: 1620 starts, 930
+  of them reading the token as a URL, no token read as a URL given to another origin
+  (`round3-file-starts.txt`). The class took 174 s on the Mac, where it took 42 s before
+  the files (`round3-class.txt`, `round3-class-before-files.txt`). At 0.164.0's code the
+  first test fails, 31 starts of 18 programs, `detect_profile` and `lcp_subparts` among them under `--json`
+  (`local/printtok/red-36f7a16.txt`). The one test that encoded the old behaviour was a
+  comment: the start with `tok@host` in every required argument stays out of the printing
+  test, because it puts the token into `indexnow_checker --key` too, where it is text.
+
+* **Two arguments the sweep cannot tell from text, each held by a test of its own.**
+  `server_log_audit --url` (the JSON's `base_url`) and `parse_html --url` (the base a
+  saved page's links are resolved against) are read once after `parse_args` like the rest,
+  but nothing else reads either as a URL, so with that read taken out the start looks
+  like one of text and the derived sweep stays green — measured on Anton's Windows PC on
+  15 October (`local/printtok/pc/round3/round3-breakages-optional-*.txt`).
+  `TwoArgumentsTheSweepCannotTellFromText` starts each by hand with `tok@host`, a log and
+  a saved page, and asserts that nothing printed or written carries the token, that
+  `base_url` is `https://staging.example` and the page's link
+  `https://staging.example/about`, and that nobody is presented a credential; named for
+  the two programs on purpose, and its docstring says why.
+
+* **On the PC, at this tree before those two tests** (15 October, Python 3.14.7):
+  `tests.test_url_credentials` ran 82 tests in 1251 s, OK, where the class had taken
+  about 6.5 minutes before the files (`local/printtok/pc/round3/round3-module.txt`);
+  every row of `local/printtok/breakages3.py` was as expected
+  (`round3-breakages*.txt`), and `read_source` reading every source as a URL reddened the
+  saved-page pin alone (`round3-pc-breakages.txt`). Python 3.10 was left to CI.
+
+* **A name read as a file is a file name from there on.** Measured at this release's
+  earlier build (`local/printtok/saved-before-758f419.txt`), eight of the 20 programs
+  above, handed a saved page named `tok@host`, read it and then, taking its name for the
+  page's address, ended carrying `tok` as the credential of `host`. Where a program opens
+  what was typed as a file — `seo_common.load_html`, `read_source`,
+  `schema_required_props.load_source_html` — the new `typed_credential.read_as_file` takes
+  it out of the candidates, and a later scheme is the scheme and nothing else. After
+  (`saved-after.txt`), none carries one; their output, plain and `--json`, is as it was,
+  but `topical_cluster_mapper --json` now names its `hub`
+  `https://H4ndTok3nOnly@staging.example/`, the name given a scheme, where it named the
+  site the name had been read as (`saved-linked-json-diff.txt`).
+
+* **Breakages** (`local/printtok/breakage-*.txt`, 15 October 2026), each run under
+  `test_url_credentials`, the one module that starts a program by hand with a typed
+  credential: the read taken out of `social_meta` reddened the first test and nothing
+  else; a probe program that reads its URL and prints what was typed, added to
+  `scripts/`, reddened the first test and nothing else, run also under the seven modules
+  that read every script in `scripts/`, all green; the entrance deciding for every
+  argument, so that `tok@host` typed as a file or text became a URL, reddened all four
+  new tests, the e-mail test, two shape tests of `WhatAScriptStartedByHandWasTyped` and
+  the pinned entrance test; the control made a no-op reddened the control alone; the
+  capture made to say no process carried a credential reddened the first test and the
+  control; `read_source` made to read every source as a URL, a file on disk included,
+  reddened the saved-page pin alone. Round 3's, on the final tree
+  (`breakage-file-stays-candidate.txt`, `breakage-<program>-read.txt`, the Mac, 15
+  October 13:16–13:34): `read_as_file` made to keep a name read as a file a candidate
+  reddened the saved-page pin alone; the read after `parse_args` taken out of
+  `anchor_text_audit`, `duplicate_content`, `canonical_checker` or `image_weight_audit`
+  reddened the first test alone, each reached only through a file the sweep now gives.
+
+* **Not held, and said in INP-7.** `tok@host` typed where a program takes a file or text is
+  shown as typed and goes out as typed where text goes out. A program that put `https://`
+  in front of its typed URL itself, without `read_as_url`, and asked the site through
+  Requests would give the site no token, and the sweep's site test is red for it (shown on
+  the PC, `local/printtok/pc/pc-own-scheme-full.txt`); one that does so, asks nothing
+  through the captured path — no request, or a socket of its own — and prints what was
+  typed is taken for a file or text start, and a probe doing exactly that left every test
+  green (`breakage-own-scheme-socket.txt`). A saved page named `tok@host` handed to
+  `topical_cluster_mapper --json` is named in its `hub` as
+  `https://H4ndTok3nOnly@staging.example/`: the mapper gives a local file name a scheme
+  (`https://page.html/`), a defect of its own queued as its own item; no request is made
+  with it. `hreflang_checker` names the URL as typed when its fetch fails, which no start
+  reaches. `tok@host` typed into `indexnow_checker --key` goes to Bing as the key under
+  `--ping`, as text does.
+  The Search Console properties are text, handed to Google as typed, and not observed; nor
+  is what the `gsc_*` scripts send, as in 0.164.0.
+
 ## 0.164.0 — a credential typed in a URL without a scheme is split like one typed with it
 
 Registry version: `90ba79b14b28`, unchanged. No verdict of an audit of a URL typed with its
