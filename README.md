@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.165.0 — see [CHANGELOG.md](CHANGELOG.md). A program started by hand with `tok@host`, nothing after the host, in an argument it reads as a URL now shows the URL it read, `https://host`, as it does for `https://tok@host`: each program reads such an argument once, where it takes its arguments, and uses that from there on. Measured over every program here at 0.164.0, 16 programs read it as a URL, gave the site the token, and then printed or wrote what was typed, token and all, in a heading or a JSON field; some went on auditing the typed spelling. Typed where a file or text is asked for, it is still a file name or text. No verdict moves. 0.164.0, the release before, made a credential typed in a URL without a scheme split like one typed with it.
+Version 0.166.0 — see [CHANGELOG.md](CHANGELOG.md). Python 3.10 is no longer supported: the floor is 3.11, and every program started on an older Python says so in one line on stderr and exits before it reads, writes or asks for anything. What 3.10 needed is gone — the server-log audit read an ISO time ending in `Z` by hand, and a test read `pyproject.toml` by regex — and the check of the tree's syntax now reads every Python file at the declared floor instead of knowing three features of 3.10 by name. No verdict moves, and on 3.11 and newer no program prints, writes or sends anything it did not before. 0.165.0, the release before, made a program started by hand with `tok@host` show the URL it read, not the token.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -100,6 +100,9 @@ status changes" could mean the checklist itself changed underneath.
 python3 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
 ```
+
+Python 3.11 or newer. Every program refuses an older one with a single line naming both
+versions, before it does anything else.
 
 Core requirements are `requests`, `beautifulsoup4`, `lxml`. Search Console checks
 also need `google-auth` and `google-api-python-client`; without them those items
@@ -776,7 +779,7 @@ a `CHANGELOG.md` entry naming the shipped `registry_version` and must match
 `pyproject.toml`, the 200 borrowed titles must record their source in the file that
 holds them, every category must have a plain-language explanation in every shipped
 language, and the lowest Python in the CI matrix must be the floor `pyproject.toml`
-declares. CI runs the suite on 3.10, 3.11, 3.13 and 3.14, the newest of them on Linux,
+declares. CI runs the suite on 3.11, 3.13 and 3.14, the newest of them on Linux,
 macOS and Windows and the oldest on Linux and Windows, along with `ruff`, the gates and
 four offline end-to-end audits, and a job of its own re-takes the recorded verdict
 census over all five served trees and compares it with the one in the tree.

@@ -10,6 +10,96 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.166.0 — the Python floor is 3.11, and an older Python is told so
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves, and on Python 3.11 and
+newer no program prints, writes or sends anything it did not at 0.165.0. **Python 3.10 is
+no longer supported.** Anton decided on 15 October 2026 that an old Python which needs
+patches to be supported raises the floor rather than keeping them; 3.10 needed two, and
+both are gone. A program started on 3.10, or on any Python older than 3.11, now stops
+before it reads, writes or asks for anything, with exit 1 and one line on stderr:
+
+    seo-checklist needs Python 3.11 or newer; this is Python 3.10.20.
+
+* **What 3.10 needed.** `server_log_audit.py` turned a trailing `Z` into `+00:00` before
+  `datetime.fromisoformat`, which refuses `Z` before 3.11; `test_registry.pyproject_value`
+  read `pyproject.toml` by regex because `tomllib` is 3.11's. The log audit now hands
+  `fromisoformat` the time as written, and the test reads the file with `tomllib`. The
+  census that found them goes by what the code does, not by a spelling: the 24 lines of
+  this file that name 3.10, `git log -S'3.10'`, and for each of 3.11's additions to the
+  standard library the shape of the workaround it makes unnecessary
+  (`local/floor311/census.md`). Every other hit works the same on 3.10 and 3.11 and is
+  left. One looked like a third: `freshness_checker` also turns `Z` into `+00:00`, but
+  falls back to the value's first ten characters, the same date, so on 3.10 too it made
+  no difference.
+
+* **Why the floor needs a guard of its own.** The plugin is installed by copying, so
+  `requires-python` stops nobody, and `SKILL.md` starts every program as `python3`, which
+  is 3.10 on Ubuntu 22.04. 3.9 died at import with a `TypeError` about `|` that said
+  nothing about versions; with the `Z` patch gone, 3.10 would not have died at all, and
+  would have read every `…Z` time of a log as no time — the window unknown, rates per day
+  withheld. `scripts/lib/python_floor.py` is now the first import of every program,
+  `from lib import python_floor` in `scripts/` and `import python_floor` in `tools/`,
+  which loads the same file. It is written in syntax every Python 3 parses, and its
+  `REQUIRES` is held to `requires-python` by a test: one number, not a fourth copy.
+
+* **Held by `tests/test_python_floor.py`.** Every Python file in `scripts/`,
+  `scripts/lib/` and `tools/` is started once as it is, and one with a `__main__` guard,
+  or one that prints or does something, is a program: 82 of them, among them
+  `tools/probe_shapes.py`, which has no guard. Each is started again with
+  `sys.version_info` saying 3.10.20 and an audit hook that ends the process at its first
+  request, child process or file written, and must print the one line, exit 1 and do
+  nothing; a made-up program that never imports the check, and one that writes a file
+  before it, are seen failing that. Each program, and the check, must parse at 3.10. A
+  log whose window is 20 days and whose times end in `Z` is read through
+  `server_log_audit.py --json` as the same log with `+00:00`. CI runs nothing below 3.11
+  any more, so a real one was run by hand, on Anton's PC on 17 October 2026: under
+  CPython 3.10.21 and 3.9.25 from `uv`, with nothing installed beside them, 82 of 82
+  programs each refused with the one line
+  (`seo-checklist needs Python 3.11 or newer; this is Python 3.10.21.`).
+
+* **The syntax check knows the floor it defends.**
+  `test_the_floor_is_not_lower_than_the_syntax_in_the_tree` knew three features of 3.10
+  by name and counted them only below 3.10, so at the floor it could find nothing: a
+  `type X = …` statement in a script passed it. It now parses every Python file under
+  `scripts/`, `tools/` and `tests/` at the declared floor with
+  `ast.parse(feature_version=…)`. That refuses the grammar the parser carries a version
+  for — `except*`, `type`, `def f[T]()` among it — and not an f-string: until 3.12 an
+  f-string was a string the parser did not look inside, so what PEP 701 allowed is read
+  off the tokens instead — a quote of the enclosing f-string, a backslash or a comment in
+  a field, a line break in a one-line f-string. A control holds each case refused at the
+  version below its own.
+
+* **CI.** The Linux list is 3.11, 3.13 and 3.14, and the Windows job runs 3.11 and 3.14;
+  `requires-python = ">=3.11"` and ruff's `target-version = "py311"`. Two tests encoded
+  the old floor's reasons in prose and say 3.11 now (`test_shapes.page`,
+  `test_url_credentials`' note on `urlunparse`, whose value is still computed on each
+  interpreter).
+
+* **Not held.** No CI leg runs a Python below the floor, so the refusal on a real older
+  interpreter is a command run by hand. A Python too old to parse a program's own file
+  stops with a `SyntaxError` before the check — Python 2 for every program. Work the audit
+  hook has no event for, such as a write to a stream already open, is not seen. The
+  standard library: a function newer than the floor parses at any `feature_version`, and
+  only the 3.11 legs running the code that calls it can see it. Grammar the parser
+  carries no version for, other than an f-string, is let through.
+
+* **Breakages**, each the edit and the tests it turns red (`local/floor311/breakages.py`):
+  run on Anton's PC under 3.14.7 on 17 October 2026, all fifteen reddened exactly the
+  names expected and the tree was put back after each. The check disabled: every program
+  and the check alone. A temporary file made before the check in `a11y_seo_checker`, or
+  its import of the check removed: every program. `REQUIRES` moved to 3.12: the tie to
+  `requires-python`. A `type` statement, or a nested f-string reusing its quote, in
+  `seo_common.py`: the syntax check. `except*` in a program: the test that a program
+  parses on the Python it refuses. `requires-python` back to 3.10: CI's lowest, ruff's
+  target and the tie. Ruff's target back to `py310`: that test. 3.10 put back on the
+  Windows list: the oldest-leg test; on the Linux list: that and CI's lowest. `Z` refused
+  by `fromisoformat` with the patch gone: the log test; with the patch put back: nothing,
+  since the test holds what is read, not how. The basis line of `robots_path_tester.py`
+  moved: the recorded known issue; removed: that, the test that names it and the summary's
+  count. Suite: 2356 tests at 0.165.0, 2366 now, `OK (skipped=6)` on the PC under 3.14.7
+  on 17 October 2026.
+
 ## 0.165.0 — a program started by hand shows the URL it read, not the token typed with it
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves, and nothing an audit of a
