@@ -28,6 +28,8 @@ is re-read by hand, or the build stays red.
 
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import json
 import re

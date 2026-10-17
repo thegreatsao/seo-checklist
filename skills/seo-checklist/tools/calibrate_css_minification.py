@@ -22,6 +22,8 @@ The second reads only that report and the classifier constants; it never uses ne
 """
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import gzip
 import json

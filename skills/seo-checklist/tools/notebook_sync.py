@@ -20,6 +20,8 @@ keeps itself: a record written here is not evidence of what the notebook holds.
 """
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import collections
 import hashlib

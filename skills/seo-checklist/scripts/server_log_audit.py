@@ -37,6 +37,11 @@ be printed as the first.
 """
 from __future__ import annotations
 
+try:
+    from lib import python_floor  # noqa: F401
+except ImportError:
+    from scripts.lib import python_floor  # noqa: F401
+
 import argparse
 import collections
 import gzip
@@ -355,9 +360,9 @@ def _parse_time(raw: str) -> datetime | None:
     except ValueError:
         pass
     try:
-        # ISO 8601, with or without a zone. `Z` is not accepted by fromisoformat
-        # before 3.11 and the floor here is 3.10.
-        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        # ISO 8601, with or without a zone, `Z` included: fromisoformat reads it
+        # from 3.11, which is the floor (`lib/python_floor.py`).
+        return datetime.fromisoformat(raw)
     except ValueError:
         return None
 

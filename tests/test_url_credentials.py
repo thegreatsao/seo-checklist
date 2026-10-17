@@ -858,8 +858,9 @@ class WhatIsNotASchemelessCredentialIsReadAsBefore(unittest.TestCase):
         ("me@example.com", "https://me@example.com/", "https://me@example.com/", True),
         ("mailto:me@example.com", "Invalid URL scheme: mailto", "mailto:me@example.com", True),
         # 0.163.0 put `https:` in front and wrote the parse back with `urlunparse`, which
-        # keeps the empty authority on 3.10.20 and 3.14 and drops it on 3.10.11, CI's
-        # Windows leg: the value is what that expression gives on this interpreter.
+        # keeps the empty authority on 3.10.20 and 3.14 and drops it on 3.10.11, which was
+        # CI's Windows leg then: patch releases of one Python differ here, so the value
+        # is what that expression gives on this interpreter.
         ("//staging.example/x", "URL must include a hostname",
          urlunparse(urlparse("https:////staging.example/x")), False),
         ("user:pw@staging.example/", "Invalid URL scheme: user", "user:pw@staging.example/",

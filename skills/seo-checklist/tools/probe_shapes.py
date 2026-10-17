@@ -23,6 +23,8 @@ checks, the same way an audit does — so it costs roughly what one audit costs 
 than what six independent crawls cost. Use PROBE_ONLY when only one output contract
 changed.
 """
+import python_floor  # noqa: F401
+
 import json
 import os
 import subprocess

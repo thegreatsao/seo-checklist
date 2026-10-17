@@ -88,6 +88,8 @@ a decision, so it is a plain error with nothing to declare.
 """
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import ast
 import json

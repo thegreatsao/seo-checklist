@@ -18,6 +18,8 @@ import statistics
 import subprocess
 import sys
 import tempfile
+import tokenize
+import tomllib
 import unittest
 from unittest import mock
 
@@ -850,7 +852,14 @@ WINDOW = 7
         with contextlib.redirect_stdout(stdout):
             status = at.main(["--check"])
         self.assertEqual(status, 0, stdout.getvalue())
-        self.assertIn("robots_path_tester.py:31", stdout.getvalue())
+        # The declaration above `_META_ROBOTS`, a pattern and not a number, found by its
+        # text: the line number was written here as :31 and moved to :36 when 0.166.0
+        # put the floor's import first in every program.
+        with open(os.path.join(SCRIPTS, "robots_path_tester.py"), encoding="utf-8") as f:
+            lines = f.read().splitlines()
+        pattern = next(n for n, line in enumerate(lines) if line.startswith("_META_ROBOTS ="))
+        basis = max(n for n in range(pattern) if lines[n].startswith("# basis:")) + 1
+        self.assertIn(f"robots_path_tester.py:{basis}", stdout.getvalue())
 
     def test_the_flags_compose(self):
         at = self._tool()
@@ -2024,7 +2033,7 @@ class VersionAndChangelog(unittest.TestCase):
     def test_pyproject_states_the_same_version_as_the_manifest(self):
         """Two files naming a version is one more chance for them to disagree, and
         the manifest is the one a plugin host reads."""
-        self.assertEqual(pyproject_value(r'^version = "([^"]+)"'),
+        self.assertEqual(pyproject_value("project", "version"),
                          self.manifest["version"])
 
     def test_the_readme_names_the_shipped_version(self):
@@ -2072,28 +2081,84 @@ class VersionAndChangelog(unittest.TestCase):
                               f"describes")
 
 
-def pyproject_value(pattern: str) -> str:
-    """One value out of pyproject.toml, by regex.
+def pyproject_value(*keys: str):
+    """One value out of pyproject.toml, by its keys: `("project", "version")`.
 
-    Not `tomllib`: that arrived in 3.11 and the floor this very file asserts is
-    3.10, so parsing the file properly would make the test unrunnable on the
-    version it exists to defend.
+    Read with `tomllib` since 0.166.0. Until then it was a regex, because `tomllib`
+    arrived in 3.11 and the floor this file asserts was 3.10.
     """
-    with open(os.path.join(ROOT, "pyproject.toml"), encoding="utf-8") as f:
-        found = re.search(pattern, f.read(), re.M)
-    assert found, f"pyproject.toml has no {pattern}"
+    with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
+        value = tomllib.load(f)
+    for key in keys:
+        assert key in value, f"pyproject.toml has no {'.'.join(keys)}"
+        value = value[key]
+    return value
+
+
+def declared_floor() -> str:
+    """`requires-python` without its `>=`: the oldest Python this project claims."""
+    found = re.fullmatch(r">=(\d+\.\d+)", pyproject_value("project", "requires-python"))
+    assert found, "requires-python is no longer a plain `>=X.Y`"
     return found.group(1)
+
+
+def newer_syntax(source: str, path: str, version: tuple[int, int]) -> list[str]:
+    """What in `source` a Python of `version` would not parse, as `name:line what`.
+
+    `ast.parse(feature_version=…)` refuses the grammar newer than `version` that the
+    parser of the running Python carries a version for, `except*` (3.11) and `type`
+    statements and `def f[T]()` (3.12) among them. The standard library calls that
+    "best-effort": what has no version written beside it in the grammar is let
+    through. An f-string is the case that matters here. Until 3.12 it was a string
+    the parser did not look inside, so 3.12's own parser has no older reading of one,
+    and what PEP 701 then allowed passes at any `feature_version`. That is read off the
+    tokens instead: inside a replacement field, a string opened with a quote that ends
+    an enclosing f-string, a backslash, a comment, or a line break in a single-quoted
+    one. On 3.11 the tokenizer has no f-string tokens, and nothing there is needed:
+    such an f-string is a syntax error to its own parser.
+    """
+    name = os.path.relpath(path, ROOT).replace(os.sep, "/")
+    try:
+        ast.parse(source, path, feature_version=version)
+    except SyntaxError as error:
+        return [f"{name}:{error.lineno} {error.msg}"]
+    if version >= (3, 12):
+        return []
+    found, inside = [], []        # the quote of each f-string the tokens are inside
+    for token in tokenize.generate_tokens(io.StringIO(source).readline):
+        kind, text, line = tokenize.tok_name[token.type], token.string, token.start[0]
+        if kind in ("STRING", "FSTRING_START", "TSTRING_START") and inside:
+            quote = text.lstrip("rRbBfFuUtT")
+            quote = quote[:3] if quote[:3] in ('"""', "'''") else quote[:1]
+            if any(q == quote or (len(q) == 1 and quote[0] == q) for q in inside):
+                found.append(f"{name}:{line} a quote of the f-string it is inside")
+            if "\\" in text:
+                found.append(f"{name}:{line} a backslash inside an f-string's field")
+        elif kind == "FSTRING_MIDDLE" and len(inside) > 1 and "\\" in text:
+            found.append(f"{name}:{line} a backslash inside an f-string's field")
+        elif kind == "COMMENT" and inside:
+            found.append(f"{name}:{line} a comment inside an f-string")
+        elif kind == "NL" and any(len(q) == 1 for q in inside):
+            found.append(f"{name}:{line} a line break inside a one-line f-string")
+        if kind in ("FSTRING_START", "TSTRING_START"):
+            quote = text.lstrip("rRbBfFuUtT")
+            inside.append(quote[:3] if quote[:3] in ('"""', "'''") else quote[:1])
+        elif kind in ("FSTRING_END", "TSTRING_END"):
+            inside.pop()
+    return found
 
 
 class TheDeclaredPythonFloorIsExercised(unittest.TestCase):
     """A `requires-python` nothing runs is a guess with a colon in it.
 
-    The floor is real and the failure it prevents is ugly: `duplicate_content.py`,
-    `link_profile.py` and `pagespeed.py` annotate with PEP 604 unions without
-    `from __future__ import annotations`, so on 3.9 the annotation is evaluated at
-    import and raises `TypeError: unsupported operand type(s) for |`. That happens
-    before a single check runs, and the message says nothing about SEO or about a
-    Python version being too old.
+    The floor is 3.11 since 0.166.0, by Anton's decision of 15 October 2026: an old
+    Python that needs patches raises the floor rather than keeping them. 3.10 needed
+    two — a server log's `Z` read by hand, and this file reading `pyproject.toml` by
+    regex — and both are gone. `lib/python_floor.py` tells an older Python so, and
+    `tests/test_python_floor.py` holds that. Until then the floor was 3.10, and
+    measured from below: `duplicate_content.py`, `link_profile.py` and `pagespeed.py`
+    annotate with PEP 604 unions without `from __future__ import annotations`, so 3.9
+    raised `TypeError: unsupported operand type(s) for |` at import.
     """
 
     def matrix_versions(self):
@@ -2104,7 +2169,7 @@ class TheDeclaredPythonFloorIsExercised(unittest.TestCase):
         return [v.strip().strip('"') for v in line.group(1).split(",")]
 
     def test_ci_runs_the_lowest_version_the_project_claims_to_support(self):
-        floor = pyproject_value(r'requires-python = ">=([\d.]+)"')
+        floor = declared_floor()
         versions = sorted(self.matrix_versions(),
                           key=lambda v: tuple(int(p) for p in v.split(".")))
         self.assertEqual(versions[0], floor,
@@ -2112,52 +2177,44 @@ class TheDeclaredPythonFloorIsExercised(unittest.TestCase):
                          f"{versions[0]}; one of the two is wrong")
 
     def test_ruff_targets_the_same_floor(self):
-        floor = pyproject_value(r'requires-python = ">=([\d.]+)"')
-        target = pyproject_value(r'target-version = "py(\d+)"')
-        self.assertEqual(target, floor.replace(".", ""),
+        self.assertEqual(pyproject_value("tool", "ruff", "target-version"),
+                         "py" + declared_floor().replace(".", ""),
                          "ruff would suggest rewrites for a version this project "
                          "does not require, or miss ones it does")
 
     def test_the_floor_is_not_lower_than_the_syntax_in_the_tree(self):
         """Measured from the source rather than trusted, because the way this claim
-        breaks is somebody using a newer feature in a script nobody re-reads."""
-        floor = tuple(int(p) for p in
-                      pyproject_value(r'requires-python = ">=([\d.]+)"').split("."))
-        offenders = []
-        for folder in (SCRIPTS, os.path.join(SKILL, "tools"),
-                       os.path.dirname(os.path.abspath(__file__))):
-            for name in sorted(os.listdir(folder)):
-                if not name.endswith(".py"):
-                    continue
-                path = os.path.join(folder, name)
-                with open(path, encoding="utf-8") as f:
-                    source = f.read()
-                tree = ast.parse(source, path)
-                future = any(isinstance(n, ast.ImportFrom) and n.module == "__future__"
-                             and any(a.name == "annotations" for a in n.names)
-                             for n in tree.body)
-                for node in ast.walk(tree):
-                    # 3.10: `X | Y` evaluated at runtime, which an annotation is
-                    # unless the __future__ import postpones it.
-                    annotation = None
-                    if isinstance(node, (ast.AnnAssign, ast.arg)):
-                        annotation = getattr(node, "annotation", None)
-                    elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                        annotation = node.returns
-                    if annotation is not None and not future:
-                        for sub in ast.walk(annotation):
-                            if isinstance(sub, ast.BinOp) and isinstance(sub.op, ast.BitOr):
-                                if floor < (3, 10):
-                                    offenders.append(f"{name}:{node.lineno} PEP 604")
-                                break
-                    # 3.10: zip(strict=), and the match statement.
-                    if isinstance(node, ast.Match) and floor < (3, 10):
-                        offenders.append(f"{name}:{node.lineno} match")
-                    if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-                            and node.func.id == "zip" and floor < (3, 10)
-                            and any(k.arg == "strict" for k in node.keywords)):
-                        offenders.append(f"{name}:{node.lineno} zip(strict=)")
+        breaks is somebody using a newer feature in a script nobody re-reads. Every
+        Python file under `scripts/`, `tools/` and `tests/`, read at the declared
+        floor. Until 0.166.0 this knew three features of 3.10 by name and counted one
+        only `if floor < (3, 10)`, so at a floor of 3.10 it could find nothing."""
+        floor = tuple(int(p) for p in declared_floor().split("."))
+        offenders, read = [], 0
+        for top in (SCRIPTS, TOOLS, os.path.dirname(os.path.abspath(__file__))):
+            for folder, dirs, files in os.walk(top):
+                dirs[:] = sorted(d for d in dirs if d not in ("__pycache__", "fixtures")
+                                 and not d.startswith("."))      # a download cache
+                for name in sorted(files):
+                    if name.endswith(".py"):
+                        path = os.path.join(folder, name)
+                        with open(path, encoding="utf-8") as f:
+                            offenders += newer_syntax(f.read(), path, floor)
+                        read += 1
+        self.assertGreater(read, 150, "the walk found almost no Python")
         self.assertEqual(offenders, [], "these need a higher floor than declared")
+
+    def test_a_construct_newer_than_the_floor_is_seen(self):
+        """The control: each of these is refused at 3.11 and read at its own version,
+        so the check above is not green because it cannot see."""
+        newer = {(3, 12): ["type Alias = int\n", "def first[T](x: T) -> T:\n    return x\n",
+                           "a = {'k': 1}\nb = f'{a['k']}'\n", "b = f'{\"\\n\".join(x)}'\n"],
+                 (3, 11): ["try:\n    pass\nexcept* ValueError:\n    pass\n"]}
+        for version, sources in newer.items():
+            for source in sources:
+                with self.subTest(source=source):
+                    self.assertTrue(newer_syntax(source, __file__, (version[0], version[1] - 1)))
+                    if sys.version_info[:2] >= version:
+                        self.assertEqual(newer_syntax(source, __file__, version), [])
 
 
 class ChecklistProvenance(unittest.TestCase):

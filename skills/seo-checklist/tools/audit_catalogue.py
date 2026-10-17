@@ -32,6 +32,8 @@ what an element looks like, and a rule written against it is written against not
 """
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import ast
 import json

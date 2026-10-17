@@ -20,6 +20,8 @@ about, and they agree with the browser. See `_answer_after`, `_own_text` and
 
 from __future__ import annotations
 
+from lib import python_floor  # noqa: F401
+
 import argparse
 import json
 import re

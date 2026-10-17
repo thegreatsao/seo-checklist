@@ -35,6 +35,8 @@ Reads the artifacts a normal audit already writes. Nothing here re-runs a check.
 
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import json
 import os

@@ -12,6 +12,11 @@ Usage:
     python css_minify_check.py https://example.com --json
 """
 
+try:
+    from lib import python_floor  # noqa: F401
+except ImportError:
+    from scripts.lib import python_floor  # noqa: F401
+
 import argparse
 import json
 import re

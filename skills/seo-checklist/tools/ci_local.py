@@ -30,6 +30,8 @@ execute is worth less than no gate at all.
 """
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import os
 import shlex

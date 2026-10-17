@@ -23,6 +23,8 @@ Usage:
     python gsc_links_csv.py ~/Downloads/top-linking-sites.csv --json
 """
 
+from lib import python_floor  # noqa: F401
+
 import argparse
 import csv
 import io

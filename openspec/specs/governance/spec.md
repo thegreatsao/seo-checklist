@@ -687,11 +687,24 @@ the Workbench session before changing a name the module holds.
 * **INV-G2** — no gate writes into the tracked tree. *Reader: enforced* — a test reads the
   default output paths out of the tools' own argparse definitions and asserts `git
   check-ignore` covers every one, having twice been added to after an output escaped.
-* **INV-G3** — the Python floor CI tests is the floor the package declares.
-  *Reader: enforced* — `test_registry.TheDeclaredPythonFloorIsExercised` reads the matrix's
-  list and `requires-python` and requires the lowest of the one to be the other. This line
-  said *none* until 0.151.0, "nothing compares them"; the test is from 0.7.0, a month older
-  than the line, and a floor raised to 3.11 fails it with `'3.10' != '3.11'`.
+* **INV-G3** — the Python floor CI tests is the floor the package declares, and the one
+  every program refuses below. *Reader: enforced* —
+  `test_registry.TheDeclaredPythonFloorIsExercised` reads the matrix's list and
+  `requires-python` and requires the lowest of the one to be the other, ruff's
+  `target-version` to be the same, and every Python file under `scripts/`, `tools/` and
+  `tests/` to parse at that version: `ast.parse(feature_version=…)`, and the f-strings
+  PEP 701 allowed in 3.12, which `feature_version` lets through, read off the tokens.
+  `test_python_floor.TheFloorIsWrittenOnce` holds the check's `REQUIRES`
+  (`scripts/lib/python_floor.py`, INV-G13) to `requires-python`. The floor is 3.11 since
+  0.166.0, by Anton's decision of 15 October 2026 that an old Python needing patches
+  raises the floor; it was 3.10. This line said *none* until 0.151.0, "nothing compares
+  them"; the test is from 0.7.0, a month older than the line, and the floor raised to
+  3.11 without the matrix fails it with `'3.10' != '3.11'`. Until 0.166.0 the syntax
+  check knew three features of 3.10 by name and counted them only below 3.10, so at the
+  floor it could find nothing. Not held: the standard library — a function newer than
+  the floor parses at any `feature_version`, and only the floor's legs running the code
+  that calls it can see it; and grammar newer than the floor that the parser carries no
+  version for and that is not an f-string.
 * **INV-G4** — every ledger entry names a marker that exists in the tree.
   *Reader: enforced* — the ledger's `--check` resolves each entry's probe by name and fails
   on one it cannot find.
@@ -806,6 +819,8 @@ the Workbench session before changing a name the module holds.
   nothing had run the paths that are Windows' own on 3.10. Three breakages: the Windows
   list put back to 3.13 and 3.14, the Windows list as 3.10 alone, and 3.10 taken off the
   Linux list; the first and third redden the new test, the second the one for the newest.
+  Since 0.166.0 the oldest is 3.11, the floor: the Linux list is 3.11, 3.13 and 3.14, and
+  the Windows job runs 3.11 and 3.14.
   Not held: which patch release a leg gets, which is whatever the runner offers on the
   day; that a machine the tool is run on has a leg at all, which the gate says at the end
   of a run and no test requires; the oldest on macOS, whose leg is one Python; and the
@@ -882,6 +897,28 @@ the Workbench session before changing a name the module holds.
   writes after its parser — only its streams' encoding is asked, and a program that set
   it back would not be seen; a file a program opens itself; and a program started with
   no stdout at all is left as it is.
+* **INV-G13** — a program started on a Python older than the floor says so in one line
+  and does nothing else. *Reader: enforced* — every program imports
+  `scripts/lib/python_floor.py` first (`from lib import python_floor` in `scripts/`,
+  `import python_floor` in `tools/`, which loads that same file), and it ends the
+  process with `seo-checklist needs Python 3.11 or newer; this is Python X.Y.Z.` and exit
+  1 when the interpreter is older than its `REQUIRES`. `tests/test_python_floor.py`
+  starts every Python file in `scripts/`, `scripts/lib/` and `tools/` once as it is: one
+  with a `__main__` guard, or one that prints or does something, is a program, and
+  `tools/probe_shapes.py`, which has no guard, is one. Each program is then started with
+  `sys.version_info` saying the version just below the floor and an audit hook that
+  ends the process at its first request, child process, or file written, made or
+  removed; it must exit 1 with that line alone on stderr, nothing on stdout and nothing
+  done. A made-up program that never imports the check and one that writes a file
+  before it are seen failing that, and each program and the check must parse at the
+  version below the floor. Until 0.166.0 nothing did this: the plugin is installed by
+  copying, so `requires-python` stops nobody; 3.9 died at import with a `TypeError`
+  about `|`, and with the `Z` patch gone 3.10 would have read every `…Z` time of a
+  server log as no time. Not held: CI runs no Python below the floor, so a real older
+  interpreter is a command in the release's report, run by hand; one too old to parse
+  a program's own file stops with a `SyntaxError` before the check (Python 2 for every
+  program); and work the hook has no event for, such as a write to an already-open
+  stream, is not seen.
 
 ## 5. What this document does not decide
 
@@ -1031,8 +1068,8 @@ their tests.
 | **none** | — none |
 | **opposed** | — none |
 
-Invariants: INV-G2, INV-G3, INV-G4, INV-G5, INV-G7, INV-G9, INV-G10, INV-G11 and INV-G12
-enforced; INV-G1, INV-G6 and INV-G8 partial.
+Invariants: INV-G2, INV-G3, INV-G4, INV-G5, INV-G7, INV-G9, INV-G10, INV-G11, INV-G12 and
+INV-G13 enforced; INV-G1, INV-G6 and INV-G8 partial.
 
 **Six enforced, six partial, none unread, of twelve.**
 

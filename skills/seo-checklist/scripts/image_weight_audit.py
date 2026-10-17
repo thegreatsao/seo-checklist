@@ -11,6 +11,11 @@ fails the site precisely for following the recommendation.
 
 from __future__ import annotations
 
+try:
+    from lib import python_floor  # noqa: F401
+except ImportError:
+    from scripts.lib import python_floor  # noqa: F401
+
 import argparse
 import json
 import os

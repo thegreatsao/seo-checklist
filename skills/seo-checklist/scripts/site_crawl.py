@@ -35,6 +35,8 @@ uses that distinction, so seeding from the sitemap must not quietly satisfy it.
 
 from __future__ import annotations
 
+from lib import python_floor  # noqa: F401
+
 import argparse
 import hashlib
 import json

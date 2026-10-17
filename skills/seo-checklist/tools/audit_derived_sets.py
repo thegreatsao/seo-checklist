@@ -37,6 +37,8 @@ violated 150 times.
 """
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import ast
 import functools

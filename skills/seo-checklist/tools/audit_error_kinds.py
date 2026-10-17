@@ -27,6 +27,8 @@ Both directions matter and the regex could do neither honestly:
 """
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import ast
 import os

@@ -908,7 +908,7 @@
         },
         "counted": 161,
         "non_numeric_basis": [
-          "scripts/robots_path_tester.py:31"
+          "scripts/robots_path_tester.py:36"
         ],
         "presentation": 12,
         "uncounted": [

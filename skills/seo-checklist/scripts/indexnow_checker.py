@@ -19,6 +19,11 @@ Usage:
     python indexnow_checker.py https://example.com --key YOUR_KEY --ping-sitemap
 """
 
+try:
+    from lib import python_floor  # noqa: F401
+except ImportError:
+    from scripts.lib import python_floor  # noqa: F401
+
 import argparse
 import json
 import sys

@@ -3,19 +3,20 @@
 # which Python versions the code actually runs on, and how the linter is configured.
 [project]
 name = "seo-checklist"
-version = "0.165.0"
+version = "0.166.0"
 description = "Deterministic SEO audit against a fixed 217-item registry"
 license = "MIT"
-# Measured, not guessed. `duplicate_content.py`, `link_profile.py` and
-# `pagespeed.py` annotate with PEP 604 unions and do *not* carry
-# `from __future__ import annotations`, so their annotations are evaluated when the
-# module loads and a 3.9 interpreter raises TypeError at import — before any check
-# runs and with nothing in the message about SEO. Another dozen files use PEP 585
-# generics the same way, which puts the same floor one version lower.
+# 3.11 since 0.166.0, by Anton's decision of 15 October 2026: an old Python that
+# needs patches raises the floor rather than keeping them. 3.10 needed two, and both
+# are gone: `server_log_audit.py` turned a trailing `Z` into `+00:00` because
+# `datetime.fromisoformat` refuses it before 3.11, and a test read this file by regex
+# because `tomllib` is 3.11's. Installed by copying, the plugin is not stopped by this
+# line, so every program refuses an older Python itself (`scripts/lib/python_floor.py`,
+# whose `REQUIRES` a test holds to this string).
 #
 # The lowest version in the CI matrix is tied to this string by a test, because the
 # usual way this claim goes stale is a floor that nothing ever exercises.
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "beautifulsoup4>=4.12",
     "lxml>=5.0",
@@ -33,7 +34,7 @@ dev = ["ruff>=0.5", "pyyaml>=6.0"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 extend-exclude = [".venv", "plugin-snapshot"]
 
 [tool.ruff.lint]

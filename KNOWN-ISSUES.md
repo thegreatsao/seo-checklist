@@ -477,11 +477,11 @@ name. A column called `url` would be read as "fix this page".
   inspection, and by inspection is all this entry can say about them: nobody has walked
   them one at a time the way these four were walked.
 
-  One declaration points the other way. `robots_path_tester.py:31` puts
-  `# basis: standard` above `_META_ROBOTS`, a regular expression rather than a numeric
-  constant. Either describe that justification without the reserved marker, as the
-  tool's own error text prescribes, or deliberately widen the convention to cover
-  vocabularies. This release changes neither the line nor the vocabulary.
+  One declaration points the other way. `robots_path_tester.py:36` (`:31` until
+  0.166.0) puts `# basis: standard` above `_META_ROBOTS`, a regular expression rather
+  than a numeric constant. Either describe that justification without the reserved
+  marker, as the tool's own error text prescribes, or deliberately widen the convention
+  to cover vocabularies. This release changes neither the line nor the vocabulary.
 
   The scan remains shallow in the three measured ways whose wider simulation was
   rejected: it does not follow an unbased value through an assignment, an argument or

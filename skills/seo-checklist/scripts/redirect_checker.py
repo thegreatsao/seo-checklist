@@ -10,6 +10,11 @@ Usage:
     python redirect_checker.py https://example.com http://example.com --json
 """
 
+try:
+    from lib import python_floor  # noqa: F401
+except ImportError:
+    from scripts.lib import python_floor  # noqa: F401
+
 import argparse
 import json
 import sys

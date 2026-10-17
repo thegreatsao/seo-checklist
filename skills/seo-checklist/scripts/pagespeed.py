@@ -19,6 +19,11 @@ Usage:
     PAGESPEED_API_KEY=AIza... python pagespeed.py https://example.com
 """
 
+try:
+    from lib import python_floor  # noqa: F401
+except ImportError:
+    from scripts.lib import python_floor  # noqa: F401
+
 import argparse
 import json
 import math

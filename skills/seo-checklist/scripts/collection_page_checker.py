@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from lib import python_floor  # noqa: F401
+
 import argparse
 from urllib.parse import parse_qs, urlparse
 

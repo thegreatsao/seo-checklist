@@ -11,6 +11,11 @@ the audited page so CI-013 tests real rendering resources rather than invented p
 
 from __future__ import annotations
 
+try:
+    from lib import python_floor  # noqa: F401
+except ImportError:
+    from scripts.lib import python_floor  # noqa: F401
+
 import argparse
 import json
 import re

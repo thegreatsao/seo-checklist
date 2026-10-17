@@ -14,6 +14,8 @@ Usage:
     python internal_links.py https://example.com --inventory inventory.json --json
 """
 
+from lib import python_floor  # noqa: F401
+
 import argparse
 import json
 import sys

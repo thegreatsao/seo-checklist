@@ -15,6 +15,8 @@ site on it is wrong — visible, and overridable with --gsc-property, but wrong.
 """
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import os
 import sys

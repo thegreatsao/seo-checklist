@@ -35,6 +35,8 @@ the output entirely, which the runner reads as NO_DATA rather than as a pass.
 """
 from __future__ import annotations
 
+from lib import python_floor  # noqa: F401
+
 import argparse
 import json
 import os

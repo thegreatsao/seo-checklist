@@ -25,6 +25,8 @@ a reason to re-read the Russian.
 
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import hashlib
 import json

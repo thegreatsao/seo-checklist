@@ -16,6 +16,8 @@ Usage:
 """
 from __future__ import annotations
 
+from lib import python_floor  # noqa: F401
+
 import argparse
 import ast
 import csv

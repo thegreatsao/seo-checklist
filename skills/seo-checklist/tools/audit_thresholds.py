@@ -69,6 +69,8 @@ exercise: one number in two places is one number that can drift into two.
 """
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import ast
 import datetime

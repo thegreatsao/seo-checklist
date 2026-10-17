@@ -16,6 +16,11 @@ Usage:
     python broken_links.py https://example.com --internal-only
 """
 
+try:
+    from lib import python_floor  # noqa: F401
+except ImportError:
+    from scripts.lib import python_floor  # noqa: F401
+
 import argparse
 import json
 import sys

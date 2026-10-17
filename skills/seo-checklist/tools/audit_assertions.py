@@ -21,6 +21,8 @@ report NO_DATA when the field is absent instead of passing.
 """
 from __future__ import annotations
 
+import python_floor  # noqa: F401
+
 import argparse
 import ast
 import json

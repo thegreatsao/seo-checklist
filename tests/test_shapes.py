@@ -56,9 +56,9 @@ def page(title="A page that satisfies the basics", body="", head="", lang="en"):
 
     The default body is a module constant rather than an inline fallback: a multi-line
     expression inside an f-string field is Python 3.12 syntax, the declared floor here
-    is 3.10, and CI runs 3.11 — so the first version of this helper would not have
-    *parsed* there. `ruff` caught it before CI did, which is the argument for having
-    added the linter in 0.7.0.
+    is 3.11 (3.10 when this was written), and CI runs it — so the first version of
+    this helper would not have *parsed* there. `ruff` caught it before CI did, which is
+    the argument for having added the linter in 0.7.0.
     """
     return (f'<!doctype html><html lang="{lang}"><head><meta charset="utf-8">'
             f'<meta name="viewport" content="width=device-width, initial-scale=1">'

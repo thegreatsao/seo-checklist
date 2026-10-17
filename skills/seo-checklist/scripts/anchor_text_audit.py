@@ -7,6 +7,8 @@ given one, so the CLI still works alone.
 
 from __future__ import annotations
 
+from lib import python_floor  # noqa: F401
+
 import argparse
 from collections import Counter, defaultdict
 
