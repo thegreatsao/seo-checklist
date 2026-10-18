@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.166.0 — see [CHANGELOG.md](CHANGELOG.md). Python 3.10 is no longer supported: the floor is 3.11, and every program started on an older Python says so in one line on stderr and exits before it reads, writes or asks for anything. What 3.10 needed is gone — the server-log audit read an ISO time ending in `Z` by hand, and a test read `pyproject.toml` by regex — and the check of the tree's syntax now reads every Python file at the declared floor instead of knowing three features of 3.10 by name. No verdict moves, and on 3.11 and newer no program prints, writes or sends anything it did not before. 0.165.0, the release before, made a program started by hand with `tok@host` show the URL it read, not the token.
+Version 0.167.0 — see [CHANGELOG.md](CHANGELOG.md). A sitemap walk now requests sitemaps only on the audited host and keeps to a budget: a sitemap that robots.txt or a sitemap index names on another host is listed, not fetched, and a walk stops reading at 20 MB and keeps at most 50,000 URLs, saying what it left out; a gzipped sitemap is decompressed no further than the protocol's 50 MB. The certificate check connects to the address the SSRF guard validated instead of resolving the name again, and the guard refuses 100.64.0.0/10 (carrier NAT, Tailscale) unless `--allow-private` is passed. On an ordinary site no verdict moves. 0.166.0, the release before, raised the Python floor to 3.11.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

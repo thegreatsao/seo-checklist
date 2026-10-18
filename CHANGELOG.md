@@ -10,6 +10,71 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.167.0 — a sitemap walk keeps to the audited host and to a budget; two guard gaps closed
+
+Registry version: `90ba79b14b28`, unchanged. **What changes is what an audit fetches on a
+site's word and how much of it it keeps.** The audit also runs behind a public web form, for
+anyone, so the site being audited, and everything its robots.txt and sitemaps
+say, is a stranger's input. A security review of that service on 18 October 2026 (a Codex
+read-only review plus direct checks) found four things the engine did with it, and each is
+fixed here with a test that fails on 0.166.0. On an ordinary site no verdict moves; on a
+site whose sitemaps are larger than the budget or live on another host, GO-136, GO-138 and
+GO-137 now say they read part of the set instead of reading a clean set off it.
+
+* **A sitemap on another host is named, not requested.** A sitemap named in robots.txt, or
+  by a sitemap index, was fetched on any public host and port, so an audit could be pointed
+  at somebody else's server as a GET proxy. The three walkers — `site_crawl.load_sitemap_urls`
+  (the crawl, and GO-137 through `gsc_sitemap_reconcile`), `sitemap_checker` and
+  `indexability_matrix` — now request a sitemap only on the audited host, read as `same_host`
+  reads it everywhere else here: the `www.` variant and the other scheme are the same site,
+  another port is not. The others are listed in `off_host_sitemaps`. Google accepts a
+  sitemap declared on another host, so that is not a defect: `sitemap_checker` no longer
+  says "No sitemap found" when the only one declared is elsewhere, and marks its result
+  `truncated` with the URLs named, which withholds GO-136's and GO-138's clean verdict;
+  GO-137 stops counting indexed pages missing from the sitemap, as it already did for an
+  unread one.
+
+* **A walk has a budget, and says when it spends it.** A walk read up to 25 sitemaps of up
+  to 8 MB each and kept every `<loc>`; the crawl's page cap bounds pages fetched, not
+  sitemap URLs held. It now stops reading new files once 20 MB have been read
+  (`SITEMAP_BYTES_BUDGET`) and keeps at most 50,000 URLs, one sitemap file's protocol
+  maximum (`SITEMAP_URLS_BUDGET`), both in `seo_common`. The crawl's sitemap record names
+  the files left unread in `unvisited`, as at its sitemap cap, and says what was cut in a
+  new `cut` list; `sitemap_checker` says it in `truncated_reason`. `indexability_matrix`
+  reads at most ten top-level sitemaps and follows no index, and is left as it was.
+
+* **A gzipped sitemap is decompressed no further than 50 MB.** `parse_sitemap_xml`
+  decompressed a `.xml.gz` body with no limit, so 8 MB on the wire could become gigabytes
+  in memory. Past the protocol's 50 MB uncompressed it now stops and returns the file as
+  invalid, saying why.
+
+* **The certificate check connects to the address the guard checked.** `tls_certificate.py`
+  called `assert_safe_url`, which resolves the host and checks every answer, and then
+  `socket.create_connection((host, port))`, which resolved it again: a name whose second
+  answer is private — DNS rebinding — passed on its first. Both handshakes now go to the
+  addresses the guard returned (`safe_http.validated_addresses`), in resolver order; the
+  name still goes to SNI and to certificate matching, so what is verified is unchanged.
+
+* **100.64.0.0/10 is private.** Shared address space (RFC 6598: carrier NAT, Tailscale) is
+  neither `is_private` nor reserved to `ipaddress`, so `assert_safe_url` let it through
+  without `--allow-private`, and a public audit could reach a tailnet peer of the machine
+  running it. The guard now refuses any address that is not `is_global`; the range was
+  already in `PRIVATE_ALLOWED_NETWORKS`, so `--allow-private` still opens it.
+
+* **Not held.** A sitemap on the audited host that redirects elsewhere is still followed,
+  as every fetch follows a redirect, each hop through the private-address guard: the site
+  being audited can make the audit request a public URL that way, and this release does not
+  change it.
+
+* **Held by** `tests/test_sitemap_walk_bounds.py` (both walkers' budgets and hosts, the
+  `indexability_matrix` host, the gzip limit),
+  `test_evidence_apis.SitemapReconciliation.test_a_walk_cut_by_its_budget_or_by_host_withholds_the_reverse_direction`,
+  `test_safe_http.PinnedTransport.test_shared_address_space_is_private_unless_the_run_allows_it`
+  and `test_tls_certificate.ConnectsToTheValidatedAddress`: thirteen tests, each run against
+  the 0.166.0 code first, and all thirteen failed there.
+  Suite: 2366 tests at 0.166.0, 2379 now, `OK (skipped=6)` on the Mac under 3.14.8 on 18 October
+  2026, with every step of `ci_local.py` green.
+
 ## 0.166.0 — the Python floor is 3.11, and an older Python is told so
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves, and on Python 3.11 and
