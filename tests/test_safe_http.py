@@ -1276,5 +1276,74 @@ class AProxyInTheEnvironmentIsNotInTheRequest(unittest.TestCase):
         self.assertFalse(self._asked(), "the proxy was contacted")
 
 
+@public_policy
+class TheWebDeploymentReachesOnlyTheWebPorts(unittest.TestCase):
+    """A stranger's site decides most of what an audit requests: every outbound link,
+    the canonical target, the favicon, `sameAs`, fonts, each redirect hop. With no port
+    rule, a page linking to `https://somebody.example:8443/` had the engine connect
+    there and report the status, which turns the public form into a port prober
+    running from the operator's address. `SEO_STANDARD_PORTS_ONLY` is how the web
+    deployment says "80 and 443 only"; it is checked before the name is resolved, so a
+    refused URL costs no DNS query and no connection. Each case fails on 0.167.0.
+    """
+
+    def setUp(self):
+        self.saved = {name: os.environ.get(name) for name in
+                      ("SEO_ALLOW_PRIVATE", "SEO_HTTP_CACHE", "SEO_MAX_RPS",
+                       "SEO_STANDARD_PORTS_ONLY")}
+        os.environ.pop("SEO_ALLOW_PRIVATE", None)
+        os.environ.pop("SEO_HTTP_CACHE", None)
+        os.environ["SEO_MAX_RPS"] = "0"
+        os.environ["SEO_STANDARD_PORTS_ONLY"] = "1"
+
+    def tearDown(self):
+        for name, value in self.saved.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+    def fetch(self, url, routes):
+        """`safe_get(url)` with `routes` {url: (status, headers)}; returns the URLs sent."""
+        sent = self.sent = []
+
+        def send(adapter, request, **kwargs):
+            sent.append(request.url)
+            status, headers = routes.get(request.url, (200, {}))
+            return response_for(request, status=status, headers=headers)
+
+        with mock.patch.object(sh.socket, "getaddrinfo",
+                               side_effect=lambda host, port, *a, **k: answer(PUBLIC_A, port)), \
+                mock.patch.object(sh._PinnedAdapter, "send", new=send):
+            sh.safe_get(url)
+        return sent
+
+    def test_another_port_is_refused_before_it_is_resolved(self):
+        with mock.patch.object(sh.socket, "getaddrinfo") as resolve:
+            with self.assertRaises(sh.SafeHTTPError) as caught:
+                sh.safe_get("https://port.example:8443/")
+        resolve.assert_not_called()
+        import seo_common
+        # "blocked" is not a dead link: broken_links reports it unchecked, not broken.
+        self.assertEqual(seo_common.fetch_error_kind(caught.exception), "blocked")
+
+    def test_a_redirect_to_another_port_is_not_followed(self):
+        routes = {"https://port.example/": (302, {"Location": "http://port.example:6379/"})}
+        with self.assertRaises(sh.SafeHTTPError):
+            self.fetch("https://port.example/", routes)
+        self.assertEqual(self.sent, ["https://port.example/"])
+
+    def test_the_web_ports_are_fetched_named_or_not(self):
+        for url in ("https://port.example/", "https://port.example:443/",
+                    "http://port.example/", "http://port.example:80/"):
+            with self.subTest(url=url):
+                self.assertEqual(len(self.fetch(url, {})), 1)
+
+    def test_without_the_switch_any_port_is_fetched(self):
+        os.environ.pop("SEO_STANDARD_PORTS_ONLY")
+        self.assertEqual(self.fetch("https://port.example:8443/", {}),
+                         ["https://port.example:8443/"])
+
+
 if __name__ == "__main__":
     unittest.main()

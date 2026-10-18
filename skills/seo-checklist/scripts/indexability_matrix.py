@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup, NavigableString
 
 import site_crawl
 from seo_common import (read_as_url,
+    SITEMAP_BYTES_BUDGET,
     discover_sitemap_urls,
     fetch_robots,
     fetch_url,
@@ -92,12 +93,18 @@ def snippet_controls(html_text: str, x_robots_tag: str | None) -> dict:
     return controls
 
 
-def urls_from_sitemaps(site: str, timeout: int) -> set[str]:
+def urls_from_sitemaps(site: str, timeout: int) -> set[str] | None:
+    """Every URL the site's own sitemaps list, or None when the byte budget left
+    some unread: a URL missing from the ones read is then not known to be missing."""
     urls = set()
+    read_bytes = 0
     for sm in discover_sitemap_urls(site, timeout=timeout)[:10]:
         if not same_host(site, sm):
             continue      # never requested: see site_crawl.load_sitemap_urls
+        if read_bytes >= SITEMAP_BYTES_BUDGET:
+            return None
         fetched = fetch_url(sm, timeout=timeout, max_bytes=8_000_000)
+        read_bytes += len(fetched.get("text") or "")
         parsed = parse_sitemap_xml(fetched.get("text") or "", sm)
         urls.update(row["loc"] for row in parsed["urls"])
     return urls
@@ -145,7 +152,7 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
             "x_robots_tag": xrobots,
             "snippet_controls": snippets,
             "canonical": html.get("canonical"),
-            "in_sitemap": url in sitemap_urls,
+            "in_sitemap": None if sitemap_urls is None else url in sitemap_urls,
             "redirects": fetched.get("redirect_chain", []),
             "verdict": "indexable" if not blockers else "not_indexable",
             "blockers": blockers,

@@ -714,6 +714,23 @@ def loopback_only() -> bool:
     return os.environ.get("SEO_LOOPBACK_ONLY", "").strip().lower() in _TRUE
 
 
+class NonStandardPort(SafeHTTPError):
+    """A port other than 80 or 443, asked for in a process limited to the web ports."""
+
+
+def standard_ports_only() -> bool:
+    """Whether this process may connect to ports 80 and 443 only. Off unless asked.
+
+    The web deployment sets it. There the audited site is a stranger's, and it decides
+    most of what an audit requests: every outbound link, the canonical target, the
+    favicon, each redirect hop. Without it a page linking to `host:8443` had the engine
+    connect there and report the status — a port prober running from the operator's
+    address. A same-host rule on redirects would not have closed that: the page can
+    link to the target directly. The port is what the guard can hold for every request.
+    """
+    return os.environ.get("SEO_STANDARD_PORTS_ONLY", "").strip().lower() in _TRUE
+
+
 def _is_loopback_host(hostname: str | None) -> bool:
     if not hostname:
         return False
@@ -810,6 +827,11 @@ def _validated_url(url: str) -> tuple[str, tuple[str, ...]]:
     normalized = normalize_url(url)
     parsed = urlparse(normalized)
     hostname = parsed.hostname
+
+    if standard_ports_only() and _port_for(parsed) not in (80, 443):
+        raise NonStandardPort(
+            f"Blocked: port {_port_for(parsed)} of {hostname} — the process is limited "
+            f"to ports 80 and 443 (SEO_STANDARD_PORTS_ONLY)")
 
     if loopback_only() and not _is_loopback_host(hostname):
         raise LoopbackOnly(

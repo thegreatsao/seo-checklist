@@ -207,5 +207,26 @@ class OffHostSitemaps(unittest.TestCase):
         self.assertEqual(fetch.requested, [own])
         self.assertEqual(found, {SITE + "a"})
 
+    def test_the_indexability_matrix_stops_reading_sitemaps_past_its_byte_budget(self):
+        # Ten declared sitemaps of about 3 MB each: 30 MB, over the 20 MB budget. With
+        # sitemaps left unread, a URL not found in the ones read is not known to be
+        # missing, so membership is unknown rather than false.
+        import indexability_matrix as ix
+        declared = [f"{SITE}sitemap-{i}.xml" for i in range(10)]
+        docs = {sm: urlset([f"{SITE}p{i}"], padding=3_000_000)
+                for i, sm in enumerate(declared)}
+        fetch = Documents(docs)
+        saved = ix.fetch_url, ix.discover_sitemap_urls
+        ix.fetch_url = fetch
+        ix.discover_sitemap_urls = lambda *a, **k: declared
+        try:
+            found = ix.urls_from_sitemaps(SITE, 15)
+        finally:
+            ix.fetch_url, ix.discover_sitemap_urls = saved
+        read = sum(len(docs[u]) for u in fetch.requested)
+        self.assertLess(read, seo_common.SITEMAP_BYTES_BUDGET + 3_100_000)
+        self.assertLess(len(fetch.requested), len(declared))
+        self.assertIsNone(found)
+
 if __name__ == "__main__":
     unittest.main()
