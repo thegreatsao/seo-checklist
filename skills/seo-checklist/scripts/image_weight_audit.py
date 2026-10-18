@@ -88,9 +88,11 @@ def _needs_sizes(srcset: str | None) -> bool:
 # A crawl can contain one query-stringed tracking pixel per page. The site-wide
 # audit bounds distinct image requests just as broken_links.py bounds link requests,
 # and reports the part it did not check.
-# basis: inherited — 200 distinct image URLs, present at import. MD-187 is `high`
-#  and passes when `broken_image_count` is 0, so the cap decides that verdict: the
-#  images past it are exactly the ones that could have failed it.
+# basis: convention — 200 distinct image URLs, the same request budget as
+#  `broken_links.py`. MD-187 is `high` and passes when `broken_image_count` is 0; the
+#  images past the cap are the ones that could have failed it, which is why `truncated`
+#  is set past it and the runner withholds that PASS
+#  (`test_release_0740.py`, `test_budget_is_enforced_and_dropped_count_is_reported`).
 DEFAULT_MAX_IMAGES = 200
 
 

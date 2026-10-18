@@ -43,9 +43,9 @@ NU_ENDPOINT = "https://validator.w3.org/nu/"
 #  advisory in Nu's own output, so this is a "the page has a pattern of them" line rather
 #  than a count anybody calibrated.
 MANY_WARNINGS = 10
-# basis: inherited — 40, present at import. A cap on how much of Nu's answer is carried
-#  forward, not a verdict: a page with more than 40 validation errors is already failing
-#  the item
+# basis: presentation — 40 messages carried into the report. `counts` is incremented
+#  for every message before this cap trims `messages`, so `summary.errors`, which
+#  CI-017 and TE-181 read, is the whole number
 MAX_MESSAGES = 40
 
 

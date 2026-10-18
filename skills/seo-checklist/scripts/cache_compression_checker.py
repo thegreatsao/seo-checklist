@@ -33,10 +33,10 @@ STATIC_IMMUTABLE_MAX_AGE = 2_592_000
 #  header overhead rarely reduces what goes over the wire. Every serious server ships
 #  the same knob with a number of this order; none of them measured it here.
 COMPRESSIBLE_MIN_BYTES = 1024
-# basis: inherited — present at import as `max_assets=25` on `audit`, where the
-#  threshold inventory could not see it. It is a threshold and not a budget because
-#  TE-170 asserts that `issues` contains no medium-or-worse finding, and this number
-#  decides how many linked assets can supply one. Measured for 0.91.0 with a one-asset
+# basis: convention — 25 linked assets, a request budget chosen here, not measured. It
+#  bounds `--include-assets`, which no registry item passes: TE-170 runs on the page
+#  alone, so this decides nothing an audit reports. On a hand run past it the answer is
+#  marked incomplete (`test_asset_cap_reports_completeness_and_controls_the_clean_verdict`). Measured for 0.91.0 with a one-asset
 #  cap: one distinct linked asset leaves a complete answer, while a second is absent
 #  from `resources` and `issues` and must mark the answer incomplete rather than move
 #  the cap.

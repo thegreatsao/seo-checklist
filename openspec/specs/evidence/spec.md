@@ -255,9 +255,9 @@ and no number that decides a verdict may carry none.
 question about a `FAIL` is where the line came from. `inherited` is an honest answer and
 also a debt; the point of naming it is that the debt is countable.
 **Reader:** enforced. `tools/audit_thresholds.py --check` runs in CI over every number a
-verdict depends on and fails when one names no basis. It reports 164 such numbers at
-0.167.0 — 20 `standard`, 11 `measured`, 56 `convention`, 77 `inherited`, and **0 with no
-basis**. The gate holds the floor; the 77 are the debt it makes visible. **Until 0.144.0
+verdict depends on and fails when one names no basis. It reports 163 such numbers at
+0.167.1 — 20 `standard`, 11 `measured`, 66 `convention`, 66 `inherited`, and **0 with no
+basis**. The gate holds the floor; the 66 are the debt it makes visible. **Until 0.144.0
 nothing held the scan itself.** A constant becomes a threshold in four places — an
 ordering comparison, an argument of `min` or `max`, a multiplication, a looked-up table —
 and by the walk under each; any of the five could be removed with every test green,
@@ -584,8 +584,8 @@ asked about". Today it either omits them silently or reports them as findings. W
 settle it: whether any current rule would change its verdict if it knew, which is
 answerable from the catalogue.
 
-**Is `inherited` a basis or the absence of one?** EVD-6 accepts four bases and 77 of 146
-numbers claim the fourth, which means the gate passes while more than half the thresholds
+**Is `inherited` a basis or the absence of one?** EVD-6 accepts four bases and 66 of 160
+numbers claim the fourth, which means the gate passes while two in five of the thresholds
 in the tree are undefended. Treating `inherited` as a failure would redden CI today and for
 a long time; treating it as a basis is what allows the number to stay at 77 for releases at
 a stretch. What would settle it: a ratchet — `inherited` permitted but never permitted to

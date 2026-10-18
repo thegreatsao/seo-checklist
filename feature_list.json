@@ -27,7 +27,7 @@
   },
   {
     "id": "F02",
-    "behavior": "No threshold rests on 'inherited': each of the 77 is calibrated or relabelled 'convention' with its judgement written out",
+    "behavior": "The eleven inherited coverage caps (link, external-link, asset, stylesheet, page-URL, image, log-line and sitemap-file caps, the URL-inspection retry count, the TLS timeout, the validator's message cap) carry a written basis, each held by a test that drives it",
     "dependencies": [
       "F01"
     ],
@@ -49,9 +49,9 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "not_started",
+    "state": "active",
     "evidence": "",
-    "notes": "ROADMAP 'What 1.0 requires' item 1; count read from ROADMAP.md at v0.166.0. Held by tools/audit_thresholds.py --check. Spans sessions: the sprint contract at activation picks a batch and adds the layer that proves the new count."
+    "notes": "ROADMAP 'What 1.0 requires' item 1, first batch: docs/sprint-20261018-F02.md. Release 0.167.1: inherited 77 -> 66."
   },
   {
     "id": "F03",
@@ -192,5 +192,61 @@
     "state": "not_started",
     "evidence": "",
     "notes": "ROADMAP item 6; counts are held by tests/test_prose_counts.py. Spans sessions."
+  },
+  {
+    "id": "F08",
+    "behavior": "LO-198 does not report a FAIL off a truncated crawl: check_local_business_inventory carries the crawl's truncated through, and a presence check that found nothing in part of a site says so instead of failing",
+    "dependencies": [
+      "F01"
+    ],
+    "verification": "make verify-feature F=F08",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "not_started",
+    "evidence": "",
+    "notes": "Found in F02 batch 1 (docs/sprint-20261018-F02.md, 'Left inherited'). Until it lands, DEFAULT_MAX_PAGES and DEFAULT_DEPTH decide LO-198's verdict and stay inherited."
+  },
+  {
+    "id": "F09",
+    "behavior": "No threshold rests on 'inherited': each of the remaining 66 is calibrated or relabelled 'convention' with its judgement written out",
+    "dependencies": [
+      "F02"
+    ],
+    "verification": "make verify-feature F=F09",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "not_started",
+    "evidence": "",
+    "notes": "ROADMAP 'What 1.0 requires' item 1, after F02's batch; 66 at 0.167.1 (tools/audit_thresholds.py). Nine Search Console numbers are blocked on multi-market data; ROW_LIMIT, DEFAULT_MAX_PAGES and DEFAULT_DEPTH wait on F08 and a KW-070/GO-139 fix. Spans sessions: one batch per sprint contract."
   }
 ]

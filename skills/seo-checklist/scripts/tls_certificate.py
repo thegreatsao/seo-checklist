@@ -48,7 +48,9 @@ except ImportError:
 # reliably fits. Let's Encrypt renews at 30 days remaining for the same reason.
 EXPIRY_WARN_DAYS = 30
 
-# basis: inherited — the timeout every other script in this tree passes.
+# basis: convention — 15 seconds, the timeout every other script in this tree passes. A
+#  handshake that outlasts it sets `error` and no `valid`, so SE-118 reads NO_DATA, not a
+#  bad certificate: the number decides whether the item answers (`tests/test_coverage_caps.py`).
 DEFAULT_TIMEOUT = 15
 
 

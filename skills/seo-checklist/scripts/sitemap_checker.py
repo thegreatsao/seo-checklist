@@ -39,8 +39,12 @@ except ImportError:
 # basis: standard — 50,000 URLs per sitemap file, the limit stated in the sitemaps.org
 #  protocol. Google documents the same figure alongside a 50MB uncompressed cap.
 MAX_URLS_PER_SITEMAP = 50_000
-# basis: inherited — 25 sitemap files followed, present at import. The reason it is not
-#  larger is that a sitemap index can point at itself. It was recorded here as "an
+# basis: convention — 25 sitemap files followed, a bound chosen here; it is not larger
+#  because a sitemap index can point at itself. Past it `truncated` is set and the
+#  runner withholds GO-136's and GO-138's PASS (`tests/test_coverage_caps.py`).
+#  GO-136 has a warn band, and a WARN counted over part of the input can understate a
+#  FAIL in the rest: the runner says the count is a floor, so the cap decides how much
+#  is read and how sure the WARN is, which is the trade this number makes. It was recorded here as "an
 #  operational cap rather than a verdict"; that was wrong. GO-136 is `high` and passes
 #  by finding no issue at or above medium, so on a site whose index lists more than 25
 #  files the walk stopped, said nothing, and the item read a clean sitemap set off the

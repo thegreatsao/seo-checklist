@@ -126,16 +126,19 @@ def check_link(link: dict, timeout: int = 10) -> dict:
 # cap exists so the request budget is a property of the tool rather than of
 # whatever page it was pointed at — and it is reported, because a truncated check
 # that says "300 links, 200 checked" is honest where a silent one is not.
-# basis: inherited — 200 links, present at import. TE-168 passes when
-#  `summary.broken_or_redirected` is 0, so this cap decides a verdict and not just
-#  a runtime; the comment above says the truncation is reported, and `truncated` is
-#  now read rather than only printed.
+# basis: convention — 200 links, a request budget chosen here, not measured: it bounds
+#  what one page costs to check by hand. No registry item reaches it: TE-168 runs with
+#  `--inventory`, where `DEFAULT_MAX_EXTERNAL` and the crawl bound the reading instead.
+#  Past it `truncated` is set (`tests/test_coverage_caps.py`).
 DEFAULT_MAX_LINKS = 200
 
-# basis: inherited — 200 distinct external links, present at import as a default
-# argument in its former checker. TE-168 passes when
-# `summary.broken_or_redirected` is 0, and that is now a site-wide count over these
-# 200; links past them are not requested, so the output reports truncation.
+# basis: convention — 200 distinct external links, the same request budget as
+#  `DEFAULT_MAX_LINKS` applied site-wide. TE-168's count is over these 200; links past
+#  them are not requested. Past it `truncated` is set and the runner withholds a PASS
+#  (`BrokenLinks.test_the_external_cap_requests_only_the_first_targets_and_truncates`).
+#  TE-168 has a warn band, and a WARN counted over part of the input can understate a
+#  FAIL in the rest: the runner says the count is a floor, so the cap decides how much
+#  is read and how sure the WARN is, which is the trade this number makes.
 DEFAULT_MAX_EXTERNAL = 200
 
 

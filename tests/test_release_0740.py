@@ -249,6 +249,7 @@ class SiteWideBrokenImages(unittest.TestCase):
         self.assertEqual(result["summary"]["images_dropped"], 1)
         self.assertEqual(result["summary"]["images_checked"],
                          image_weight_audit.DEFAULT_MAX_IMAGES)
+        self.assertTrue(result["truncated"])
 
     def test_budget_spends_requests_on_same_host_images_first(self):
         external = "https://cdn.example.net/external.png"

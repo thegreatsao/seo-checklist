@@ -13,7 +13,7 @@ requirement a test can reach.
 
 **The count may not rise.** A new constant filed as `inherited` is a deliberate act, and
 the scenario in the requirement asks that it be visible as one rather than absorbed into
-a total nobody watches. 77 of 146 today.
+a total nobody watches. 66 of 160 today.
 
 **An `inherited` line may not defend its number.** The convention is
 `# basis: inherited — <what the number is>`, and the description is why the category is
@@ -40,10 +40,10 @@ sys.path.insert(0, os.path.join(ROOT, "skills", "seo-checklist", "tools"))
 
 import audit_thresholds  # noqa: E402
 
-# Measured 6 September 2026. A ceiling, not a target: the requirement's third scenario is
+# Measured 18 October 2026, 0.167.1. A ceiling, not a target: the requirement's third scenario is
 # a basis being upgraded, and every one of those lowers this number. Lower it in the
 # commit that earns it.
-INHERITED_AT_MOST = 77
+INHERITED_AT_MOST = 66
 
 # Phrasings that turn a description into a defence. A positive search, so this finds what
 # it knows and proves nothing about what it does not — the docstring says so rather than

@@ -72,10 +72,12 @@ WASTED_BYTES_WARN = 20000
 # package weight prevents prolific build variants from becoming extra observations.
 MINIFICATION_SAVINGS_FRACTION = 0.189
 
-# basis: inherited — 12 stylesheets, present at import. It decides a verdict rather
-#  than only a runtime: TE-174 passes when `unminified_count` is 0, and that count is
-#  over the first twelve sheets a page links. A page linking thirty was reported clean
-#  from twelve of them. `truncated` says when the cap bit.
+# basis: convention — 12 stylesheets, a request budget chosen here, not measured.
+#  TE-174 passes when `unminified_count` is 0, and that count is over the first twelve
+#  sheets a page links; a page linking thirty was once reported clean from twelve.
+#  Past it `truncated` is set, so the runner turns a PASS by absence into NO_DATA and
+#  marks a FAIL's count as a floor: the number decides how often the item answers, not
+#  which way it falls (`tests/test_coverage_caps.py`).
 MAX_SHEETS = 12
 # basis: measured — corpus=tools/calibration/css-minification.json; date=2026-08-09; method=label and classifier results below the byte cutoff
 # The 170 sub-2KB files come from only five packages: 98 animate.css single-animation

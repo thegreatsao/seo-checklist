@@ -43,10 +43,14 @@ PATH_EXPLOSION_VARIANTS = 5
 # basis: inherited — a parameter seen on three URLs, present at import, and reported as
 #  info rather than a finding: frequency here is evidence for a human, not a verdict.
 FREQUENT_PARAM_COUNT = 3
-# basis: inherited — present at import as `limit=300` on `urls_from_page`, where the
-#  threshold inventory could not see it. It is a threshold and not a budget because
-#  AR-163 asserts that `issues` contains no medium-or-worse finding, and this number
-#  decides how many page-linked URLs can supply one. Measured for 0.91.0: 299 internal
+# basis: convention — 300 page-linked URLs, a bound chosen here, not measured. AR-163
+#  asserts that `issues` contains no medium-or-worse finding, and this number decides
+#  how many page-linked URLs can supply one. Past it `truncated` is set and the runner
+#  withholds AR-163's PASS
+#  (`FacetedNavigation.test_ar_163_withholds_only_the_clean_verdict_over_a_truncated_input`).
+#  AR-163 has a warn band, and a WARN counted over part of the input can understate a
+#  FAIL in the rest: the runner says the count is a floor, so the cap decides how much
+#  is read and how sure the WARN is, which is the trade this number makes. Measured for 0.91.0: 299 internal
 #  links fill the 300-URL result together with the page and leave nothing unread; a
 #  300th internal link is omitted from `rows` and `issues` and must mark the result
 #  incomplete rather than move the cap.

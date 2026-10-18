@@ -585,7 +585,7 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
             ("gsc_cannibalization.py", "LONG_NEAR_BRAND_EDITS"): "convention",
             ("seo_common.py", "THIN_CONTENT_WORDS"): "inherited",
             ("server_log_audit.py", "MAX_VERIFIED_ADDRESSES"): "convention",
-            ("tls_certificate.py", "DEFAULT_TIMEOUT"): "inherited",
+            ("tls_certificate.py", "DEFAULT_TIMEOUT"): "convention",
         }
         for (filename, name), kind in expected.items():
             with self.subTest(file=filename, name=name):
@@ -699,14 +699,18 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # `RECOMMENDED_SIDE_ABOVE_PX` 48, both `standard`: one out, two in.
         # 0.167.0: the sitemap walk's bounds in `seo_common` — the protocol's 50 MB
         # uncompressed (`standard`), and a byte and a URL budget (`convention`).
+        # 0.167.1 moves eleven coverage caps out of `inherited`: ten to `convention`,
+        # each withholding a PASS past its value (`test_coverage_caps.py`), and
+        # `html_validator.py`'s `MAX_MESSAGES` to `presentation`, since the error count
+        # is taken before it.
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 11,
-            "convention": 56,
-            "inherited": 77,
-            "presentation": 12,
+            "convention": 66,
+            "inherited": 66,
+            "presentation": 13,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 164)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 163)
         self.assertEqual(len(named), 176)
         # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
         # `lib/safe_http.py`, how long and how often a held lock is asked for on

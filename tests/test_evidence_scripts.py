@@ -1278,7 +1278,7 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
     `openspec/specs/verdicts/` VRD-14 turns a pass-by-absence over a truncated input
     into `NO_DATA`, and `DEFAULT_MAX_LINES` in this very script carries a basis line
     making that argument for the line cap — *"a log longer than this is read from its
-    first million lines, so the cap decides that verdict"*. The three other ways this
+    first million lines"*, and past it the PASS is withheld. The three other ways this
     script stops covering its subject were simply never marked.
 
     Which caveats belong is derived from `_findings` rather than chosen:
@@ -1410,6 +1410,20 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
         self.assertIn("too_few_requests", self.caveats(data))
         self.assertFalse(data["summary"]["rates_meaningful"])
         self.assertTrue(data["truncated"])
+
+    def test_the_line_cap_stops_the_read_and_withholds_the_pass(self):
+        """`DEFAULT_MAX_LINES` carries a `convention` basis on this argument: past the
+        cap the read stops and `truncated` is set, so CI-018 cannot pass off the part
+        that was read. The log is the complete one below, one line longer than the cap.
+        """
+        import server_log_audit as sla
+        log = self.log(days=14, per_day=30)
+        with open(log, encoding="utf-8") as handle:
+            lines = sum(1 for _ in handle)
+        data = sla.audit(log, self.inventory(self.PATHS), self.SITE, max_lines=lines - 1)
+        self.assertEqual(data["lines_read"], lines - 1)
+        self.assertTrue(data["truncated"])
+        self.assertEqual(graded_verdict("CI-018", data), NO_DATA)
 
     def test_a_complete_log_claims_nothing_partial(self):
         """The floor, and the one that catches a repair gone too far. Every caveat

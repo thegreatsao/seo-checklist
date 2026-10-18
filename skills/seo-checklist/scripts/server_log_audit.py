@@ -295,10 +295,14 @@ JSON_KEYS = {
 }
 
 CLF_TIME = "%d/%b/%Y:%H:%M:%S %z"
-# basis: inherited — one million log lines, present at import. CI-018 passes when
-#  nothing in `issues` reaches medium, and a log longer than this is read from its
-#  first million lines, so the cap decides that verdict. `truncated` already said so
-#  and nothing read it until now.
+# basis: convention — one million log lines, a bound on one run's reading time chosen
+#  here. CI-018 passes when nothing in `issues` reaches medium, and a log longer than
+#  this is read from its first million lines. Past it `truncated` is set and the runner
+#  withholds a PASS
+#  (`ALogThatCouldOnlyAnswerHalfTheQuestion.test_the_line_cap_stops_the_read_and_withholds_the_pass`).
+#  CI-018 has a warn band, and a WARN counted over part of the input can understate a
+#  FAIL in the rest: the runner says the count is a floor, so the cap decides how much
+#  is read and how sure the WARN is, which is the trade this number makes.
 DEFAULT_MAX_LINES = 1_000_000
 
 
