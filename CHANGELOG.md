@@ -10,6 +10,55 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.167.1 — eleven coverage caps leave `inherited`, and three are shown to stay
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves and no program prints,
+writes or sends anything it did not at 0.167.0: what changed is what eleven numbers say
+they rest on, and the tests that hold them to it. `inherited` goes from 77 of 164 to 66 of
+163 (`tools/audit_thresholds.py`), `convention` from 56 to 66, `presentation` from 12 to
+13. The ratchet in `tests/test_inherited_basis.py` comes down to 66 in the same commit.
+
+* **Ten caps are `convention`.** `broken_links.py` `DEFAULT_MAX_LINKS` and
+  `DEFAULT_MAX_EXTERNAL`, `cache_compression_checker.py` `MAX_ASSETS`,
+  `css_minify_check.py` `MAX_SHEETS`, `faceted_nav_audit.py` `MAX_URLS_FROM_PAGE`,
+  `image_weight_audit.py` `DEFAULT_MAX_IMAGES`, `server_log_audit.py`
+  `DEFAULT_MAX_LINES`, `sitemap_checker.py` `MAX_SITEMAPS_FOLLOWED`,
+  `gsc_url_inspection.py` `RETRIES` and `tls_certificate.py` `DEFAULT_TIMEOUT`. Each
+  bounds what a run costs, and each line now says what it trades for that. Past a
+  reading cap the script sets `truncated`, and the runner turns a PASS by absence into
+  NO_DATA; past the retry count or the timeout the result carries `error` and no verdict
+  field. What a cap still decides is written beside it: TE-168, AR-163, CI-018 and GO-136
+  have a warn band, and a WARN counted over part of the input can understate a FAIL in
+  the rest, which the runner marks as a floor. `DEFAULT_MAX_LINKS` and `MAX_ASSETS` are
+  reached by no registry item at all — TE-168 runs over the crawl, TE-170 without
+  `--include-assets` — and their old lines said they decided those items. GOV-2 is why a
+  relabel has to carry its argument: a `convention` line that only says "a round number"
+  moves the debt instead of paying it.
+* **Each is held by a test that drives it.** Four had one already. Six did not:
+  `tests/test_coverage_caps.py` takes the page-link cap, the stylesheet cap and the
+  sitemap-file cap one step past their values and one step short; the retry count to its
+  last refusal; the timeout to a handshake that outlasts it. The log line cap is driven in
+  `ALogThatCouldOnlyAnswerHalfTheQuestion`, and the image budget test now asserts
+  `truncated` as well as the dropped count. Each new test was seen red against a copy of
+  its script with the flag, the retry loop or the timeout branch broken.
+* **Reviewed by a second model** (Codex, read-only) before release. It found the warn-band
+  claim and the two unreached caps above; the first draft of these lines said no cap here
+  decides which way a verdict falls.
+* **`html_validator.py` `MAX_MESSAGES` is `presentation`.** Every message is counted
+  before the cap trims the list, so `summary.errors`, which CI-017 and TE-181 read, is the
+  whole number. The ledger in `tests/known_issues.py` had recorded that since 0.88.0; the
+  basis line had not.
+* **Three caps stay `inherited`, and why is written down.** `site_crawl.py`
+  `DEFAULT_MAX_PAGES` and `DEFAULT_DEPTH`: LO-198 (`high`) fails when no crawled page
+  carries LocalBusiness markup, and `local_seo_checker.py` passes the crawl's truncation
+  on to nothing, so on a site larger than the crawl the item can fail for markup on a page
+  never read. `gsc_cannibalization.py` `ROW_LIMIT`: KW-070 and GO-139 read the branded
+  query off the first 5000 rows, and a `truthy` rule is not withheld over a truncated
+  input. Neither is repaired here; LO-198 is the next piece of work.
+* **Counts in prose.** `ROADMAP.md`, `openspec/specs/evidence/spec.md` and
+  `openspec/specs/governance/spec.md` say 66 of 163, read by `tests/test_prose_counts.py`;
+  "more than half the thresholds are undefended" is now two in five, and says so.
+
 ## 0.167.0 — a sitemap walk keeps to the audited host and to a budget; two guard gaps closed
 
 Registry version: `90ba79b14b28`, unchanged. **What changes is what an audit fetches on a
