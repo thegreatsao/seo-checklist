@@ -10,6 +10,54 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.168.1 — the local gate leaves the machine it runs on as it found it
+
+Registry version: `90ba79b14b28`, unchanged. Nothing an audit fetches, decides or prints
+moves; what changes is what `ci_local.py` and the pre-push hook do to the machine they run
+on, and what of that machine they let into a step.
+
+* **The spec step installs nothing.** "The specification is a specification" ran
+  `npm install -g @fission-ai/openspec@1.12.0` and then `openspec validate --all --strict`.
+  `ci_local.py` skips a step only when every line of it installs, so this one ran whole on
+  a developer's machine, and every local gate and every push put 1.12.0 over the openspec
+  installed globally there. On Anton's Mac that was nine reinstalls of 1.14.3 between 7 and
+  18 October, each starting from 1.12.0, found by the PkgDesk session from its update
+  history and npm's own output. The step is now
+  `npx -y @fission-ai/openspec@1.12.0 validate --all --strict`: CI keeps its pin and
+  nothing is installed globally, in CI or here.
+* **A mixed step runs without its install lines.** `ci_local.py` takes out every line of a
+  step that installs a package (`pip`, `python -m pip`, `npm install`, `npm i`) and runs
+  the rest, and names each line it left out at the end of the run, beside the steps it did
+  not run. The rest of such a step then runs against what this machine has installed, not
+  CI's pin — the same trade a whole install step already makes. An install continued onto
+  the next line with `\` is not recognised and runs as before. After the first change no
+  step of this workflow has such a line, so this is a guard for the next one;
+  `test_no_step_of_this_workflow_installs_anything_here` reads the workflow and says so.
+* **A step gets an empty `HOME` and no keys.** The gate handed every step the developer's
+  environment, so the runner found a Search Console key under `~/.config/gcloud/` by itself
+  — the live step printed `GSC: <that path>` here and `GSC: no` in CI — and
+  `env_loader.py` read `~/.agentic-seo/.env`. Nothing was sent, because every audit the
+  workflow runs targets loopback or an archive, but it was a different run under CI's name,
+  and a step pointed at a public host would have used a client's key. `gate_env` now drops
+  every variable named `*_KEY` or `*CREDENTIALS*` and sets `HOME` to an empty directory in
+  `.git/ci-local-home`, emptied at the start of each run; npm's cache stays where it was so
+  `npx` does not download on every run. The live step now prints `GSC: no credentials
+  found`, as CI does.
+* **No fixed paths in `/tmp`, and no fixed port.** The smoke steps wrote their pages to
+  `/tmp/site`, `/tmp/challenge`, `/tmp/soft404` and `/tmp/article`, and the live step served
+  its fixture on port 8000, because the fixture's URLs name it. Two gates on one machine —
+  one per worktree, which is how this repository is worked on — overwrote each other's
+  pages and refused each other's port. Each step now writes to a `mktemp -d` of its own
+  and removes it; the live step copies the fixture tree, rewrites its URLs to a free port
+  with `harness.substitute`, as the suite's own fixture sites are, and still refuses a port
+  something else answers on.
+* **Tests.** `tests/test_ci_local.py` `AStepThatInstallsAndChecksRunsOnlyTheCheck`: a step
+  of `pip install x` and `python -c pass` is handed to `run_step` as `python -c pass` alone,
+  and the run names `pip install x` as not run. Seen red with the step handed over whole.
+  `test_no_key_the_plugin_reads_reaches_a_step` reads every key-shaped variable name out of
+  the shipped scripts and gives them all to `gate_env`; none survives.
+  `tests/test_serve_fixture.py` refuses a live step that names port 8000.
+
 ## 0.168.0 — an audit run for strangers can be held to ports 80 and 443; the third sitemap walker gets the byte budget
 
 Registry version: `90ba79b14b28`, unchanged. Without the new switch, nothing an audit
