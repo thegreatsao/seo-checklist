@@ -92,7 +92,9 @@ class TheWorkflowCountsThroughIt(unittest.TestCase):
             script = "\n".join(line for line in script.splitlines()
                                if not line.lstrip().startswith("#"))
             with self.subTest(job=job):
-                self.assertIn("python tests/serve_fixture.py 8000 ", script)
+                self.assertIn('python tests/serve_fixture.py "$PORT" "$SITE" ', script)
+                self.assertNotIn("8000", script,
+                                 "a fixed port: two gates on one machine refuse each other")
                 self.assertNotIn("-m http.server", script,
                                  "the standard server's log does not say who asked")
                 self.assertIn('counted(open("server.log"))', script)

@@ -179,8 +179,11 @@ jobs:
       # end — registry, runner, report — without touching the network.
       - name: Offline smoke run
         run: |
-          mkdir -p /tmp/site
-          cat > /tmp/site/index.html <<'HTML'
+          # A directory of this run's own, not `/tmp/site`: two gates on one machine,
+          # one per worktree, wrote each other's pages there until 0.168.1.
+          SITE=$(mktemp -d)
+          trap 'rm -rf "$SITE"' EXIT
+          cat > "$SITE/index.html" <<'HTML'
           <!doctype html><html lang="en"><head><meta charset="utf-8">
           <title>CI smoke page</title>
           <meta name="description" content="A page used only to prove the audit runs end to end.">
@@ -188,7 +191,7 @@ jobs:
           <body><h1>CI smoke page</h1><p>Body copy.</p></body></html>
           HTML
           python skills/seo-checklist/scripts/checklist_runner.py https://ci.example/ \
-              --archive /tmp/site --no-history --quiet
+              --archive "$SITE" --no-history --quiet
           python skills/seo-checklist/scripts/checklist_report.py checklist-results.json --no-html
           python skills/seo-checklist/scripts/checklist_report.py checklist-results.json --no-html --lang ru
 
@@ -220,14 +223,16 @@ jobs:
       # exactly the shape of the real thing.
       - name: A challenge page and a soft 404 get no score
         run: |
-          mkdir -p /tmp/challenge /tmp/soft404
-          cat > /tmp/challenge/index.html <<'HTML'
+          PAGES=$(mktemp -d)
+          trap 'rm -rf "$PAGES"' EXIT
+          mkdir -p "$PAGES/challenge" "$PAGES/soft404"
+          cat > "$PAGES/challenge/index.html" <<'HTML'
           <!doctype html><html><head><title>Just a moment...</title></head>
           <body><h1>Checking your browser</h1>
           <script src="/cdn-cgi/challenge-platform/h/b/orchestrate/chl_page/v1"></script>
           </body></html>
           HTML
-          cat > /tmp/soft404/index.html <<'HTML'
+          cat > "$PAGES/soft404/index.html" <<'HTML'
           <!doctype html><html lang="en"><head><meta charset="utf-8">
           <title>404 Not Found | Example Shop</title>
           <link rel="canonical" href="https://example.com/missing"></head>
@@ -235,7 +240,7 @@ jobs:
           HTML
           for kind in challenge soft404; do
             python skills/seo-checklist/scripts/checklist_runner.py https://example.com/ \
-                --archive /tmp/$kind --no-history --no-prompt --quiet \
+                --archive "$PAGES/$kind" --no-history --no-prompt --quiet \
                 --json $kind.json > $kind.log 2>&1
             if grep -q "SEO Score" $kind.log; then
               echo "scored a $kind page"; cat $kind.log; exit 1
@@ -257,8 +262,9 @@ jobs:
       # it would be the same bug pointing the other way.
       - name: An article about bot protection is still audited
         run: |
-          mkdir -p /tmp/article
-          cat > /tmp/article/index.html <<'HTML'
+          ARTICLE=$(mktemp -d)
+          trap 'rm -rf "$ARTICLE"' EXIT
+          cat > "$ARTICLE/index.html" <<'HTML'
           <!doctype html><html lang="en"><head><meta charset="utf-8">
           <title>How to fix 404 errors on your site | Example</title>
           <meta name="description" content="Finding and fixing broken links and soft 404s.">
@@ -268,7 +274,7 @@ jobs:
           different from a browser.</p></body></html>
           HTML
           python skills/seo-checklist/scripts/checklist_runner.py https://example.com/ \
-              --archive /tmp/article --no-history --no-prompt --quiet \
+              --archive "$ARTICLE" --no-history --no-prompt --quiet \
               --json article.json > article.log 2>&1
           grep -q "SEO Score" article.log || {
             echo "refused to audit a real page"; cat article.log; exit 1; }
@@ -294,27 +300,39 @@ jobs:
         run: |
           # 0.131.0: a server an earlier run left on 8000 answered in this one's place.
           # The audit ran against it, this job's server never bound, and the request
-          # count below read the empty log as "0 requests". The fixture's URLs name
-          # port 8000, so the port cannot move: refuse an occupied one, and require
-          # that the server answering is the one started here.
-          if curl -s -o /dev/null http://127.0.0.1:8000/; then
-            echo "port 8000 is already served by another process; stop it and rerun"; exit 1
+          # count below read the empty log as "0 requests". Until 0.168.1 the port was
+          # always 8000, because the fixture's URLs name it, so two gates on one machine
+          # (one per worktree) refused each other. Now the tree is copied and its URLs
+          # rewritten to a free port, the way the suite's own fixture sites are
+          # (`harness.substitute`); an occupied port is still refused, and the server
+          # answering must still be the one started here.
+          SITE=$(mktemp -d)
+          cp -R tests/fixtures/good/. "$SITE"
+          PORT=$(python -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+          python - "$SITE" "$PORT" <<'PY'
+          import sys
+          sys.path.insert(0, "tests")
+          from harness import PLACEHOLDER, substitute
+          substitute(sys.argv[1], PLACEHOLDER, f"http://127.0.0.1:{sys.argv[2]}")
+          PY
+          if curl -s -o /dev/null "http://127.0.0.1:$PORT/"; then
+            echo "port $PORT is already served by another process; stop it and rerun"; exit 1
           fi
           # `python -m http.server`, with the User-Agent on every line of its log: the
           # count below is of the audit's requests, and on a machine where something
           # else asks a freshly opened port (0.160.0) the log has to say who asked.
-          python tests/serve_fixture.py 8000 tests/fixtures/good > server.log 2>&1 &
+          python tests/serve_fixture.py "$PORT" "$SITE" > server.log 2>&1 &
           SERVER=$!
-          trap 'kill $SERVER' EXIT
+          trap 'kill $SERVER; rm -rf "$SITE"' EXIT
           for _ in $(seq 1 20); do
-            curl -sf -o /dev/null http://127.0.0.1:8000/ && break || sleep 0.5
+            curl -sf -o /dev/null http://127.0.0.1:$PORT/ && break || sleep 0.5
           done
-          curl -sf -o /dev/null http://127.0.0.1:8000/ || { echo "fixture server never came up"; exit 1; }
+          curl -sf -o /dev/null http://127.0.0.1:$PORT/ || { echo "fixture server never came up"; exit 1; }
           kill -0 "$SERVER" 2>/dev/null || { echo "the fixture server exited; another answered"; cat server.log; exit 1; }
 
           # The guard first: the default must still refuse. If this ever passes,
           # every audit is one DNS answer away from reaching a private network.
-          python skills/seo-checklist/scripts/checklist_runner.py http://127.0.0.1:8000/ \
+          python skills/seo-checklist/scripts/checklist_runner.py http://127.0.0.1:$PORT/ \
               --no-history --no-prompt --quiet --timeout 60 --json blocked.json \
               > blocked.log 2>&1 || true
           grep -q "private/internal IP" blocked.log || {
@@ -333,7 +351,7 @@ jobs:
           # being measured, and a number that quietly includes them is a number that
           # cannot be compared with the one in KNOWN-ISSUES.
           : > server.log
-          python skills/seo-checklist/scripts/checklist_runner.py http://127.0.0.1:8000/ \
+          python skills/seo-checklist/scripts/checklist_runner.py http://127.0.0.1:$PORT/ \
               --allow-private --sample 3 --max-rps 50 --no-history --no-prompt \
               --timeout 90 --json live.json > live.log 2>&1
           grep -q "SEO Score" live.log || {
@@ -440,7 +458,7 @@ jobs:
           # has stopped measuring and nobody would notice from the score alone.
           SEO_ALLOW_PRIVATE=1 SEO_MAX_RPS=50 python \
               skills/seo-checklist/scripts/link_profile.py \
-              http://127.0.0.1:8000/ --json > profile.json
+              http://127.0.0.1:$PORT/ --json > profile.json
           python - <<'PY'
           import json
           d = json.load(open("profile.json"))
@@ -489,10 +507,12 @@ jobs:
       # Wired on the day the twelfth document converted, rather than left for later:
       # GOV-10 is about the other outcome, four calibration checks that existed, passed,
       # and gated nothing until somebody went looking.
+      #
+      # `npx` and not `npm install -g`: `ci_local.py` runs this step on a developer's
+      # machine, and until 0.168.1 every local gate put 1.12.0 over whatever openspec
+      # that machine had installed globally. The pin holds here and installs nothing.
       - name: The specification is a specification
-        run: |
-          npm install -g @fission-ai/openspec@1.12.0
-          openspec validate --all --strict
+        run: npx -y @fission-ai/openspec@1.12.0 validate --all --strict
 
       # The `measured` bases, re-read against the constants they justify. Each check is
       # offline and takes about a second, and all four existed with no CI step for as

@@ -135,9 +135,33 @@ def legs_not_run(legs: list[tuple[str, str]], platform: str, python: str) -> lis
     return lines
 
 
-def gate_env(environ) -> dict:
-    """What every step starts from: this process's environment, and the interpreter
-    that is running first on `PATH`. Nothing else.
+def home_path() -> str:
+    """The `HOME` every step gets: an empty directory beside the stamp, in `.git/`."""
+    return os.path.join(git_directory(ROOT), "ci-local-home")
+
+
+def empty_home() -> str:
+    """`home_path()`, emptied, so nothing one run leaves there reaches the next."""
+    home = home_path()
+    shutil.rmtree(home, ignore_errors=True)
+    os.makedirs(home)
+    return home
+
+
+def gate_env(environ, home: str) -> dict:
+    """What every step starts from: this process's environment without its keys, an
+    empty `HOME`, and the interpreter that is running first on `PATH`.
+
+    CI's runner has no credentials and an empty home, and until 0.168.1 this gate gave
+    every step the developer's. The runner found a Search Console key under
+    `~/.config/gcloud/` by itself and printed `GSC: <that path>` in the live step,
+    where CI prints `GSC: no`; `env_loader.py` read `~/.agentic-seo/.env`. Nothing was
+    sent, because every audit here targets loopback, but it was a different run under
+    CI's name, and the next step pointed at a public host would have used a client's
+    key. A variable is taken out by its name — `*_KEY`, `*CREDENTIALS*` — rather than
+    from a list, so a key the plugin learns to read later is covered on the day.
+    npm's cache stays where it was: an empty `HOME` would otherwise make `npx`
+    download its package on every run.
 
     Until 0.159.0 a step was also given `PYTHONIOENCODING="utf-8"`, which CI gives no
     step. A test that read a child's output as UTF-8 while the child wrote the
@@ -149,7 +173,14 @@ def gate_env(environ) -> dict:
     variable CI does not set is the defect `step_env` names from the other side: a
     different run passing under the same name.
     """
-    env = dict(environ)
+    env = {key: value for key, value in environ.items()
+           if not (key.upper().endswith("_KEY") or "CREDENTIALS" in key.upper())}
+    real_home = environ.get("HOME") or environ.get("USERPROFILE")
+    if real_home and "npm_config_cache" not in env:
+        env["npm_config_cache"] = os.path.join(real_home, ".npm")
+    env["HOME"] = home
+    if "USERPROFILE" in env:
+        env["USERPROFILE"] = home
     # CI calls the interpreter `python`; on Windows the venv ships `python.exe`
     # but a bare `python` may be a store stub, so the running one is named.
     env["PATH"] = os.path.dirname(sys.executable) + os.pathsep + env["PATH"]
@@ -171,6 +202,12 @@ def step_env(base: dict, workflow: dict, job: dict, step: dict) -> dict:
     return env
 
 
+def installs(line: str) -> bool:
+    """True when this one line of a step installs a package."""
+    return line.strip().startswith(
+        ("pip ", "python -m pip ", "py -m pip ", "npm install ", "npm i "))
+
+
 def only_installs(script: str) -> bool:
     """True when every line of the step installs something.
 
@@ -179,8 +216,26 @@ def only_installs(script: str) -> bool:
     """
     lines = [ln.strip() for ln in script.splitlines()]
     lines = [ln for ln in lines if ln and not ln.startswith("#")]
-    return bool(lines) and all(
-        ln.startswith(("pip ", "python -m pip ", "py -m pip ")) for ln in lines)
+    return bool(lines) and all(installs(ln) for ln in lines)
+
+
+def without_installs(script: str) -> tuple[str, list[str]]:
+    """The step with its install lines taken out, and those lines.
+
+    A step that installs *and* checks ran whole until 0.168.1, and the one that did —
+    `npm install -g @fission-ai/openspec@1.12.0` before `openspec validate` — put
+    1.12.0 over this machine's own openspec on every local run. The rest of such a
+    step now runs against what this machine has installed, not CI's pin, which is the
+    trade the whole-step skip already makes.
+    """
+    # ponytail: a line is an install only on its own; an install continued with `\`
+    # onto the next line is not recognised and runs, as every line did before 0.168.1.
+    kept, dropped = [], []
+    lines = script.splitlines()
+    for i, ln in enumerate(lines):
+        continued = ln.rstrip().endswith("\\") or (i and lines[i - 1].rstrip().endswith("\\"))
+        (dropped if installs(ln) and not continued else kept).append(ln)
+    return "\n".join(kept), [ln.strip() for ln in dropped]
 
 
 # Three rules this tree holds every child process to, and
@@ -365,6 +420,8 @@ def main() -> int:
                 kind = f"not run ({s.get('uses', '?')})"
             elif only_installs(s["run"]):
                 kind = "not run (installs packages)"
+            elif without_installs(s["run"])[1]:
+                kind = f"run without {len(without_installs(s['run'])[1])} install line(s)"
             else:
                 kind = "run"
             print(f"  {job:<14} {s.get('name', '(unnamed)'):<52} {kind}")
@@ -378,7 +435,7 @@ def main() -> int:
                       f"green here. Nothing changed, so nothing is rerun.")
                 return 0
 
-    env = gate_env(os.environ)
+    env = gate_env(os.environ, empty_home())
 
     runnable = [(j, s) for j, s in steps
                 if "run" in s and not only_installs(s["run"])]
@@ -389,9 +446,12 @@ def main() -> int:
 
     before = untracked()
     failures, total = [], 0.0
+    lines_not_run = []
     for job, step in runnable:
         name = step.get("name", "(unnamed)")
-        ok, took, output = run_step(name, step["run"],
+        script, dropped = without_installs(step["run"])
+        lines_not_run += [(job, name, ln) for ln in dropped]
+        ok, took, output = run_step(name, script,
                                     step_env(env, workflow, jobs[job], step))
         total += took
         print(f"  {'ok  ' if ok else 'FAIL'}  {took:6.1f}s  {job}: {name}")
@@ -408,6 +468,8 @@ def main() -> int:
     for job, step in skipped:
         why = step.get("uses") or "installs packages; this machine has its venv"
         print(f"  not run: {job}: {step.get('name') or step.get('uses')} — {why}")
+    for job, name, line in lines_not_run:
+        print(f"  not run: {job}: {name}: `{line}` — installs a package; this machine has its own")
     for job in jobs:
         if job not in wanted:
             print(f"  not run: the whole {job} job")

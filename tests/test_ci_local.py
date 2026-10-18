@@ -324,14 +324,33 @@ class AStepGetsTheEnvironmentCIGivesIt(unittest.TestCase):
     machine's codepage passed this gate on Windows and failed CI's Windows leg.
     """
 
-    def test_the_base_differs_from_this_environment_by_the_path_alone(self):
-        mine = {"PATH": "elsewhere", "HOME": "somewhere", "PYTHONIOENCODING": "cp1252"}
-        env = ci_local.gate_env(mine)
+    def test_the_base_differs_from_this_environment_by_path_home_and_keys(self):
+        mine = {"PATH": "elsewhere", "HOME": "somewhere", "PYTHONIOENCODING": "cp1252",
+                "GV_SA_KEY": "/k.json", "GSC_CREDENTIALS_PATH": "/k.json"}
+        env = ci_local.gate_env(mine, "empty")
         self.assertEqual({key for key in set(env) | set(mine) if env.get(key) != mine.get(key)},
-                         {"PATH"})
+                         {"PATH", "HOME", "GV_SA_KEY", "GSC_CREDENTIALS_PATH",
+                          "npm_config_cache"})
+        self.assertEqual(env["HOME"], "empty")
+        self.assertEqual(env["npm_config_cache"], os.path.join("somewhere", ".npm"))
         self.assertEqual(env["PATH"].split(os.pathsep),
                          [os.path.dirname(sys.executable), "elsewhere"])
         self.assertEqual(mine["PATH"], "elsewhere", "the caller's environment was edited")
+
+    def test_no_key_the_plugin_reads_reaches_a_step(self):
+        """Every variable name the shipped scripts read that looks like a secret, read off
+        the scripts rather than listed here, is gone from a step's environment."""
+        scripts = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
+        names = set()
+        for folder, _dirs, files in os.walk(scripts):
+            for name in files:
+                if name.endswith(".py"):
+                    with open(os.path.join(folder, name), encoding="utf-8") as f:
+                        names |= set(re.findall(r'"([A-Z][A-Z0-9_]*(?:KEY|CREDENTIALS[A-Z_]*))"',
+                                                f.read()))
+        self.assertTrue({"GV_SA_KEY", "GSC_CREDENTIALS_PATH", "PAGESPEED_API_KEY"} <= names, names)
+        env = ci_local.gate_env({name: "secret" for name in names} | {"PATH": "p"}, "h")
+        self.assertEqual(sorted(names & set(env)), [])
 
     def test_a_run_hands_every_step_that_and_the_workflows_own(self):
         """Through `main`, since a variable can be added after the base is built as
@@ -351,7 +370,8 @@ class AStepGetsTheEnvironmentCIGivesIt(unittest.TestCase):
                 mock.patch("builtins.print"):
             self.assertEqual(ci_local.main(), 0)
         expected = [(s.get("name", "(unnamed)"),
-                     ci_local.step_env(ci_local.gate_env(os.environ), workflow, job, s))
+                     ci_local.step_env(ci_local.gate_env(os.environ, ci_local.home_path()),
+                                       workflow, job, s))
                     for job in (workflow["jobs"][name] for name in ("test", "census"))
                     for s in job["steps"]
                     if "run" in s and not ci_local.only_installs(s["run"])]
@@ -360,6 +380,63 @@ class AStepGetsTheEnvironmentCIGivesIt(unittest.TestCase):
         for name, env in handed:
             self.assertEqual(env.get("PYTHONIOENCODING"), os.environ.get("PYTHONIOENCODING"),
                              f"{name}: the gate set what CI does not")
+
+
+class AStepThatInstallsAndChecksRunsOnlyTheCheck(unittest.TestCase):
+    """The install lines of a mixed step are not run here.
+
+    Until 0.168.1 only a step whose every line installed was skipped, and "The
+    specification is a specification" installed openspec globally before validating:
+    every local gate put 1.12.0 over the openspec this machine had. The step itself
+    no longer installs (`npx`); this is the guard for the next one that does.
+    """
+
+    WORKFLOW = {"jobs": {"test": {"steps": [
+        {"name": "mixed", "run": "pip install x\npython -c pass\n"},
+    ]}}}
+
+    def test_the_install_line_is_taken_out_and_named(self):
+        script, dropped = ci_local.without_installs("pip install x\npython -c pass\n")
+        self.assertEqual(script.strip(), "python -c pass")
+        self.assertEqual(dropped, ["pip install x"])
+
+    def test_an_npm_install_is_an_install(self):
+        self.assertTrue(ci_local.installs("npm install -g @fission-ai/openspec@1.12.0"))
+        self.assertTrue(ci_local.only_installs("npm i -g a\npip install b\n"))
+
+    def test_an_install_continued_onto_the_next_line_is_left_whole(self):
+        script, dropped = ci_local.without_installs("pip install a \\\n  b\nx\n")
+        self.assertEqual(dropped, [])
+        self.assertIn("pip install a", script)
+
+    def test_a_run_hands_the_step_only_its_check_and_says_what_it_left_out(self):
+        handed, printed = [], []
+
+        def step(name, script, env):
+            handed.append(script)
+            return True, 0.0, ""
+
+        with mock.patch.object(sys, "argv", ["ci_local.py", "--no-cache", "--job", "test"]), \
+                mock.patch.object(ci_local, "load_workflow", return_value=self.WORKFLOW), \
+                mock.patch.object(ci_local, "tree_hash", return_value=None), \
+                mock.patch.object(ci_local, "untracked", return_value=set()), \
+                mock.patch.object(ci_local, "legs_not_run", return_value=[]), \
+                mock.patch.object(ci_local, "run_step", side_effect=step), \
+                mock.patch("builtins.print", side_effect=lambda *a, **k: printed.append(
+                    " ".join(map(str, a)))):
+            self.assertEqual(ci_local.main(), 0)
+        self.assertEqual([script.strip() for script in handed], ["python -c pass"])
+        self.assertTrue(any("`pip install x`" in line and "not run" in line
+                            for line in printed), printed)
+
+    def test_no_step_of_this_workflow_installs_anything_here(self):
+        """The real workflow, read: no step this gate runs keeps an install line."""
+        for job in ci_local.load_workflow()["jobs"].values():
+            for s in job["steps"]:
+                if "run" in s and not ci_local.only_installs(s["run"]):
+                    script, _ = ci_local.without_installs(s["run"])
+                    self.assertFalse(any(ci_local.installs(ln) for ln in script.splitlines()),
+                                     s.get("name"))
 
 
 class ARunLeavesNoFileOfItsOwnInTheTree(unittest.TestCase):
