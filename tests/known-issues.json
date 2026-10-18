@@ -199,6 +199,7 @@
           "indexability_matrix.py",
           "internal_links.py",
           "link_profile.py",
+          "local_seo_checker.py",
           "redirect_checker.py",
           "rich_results_guard.py",
           "server_log_audit.py",

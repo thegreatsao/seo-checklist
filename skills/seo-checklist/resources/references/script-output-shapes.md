@@ -1276,11 +1276,13 @@ remain present, and the site path additionally emits `scope`, `pages_checked`, a
 `final_url` — str
 `status` — int or NoneType
 `fetch_error` — NoneType or str (the page could not be read; LO-198 and LO-200 are `high`)
-`local_business_nodes` — int
+`local_business_nodes` — int; absent on the inventory path when the crawl was truncated and found none, so LO-198 answers NO_DATA rather than failing on pages never read
 `nap_complete` — bool: true when every LocalBusiness node has name, address, and telephone; written only for a page carrying at least one LocalBusiness node, so a page with none reports no key and the item answers NO_DATA
 `scope` — str: `site` (inventory only)
 `pages_checked` — int (inventory only)
 `local_business_pages[]` — array (inventory only)
+`truncated` — bool: the crawl's `summary.truncated` (inventory only)
+`truncated_reason` — str: why `local_business_nodes` is absent (inventory only, written with it absent)
 `phones_detected[]` — array
 `map_embeds` — int
 `issues[]` — array

@@ -885,6 +885,9 @@ def _absent(rule: dict, data: dict) -> str:
     parent_path, separator, _ = rule.get("path", "").rpartition(".")
     parent = resolve(data, parent_path) if separator else None
     reason = parent.get("reason") if isinstance(parent, dict) else None
+    # A count a script withheld because its input was capped says so at the top.
+    if not (isinstance(reason, str) and reason.strip()) and input_truncated(data):
+        reason = truncation_reason(data)
     if isinstance(reason, str) and reason.strip():
         return f"{rule['path']} missing: {reason.strip()[:200]}"
     return f"{rule['path']} missing"

@@ -5836,6 +5836,46 @@ class LocalBusinessInventory(unittest.TestCase):
         self.assertFalse(is_page_level({"check": check}))
         self.assertEqual(ITEMS["LO-200"]["check"]["requires"], "fetch")
 
+    def test_lo_198_does_not_fail_a_site_on_the_pages_a_capped_crawl_skipped(self):
+        """F08. LO-198 is the one crawl item whose failing answer is an absence, and
+        the runner's truncation rule only withholds a clean PASS. With the page cap at
+        one, the crawl read the entry, never reached `/contact` where the markup
+        sits, and LO-198 reported a `high` FAIL about the whole site."""
+        import local_seo_checker
+        import site_crawl
+        marked = ('<html><head><script type="application/ld+json">'
+                  '{"@context":"https://schema.org","@type":"Restaurant",'
+                  '"name":"Fixture"}</script></head><body>'
+                  '<a href="/contact">Contact</a></body></html>')
+        plain = '<html><body><a href="/contact">Contact</a></body></html>'
+        item = ITEMS["LO-198"]
+        key = (item["check"]["script"], ())
+
+        def graded(home, contact, max_pages):
+            routes = {"/": home, "/contact": contact,
+                      "/robots.txt": (200, "User-agent: *\nAllow: /\n")}
+            with harness.allow_loopback(), served(routes) as site:
+                inventory = site_crawl.crawl(site.url, use_sitemap=False,
+                                             workers=1, max_pages=max_pages)
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".json",
+                                                 delete=False) as handle:
+                    json.dump(inventory, handle)
+                    path = handle.name
+                try:
+                    result = local_seo_checker.check_local_business_inventory(
+                        site.url, path)
+                finally:
+                    os.unlink(path)
+            return grade([item], {key: [item["id"]]}, {key: result}, {}, False)[0]
+
+        unread = graded(plain, marked, max_pages=1)
+        self.assertEqual(unread["status"], NO_DATA, unread["evidence"])
+        self.assertIn("1 page", unread["evidence"])
+        self.assertEqual(graded(marked, plain, max_pages=1)["status"], PASS,
+                         "a node found on a capped crawl is still found")
+        self.assertEqual(graded(plain, plain, max_pages=10)["status"], FAIL,
+                         "a whole site read with no node still fails")
+
 
 class AnchorText(unittest.TestCase):
     """BL-081 `summary.overused_exact_match_targets`."""

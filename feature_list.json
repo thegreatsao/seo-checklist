@@ -217,7 +217,7 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "not_started",
+    "state": "active",
     "evidence": "",
     "notes": "Found in F02 batch 1 (docs/sprint-20261018-F02.md, 'Left inherited'). Until it lands, DEFAULT_MAX_PAGES and DEFAULT_DEPTH decide LO-198's verdict and stay inherited."
   },

@@ -36,11 +36,12 @@ def check_local_business_inventory(source: str, inventory_path: str) -> dict[str
             if is_local_business_type(node.get("types")):
                 matches.append({"url": page.get("final_url") or page.get("url") or key,
                                 "types": node.get("types") or []})
+    truncated = bool((inventory.get("summary") or {}).get("truncated"))
     issues = []
     if not matches:
         issues.append(issue("warning", "No LocalBusiness JSON-LD found on any "
                             "crawled page (nor any of its subtypes)", source))
-    return {
+    result = {
         "source": source,
         "final_url": source,
         "status": None,
@@ -52,7 +53,18 @@ def check_local_business_inventory(source: str, inventory_path: str) -> dict[str
         "phones_detected": [],
         "map_embeds": 0,
         "issues": issues,
+        "truncated": truncated,
     }
+    # LO-198 fails on finding none, so it is the one crawl verdict a cap can fake
+    # by failing: the runner withholds a clean PASS off a capped input, not a FAIL.
+    # None found on part of a site is not a count of the site, so the count is
+    # withheld and the item answers NO_DATA; a node found stands either way.
+    if truncated and not matches:
+        del result["local_business_nodes"]
+        result["truncated_reason"] = (
+            f"no LocalBusiness node on the {len(pages)} page(s) read, and the crawl "
+            "stopped at its page or depth cap before the rest of the site")
+    return result
 
 
 def check_local_seo(source: str, timeout: int = 15) -> dict[str, Any]:
