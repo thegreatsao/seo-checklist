@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.167.1 — see [CHANGELOG.md](CHANGELOG.md). Eleven of the 77 numbers that carried `# basis: inherited` are decided now: ten coverage caps — how many links, sheets, images, sitemap files and log lines a script reads, one retry count and one timeout — are `convention`, each with the argument that past it the script says it stopped and the item answers NO_DATA instead of passing off part of the site, what it still decides (a WARN counted over part of the input can understate a FAIL), and a test that drives it past its value. The validator's 40-message cap is `presentation`: the error count is taken before it. `inherited` is 66 of 163. Three caps stay `inherited` because the argument is not true for them: the crawl's page and depth limits decide LO-198, and Search Console's row limit decides KW-070 and GO-139. No verdict moves. 0.167.0, the release before, kept a sitemap walk to the audited host and to a budget.
+Version 0.168.0 — see [CHANGELOG.md](CHANGELOG.md). `SEO_STANDARD_PORTS_ONLY=1` holds every request an audit makes — the entry URL, each redirect hop, every link and asset the page names — to ports 80 and 443, for an audit that runs behind a public form (see "Running audits for other people"); off by default, so nothing a hand-run audit does moves. `indexability_matrix` now reads sitemaps within the same 20 MB budget as the other two walkers. 0.167.1, the release before, gave eleven coverage caps a stated basis; 0.167.0 kept the sitemap walks to the audited host and to a budget.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -549,6 +549,14 @@ Two consequences worth expecting:
 
 For a single evidence script run by hand, `SEO_ALLOW_PRIVATE=1` does the same thing
 and announces itself once.
+
+**Running audits for other people.** If the audit runs behind a form anyone can use,
+set `SEO_STANDARD_PORTS_ONLY=1` in its environment. The audited site decides most of
+what an audit requests (every outbound link, the canonical target, the favicon, each
+redirect hop), and with this set every one of those requests, and the entry URL, goes
+to port 80 or 443 only. A link to another port is reported unchecked, not broken.
+Requests to other public sites on the web ports remain: checking a site's outbound
+links means requesting them.
 
 ## Measuring the rendered page
 

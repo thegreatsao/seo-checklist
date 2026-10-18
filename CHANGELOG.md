@@ -10,6 +10,43 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.168.0 — an audit run for strangers can be held to ports 80 and 443; the third sitemap walker gets the byte budget
+
+Registry version: `90ba79b14b28`, unchanged. Without the new switch, nothing an audit
+fetches or reports moves.
+
+* **`SEO_STANDARD_PORTS_ONLY=1` holds every request to ports 80 and 443.** 0.167.0 left one
+  thing open, recorded as "Not held": a fetch follows a redirect to any public host and
+  port. Measured before changing it, a redirect rule would have closed nothing. The audited
+  page names most of what an audit requests directly, no redirect needed: `broken_links`
+  checks up to 200 outbound links, and the canonical target, the favicon, `sameAs`, fonts,
+  stylesheets, third-party scripts, images and hreflang alternates are all requested on
+  whatever host and port the page gives, while `redirect_checker` walks each hop itself.
+  So a page linking to `host:8443` already had the engine connect there and report the
+  status: a port prober running from the operator's address. The guard is the one place
+  every request passes, so the rule is there. With the switch set, `_validated_url` refuses
+  any other port before the name is resolved, for the entry URL, every redirect hop and
+  every discovered URL alike, with `NonStandardPort` (a `SafeHTTPError`, so the fetch
+  classifies as `blocked` and `broken_links` reports the link unchecked, not broken). Off
+  by default: run by hand, an audit of a staging site on `:8080` works as before. A public
+  deployment should set it (README, "Running audits for other people"). Requests to other
+  public sites on the web ports remain, because checking outbound links means making them.
+
+* **`indexability_matrix` reads sitemaps within `SITEMAP_BYTES_BUDGET`.** 0.167.0 gave the
+  20 MB budget to the crawl and to `sitemap_checker`; the matrix could still read ten
+  sitemaps of 8 MB. It now stops at the budget, and when sitemaps were left unread a row's
+  `in_sitemap` is `null` (unknown), not `false`: a URL missing from the files read is not
+  known to be missing. No registry item reads that field.
+
+* **Held by** `test_safe_http.TheWebDeploymentReachesOnlyTheWebPorts` (another port refused
+  before resolution and classified `blocked`, a redirect to another port not followed, both
+  web ports fetched named or not, any port fetched with the switch off) and
+  `test_sitemap_walk_bounds` `test_the_indexability_matrix_stops_reading_sitemaps_past_its_byte_budget`.
+  The three that assert a refusal or a stop failed on the 0.167.0 code; the two that assert
+  a fetch passed there, as they should.
+  Suite: 2388 tests at 0.167.1, 2393 now, `OK (skipped=6)` on the Mac on 18 October
+  2026, with every step of `ci_local.py` green.
+
 ## 0.167.1 — eleven coverage caps leave `inherited`, and three are shown to stay
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves and no program prints,
