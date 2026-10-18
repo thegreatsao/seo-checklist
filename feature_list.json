@@ -1,0 +1,196 @@
+[
+  {
+    "id": "F01",
+    "behavior": "The plugin as released passes every CI step this machine can run: lint, the full unittest suite, the registry and audit gates, the offline smoke runs and the live-fixture path",
+    "dependencies": [],
+    "verification": "make verify-feature F=F01",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "passing",
+    "evidence": "commit 3e80746, verified 2026-10-18",
+    "notes": "Baseline: what v0.166.0 already does. CI itself also runs the Python floor and Linux/Windows legs, which no local layer covers."
+  },
+  {
+    "id": "F02",
+    "behavior": "No threshold rests on 'inherited': each of the 77 is calibrated or relabelled 'convention' with its judgement written out",
+    "dependencies": [
+      "F01"
+    ],
+    "verification": "make verify-feature F=F02",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "not_started",
+    "evidence": "",
+    "notes": "ROADMAP 'What 1.0 requires' item 1; count read from ROADMAP.md at v0.166.0. Held by tools/audit_thresholds.py --check. Spans sessions: the sprint contract at activation picks a batch and adds the layer that proves the new count."
+  },
+  {
+    "id": "F03",
+    "behavior": "REG-6 has a second reader: each item reading is checked by someone other than its author",
+    "dependencies": [
+      "F01"
+    ],
+    "verification": "make verify-feature F=F03",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "not_started",
+    "evidence": "",
+    "notes": "ROADMAP item 2. Readings: tools/item-readings.json, held by tools/audit_item_readings.py --check."
+  },
+  {
+    "id": "F04",
+    "behavior": "The 20 partial requirements and DEC-1 are each held or narrowed to what is held",
+    "dependencies": [
+      "F01"
+    ],
+    "verification": "make verify-feature F=F04",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "not_started",
+    "evidence": "",
+    "notes": "ROADMAP item 3; counts from the spec ledger (tests/spec-debt.json, tools/spec_debt.py --check). Spans sessions."
+  },
+  {
+    "id": "F05",
+    "behavior": "The 143 assertions audit_reachability.py makes no claim about are reduced by extending its detectors, not by prose",
+    "dependencies": [
+      "F01"
+    ],
+    "verification": "make verify-feature F=F05",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "not_started",
+    "evidence": "",
+    "notes": "ROADMAP item 4. Spans sessions."
+  },
+  {
+    "id": "F06",
+    "behavior": "The census's 19 and 35 are each an answer or a named structural reason",
+    "dependencies": [
+      "F01"
+    ],
+    "verification": "make verify-feature F=F06",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "not_started",
+    "evidence": "",
+    "notes": "ROADMAP item 5; tests/census.json, tests/test_census.py."
+  },
+  {
+    "id": "F07",
+    "behavior": "Every checkable sentence in SKILL.md, README.md and ROADMAP.md is tied to observable behaviour, the way counts are",
+    "dependencies": [
+      "F01"
+    ],
+    "verification": "make verify-feature F=F07",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "not_started",
+    "evidence": "",
+    "notes": "ROADMAP item 6; counts are held by tests/test_prose_counts.py. Spans sessions."
+  }
+]

@@ -30,3 +30,10 @@ CHECKLIST.html
 *QUEUE*.md
 probe-*.json
 .seo-runs/
+
+# Harness runtime output, and the owner's handoff: it names machines, clients and
+# paths, so it lives in his workspace and the root name is a link to it.
+.harness/traces/*.jsonl
+.harness/traces/.current-session-id
+/HANDOFF.md
+/HANDOFF-archive.md

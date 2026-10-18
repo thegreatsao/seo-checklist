@@ -1,0 +1,29 @@
+[
+  {
+    "id": "A01",
+    "description": "No debugger left in shipped or test code",
+    "check": "git grep -nE '^[[:space:]]*(breakpoint\\(\\)|import pdb|pdb\\.set_trace)' -- '*.py'",
+    "expect": "no-output",
+    "what": "A breakpoint() or pdb call is in a tracked Python file",
+    "why": "The plugin runs unattended inside an agent session and in CI; a debugger stops the run with no one to answer it",
+    "fix": "Delete the reported line. To see a value, assert it in a test under tests/."
+  },
+  {
+    "id": "A02",
+    "description": "No hardcoded secret outside tests/ (tests hold fakes on purpose)",
+    "check": "git grep -nEi \"(api_key|secret|token|password)[[:space:]]*[:=][[:space:]]*['\\\"][A-Za-z0-9_/+=-]{20,}['\\\"]\" -- ':!tests'",
+    "expect": "no-output",
+    "what": "A tracked file holds what looks like a literal key or token",
+    "why": "This repository is public; a key in git history can only be rotated, not removed",
+    "fix": "Remove the literal and read it from the environment the way checklist_runner.py reads GSC_CREDENTIALS_PATH; rotate the key."
+  },
+  {
+    "id": "A03",
+    "description": "feature_list.json is valid JSON",
+    "check": "jq empty feature_list.json",
+    "expect": "exit-0",
+    "what": "feature_list.json is missing or contains a JSON syntax error",
+    "why": "Invalid JSON breaks make vcr, verify-feature.sh and the feature state machine",
+    "fix": "Run 'jq . feature_list.json' to see the parse error and fix the reported line."
+  }
+]
