@@ -255,8 +255,8 @@ and no number that decides a verdict may carry none.
 question about a `FAIL` is where the line came from. `inherited` is an honest answer and
 also a debt; the point of naming it is that the debt is countable.
 **Reader:** enforced. `tools/audit_thresholds.py --check` runs in CI over every number a
-verdict depends on and fails when one names no basis. It reports 161 such numbers at
-0.144.0 — 19 `standard`, 11 `measured`, 54 `convention`, 77 `inherited`, and **0 with no
+verdict depends on and fails when one names no basis. It reports 164 such numbers at
+0.167.0 — 20 `standard`, 11 `measured`, 56 `convention`, 77 `inherited`, and **0 with no
 basis**. The gate holds the floor; the 77 are the debt it makes visible. **Until 0.144.0
 nothing held the scan itself.** A constant becomes a threshold in four places — an
 ordering comparison, an argument of `min` or `max`, a multiplication, a looked-up table —

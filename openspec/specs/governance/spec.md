@@ -83,8 +83,8 @@ that decides only what is printed is marked as such and is not counted among the
 threshold with no stated basis cannot be argued with, and the honest answer "we do not know,
 it came with the code" is only available if somebody wrote it down.
 **Reader:** enforced. `audit_thresholds.py --check` runs in CI and fails when a
-verdict-deciding number names no basis. It counts 161 such numbers at 0.144.0 — 19
-`standard`, 11 `measured`, 54 `convention`, **77 `inherited`**, 0 without a basis — plus 12
+verdict-deciding number names no basis. It counts 164 such numbers at 0.167.0 — 20
+`standard`, 11 `measured`, 56 `convention`, **77 `inherited`**, 0 without a basis — plus 12
 that decide only presentation. `tests/test_prose_counts.py` reads the counts in this
 paragraph since 0.145.0 (`evidence` EVD-6 says what their going unread had cost).
 

@@ -48,6 +48,8 @@ from datetime import datetime, timezone
 from urllib.parse import urljoin, urlparse
 
 from seo_common import (
+    SITEMAP_BYTES_BUDGET,
+    SITEMAP_URLS_BUDGET,
     as_list,
     carries_content,
     discover_sitemap_urls,
@@ -254,10 +256,21 @@ def load_sitemap_urls(site_url: str, sitemap_urls: list[str] | None = None,
     seen_sitemaps: set[str] = set()
     urls: list[str] = []
     errors: list[dict] = []
+    # A sitemap on another host is named and never requested: robots.txt and a
+    # sitemap index are the audited site's words, and following them off the site
+    # made this walk a GET proxy to any public host and port. The www variant and
+    # the other scheme are the same site, as everywhere else here (`same_host`).
+    off_host_sitemaps: list[str] = []
+    read_bytes, dropped_urls = 0, 0
 
     while queue and len(seen_sitemaps) < max_sitemaps:
+        if read_bytes >= SITEMAP_BYTES_BUDGET:
+            break
         sitemap_url = normalize_url(queue.pop(0), site_url)
-        if sitemap_url in seen_sitemaps:
+        if sitemap_url in seen_sitemaps or sitemap_url in off_host_sitemaps:
+            continue
+        if not same_host(site_url, sitemap_url):
+            off_host_sitemaps.append(sitemap_url)
             continue
         seen_sitemaps.add(sitemap_url)
         fetched = fetch(sitemap_url, timeout=timeout, max_bytes=8_000_000)
@@ -266,12 +279,16 @@ def load_sitemap_urls(site_url: str, sitemap_urls: list[str] | None = None,
                            "error": fetched.get("error"),
                            "error_kind": fetched.get("error_kind")})
             continue
+        read_bytes += len(fetched["text"])
         parsed = parse_sitemap_xml(fetched["text"], sitemap_url)
         if parsed.get("error"):
             errors.append({"url": sitemap_url, "error": parsed["error"]})
             continue
         queue.extend(item["loc"] for item in parsed.get("sitemaps", []))
-        urls.extend(item["loc"] for item in parsed.get("urls", []))
+        locs = [item["loc"] for item in parsed.get("urls", [])]
+        room = max(0, SITEMAP_URLS_BUDGET - len(urls))
+        urls.extend(locs[:room])
+        dropped_urls += max(0, len(locs) - room)
 
     # A sitemap listing another host's URLs is a real defect and it is
     # `sitemap_checker.py`'s to report. Here they are only kept out of the way: a
@@ -295,12 +312,23 @@ def load_sitemap_urls(site_url: str, sitemap_urls: list[str] | None = None,
     unvisited, queued = [], set()
     for candidate in queue:
         sitemap_url = normalize_url(candidate, site_url)
-        if sitemap_url not in seen_sitemaps and sitemap_url not in queued:
+        if not same_host(site_url, sitemap_url):
+            if sitemap_url not in off_host_sitemaps:
+                off_host_sitemaps.append(sitemap_url)
+        elif sitemap_url not in seen_sitemaps and sitemap_url not in queued:
             queued.add(sitemap_url)
             unvisited.append(sitemap_url)
+    cut = []
+    if read_bytes >= SITEMAP_BYTES_BUDGET and unvisited:
+        cut.append(f"the sitemap byte budget ({SITEMAP_BYTES_BUDGET} bytes) was spent "
+                   f"with {len(unvisited)} sitemap(s) unread")
+    if dropped_urls:
+        cut.append(f"the sitemap URL budget ({SITEMAP_URLS_BUDGET}) was reached and "
+                   f"{dropped_urls} listed URL(s) were not kept")
     result = {"sitemaps_checked": sorted(seen_sitemaps), "urls": deduped,
               "off_host": off_host, "errors": errors,
-              "unvisited": unvisited}
+              "unvisited": unvisited, "off_host_sitemaps": off_host_sitemaps,
+              "cut": cut}
     if include_fetch_targets:
         # Crawl-only transport detail, removed before the inventory is written.
         # The first sitemap spelling wins when `/about` and `/about/` share a
@@ -466,7 +494,8 @@ def crawl(site_url: str, depth: int = DEFAULT_DEPTH,
         return fetch_url(url, **kw)
 
     sitemap = ({"sitemaps_checked": [], "urls": [], "off_host": [], "errors": [],
-                "unvisited": [], "_fetch_targets": {}}
+                "unvisited": [], "off_host_sitemaps": [], "cut": [],
+                "_fetch_targets": {}}
                if not use_sitemap
                else load_sitemap_urls(site_url, sitemap_urls=sitemap_urls,
                                       timeout=timeout, fetch=_fetch,

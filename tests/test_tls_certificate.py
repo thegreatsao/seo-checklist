@@ -165,5 +165,47 @@ class TheGuardReachesThisScriptToo(unittest.TestCase):
         self.assertIn("SafeHTTPError", out["error"])
 
 
+
+class ConnectsToTheValidatedAddress(unittest.TestCase):
+    """The guard and the connection must agree on one address.
+
+    `inspect` called `assert_safe_url`, which resolves the host and checks every
+    answer, and then `socket.create_connection((host, port))`, which resolves it
+    again. A name whose second answer differs from its first — DNS rebinding, a TTL
+    of zero — passed the guard on a public address and connected to a private one.
+    The handshake goes to the address the guard validated; the name is kept for SNI
+    and for certificate verification.
+    """
+
+    PUBLIC = "93.184.216.34"
+
+    def test_a_second_resolution_cannot_move_the_connection(self):
+        sys.path.insert(0, str(SCRIPT.parent))
+        import socket as socket_module
+        from unittest import mock
+
+        import tls_certificate
+
+        def resolving(host, port, *args, **kwargs):
+            ip = self.PUBLIC if not answers else "127.0.0.1"
+            answers.append(host)
+            return [(socket_module.AF_INET, socket_module.SOCK_STREAM, 6, "", (ip, port))]
+
+        answers: list[str] = []
+        connected = []
+
+        def connect(address, *args, **kwargs):
+            connected.append(address)
+            raise OSError("stop before a handshake")
+
+        env = {"SEO_LOOPBACK_ONLY": "", "SEO_ALLOW_PRIVATE": ""}
+        with mock.patch.dict(os.environ, env), \
+                mock.patch.object(socket_module, "getaddrinfo", side_effect=resolving), \
+                mock.patch.object(socket_module, "create_connection", side_effect=connect):
+            out = tls_certificate.inspect("https://rebind.example/")
+        self.assertEqual(connected, [(self.PUBLIC, 443)])
+        self.assertNotIn("valid", out)
+        self.assertEqual(out["host"], "rebind.example")
+
 if __name__ == "__main__":
     unittest.main()

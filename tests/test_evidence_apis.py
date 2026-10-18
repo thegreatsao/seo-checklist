@@ -633,7 +633,8 @@ class SitemapReconciliation(unittest.TestCase):
                  "ctr": 0.5, "position": 1.0} for page in pages]
 
     def reconcile(self, urls, states=None, rows=None, submitted=True,
-                  errors=None, discovered=None, unvisited=None, max_urls=100):
+                  errors=None, discovered=None, unvisited=None, max_urls=100,
+                  walk=None):
         inspections = {
             url: (state if isinstance(state, Exception)
                   else self.inspection(state))
@@ -652,6 +653,7 @@ class SitemapReconciliation(unittest.TestCase):
             "sitemaps_checked": list(k.get("sitemap_urls") or []),
             "errors": list(errors or []),
             "unvisited": list(unvisited or []),
+            **(walk or {}),
         }
         out = self.mod.analyze(self.SITE, self.PROP, "/dev/null", max_urls, 28)
         return out, service
@@ -774,6 +776,25 @@ class SitemapReconciliation(unittest.TestCase):
         self.assertIn("reached its cap with 2 sitemaps unread",
                       out["truncated_reason"])
         self.assertEqual(verdict("GO-137", out), NO_DATA)
+
+    def test_a_walk_cut_by_its_budget_or_by_host_withholds_the_reverse_direction(self):
+        """0.167.0: the walk keeps to its budgets and to the audited host, and says
+        what it left out; a set it left something out of is not a whole sitemap."""
+        listed = self.SITE + "listed"
+        missing = self.SITE + "missing"
+        for walk, said in (
+                ({"cut": ["the sitemap URL budget (50000) was reached"]}, "URL budget"),
+                ({"off_host_sitemaps": ["https://cdn.example/sitemap.xml"]},
+                 "https://cdn.example/sitemap.xml")):
+            with self.subTest(walk=walk):
+                out, _ = self.reconcile(
+                    [listed], states={listed: "Submitted and indexed"},
+                    rows=self.rows(listed, missing), walk=walk)
+                self.assertFalse(out["summary"]["indexed_not_in_sitemap_counted"])
+                self.assertEqual(out["summary"]["unreconciled"], 0)
+                self.assertTrue(out["truncated"])
+                self.assertIn(said, out["truncated_reason"])
+                self.assertEqual(verdict("GO-137", out), NO_DATA)
 
     def test_sitemap_loader_names_children_left_unread_at_its_cap(self):
         import site_crawl

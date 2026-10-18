@@ -638,8 +638,12 @@ def _port_for(parsed) -> int:
 
 def _is_blocked_ip(ip_text: str) -> bool:
     ip = ipaddress.ip_address(ip_text)
+    # `is_global` is the one flag that covers 100.64.0.0/10 (RFC 6598: carrier NAT,
+    # Tailscale), which is neither private nor reserved to `ipaddress`; until
+    # 0.167.0 a public audit could reach a tailnet peer of the machine running it.
     return (
-        ip.is_private
+        not ip.is_global
+        or ip.is_private
         or ip.is_loopback
         or ip.is_reserved
         or ip.is_link_local
@@ -839,6 +843,16 @@ def assert_safe_url(url: str) -> str:
     """Compatibility wrapper for validation-only callers."""
     normalized, _resolved_ips = _validated_url(url)
     return normalized
+
+
+def validated_addresses(url: str) -> tuple[str, ...]:
+    """The addresses `url` resolved to, every one checked, in resolver order.
+
+    For a caller that opens its own socket (`tls_certificate.py`): connect to one of
+    these, not to the name, or the name is resolved a second time after the check.
+    """
+    _normalized, resolved_ips = _validated_url(url)
+    return resolved_ips
 
 
 # How far into a document to look for its own encoding declaration. The HTML spec

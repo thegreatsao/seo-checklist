@@ -201,6 +201,8 @@ def analyze(site_url: str, prop: str, credentials: str, max_urls: int = MAX_URLS
         )
     ]
     unvisited = sitemap.get("unvisited", [])
+    cut = sitemap.get("cut", [])
+    off_host_sitemaps = sitemap.get("off_host_sitemaps", [])
     if not urls and result["sitemap_errors"]:
         failed = ", ".join(
             str(row.get("url") or "unknown sitemap")
@@ -238,7 +240,8 @@ def analyze(site_url: str, prop: str, credentials: str, max_urls: int = MAX_URLS
     result["indexed_not_in_sitemap"] = missing_all[:50]
 
     indexed = sum(row.get("indexed") is True for row in inspected)
-    sitemap_complete = not result["sitemap_errors"] and not unvisited
+    sitemap_complete = (not result["sitemap_errors"] and not unvisited
+                        and not cut and not off_host_sitemaps)
     result["summary"] = {
         "sitemap_urls": len(urls),
         "inspected": len(inspected),
@@ -285,6 +288,13 @@ def analyze(site_url: str, prop: str, credentials: str, max_urls: int = MAX_URLS
         reasons.append(
             f"the sitemap walk reached its cap with {count} sitemap"
             f"{'s' if count != 1 else ''} unread, so indexed pages missing from the sitemap were not counted")
+    for what in cut:
+        reasons.append(f"{what}, so indexed pages missing from the sitemap were not counted")
+    if off_host_sitemaps:
+        reasons.append(
+            "sitemaps on another host are not requested ("
+            + ", ".join(off_host_sitemaps)
+            + "), so indexed pages missing from the sitemap were not counted")
     result["truncated"] = bool(reasons)
     if reasons:
         result["truncated_reason"] = "; ".join(reasons)

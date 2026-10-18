@@ -22,6 +22,7 @@ from seo_common import (read_as_url,
     read_urls,
     robots_allowed,
     normalize_url,
+    same_host,
     status_class,
 )
 
@@ -94,6 +95,8 @@ def snippet_controls(html_text: str, x_robots_tag: str | None) -> dict:
 def urls_from_sitemaps(site: str, timeout: int) -> set[str]:
     urls = set()
     for sm in discover_sitemap_urls(site, timeout=timeout)[:10]:
+        if not same_host(site, sm):
+            continue      # never requested: see site_crawl.load_sitemap_urls
         fetched = fetch_url(sm, timeout=timeout, max_bytes=8_000_000)
         parsed = parse_sitemap_xml(fetched.get("text") or "", sm)
         urls.update(row["loc"] for row in parsed["urls"])

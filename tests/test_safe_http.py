@@ -137,6 +137,24 @@ class PinnedTransport(unittest.TestCase):
                     with self.assertRaises(sh.SafeHTTPError):
                         sh.assert_safe_url("http://answer.example/")
 
+    def test_shared_address_space_is_private_unless_the_run_allows_it(self):
+        """100.64.0.0/10 (RFC 6598: carrier NAT, Tailscale) is not `is_private`.
+
+        It is in `PRIVATE_ALLOWED_NETWORKS`, so `--allow-private` was meant to be the
+        only way in; until 0.167.0 the guard let it through without the switch, and a
+        public audit could reach a tailnet peer of the machine running it.
+        """
+        for ip in ("100.100.100.100", "100.64.0.1", "100.127.255.254"):
+            os.environ.pop("SEO_ALLOW_PRIVATE", None)
+            with self.subTest(ip=ip), \
+                    mock.patch.object(sh.socket, "getaddrinfo", return_value=answer(ip)):
+                with self.assertRaises(sh.SafeHTTPError):
+                    sh.assert_safe_url("http://tailnet.example/")
+                with self.assertRaises(sh.SafeHTTPError):
+                    sh.assert_safe_url(f"http://{ip}/")
+                os.environ["SEO_ALLOW_PRIVATE"] = "1"
+                sh.assert_safe_url("http://tailnet.example/")
+
     def test_allow_private_still_permits_a_loopback_request(self):
         os.environ["SEO_ALLOW_PRIVATE"] = "1"
         connected = []

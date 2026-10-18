@@ -37,10 +37,10 @@ from urllib.parse import urlparse
 # `assert_safe_url` reaches only `socket` and `ipaddress`, so this file keeps the
 # stdlib-only property that lets it run where `requests` is not installed.
 try:
-    from lib.safe_http import SafeHTTPError, assert_safe_url
+    from lib.safe_http import SafeHTTPError, validated_addresses
     from lib.typed_credential import read_as_url, scheme_added
 except ImportError:
-    from scripts.lib.safe_http import SafeHTTPError, assert_safe_url
+    from scripts.lib.safe_http import SafeHTTPError, validated_addresses
     from scripts.lib.typed_credential import read_as_url, scheme_added
 
 # basis: convention — the point of asking is to renew before it bites, and a month
@@ -103,11 +103,26 @@ def inspect(url: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
     # A blocked address is not a fact about a certificate, so this returns without
     # `valid` — NO_DATA to SE-118, the same shape as the refused connection below,
     # rather than a `valid: False` that would read as "this site's certificate is bad".
+    #
+    # Both passes connect to the addresses this check validated, never to the name:
+    # `create_connection((host, port))` resolves it again, and a name whose second
+    # answer is private (DNS rebinding) would have passed the guard on its first.
+    # The name still goes to `server_hostname`, so SNI and certificate matching are
+    # unchanged.
     try:
-        assert_safe_url(target)
+        addresses = validated_addresses(target)
     except SafeHTTPError as exc:
         out["error"] = f"SafeHTTPError: {exc}"
         return out
+
+    def connect():
+        failure = None
+        for address in addresses:
+            try:
+                return socket.create_connection((address, port), timeout=timeout)
+            except OSError as exc:
+                failure = exc
+        raise failure
 
     # Pass one: a verifying handshake. This is the verdict.
     context = ssl.create_default_context()
@@ -115,7 +130,7 @@ def inspect(url: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
     context.verify_mode = ssl.CERT_REQUIRED
     cert = None
     try:
-        with socket.create_connection((host, port), timeout=timeout) as raw:
+        with connect() as raw:
             with context.wrap_socket(raw, server_hostname=host) as tls:
                 cert = tls.getpeercert()
                 out["tls_version"] = tls.version()
@@ -135,7 +150,7 @@ def inspect(url: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
     if cert is None:
         unverified = ssl._create_unverified_context()  # noqa: SLF001
         try:
-            with socket.create_connection((host, port), timeout=timeout) as raw:
+            with connect() as raw:
                 with unverified.wrap_socket(raw, server_hostname=host) as tls:
                     der = tls.getpeercert(binary_form=True)
                     out["tls_version"] = tls.version()

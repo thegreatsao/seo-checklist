@@ -697,15 +697,17 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 0.129.0: MB-104's `MIN_FAVICON_SIDE_PX` (48, "a multiple of 48") gives way
         # to Google's page as it reads now — `REQUIRED_MIN_SIDE_PX` 8 and
         # `RECOMMENDED_SIDE_ABOVE_PX` 48, both `standard`: one out, two in.
+        # 0.167.0: the sitemap walk's bounds in `seo_common` — the protocol's 50 MB
+        # uncompressed (`standard`), and a byte and a URL budget (`convention`).
         self.assertEqual(by_kind, {
-            "standard": 19,
+            "standard": 20,
             "measured": 11,
-            "convention": 54,
+            "convention": 56,
             "inherited": 77,
             "presentation": 12,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 161)
-        self.assertEqual(len(named), 173)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 164)
+        self.assertEqual(len(named), 176)
         # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
         # `lib/safe_http.py`, how long and how often a held lock is asked for on
         # Windows. Listed and not counted, beside `ROBOTS_FETCH_WAIT` and `_CACHE_POLL`,
@@ -742,8 +744,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 187 -> 188: MB-104's one floor became Google's two tiers at 0.129.0.
         # 188 -> 190: the two lock numbers above at 0.156.0, uncounted.
         # 190 -> 192: the two replacement numbers above at 0.157.0, uncounted.
+        # 192 -> 195: the sitemap walk's three bounds in `seo_common` at 0.167.0.
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 192)
+                             for path in at._script_paths()), 195)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()

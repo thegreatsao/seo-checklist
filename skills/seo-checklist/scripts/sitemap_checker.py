@@ -13,6 +13,8 @@ import re
 from datetime import datetime, timezone
 
 from seo_common import (read_as_url,
+    SITEMAP_BYTES_BUDGET,
+    SITEMAP_URLS_BUDGET,
     carries_content,
     discover_sitemap_urls,
     fetch_robots,
@@ -73,15 +75,24 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
     queue = list(dict.fromkeys(sitemap_urls))
     seen_sitemaps = set()
     seen_urls = set()
+    # Named, never requested: see `site_crawl.load_sitemap_urls`, which walks the
+    # same way under the same two budgets (`seo_common.SITEMAP_*`).
+    off_host_sitemaps = []
+    read_bytes, dropped_urls = 0, 0
 
     # Recorded before the walk so the loop below can end either way without the
     # caller having to reconstruct which way it ended.
-    while queue and len(seen_sitemaps) < MAX_SITEMAPS_FOLLOWED:
+    while (queue and len(seen_sitemaps) < MAX_SITEMAPS_FOLLOWED
+           and read_bytes < SITEMAP_BYTES_BUDGET):
         sm_url = normalize_url(queue.pop(0), site_url)
-        if sm_url in seen_sitemaps:
+        if sm_url in seen_sitemaps or sm_url in off_host_sitemaps:
+            continue
+        if not same_host(site_url, sm_url):
+            off_host_sitemaps.append(sm_url)
             continue
         seen_sitemaps.add(sm_url)
         fetched = fetch_url(sm_url, timeout=timeout, max_bytes=8_000_000)
+        read_bytes += len(fetched.get("text") or "")
         entry = {
             "url": sm_url,
             "status": fetched.get("status"),
@@ -118,7 +129,9 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
         if parsed["type"] == "urlset" and len(parsed["urls"]) > MAX_URLS_PER_SITEMAP:
             result["issues"].append(issue("error", "Sitemap exceeds 50,000 URL limit", sm_url, str(len(parsed["urls"]))))
 
-        for row in parsed["urls"]:
+        room = max(0, SITEMAP_URLS_BUDGET - len(seen_urls))
+        dropped_urls += max(0, len(parsed["urls"]) - room)
+        for row in parsed["urls"][:room]:
             loc = row["loc"]
             if loc in seen_urls:
                 result["issues"].append(issue("warning", "Duplicate URL in sitemap set", loc))
@@ -203,20 +216,37 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
                                           key=lambda row: row["url"])
     result["summary"]["blocked_by_robots"] = len(blocked_by_robots)
 
+    for candidate in queue:
+        sm_url = normalize_url(candidate, site_url)
+        if not same_host(site_url, sm_url) and sm_url not in off_host_sitemaps:
+            off_host_sitemaps.append(sm_url)
+    queue = [c for c in queue if same_host(site_url, normalize_url(c, site_url))]
+    result["off_host_sitemaps"] = off_host_sitemaps
+
     # A queue with anything still in it means the walk stopped at the cap rather
     # than at the end of the index. An unread robots.txt likewise leaves the
-    # sitemap's hygiene unanswered. Read by the runner, which withholds GO-136's
+    # sitemap's hygiene unanswered, and so does a budget spent or a sitemap on
+    # another host left unrequested. Read by the runner, which withholds GO-136's
     # and GO-138's clean verdict rather than reading it off incomplete evidence.
-    result["truncated"] = bool(queue) or bool(unread_robots)
-    if unread_robots:
-        reasons = [
-            f"robots.txt at {row['url']} answered "
-            f"{row['status'] if row['status'] is not None else 'nothing'}, so whether "
-            "the sitemap lists URLs it disallows is unknown"
-            for row in unread_robots
-        ]
-        if queue:
-            reasons.append("the sitemap walk also stopped at MAX_SITEMAPS_FOLLOWED")
+    reasons = [
+        f"robots.txt at {row['url']} answered "
+        f"{row['status'] if row['status'] is not None else 'nothing'}, so whether "
+        "the sitemap lists URLs it disallows is unknown"
+        for row in unread_robots
+    ]
+    if queue and read_bytes >= SITEMAP_BYTES_BUDGET:
+        reasons.append(f"the sitemap byte budget ({SITEMAP_BYTES_BUDGET} bytes) was "
+                       f"spent with {len(queue)} sitemap(s) unread")
+    elif queue and unread_robots:
+        reasons.append("the sitemap walk also stopped at MAX_SITEMAPS_FOLLOWED")
+    if dropped_urls:
+        reasons.append(f"the sitemap URL budget ({SITEMAP_URLS_BUDGET}) was reached "
+                       f"and {dropped_urls} listed URL(s) were not checked")
+    if off_host_sitemaps:
+        reasons.append("sitemaps on another host are not requested: "
+                       + ", ".join(off_host_sitemaps))
+    result["truncated"] = bool(queue) or bool(reasons)
+    if reasons:
         result["truncated_reason"] = "; ".join(reasons)
     result["summary"]["sitemaps"] = len(result["sitemaps_checked"])
     result["summary"]["loaded"] = sum(
@@ -235,7 +265,9 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
         result["fetch_error"] = ("no sitemap location could be reached: "
                                  + (result["sitemaps_checked"][0].get("error")
                                     or "connection failed"))
-    if not result["summary"]["loaded"] and not result.get("fetch_error"):
+    # A sitemap the site declared on another host is unread, not absent.
+    if (not result["summary"]["loaded"] and not result.get("fetch_error")
+            and not off_host_sitemaps):
         result["issues"].append(issue(
             "error", "No sitemap found",
             result["site"],

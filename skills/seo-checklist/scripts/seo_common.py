@@ -31,6 +31,7 @@ a different module root, so both spellings are necessary there.
 from __future__ import annotations
 
 import gzip
+import io
 import json
 import os
 import re
@@ -1177,10 +1178,36 @@ def discover_sitemap_urls(site_url: str, timeout: int = 15,
     return pairs if with_source else [url for url, _ in pairs]
 
 
+# The bounds of one sitemap walk. The site being audited decides what its sitemaps
+# say, and on the public form that site is a stranger's input: before 0.167.0 a walk
+# read up to 25 files of 8 MB, kept every `<loc>` of them, and decompressed a gzipped
+# file with no limit at all. A walk that reaches either budget stops, and says so —
+# the walkers name what they did not read, never just read less.
+#
+# basis: standard — sitemaps.org: a sitemap file is at most 50 MB (52,428,800 bytes)
+#  uncompressed. A gzipped one is decompressed no further, so 8 MB on the wire stays
+#  bounded; past it the file breaks the protocol, which is what the error says.
+SITEMAP_MAX_UNCOMPRESSED = 52_428_800
+# basis: convention — 20 MB of sitemap documents read per walk. Enough for every
+#  sitemap of an ordinary site several times over; the files past it are named as
+#  unread, and the readers that need the whole set withhold their verdict.
+SITEMAP_BYTES_BUDGET = 20_000_000
+# basis: convention — 50,000 sitemap URLs held per walk, the most one sitemap file may
+#  list (sitemaps.org). The crawl fetches at most 100 pages, so URLs past this only
+#  ever served membership tests; the count dropped is recorded.
+SITEMAP_URLS_BUDGET = 50_000
+
+
 def parse_sitemap_xml(xml_text: str, sitemap_url: str = "") -> dict:
     text = xml_text or ""
     if text[:2] == "\x1f\x8b":
-        text = gzip.decompress(text.encode("latin1")).decode("utf-8", errors="replace")
+        with gzip.GzipFile(fileobj=io.BytesIO(text.encode("latin1"))) as packed:
+            raw = packed.read(SITEMAP_MAX_UNCOMPRESSED + 1)
+        if len(raw) > SITEMAP_MAX_UNCOMPRESSED:
+            return {"type": "invalid", "urls": [], "sitemaps": [],
+                    "error": f"gzipped sitemap is over {SITEMAP_MAX_UNCOMPRESSED} "
+                             "bytes uncompressed, the protocol's limit"}
+        text = raw.decode("utf-8", errors="replace")
     try:
         root = ET.fromstring(text.encode("utf-8"))
     except ET.ParseError as exc:
