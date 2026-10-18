@@ -10,6 +10,36 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.169.0 — LO-198 no longer fails a site on the pages a capped crawl never read
+
+Registry version: `90ba79b14b28`, unchanged. **One verdict moves: LO-198 (`high`) on a
+crawl that stopped at its page or depth cap and found no LocalBusiness markup was FAIL and
+is now NO_DATA.**
+
+* **The one crawl item that fails by absence.** LO-198 asserts `local_business_nodes gte 1`
+  over the shared crawl. The runner withholds a PASS that rests on finding nothing in a
+  capped input (0.88.0), but a FAIL stands, and for LO-198 the FAIL *is* the finding of
+  nothing. On a site larger than 100 pages or deeper than three hops, markup on a page the
+  crawl never reached was reported as missing. Found in the 0.167.1 cap review, where it
+  kept `DEFAULT_MAX_PAGES` and `DEFAULT_DEPTH` `inherited`.
+* **The script withholds the count, not the runner.** `local_seo_checker.py` on the
+  inventory path now carries the crawl's `summary.truncated` out as `truncated`; with no
+  node found on a truncated crawl it emits no `local_business_nodes` and says why in
+  `truncated_reason`, the way `image_weight_audit.py` withholds a count its input cannot
+  support. A node found still passes on a capped crawl, and a whole site read with none
+  still fails. A runner-wide rule for presence checks was rejected: CI-005, KW-070 and
+  GO-139 assert `truthy` on values that reading more does not make true.
+* **The evidence names the cap.** A path a script withheld because its input was capped
+  used to print as "`local_business_nodes` missing"; `_absent` now appends the script's
+  `truncated_reason` when the missing key's parent gives no reason of its own.
+* **Tested on a served site**: a two-page site crawled with `max_pages=1`, the markup on
+  the unread page, grades NO_DATA (FAIL before this release); the markup on the entry page
+  grades PASS; neither page carrying it, uncapped, grades FAIL.
+* **Reviewed by a second model** (Codex, read-only): no other item reads this output, no
+  other LO-198 path moves, and no other script's evidence changes wrongly. No findings.
+* `DEFAULT_MAX_PAGES` and `DEFAULT_DEPTH` stay `inherited` in this release; relabelling
+  them moves the threshold ledgers and is the next batch's.
+
 ## 0.168.1 — the local gate leaves the machine it runs on as it found it
 
 Registry version: `90ba79b14b28`, unchanged. Nothing an audit fetches, decides or prints

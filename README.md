@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.168.1 — see [CHANGELOG.md](CHANGELOG.md). The local gate no longer changes this machine's global packages: the spec check runs openspec 1.12.0 through `npx` instead of `npm install -g`, which until now put 1.12.0 over whatever openspec the machine had on every `ci_local.py` run and every push, `ci_local.py` now leaves out any install line inside a step that also checks something, naming each line it left out, gives every step an empty `HOME` and none of the machine's keys (it had been finding a Search Console key and `~/.agentic-seo/.env` by itself), and the smoke steps write to directories and a port of their own instead of `/tmp/site` and 8000, so two gates on one machine no longer collide. No audit moves. 0.168.0, the release before, let an audit that runs for strangers be held to ports 80 and 443.
+Version 0.169.0 — see [CHANGELOG.md](CHANGELOG.md). LO-198 (LocalBusiness markup anywhere on the site) no longer reports a FAIL when the crawl stopped at its page or depth cap before reaching the page that carries the markup: it answers NO_DATA and says the crawl was cut short. A node found on a capped crawl still passes, and a whole site read with none still fails. 0.168.1, the release before, made the local gate leave the machine it runs on as it found it.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
