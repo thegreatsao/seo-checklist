@@ -117,6 +117,10 @@
           "severity": "low"
         },
         {
+          "message": "the sitemap list was not read whole ({facts['sitemap_cut']}), so sitemap URLs past it are not compared with the log",
+          "severity": "low"
+        },
+        {
           "message": "{facts['error']}; the log was read on its own, so never-crawled and unoffered-URL findings are absent",
           "severity": "low"
         },

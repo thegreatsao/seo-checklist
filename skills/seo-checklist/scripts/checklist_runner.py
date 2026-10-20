@@ -2709,7 +2709,16 @@ def stride(urls: list[str], limit: int) -> list[str]:
     return [urls[round(i * last / (limit - 1))] for i in range(limit)]
 
 
-def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> list[str]:
+# basis: convention — three child sitemaps of an index, the most `--sample`'s own
+#  fallback reads when no crawl supplied the pool (a bare `[:3]` until F11). A handful
+#  of requests on a path that runs only without a usable crawl; past it the pool is
+#  cut and `withhold_cut_sample` withholds what the children left out could decide,
+#  so the number trades requests against how often a sampled answer is withheld.
+SAMPLE_FALLBACK_SITEMAPS = 3
+
+
+def discover_urls(base_url: str, limit: int, inventory: dict | None = None,
+                  report: dict | None = None) -> list[str]:
     """Pick up to `limit` same-host URLs, sitemap first, on-page links second.
 
     With an `inventory` from the shared crawl, the candidates come out of it and this
@@ -2727,7 +2736,13 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
     finding to report, not a reason to audit nothing.
 
     Returns [] when neither source yields anything — the caller then audits the
-    single entry URL and says so, rather than claiming to have looked wider."""
+    single entry URL and says so, rather than claiming to have looked wider.
+
+    `report`, when given, is filled with where the pool came from (`source`: crawl,
+    sitemap, links or "") and why it is not the whole of that source (`cut`, "" when
+    it is): a crawl stopped at its cap, a sitemap set the walk cut, an index with more
+    children than the fallback reads. A cut pool is what `withhold_cut_sample` reads
+    (F11): the page that fails may be one the cut left out."""
     try:
         from lib.safe_http import robots_allows, safe_get
         from seo_common import CONVENTIONAL_SITEMAP_PATHS
@@ -2748,12 +2763,23 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
         if fetch_error_kind(exc) == GUARD_REFUSED:
             print(f"  {url} not requested: {exc}", file=sys.stderr)
 
+    source, cut = "", []
     if inventory:
         # Content-only: any readable success is a page, while a 404 would fail every
         # page-level check and let the worst page decide the verdict.
         found = [key for key, row in sorted((inventory.get("pages") or {}).items())
                  if row.get("html") and carries_content(row.get("status"))
                  and same_host(key) and looks_like_a_page(key)]
+        if found:
+            source = "crawl"
+            if (inventory.get("summary") or {}).get("truncated"):
+                cut.append(f"a crawl that stopped short of the whole site "
+                           f"(--crawl-max-pages {inventory.get('max_pages')}, "
+                           f"--crawl-depth {inventory.get('depth')})")
+            sitemap_cut = site_crawl.sitemap_incomplete(inventory)
+            if sitemap_cut:
+                cut.append(f"a crawl seeded from a sitemap list not read whole "
+                           f"({sitemap_cut})")
 
     for path in CONVENTIONAL_SITEMAP_PATHS if not found else ():
         if found:
@@ -2776,13 +2802,22 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
             elsewhere = [u for u in nested if not same_site(base_url, u)]
             print(f"  {len(elsewhere)} sitemap(s) on another host not requested: "
                   + ", ".join(elsewhere), file=sys.stderr)
-        for n in own[:3]:
+            cut.append(f"{len(elsewhere)} sitemap(s) on another host not requested")
+        if len(own) > SAMPLE_FALLBACK_SITEMAPS:
+            cut.append(f"a sitemap index of {len(own)} files, of which the first "
+                       f"{SAMPLE_FALLBACK_SITEMAPS} were read")
+        for n in own[:SAMPLE_FALLBACK_SITEMAPS]:
             try:
                 pages += LOC_RE.findall(safe_get(n, timeout=15).text)
             except Exception as exc:  # noqa: BLE001
                 refused(n, exc)
+                cut.append(f"{n} could not be read")
         # Sitemaps list PDFs and images too — the same extension filter applies.
         found += [u for u in pages if same_host(u) and looks_like_a_page(u)]
+        if found:
+            source = "sitemap"
+        else:
+            cut = []
 
     if not found:
         try:
@@ -2799,6 +2834,11 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
                     found.append(u)
         except Exception as exc:  # noqa: BLE001
             refused(base_url, exc)
+        if found:
+            source = "links"
+
+    if report is not None:
+        report.update(source=source, cut="; ".join(cut))
 
     # Deduplicate before striding, or the step lands repeatedly on the same page in
     # a sitemap that lists a URL under several paths.
@@ -2956,6 +2996,42 @@ def aggregate_pages(primary: list[dict], per_page: list[list[dict]]) -> list[dic
             raise AssertionError(
                 f"{row['id']} sampled {row['status']} carries a passing measure")
         out.append(row)
+    return out
+
+
+def sampled_item_ids(items: list[dict]) -> set[str]:
+    """The items `--sample` folds across pages: page-level, not read off an artifact.
+
+    Read off the registry items and not the graded rows, which carry no `check`."""
+    return {i["id"] for i in items if is_page_level(i) and not reads_artifact(i)}
+
+
+def withhold_cut_sample(graded: list[dict], why: str, sampled: set[str],
+                        scope_na: set[str] | frozenset = frozenset()) -> list[dict]:
+    """Withhold what a cut sample pool could decide (F11, VRD-14 under `--sample`).
+
+    `why` is `discover_urls`' `cut`: the pool the sample was drawn from is not the whole
+    of its source, so the page that fails may be one the cut left out. Only the items a
+    sample folds (`sampled`, from `sampled_item_ids`) are touched. A `FAIL` found on a
+    page read whole stands; a `WARN` stands as a floor, VRD-14's rule for a defect found
+    in the part read; a `PASS` and an `N/A` read off the pages become `NO_DATA`, since
+    either can be a page the cut left out; an `N/A` decided by scope (`scope_na`: the
+    profile, the mode, `--only`) was decided before any page was read and stands.
+    """
+    out = []
+    for row in graded:
+        status = row.get("status")
+        if row["id"] not in sampled:
+            out.append(row)
+        elif status == WARN:
+            out.append(dict(row, evidence=f"{row.get('evidence')} — the worst of a "
+                                          f"sample drawn from {why}, so this is a floor"))
+        elif status == PASS or (status == NA and row["id"] not in scope_na):
+            out.append(dict(row, status=NO_DATA,
+                            evidence=f"{row.get('evidence')}, but the sample was drawn "
+                                     f"from {why}"))
+        else:
+            out.append(row)
     return out
 
 
@@ -3878,6 +3954,7 @@ def main() -> int:
     graded = grade(items, plan, results, skipped, bool(gsc_path))
 
     sampled_urls: list[str] = []
+    sample_pool: dict = {}
     if a.sample > 1:
         if mode == "archive":
             print("  --sample ignored: archive mode audits the files you point it at",
@@ -3886,7 +3963,11 @@ def main() -> int:
             print("  --sample skipped: the entry page could not be read, so there "
                   "is nothing to discover URLs from", file=sys.stderr)
         else:
-            sampled_urls = discover_urls(audit_url, a.sample, inventory=crawl_pages)
+            sampled_urls = discover_urls(audit_url, a.sample, inventory=crawl_pages,
+                                         report=sample_pool)
+            if sample_pool.get("cut"):
+                print(f"  --sample pool is cut: {sample_pool['cut']}; what it could "
+                      f"decide is withheld", file=sys.stderr)
             if len(sampled_urls) < 2:
                 print("  --sample found no other URLs (no sitemap, no internal "
                       "links); auditing the single page", file=sys.stderr)
@@ -3900,7 +3981,8 @@ def main() -> int:
         # then reports "4/4 pages" about pages nobody measured. Excluded here, so
         # those items keep the primary run's verdict about the page the artifact
         # is actually about.
-        page_items = [i for i in items if is_page_level(i) and not reads_artifact(i)]
+        sampled = sampled_item_ids(items)
+        page_items = [i for i in items if i["id"] in sampled]
         per_page = []
         page_evidence = {}
         if not a.quiet:
@@ -3931,6 +4013,12 @@ def main() -> int:
                 print(f"  [{n}/{len(sampled_urls)}] {page_url}", file=sys.stderr)
         if per_page:
             graded = aggregate_pages(graded, per_page)
+    if sample_pool.get("cut"):
+        # After the fold, and also when the pool collapsed to the entry alone: a cap
+        # that left one candidate decided the sample as surely as one that left three.
+        graded = withhold_cut_sample(
+            graded, sample_pool["cut"], sampled_item_ids(items),
+            scope_na={i for i, (st, _why) in skipped.items() if st == NA})
 
     http_cache_hits = 0
     if http_cache:

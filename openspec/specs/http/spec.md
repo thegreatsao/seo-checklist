@@ -775,8 +775,10 @@ part-way through its body — refused for passing its own 8 MB limit, or cut by 
 — returns no body and counts nothing, whatever was read before it failed; the file cap (25 in
 the crawl and the checker, 10 in the matrix) and the 8 MB limit are what bound those. `--sample`'s sitemap fallback is not
 one of the walkers: it tries the conventional sitemap paths until one yields pages and follows
-at most three children of each index it reads, every response under the ceiling, with no byte
-budget of its own. `indexability_matrix` held every URL it read, and
+at most `SAMPLE_FALLBACK_SITEMAPS` (three) children of each index it reads, every response under
+the ceiling, with no byte budget of its own; an index with more same-host children than that, a
+child on another host or a child that could not be read marks the pool cut, and the sampled
+verdicts it could decide are withheld (F11, `verdicts` VRD-14). `indexability_matrix` held every URL it read, and
 now past `SITEMAP_URLS_BUDGET` reports membership as unknown (`null`), as past the byte
 budget. No item reads `in_sitemap`.
 

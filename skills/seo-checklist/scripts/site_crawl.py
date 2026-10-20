@@ -92,27 +92,32 @@ _utf8_stdout()
 # 4 adds image references; an older inventory cannot answer a site-wide image rule.
 INVENTORY_VERSION = 4
 
-# basis: inherited — 100 pages, the request budget an audit's crawl runs with (the
-#  runner's `--crawl-max-pages` reads it). Past it the crawl sets `summary.truncated`.
-#  The fourteen inventory readers that pass by absence carry the flag and the runner
-#  turns their PASS into NO_DATA; four withhold a non-PASS that is not a floor — LO-198
-#  (0.169.0), CI-008 and AR-162 (0.170.0), BL-081 (0.171.0) — and CI-018 counts
-#  never-crawled pages only over the sitemap URLs the crawl fetched (0.171.0); CI-001,
-#  CI-003, CI-005 and GEO-008 read the entry row. Back to `inherited` in 0.172.0 (F13):
-#  with `--sample` the sample is drawn from the pages the crawl read, so the cap decides
-#  which pages a sampled PASS or N/A is about, and a WARN counted over the pages read
-#  can understate a FAIL (CI-018, CN-039, AR-149, TE-168). Driven at its value in
-#  `tests/test_coverage_caps.py` `TheCrawlCaps`.
+# basis: convention — 100 pages, the request budget an audit's crawl runs with (the
+#  runner's `--crawl-max-pages` reads it): at the default 4 requests a second it is
+#  under a minute of one site's time, and a judgement, not a measurement — nothing
+#  about a site says how many of its pages an audit should read. What the number may
+#  not do is decide a verdict, and past it none does: the crawl sets
+#  `summary.truncated`; the fourteen inventory readers that pass by absence carry the
+#  flag and the runner turns their PASS into NO_DATA; four withhold a non-PASS that is
+#  not a floor — LO-198 (0.169.0), CI-008 and AR-162 (0.170.0), BL-081 (0.171.0); a
+#  WARN or FAIL found in the pages read stands and says it is a floor (VRD-14), which
+#  is how a warn band (CI-018, CN-039, AR-149, TE-168) reads over a cut crawl; CI-001,
+#  CI-003, CI-005 and GEO-008 read the entry row. Under `--sample` the pool drawn from
+#  a cut crawl is cut, and `withhold_cut_sample` turns a sampled PASS and an N/A read
+#  off the pages into NO_DATA, a pool collapsed to the entry included (F11; F13 had
+#  sent it back to `inherited` because it did not). So moving it trades requests and
+#  time against how often an answer is withheld, never which answer is given. Driven
+#  at its value in `tests/test_coverage_caps.py` `TheCrawlCaps`.
 DEFAULT_MAX_PAGES = 100
-# basis: inherited — three hops from the entry, read by the runner's
+# basis: convention — three hops from the entry, read by the runner's
 #  `--crawl-depth`. It bounds the same items `DEFAULT_MAX_PAGES` does, through the same
 #  flag: a page at the limit has its links dropped rather than queued, and a link
 #  dropped is an internal target never fetched, which sets `summary.truncated` (since
 #  0.88.0; before, the crawl reported itself complete). So it trades the same thing —
-#  requests against how often an answer is withheld — and decides the same floors,
-#  warn bands and `--sample` pools, which is why it is `inherited` with it (0.172.0).
-#  Pages a sitemap lists enter at depth 0, which is why a site with a sitemap rarely
-#  meets it. Driven at its value in `TheCrawlCaps`.
+#  requests against how often an answer is withheld — and every verdict it could
+#  decide, the `--sample` pool's included, is withheld or a floor by the same rules
+#  (F11). Pages a sitemap lists enter at depth 0, which is why a site with a sitemap
+#  rarely meets it. Driven at its value in `TheCrawlCaps`.
 DEFAULT_DEPTH = 3
 
 # Stripped before the text is hashed or counted, because a shared navigation and
@@ -748,6 +753,31 @@ def html_pages(inventory: dict) -> dict[str, dict]:
 def sitemap_urls(inventory: dict) -> list[str]:
     """Every URL the site's sitemaps listed, as page keys."""
     return list((inventory.get("sitemap") or {}).get("urls") or ())
+
+
+def sitemap_incomplete(inventory: dict) -> str:
+    """Why the sitemap set this crawl was seeded from is not the whole list, or "".
+
+    The walk's limits cut the set without setting `summary.truncated` (F11): a byte or
+    URL budget, files past the file cap, a sitemap on another host, a file that gave no
+    HTTP answer. A sitemap the site serves broken (a 404, XML that does not parse) is
+    the site's answer, not a cut: a search engine reads nothing from it either.
+    """
+    sitemap = inventory.get("sitemap") or {}
+    parts = list(sitemap.get("cut") or ())
+    unvisited = sitemap.get("unvisited") or ()
+    if unvisited and not parts:
+        parts.append(f"{len(unvisited)} sitemap file(s) past the walk's file cap were "
+                     f"not read")
+    off_host = sitemap.get("off_host_sitemaps") or ()
+    if off_host:
+        parts.append(f"{len(off_host)} sitemap(s) on another host were not requested")
+    # A fetch failure carries `status`; a parse failure has none to carry.
+    unanswered = [e for e in sitemap.get("errors") or ()
+                  if isinstance(e, dict) and "status" in e and e["status"] is None]
+    if unanswered:
+        parts.append(f"{len(unanswered)} sitemap(s) gave no answer")
+    return "; ".join(parts)
 
 
 def robots_refused(inventory: dict) -> dict[str, str]:

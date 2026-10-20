@@ -1379,7 +1379,10 @@ class BrowserArtifacts(unittest.TestCase):
         # The real guarantee is in the runner's own selection, which drops every
         # artifact reader from the per-page sample whatever its `requires`:
         #
-        #     page_items = [i for i in items if is_page_level(i) and not reads_artifact(i)]
+        #     return {i["id"] for i in items if is_page_level(i) and not reads_artifact(i)}
+        #
+        # in `sampled_item_ids`, which the per-page selection and `withhold_cut_sample`
+        # both read (F11).
         #
         # A site-level artifact reader is likewise safe: it runs once, against the
         # audited URL. So the thing to defend is that line, not the proxy. Reading the
@@ -1387,11 +1390,12 @@ class BrowserArtifacts(unittest.TestCase):
         with open(os.path.join(ROOT, "skills", "seo-checklist", "scripts",
                                "checklist_runner.py"), encoding="utf-8") as f:
             source = f.read()
-        self.assertIn("page_items = [i for i in items if is_page_level(i) "
-                      "and not reads_artifact(i)]", source,
+        self.assertIn('return {i["id"] for i in items if is_page_level(i) '
+                      'and not reads_artifact(i)}', source,
                       "the per-page sample no longer excludes artifact readers; an "
                       "item reading a one-page trace could now be run against other "
                       "pages and report the same numbers for each")
+        self.assertIn('page_items = [i for i in items if i["id"] in sampled]', source)
         # And the subject guard is what catches an artifact describing a different
         # page altogether, whichever level the item is.
         self.assertIn("the artifact describes", source)

@@ -301,7 +301,7 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "not_started",
+    "state": "active",
     "evidence": "",
     "notes": "ROADMAP item 1, after F09's batch; 62 at 0.170.0 (tools/audit_thresholds.py). Nine Search Console numbers are blocked on multi-market data; ROW_LIMIT waits on a KW-070/GO-139 fix. Also found in F09's review: CI-018's sitemap_urls_never_crawled reads the crawl's sitemap set, which 0.167.0's walk budgets and off-host rule can cut without setting summary.truncated. Spans sessions: one batch per sprint contract."
   },

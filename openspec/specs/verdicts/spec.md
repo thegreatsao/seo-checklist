@@ -687,16 +687,25 @@ count over a truncated crawl, and withholds `links_analyzed` when no link was re
 `links_analyzed gt 0` would otherwise call the item inapplicable off the pages the cap let
 in. A count is a floor only when each member, once found, stays found.
 
-**Not held under `--sample`, written down in 0.172.0.** A page-level item reads one page, so
-no cap stands between it and its input — until `--sample` folds several pages into one
-verdict. With a crawl the sampled pages are drawn from the pages it read, so a crawl cut by
-its page or depth cap decides which pages a sample can reach: measured on a served site,
-MS-020 `PASS` on 3/3 pages over a three-page crawl and `FAIL` over the whole, and CI-016 `N/A`
-over a two-page crawl and `FAIL` over the whole. Neither is withheld. Withholding the sampled
-`PASS` alone was tried and left the `N/A`, a pool the cap shrank to the entry page, and a
-sample the sitemap supplied after the crawl read no page eligible to be sampled; closing all four reaches past the
-aggregation, so the crawl caps went back to `inherited` instead, which is the debt this
-paragraph names (F13; `site_crawl.py`'s basis lines).
+**Held under `--sample`, from 0.174.0 (F11).** A page-level item reads one page, so no cap
+stands between it and its input — until `--sample` folds several pages into one verdict. With a
+crawl the sampled pages are drawn from the pages it read, so a crawl cut by its page or depth
+cap decided which pages a sample could reach: measured on a served site, MS-020 `PASS` on 3/3
+pages over a three-page crawl and `FAIL` over the whole, and CI-016 `N/A` over a two-page crawl
+and `FAIL` over the whole. 0.172.0 wrote that down as not held (F13: withholding the sampled
+`PASS` alone left the `N/A`, a pool the cap shrank to the entry, and a sample the sitemap
+supplied after the crawl read no eligible page). Now `discover_urls` reports where its pool
+came from and whether it is cut — a crawl whose `summary.truncated` is set or whose sitemap
+list the walk did not read whole (`site_crawl.sitemap_incomplete`), or a fallback index with
+more children than it reads, one on another host, or one it could not read — and over a cut
+pool `withhold_cut_sample` applies this requirement to the sampled items: a `FAIL` found
+stands, a `WARN` stands and says it is a floor, a `PASS` and an `N/A` read off the pages become
+`NO_DATA` with the cut named, and an `N/A` decided by scope before any page was read stands. A
+pool collapsed to the entry by the cut is withheld the same way; a sample the sitemap fallback
+supplied is not, since no crawl cap shortened it. Held by `tests/test_sample_pool.py`: the two
+measurements above and `--crawl-max-pages 1` through the runner, each with its uncapped
+control, the source and cut of every pool `discover_urls` builds, and each status over a cut
+pool.
 
 #### Scenario: a clean bill of health over a capped search
 - **WHEN** an assertion passes by finding none of the thing it forbids, and the input

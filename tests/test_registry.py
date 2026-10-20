@@ -708,15 +708,19 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # near-duplicate field.
         # 0.172.0 (F13): the two crawl caps back to `inherited`: under `--sample` the
         # cap still decides which pages a sampled verdict is about.
+        # 0.174.0 (F11) batch 1: the two crawl caps to `convention`, now that a sample
+        # drawn from a cut crawl withholds what the cut could decide, and one
+        # `convention` added: `SAMPLE_FALLBACK_SITEMAPS`, the bare `[:3]` `--sample`'s
+        # sitemap fallback read, which now marks the pool cut past it.
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 11,
-            "convention": 66,
-            "inherited": 64,
+            "convention": 69,
+            "inherited": 62,
             "presentation": 15,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 161)
-        self.assertEqual(len(named), 176)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 162)
+        self.assertEqual(len(named), 177)
         # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
         # `lib/safe_http.py`, how long and how often a held lock is asked for on
         # Windows. Listed and not counted, beside `ROBOTS_FETCH_WAIT` and `_CACHE_POLL`,
@@ -754,8 +758,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 188 -> 190: the two lock numbers above at 0.156.0, uncounted.
         # 190 -> 192: the two replacement numbers above at 0.157.0, uncounted.
         # 192 -> 195: the sitemap walk's three bounds in `seo_common` at 0.167.0.
+        # 195 -> 196: `SAMPLE_FALLBACK_SITEMAPS` in the runner at 0.174.0 (F11).
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 195)
+                             for path in at._script_paths()), 196)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()

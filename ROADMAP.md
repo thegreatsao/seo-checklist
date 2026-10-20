@@ -82,16 +82,18 @@ robots.txt forbids, and it no longer does.
 |---|---|
 | standard | 20 |
 | measured | 11 |
-| convention | 66 |
-| inherited | 64 |
+| convention | 69 |
+| inherited | 62 |
 | no basis | 0 |
-| **numbers a verdict depends on** | **161** |
+| **numbers a verdict depends on** | **162** |
 
-**`inherited` at 64 of 161 is the largest single gap between this tree and 1.0.** It was
+**`inherited` at 62 of 162 is the largest single gap between this tree and 1.0.** It was
 75 of 144 at 0.87.1 and 77 of 164 until 0.167.1, which moved eleven coverage caps out: ten
 to `convention`, one to `presentation`. 0.170.0 moved the crawl's page and depth caps to
 `convention` and the MinHash pair to `presentation`; 0.172.0 moved the two crawl caps back,
-since under `--sample` the cap still decides which pages a sampled verdict is about. Nothing is unnamed — that took a gate — but
+since under `--sample` the cap still decided which pages a sampled verdict was about, and F11
+(0.174.0) moved them to `convention` again once a sample drawn from a cut crawl withholds what the
+cut could decide. Nothing is unnamed — that took a gate — but
 nearly two in five of the numbers a verdict rests on are still numbers nobody here decided. The calibrations so
 far show what closing one costs: each took a corpus, a method and a stated limitation.
 
@@ -113,7 +115,7 @@ modules read; no number is bound by both. It is narrower than the ask it answers
 
 ## What 1.0 requires, in the order the numbers should move
 
-1. **`inherited` 64 → 0**, by calibration or by an honest relabel to `convention` with
+1. **`inherited` 62 → 0**, by calibration or by an honest relabel to `convention` with
    the judgement written out.
 2. **REG-6's second reader** — the readings exist and are held against the registry;
    what would close the row is a check of whether each reading is true that is not the

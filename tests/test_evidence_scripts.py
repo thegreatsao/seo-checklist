@@ -1289,6 +1289,7 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
     | `window_too_short` | `sitemap_urls_never_crawled` (medium) |
     | `inventory_unreadable` | that one and `disallowed_paths_crawled` (medium) |
     | `inventory_truncated` | `disallowed_paths_crawled` (medium), past the crawl's cap |
+    | `sitemap_set_incomplete` | `sitemap_urls_never_crawled` (medium), past the sitemap walk's limits |
     | `too_few_requests` | `crawl_budget_wasted`, `server_errors_to_crawlers`, `crawl_spent_on_redirects` — medium and high |
 
     Every log below is built here rather than injected. A test that sets `truncated`
@@ -1336,8 +1337,10 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
                     rows.append(row)
         return self.write("\n".join(rows) + "\n", ".log")
 
-    def inventory(self, paths, sitemap=None, robots_blocked=None, truncated=False):
-        """An inventory `site_crawl.load` accepts, keyed off its own constant."""
+    def inventory(self, paths, sitemap=None, robots_blocked=None, truncated=False,
+                  walk=None):
+        """An inventory `site_crawl.load` accepts, keyed off its own constant. `walk`
+        adds the sitemap walk's own record (`cut`, `unvisited`, ...)."""
         from site_crawl import INVENTORY_VERSION
         return self.write(json.dumps({
             "inventory_version": INVENTORY_VERSION,
@@ -1349,7 +1352,8 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
                                           "redirected": False,
                                           "redirect_chain": []}
                       for p in paths},
-            "sitemap": {"urls": [f"{self.SITE}{p}" for p in (sitemap or paths)]},
+            "sitemap": {"urls": [f"{self.SITE}{p}" for p in (sitemap or paths)],
+                        **(walk or {})},
             "robots_blocked": {f"{self.SITE}{p}": why
                                for p, why in (robots_blocked or {}).items()},
             "fetch_error": None,
@@ -1466,6 +1470,40 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
                          ["/private.html"],
                          "a complete crawl that neither fetched nor was refused a "
                          "sitemap URL still counts it")
+
+    def test_a_cut_sitemap_set_withholds_the_pass_and_keeps_the_finding(self):
+        """F11. `never_crawled` is counted over the crawl's sitemap set, and 0.167.0's
+        walk limits — a byte or URL budget, the 25-file cap, a sitemap on another host
+        — cut that set without setting the crawl's `truncated`. CI-018 then passed
+        clean over part of the list. Each limit is a cut; a never-crawled URL found in
+        the part read still stands, as a floor."""
+        walks = {
+            "files left unread": {"unvisited": [f"{self.SITE}/s26.xml"]},
+            "a budget": {"cut": ["the sitemap URL budget (50000) was reached and 3 "
+                                 "listed URL(s) were not kept"]},
+            "another host": {"off_host_sitemaps": ["https://cdn.example.net/s.xml"]},
+            "no answer": {"errors": [{"url": f"{self.SITE}/s2.xml", "status": None,
+                                      "error": "timed out", "error_kind": "timeout"}]},
+        }
+        for label, walk in walks.items():
+            with self.subTest(cut=label):
+                data = self.audit(self.log(days=14, per_day=30),
+                                  self.inventory(self.PATHS, walk=walk))
+                self.assertIn("sitemap_set_incomplete", self.caveats(data))
+                self.assertEqual(self.verdict_of(data)[0], NO_DATA)
+        found = self.audit(self.log(days=14, per_day=30),
+                           self.inventory(self.PATHS,
+                                          sitemap=self.PATHS + ("/never.html",),
+                                          walk=walks["files left unread"]))
+        status, evidence = self.verdict_of(found)
+        self.assertEqual(status, WARN, evidence)
+        self.assertIn("floor", evidence)
+        # A sitemap the site serves broken is the site's answer, not a cut.
+        broken = self.audit(self.log(days=14, per_day=30),
+                            self.inventory(self.PATHS, walk={"errors": [
+                                {"url": f"{self.SITE}/s2.xml", "status": 404}]}))
+        self.assertNotIn("sitemap_set_incomplete", self.caveats(broken))
+        self.assertEqual(self.verdict_of(broken)[0], PASS)
 
     def test_a_complete_log_claims_nothing_partial(self):
         """The floor, and the one that catches a repair gone too far. Every caveat
