@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.171.0 — see [CHANGELOG.md](CHANGELOG.md). Two more items stop judging a site on pages a capped crawl never read: BL-081 (exact-match anchor overuse) answers NO_DATA over such a crawl, because overuse is a share that reading more pages can lower, and CI-018 no longer counts a sitemap URL robots.txt refuses as never crawled when the crawl stopped before reaching it. Nothing moves over a crawl that read the whole site. 0.170.0, the release before, did the same for CI-008, AR-162 and CI-018's refused paths, and gave the crawl's page and depth caps a written basis.
+Version 0.172.0 — see [CHANGELOG.md](CHANGELOG.md). The HTTP specification now claims no more than the code holds: `--sample`'s own sitemap fallback no longer follows a sitemap index to another host or port, the 20 MB sitemap budget counts bytes rather than characters in all three walkers, `indexability_matrix` holds at most 50,000 sitemap URLs, and a TLS check refused by the web-ports switch reports `blocked` rather than a crash. The crawl's page and depth caps are `inherited` again: under `--sample` they still decide which pages a sampled verdict is about, and that is now written down rather than claimed solved.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

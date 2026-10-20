@@ -10,6 +10,56 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.172.0 — the HTTP specification claims no more than the code holds; the crawl caps are `inherited` again
+
+Registry version: `90ba79b14b28`, unchanged. **Verdicts can move in two places, both toward
+withholding or toward the audited host: GO-136 and GO-138 withhold their clean verdict on a
+site whose sitemaps pass 20 MB in bytes but not in characters; and
+`--sample` without a crawl no longer samples pages listed only in a sitemap on another host or
+port.** SE-118 stays NO_DATA when the web-ports switch refuses its port, now labelled `blocked`
+instead of a crash. A run with sitemaps under 20 MB and no off-host index children moves
+nothing.
+
+* **Found by an independent review of 0.169.1–0.171.0** (Codex on `gpt-6.1-sol`): 0.169.1 wrote
+  HTTP-1, HTTP-10 and HTTP-13 as held where the code or the tests did not hold them, and
+  0.170.0's `convention` basis for the crawl caps failed its own criterion through `--sample`.
+  Each gap was reproduced on 0.171.0 before it was changed.
+* **The crawl caps go back to `inherited`.** With a crawl, `--sample` draws its pages from the
+  ones the crawl read, so a crawl cut by its cap decides which pages a sampled verdict is about:
+  MS-020 `PASS` on 3/3 pages over a three-page crawl and `FAIL` over the whole site, CI-016
+  `N/A` over two pages and `FAIL` over three. Withholding the sampled PASS was built and
+  reviewed; the review found the N/A, a pool the cap shrank to one page, and a sitemap-fed
+  sample it withheld wrongly, and closing those reaches past the aggregation. So nothing about
+  `--sample`'s verdicts changed, and `DEFAULT_MAX_PAGES` and `DEFAULT_DEPTH` say why they are
+  `inherited`. Threshold totals: convention 68 → 66, inherited 62 → 64, of 161.
+* **`--sample` without a crawl followed a sitemap index anywhere.** Its own sitemap fallback
+  requested up to three of an index's children on any host and port; it now refuses the ones
+  off the audited host, as the three sitemap walkers do, and names them on stderr.
+* **The sitemap byte budget counted characters**, and the crawl counted nothing for an error
+  page. All three walkers added the decoded text's length to a budget written in bytes, so UTF-8
+  sitemaps were read to two or three times 20 MB with no cut reported. They count the response
+  body's bytes now, an error page's included.
+* **`indexability_matrix` held every sitemap URL.** Past 50,000 its sitemap membership is
+  unknown (`null`), as it already was past the byte budget; no item reads it.
+* **`tls_certificate.py` dropped the refusal's kind.** A port refused under
+  `SEO_STANDARD_PORTS_ONLY` reached the runner as `crash`; it carries `blocked` (`unresolved`
+  for a name with no address).
+* **Narrowed, not changed.** HTTP-10 said a walk "requests no new file past" its URL budget: the
+  crawl and the checker go on reading files past it, bounded by the byte budget and the file cap,
+  so a broken sitemap there is still reported. HTTP-1 and INV-H3 said "every request": the W3C
+  validator and Safe Browsing are fixed services reached directly, and now say so. A response
+  refused for passing its own 8 MB limit is not counted against the budget; the file cap bounds
+  it.
+* **Spec**: HTTP-1, INV-H3, HTTP-10, HTTP-13 and the HTTP appendix, which records the mutation
+  run against each Reader line; VRD-14 names what the caps still decide under `--sample`; GOV-2
+  and EVD-6 carry the new counts. Spec debt unchanged (158 / 133 / 20 / 1 / 4). `AGENTS.md` says
+  what is true of spec changes: they ship with the code; the `opsx` workflows were never used.
+* **Tests**, each seen red on 0.171.0 or under a mutation of the fix: the fallback's off-host
+  children and its stderr line, multi-byte sitemaps in all three walkers, error pages against the
+  crawl's budget, the matrix past 50,000 URLs, a gzip bomb measured by peak memory (the old test
+  stays green under an unbounded expansion), another port as another host, the TLS refusal
+  through the runner, and `tls_certificate.py`'s second pass and SNI name.
+
 ## 0.171.0 — BL-081 and CI-018's never-crawled pages stop judging a site off part of a capped crawl
 
 Registry version: `90ba79b14b28`, unchanged. **Two verdicts move, each only over a crawl
