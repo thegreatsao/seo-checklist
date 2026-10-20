@@ -66,19 +66,36 @@ except ImportError:
     print("Error: gsc_checker.py must be importable from the same directory")
     sys.exit(1)
 
-# basis: inherited — average position 1.5, present at import. Blocker: one property in one language cannot establish branded-query ownership across markets; this needs many properties across markets.
+# basis: convention — average position 1.5, present at import (F11). At or above it
+#  (numerically below) the page that owns the brand's most-searched query "ranks first",
+#  which KW-070 and GO-139 read: an average that rounds to first. Search Console reports
+#  an impression-weighted mean, so 1.5 can hide a page first on most searches and third
+#  on some. Calibrating it would take many properties across markets — one property in
+#  one language cannot establish branded-query ownership — which is the blocker kept here;
+#  until then it is the judgement that "rounds to one" is first
 RANKS_FIRST_POSITION = 1.5
-# basis: inherited — 100 impressions, present at import. Blocker: this only splits an already-fired finding into high versus medium severity, so it is a prioritisation convention rather than a search-analytics measurement.
+# basis: presentation — 100 impressions, present at import. It splits a cannibalised
+#  query's `issues` entry into `high` or `medium`, and no item reads this script's
+#  `issues` (MS-023 and KW-071 count `summary`, KW-070 and GO-139 read `branded`), so it
+#  decides what is printed, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 HIGH_SEVERITY_IMPRESSIONS = 100
 
-# basis: inherited — present at import, and the one cap here that decides a verdict.
-#  One request, no `startRow`, so a property with more than this many query/page
-#  rows in the window is analysed from the first 5000 and MS-023 and KW-071 — both
-#  `high` — read `eq 0` off them as "no query on this site splits across URLs".
-#  `truncated` below says when that happened; raising it means paginating.
+# basis: convention — 5000 query/page rows, one request with no `startRow` (F11). The
+#  Search Analytics API returns up to 25,000 a request and pages past that, so the number
+#  is a request budget, not the API's. Past it no answer it could decide stands: MS-023
+#  and KW-071 pass by absence and the runner withholds them over `truncated`, and
+#  KW-070 and GO-139, whose `truthy` answers the runner cannot withhold, lose them here —
+#  the script drops `searched`, `ranks_first` and `homepage_ranks_first` from `branded`
+#  and says why (until F11 the branded query and its page were picked from the rows read).
+#  So moving it trades how many properties these four items answer for against one
+#  request, never which answer they give; paging would answer more
 ROW_LIMIT = 5000
-# basis: inherited — 10 impressions, present at import. Below it two pages sharing a
-#  query is noise rather than cannibalisation, but the number was not measured
+# basis: convention — 10 impressions, present at import (F11). A page under it is not
+#  counted among the pages sharing a query, which decides MS-023 and KW-071: two pages
+#  splitting a query is a pattern, a page with a handful of impressions is noise. Where
+#  noise ends depends on how Search Console's per-page impressions vary for one query
+#  across properties, which one property cannot show — the same multi-market blocker as
+#  the numbers above; until then it is a judgement of where noise ends
 MIN_IMPRESSIONS = 10       # below this, page-splitting is noise, not a pattern
 # basis: convention — two pages, definitional (F11): cannibalisation is one query
 #  answered by more than one of the site's pages, and one page cannot compete with
@@ -558,6 +575,17 @@ def analyze(site_url: str, credentials: str, days: int,
     result["queries_analyzed"] = len({r["query"] for r in rows})
     result["branded"] = find_branded(rows, site_url, brand_names, brand_source,
                                      alternate_urls, no_brand_reason)
+    if result["truncated"] and result["branded"].get("checked"):
+        # KW-070 and GO-139 read `truthy` answers the runner does not withhold over a
+        # truncated input, and over a full page of rows the brand's most-searched query,
+        # or any branded row at all, may be past the cap (F11). The query and page read
+        # stay as evidence; the three answers the items read go, and `reason` says why.
+        for key in ("searched", "ranks_first", "homepage_ranks_first"):
+            result["branded"].pop(key, None)
+        result["branded"]["reason"] = (
+            f"the window has more query/page rows than the {ROW_LIMIT} one request "
+            f"returns, so the brand's most-searched query and the page that owns it "
+            f"may be among the rows not read")
     spreads = find_query_spreads(rows, alternate_urls)
     if brand_names:
         result["spread_brand"] = {"source": brand_source, "names": brand_names}

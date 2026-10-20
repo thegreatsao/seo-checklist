@@ -1146,6 +1146,40 @@ class Cannibalization(unittest.TestCase):
     def brand_verdicts(self, out):
         return {item_id: verdict(item_id, out) for item_id in self.BRAND_ITEMS}
 
+    def _a_full_page(self, *head):
+        """`head` rows, then generic filler up to ROW_LIMIT: the shape of a property
+        whose window has more query/page rows than the one request returns."""
+        filler = [((f"generic query {i}", f"https://example.com/p{i}"), 1, 30, 9.0)
+                  for i in range(self.mod.ROW_LIMIT - len(head))]
+        return self.rows(list(head) + filler)
+
+    def test_a_branded_answer_off_a_full_page_of_rows_is_withheld(self):
+        """F11 (the fix ROW_LIMIT waited on): the brand's most-searched query and the
+        page that owns it were picked from the first ROW_LIMIT rows, and a `truthy`
+        rule is not withheld over a truncated input, so the cap could move KW-070 and
+        GO-139 either way. Over a full page both say why they cannot answer; below it
+        the same brand row still decides."""
+        brand_row = (("marino barbero", "https://example.com/"), 6, 20, 1.0)
+        full = self.analyze(self._a_full_page(brand_row), brand=["Marino Barbero"],
+                            source="published")
+        self.assertTrue(full["truncated"])
+        self.assertEqual(self.brand_verdicts(full), {"KW-070": NO_DATA, "GO-139": NO_DATA})
+        self.assertIn(str(self.mod.ROW_LIMIT), full["branded"]["reason"])
+        short = self.analyze(self.rows([brand_row]), brand=["Marino Barbero"],
+                             source="published")
+        self.assertEqual(self.brand_verdicts(short), {"KW-070": PASS, "GO-139": PASS})
+
+    def test_no_brand_row_in_a_full_page_is_not_a_brand_nobody_searched(self):
+        """`searched` false makes both items N/A; over a full page the brand's rows may
+        be past the cap, so that is not known either."""
+        full = self.analyze(self._a_full_page(), brand=["Marino Barbero"],
+                            source="published")
+        self.assertEqual(self.brand_verdicts(full), {"KW-070": NO_DATA, "GO-139": NO_DATA})
+        short = self.analyze(self.rows([(("generic query", "https://example.com/p"),
+                                         1, 30, 9.0)]),
+                             brand=["Marino Barbero"], source="published")
+        self.assertEqual(self.brand_verdicts(short), {"KW-070": NA, "GO-139": NA})
+
     def test_a_generic_head_term_is_not_the_brand(self):
         """The property that exposed the defect, in shape: the highest-click query is
         `barber paphos`, served by an inner page, and the shop's own name is served by

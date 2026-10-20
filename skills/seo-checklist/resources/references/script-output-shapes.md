@@ -201,7 +201,8 @@ Reads `--inventory` (see `site_crawl.py`); crawls one for itself without it.
 `headings.h1[]` — array
 `headings.h2[]` — array
 `headings.h3[]` — array
-`paragraphs[]` — array
+`paragraphs[]` — array — every non-empty `<p>` in the body containers (until 0.174.0,
+  only those of more than eight words; KW-076's body text is these and the headings)
 `images[]` — array
   - item keys: src, alt, width, height, loading
 `structured_data[]` — array
@@ -718,7 +719,10 @@ or no query data in the range, `branded` collapses to
 `{checked: false, reason: "..."}` and the sub-fields are absent — so rules on
 `branded.*` yield `NO_DATA`, with the reason, not a verdict. When a name is known
 but no query in the window carries it, `searched` is false and the query fields
-are absent.
+are absent. Over a full page of rows (`truncated`, 0.174.0) `searched`, `ranks_first` and
+`homepage_ranks_first` are absent and `branded.reason` says the brand's rows may be past
+the cap, so KW-070 and GO-139 are `NO_DATA` with that reason; the query and page read
+stay as evidence.
 
 ### gsc_checker.py
 
@@ -1695,9 +1699,11 @@ it, CI-018 decides. Same artifact pattern as `cwv_metrics.py`.
 `log_file` / `base_url` — str
 `format` — str — `combined` / `common` / `json` / `unknown`
 `lines_read` / `lines_parsed` / `lines_unparsed` — int
-`truncated` — bool — **this answer does not cover its whole subject.** Five causes:
+`truncated` — bool — **this answer does not cover its whole subject.** Six causes:
   `--max-lines` reached, a window under 7 days, an inventory that would not load, a
-  crawl inventory that stopped at its page or depth cap (0.170.0), or a sample under the
+  crawl inventory that stopped at its page or depth cap (0.170.0), a sitemap list the
+  crawl's walk did not read whole — a budget, the file cap, a sitemap on another host or
+  one with no answer (`sitemap_set_incomplete`, 0.174.0) — or a sample under the
   rate floor. Each silences a finding CI-018 would otherwise read, so a
   clean answer here is not a clean bill of health and the runner withholds the `PASS`
 `truncated_reason` — str — why, in the checker's own words; `""` when nothing was

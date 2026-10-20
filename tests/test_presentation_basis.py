@@ -2,7 +2,7 @@
 
 `tools/audit_thresholds.py` takes a basis line at its word, so a number filed as
 `presentation` leaves "numbers a verdict depends on" on the line's say-so. F11 moved
-twenty-three numbers there because the field each one feeds is read by no registry item —
+thirty-one numbers there because the field each one feeds is read by no registry item —
 or, for an entry in `issues`, read by none at the severity the number raises. The claim
 stops being true the day an item reads that field, and this is what says so: each row
 below names the script, the field, the registry severity of what the number writes there
@@ -58,6 +58,12 @@ UNREAD = {
     "freshness_checker.py": [("issues", None, ("STALE_CONTENT_DAYS",))],
     "collection_page_checker.py": [
         ("issues", SEVERITY_ALIAS["info"], ("MIN_PRODUCT_LINKS",))],
+    "gsc_checker.py": [("opportunities", None, (
+        "STRIKING_DISTANCE_MIN_POSITION", "STRIKING_DISTANCE_MAX_POSITION",
+        "STRIKING_DISTANCE_MIN_IMPRESSIONS", "TOP_POSITION_MAX", "LOW_CTR_PCT",
+        "VERY_LOW_CTR_PCT"))],
+    "gsc_links_csv.py": [("issues", None, ("TOP1_SHARE_PCT",))],
+    "gsc_cannibalization.py": [("issues", None, ("HIGH_SEVERITY_IMPRESSIONS",))],
     "lcp_subparts.py": [
         (f"subparts.{field}", None, ("MS_IF_ABOVE",))
         for field in ("resource_load_delay_ms", "resource_load_duration_ms",

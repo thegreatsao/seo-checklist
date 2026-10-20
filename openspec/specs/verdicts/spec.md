@@ -667,6 +667,16 @@ missing key as `NO_DATA` with that reason in its evidence. Of the items over a s
 report a cap, three fail on a floor: BL-086 and BL-087 count the whole links export, which the
 cap on checked targets does not shorten, and LO-198 is the one a cap could fake.
 
+**A `truthy` answer off a capped page of rows, from 0.174.0 (F11).** KW-070 and GO-139 read
+`truthy` answers that reading more could turn either way: the brand's most-searched query, and
+the page that owns it, were picked from the first `ROW_LIMIT` Search Console rows, and over a
+full page a branded row past the cap could change both, or make an unsearched brand searched.
+`gsc_cannibalization.py` now drops `searched`, `ranks_first` and `homepage_ranks_first` from
+`branded` over a truncated read and says why in `branded.reason`, which the runner prints with
+the `NO_DATA`. Held by `test_a_branded_answer_off_a_full_page_of_rows_is_withheld` and
+`test_no_brand_row_in_a_full_page_is_not_a_brand_nobody_searched`, each with the same rows below
+the cap as control.
+
 **And a count can be of absences, from 0.170.0.** The census above reads the rule's operator,
 and CI-008 (`orphan_pages.count eq 0`) is outside it: each page it counts is defined by a
 lack — no page read links to it — so on a crawl stopped at its cap a page reached from the

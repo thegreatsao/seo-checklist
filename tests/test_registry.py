@@ -724,14 +724,18 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # `convention` (four cache, facet, image and link lines; four signal tables).
         # 3a's review: MIN_PARAGRAPH_WORDS from `convention` to `measured` (0, the Zyte
         # article-extraction benchmark).
+        # 0.174.0 (F11) batch 4: eight Search Console numbers to `presentation` (six
+        # feed `opportunities`, two word `issues`, none read by an item); three to
+        # `convention` (RANKS_FIRST_POSITION and MIN_IMPRESSIONS with the multi-market
+        # blocker kept, ROW_LIMIT once KW-070 and GO-139 withhold over a full page).
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 13,
-            "convention": 93,
-            "inherited": 12,
-            "presentation": 39,
+            "convention": 96,
+            "inherited": 1,
+            "presentation": 47,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 138)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 130)
         self.assertEqual(len(named), 177)
         # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
         # `lib/safe_http.py`, how long and how often a held lock is asked for on

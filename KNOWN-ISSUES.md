@@ -932,6 +932,13 @@ name. A column called `url` would be read as "fix this page".
   What would settle the market claims is many properties across languages and markets,
   with property-level estimates kept independent. More months from this one property
   would deepen the same sampling bias, not create the missing market evidence.
+
+  F11 (0.174.0) traced each to what reads it, and the values stand. Eight decide only
+  what is printed: the six opportunity numbers feed `opportunities`, which no item reads
+  and the report prints outside the score, and `TOP1_SHARE_PCT` and
+  `HIGH_SEVERITY_IMPRESSIONS` word `issues` entries no item reads, so all eight are
+  `presentation`. `RANKS_FIRST_POSITION` decides KW-070 and GO-139 and is `convention`
+  with the blocker above kept in its line. None is `measured`.
   <!-- ki: gsc-thresholds-uncalibrated -->
 
 - **Line-wrapped minified CSS reads as unminified.** The pinned corpus labels

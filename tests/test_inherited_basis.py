@@ -13,7 +13,7 @@ requirement a test can reach.
 
 **The count may not rise.** A new constant filed as `inherited` is a deliberate act, and
 the scenario in the requirement asks that it be visible as one rather than absorbed into
-a total nobody watches. 12 of 138 today.
+a total nobody watches. 1 of 130 today.
 
 **An `inherited` line may not defend its number.** The convention is
 `# basis: inherited — <what the number is>`, and the description is why the category is
@@ -43,10 +43,10 @@ import audit_thresholds  # noqa: E402
 # Measured 20 October 2026, 0.172.0, raised by two on purpose: F13 moved the crawl caps
 # back from `convention` (see their basis lines). Lowered with each batch of F11
 # (0.174.0): 62 once the crawl caps left again; 34 after the second batch's relabels; 22 after the third's; 12 after
-# 3b's. A ceiling, not a target: the requirement's third scenario is
+# 3b's; 1 after the fourth's (MIN_SCORE, held for the owner). A ceiling, not a target: the requirement's third scenario is
 # a basis being upgraded, and every one of those lowers this number. Lower it in the
 # commit that earns it.
-INHERITED_AT_MOST = 12
+INHERITED_AT_MOST = 1
 
 # Phrasings that turn a description into a defence. A positive search, so this finds what
 # it knows and proves nothing about what it does not — the docstring says so rather than

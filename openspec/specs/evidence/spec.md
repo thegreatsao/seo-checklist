@@ -255,9 +255,9 @@ and no number that decides a verdict may carry none.
 question about a `FAIL` is where the line came from. `inherited` is an honest answer and
 also a debt; the point of naming it is that the debt is countable.
 **Reader:** enforced. `tools/audit_thresholds.py --check` runs in CI over every number a
-verdict depends on and fails when one names no basis. It reports 138 such numbers at
-0.174.0 — 20 `standard`, 13 `measured`, 93 `convention`, 12 `inherited`, and **0 with no
-basis**. The gate holds the floor; the 12 are the debt it makes visible. **Until 0.144.0
+verdict depends on and fails when one names no basis. It reports 130 such numbers at
+0.174.0 — 20 `standard`, 13 `measured`, 96 `convention`, 1 `inherited`, and **0 with no
+basis**. The gate holds the floor; the 1 are the debt it makes visible. **Until 0.144.0
 nothing held the scan itself.** A constant becomes a threshold in four places — an
 ordering comparison, an argument of `min` or `max`, a multiplication, a looked-up table —
 and by the walk under each; any of the five could be removed with every test green,
@@ -584,9 +584,9 @@ asked about". Today it either omits them silently or reports them as findings. W
 settle it: whether any current rule would change its verdict if it knew, which is
 answerable from the catalogue.
 
-**Is `inherited` a basis or the absence of one?** EVD-6 accepts four bases and 12 of 138
-numbers claim the fourth, which means the gate passes while about one in twelve of the thresholds
-in the tree are undefended. Treating `inherited` as a failure would redden CI today and for
+**Is `inherited` a basis or the absence of one?** EVD-6 accepts four bases and 1 of 130
+numbers claim the fourth, which means the gate passes while one threshold in the tree is
+undefended. Treating `inherited` as a failure would redden CI today and for
 a long time; treating it as a basis is what allows the number to stay at 77 for releases at
 a stretch. What would settle it: a ratchet — `inherited` permitted but never permitted to
 *increase*, which is the shape this tree already uses for its other debts.

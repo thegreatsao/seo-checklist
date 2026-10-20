@@ -35,23 +35,66 @@ except ImportError:
 
 
 # The opportunity rules were all present at import. The two sample floors governing a
-# CTR comparison are now justified by binomial precision; the other numbers retain the
-# inherited values and name the evidence that would be needed to settle them.
-# basis: inherited — positions 4-20, present at import. Blocker: one property in one language cannot establish a cross-market ranking-opportunity band; this needs many properties across markets.
+# CTR comparison are now justified by binomial precision; the other numbers keep their
+# values, decide only what `opportunities` lists (F11), and name the evidence that would
+# be needed to settle them.
+# basis: presentation — positions 4-20, present at import. It feeds `opportunities` and
+#  nothing else; GO-134, the one item over this script, reads `issues` (Search Console's
+#  own sitemap errors), and the runner carries `opportunities` as `gsc_opportunities`,
+#  printed outside the score and the fix list, so it decides what is printed, never a
+#  verdict (F11; held by `tests/test_presentation_basis.py`). Calibrating it still needs
+#  many properties across markets: one property in one language cannot establish a
+#  cross-market
+#  ranking-opportunity band, which is why it was never `measured`
 STRIKING_DISTANCE_MIN_POSITION = 4
-# basis: inherited — position 20, the far end of the band above. Blocker: one property in one language cannot establish a cross-market ranking-opportunity band; this needs many properties across markets.
+# basis: presentation — position 20, the far end of the band above; it feeds
+#  `opportunities` and nothing else; GO-134, the one item over this script, reads
+#  `issues` (Search Console's own sitemap errors), and the runner carries
+#  `opportunities` as `gsc_opportunities`, printed outside the score and the fix list,
+#  so it decides what is printed, never a verdict (F11; held by
+#  `tests/test_presentation_basis.py`). Calibrating it still needs many properties
+#  across markets: one property in one language cannot establish that band
 STRIKING_DISTANCE_MAX_POSITION = 20
-# basis: inherited — fifty impressions gates an average position, so binomial CTR precision does not apply. Blocker: only five pilot queries reached the relevant 50-199 bucket; this needs measured query-level mean-position variation.
+# basis: presentation — fifty impressions before an average position is an opportunity.
+#  It feeds `opportunities` and nothing else; GO-134, the one item over this script,
+#  reads `issues` (Search Console's own sitemap errors), and the runner carries
+#  `opportunities` as `gsc_opportunities`, printed outside the score and the fix list,
+#  so it decides what is printed, never a verdict (F11; held by
+#  `tests/test_presentation_basis.py`). Calibrating it still needs many properties
+#  across markets: one property in one language cannot establish the variation of a
+#  query's mean position (only five pilot queries reached the
+#  50-199 bucket)
 STRIKING_DISTANCE_MIN_IMPRESSIONS = 50
-# basis: inherited — top three positions, present at import. Blocker: one property in one language cannot establish normal CTR by position across markets; this needs many properties across markets.
+# basis: presentation — the top three positions, present at import. It feeds
+#  `opportunities` and nothing else; GO-134, the one item over this script, reads
+#  `issues` (Search Console's own sitemap errors), and the runner carries
+#  `opportunities` as `gsc_opportunities`, printed outside the score and the fix list,
+#  so it decides what is printed, never a verdict (F11; held by
+#  `tests/test_presentation_basis.py`). Calibrating it still needs many properties
+#  across markets: one property in one language cannot establish normal CTR
+#  by position
 TOP_POSITION_MAX = 3
-# basis: inherited — five percent CTR, present at import. Blocker: one property's non-monotonic CTR-by-position curve cannot establish normal CTR across markets; this needs many properties across markets.
+# basis: presentation — five percent CTR, present at import. It feeds `opportunities`
+#  and nothing else; GO-134, the one item over this script, reads `issues` (Search
+#  Console's own sitemap errors), and the runner carries `opportunities` as
+#  `gsc_opportunities`, printed outside the score and the fix list, so it decides what
+#  is printed, never a verdict (F11; held by `tests/test_presentation_basis.py`).
+#  Calibrating it still needs many properties across markets: one property in one
+#  language cannot establish normal CTR by
+#  position (one property's curve was not even monotonic)
 LOW_CTR_PCT = 5
 # basis: measured — corpus=binomial CTR proportion at the declared 5 percent threshold; date=2026-08-10; method=normal-approximation interval with z=1.96, applying the rule that the 95% confidence interval half-width on measured CTR must not exceed the threshold being tested. Minimum 73 impressions, so floor 100 has 27 impressions of headroom.
 LOW_CTR_MIN_IMPRESSIONS = 100
 # basis: measured — corpus=binomial CTR proportion at the declared 2 percent threshold; date=2026-08-10; method=normal-approximation interval with z=1.96, applying the rule that the 95% confidence interval half-width on measured CTR must not exceed the threshold being tested. Minimum 189 impressions, so floor 200 has 11 impressions of headroom.
 HIGH_IMPRESSIONS = 200
-# basis: inherited — two percent CTR, present at import. Blocker: one property's non-monotonic CTR-by-position curve cannot establish normal CTR across markets; this needs many properties across markets.
+# basis: presentation — two percent CTR, present at import. It feeds `opportunities` and
+#  nothing else; GO-134, the one item over this script, reads `issues` (Search Console's
+#  own sitemap errors), and the runner carries `opportunities` as `gsc_opportunities`,
+#  printed outside the score and the fix list, so it decides what is printed, never a
+#  verdict (F11; held by `tests/test_presentation_basis.py`). Calibrating it still needs
+#  many properties across markets: one property in one language cannot establish normal
+#  CTR by
+#  position
 VERY_LOW_CTR_PCT = 2
 
 SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]

@@ -461,42 +461,42 @@
       "why": "A closed narrative about a test repair, held by the scenarios it rewrote."
     },
     "gsc-thresholds-uncalibrated": {
-      "claim": "Nine Search Console numbers keep their inherited values and are deliberately not relabelled measured.",
+      "claim": "Nine Search Console numbers keep their values and are deliberately not relabelled measured: eight decide only what is printed (presentation since F11) and RANKS_FIRST_POSITION is convention with the multi-market blocker kept.",
       "measured": {
         "HIGH_SEVERITY_IMPRESSIONS": {
-          "basis": "inherited",
+          "basis": "presentation",
           "value": 100
         },
         "LOW_CTR_PCT": {
-          "basis": "inherited",
+          "basis": "presentation",
           "value": 5
         },
         "RANKS_FIRST_POSITION": {
-          "basis": "inherited",
+          "basis": "convention",
           "value": 1.5
         },
         "STRIKING_DISTANCE_MAX_POSITION": {
-          "basis": "inherited",
+          "basis": "presentation",
           "value": 20
         },
         "STRIKING_DISTANCE_MIN_IMPRESSIONS": {
-          "basis": "inherited",
+          "basis": "presentation",
           "value": 50
         },
         "STRIKING_DISTANCE_MIN_POSITION": {
-          "basis": "inherited",
+          "basis": "presentation",
           "value": 4
         },
         "TOP1_SHARE_PCT": {
-          "basis": "inherited",
+          "basis": "presentation",
           "value": 50
         },
         "TOP_POSITION_MAX": {
-          "basis": "inherited",
+          "basis": "presentation",
           "value": 3
         },
         "VERY_LOW_CTR_PCT": {
-          "basis": "inherited",
+          "basis": "presentation",
           "value": 2
         }
       },
@@ -910,17 +910,17 @@
       "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants (presentation since 0.170.0: no rule reads a near-duplicate field) and the three detect_profile tables as inherited (convention since F11, with the detector measured as a whole), DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and nineteen module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
         "basis": {
-          "convention": 93,
-          "inherited": 12,
+          "convention": 96,
+          "inherited": 1,
           "measured": 13,
-          "presentation": 39,
+          "presentation": 47,
           "standard": 20
         },
-        "counted": 138,
+        "counted": 130,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:36"
         ],
-        "presentation": 39,
+        "presentation": 47,
         "uncounted": [
           "CACHE_ENTRY_VERSION",
           "DEFAULT_MAX_REDIRECTS",

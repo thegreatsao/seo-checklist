@@ -54,7 +54,13 @@ def _utf8_stdout() -> None:
 _utf8_stdout()
 
 # Google localises the export, so match on shape rather than on English headers.
-# basis: inherited — half the backlinks from one domain, present at import. Blocker: backlink concentration is not a search-analytics number, so no volume of Search Console performance data can calibrate it.
+# basis: presentation — half the backlinks from one domain, present at import. It raises
+#  one `high` entry in `issues`, which no item over this script reads (BL-083, BL-084,
+#  BL-086, BL-087 read named fields), so it decides what is printed, never a verdict
+#  (F11; held by `tests/test_presentation_basis.py`). BL-084 decides on the same share against a `50`, with a warn band to
+#  `65`, written in its own registry rule — the number in a second place, which this
+#  scan cannot see. Backlink concentration is not a search-analytics number, so no
+#  volume of Search Console data would calibrate either
 TOP1_SHARE_PCT = 50
 
 # basis: convention — the hundred most-linked pages; the export's own ordering
