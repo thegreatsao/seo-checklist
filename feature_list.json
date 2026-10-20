@@ -335,7 +335,7 @@
   },
   {
     "id": "F13",
-    "behavior": "The HTTP specification claims no more than the code holds: off-host sitemaps are never requested on any path, sitemap budgets count bytes and bind every walker, a TLS port refusal classifies as blocked, every enforced Reader line names a test that fails under the violation, and the crawl caps are inherited again because under --sample they still decide which pages a sampled verdict is about",
+    "behavior": "The HTTP specification claims no more than the code holds: a sitemap named on another host or port is never requested by any walker or by --sample's fallback (a same-host sitemap that redirects off the host still is, as HTTP-13 says), sitemap budgets count bytes in the three walkers, a port refusal in tls_certificate.py classifies as blocked, every enforced Reader line names a test that fails under the violation, and the crawl caps are inherited again because under --sample they still decide which pages a sampled verdict is about",
     "dependencies": [
       "F10",
       "F12"

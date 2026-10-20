@@ -726,7 +726,11 @@ unkept; and a compressed body SHALL be expanded no further than the protocol all
 counts elements would answer confidently about a page that does not exist. The same is true
 of a mis-decoded one: a page read as ISO-8859-1 has different text, different word counts
 and different headings.
-**Reader:** enforced. The cap raises rather than truncating, and a smaller cap is asserted to
+**Reader:** partial — the decompression limit is held only as a memory ceiling. A review of
+0.172.0 (gpt-6.1-sol, 20 October) replaced the bounded read with `read(60_000_001)`, past the
+protocol's 52,428,800, and every test stayed green: the gzip tests require the document invalid
+and the peak under 150 MB, which a limit anywhere below about 150 MB also meets. Everything else
+below is held. The cap raises rather than truncating, and a smaller cap is asserted to
 cost a real refetch. The encoding recovery is covered thoroughly — fourteen tests over
 header-versus-meta precedence, BOMs, XML declarations, commented-out metas, and a
 declaration past the sniff window that is deliberately *not* read. Both defaults were unread
@@ -938,7 +942,12 @@ an unread one is not a defect, and a checker that said "No sitemap found" for it
 a clean set over it, would be reporting the part it read as the whole. The port rule sits in
 the guard because the guard is the one place every request passes: a same-host rule on
 redirects would not have closed it, since a page can link to the port directly.
-**Reader:** enforced. `tests/test_sitemap_walk_bounds.py` `OffHostSitemaps` hands each of
+**Reader:** partial — two clauses are held on fewer paths than they name. The `www.` variant
+is held as the same site only for the crawl: a checker changed to refuse it leaves every
+`OffHostSitemaps` test green. And a port refusal classifies as `blocked` in the guard and in
+`tls_certificate.py` only: `hreflang_checker.py` reports any failed fetch as `unread`, and
+`indexnow_checker.py` drops the kind, so the runner records `crash` (found by the review of
+0.172.0; filed as F14). The rest is held. `tests/test_sitemap_walk_bounds.py` `OffHostSitemaps` hands each of
 the three walkers sitemaps on other hosts and ports and requires that none is requested:
 the crawl lists them in `off_host_sitemaps` and keeps only the audited host's URLs, the
 `www.` variant and the other scheme are requested as the same site, and `sitemap_checker`
@@ -1171,7 +1180,7 @@ into a `setdefault`, so a caller may relax it, left 319 tests green when this wa
 and reddens two of its four readers now. HTTP-8 — as of 5 September 2026 the recording is read in both directions and the
 provenance omission is pinned as an absence; before that, the string
 `http_cache` appears nowhere under `tests/`. HTTP-10 and HTTP-13, and HTTP-1's own-socket
-half (20 October 2026, F13): each clause broken in turn — a walker counting characters, the
+half (20 October 2026, F13): the clauses F13 changed, broken in turn — a walker counting characters, the
 matrix holding every URL, the crawl skipping an error page's bytes, an unbounded expansion, a port read as the same host, the sample
 fallback following any host or not naming what it refused, the TLS refusal's kind dropped, a second TLS pass resolving the
 name, the address sent as SNI — and each reddens the test the Reader line names.
@@ -1185,14 +1194,17 @@ the error this method leaves open, and the halves are where to look first.
 
 | | requirements |
 |---|---|
-| **enforced** | HTTP-1, HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-7, HTTP-8, HTTP-9, HTTP-10, HTTP-11, HTTP-12, HTTP-13 |
-| **partial** | — none |
+| **enforced** | HTTP-1, HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-7, HTTP-8, HTTP-9, HTTP-11, HTTP-12 |
+| **partial** | HTTP-10, HTTP-13 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-H2 and INV-H3 enforced; INV-H1 and INV-H4 partial.
 
-**Thirteen enforced, nothing partial, nothing unread, of thirteen.**
+**Eleven enforced, two partial, nothing unread, of thirteen.** HTTP-10 and HTTP-13 moved to
+`partial` in 0.172.0: the review of that release mutated three clauses their Reader lines called
+held — the decompression limit raised past the protocol's, `www.` refused by the checker, a port
+refusal reported as something other than `blocked` by two scripts — and no test went red.
 
 HTTP-13 joined on 20 October 2026 (F10), written for behaviour 0.167.0 and 0.168.0 had
 shipped with its tests and without a requirement: what a site's own word may make the
