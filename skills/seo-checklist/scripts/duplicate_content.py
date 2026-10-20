@@ -27,9 +27,10 @@ from collections import defaultdict
 import site_crawl
 from seo_common import read_as_url, THIN_CONTENT_WORDS, carries_content, normalize_url
 
-# basis: inherited — 100 words, present at import. Splits a thin page into two
-#  severities: under a hundred words the page is closer to empty than to short, which is
-#  a different conversation with whoever owns it.
+# basis: presentation — 100 words, present at import. It picks the `severity` of a thin
+#  page's row in `thin_content` (Critical under it, Warning above), and CN-039 counts
+#  `summary.thin_pages` whatever their severity; no item reads `thin_content`, so it
+#  decides what is printed, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 NEARLY_EMPTY_WORDS = 100
 
 # Quality gates from resources/references/quality-gates.md

@@ -29,11 +29,15 @@ KNOWN_TAGS = {
 }
 
 
-# basis: inherited — eight third-party scripts, present at import. Round, and the sort
-#  of number a performance blog post quotes; nothing here measured what an eighth tag
-#  costs that a seventh did not.
+# basis: presentation — eight third-party scripts, present at import. It raises one
+#  `warning` in `issues`, and SP-109, the one item over this script, reads
+#  `blocking_third_party_count`, so it decides what is printed, never a verdict (F11;
+#  held by `tests/test_presentation_basis.py`)
 MANY_THIRD_PARTY_SCRIPTS = 8
-# basis: inherited — 300KB of third-party JavaScript, present at import.
+# basis: presentation — 300KB of third-party JavaScript, present at import. It raises
+#  one `warning` in `issues`, which no item reads (SP-109 reads
+#  `blocking_third_party_count`), so it decides what is printed, never a verdict (F11;
+#  held by `tests/test_presentation_basis.py`)
 THIRD_PARTY_BYTES_WARN = 300_000
 
 

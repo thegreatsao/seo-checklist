@@ -16,8 +16,11 @@ from seo_common import read_source, issue, parse_html, print_json_or_text
 #  content page is held to: a collection page's job is the grid, so the copy only has to
 #  be enough to say what the collection is.
 COLLECTION_THIN_WORDS = 150
-# basis: inherited — four distinct product links, present at import. Below it the grid
-#  is either empty or built by client-side rendering, and this script reads HTML.
+# basis: presentation — four distinct product links, present at import. Below it one
+#  `info` entry in `issues`, which the runner reads as `low`; AR-154 counts `issues` only
+#  at critical, high and medium, and applies when `product_links_detected` is above
+#  zero, a count this number does not touch, so it decides what is printed, never a
+#  verdict (F11; held by `tests/test_presentation_basis.py`)
 MIN_PRODUCT_LINKS = 4
 
 FILTER_PARAMS = {"filter", "sort", "color", "size", "brand", "price", "min_price", "max_price", "page", "p"}

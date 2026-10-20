@@ -21,9 +21,11 @@ from seo_common import (
 )
 
 
-# basis: inherited — 730 days, present at import. Two years is the point at which a
-#  visible date is reported as old; it is a round number and nothing here measured what
-#  staleness costs a given kind of page.
+# basis: presentation — 730 days, present at import. Past it the latest visible date is
+#  reported old in one `warning` entry of `issues`; CN-038 reads `score`, which this
+#  script computes from the date's age by its own formula and not from this number,
+#  and CN-056 reads `date_signals`, so it decides what is printed, never a verdict (F11;
+#  held by `tests/test_presentation_basis.py`)
 STALE_CONTENT_DAYS = 730
 
 # basis: standard — civil time spans UTC+14 to UTC-12 in the IANA time zone database,

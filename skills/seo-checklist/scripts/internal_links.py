@@ -26,15 +26,18 @@ import site_crawl
 from seo_common import read_as_url
 
 
-# basis: inherited — under three outgoing internal links from a page, present at
-#  import. A page with a navigation bar clears this without trying, so it fires on
-#  pages rendered client-side or genuinely orphaned in the other direction.
+# basis: presentation — under three outgoing internal links from a page, present at
+#  import. It counts `summary.pages_under_three_links`, which no item reads (AR-149
+#  reads `summary.internal_redirects`), so it decides what is printed, never a verdict
+#  (F11; held by `tests/test_presentation_basis.py`)
 LOW_OUTLINKS = 3
-# basis: inherited — over a hundred, present at import. Above it the page is a
-#  directory or a tag index rather than a document, and PageRank per link is thin.
+# basis: presentation — over a hundred, present at import. It counts
+#  `summary.pages_over_hundred_links`, which no item reads, so it decides what is
+#  printed, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 HIGH_OUTLINKS = 100
-# basis: inherited — a site averaging under five internal links per page, present at
-#  import.
+# basis: presentation — a site averaging under five internal links per page, present at
+#  import. It adds one line to `recommendations`, which no item reads, so it decides
+#  what is printed, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 LOW_AVERAGE_OUTLINKS = 5
 
 def analyze(inventory: dict, start_url: str) -> dict:

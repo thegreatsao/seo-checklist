@@ -61,9 +61,11 @@ PAGE_WEIGHT_FLAG_KIB = 5000
 # Lightest first; MB-095's value_map names exactly these.
 PAGE_WEIGHT_BANDS = ("light", "heavy", "enormous")
 
-# basis: inherited — 100ms of predicted saving, present at import. Below it a Lighthouse
-#  opportunity is dropped from the report, so it does decide what the audit says; the
-#  number is a noise floor for an estimate Lighthouse itself calls approximate.
+# basis: presentation — 100ms of predicted saving, present at import. Below it a
+#  Lighthouse opportunity is left out of `opportunities`, which the runner carries as
+#  `lab_performance`, reported and never scored; no item reads it (SP-107 to SP-113,
+#  SE-119 and MB-095 read field data, metric ratings and `page_weight`), so it decides
+#  what the report lists, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 MIN_OPPORTUNITY_SAVINGS_MS = 100
 # basis: presentation — Lighthouse's own published score bands (90 and above green, 50
 #  and above amber) and a millisecond value rendered as seconds once it reaches a

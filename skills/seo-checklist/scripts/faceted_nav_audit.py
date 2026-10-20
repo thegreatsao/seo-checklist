@@ -34,14 +34,17 @@ except ImportError:
 from seo_common import fetch_url, parse_html, read_urls, same_host
 
 
-# basis: inherited — three query parameters on one URL, present at import. A count, not
-#  a judgement about which parameters: three combined facets is where the crawlable
-#  variants of a page start multiplying.
+# basis: presentation — three query parameters on one URL, present at import. It adds
+#  `parameter_combination` to that URL's `rows[].flags`, which no issue and no item
+#  reads (AR-163 reads `issues` and `faceted_count`), so it decides what is printed,
+#  never a verdict (F11; held by `tests/test_presentation_basis.py`)
 PARAM_COMBINATION_COUNT = 3
 # basis: inherited — five URL variants of one path, present at import.
 PATH_EXPLOSION_VARIANTS = 5
-# basis: inherited — a parameter seen on three URLs, present at import, and reported as
-#  info rather than a finding: frequency here is evidence for a human, not a verdict.
+# basis: presentation — a parameter seen on three URLs, present at import. It fills
+#  `frequent_params` and one `info` entry in `issues`, which the runner reads as `low`;
+#  AR-163 counts `issues` only at critical, high and medium, so it decides what is
+#  printed, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 FREQUENT_PARAM_COUNT = 3
 # basis: convention — 300 page-linked URLs, a bound chosen here, not measured. AR-163
 #  asserts that `issues` contains no medium-or-worse finding, and this number decides

@@ -25,9 +25,10 @@ from seo_common import (BeautifulSoup, fetch_error_kind, html_parser, is_url,
 # basis: inherited — one week of `max-age` for a fingerprinted static asset, present at
 #  import. Round, and the sort of number a CDN's own documentation suggests.
 STATIC_MAX_AGE_MIN = 604800
-# basis: inherited — 30 days, present at import. Above it a static asset is expected to
-#  carry `immutable`, because a month of caching with no fingerprint in the URL is a
-#  month of serving a file that has changed.
+# basis: presentation — 30 days, present at import. Above it a static asset without
+#  `immutable` gets an `info` entry in `issues`, which the runner reads as `low`; TE-170
+#  counts `issues` only at critical, high and medium, so it decides what is printed,
+#  never a verdict (F11; held by `tests/test_presentation_basis.py`)
 STATIC_IMMUTABLE_MAX_AGE = 2_592_000
 # basis: convention — one kibibyte, the minimum length below which compression plus its
 #  header overhead rarely reduces what goes over the wire. Every serious server ships

@@ -39,9 +39,12 @@ except ImportError:
     from scripts.seo_common import carries_content, unread_kind
 
 
-# basis: inherited — every one of these, present at import. `llms.txt` is a proposal
-#  with no ratified spec, so none of them can be `standard` even in principle: the file
-#  format's own documentation states no lengths and no section counts.
+# Every number below arrived with the import. `llms.txt` is a proposal with no ratified
+# spec, so none of them can be `standard` even in principle: the file format's own
+# documentation states no lengths and no section counts.
+# basis: presentation — 20 characters, present at import. Below it the description gets
+#  one entry in `quality.issues` and loses nothing from `quality.score`, the field GEO-002
+#  reads, so it decides what is printed, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 MIN_DESCRIPTION_CHARS = 20
 GOOD_DESCRIPTION_CHARS = 50   # basis: inherited — the "detailed enough" line, same origin
 MIN_SECTIONS = 3              # basis: inherited — a structured file has a few sections

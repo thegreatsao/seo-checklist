@@ -62,8 +62,10 @@ except ImportError:
 # basis: inherited — 8 words, present at import. Filters navigation entries and captions
 #  out of the paragraph list so readability is measured on prose.
 MIN_PARAGRAPH_WORDS = 8
-# basis: inherited — present at import, and part of the Flesch syllable estimate rather
-#  than a verdict: a word of three letters or fewer is counted as one syllable.
+# basis: presentation — a word of three letters or fewer is counted as one syllable in
+#  the Flesch estimate, present at import. It feeds `readability` and nothing else, and
+#  the one item over this script, KW-076, reads `keyword_usage.in_body`, so it decides
+#  what the evidence prints, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 SHORT_WORD_LETTERS = 3
 # basis: standard — 70 is a Flesch Reading Ease boundary; Flesch, R. (1948), "A new
 #  readability yardstick", Journal of Applied Psychology, 32(3), 221-233. Flesch's table
@@ -78,8 +80,11 @@ READABILITY_MEDIUM = 50
 #  above: Flesch, R. (1948), Journal of Applied Psychology, 32(3), 221-233. Below it is
 #  Flesch's bottom band; reporting that as "very difficult to read" is this tool's wording.
 READABILITY_HARD = 30
-# basis: inherited — a unigram has to appear more than three times to be a keyword
-#  candidate, present at import.
+# basis: presentation — a unigram has to appear more than three times to be a keyword
+#  candidate, present at import. It feeds `extracted_keywords` and, when no `--keyword`
+#  is given, `target_keyword`; KW-076 reads `keyword_usage`, which exists only for a
+#  `--keyword` the operator typed, so it decides what is printed, never a verdict (F11;
+#  held by `tests/test_presentation_basis.py`)
 MIN_UNIGRAM_COUNT = 3
 # basis: convention — a pixel truncation budget establishes no minimum: 30 characters
 #  is retained as this project's editorial judgement that a shorter title is unlikely
@@ -93,13 +98,18 @@ TITLE_MAX_CHARS = 65
 META_MIN_CHARS = 100
 # basis: measured — corpus=tools/calibration/serp-length.json; date=2026-08-10; method=ordinary composition in Arial using frequency-weighted glyph advances at 14px fitted to the assumed 920px desktop budget. The budget is a third-party observation, not a Google-published limit — if it is wrong, 144 is wrong.
 META_MAX_CHARS = 144
-# basis: inherited — 1000 words, present at import: the "may be thin for a blog post"
-#  line, itself below the 1500 the fix text asks for.
+# basis: presentation — 1000 words, present at import: the "may be thin for a blog
+#  post" line, itself below the 1500 the fix text asks for. It words one entry of
+#  `seo_issues`, which no item reads (KW-076 reads `keyword_usage`), so it decides what
+#  is printed, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 BLOG_THIN_WORDS = 1000
-# basis: inherited — more than three images without loading="lazy", present at import.
+# basis: presentation — more than three images without loading="lazy", present at
+#  import. It raises one `Info` entry of `seo_issues`, which no item reads, so it decides
+#  what is printed, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 MAX_EAGER_IMAGES = 3
-# basis: inherited — five related keywords, present at import. A padding target for the
-#  keyword list, not a verdict about the page.
+# basis: presentation — five related keywords, present at import. A padding target for
+#  `related_keywords`, which no item reads, so it decides what is printed, never a
+#  verdict (F11; held by `tests/test_presentation_basis.py`)
 MIN_RELATED_KEYWORDS = 5
 
 # Curated per-language lists, selected from the page's declared `<html lang>`.

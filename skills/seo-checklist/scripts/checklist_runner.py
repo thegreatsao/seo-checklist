@@ -684,16 +684,18 @@ NO_DATA, MANUAL, LLM_PENDING, NA = "NO_DATA", "MANUAL", "LLM_PENDING", "N/A"
 # silence the first time a reason is reworded.
 NEEDS_INPUT = "NEEDS_INPUT"
 
-# basis: inherited — critical 10 / high 6 / medium 3 / low 1, present at import from
-#  Agentic-SEO-Skill. **These weights decide the SEO Score itself.** Nobody here has
-#  asked whether a critical item is ten low items or three; what 0.18 measured is not
-#  the number but the consequence of getting it wrong, with
-#  tools/audit_score_sensitivity.py over four real runs. Re-scored from flat 1/1/1/1
-#  to steep 27/9/3/1 the headline moved 0.2, 1.9, 9.3 and 14.6 points — so the table
-#  cannot be dismissed as decoration. The driver is not the item count but how far
-#  the per-severity pass rates spread: 11.8 points of spread gave 0.2, and 50 gave
-#  14.6. It moves the score most on exactly the sites where severity discriminates,
-#  which is where the critical items are the broken ones
+# basis: convention — critical 10 / high 6 / medium 3 / low 1, arrived with
+#  Agentic-SEO-Skill and kept as a decision here (F11). **These weights decide the SEO
+#  Score itself**, and no item's status: they say how many low items one critical item
+#  is worth, which is a statement about what a reader should care about, not a property
+#  of any site — no corpus of sites, rankings or audits has a column that would settle
+#  it. What a corpus can show is the consequence, and 0.18 measured it with
+#  tools/audit_score_sensitivity.py over four real runs: re-scored from flat 1/1/1/1 to
+#  steep 27/9/3/1 the headline moved 0.2, 1.9, 9.3 and 14.6 points, driven by how far
+#  the per-severity pass rates spread (11.8 points of spread gave 0.2, 50 gave 14.6).
+#  Moving any weight changes the score on exactly the sites where severity
+#  discriminates, and changes `scoring_stamp`, so a run scored under the new table is
+#  marked as not comparable with an archived one (SCR-2)
 SEVERITY_WEIGHT = {"critical": 10, "high": 6, "medium": 3, "low": 1}
 # Worst first: the registry's four words. Every severity sort in the runner and
 # report is read off this one ordering.
@@ -722,13 +724,14 @@ VERDICT_CREDIT = {PASS: 1.0, WARN: 0.5, FAIL: 0.0}
 # all three tables one instrument, and an instrument whose parts live in two modules
 # cannot be stamped in one place. `checklist_report` re-exports the name it used to
 # own, so every importer of it keeps working.
-# basis: inherited — low 1 / medium 2 / high 4, present at import. Divides
-#  SEVERITY_WEIGHT to rank what to do first. 0.18 measured what that ratio is worth
-#  with tools/audit_score_sensitivity.py: *dividing* changes 2-4 of the first ten
-#  rows against not dividing at all, so the idea earns its place, while the exact
-#  ratio does not — 1/2/3 gives the identical first ten on every run measured, and
-#  1/3/9 differs by one row. Whether to divide by effort is the decision; which
-#  numbers is not
+# basis: convention — low 1 / medium 2 / high 4, arrived with the import and kept as a
+#  decision (F11). Divides SEVERITY_WEIGHT to order the fix list and decides no status
+#  and no score. How much harder "high" effort is than "low" depends on who does the
+#  work, so no corpus of sites would settle it. 0.18 measured what the ratio is worth
+#  with tools/audit_score_sensitivity.py: *dividing* changes 2-4 of the first ten rows
+#  against not dividing at all, so the idea earns its place, while the exact ratio does
+#  not — 1/2/3 gives the identical first ten on every run measured, and 1/3/9 differs by
+#  one row. Moving it reorders the fix list and changes `scoring_stamp`
 EFFORT_COST = {"low": 1, "medium": 2, "high": 4}
 
 

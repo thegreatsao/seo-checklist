@@ -712,14 +712,18 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # drawn from a cut crawl withholds what the cut could decide, and one
         # `convention` added: `SAMPLE_FALLBACK_SITEMAPS`, the bare `[:3]` `--sample`'s
         # sitemap fallback read, which now marks the pool cut past it.
+        # 0.174.0 (F11) batch 2: four definitional or prioritisation numbers to
+        # `convention` (SEVERITY_WEIGHT, EFFORT_COST, SECOND_LEVEL_LABELS, MIN_PAGES) and
+        # twenty-four to `presentation`, each feeding a field no item reads at the
+        # severity it writes (`tests/test_presentation_basis.py`).
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 11,
-            "convention": 69,
-            "inherited": 62,
-            "presentation": 15,
+            "convention": 73,
+            "inherited": 34,
+            "presentation": 39,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 162)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 138)
         self.assertEqual(len(named), 177)
         # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
         # `lib/safe_http.py`, how long and how often a held lock is asked for on

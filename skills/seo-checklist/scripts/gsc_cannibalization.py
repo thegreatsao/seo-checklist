@@ -80,8 +80,10 @@ ROW_LIMIT = 5000
 # basis: inherited — 10 impressions, present at import. Below it two pages sharing a
 #  query is noise rather than cannibalisation, but the number was not measured
 MIN_IMPRESSIONS = 10       # below this, page-splitting is noise, not a pattern
-# basis: inherited — present at import, and definitional rather than calibratable: one
-#  page cannot compete with itself
+# basis: convention — two pages, definitional (F11): cannibalisation is one query
+#  answered by more than one of the site's pages, and one page cannot compete with
+#  itself. It decides MS-023 and KW-071 only in that sense — a query on one page is not
+#  split — and no measurement of any property could make the line one or three
 MIN_PAGES = 2
 # basis: convention — two results within three average-position places are close
 # enough that the number alone cannot identify a settled winner. This reuses the

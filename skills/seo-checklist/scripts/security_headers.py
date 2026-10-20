@@ -63,9 +63,13 @@ HTTP_SAMPLE_PAGES = 3
 PAGE_SECURITY_STATES = ("plain_http", "blocked_content", "upgraded_content", "secure")
 
 
-# basis: inherited — per-header weights present at import, summing to a 0-100 score. The
-#  weights are one project's opinion about which header matters most, and the registry
-#  reads the score
+# basis: presentation — per-header weights, present at import, summing to a 0-100
+#  `score`. The weights are one project's opinion of which header matters most, and they
+#  feed `score` and nothing else; no item reads `score` (SE-115 reads `hsts_enabled`,
+#  SE-117 `http_to_https`, SE-120 `hardening_missing`, TE-175 `page_security`), so the
+#  table decides what the evidence prints, never a verdict (F11; held by
+#  `tests/test_presentation_basis.py`). The header list itself decides `header_values`
+#  and `headers_missing`, which no item reads either
 SECURITY_HEADERS = {
     "strict-transport-security": {
         "label": "HSTS (Strict-Transport-Security)",
@@ -110,9 +114,10 @@ SECURITY_HEADERS = {
 #  for inclusion in the browsers' preload list. Not this project's number and checkable
 #  against a published requirement, which is what separates it from the rest here.
 HSTS_MIN_MAX_AGE = 31_536_000
-# basis: inherited — more than three of the tracked headers absent, present at import.
-#  A count over a weighted set, so it double-counts what SECURITY_HEADERS already
-#  scores; kept because the finding it raises is about breadth rather than score.
+# basis: presentation — more than three of the tracked headers absent, present at
+#  import. It picks the wording of one `issues` string ("poor security posture" or "N
+#  missing"), and no item reads this script's `issues`, so it decides what is printed,
+#  never a verdict (F11; held by `tests/test_presentation_basis.py`)
 MANY_MISSING_HEADERS = 3
 
 

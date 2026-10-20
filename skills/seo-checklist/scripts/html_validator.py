@@ -39,9 +39,10 @@ except ImportError:
     from scripts.lib.typed_credential import read_as_url
 
 NU_ENDPOINT = "https://validator.w3.org/nu/"
-# basis: inherited — more than 10 validation warnings, present at import. Warnings are
-#  advisory in Nu's own output, so this is a "the page has a pattern of them" line rather
-#  than a count anybody calibrated.
+# basis: presentation — more than 10 validation warnings, present at import. It raises
+#  one `low` entry in `issues`; CI-017 and TE-181 read `summary.errors`, and warnings
+#  are advisory in Nu's own output, so it decides what is printed, never a verdict (F11;
+#  held by `tests/test_presentation_basis.py`)
 MANY_WARNINGS = 10
 # basis: presentation — 40 messages carried into the report. `counts` is incremented
 #  for every message before this cap trims `messages`, so `summary.errors`, which

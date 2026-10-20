@@ -49,17 +49,27 @@ except ImportError:
     from scripts.lib.typed_credential import read_as_url
     from scripts.seo_common import fetch_error_kind
 
-# basis: inherited — three labels, present at import, and definitional rather than
-#  calibratable: a whois lookup needs the registrable domain, and a multi-label public
-#  suffix (.co.uk, .com.br) is the only case where that is three labels rather than two.
+# basis: convention — three labels, definitional (F11): a whois lookup needs the
+#  registrable domain, and for a host under one of the hand-listed second-level labels
+#  below (`co`, `com`, `net`, `org`, `gov`, `edu`, `ac` before a country code, as in
+#  .co.uk and .com.br) that is three labels rather than two. It decides which domain
+#  whois is asked about, so TE-179's age, and a corpus would not move it: three is what
+#  the listed suffixes are. What it gets wrong is the list, not the number — a suffix of
+#  three labels or one the list lacks is cut at two. The Public Suffix List the runner
+#  already loads would replace both, which is a behaviour change and not this relabel
 SECOND_LEVEL_LABELS = 3
-# basis: inherited — 3 seconds to first byte, present at import. Well above anything a
-#  Core Web Vitals band would allow, so this is a reachability smell rather than a
-#  performance verdict; the performance items measure that properly.
+# basis: presentation — 3 seconds to first response, present at import. It raises a
+#  `medium` "Slow response" entry in `issues`, and no item reads this script's `issues`
+#  (SE-114, SE-116 and TE-171 read `safe_browsing.threats`, TE-167 `uptime.reachable`,
+#  TE-178 `neighbors.suspicious`, TE-179 `whois.age_days`), so it decides what the
+#  evidence prints, never a verdict (F11; held by `tests/test_presentation_basis.py`).
+#  Response time is decided by TECH-003 against Core Web Vitals' 800 ms TTFB band
 SLOW_RESPONSE_MS = 3000
-# basis: inherited — 90 days, present at import. A domain younger than a quarter is
-#  reported as still accumulating trust, which is an SEO-folklore claim rather than
-#  something measured here, and the finding is `low` for that reason.
+# basis: presentation — 90 days, present at import. Under it one `low` entry in
+#  `issues`, which no item reads, so this constant decides what is printed, never a
+#  verdict (F11; held by `tests/test_presentation_basis.py`). TE-179 does decide on a domain's age, against a `90` written
+#  in its own registry rule (`whois.age_days gte 90`), which this scan cannot see: the
+#  same number in a second place, named here so the two cannot drift unnoticed
 YOUNG_DOMAIN_DAYS = 90
 
 SB_ENDPOINT = "https://safebrowsing.googleapis.com/v4/threatMatches:find"

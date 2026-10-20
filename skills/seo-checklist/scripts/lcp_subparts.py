@@ -22,11 +22,13 @@ except ImportError:
 from seo_common import unread_kind, read_source, is_url, load_source, normalize_url, parse_html
 
 
-# basis: inherited — 100, present at import, and a unit guess rather than a limit:
-#  Lighthouse reports network timings in milliseconds, but some versions and some
-#  proxies hand back seconds, and a page whose LCP resource genuinely starts within
-#  100ms of navigation is rare enough that treating the value as seconds is the safer
-#  reading. Wrong for a very fast resource, which is the trade.
+# basis: presentation — 100, present at import, and a unit guess rather than a limit:
+#  a network timing under it is read as seconds and multiplied by 1000. It moves the
+#  three LCP subparts derived from the LCP resource's timings
+#  (`resource_load_delay_ms`, `resource_load_duration_ms`, `element_render_delay_ms`);
+#  TECH-003, the one item over this script, reads `subparts.ttfb_ms`, which Lighthouse's
+#  `server-response-time` supplies and this number never touches, so it decides what is
+#  printed, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 MS_IF_ABOVE = 100
 
 def _load_lighthouse(path: str) -> dict:
