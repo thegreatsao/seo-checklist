@@ -17,22 +17,31 @@ stops a request: chiefly the web-ports switch (`SEO_STANDARD_PORTS_ONLY`, set by
 deployment) refusing a port other than 80 and 443 — a same-site file that redirects to one, or a
 URL the page names on one — and, where noted, a private address or a body over the audit's
 size limit, which the fetch layer has always called `blocked` too.** A run in which the guard
-stops nothing moves nothing, with three exceptions named at the end of this list.
+stops nothing moves nothing, with the exceptions named under "Moved without a refusal".
 
 * **Found by the `gpt-6.1-sol` review of 0.172.0**, which named two scripts; a census of every
-  job the registry plans, run with the switch on, found thirty-nine. Each was reproduced on
-  0.172.0 before it was changed.
+  job the registry plans, run with the switch on, found thirty-nine, and the review of this
+  release's first build found the paths the census page could not show (a page read and its
+  HEAD refused, robots.txt read and the paths behind it refused, one crawled page refused).
+  Each was reproduced before it was changed.
 * **Verdicts that move**, each to NO_DATA:
-  * GEO-007 from FAIL (`key_valid = False`) when the IndexNow key file is refused by the guard;
-    `key_valid` is now null and the result says the file was not requested.
+  * GEO-007 from FAIL (`key_valid = False`) when the web-ports switch refuses the IndexNow key
+    file; `key_valid` is now null and the result says the file was not requested. A key file
+    behind a private address still fails: no search engine can fetch it either.
   * MB-104 from FAIL ("Declared favicon is unreachable") when the web-ports switch refuses the
     favicon; and from FAIL or PASS when the guard refuses robots.txt, on which the grade turns. A
     favicon on a private address or a `data:` href still fails: Google cannot fetch those either.
   * TE-174 from N/A (`checked = 0`) when the switch refuses every stylesheet, and from PASS when
     it refuses some (the clean answer covers only those read).
   * TECH-002 from WARN ("Stylesheet could not be fetched") or PASS when the switch refuses a
-    stylesheet: the refused sheet is unread, not the site's defect, and withholds the clean
-    answer; a WARN or FAIL from another issue stands.
+    stylesheet, or (with `--fetch-fonts`, by hand) the guard refuses a font: the refused file
+    is unread, not the site's defect, and withholds the clean answer; a WARN or FAIL from
+    another issue stands.
+  * TE-170 from PASS when the guard refuses a resource's HEAD — the page's own included, which
+    can answer a GET and redirect its HEAD to another port.
+  * CI-019 from PASS when robots.txt was read and the guard refused the paths it probes
+    (`indexable_urls` was empty only because nothing was asked).
+  * AR-163 from PASS when the guard refuses a facet URL it fetches for canonical and noindex.
   * CI-005 from PASS and CI-001 from PASS when the guard refuses robots.txt, which was read as
     allowing everything; that includes a robots.txt over the 500 KB the audit reads. A blocker
     found otherwise still fails CI-001.
@@ -40,8 +49,18 @@ stops nothing moves nothing, with three exceptions named at the end of this list
     error read "Sitemap returned HTTP None"), and GO-136 and GO-138 from PASS then: the refused
     sitemap is unread, as one on another host is.
   * TE-167 from FAIL ("Site not reachable") when the guard refuses the uptime request.
-  * AR-163 from N/A (`faceted_count = 0`) when the page whose links it reads could not be read,
-    for any reason.
+  * AR-163 from N/A (`faceted_count = 0`), or from PASS, when the page whose links it reads
+    could not be read, for any reason (a 500 with an empty body passed before).
+  * Every crawl-fed item that withholds a clean verdict over an incomplete crawl, from PASS,
+    when the guard refused a page the crawl tried to read (a same-host link redirecting to
+    another port): the crawl counted that page as read and called itself complete, so MS-022,
+    CN-041 and AR-149 passed over it. The crawl now reports `refused_pages` and is
+    `truncated`; the items are those listed in KNOWN-ISSUES' `a-truncated-crawl-decides-the-
+    whole-site` (AR-149, AR-162, BL-081, CI-008, CI-015, CI-018, CN-039, CN-041, MD-187,
+    MS-022, MS-026, MS-029, TE-168, TE-176 among them). A FAIL found stands.
+  * LO-198 from a crash to NO_DATA over a truncated crawl with no LocalBusiness node, by
+    hand or in a run: the result withheld the count and the text line read it anyway, with
+    `--json` too. Not a refusal's; a capped crawl did it before.
 * **Kinds that move**, on items already NO_DATA:
   * `unread` ("the site could not be read") to `blocked` ("this audit's own guard stopped the
     request") on every item fed by a script whose page the guard stopped: a11y_seo_checker,
@@ -52,7 +71,11 @@ stops nothing moves nothing, with three exceptions named at the end of this list
     indexability_matrix, javascript_render_audit, lcp_subparts, llms_txt_checker,
     local_seo_checker, mobile_render_checker, redirect_checker, rich_results_guard,
     robots_checker, schema_required_props, security_headers, sitemap_checker, social_meta,
-    third_party_script_audit, topical_cluster_mapper, video_schema_checker. In a run the
+    third_party_script_audit, topical_cluster_mapper, video_schema_checker; and on every item
+    read off a crawl the guard refused whole (the crawl's `fetch_error_kind`, copied by the nine
+    scripts that read the inventory), on GO-137 when every sitemap it walks is refused, on
+    TECH-003 when the timing request is refused after the page was read, and on
+    `broken_links` run by hand. In a run the
     runner reads the entry and each sampled page itself first, so this is reached when a
     script is run by hand, or by a further file the script reads (robots.txt for CI-006,
     AR-151, AR-152 and GEO-003; llms.txt for GEO-001 and GEO-002; the sitemaps for GO-136 and
@@ -67,20 +90,26 @@ stops nothing moves nothing, with three exceptions named at the end of this list
 * **`indexability_matrix` says when it did not read a sitemap.** It reads at most ten sitemap
   locations, and past the tenth it reported `in_sitemap: false`; so it did for an index, whose
   children it does not follow, for a location that gave no answer (refused, timed out, a 5xx or
-  429), and for a sitemap on another host. Membership is `null` on every row in each of those
+  429), for a sitemap on another host, and when robots.txt itself gave no answer, so the
+  sitemaps it declares were never seen. Membership is `null` on every row in each of those
   cases, as past the budgets, and the new `sitemap_membership_unknown` names why. A site with no
   sitemap at any location still reads `false`; exactly ten read reads `true` or `false`. No
   item reads `in_sitemap`, so no verdict moves; a site whose sitemap is an index now reads
-  `null` where it read `false`.
+  `null` where it read `false`. The text output prints the reason too.
 * **The artifact** records the entry's kind (`entry_error_kind`), and `--sample`'s sitemap
   fallback names on stderr each URL the guard refused, where it said only "no sitemap".
-* **Moved without a refusal**: AR-163 NO_DATA over a page that timed out (above); `crash` to
-  `unread` for the three scripts above when the site does not answer; and the matrix's
-  `in_sitemap` over an index or an unanswered location.
-* **Not changed, and written into HTTP-13**: a page the crawl could not read because it
-  redirects to another port carries `blocked` on its crawl row, and the site-wide items treat it
-  as they treat a page that timed out — AR-149 counts no redirect for it, CN-041 leaves it out
-  of the set. That is a partial crawl, not a refusal's kind.
+* **Moved without a refusal**: AR-163 NO_DATA over a page that timed out or answered an error
+  (above); LO-198's crash over a capped crawl (above); `crash` to `unread` for the three
+  scripts above when the site does not answer; and the matrix's `in_sitemap` over an index,
+  an unanswered location or an unanswered robots.txt.
+* **Not held, and written into HTTP-13**: a page the crawl could not read because it timed out
+  still counts as read, as before — only the guard's refusal now leaves the crawl incomplete.
+  `domain_safety_check` reads several subjects in one result, so a refused uptime request is
+  NO_DATA by an absent key, not `blocked`; `security_headers`' refused http variant names
+  `blocked` on its own row and leaves SE-117 NO_DATA the same way. Run by hand only and
+  unchanged: `parse_html.py --fetch`, `detect_profile.py` with a URL,
+  `canonical_checker.py --check-targets`. `pagespeed.py` calls one fixed host on 443, which
+  the switch never refuses.
 * **Spec**: HTTP-13 (the `blocked` clause held on every path, and what is not), HTTP-10 (the
   matrix's unread sitemaps), RUN-7 (nine kinds). Spec debt unchanged, 158 / 131 / 22 / 1 / 4:
   HTTP-13 stays `partial` for its other gap (`www.` is tested as the same site for the crawl
@@ -92,8 +121,9 @@ stops nothing moves nothing, with three exceptions named at the end of this list
   refused in front of a favicon, a favicon on another port, one stylesheet refused among
   several, one sitemap refused beside one that loads, and a `data:` or private-address favicon
   that still fails;
-  `TheMatrixSaysWhenItStopped` gives the matrix eleven locations, ten, none, an index, a
-  refused location and a sitemap on another host.
+  `FoundByTheReviewOf0173` holds each path that review found; `TheMatrixSaysWhenItStopped`
+  gives the matrix eleven locations, ten, none, an index, a refused location, a 503 and a 429,
+  an unanswered robots.txt, both budgets and a sitemap on another host.
 
 ## 0.172.0 — the HTTP specification claims no more than the code holds; the crawl caps are `inherited` again
 
