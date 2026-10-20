@@ -319,7 +319,8 @@ class PartsTheCensusDoesNotReach(unittest.TestCase):
     def test_a_refused_robots_txt_withholds_the_favicon_grade(self):
         import favicon_check
         html = '<html><head><link rel="icon" href="/favicon.ico"></head></html>'
-        icon = b"\x89PNG\r\n\x1a\n" + b"\x00" * 8 + b"IHDR" + (96).to_bytes(4, "big") * 2
+        icon = (b"\x89PNG\r\n\x1a\n" + (13).to_bytes(4, "big") + b"IHDR"
+                + (96).to_bytes(4, "big") * 2 + b"\x08\x06\x00\x00\x00" + b"\x00" * 64)
 
         def get(url, **_kwargs):
             body = html.encode() if url.endswith("/") else icon
@@ -332,8 +333,9 @@ class PartsTheCensusDoesNotReach(unittest.TestCase):
         with mock.patch.object(favicon_check, "safe_get", get), \
                 mock.patch.object(favicon_check, "fetch_robots", return_value=robots):
             out = favicon_check.check("https://site.example/")
+        # Graded, and withheld: the runner reads the `fetch_error` before the grade.
         self.assertEqual(out["fetch_error_kind"], "blocked")
-        self.assertIsNone(out["favicon"].get("grade"))
+        self.assertNotEqual(out["favicon"]["grade"], "fails")
 
     def test_one_stylesheet_refused_among_several_withholds_only_the_clean_answer(self):
         import css_minify_check
@@ -560,6 +562,81 @@ class FoundByTheReviewOf0173(unittest.TestCase):
         with mock.patch.object(security_headers, "safe_get", side_effect=port_refusal()):
             out = security_headers.walk_http_to_https("http://site.example/")
         self.assertEqual(out["error_kind"], "blocked")
+
+
+    # The second pass of the same review, over the fixes.
+
+    def test_a_favicon_defect_fails_even_when_robots_txt_was_refused(self):
+        import favicon_check
+        html = '<html><head><link rel="icon" href="data:image/png;base64,AAAA"></head></html>'
+
+        def get(url, **_kwargs):
+            sh.normalize_url(url)
+            return mock.Mock(status_code=200, url=url, text=html, content=html.encode(),
+                             headers={"Content-Type": "text/html"})
+
+        robots = {"url": "https://site.example/robots.txt", "parsed": None,
+                  "fetch": refused_fetch("https://site.example/robots.txt")}
+        with mock.patch.object(favicon_check, "safe_get", get), \
+                mock.patch.object(favicon_check, "fetch_robots", return_value=robots):
+            out = favicon_check.check("https://site.example/")
+        self.assertEqual(out["favicon"]["grade"], "fails")
+        self.assertNotIn("fetch_error_kind", out)
+
+    def test_a_timing_response_cut_short_is_unread_not_a_crash(self):
+        import lcp_subparts
+        fetched = {"url": "https://site.example/", "status": 200, "error": None,
+                   "error_kind": None}
+        cut = sh.requests.exceptions.ChunkedEncodingError("Response ended prematurely")
+        with mock.patch.object(lcp_subparts, "load_source",
+                               return_value=("<html>ok</html>", fetched["url"], fetched)), \
+                mock.patch.object(lcp_subparts, "safe_request", side_effect=cut):
+            out = lcp_subparts.analyze_source("https://site.example/")
+        self.assertEqual(out["error_kind"], "unread")
+
+    def test_a_refused_url_in_a_matrix_batch_is_unknown_not_unindexable(self):
+        import indexability_matrix as ix
+        off = "https://site.example:8443/refused"
+
+        def fetch(url, **_kwargs):
+            if url == off:
+                return refused_fetch(url)
+            return {"url": url, "status": 200, "headers": {}, "text": "",
+                    "redirect_chain": [], "error": None, "error_kind": None}
+
+        absent = {"url": "https://site.example/robots.txt", "parsed": None,
+                  "fetch": {"status": 404, "error": None, "error_kind": None}}
+        with mock.patch.object(ix, "fetch_robots", return_value=absent), \
+                mock.patch.object(ix, "fetch_url", fetch), \
+                mock.patch.object(ix, "discover_sitemap_urls", return_value=[]):
+            out = ix.evaluate([off, "https://site.example/ok"], "https://site.example/")
+        row = out["rows"][0]
+        self.assertEqual((row["blockers"], row["verdict"], row["status_class"]),
+                         ([], None, None))
+        self.assertEqual(out["rows"][1]["verdict"], "indexable")
+
+    def test_the_matrix_carries_an_unanswered_robots_txt_into_membership(self):
+        # Through `evaluate`: the helper's own test passed with `evaluate` no longer
+        # handing it the robots.txt it read (second review pass).
+        import indexability_matrix as ix
+        robots = {"url": "https://site.example/robots.txt", "parsed": None,
+                  "fetch": refused_fetch("https://site.example/robots.txt")}
+        page = {"url": "https://site.example/page", "status": 200,
+                "headers": {"content-type": "text/html"}, "text": "<html></html>",
+                "redirect_chain": [], "error": None, "error_kind": None}
+
+        def fetch(url, **_kwargs):
+            return page if url.endswith("/page") else dict(page, url=url, status=404,
+                                                            text="")
+
+        with mock.patch.object(ix, "fetch_robots", return_value=robots), \
+                mock.patch.object(ix, "fetch_url", fetch), \
+                mock.patch.object(ix, "discover_sitemap_urls",
+                                  side_effect=lambda *a, **k: [] if k.get("robots") is None
+                                  else ["https://site.example/sitemap.xml"]):
+            out = ix.evaluate(["https://site.example/page"], "https://site.example/")
+        self.assertIsNone(out["rows"][0]["in_sitemap"])
+        self.assertIn("robots.txt gave no answer", out["sitemap_membership_unknown"])
 
 
 if __name__ == "__main__":

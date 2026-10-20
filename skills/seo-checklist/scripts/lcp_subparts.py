@@ -19,7 +19,7 @@ try:
 except ImportError:
     from scripts.lib.safe_http import safe_request
 
-from seo_common import fetch_error_kind, read_source, is_url, load_source, normalize_url, parse_html
+from seo_common import unread_kind, read_source, is_url, load_source, normalize_url, parse_html
 
 
 # basis: inherited — 100, present at import, and a unit guess rather than a limit:
@@ -136,7 +136,7 @@ def analyze_source(source: str, timeout: int = 15) -> dict:
         ttfb_ms, headers, timing_error = _fetch_ttfb(final_url, timeout)
         if timing_error is not None and not error:
             # The kind of the request that failed, not of the one that was read.
-            error, error_kind = str(timing_error), fetch_error_kind(timing_error)
+            error, error_kind = str(timing_error), unread_kind(timing_error)
 
     notes = [
         "Static mode cannot observe the browser's real LCP render timestamp.",

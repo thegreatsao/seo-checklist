@@ -97,15 +97,11 @@ def check(url: str, timeout: int = 15) -> dict:
         return result
 
     robots = fetch_robots(page.url, timeout=timeout)
-    if robots["fetch"].get("error_kind") == "blocked":
-        # The grade turns on whether Googlebot may fetch the icon, and a robots.txt
-        # this audit's guard refused says nothing either way (HTTP-13).
-        reason = f"robots.txt not requested: {robots['fetch'].get('error')}"
-        result["fetch_error"] = reason
-        result["fetch_error_kind"] = "blocked"
-        favicon["reason"] = reason
-        return result
-    parsed_robots = robots.get("parsed")
+    # A robots.txt this audit's guard refused says nothing either way (HTTP-13). The
+    # icon is still read: a defect found in it fails whatever robots.txt says, and only
+    # a grade that would pass is withheld at the end.
+    robots_refused = robots["fetch"].get("error_kind") == "blocked"
+    parsed_robots = None if robots_refused else robots.get("parsed")
     if parsed_robots is not None:
         for agent, target in (("Googlebot", origin(page.url) + "/"),
                               ("Googlebot-Image", resolved)):
@@ -185,6 +181,9 @@ def check(url: str, timeout: int = 15) -> dict:
     favicon.update({"grade": grade, "reason": reason})
     if grade == "fails":
         result["issues"].append(issue("low", reason, resolved))
+    elif robots_refused:
+        result["fetch_error"] = f"robots.txt not requested: {robots['fetch'].get('error')}"
+        result["fetch_error_kind"] = "blocked"
     return result
 
 

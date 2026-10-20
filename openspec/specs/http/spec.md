@@ -1010,7 +1010,9 @@ A census found them, by running every planned job with the switch on; the two sc
 review named were two of thirty-nine. The review of this release's first build found the paths
 that page could not show — a page read and its HEAD refused, robots.txt read and the paths behind
 it refused, one crawled page refused, a whole crawl refused — and a key file behind a private
-address excused with the port's refusal; each is held now.
+address excused with the port's refusal; each is held now. Its second pass found a favicon's own
+defect withheld behind a refused robots.txt and a matrix batch failing CI-001 on a refused row;
+both held too.
 
 **Not held, and said here so that it is not found again as a surprise.** A sitemap on the
 audited host that redirects elsewhere is still followed, as every fetch follows a redirect,

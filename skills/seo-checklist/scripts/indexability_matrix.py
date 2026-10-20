@@ -185,8 +185,10 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
         if allowed is False:
             blockers.append("robots.txt disallow")
         # Google's HTTP-status guidance treats 2xx content other than 204 as
-        # processable, so those answers do not make the page non-indexable.
-        if fetched_status_class not in ("ok", "other_success"):
+        # processable, so those answers do not make the page non-indexable. A URL this
+        # audit's guard refused gave no status at all: unknown, not a blocker (HTTP-13).
+        refused = fetched.get("error_kind") == "blocked"
+        if not refused and fetched_status_class not in ("ok", "other_success"):
             blockers.append(f"HTTP {fetched.get('status')}")
         if html.get("meta_robots") and "noindex" in html["meta_robots"].lower():
             blockers.append("meta robots noindex")
@@ -198,7 +200,7 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
             "url": url,
             "final_url": fetched.get("url"),
             "status": fetched.get("status"),
-            "status_class": fetched_status_class,
+            "status_class": None if refused else fetched_status_class,
             "robots_allowed": allowed,
             "robots_rule": robots_rule,
             "meta_robots": html.get("meta_robots"),
@@ -210,7 +212,7 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
             # Indexable only if nothing blocks it and robots.txt was read: a blocker
             # found stands, but no blocker over an unread robots.txt is unknown.
             "verdict": ("not_indexable" if blockers
-                        else None if allowed is None else "indexable"),
+                        else None if allowed is None or refused else "indexable"),
             "blockers": blockers,
             "error": fetched.get("error"),
             "error_kind": fetched.get("error_kind"),
