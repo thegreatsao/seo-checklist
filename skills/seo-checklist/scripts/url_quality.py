@@ -18,16 +18,24 @@ FACET_PARAMS = {"sort", "filter", "color", "size", "brand", "price", "min_price"
 TRACKING_PREFIXES = ("utm_", "fbclid", "gclid", "msclkid")
 
 
-# basis: inherited — 115 characters, present at import. An oddly specific number for a
-#  convention: long URLs are held to be worse for sharing and for click-through, and no
-#  search engine publishes a length limit anywhere near this.
+# basis: convention — 115 characters, present at import (F11). Past it a URL is not
+#  `short` (AR-147), carries `long_url` (AR-155) and loses 12 points of CI-012's score.
+#  No search engine publishes a URL length that costs anything: Google asks for a
+#  simple structure and states no number, the sitemap protocol's limit is 2,048
+#  characters and HTTP's recommended minimum support is 8,000 octets. A corpus of URLs
+#  would show what lengths sites use, not which one loses a click, so the line is a
+#  readability judgement. Moving it moves those three items for URLs near it
 MAX_URL_CHARS = 115
-# basis: inherited — more than five path segments, present at import: a proxy for how
-#  deep a page sits, which is not the same thing as click depth from the home page.
+# basis: convention — more than five path segments, present at import (F11): a proxy
+#  for how deep a page sits, which is not click depth from the home page (that is the
+#  crawl's `depth`). It decides AR-147, AR-155's `deep_path` and CI-012 the way
+#  MAX_URL_CHARS does, and no corpus settles it for the same reason: segments are how a
+#  site names its sections, and how many is too many is a readability call
 MAX_PATH_SEGMENTS = 5
-# basis: inherited — at most two query parameters, the number AR-147's rule asserted on
-#  `param_count` from import until 0.115.0. It moved here when the rule started reading
-#  length and depth as well, so the number is the same and now lives beside the others.
+# basis: convention — at most two query parameters, the number AR-147's rule asserted
+#  on `param_count` from import until 0.115.0, kept as a decision (F11). Two leaves a
+#  page and a sort, say, and three is where a URL starts reading as a filtered view;
+#  Google states no count. It decides AR-147 only (AR-155 flags any parameter)
 MAX_SHORT_PARAMS = 2
 
 def analyze_urls(urls: list[str]) -> dict:

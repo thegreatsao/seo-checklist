@@ -34,10 +34,11 @@ from seo_common import read_as_url, THIN_CONTENT_WORDS, carries_content, normali
 NEARLY_EMPTY_WORDS = 100
 
 # Quality gates from resources/references/quality-gates.md
-# basis: inherited — 300 words for a default page, present at import from
-#  Agentic-SEO-Skill. One of the five numbers KNOWN-ISSUES §2 names, and its provenance
-#  is exactly what §2 suspected: the figure is conventional in SEO writing and has no
-#  source anybody here can point at
+# basis: convention — `default` is THIN_CONTENT_WORDS and is the only entry ever read
+#  (see the comment where it is read): the other four need a page-type detector that
+#  does not exist and have been unreachable since import. So this table decides
+#  nothing its default does not, and the judgement is the one written over
+#  THIN_CONTENT_WORDS in `seo_common.py` (F11)
 THIN_CONTENT_THRESHOLDS = {
     "blog_post": 1500,
     "landing_page": 800,

@@ -910,8 +910,8 @@
       "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants (presentation since 0.170.0: no rule reads a near-duplicate field) and the three detect_profile tables as inherited, DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and twenty module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
         "basis": {
-          "convention": 74,
-          "inherited": 34,
+          "convention": 86,
+          "inherited": 22,
           "measured": 11,
           "presentation": 38,
           "standard": 20

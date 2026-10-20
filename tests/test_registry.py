@@ -583,7 +583,7 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
             ("freshness_checker.py", "FUTURE_DATE_TOLERANCE_DAYS"): "standard",
             ("gsc_cannibalization.py", "SHORT_NEAR_BRAND_EDITS"): "convention",
             ("gsc_cannibalization.py", "LONG_NEAR_BRAND_EDITS"): "convention",
-            ("seo_common.py", "THIN_CONTENT_WORDS"): "inherited",
+            ("seo_common.py", "THIN_CONTENT_WORDS"): "convention",
             ("server_log_audit.py", "MAX_VERIFIED_ADDRESSES"): "convention",
             ("tls_certificate.py", "DEFAULT_TIMEOUT"): "convention",
         }
@@ -717,11 +717,13 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # the review found reaching GEO-002's score) and twenty-three to `presentation`,
         # each feeding a field no item reads at the
         # severity it writes (`tests/test_presentation_basis.py`).
+        # 0.174.0 (F11) batch 3a: twelve content and URL numbers to `convention`, the
+        # judgement written over each (no standard; a corpus would show practice).
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 11,
-            "convention": 74,
-            "inherited": 34,
+            "convention": 86,
+            "inherited": 22,
             "presentation": 38,
         })
         self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 139)

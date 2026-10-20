@@ -50,12 +50,25 @@ except ImportError:
 #  verdict by moving is counted. The proposal names no length; the line is a judgement
 #  of when a description says nothing
 MIN_DESCRIPTION_CHARS = 20
-GOOD_DESCRIPTION_CHARS = 50   # basis: inherited — the "detailed enough" line, same origin
-MIN_SECTIONS = 3              # basis: inherited — a structured file has a few sections
-GOOD_LINKS = 5                # basis: inherited — enough links for the file to be a
-#  map of the site rather than a single pointer, same origin as the rest here
-MANY_LINKS = 10               # basis: inherited — the next step up, same origin
-MIN_CONTENT_BYTES = 200       # basis: inherited — below it the file is a placeholder
+# basis: convention — the five numbers below each add 5 to `quality.score`, which
+#  GEO-002 holds to 60 (F11). Title, description and links together already reach 60,
+#  so a bonus decides only a file that lacks one of them — a title-less file with a
+#  description, sections and links scores 55 and passes on any one bonus. The proposal
+#  names no length and no count, no model vendor documents reading the file, and a
+#  corpus of published llms.txt files would measure adoption, not what a model uses; so
+#  each line is a judgement of what a useful file has, and moving one moves GEO-002 only
+#  for a file missing its title, description or links that the bonuses can still lift.
+#  GOOD_DESCRIPTION_CHARS: a description past 50 characters says what the site is.
+GOOD_DESCRIPTION_CHARS = 50
+# basis: convention — three sections: a file organised rather than one list (see above)
+MIN_SECTIONS = 3
+# basis: convention — five links: a map of the site rather than a pointer (see above)
+GOOD_LINKS = 5
+# basis: convention — ten links, the next step up from GOOD_LINKS (see above)
+MANY_LINKS = 10
+# basis: convention — 200 characters (`len` of the text; the name says bytes): below
+#  it the file is a placeholder (see above)
+MIN_CONTENT_BYTES = 200
 
 def check_llms_txt(url: str, timeout: int = 15) -> dict:
     """

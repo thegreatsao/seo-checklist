@@ -12,9 +12,12 @@ from schema_required_props import load_source_html
 from seo_common import read_source, issue, parse_html, print_json_or_text
 
 
-# basis: inherited — 150 words, present at import, and deliberately below the 300 a
-#  content page is held to: a collection page's job is the grid, so the copy only has to
-#  be enough to say what the collection is.
+# basis: convention — 150 words, present at import, half the 300 a content page is
+#  held to (F11): a collection page's job is the grid, so the copy only has to say what
+#  the collection is. Below it AR-154 reads a `warning` and WARNs. Google publishes no
+#  word count for any page; a corpus of collection pages would give the spread of the
+#  copy stores write, and which share of them deserves a warning is still the choice
+#  this line makes. Moving it moves AR-154 between PASS and WARN for pages near it
 COLLECTION_THIN_WORDS = 150
 # basis: presentation — four distinct product links, present at import. Below it one
 #  `info` entry in `issues`, which the runner reads as `low`; AR-154 counts `issues` only

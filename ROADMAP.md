@@ -82,22 +82,22 @@ robots.txt forbids, and it no longer does.
 |---|---|
 | standard | 20 |
 | measured | 11 |
-| convention | 74 |
-| inherited | 34 |
+| convention | 86 |
+| inherited | 22 |
 | no basis | 0 |
 | **numbers a verdict depends on** | **139** |
 
-**`inherited` at 34 of 139 is the largest single gap between this tree and 1.0.** It was
+**`inherited` at 22 of 139 is the largest single gap between this tree and 1.0.** It was
 75 of 144 at 0.87.1 and 77 of 164 until 0.167.1, which moved eleven coverage caps out: ten
 to `convention`, one to `presentation`. 0.170.0 moved the crawl's page and depth caps to
 `convention` and the MinHash pair to `presentation`; 0.172.0 moved the two crawl caps back,
 since under `--sample` the cap still decided which pages a sampled verdict was about, and F11
 (0.174.0) moved them to `convention` again once a sample drawn from a cut crawl withholds what the
-cut could decide; its second batch moved four definitional and prioritisation numbers to
-`convention`, twenty-three to `presentation`, and one, found by review to reach a
-verdict, to `convention`, each feeding a field no item reads (held by
-`tests/test_presentation_basis.py`). Nothing is unnamed — that took a gate — but about one
-in four of the numbers a verdict rests on is still a number nobody here decided. The calibrations so
+cut could decide; its second batch moved five definitional or prioritisation numbers to
+`convention` and twenty-three that feed only a field no item reads to `presentation` (held by
+`tests/test_presentation_basis.py`); its third wrote the judgement over twelve content and URL
+numbers that no standard or reachable corpus settles. Nothing is unnamed — that took a gate — but about one
+in six of the numbers a verdict rests on is still a number nobody here decided. The calibrations so
 far show what closing one costs: each took a corpus, a method and a stated limitation.
 
 `audit_reachability.py` proves 2 of the 145 script-backed assertions unable to report
@@ -118,7 +118,7 @@ modules read; no number is bound by both. It is narrower than the ask it answers
 
 ## What 1.0 requires, in the order the numbers should move
 
-1. **`inherited` 34 → 0**, by calibration or by an honest relabel to `convention` with
+1. **`inherited` 22 → 0**, by calibration or by an honest relabel to `convention` with
    the judgement written out.
 2. **REG-6's second reader** — the readings exist and are held against the registry;
    what would close the row is a check of whether each reading is true that is not the

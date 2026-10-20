@@ -84,7 +84,7 @@ threshold with no stated basis cannot be argued with, and the honest answer "we 
 it came with the code" is only available if somebody wrote it down.
 **Reader:** enforced. `audit_thresholds.py --check` runs in CI and fails when a
 verdict-deciding number names no basis. It counts 139 such numbers at 0.174.0 — 20
-`standard`, 11 `measured`, 74 `convention`, **34 `inherited`**, 0 without a basis — plus 38
+`standard`, 11 `measured`, 86 `convention`, **22 `inherited`**, 0 without a basis — plus 38
 that decide only presentation. `tests/test_prose_counts.py` reads the counts in this
 paragraph since 0.145.0 (`evidence` EVD-6 says what their going unread had cost).
 
@@ -106,11 +106,11 @@ paragraph since 0.145.0 (`evidence` EVD-6 says what their going unread had cost)
 `inherited` licenses no conclusion about whether a number is right. It is the recorded
 absence of a decision, and it MUST NOT be cited as anything else.
 
-**Why:** the gate passes with 34 of 139 undefended, which is fine as an accounting and
+**Why:** the gate passes with 22 of 139 undefended, which is fine as an accounting and
 dangerous as a standard. The category exists so the debt is countable, and it stops working
 the moment it reads as a fourth kind of justification.
 **Reader:** partial. `tests/test_inherited_basis.py` holds the two halves a test can
-reach. The count may not rise — 34 of 139 today, ratcheted downward (it rose by two once, by
+reach. The count may not rise — 22 of 139 today, ratcheted downward (it rose by two once, by
 decision: 0.172.0 moved the crawl caps back from `convention`, F13; F11 moved them out again
 once no sampled verdict rested on them), which is the second
 scenario as an assertion. And no `inherited` line may argue its number: a declaration
@@ -936,7 +936,7 @@ the Workbench session before changing a name the module holds.
 ## 6. Open questions
 
 **Should `inherited` be allowed to increase?** GOV-2 says the category is an admission.
-At 34 of 139 it is a large admission, and the gate passes at any number. A ratchet —
+At 22 of 139 it is a large admission, and the gate passes at any number. A ratchet —
 `inherited` permitted but never permitted to rise — is the shape this tree already uses for
 other debts, costs nothing to add, and would make every new undefended constant a
 deliberate act. What would settle it: whether the count is stable enough to ratchet against,

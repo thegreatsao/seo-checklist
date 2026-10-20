@@ -295,12 +295,15 @@ def picture_sources(img, base_url: str = "") -> list[dict]:
     return out
 
 
-# basis: inherited — 300 words, present at import from Agentic-SEO-Skill. It lives
-# here because two scripts compared against it independently: `duplicate_content.py`
-# through THIN_CONTENT_THRESHOLDS and `article_seo.py` through a bare literal, so one
-# number had two homes and could be revised in one of them. Its provenance is exactly
-# what KNOWN-ISSUES §2 suspected — conventional in SEO writing, with no source anybody
-# here can point at.
+# basis: convention — 300 words, arrived with Agentic-SEO-Skill and kept as a decision
+# here (F11). It is the line CN-039 counts pages under (`duplicate_content.py`, WARN up
+# to five pages, FAIL past them) and `article_seo.py`'s unread "very thin" entry. Google
+# says it has no minimum word count and that length is not what it rates, so nothing
+# external sets it; a word-count distribution over real pages would say what sites
+# publish, not when a page is too thin for its purpose, which is the claim. The `local`
+# profile moves it to 150 through `--thin-words` (`profiles.json`), the second judgement
+# of the same kind. Moving it changes CN-039's count on every site. One number with one
+# home: two scripts compared against it independently until it lived here
 THIN_CONTENT_WORDS = 300
 
 # Below this many declared pixels an image is not what the Largest Contentful Paint

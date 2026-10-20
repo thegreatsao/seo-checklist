@@ -59,8 +59,13 @@ except ImportError:
 # them arguable, which is the step that was missing while they were literals scattered
 # through 600 lines.
 
-# basis: inherited — 8 words, present at import. Filters navigation entries and captions
-#  out of the paragraph list so readability is measured on prose.
+# basis: convention — 8 words, present at import, and a definition rather than a
+#  measurement (F11). Paragraphs of more than eight words, with the headings, are the
+#  body text KW-076 searches for the operator's `--keyword`; a shorter one is read as a
+#  caption, a button or a navigation line. Where prose begins is the definition of the
+#  field, not a property a corpus of pages has, so no measurement would settle it.
+#  Lowering it lets captions and menus count as body; raising it can FAIL KW-076 on a
+#  page whose only mention of the keyword is a short paragraph
 MIN_PARAGRAPH_WORDS = 8
 # basis: presentation — a word of three letters or fewer is counted as one syllable in
 #  the Flesch estimate, present at import. It feeds `readability` and nothing else, and
