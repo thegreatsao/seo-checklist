@@ -302,7 +302,7 @@ def picture_sources(img, base_url: str = "") -> list[dict]:
 # external sets it; a word-count distribution over real pages would say what sites
 # publish, not when a page is too thin for its purpose, which is the claim. The `local`
 # profile moves it to 150 through `--thin-words` (`profiles.json`), the second judgement
-# of the same kind. Moving it changes CN-039's count on every site. One number with one
+# of the same kind. Moving it changes CN-039's count on any site with pages near it. One number with one
 # home: two scripts compared against it independently until it lived here
 THIN_CONTENT_WORDS = 300
 

@@ -1,4 +1,4 @@
-"""`inherited` is the recorded absence of a decision, and 77 numbers carry it.
+"""`inherited` is the recorded absence of a decision, and the count of numbers carrying it.
 
 `openspec/specs/governance/` GOV-2. Every number a verdict depends on carries a
 `# basis:` line naming one of five kinds, and `inherited` means the number came with the

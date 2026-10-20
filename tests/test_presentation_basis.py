@@ -93,13 +93,16 @@ def _segments(path: str) -> list[str]:
 def reads(rule: dict, field: str, severity: str | None) -> bool:
     """Whether a rule can see what the number writes at `field`.
 
-    The rule's effective path is its `path`, then its `field` (the runner applies a
-    `field` to each element under `path`). It reads `field` when either path contains
+    The rule's effective path is its `path`, then its `field` where the runner applies
+    one (`none_matching` and `value_map` read `field` of each element under `path`;
+    every other operator reads the whole value at `path`, `field` or not). It reads
+    `field` when either path contains
     the other: reading `quality` reads `quality.issues`, and reading
     `summary.pages_under_three_links.x` reads the summary field. A `none_severity` rule
     counts only the severities it lists, both sides read through `SEVERITY_ALIAS` as
     the runner does."""
-    effective = _segments(rule["path"]) + ([rule["field"]] if rule.get("field") else [])
+    narrows = rule.get("field") and ("none_matching" in rule or "value_map" in rule)
+    effective = _segments(rule["path"]) + ([rule["field"]] if narrows else [])
     wanted = _segments(field)
     shorter = min(len(effective), len(wanted))
     if effective[:shorter] != wanted[:shorter]:

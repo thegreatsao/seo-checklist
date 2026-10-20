@@ -15,7 +15,7 @@ TOOLS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 class CalibrationReports(unittest.TestCase):
     def test_each_report_still_matches_its_measurement(self):
         for name in ("css_minification", "font_weight", "gsc_sample_floors", "serp_length",
-                     "mobile_viewport", "profile_detection"):
+                     "mobile_viewport", "paragraph_words", "profile_detection"):
             with self.subTest(tool=name):
                 result = subprocess.run(
                     [sys.executable, os.path.join(TOOLS, f"calibrate_{name}.py"), "--check"],
@@ -80,7 +80,7 @@ class CalibrationReports(unittest.TestCase):
 
     def test_offline_checks_load_no_runtime_scripts(self):
         for name in ("css_minification", "font_weight", "gsc_sample_floors", "serp_length",
-                     "mobile_viewport", "profile_detection"):
+                     "mobile_viewport", "paragraph_words", "profile_detection"):
             with self.subTest(tool=name):
                 program = (
                     "import contextlib,io,json,pathlib,runpy,sys; "

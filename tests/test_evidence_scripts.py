@@ -585,6 +585,10 @@ GOOD_ROUTES = {
     # KW-076, the three places a keyword can be when it is not in the first
     # `<article>`: in `<main>` after the article, in a later card of a listing, and
     # outside `<main>` altogether. The last page has no `<main>` at all.
+    # KW-076, a keyword whose one mention is a short paragraph (F11's review of 3a).
+    "/short-paragraph.html": ("<!doctype html><html><head><title>Panels</title></head>"
+                              "<body><main><h1>Heading</h1><p>Solar panels save money."
+                              "</p></main></body></html>"),
     "/after-article.html": ("<!doctype html><html><head><title>Starter notes</title>"
                             "</head><body><main><article><h1>Starter notes</h1>"
                             "<p>Flour, water and salt are measured on a scale, and time "
@@ -750,6 +754,8 @@ RUNS = [
      ["{good}seoul.html", "--keyword", "seo", "--no-autocomplete"]),
     ("article_keyword_case", "article_seo.py",
      ["{good}seo-audit.html", "--keyword", "SEO Audit", "--no-autocomplete"]),
+    ("article_keyword_short_paragraph", "article_seo.py",
+     ["{good}short-paragraph.html", "--keyword", "Solar", "--no-autocomplete"]),
     ("article_keyword_after_article", "article_seo.py",
      ["{good}after-article.html", "--keyword", "bread", "--no-autocomplete"]),
     ("article_keyword_second_card", "article_seo.py",
@@ -4973,6 +4979,16 @@ class ArticleKeyword(unittest.TestCase):
                 result = out(key)
                 self.assertGreater(result["keyword_usage"]["body_occurrences"], 0)
                 self.assertEqual(verdict("KW-076", result), PASS)
+
+    def test_a_keyword_in_a_short_paragraph_is_in_the_body(self):
+        """F11: MIN_PARAGRAPH_WORDS was 8, so a four-word paragraph was not body copy
+        and a keyword said only there failed KW-076. Measured against the Zyte article
+        extraction benchmark (`tools/calibration/paragraph-words.json`), the filter
+        dropped 17% of the labelled body paragraphs for 3.5 points of precision; the
+        best cutoff is 0, keeping every non-empty paragraph."""
+        result = out("article_keyword_short_paragraph")
+        self.assertEqual(result["keyword_usage"]["body_occurrences"], 1)
+        self.assertEqual(verdict("KW-076", result), PASS)
 
     def test_a_keyword_outside_the_body_copy_is_not_in_it(self):
         """The other direction, so that reading `<main>` cannot become reading the

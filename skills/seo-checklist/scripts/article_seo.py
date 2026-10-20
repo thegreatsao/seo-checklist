@@ -59,14 +59,8 @@ except ImportError:
 # them arguable, which is the step that was missing while they were literals scattered
 # through 600 lines.
 
-# basis: convention — 8 words, present at import, and a definition rather than a
-#  measurement (F11). Paragraphs of more than eight words, with the headings, are the
-#  body text KW-076 searches for the operator's `--keyword`; a shorter one is read as a
-#  caption, a button or a navigation line. Where prose begins is the definition of the
-#  field, not a property a corpus of pages has, so no measurement would settle it.
-#  Lowering it lets captions and menus count as body; raising it can FAIL KW-076 on a
-#  page whose only mention of the keyword is a short paragraph
-MIN_PARAGRAPH_WORDS = 8
+# basis: measured — corpus=tools/calibration/paragraph-words.json (the Zyte article-extraction benchmark, 181 news and blog pages with hand-written article bodies, pinned by commit); date=2026-10-20; method=every paragraph extract_content considers, called body when its normalised text occurs in the labelled body, scored by paragraph-level F1 at cutoffs 0..20, the best taken (written before the run). It was 8 (F11's review of 3a): at 8 the filter dropped 17% of labelled body paragraphs for 3.5 points of precision, and a keyword said only in a short paragraph failed KW-076. At 0 every non-empty paragraph is body copy. Short paragraphs can match the body by accident, which flatters small cutoffs, but with a quarter of the short matches counted false, 0 still has the best F1. A word count also reads a CJK sentence as one word, which the old cutoff dropped
+MIN_PARAGRAPH_WORDS = 0
 # basis: presentation — a word of three letters or fewer is counted as one syllable in
 #  the Flesch estimate, present at import. It feeds `readability` and nothing else, and
 #  the one item over this script, KW-076, reads `keyword_usage.in_body`, so it decides
@@ -311,7 +305,7 @@ def extract_content(parsed: dict, cms: str) -> dict:
         # ── Paragraphs ────────────────────────────────────────────────────
         for p in scope.find_all("p"):
             text = p.get_text(" ", strip=True)
-            if len(text.split()) > MIN_PARAGRAPH_WORDS:  # skip tiny fragments
+            if len(text.split()) > MIN_PARAGRAPH_WORDS:  # skip empty paragraphs
                 result["paragraphs"].append(text)
 
         # ── Images ────────────────────────────────────────────────────────

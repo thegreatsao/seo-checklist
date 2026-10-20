@@ -81,8 +81,8 @@ robots.txt forbids, and it no longer does.
 | basis | count |
 |---|---|
 | standard | 20 |
-| measured | 12 |
-| convention | 94 |
+| measured | 13 |
+| convention | 93 |
 | inherited | 12 |
 | no basis | 0 |
 | **numbers a verdict depends on** | **138** |
@@ -95,8 +95,9 @@ since under `--sample` the cap still decided which pages a sampled verdict was a
 (0.174.0) moved them to `convention` again once a sample drawn from a cut crawl withholds what the
 cut could decide; its second batch moved five definitional or prioritisation numbers to
 `convention` and twenty-three that feed only a field no item reads to `presentation` (held by
-`tests/test_presentation_basis.py`); its third wrote the judgement over twelve content and URL
-numbers that no standard or reachable corpus settles, and the next measured a mobile viewport
+`tests/test_presentation_basis.py`); its third wrote the judgement over eleven content and URL
+numbers that no standard or reachable corpus settles and measured a twelfth (KW-076's body
+text now keeps every non-empty paragraph, against a labelled extraction benchmark), and the next measured a mobile viewport
 width (MB-100 now fails a fixed width over 360 CSS pixels, not 390), measured the profile
 detector as a whole, and wrote the judgement over the rest. Nothing is unnamed — that took a gate — what is
 left undecided is the Search Console thresholds and the profile detector's MIN_SCORE. The calibrations so

@@ -722,10 +722,12 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 0.174.0 (F11) batch 3b: MAX_FIXED_WIDTH_PX to `measured` (360, StatCounter's
         # narrowest listed phone width), CLEAR_MARGIN to `presentation`, eight to
         # `convention` (four cache, facet, image and link lines; four signal tables).
+        # 3a's review: MIN_PARAGRAPH_WORDS from `convention` to `measured` (0, the Zyte
+        # article-extraction benchmark).
         self.assertEqual(by_kind, {
             "standard": 20,
-            "measured": 12,
-            "convention": 94,
+            "measured": 13,
+            "convention": 93,
             "inherited": 12,
             "presentation": 39,
         })
