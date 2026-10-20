@@ -1448,6 +1448,25 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
                          "a refused path crawlers requested is a finding however "
                          "much of the site the crawl read")
 
+    def test_a_capped_crawl_does_not_make_a_refused_sitemap_url_never_crawled(self):
+        """F12. `never_crawled` is sitemap URLs crawlers never requested, minus the ones
+        robots.txt refuses — and the refused set is what the crawl discovered. A capped
+        crawl that never reached `/private.html` did not learn robots refuses it, so a
+        crawler obeying `Disallow` made it "never crawled" and CI-018 WARNed (found by
+        the gpt-6.1-sol review of F09). Over a capped crawl the count is taken over the
+        sitemap URLs the crawl fetched, which robots allows, so what it finds is real."""
+        sitemap = self.PATHS + ("/private.html",)
+        capped = self.audit(self.log(days=14, per_day=30),
+                            self.inventory(self.PATHS, sitemap=sitemap, truncated=True))
+        self.assertEqual(capped["never_crawled"], [])
+        self.assertEqual(self.verdict_of(capped)[0], NO_DATA)
+        whole = self.audit(self.log(days=14, per_day=30),
+                           self.inventory(self.PATHS, sitemap=sitemap))
+        self.assertEqual([row["path"] for row in whole["never_crawled"]],
+                         ["/private.html"],
+                         "a complete crawl that neither fetched nor was refused a "
+                         "sitemap URL still counts it")
+
     def test_a_complete_log_claims_nothing_partial(self):
         """The floor, and the one that catches a repair gone too far. Every caveat
         above suppresses a finding, so it is entirely possible to withhold every
@@ -5910,6 +5929,42 @@ class AnchorText(unittest.TestCase):
         spam = out("anchor_spam")
         self.assertGreaterEqual(spam["summary"]["overused_exact_match_targets"], 1)
         self.assertEqual(verdict("BL-081", spam), WARN)
+
+    def graded_over(self, links_from_home, truncated):
+        """BL-081 graded through `grade()` over an inventory of three pages."""
+        import anchor_text_audit
+        origin = "https://example.test"
+        page = {"status": 200, "html": True, "error": None, "depth": 1}
+        pages = {f"{origin}/": {**page, "final_url": f"{origin}/", "links": [
+                     {"internal": True, "target": f"{origin}/shoes", "anchor": anchor}
+                     for anchor in links_from_home]},
+                 f"{origin}/shoes": {**page, "final_url": f"{origin}/shoes", "links": []},
+                 f"{origin}/about": {**page, "final_url": f"{origin}/about", "links": []}}
+        result = anchor_text_audit.audit_anchor_text(
+            f"{origin}/", inventory={"pages": pages,
+                                     "summary": {"truncated": truncated}})
+        key = ("anchor_text_audit.py", ())
+        return grade([ITEMS["BL-081"]], {key: ["BL-081"]}, {key: result}, {}, False)[0]
+
+    def test_a_capped_crawl_does_not_decide_whether_an_anchor_is_overused(self):
+        """F12. Overuse is a share — one anchor on at least 80% of a target's editorial
+        links — and which links count as editorial is itself a share across pages, so
+        reading more pages can lower either. A count of overused targets over a capped
+        crawl is not a floor, and until 0.171.0 it could FAIL a site the whole crawl
+        passes (found by the gpt-6.1-sol review of F09: 11 overused targets on 100 of
+        110 pages, none on all of them)."""
+        five = ["buy shoes"] * 5
+        self.assertEqual(self.graded_over(five, truncated=False)["status"], WARN)
+        capped = self.graded_over(five, truncated=True)
+        self.assertEqual(capped["status"], NO_DATA, capped["evidence"])
+        self.assertIn("share", capped["evidence"])
+
+    def test_a_capped_crawl_with_no_links_yet_is_not_inapplicable(self):
+        """The applicability half: `links_analyzed gt 0` read off pages that happened
+        to carry no internal link said N/A for a site whose other pages do."""
+        self.assertEqual(self.graded_over([], truncated=False)["status"], NA)
+        capped = self.graded_over([], truncated=True)
+        self.assertEqual(capped["status"], NO_DATA, capped["evidence"])
 
 
 class InternalLinks(unittest.TestCase):

@@ -637,6 +637,9 @@ script that can report a cap whose rule is a floor on a count, and
 `tests/test_evidence_scripts.py::test_lo_198_does_not_fail_a_site_on_the_pages_a_capped_crawl_skipped`
 serves a two-page site, crawls one page of it, and reads LO-198 as `NO_DATA` with the reason
 in its evidence, `PASS` when the node is on the page read, and `FAIL` over the whole site.
+`test_a_capped_crawl_does_not_decide_whether_an_anchor_is_overused` and
+`test_a_capped_crawl_with_no_links_yet_is_not_inapplicable` read BL-081 as `WARN` and `N/A`
+over a whole inventory and `NO_DATA` over the same inventory marked truncated.
 `test_a_capped_crawl_does_not_call_a_page_it_reached_by_sitemap_an_orphan` crawls a served
 site whose sitemap names a page before the one that links to it, and reads CI-008 and AR-162
 as `NO_DATA` over a two-page budget, with the reason in CI-008's evidence, and `PASS` over the
@@ -674,6 +677,15 @@ raises neither issue over a truncated crawl, saying why; a dead end — a page r
 outbound link — is a defect found and still counts. Found re-reading every crawl-fed item
 before the crawl caps' basis changed (F09); no census derives this shape, because it lives in
 what a script counts, not in the rule.
+
+**And a share is not a floor, from 0.171.0.** BL-081 counts targets whose editorial links
+carry one anchor text on 80% or more of their nonblank anchors, and which links are editorial is itself decided by how many
+pages carry them. Reading more pages can lower either share, so a count of overused targets
+over a capped crawl can FAIL a site the whole crawl passes — measured by the second review of
+F09: eleven on 100 of 110 pages, none on all of them. `anchor_text_audit.py` withholds the
+count over a truncated crawl, and withholds `links_analyzed` when no link was read, since
+`links_analyzed gt 0` would otherwise call the item inapplicable off the pages the cap let
+in. A count is a floor only when each member, once found, stays found.
 
 #### Scenario: a clean bill of health over a capped search
 - **WHEN** an assertion passes by finding none of the thing it forbids, and the input

@@ -240,7 +240,7 @@ def audit_anchor_text(start_url: str, inventory: dict | None = None, depth: int 
     if low_diversity:
         issues.append({"severity": "info", "type": "low_anchor_diversity", "count": len(low_diversity), "message": "Targets have low anchor diversity"})
 
-    return {
+    result = {
         # Zero overused anchors across zero crawled pages is not a clean link
         # profile. `fetch_errors` (plural) stays per-URL; this is the whole-crawl
         # verdict the runner needs to tell silence from a pass, and it now comes
@@ -280,6 +280,21 @@ def audit_anchor_text(start_url: str, inventory: dict | None = None, depth: int 
         "issues": issues,
         "fetch_errors": crawl["fetch_errors"],
     }
+    if result["truncated"]:
+        # Overuse is a share of a target's editorial links, and which links are
+        # editorial is a share across pages: reading more pages can lower either, so
+        # over a capped crawl the count is not a floor and BL-081 is not decided
+        # (0.171.0; it could FAIL a site the whole crawl passes). Nor is "no links":
+        # the pages read carrying none says nothing of the ones that were not.
+        result["truncated_reason"] = (
+            "the crawl stopped at its page or depth cap, and an overused anchor is a "
+            "share of the links read, which reading more pages can lower")
+        del result["summary"]["overused_exact_match_targets"]
+        result["issues"] = [row for row in issues if row["type"] not in
+                            ("exact_match_overuse", "low_anchor_diversity")]
+        if not links:
+            del result["links_analyzed"]
+    return result
 
 
 def main() -> None:
@@ -299,13 +314,13 @@ def main() -> None:
                               timeout=args.timeout, inventory_path=args.inventory)
     lines = [
         f"Anchor text audit for {result['start_url']}",
-        f"Pages crawled: {result['pages_crawled']}  Links analyzed: {result['links_analyzed']}",
+        f"Pages crawled: {result['pages_crawled']}  Links analyzed: {result.get('links_analyzed', 'withheld')}",
         (
             "Issues: "
             f"empty={result['summary']['empty_anchors']} "
             f"generic={result['summary']['generic_anchors']} "
             f"nofollow={result['summary']['nofollow_internal_links']} "
-            f"exact_match_targets={result['summary']['overused_exact_match_targets']}"
+            f"exact_match_targets={result['summary'].get('overused_exact_match_targets', 'withheld')}"
         ),
     ]
     lines.extend(f"[{issue['severity']}] {issue['message']}: {issue['count']}" for issue in result["issues"])

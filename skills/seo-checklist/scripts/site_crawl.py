@@ -94,15 +94,17 @@ INVENTORY_VERSION = 4
 # basis: convention — 100 pages, a request budget chosen here and the one an audit runs
 #  with (the runner's `--crawl-max-pages` reads it). Raising it costs requests linearly;
 #  what it buys is how often a site-wide answer is "not fully read". Past it the crawl
-#  sets `summary.truncated`, and every crawl-fed item is then withheld or unmoved: the
-#  fourteen inventory readers that pass by absence carry the flag and the runner turns
-#  their PASS into NO_DATA; three withhold a FAIL that is itself an absence — LO-198
-#  (0.169.0), and CI-008 and AR-162 of the fourteen (0.170.0); CI-001, CI-003, CI-005
-#  and GEO-008 read the entry row. What
-#  the cap still decides is how sure a finding is: a count over the pages read is a
-#  floor, and CI-018, CN-039, BL-081, AR-149 and TE-168 have a warn band, so a WARN can
-#  understate a FAIL in the rest; with `--sample`, which pages the sample is drawn
-#  from. Driven at its value in `tests/test_coverage_caps.py` `TheCrawlCaps`.
+#  sets `summary.truncated`. The fourteen inventory readers that pass by absence carry
+#  the flag and the runner turns their PASS into NO_DATA; four withhold a non-PASS that
+#  is not a floor — LO-198 (0.169.0), CI-008 and AR-162 (0.170.0), BL-081 (0.171.0) —
+#  and CI-018 counts never-crawled pages only over the sitemap URLs the crawl fetched
+#  (0.171.0); CI-001, CI-003, CI-005 and GEO-008 read the entry row. Two things the cap
+#  still decides, by this tree's rules rather than past them: a WARN or FAIL counted
+#  over the pages read is a floor (VRD-14), and CI-018, CN-039, AR-149 and TE-168 have
+#  a warn band, so a WARN can understate a FAIL in the rest; and with `--sample`, the
+#  cap bounds the pages a sample is drawn from when the crawl read any eligible page
+#  (with none, discovery falls back to the sitemap), so it decides which pages a
+#  sampled verdict is about. Driven at its value in `tests/test_coverage_caps.py` `TheCrawlCaps`.
 DEFAULT_MAX_PAGES = 100
 # basis: convention — three hops from the entry, chosen here and read by the runner's
 #  `--crawl-depth`. It bounds the same items `DEFAULT_MAX_PAGES` does, through the same

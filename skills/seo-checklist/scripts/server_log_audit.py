@@ -767,7 +767,13 @@ def _compare_with_inventory(result: dict, inventory_path: str,
                     f"yet' are the same thing")
         return
 
-    never = sorted(facts["sitemap"] - search_paths - facts["robots_refused"])
+    # The refused set is what the crawl discovered. Over a capped crawl a sitemap URL
+    # it never reached may be one robots.txt refuses, and a crawler obeying that is
+    # not a coverage gap: count only sitemap URLs the crawl fetched, which robots
+    # allows (0.171.0). What that finds is real; what it misses, the caveat says.
+    offered = (facts["sitemap"] & facts["known"] if facts["truncated"]
+               else facts["sitemap"])
+    never = sorted(offered - search_paths - facts["robots_refused"])
     result["never_crawled"] = [{"path": p} for p in never[:TOP_N]]
     result["summary"]["never_crawled_count"] = len(never)
 

@@ -133,19 +133,22 @@ for that page. Use `--no-http-cache` for an isolated timing.
 
 Reads `--inventory` (see `site_crawl.py`); crawls one for itself without it.
 
-`truncated` — bool — the crawl behind this stopped at `--max-pages`, so every
+`truncated` — bool — the crawl behind this stopped at its page or depth cap, so every
   count here is over the pages it read
+`truncated_reason` — str — present when `truncated` is true: why the overuse count is
+  withheld (0.171.0)
 `fetch_error` — NoneType or str (the crawl's reason, copied through)
 `start_url` — str
 `pages_crawled` — int
-`links_analyzed` — int
+`links_analyzed` — int — absent when `truncated` is true and no link was read
 `summary.unique_targets` — int
 `summary.empty_anchors` — int
 `summary.generic_anchors` — int
 `summary.nofollow_internal_links` — int
 `summary.navigation_links` — int (pairs carried by most pages: site chrome)
 `summary.editorial_links` — int (the rest, which is what the repetition checks read)
-`summary.overused_exact_match_targets` — int
+`summary.overused_exact_match_targets` — int — read by BL-081; absent when `truncated`
+  is true, because overuse is a share that reading more pages can lower
 `summary.low_diversity_targets` — int
 `top_anchor_texts[]` — array
   - item keys: anchor, count
@@ -1699,7 +1702,8 @@ it, CI-018 decides. Same artifact pattern as `cwv_metrics.py`.
 `top_crawled[]` / `top_wasted[]` / `parameters[]` — array (≤20)
 `never_crawled` — NoneType or array — **NoneType when the window is under 7 days**,
   because below that "never crawled" and "not crawled yet" are the same thing. An
-  empty array would read as "we looked and there were none"
+  empty array would read as "we looked and there were none". Over a crawl that stopped
+  at its cap, taken over the sitemap URLs the crawl fetched only (0.171.0)
 `crawled_not_offered` — NoneType or array — same gate
 `robots_disallowed_hits[]` — array — paths robots.txt refuses that crawlers still asked
   for; needs `--inventory`

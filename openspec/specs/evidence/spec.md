@@ -740,7 +740,7 @@ it suppresses a finding that could otherwise have reached the severity the rule 
 | `no_timestamps` | the window, so `window_too_short` follows |
 | `window_too_short` | `sitemap_urls_never_crawled` — medium |
 | `inventory_unreadable` | that one and `disallowed_paths_crawled` — medium |
-| `inventory_truncated` | `disallowed_paths_crawled` — medium, for the URLs a capped crawl never reached (0.170.0) |
+| `inventory_truncated` | `disallowed_paths_crawled` — medium, for the URLs a capped crawl never reached (0.170.0); `sitemap_urls_never_crawled` is then counted over the sitemap URLs the crawl fetched, since one it never reached may be one robots.txt refuses (0.171.0) |
 | `too_few_requests` | `crawl_budget_wasted`, `server_errors_to_crawlers`, `crawl_spent_on_redirects` — medium and high |
 
 `too_few_requests` is the one a first reading waves off — *the shares are omitted, the

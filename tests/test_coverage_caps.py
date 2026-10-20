@@ -263,7 +263,7 @@ class TheMinHashPairDecidesOnlyWhatIsPrinted(unittest.TestCase):
         readers = []
         for item in harness.registry()["items"]:
             check = item.get("check") or {}
-            for part in ("assert", "applies_when"):
+            for part in ("assert", "warn", "applies_when"):
                 path = str((check.get(part) or {}).get("path") or "")
                 if "near_dup" in path:
                     readers.append(f"{item['id']} {part}: {path}")
