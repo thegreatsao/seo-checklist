@@ -15,8 +15,8 @@ breaking change for whoever read the old number, and saying so is the point.
 Registry version: `90ba79b14b28`, unchanged. **Two verdicts move, each only over a crawl
 that stopped at its page or depth cap: BL-081 (`medium`) could be FAIL, WARN or N/A and is
 NO_DATA; CI-018 (`medium`) could WARN on a sitemap URL robots.txt refuses and no longer
-does.** On a crawl that read the whole site nothing moves. 0.170.0 has not been published;
-this release corrects what its `convention` basis for the crawl caps claimed.
+does.** On a crawl that read the whole site nothing moves. This release corrects what 0.170.0's
+`convention` basis for the crawl caps claimed.
 
 * **Found by a second review of 0.170.0** (Codex on `gpt-6.1-sol`), which reproduced both.
   0.170.0's line said every crawl-fed answer over a capped crawl was withheld, unmoved or a
