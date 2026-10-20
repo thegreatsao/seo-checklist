@@ -898,20 +898,20 @@
       "state": "open"
     },
     "threshold-declarations-unjudged": {
-      "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants and the three detect_profile tables as inherited, DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and twenty module-level numeric constants carry no basis and are beyond the name-based scan.",
+      "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants (presentation since 0.170.0: no rule reads a near-duplicate field) and the three detect_profile tables as inherited, DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and twenty module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
         "basis": {
-          "convention": 66,
-          "inherited": 66,
+          "convention": 68,
+          "inherited": 62,
           "measured": 11,
-          "presentation": 13,
+          "presentation": 15,
           "standard": 20
         },
-        "counted": 163,
+        "counted": 161,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:36"
         ],
-        "presentation": 13,
+        "presentation": 15,
         "uncounted": [
           "CACHE_ENTRY_VERSION",
           "DEFAULT_MAX_REDIRECTS",

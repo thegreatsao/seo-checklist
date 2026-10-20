@@ -67,6 +67,7 @@ sys.path.insert(0, SCRIPT_DIR)
 from seo_common import carries_content, fetch_error_kind, status_class  # noqa: E402
 from lib.whole_file import write_json_whole  # noqa: E402
 from lib.typed_credential import split_userinfo  # noqa: E402
+import site_crawl  # noqa: E402
 
 
 def plugin_version() -> str:
@@ -3241,10 +3242,15 @@ def build_parser() -> argparse.ArgumentParser:
                          "output. Keys match the compact runs summary so the two "
                          "artifacts can be joined without embedding bulky evidence "
                          "in the emailed checklist results.")
-    ap.add_argument("--crawl-depth", type=int, default=3, metavar="N",
-                    help="link depth for the shared crawl (default: 3)")
-    ap.add_argument("--crawl-max-pages", type=int, default=100, metavar="N",
-                    help="page budget for the shared crawl (default: 100). It is "
+    # The crawl's own constants, read here so their basis lines argue the numbers an
+    # audit runs with (they were the literals 3 and 100 until 0.170.0).
+    ap.add_argument("--crawl-depth", type=int, default=site_crawl.DEFAULT_DEPTH,
+                    metavar="N", help="link depth for the shared crawl "
+                                      f"(default: {site_crawl.DEFAULT_DEPTH})")
+    ap.add_argument("--crawl-max-pages", type=int, default=site_crawl.DEFAULT_MAX_PAGES,
+                    metavar="N",
+                    help=f"page budget for the shared crawl (default: "
+                         f"{site_crawl.DEFAULT_MAX_PAGES}). It is "
                          "one crawl for all the site-wide checks now, so this is "
                          "the audit's whole crawl budget rather than one of six.")
     ap.add_argument("--links-csv", default="",

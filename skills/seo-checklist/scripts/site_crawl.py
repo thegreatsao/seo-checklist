@@ -91,17 +91,27 @@ _utf8_stdout()
 # 4 adds image references; an older inventory cannot answer a site-wide image rule.
 INVENTORY_VERSION = 4
 
-# basis: inherited — 100 pages, present at import, and the widest-reaching number
-#  here: every site-wide item reads this crawl, and nine of them pass by finding
-#  none of something. Raising it costs requests linearly; leaving it means a site
-#  past 100 pages is judged on 100 of them, which is why `summary.truncated` now
-#  withholds those verdicts instead of only annotating them.
+# basis: convention — 100 pages, a request budget chosen here and the one an audit runs
+#  with (the runner's `--crawl-max-pages` reads it). Raising it costs requests linearly;
+#  what it buys is how often a site-wide answer is "not fully read". Past it the crawl
+#  sets `summary.truncated`, and every crawl-fed item is then withheld or unmoved: the
+#  fourteen inventory readers that pass by absence carry the flag and the runner turns
+#  their PASS into NO_DATA; three withhold a FAIL that is itself an absence — LO-198
+#  (0.169.0), and CI-008 and AR-162 of the fourteen (0.170.0); CI-001, CI-003, CI-005
+#  and GEO-008 read the entry row. What
+#  the cap still decides is how sure a finding is: a count over the pages read is a
+#  floor, and CI-018, CN-039, BL-081, AR-149 and TE-168 have a warn band, so a WARN can
+#  understate a FAIL in the rest; with `--sample`, which pages the sample is drawn
+#  from. Driven at its value in `tests/test_coverage_caps.py` `TheCrawlCaps`.
 DEFAULT_MAX_PAGES = 100
-# basis: inherited — three hops from the entry, present at import. It bounds the same
-#  nineteen verdicts `DEFAULT_MAX_PAGES` does, and less visibly: a page at the limit
-#  has its links dropped rather than queued, so the crawl stops without any budget
-#  being spent. Pages a sitemap lists enter at depth 0 and are unaffected, which is
-#  why a site with a sitemap rarely meets this number at all.
+# basis: convention — three hops from the entry, chosen here and read by the runner's
+#  `--crawl-depth`. It bounds the same items `DEFAULT_MAX_PAGES` does, through the same
+#  flag: a page at the limit has its links dropped rather than queued, and a link
+#  dropped is an internal target never fetched, which sets `summary.truncated` (since
+#  0.88.0; before, the crawl reported itself complete). So it trades the same thing —
+#  requests against how often an answer is withheld — and decides the same floors and
+#  warn bands. Pages a sitemap lists enter at depth 0, which is why a site with a
+#  sitemap rarely meets it. Driven at its value in `TheCrawlCaps`.
 DEFAULT_DEPTH = 3
 
 # Stripped before the text is hashed or counted, because a shared navigation and
@@ -111,21 +121,23 @@ DEFAULT_DEPTH = 3
 CHROME_TAGS = ("script", "style", "nav", "footer", "header", "aside", "noscript",
                "template")
 
-# basis: inherited — present at import: both arrived in 0.1.0 as default arguments
-#  (`num_hashes: int = 100`, `k: int = 5`) and became constants in 0.9.0, when six crawls
+# basis: presentation — no verdict reads what these decide (F09).
+#  Both arrived in 0.1.0 as default arguments (`num_hashes: int = 100`, `k: int = 5`)
+#  and became constants in 0.9.0, when six crawls
 #  became one. Measured for 0.80.1 rather than left as a name: they feed the MinHash
 #  signature and nothing else, the signature feeds `jaccard_from_minhash`, and that feeds
 #  `near_duplicates` alone. **No registry assertion reads any near-duplicate field** — the
-#  four items over `duplicate_content.py` read the exact hash (CN-041), titles (MS-022),
-#  descriptions (MS-029) and a word count (CN-039), and none of those passes through here.
+#  five items over `duplicate_content.py` read the exact hash (CN-041), titles (MS-022,
+#  MS-026), descriptions (MS-029) and a word count (CN-039), and none passes through here.
 #  What they do decide is a claim printed about the site: across 25/100/400 functions and
 #  3/5/9-word shingles the same page pair estimates 0.68 to 0.81 similar — a spread of
 #  0.13 under a 0.85 reporting line. The four asserted fields were measured across the same
 #  nine settings and did not move, which the code also guarantees: none of them is computed
 #  from a signature. Pointing any item at `near_duplicate_pairs` promotes both of these to
-#  thresholds, and this line with them.
+#  thresholds, and this line with them; `tests/test_coverage_caps.py`
+#  `TheMinHashPairDecidesOnlyWhatIsPrinted` fails when one does.
 MINHASH_FUNCTIONS = 100
-# basis: inherited — the other half of the pair above, and the same argument: `k = 5`
+# basis: presentation — the other half of the pair above, and the same argument: `k = 5`
 #  arrived in 0.1.0, nothing here chose it, and the 0.68-to-0.81 spread was measured over
 #  both numbers together. A basis block ends at the constant under it, so this one is
 #  written out rather than shared; the two must move together or the spread means nothing.

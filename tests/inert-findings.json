@@ -109,6 +109,10 @@
           "severity": "low"
         },
         {
+          "message": "the crawl stopped at its page or depth cap, so robots.txt-refused URLs it never reached are not compared with the log",
+          "severity": "low"
+        },
+        {
           "message": "the log covers {days or 'an unknown number of'} day(s); coverage findings need at least {MIN_DAYS_FOR_COVERAGE} days, because below that 'never crawled' and 'not crawled yet' are the same thing",
           "severity": "low"
         },

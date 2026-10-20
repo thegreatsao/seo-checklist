@@ -703,14 +703,17 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # each withholding a PASS past its value (`test_coverage_caps.py`), and
         # `html_validator.py`'s `MAX_MESSAGES` to `presentation`, since the error count
         # is taken before it.
+        # 0.170.0 (F09): the crawl's `DEFAULT_MAX_PAGES` and `DEFAULT_DEPTH` to
+        # `convention`, and the MinHash pair to `presentation`, since no rule reads a
+        # near-duplicate field.
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 11,
-            "convention": 66,
-            "inherited": 66,
-            "presentation": 13,
+            "convention": 68,
+            "inherited": 62,
+            "presentation": 15,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 163)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 161)
         self.assertEqual(len(named), 176)
         # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
         # `lib/safe_http.py`, how long and how often a held lock is asked for on

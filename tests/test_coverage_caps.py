@@ -174,5 +174,103 @@ class HandshakeTimeout(unittest.TestCase):
         self.assertIn("timeout", result["error"].lower())
 
 
+
+class TheCrawlCaps(unittest.TestCase):
+    """`site_crawl.py` `DEFAULT_MAX_PAGES` and `DEFAULT_DEPTH` (F09): the crawl every
+    site-wide item reads. Driven at their own values — the crawl is called without
+    either, so a change to a constant is a change to what these tests read — over a
+    served site one step past and one step short of each."""
+
+    ROBOTS = (200, "User-agent: *\nAllow: /\n")
+
+    @staticmethod
+    def page(*links: str) -> str:
+        return ("<html><head><title>t</title></head><body>"
+                + "".join(f'<a href="{href}">{href}</a>' for href in links)
+                + "</body></html>")
+
+    def crawl(self, routes: dict) -> dict:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import harness
+        import site_crawl
+        with harness.allow_loopback(), harness.served(routes) as site:
+            return site_crawl.crawl(site.url, use_sitemap=False, workers=4)["summary"]
+
+    def chain(self, length: int) -> dict:
+        """`/` -> `/p1` -> ... -> `/p{length-1}`: one page per hop."""
+        paths = ["/"] + [f"/p{i}" for i in range(1, length)]
+        routes = {path: self.page(*paths[i + 1:i + 2]) for i, path in enumerate(paths)}
+        routes["/robots.txt"] = self.ROBOTS
+        return self.crawl(routes)
+
+    def fan(self, pages: int) -> dict:
+        """`/` linking to `pages - 1` others: every page one hop from the entry."""
+        others = [f"/p{i}" for i in range(1, pages)]
+        routes = {"/": self.page(*others), "/robots.txt": self.ROBOTS}
+        routes.update({path: self.page() for path in others})
+        return self.crawl(routes)
+
+    def test_a_chain_one_hop_past_the_depth_is_cut_and_says_so(self):
+        import site_crawl
+        summary = self.chain(site_crawl.DEFAULT_DEPTH + 2)
+        self.assertEqual(summary["pages_fetched"], site_crawl.DEFAULT_DEPTH + 1)
+        self.assertEqual(summary["unchecked_internal_targets"], 1)
+        self.assertTrue(summary["truncated"])
+
+    def test_a_chain_as_deep_as_the_depth_is_read_whole(self):
+        import site_crawl
+        summary = self.chain(site_crawl.DEFAULT_DEPTH + 1)
+        self.assertEqual(summary["pages_fetched"], site_crawl.DEFAULT_DEPTH + 1)
+        self.assertFalse(summary["truncated"])
+
+    def test_a_site_one_page_past_the_budget_is_cut_and_says_so(self):
+        import site_crawl
+        summary = self.fan(site_crawl.DEFAULT_MAX_PAGES + 1)
+        self.assertEqual(summary["pages_fetched"], site_crawl.DEFAULT_MAX_PAGES)
+        self.assertTrue(summary["truncated"])
+
+    def test_a_site_one_page_short_of_the_budget_is_read_whole(self):
+        """One short, not at: a crawl that fetched exactly the budget cannot know
+        nothing was left, and says `truncated` — the cautious side of the cap."""
+        import site_crawl
+        summary = self.fan(site_crawl.DEFAULT_MAX_PAGES - 1)
+        self.assertEqual(summary["pages_fetched"], site_crawl.DEFAULT_MAX_PAGES - 1)
+        self.assertFalse(summary["truncated"])
+
+    def test_the_audit_crawls_with_these_numbers(self):
+        """The runner passes `--depth` and `--max-pages` to the crawl, and until
+        0.170.0 its defaults were the literals 3 and 100: the constants decided only a
+        crawl run by hand, and a basis line on them argued a number the audit did not
+        read. Moved here, the runner's defaults move with them."""
+        import checklist_runner
+        import site_crawl
+        with mock.patch.object(site_crawl, "DEFAULT_DEPTH", 7), \
+                mock.patch.object(site_crawl, "DEFAULT_MAX_PAGES", 11):
+            args = checklist_runner.build_parser().parse_args(["https://example.test/"])
+        self.assertEqual((args.crawl_depth, args.crawl_max_pages), (7, 11))
+
+
+
+class TheMinHashPairDecidesOnlyWhatIsPrinted(unittest.TestCase):
+    """`site_crawl.py` `MINHASH_FUNCTIONS` and `SHINGLE_WORDS` are `presentation`
+    (F09): they feed the MinHash signature, the signature feeds `near_duplicates` and
+    `summary.near_duplicate_pairs` alone, and no rule reads either. Pointing an item
+    at one makes both thresholds again, and this is what says so."""
+
+    def test_no_rule_or_declaration_reads_a_near_duplicate_field(self):
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import harness
+        readers = []
+        for item in harness.registry()["items"]:
+            check = item.get("check") or {}
+            for part in ("assert", "applies_when"):
+                path = str((check.get(part) or {}).get("path") or "")
+                if "near_dup" in path:
+                    readers.append(f"{item['id']} {part}: {path}")
+        self.assertEqual(readers, [],
+                         "a verdict now reads the MinHash estimate; give "
+                         "MINHASH_FUNCTIONS and SHINGLE_WORDS a counted basis")
+
+
 if __name__ == "__main__":
     unittest.main()

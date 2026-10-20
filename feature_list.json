@@ -223,7 +223,7 @@
   },
   {
     "id": "F09",
-    "behavior": "No threshold rests on 'inherited': each of the remaining 66 is calibrated or relabelled 'convention' with its judgement written out",
+    "behavior": "The crawl's page and depth caps leave 'inherited' for 'convention' and the MinHash pair for 'presentation', after every crawl-fed item is shown withheld or unmoved by a capped crawl (CI-018, CI-008 and AR-162 repaired)",
     "dependencies": [
       "F02"
     ],
@@ -245,9 +245,9 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "not_started",
+    "state": "active",
     "evidence": "",
-    "notes": "ROADMAP 'What 1.0 requires' item 1, after F02's batch; 66 at 0.167.1 (tools/audit_thresholds.py). Nine Search Console numbers are blocked on multi-market data; ROW_LIMIT, DEFAULT_MAX_PAGES and DEFAULT_DEPTH wait on F08 and a KW-070/GO-139 fix. Spans sessions: one batch per sprint contract."
+    "notes": "ROADMAP 'What 1.0 requires' item 1, second batch: docs/sprint-20261020-F09.md. Release 0.170.0: inherited 66 -> 62. Narrowed to this batch at the end of the sprint; the remaining 62 are F11."
   },
   {
     "id": "F10",
@@ -276,5 +276,33 @@
     "state": "passing",
     "evidence": "commit 42b8c4a, verified 2026-10-20",
     "notes": "Found 2026-10-20: 0.167.0, 0.168.0 and 0.169.0 changed behaviour without touching a spec, and GOV-2's count was stale. Contract: docs/sprint-20261020-F10.md. Separate from F04 (the partial requirements)."
+  },
+  {
+    "id": "F11",
+    "behavior": "No threshold rests on 'inherited': each of the remaining 62 is calibrated or relabelled 'convention' with its judgement written out",
+    "dependencies": [
+      "F09"
+    ],
+    "verification": "make verify-feature F=F11",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "not_started",
+    "evidence": "",
+    "notes": "ROADMAP item 1, after F09's batch; 62 at 0.170.0 (tools/audit_thresholds.py). Nine Search Console numbers are blocked on multi-market data; ROW_LIMIT waits on a KW-070/GO-139 fix. Also found in F09's review: CI-018's sitemap_urls_never_crawled reads the crawl's sitemap set, which 0.167.0's walk budgets and off-host rule can cut without setting summary.truncated. Spans sessions: one batch per sprint contract."
   }
 ]

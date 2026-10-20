@@ -1288,6 +1288,7 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
     | `no_timestamps` | the window is unknown, so `window_too_short` follows |
     | `window_too_short` | `sitemap_urls_never_crawled` (medium) |
     | `inventory_unreadable` | that one and `disallowed_paths_crawled` (medium) |
+    | `inventory_truncated` | `disallowed_paths_crawled` (medium), past the crawl's cap |
     | `too_few_requests` | `crawl_budget_wasted`, `server_errors_to_crawlers`, `crawl_spent_on_redirects` — medium and high |
 
     Every log below is built here rather than injected. A test that sets `truncated`
@@ -1335,7 +1336,7 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
                     rows.append(row)
         return self.write("\n".join(rows) + "\n", ".log")
 
-    def inventory(self, paths, sitemap=None, robots_blocked=None):
+    def inventory(self, paths, sitemap=None, robots_blocked=None, truncated=False):
         """An inventory `site_crawl.load` accepts, keyed off its own constant."""
         from site_crawl import INVENTORY_VERSION
         return self.write(json.dumps({
@@ -1352,7 +1353,7 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
             "robots_blocked": {f"{self.SITE}{p}": why
                                for p, why in (robots_blocked or {}).items()},
             "fetch_error": None,
-            "summary": {"pages_fetched": len(paths), "truncated": False},
+            "summary": {"pages_fetched": len(paths), "truncated": truncated},
         }), ".json")
 
     def test_a_sitemap_url_robots_forbids_is_not_never_crawled(self):
@@ -1424,6 +1425,28 @@ class ALogThatCouldOnlyAnswerHalfTheQuestion(unittest.TestCase):
         self.assertEqual(data["lines_read"], lines - 1)
         self.assertTrue(data["truncated"])
         self.assertEqual(graded_verdict("CI-018", data), NO_DATA)
+
+    def test_a_capped_crawl_withholds_the_pass_and_keeps_the_finding(self):
+        """F09. `disallowed_paths_crawled` (medium) is the log's requests that hit a
+        URL the crawl found robots.txt refusing, and a crawl stopped at its page or
+        depth cap has found fewer of those. Until 0.170.0 this script never read the
+        crawl's `truncated`, so CI-018 passed clean off the part of the site the crawl
+        reached — the one crawl-fed item whose clean answer a capped crawl did not
+        withhold. A request the part read does show refused still stands."""
+        data = self.audit(self.log(days=14, per_day=30),
+                          self.inventory(self.PATHS, truncated=True))
+        self.assertIn("inventory_truncated", self.caveats(data))
+        self.assertTrue(data["truncated"])
+        self.assertIn("crawl", data["truncated_reason"])
+        status, evidence = self.verdict_of(data)
+        self.assertEqual(status, NO_DATA, evidence)
+        found = self.audit(self.log(days=14, per_day=30),
+                           self.inventory(self.PATHS, truncated=True,
+                                          robots_blocked={"/b.html": "disallowed"}))
+        # One medium finding is CI-018's warn band; what matters is that it stands.
+        self.assertEqual(self.verdict_of(found)[0], WARN,
+                         "a refused path crawlers requested is a finding however "
+                         "much of the site the crawl read")
 
     def test_a_complete_log_claims_nothing_partial(self):
         """The floor, and the one that catches a repair gone too far. Every caveat
@@ -6024,6 +6047,51 @@ class LinkProfile(unittest.TestCase):
         self.assertEqual([issue["type"] for issue in profile["issues"]],
                          ["orphan_pages"])
         self.assertEqual(verdict("AR-162", profile), FAIL)
+
+    def test_a_capped_crawl_does_not_call_a_page_it_reached_by_sitemap_an_orphan(self):
+        """F09. An orphan is a page no page *read* links to, so on a crawl stopped at
+        its cap a page reached from the sitemap is an orphan whenever the page that
+        links to it was never read. CI-008 (`high`) failed a site on that, and AR-162
+        on the `orphan_pages` issue; the site-wide average AR-162 also reads is taken
+        over whichever pages the cap let in. Here `/b` is linked only from `/a`, the
+        sitemap lists `/b` before `/a`, and a two-page budget reads `/` and `/b`."""
+        import link_profile
+        import site_crawl
+        page = ('<html><head><title>{0}</title></head><body>{1}'
+                '<p>{0}</p></body></html>')
+        sitemap = ('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns='
+                   '"http://www.sitemaps.org/schemas/sitemap/0.9">{}</urlset>')
+        items = {i: ITEMS[i] for i in ("CI-008", "AR-162")}
+
+        def graded(max_pages):
+            routes = {"/": page.format("home", '<a href="/a">a</a> <a href="/">h</a>'
+                                               ' <a href="/a">a</a>'),
+                      "/a": page.format("a", '<a href="/b">b</a> <a href="/">h</a>'
+                                             ' <a href="/b">b</a>'),
+                      "/b": page.format("b", '<a href="/">h</a> <a href="/a">a</a>'
+                                             ' <a href="/">h</a>'),
+                      "/sitemap.xml": (200, sitemap.format("".join(
+                          f"<url><loc>ORIGIN{p}</loc></url>" for p in ("/", "/b", "/a")))),
+                      "/robots.txt": (200, "User-agent: *\nAllow: /\n"
+                                           "Sitemap: ORIGIN/sitemap.xml\n")}
+            with harness.allow_loopback(), served(routes) as site:
+                site.rewrite("ORIGIN")
+                inventory = site_crawl.crawl(site.url, workers=1, max_pages=max_pages)
+            graph, crawled, domain, refused = link_profile.graph_from_inventory(inventory)
+            result = link_profile.analyze_link_profile(
+                graph, crawled, domain, refused, entry_url=inventory["entry"],
+                truncated=bool(inventory["summary"]["truncated"]))
+            return {i: grade([item], {("link_profile.py", ()): [i]},
+                             {("link_profile.py", ()): result}, {}, False)[0]
+                    for i, item in items.items()}
+
+        capped = graded(max_pages=2)
+        self.assertEqual(capped["CI-008"]["status"], NO_DATA, capped["CI-008"]["evidence"])
+        self.assertIn("no page read links to", capped["CI-008"]["evidence"])
+        self.assertEqual(capped["AR-162"]["status"], NO_DATA, capped["AR-162"]["evidence"])
+        whole = graded(max_pages=10)
+        self.assertEqual(whole["CI-008"]["status"], PASS, whole["CI-008"]["evidence"])
+        self.assertEqual(whole["AR-162"]["status"], PASS, whole["AR-162"]["evidence"])
 
     def test_ci_008_ignores_dead_ends_and_reads_only_the_orphan_count(self):
         profile = self.profile_from_inventory({

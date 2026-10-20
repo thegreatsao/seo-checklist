@@ -622,8 +622,9 @@ worst result hides a finding already measured.
 When an assertion passes because the sought defect is absent but its input is marked
 truncated, that `PASS` SHALL become `NO_DATA`. A `WARN` or `FAIL` established in the part that
 was read survives, and its evidence says the reported measurement is a floor. A `FAIL` that is
-itself an absence — a count of something required, found under its floor — is not established
-by the part that was read, and over a truncated input it SHALL become `NO_DATA` too.
+itself an absence — a count of something required, found under its floor, or a count of things
+each defined by what the part read lacks, as an orphan is a page no page read links to — is not
+established by the part that was read, and over a truncated input it SHALL become `NO_DATA` too.
 
 **Why:** a truncated input cannot prove that nothing exists beyond its cap, but a defect
 already found remains a defect. Withholding both would discard evidence; keeping both
@@ -636,6 +637,10 @@ script that can report a cap whose rule is a floor on a count, and
 `tests/test_evidence_scripts.py::test_lo_198_does_not_fail_a_site_on_the_pages_a_capped_crawl_skipped`
 serves a two-page site, crawls one page of it, and reads LO-198 as `NO_DATA` with the reason
 in its evidence, `PASS` when the node is on the page read, and `FAIL` over the whole site.
+`test_a_capped_crawl_does_not_call_a_page_it_reached_by_sitemap_an_orphan` crawls a served
+site whose sitemap names a page before the one that links to it, and reads CI-008 and AR-162
+as `NO_DATA` over a two-page budget, with the reason in CI-008's evidence, and `PASS` over the
+whole site.
 
 **The withheld verdict says why, from 0.97.0.** Until then the sentence read *"this says
 nothing about what the cap left out"* whatever had happened, which was true of every
@@ -659,6 +664,17 @@ missing key as `NO_DATA` with that reason in its evidence. Of the items over a s
 report a cap, three fail on a floor: BL-086 and BL-087 count the whole links export, which the
 cap on checked targets does not shorten, and LO-198 is the one a cap could fake.
 
+**And a count can be of absences, from 0.170.0.** The census above reads the rule's operator,
+and CI-008 (`orphan_pages.count eq 0`) is outside it: each page it counts is defined by a
+lack — no page read links to it — so on a crawl stopped at its cap a page reached from the
+sitemap was an orphan whenever its linker went unread, and the count grew with what the cap
+skipped. AR-162 read the same `orphan_pages` issue, and a site-wide average of internal links
+taken over whichever pages the cap let in. `link_profile.py` now withholds the orphan count and
+raises neither issue over a truncated crawl, saying why; a dead end — a page read with no
+outbound link — is a defect found and still counts. Found re-reading every crawl-fed item
+before the crawl caps' basis changed (F09); no census derives this shape, because it lives in
+what a script counts, not in the rule.
+
 #### Scenario: a clean bill of health over a capped search
 - **WHEN** an assertion passes by finding none of the thing it forbids, and the input
   says it was truncated
@@ -674,6 +690,12 @@ cap on checked targets does not shorten, and LO-198 is the one a cap could fake.
 - **THEN** the script withholds the count and the item is `NO_DATA`, naming why
 - **AND** the same thing found in the part that was read still passes, and an input read
   in full with none of it still fails
+
+#### Scenario: a count of pages defined by what the part read lacks
+- **WHEN** an assertion counts pages that no page read links to, and the crawl says it was
+  truncated
+- **THEN** the count is withheld and the item is `NO_DATA`, naming why
+- **AND** the same crawl read whole counts them, and fails on one
 
 #### Scenario: a pass by presence
 - **WHEN** an item passes because it found something it requires, over a truncated input

@@ -1223,8 +1223,10 @@ below are examples rather than a schema.
 Reads `--inventory` (see `site_crawl.py`). `total_internal_links` counts every `<a>`,
 not distinct targets — link equity divides among links.
 
-`truncated` — bool — the crawl behind this stopped at `--max-pages`, so every
+`truncated` — bool — the crawl behind this stopped at its page or depth cap, so every
   count here is over the pages it read
+`truncated_reason` — str — present when `truncated` is true: why the orphan count and
+  the site-average finding are withheld (0.170.0)
 `fetch_error` — NoneType or str
 `pages_crawled` — int
 `total_internal_links` — int
@@ -1233,8 +1235,10 @@ not distinct targets — link equity divides among links.
 `unique_external_domains` — int
 `avg_internal_links_per_page` — float
 `robots_refused[]` — array (kept out of the orphan arithmetic on purpose)
-`orphan_pages.count` — int — read by CI-008
-`orphan_pages.urls[]` — array
+`orphan_pages.count` — int — read by CI-008; absent when `truncated` is true, because
+  an orphan is a page no page *read* links to
+`orphan_pages.urls[]` — array; absent with the count
+`orphan_pages.reason` — str — present instead of the two above when `truncated` is true
 `dead_end_pages.count` — int
 `dead_end_pages.urls[]` — array
 `top_linked_pages[]` — array
@@ -1670,9 +1674,10 @@ it, CI-018 decides. Same artifact pattern as `cwv_metrics.py`.
 `log_file` / `base_url` — str
 `format` — str — `combined` / `common` / `json` / `unknown`
 `lines_read` / `lines_parsed` / `lines_unparsed` — int
-`truncated` — bool — **this answer does not cover its whole subject.** Four causes:
-  `--max-lines` reached, a window under 7 days, an inventory that would not load, or a
-  sample under the rate floor. Each silences a finding CI-018 would otherwise read, so a
+`truncated` — bool — **this answer does not cover its whole subject.** Five causes:
+  `--max-lines` reached, a window under 7 days, an inventory that would not load, a
+  crawl inventory that stopped at its page or depth cap (0.170.0), or a sample under the
+  rate floor. Each silences a finding CI-018 would otherwise read, so a
   clean answer here is not a clean bill of health and the runner withholds the `PASS`
 `truncated_reason` — str — why, in the checker's own words; `""` when nothing was
   withheld. The runner prints it under the withheld verdict instead of blaming a cap

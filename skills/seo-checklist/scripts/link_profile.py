@@ -128,9 +128,18 @@ def analyze_link_profile(graph: dict, crawled: set, base_domain: str,
         sum(d["internal_out"] for d in pages.values()) / max(total_pages, 1)
     )
 
+    # An orphan is a page no page *read* links to, and the site average is taken over
+    # whichever pages were read. On a truncated crawl neither describes the site: a
+    # page reached from the sitemap is an orphan whenever its linker went unread, so
+    # until 0.170.0 CI-008 and AR-162 failed sites for pages the cap skipped. Both are
+    # withheld then (`orphan_pages.count` is absent and says why); a dead end is a
+    # page read with no outbound link, a defect whatever else exists, and still counts.
+    withheld = ("the crawl stopped at its page or depth cap, and an orphan is a page "
+                "no page read links to" if truncated else "")
+
     # Issues
     issues = []
-    if orphan_pages:
+    if orphan_pages and not truncated:
         issues.append({
             "type": "orphan_pages",
             "severity": "High",
@@ -150,7 +159,7 @@ def analyze_link_profile(graph: dict, crawled: set, base_domain: str,
             "fix": "Add contextual internal links to related content from these pages.",
         })
 
-    if avg_internal_links < LOW_AVERAGE_INTERNAL_LINKS:
+    if avg_internal_links < LOW_AVERAGE_INTERNAL_LINKS and not truncated:
         issues.append({
             "type": "low_internal_linking",
             "severity": "High",
@@ -167,6 +176,7 @@ def analyze_link_profile(graph: dict, crawled: set, base_domain: str,
         # every count below is a count over what was read, and the item
         # asserting `none of these` cannot tell the difference on its own.
         "truncated": truncated,
+        **({"truncated_reason": withheld} if truncated else {}),
         "pages_crawled": total_pages,
         "total_internal_links": sum(d["internal_out"] for d in pages.values()),
         "total_external_links": sum(d["external_out"] for d in pages.values()),
@@ -176,10 +186,10 @@ def analyze_link_profile(graph: dict, crawled: set, base_domain: str,
         # What robots.txt kept out of the graph, so a reader can tell a smaller
         # crawl from a worse site.
         "robots_refused": sorted(refused),
-        "orphan_pages": {
+        "orphan_pages": ({"reason": withheld} if truncated else {
             "count": len(orphan_pages),
             "urls": orphan_pages[:15],
-        },
+        }),
         "dead_end_pages": {
             "count": len(dead_ends),
             "urls": dead_ends[:15],
@@ -279,10 +289,13 @@ def main():
     print(f"Total external links     : {report['total_external_links']}")
     print(f"Unique internal targets  : {report['unique_internal_targets']}")
     print(f"Unique external domains  : {report['unique_external_domains']}")
-    print(f"Avg internal links/page  : {report['avg_internal_links_per_page']}")
+    print(f"Avg internal links/page  : {report['avg_internal_links_per_page']}"
+          + (" (over the pages read)" if report["truncated"] else ""))
+    if report.get("truncated_reason"):
+        print(f"Orphan pages             : withheld — {report['truncated_reason']}")
 
     orph = report["orphan_pages"]
-    if orph["count"]:
+    if orph.get("count"):
         print(f"\n🔴 Orphan Pages ({orph['count']}):")
         for u in orph["urls"][:5]:
             print(f"  - {u}")

@@ -463,6 +463,7 @@ def _inventory_facts(path: str) -> dict:
         "robots_refused": {_key(u) for u in site_crawl.robots_refused(inv)},
         "html": {_key(u) for u, p in pages.items()
                  if isinstance(p, dict) and carries_content(p.get("status"))},
+        "truncated": bool((inv.get("summary") or {}).get("truncated")),
     }
 
 
@@ -696,6 +697,8 @@ def audit(log_path: str, inventory_path: str = "", base_url: str = "",
 #   no_timestamps        -> the window is unknown, so window_too_short follows
 #   window_too_short     -> sitemap_urls_never_crawled (medium) cannot be raised
 #   inventory_unreadable -> that one and disallowed_paths_crawled (medium)
+#   inventory_truncated  -> disallowed_paths_crawled (medium), over the URLs the
+#                           capped crawl never reached
 #   too_few_requests     -> crawl_budget_wasted, server_errors_to_crawlers and
 #                           crawl_spent_on_redirects, all medium or high
 #
@@ -740,6 +743,13 @@ def _compare_with_inventory(result: dict, inventory_path: str,
                     f"{facts['error']}; the log was read on its own, so "
                     f"never-crawled and unoffered-URL findings are absent")
         return
+
+    if facts["truncated"]:
+        # The refused set is what the crawl discovered, and a crawl stopped at its
+        # page or depth cap discovered less of it: no hit found is not none there.
+        _incomplete(result, "inventory_truncated",
+                    "the crawl stopped at its page or depth cap, so robots.txt-refused "
+                    "URLs it never reached are not compared with the log")
 
     hits = [{"path": p, "hits": crawled[p]}
             for p in sorted(facts["robots_refused"] & search_paths)]
