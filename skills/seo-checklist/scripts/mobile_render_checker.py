@@ -71,6 +71,7 @@ def _static_checks(source: str, timeout: int = 15) -> dict:
         # about pages that were never fetched: no HTML means no viewport tag either
         # way. MB-100 reported a critical mobile defect for a refused connection.
         "fetch_error": fetched.get("error"),
+        "fetch_error_kind": fetched.get("error_kind"),
         "viewport_meta": viewport,
         "fixed_width_values": wide_values[:25],
         "sticky_position_count": sticky_hits,

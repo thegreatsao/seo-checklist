@@ -182,7 +182,8 @@
           "TE-172",
           "TE-174",
           "TE-176",
-          "TECH-001"
+          "TECH-001",
+          "TECH-002"
         ],
         "scripts_that_report_a_cap": [
           "anchor_text_audit.py",
@@ -192,6 +193,7 @@
           "css_minify_check.py",
           "duplicate_content.py",
           "faceted_nav_audit.py",
+          "font_audit.py",
           "gsc_cannibalization.py",
           "gsc_links_csv.py",
           "gsc_sitemap_reconcile.py",
@@ -697,7 +699,8 @@
           "TE-170",
           "TE-172",
           "TE-174",
-          "TECH-001"
+          "TECH-001",
+          "TECH-002"
         ],
         "items_silenced_past_either_limit": [
           "AR-149",

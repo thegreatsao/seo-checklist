@@ -41,6 +41,12 @@ one of the closed vocabulary `unresolved`, `refused`, `timeout`, `tls`, `blocked
 `robots`, `other`. Scripts that expose a shared fetch result retain the kind beside
 the existing human-readable `error`; no reader has to classify library prose.
 
+**A read that failed, at the top of a result (0.173.0):** a script that reports a
+`fetch_error` names the fetch layer's kind beside it as `fetch_error_kind`, and one that
+reports a top-level `error` names the runner's kind as `error_kind`. The runner records a
+`fetch_error` as `unread` unless `fetch_error_kind` is `blocked` — this audit's own guard
+refused the request (HTTP-13) — and then as `blocked`.
+
 **Scripts exposing a 0-100 `score`:** security_headers, social_meta, eeat_signal_checker,
 freshness_checker, answer_block_scanner, citation_readiness, a11y_seo_checker,
 topical_cluster_mapper, llms_txt_checker (`quality.score`), pagespeed (`performance_score`).
@@ -1079,10 +1085,18 @@ Inventory mode:
 `site` — str
 `count` — int
 `fetch_error` — NoneType or str (no URL answered; three `critical` items read `rows.0`)
+`fetch_error_kind` — NoneType or `blocked` (every URL refused by this audit's guard)
+`sitemap_membership_unknown` — NoneType or str — why `in_sitemap` is null on every row
 `rows[]` — array
-  - item keys: url, final_url, status, status_class, robots_allowed, robots_rule, meta_robots, x_robots_tag, snippet_controls, canonical, in_sitemap, redirects, verdict, blockers, error
+  - item keys: url, final_url, status, status_class, robots_allowed, robots_rule, meta_robots, x_robots_tag, snippet_controls, canonical, in_sitemap, redirects, verdict, blockers, error, error_kind
+`rows[].robots_allowed` — bool; absent when this audit's guard refused robots.txt
+  (`robots_rule` says so), so CI-005 is NO_DATA rather than read off an unread file (0.173.0)
+`rows[].verdict` — `indexable`, `not_indexable`, or null when no blocker was found and
+  robots.txt was not read (0.173.0)
 `rows[].in_sitemap` — bool or null — null when the sitemap byte budget left files unread
-  or the sitemaps listed more than `SITEMAP_URLS_BUDGET` URLs (0.172.0); read by no item
+  or the sitemaps listed more than `SITEMAP_URLS_BUDGET` URLs (0.172.0), and from 0.173.0
+  when a location past the tenth, an index's children, a location with no answer or a
+  sitemap on another host went unread; read by no item
 `rows[].snippet_controls` — object
   - keys: restricted, nosnippet, nosnippet_sources, max_snippet,
     max_snippet_sources, data_nosnippet_count, data_nosnippet_sources,

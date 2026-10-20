@@ -36,14 +36,14 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from lib.safe_http import safe_get
+    from lib.safe_http import NonStandardPort, safe_get
 except ImportError:
-    from scripts.lib.safe_http import safe_get
+    from scripts.lib.safe_http import NonStandardPort, safe_get
 
 try:
-    from seo_common import read_as_url, html_parser
+    from seo_common import read_as_url, fetch_error_kind, html_parser
 except ImportError:
-    from scripts.seo_common import read_as_url, html_parser
+    from scripts.seo_common import read_as_url, fetch_error_kind, html_parser
 
 # The three signals of minified CSS are read together. A corpus containing authored
 # CSS as well as generated build output matters here: generated source alone is much
@@ -128,6 +128,7 @@ def check(url: str, timeout: int = 15) -> dict:
         html = safe_get(url, timeout=timeout).text
     except Exception as exc:
         result["fetch_error"] = str(exc)[:200]
+        result["fetch_error_kind"] = fetch_error_kind(exc)
         return result
 
     soup = BeautifulSoup(html, html_parser())
@@ -164,7 +165,20 @@ def check(url: str, timeout: int = 15) -> dict:
             result["checked"] += 1
         except Exception as exc:
             row["error"] = str(exc)[:160]
+            row["refused"] = isinstance(exc, NonStandardPort)
         result["stylesheets"].append(row)
+
+    # A stylesheet the web-ports switch refused is unread, not absent and not clean
+    # (HTTP-13): with none read the item has nothing to stand on, and with some read
+    # a clean answer covers only those.
+    refused = [row["href"] for row in result["stylesheets"] if row.get("refused")]
+    if refused and not result["checked"]:
+        result["fetch_error"] = f"stylesheet not requested: {refused[0]}"
+        result["fetch_error_kind"] = "blocked"
+    elif refused:
+        result["truncated"] = True
+        result["truncated_reason"] = (f"{len(refused)} stylesheet(s) refused by this "
+                                      f"audit's guard")
 
     if not hrefs:
         result["issues"].append({

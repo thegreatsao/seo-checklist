@@ -25,16 +25,17 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from lib.safe_http import safe_get
+    from lib.safe_http import NonStandardPort, safe_get
 except ImportError:
-    from scripts.lib.safe_http import safe_get
+    from scripts.lib.safe_http import NonStandardPort, safe_get
 
 try:
-    from seo_common import (read_as_url, favicon_href, fetch_robots, html_parser, issue,
-                            origin, robots_allowed)
+    from seo_common import (read_as_url, favicon_href, fetch_error_kind, fetch_robots,
+                            html_parser, issue, origin, robots_allowed)
 except ImportError:
-    from scripts.seo_common import (read_as_url, favicon_href, fetch_robots, html_parser, issue,
-                                    origin, robots_allowed)
+    from scripts.seo_common import (read_as_url, favicon_href, fetch_error_kind,
+                                    fetch_robots, html_parser, issue, origin,
+                                    robots_allowed)
 
 try:
     from lib.image_header import image_header
@@ -76,6 +77,7 @@ def check(url: str, timeout: int = 15) -> dict:
     except Exception as exc:  # noqa: BLE001 — an unread page is evidence, not a crash
         reason = f"Page could not be fetched: {str(exc)[:200]}"
         result["fetch_error"] = reason
+        result["fetch_error_kind"] = fetch_error_kind(exc)
         favicon["reason"] = reason
         return result
     if page.status_code >= 400:
@@ -95,6 +97,14 @@ def check(url: str, timeout: int = 15) -> dict:
         return result
 
     robots = fetch_robots(page.url, timeout=timeout)
+    if robots["fetch"].get("error_kind") == "blocked":
+        # The grade turns on whether Googlebot may fetch the icon, and a robots.txt
+        # this audit's guard refused says nothing either way (HTTP-13).
+        reason = f"robots.txt not requested: {robots['fetch'].get('error')}"
+        result["fetch_error"] = reason
+        result["fetch_error_kind"] = "blocked"
+        favicon["reason"] = reason
+        return result
     parsed_robots = robots.get("parsed")
     if parsed_robots is not None:
         for agent, target in (("Googlebot", origin(page.url) + "/"),
@@ -111,6 +121,15 @@ def check(url: str, timeout: int = 15) -> dict:
         favicon["status"] = response.status_code
         favicon["content_type"] = response.headers.get("Content-Type")
     except Exception as exc:  # noqa: BLE001 — a declared but unreachable icon is a defect
+        if isinstance(exc, NonStandardPort):
+            # Unless the web-ports switch never asked for it: Google may reach it, and
+            # our refusal is not the site's defect (HTTP-9, HTTP-13). A private address
+            # or a `data:` href stays a defect: Google cannot fetch those either.
+            reason = f"Declared favicon not requested: {str(exc)[:160]}"
+            result["fetch_error"] = reason
+            result["fetch_error_kind"] = "blocked"
+            favicon["reason"] = reason
+            return result
         reason = f"Declared favicon is unreachable: {str(exc)[:160]}"
         favicon.update({"grade": "fails", "reason": reason})
         result["issues"].append(issue("low", reason, resolved))

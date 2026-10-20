@@ -15,6 +15,7 @@ import site_crawl
 from seo_common import (read_as_url,
     SITEMAP_BYTES_BUDGET,
     SITEMAP_URLS_BUDGET,
+    carries_content,
     discover_sitemap_urls,
     fetch_robots,
     fetch_url,
@@ -22,6 +23,7 @@ from seo_common import (read_as_url,
     parse_html,
     parse_sitemap_xml,
     read_urls,
+    refused_kind,
     robots_allowed,
     normalize_url,
     same_host,
@@ -94,33 +96,72 @@ def snippet_controls(html_text: str, x_robots_tag: str | None) -> dict:
     return controls
 
 
-def urls_from_sitemaps(site: str, timeout: int) -> set[str] | None:
-    """Every URL the site's own sitemaps list, or None when a budget left some unread
-    or unkept: a URL missing from the ones held is then not known to be missing."""
+def urls_from_sitemaps(site: str, timeout: int,
+                       unread: list[str] | None = None) -> set[str] | None:
+    """Every URL the site's own sitemaps list, or None when any of them was left unread
+    or unkept: a URL missing from the ones held is then not known to be missing.
+    `unread`, when given, receives why.
+
+    The budgets returned None from 0.168.0 and 0.172.0. Four other ways of not reading
+    a sitemap did not, and each reported `in_sitemap: false` about URLs nobody had
+    looked for (F14): a location past the tenth, never requested; an index, whose
+    children this does not follow; a location that gave no answer (refused by this
+    audit's guard, timed out, a 5xx); a sitemap on another host. A location that
+    answers 4xx, or a document that is not a sitemap, lists nothing Google could read
+    either, so it stays an answer.
+    """
+    why = unread if unread is not None else []
     urls = set()
     read_bytes = 0
-    for sm in discover_sitemap_urls(site, timeout=timeout)[:10]:
+    locations = discover_sitemap_urls(site, timeout=timeout)
+    past = locations[10:]
+    if past:
+        why.append(f"{len(past)} sitemap location(s) past the tenth not read: "
+                   + ", ".join(past))
+    for sm in locations[:10]:
         if not same_host(site, sm):
-            continue      # never requested: see site_crawl.load_sitemap_urls
+            # Never requested: see site_crawl.load_sitemap_urls.
+            why.append(f"a sitemap on another host is not requested: {sm}")
+            continue
         if read_bytes >= SITEMAP_BYTES_BUDGET:
+            why.append(f"the sitemap byte budget ({SITEMAP_BYTES_BUDGET} bytes) was "
+                       f"spent before {sm}")
             return None
         fetched = fetch_url(sm, timeout=timeout, max_bytes=8_000_000)
         read_bytes += fetched.get("bytes") or 0     # the body, not its characters
+        status = fetched.get("status")
+        if not carries_content(status):
+            if status is None or status >= 500 or status == 429:
+                why.append(f"{sm} gave no sitemap to read: "
+                           f"{fetched.get('error') or f'HTTP {status}'}")
+            continue
         parsed = parse_sitemap_xml(fetched.get("text") or "", sm)
+        if parsed["type"] == "sitemapindex":
+            why.append(f"{sm} is an index; its {len(parsed['sitemaps'])} sitemap(s) "
+                       f"are not read")
+            continue
         urls.update(row["loc"] for row in parsed["urls"])
         if len(urls) > SITEMAP_URLS_BUDGET:
+            why.append(f"the sitemap URL budget ({SITEMAP_URLS_BUDGET}) was reached")
             return None
-    return urls
+    return None if why else urls
 
 
 def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dict:
     base = site or (urls[0] if urls else "")
     robots = fetch_robots(base, timeout=timeout) if base else {"parsed": None}
-    sitemap_urls = urls_from_sitemaps(base, timeout) if base else set()
+    # Unread, not empty: a robots.txt this audit's guard refused allows nothing and
+    # forbids nothing we know of, and `robots_allowed` would read it as allowing all.
+    robots_refused = (robots.get("fetch") or {}).get("error_kind") == "blocked"
+    unread: list[str] = []
+    sitemap_urls = urls_from_sitemaps(base, timeout, unread) if base else set()
     rows = []
     for url in urls:
         url = normalize_url(url)
         allowed, robots_rule = robots_allowed(robots.get("parsed"), url, "Googlebot")
+        if robots_refused:
+            allowed = None
+            robots_rule = f"robots.txt not requested: {robots['fetch'].get('error')}"
         fetched = fetch_url(url, timeout=timeout, max_bytes=1_500_000)
         fetched_status_class = status_class(fetched.get("status"))
         headers = fetched.get("headers", {})
@@ -132,7 +173,7 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
             html = parse_html(html_text, fetched.get("url") or url)
         snippets = snippet_controls(html_text, xrobots)
         blockers = []
-        if not allowed:
+        if allowed is False:
             blockers.append("robots.txt disallow")
         # Google's HTTP-status guidance treats 2xx content other than 204 as
         # processable, so those answers do not make the page non-indexable.
@@ -157,10 +198,18 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
             "canonical": html.get("canonical"),
             "in_sitemap": None if sitemap_urls is None else url in sitemap_urls,
             "redirects": fetched.get("redirect_chain", []),
-            "verdict": "indexable" if not blockers else "not_indexable",
+            # Indexable only if nothing blocks it and robots.txt was read: a blocker
+            # found stands, but no blocker over an unread robots.txt is unknown.
+            "verdict": ("not_indexable" if blockers
+                        else None if allowed is None else "indexable"),
             "blockers": blockers,
             "error": fetched.get("error"),
+            "error_kind": fetched.get("error_kind"),
         })
+        if allowed is None:
+            # Absent rather than null: CI-005 reads it truthy, and null would fail
+            # the site on a file nobody read. Absent is NO_DATA (`robots_rule` says why).
+            del rows[-1]["robots_allowed"]
     return {
         "site": normalize_url(base) if base else None,
         "count": len(rows),
@@ -173,6 +222,9 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
         # the URL unread.
         "fetch_error": (None if any(row["status"] is not None for row in rows)
                          else "no URL could be read"),
+        "fetch_error_kind": refused_kind(row["error_kind"] for row in rows),
+        # Why `in_sitemap` is null on every row, or null when it is known (HTTP-10).
+        "sitemap_membership_unknown": "; ".join(unread) or None,
         "rows": rows,
     }
 

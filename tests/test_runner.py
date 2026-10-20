@@ -4679,8 +4679,10 @@ class ScriptFailureKind(unittest.TestCase):
         # the same reason and one step further out: `service` says a dependency
         # refused and `input` says the operator's file could not be used. Three
         # different places to send a reader, and none of them is our source.
-        from checklist_runner import BAD_INPUT, KIND_LABEL, SERVICE_REFUSED
-        outside = {SITE_UNREADABLE, SERVICE_REFUSED, BAD_INPUT}
+        # The ninth, `blocked`, at 0.173.0: this audit's own guard never sent the
+        # request, which is neither the site's nor a script's failure (F14).
+        from checklist_runner import BAD_INPUT, GUARD_REFUSED, KIND_LABEL, SERVICE_REFUSED
+        outside = {SITE_UNREADABLE, SERVICE_REFUSED, BAD_INPUT, GUARD_REFUSED}
         for kind in outside:
             self.assertNotIn(kind, FAILURE_LABEL, kind)
             self.assertIn(kind, ERROR_KINDS, kind)

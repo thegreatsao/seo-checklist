@@ -247,6 +247,7 @@ def check_citation_readiness(source: str, timeout: int = 15) -> dict:
         "entity_signals": entity_signals,
         "issues": issues,
         "fetch_error": fetched.get("error"),
+        "fetch_error_kind": fetched.get("error_kind"),
     }
 
 

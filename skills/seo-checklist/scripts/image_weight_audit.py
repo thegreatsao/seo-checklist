@@ -375,6 +375,7 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
         # it for the same pair of reasons; this script was doing only one of them.
         "truncated": bool(unchecked),
         "fetch_error": fetched.get("error"),
+        "fetch_error_kind": fetched.get("error_kind"),
     }
     # An image-free page is not a page serving unresponsive, legacy-format images.
     # Omit these verdict inputs so a sampled page with nothing to optimize is

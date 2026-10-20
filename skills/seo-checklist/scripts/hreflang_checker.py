@@ -39,11 +39,11 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from lib.safe_http import safe_head
-    from seo_common import read_as_url, fetch_html, html_parser
+    from lib.safe_http import safe_get, safe_head
+    from seo_common import read_as_url, fetch_html, html_parser, unread_kind
 except ImportError:
-    from scripts.lib.safe_http import safe_head
-    from scripts.seo_common import read_as_url, fetch_html, html_parser
+    from scripts.lib.safe_http import safe_get, safe_head
+    from scripts.seo_common import read_as_url, fetch_html, html_parser, unread_kind
 
 
 # ---------------------------------------------------------------------------
@@ -681,7 +681,14 @@ def check_canonical_alignment(soup: BeautifulSoup, tags: list[dict], page_url: s
 
 def run_hreflang_check(url: str, verify_returns: bool = False) -> dict:
     """Run all 8 hreflang checks and return a structured report."""
-    html, final_url = fetch_html(url, timeout=10, quiet=True)
+    # Not `fetch_html`, which drops the exception and with it the kind: this audit's
+    # guard refusing the page is not the site failing to serve it (HTTP-13).
+    try:
+        response = safe_get(url, timeout=10)
+    except Exception as exc:  # noqa: BLE001 - an unread page is data, not a crash
+        return {"error": f"Failed to fetch URL: {url}: {exc}", "url": url,
+                "error_kind": unread_kind(exc)}
+    html, final_url = response.text, response.url
     if not html:
         return {"error": f"Failed to fetch URL: {url}", "url": url,
                 "error_kind": "unread"}

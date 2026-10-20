@@ -117,6 +117,7 @@ def audit(source: str, fetch_css: bool = False, timeout: int = 15) -> dict:
         "issues": issues,
         "chains": chains,
         "fetch_error": fetched.get("error"),
+        "fetch_error_kind": fetched.get("error_kind"),
     }
 
 

@@ -338,7 +338,9 @@ class OffHostSitemaps(unittest.TestCase):
         finally:
             ix.fetch_url, ix.discover_sitemap_urls = saved
         self.assertEqual(fetch.requested, [own])
-        self.assertEqual(found, {SITE + "a"})
+        # Membership is unknown, not the one host's URLs: the unread sitemap may list
+        # the URL (F14, HTTP-10).
+        self.assertIsNone(found)
 
     def test_the_indexability_matrix_stops_reading_sitemaps_past_its_byte_budget(self):
         # Ten declared sitemaps of about 3 MB each: 30 MB, over the 20 MB budget. With
@@ -360,6 +362,96 @@ class OffHostSitemaps(unittest.TestCase):
         self.assertLess(read, seo_common.SITEMAP_BYTES_BUDGET + 3_100_000)
         self.assertLess(len(fetch.requested), len(declared))
         self.assertIsNone(found)
+
+
+class TheMatrixSaysWhenItStopped(unittest.TestCase):
+    """HTTP-10 (F14): `indexability_matrix` reads at most ten sitemap locations, did not
+    follow an index, and read a location that did not answer as one that lists
+    nothing, each time reporting `in_sitemap: false` about URLs it had not looked
+    for. Membership is known only when every location it was given was read.
+    """
+
+    PAGE = SITE + "page"
+
+    def evaluate(self, docs: dict, locations: list[str]) -> dict:
+        import indexability_matrix as ix
+        docs = dict(docs)
+        docs[self.PAGE] = "<html><head><title>t</title></head><body>x</body></html>"
+
+        class Pages(Documents):
+            def __call__(self, url, **kwargs):
+                out = super().__call__(url, **kwargs)
+                if url == TheMatrixSaysWhenItStopped.PAGE:
+                    out["headers"] = {"content-type": "text/html"}
+                return out
+
+        robots = {"url": SITE + "robots.txt", "parsed": None,
+                  "fetch": {"status": 404, "error": None, "error_kind": None}}
+        with mock.patch.object(ix, "fetch_url", Pages(docs)), \
+                mock.patch.object(ix, "fetch_robots", return_value=robots), \
+                mock.patch.object(ix, "discover_sitemap_urls",
+                                  lambda *a, **k: locations):
+            return ix.evaluate([self.PAGE], SITE)
+
+    def test_a_location_past_the_tenth_makes_membership_unknown_and_says_so(self):
+        locations = [f"{SITE}s{i}.xml" for i in range(11)]
+        docs = {sm: urlset([f"{SITE}p{i}"]) for i, sm in enumerate(locations)}
+        out = self.evaluate(docs, locations)
+        self.assertIsNone(out["rows"][0]["in_sitemap"])
+        self.assertIn("10", out["sitemap_membership_unknown"])
+        self.assertIn(locations[10], out["sitemap_membership_unknown"])
+
+    def test_exactly_ten_locations_all_read_is_known(self):
+        locations = [f"{SITE}s{i}.xml" for i in range(10)]
+        docs = {sm: urlset([f"{SITE}p{i}"]) for i, sm in enumerate(locations)}
+        docs[locations[9]] = urlset([self.PAGE])
+        out = self.evaluate(docs, locations)
+        self.assertIs(out["rows"][0]["in_sitemap"], True)
+        self.assertIsNone(out["sitemap_membership_unknown"])
+        docs[locations[9]] = urlset([SITE + "elsewhere"])
+        out = self.evaluate(docs, locations)
+        self.assertIs(out["rows"][0]["in_sitemap"], False)
+
+    def test_no_sitemap_at_any_location_is_false(self):
+        # Every location answers 404: the site names none and the conventional
+        # paths hold none, which is what `false` says.
+        locations = [SITE + p.lstrip("/") for p in seo_common.CONVENTIONAL_SITEMAP_PATHS]
+        out = self.evaluate({}, locations)
+        self.assertIs(out["rows"][0]["in_sitemap"], False)
+        self.assertIsNone(out["sitemap_membership_unknown"])
+
+    def test_an_index_whose_children_are_not_read_is_unknown(self):
+        root = SITE + "sitemap.xml"
+        out = self.evaluate({root: index([SITE + "child.xml"]),
+                             SITE + "child.xml": urlset([self.PAGE])}, [root])
+        self.assertIsNone(out["rows"][0]["in_sitemap"])
+        self.assertIn(root, out["sitemap_membership_unknown"])
+
+    def test_a_location_that_did_not_answer_is_unknown(self):
+        root = SITE + "sitemap.xml"
+
+        class Refused(Documents):
+            def __call__(self, url, **kwargs):
+                if url == root:
+                    self.requested.append(url)
+                    return {"status": None, "url": url, "text": "", "bytes": 0,
+                            "headers": {}, "redirect_chain": [],
+                            "error": "Blocked: port 8443", "error_kind": "blocked"}
+                return super().__call__(url, **kwargs)
+
+        import indexability_matrix as ix
+        with mock.patch.object(ix, "fetch_url", Refused({})), \
+                mock.patch.object(ix, "discover_sitemap_urls", lambda *a, **k: [root]):
+            unread: list[str] = []
+            self.assertIsNone(ix.urls_from_sitemaps(SITE, 15, unread))
+        self.assertIn(root, " ".join(unread))
+
+    def test_a_sitemap_on_another_host_is_unknown_not_absent(self):
+        declared = "https://third.example:8443/sitemap.xml"
+        out = self.evaluate({}, [declared])
+        self.assertIsNone(out["rows"][0]["in_sitemap"])
+        self.assertIn(declared, out["sitemap_membership_unknown"])
+
 
 if __name__ == "__main__":
     unittest.main()

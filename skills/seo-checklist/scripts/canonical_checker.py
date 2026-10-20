@@ -11,7 +11,7 @@ from collections import defaultdict
 
 import site_crawl
 from seo_common import (read_as_url, carries_content, fetch_url, issue, normalize_url,
-                        parse_html, read_urls, same_host)
+                        parse_html, read_urls, refused_kind, same_host)
 
 
 # basis: convention — the same hundred target requests as gsc_links_csv.MAX_TARGETS.
@@ -24,7 +24,8 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
     canonical_to_pages = defaultdict(list)
     for url in urls:
         fetched = fetch_url(url, timeout=timeout, max_bytes=1_500_000)
-        row = {"url": normalize_url(url), "status": fetched.get("status"), "final_url": fetched.get("url"), "canonical": None, "verdict": "unknown", "issues": []}
+        row = {"url": normalize_url(url), "status": fetched.get("status"), "final_url": fetched.get("url"), "canonical": None, "verdict": "unknown", "issues": [],
+               "error_kind": fetched.get("error_kind")}
         if fetched.get("text"):
             html = parse_html(fetched["text"], fetched.get("url") or url)
             row["canonical"] = html.get("canonical")
@@ -67,6 +68,7 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
         # (CI-009) about a host that answered nothing.
         "fetch_error": (None if any(carries_content(row.get("status")) for row in rows)
                         else "no URL could be read"),
+        "fetch_error_kind": refused_kind(row.get("error_kind") for row in rows),
     }
 
 

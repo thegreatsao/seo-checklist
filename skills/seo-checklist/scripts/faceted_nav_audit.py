@@ -137,7 +137,7 @@ def urls_from_page(url: str, timeout: int = 15,
     """
     page = fetch_url(url, timeout=timeout, max_bytes=2_000_000)
     if not page.get("text"):
-        return [url], False
+        return [url], False, page
     parsed = parse_html(page["text"], page.get("url") or url)
     found = [url]
     truncated = False
@@ -148,7 +148,7 @@ def urls_from_page(url: str, timeout: int = 15,
                 truncated = True
                 break
             found.append(href)
-    return found, truncated
+    return found, truncated, page
 
 
 def main() -> None:
@@ -169,10 +169,16 @@ def main() -> None:
     args = parser.parse_args()
     urls = read_urls(args.urls, args.url_file)
     truncated = False
+    page = None
     if args.from_page and urls:
-        page_urls, truncated = urls_from_page(urls[0], args.timeout, args.max_urls)
+        page_urls, truncated, page = urls_from_page(urls[0], args.timeout, args.max_urls)
         urls = read_urls(page_urls)
     result = audit(urls, args.fetch, args.timeout)
+    if page is not None and not page.get("text"):
+        # A page nobody read has no facet links, and "no facets, so N/A" was the
+        # verdict about it (F14). With its kind: our guard's refusal is not the site's.
+        result["fetch_error"] = page.get("error") or "the page could not be read"
+        result["fetch_error_kind"] = page.get("error_kind")
     result["truncated"] = truncated
     print(json.dumps(result, indent=2) if args.json else "\n".join(f"{','.join(r['flags']) or 'ok'}\t{r['url']}" for r in result["rows"]))
 

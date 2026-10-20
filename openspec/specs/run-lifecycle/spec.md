@@ -372,12 +372,15 @@ to find out what was actually asked had no guarantee the answer was in it. Probe
 
 ### Requirement: RUN-7 — a failed script is `NO_DATA` with a kind, and the kinds are counted apart
 
-Eight kinds of undecided answer, all of which SHALL be graded `NO_DATA`, and none of
+Nine kinds of undecided answer, all of which SHALL be graded `NO_DATA`, and none of
 which is interchangeable with another. The kind MUST be recorded per item and the counts
 reported. Five of them say **the script** produced nothing usable; the sixth says the
 script ran and **the site** answered nothing; the seventh says a **service this check
 depends on** refused; the eighth says an **input the operator supplied** could not be
-used. Four different people can act on those, and only the first five are ours.
+used; the ninth, `blocked`, says **this audit's own guard** stopped the request — a port
+the web deployment does not reach, an address it may not, a body over its limit
+(HTTP-13). Four different people can act on the first eight, and only the first five are
+ours; the ninth is ours and is not a defect, since the guard did what it is for.
 
 A script that puts an `error` at the top of its output SHALL name its kind there too.
 The runner reads `out.get("error_kind", "crash")`, so a script that stays silent is not
@@ -397,6 +400,17 @@ rather than merely be recorded, and
 `unread`. The vocabulary is derived from the runner's source in both directions by
 `tools/audit_error_kinds.py`, which runs in CI, and the count has a reader that starts
 from rows `grade()` produced rather than from a number written by the test.
+
+**The ninth from 0.173.0 (F14).** `tls_certificate.py` emitted `blocked` from 0.172.0 and
+the runner had no sentence for it, so its row read *"unlabelled failure kind 'blocked'"*;
+twenty-six scripts reported the same refusal as a `fetch_error`, which `grade()` records as
+`unread`, eight wrote `unread` into their own kind, and three recorded `crash`. A script now
+names the fetch layer's kind beside a `fetch_error` (`fetch_error_kind`) and `grade()`
+records `blocked` when it is one; `tests/test_port_refusal_census.py` runs every planned job
+with the switch refusing its page and requires each row it feeds to be `NO_DATA` and, where
+it failed, `blocked` under its label. Like `service` and `input` it is recorded on the row:
+`script_failures` counts only the five that are the plugin's, and `unreadable_items` only
+`unread`, which a refusal no longer inflates.
 
 **Held for the seventh and eighth at 0.102.0, and the gap they closed was in this
 line's own reader.** `audit_error_kinds.py` read one file, the runner, while the kinds

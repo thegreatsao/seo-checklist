@@ -50,6 +50,7 @@ def audit(source: str, timeout: int = 15, rendered_json: str | None = None) -> d
         "rendered": rendered,
         "render_error": render_error,
         "fetch_error": fetched.get("error"),
+        "fetch_error_kind": fetched.get("error_kind"),
     }
     if rendered is not None:
         diffs = []

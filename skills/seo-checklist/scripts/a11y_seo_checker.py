@@ -99,6 +99,7 @@ def checker(source: str, timeout: int = 15) -> dict:
         },
         "issues": issues,
         "fetch_error": fetched.get("error"),
+        "fetch_error_kind": fetched.get("error_kind"),
     }
 
 

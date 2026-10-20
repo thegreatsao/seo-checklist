@@ -10,6 +10,7 @@ import json
 import re
 from urllib.parse import urlparse
 
+from lib.safe_http import NonStandardPort
 from seo_common import (
     BeautifulSoup,
     fetch_url,
@@ -128,11 +129,17 @@ def audit(source: str, fetch_fonts: bool = False, timeout: int = 15) -> dict:
             issues=issues,
         )
 
+    refused = []
     for href in dict.fromkeys(stylesheets):
         try:
             response = safe_get(href, timeout=timeout)
             response.raise_for_status()
         except Exception as exc:  # noqa: BLE001 — unreadable CSS is audit evidence
+            if isinstance(exc, NonStandardPort):
+                # Not the site's: the web-ports switch did not ask (HTTP-13). Its fonts
+                # are unread, so a clean answer covers only the rest.
+                refused.append(href)
+                continue
             issues.append({
                 "severity": "warning",
                 "message": "Stylesheet could not be fetched",
@@ -187,6 +194,10 @@ def audit(source: str, fetch_fonts: bool = False, timeout: int = 15) -> dict:
         "fonts": rows,
         "font_faces": font_faces,
         "fetch_error": fetched.get("error"),
+        "fetch_error_kind": fetched.get("error_kind"),
+        "truncated": bool(refused),
+        "truncated_reason": (f"{len(refused)} stylesheet(s) refused by this audit's guard"
+                             if refused else None),
     }
 
 

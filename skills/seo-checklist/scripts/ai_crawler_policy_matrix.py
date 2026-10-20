@@ -123,6 +123,9 @@ def matrix(site: str, paths: list[str] | None = None, timeout: int = 15) -> dict
             "robots_status": robots["fetch"].get("status"),
             "llms_txt_url": base + "/llms.txt", "llms_txt_status": llms.get("status"),
             "fetch_error": robots["fetch"].get("error") or llms.get("error"),
+            "fetch_error_kind": (robots["fetch"].get("error_kind")
+                                 if robots["fetch"].get("error")
+                                 else llms.get("error_kind")),
             "named_scopes": named_scopes, "policy_grade": policy_grade,
             "rows": rows}
 

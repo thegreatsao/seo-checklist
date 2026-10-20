@@ -23,7 +23,7 @@ from urllib.parse import urljoin, urlsplit
 
 from bs4 import BeautifulSoup
 
-from seo_common import read_as_url, carries_content, fetch_robots, html_parser, normalize_url, robots_allowed
+from seo_common import read_as_url, carries_content, fetch_robots, html_parser, normalize_url, robots_allowed, unread_kind
 
 try:
     from lib.safe_http import default_headers, safe_get
@@ -66,11 +66,8 @@ def discover_asset_paths(site: str, timeout: int = 15) -> tuple[list[str], str |
     and effective port. A CDN or even the same hostname on another scheme/port has
     its own robots.txt and is outside this site's policy.
     """
-    try:
-        response = safe_get(site, timeout=timeout, headers=default_headers(),
-                            allow_redirects=True)
-    except Exception as exc:
-        return [], f"{type(exc).__name__}: {exc}"
+    response = safe_get(site, timeout=timeout, headers=default_headers(),
+                        allow_redirects=True)    # raises: the caller keeps the kind
     if response is None:
         return [], "no response"
     status = getattr(response, "status_code", None)
@@ -189,6 +186,11 @@ def test_paths(site: str, paths: list[str], agents: list[str], timeout: int = 15
     unreachable_robots = not (carries_content(status) or status == 404)
     out = {"site": normalize_url(site), "robots_url": robots["url"],
            "robots_status": robots["fetch"].get("status"), "rows": rows}
+    if robots["fetch"].get("error_kind") == "blocked":
+        # Said, rather than left as a missing key: this audit's guard refused the
+        # robots.txt, which is not the site failing to serve one (HTTP-13).
+        out["fetch_error"] = f"robots.txt not requested: {robots['fetch'].get('error')}"
+        out["fetch_error_kind"] = "blocked"
     # No robots.txt answer means no verdict: a 500 or a timeout says nothing about
     # what is allowed, and an empty list would read as "nothing is exposed".
     if paths and not unreachable_robots:
@@ -236,13 +238,20 @@ def main() -> None:
     if not args.paths and not args.discover_assets:
         parser.error("provide one or more paths or use --discover-assets")
     paths = args.paths
-    discovery_error = None
+    discovery_error, discovery_kind = None, "unread"
     if args.discover_assets:
-        paths, discovery_error = discover_asset_paths(args.site, args.timeout)
+        try:
+            paths, discovery_error = discover_asset_paths(args.site, args.timeout)
+        except Exception as exc:  # noqa: BLE001 - network, DNS, TLS, refusal
+            paths, discovery_error = [], f"{type(exc).__name__}: {exc}"
+            discovery_kind = unread_kind(exc)
     if discovery_error:
+        # With a kind: without one the runner recorded `crash`, the plugin's fault,
+        # for a page the site did not serve or this audit's guard refused (RUN-7).
         result = {"site": normalize_url(args.site), "rows": [],
                   "asset_discovery_error": discovery_error,
-                  "error": f"asset discovery failed: {discovery_error}"}
+                  "error": f"asset discovery failed: {discovery_error}",
+                  "error_kind": discovery_kind}
     elif not paths:
         result = {"site": normalize_url(args.site), "rows": []}
         if args.discover_assets:

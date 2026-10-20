@@ -35,6 +35,11 @@ except ImportError:
     from scripts.lib.safe_http import safe_get
     from scripts.lib.typed_credential import read_as_url
 
+try:
+    from seo_common import fetch_error_kind
+except ImportError:
+    from scripts.seo_common import fetch_error_kind
+
 # gtag('config', 'G-XXXX') and the gtag.js loader query string both carry the ID.
 RE_CONFIG = re.compile(r"""gtag\s*\(\s*['"]config['"]\s*,\s*['"](G-[A-Z0-9]+)['"]""", re.I)
 RE_GTAG_SRC = re.compile(r"gtag/js\?id=(G-[A-Z0-9]+)", re.I)
@@ -59,6 +64,7 @@ def check(url: str, timeout: int = 15) -> dict:
         html = safe_get(url, timeout=timeout).text
     except Exception as exc:
         result["fetch_error"] = str(exc)[:200]
+        result["fetch_error_kind"] = fetch_error_kind(exc)
         return result
 
     config_ids = [m.upper() for m in RE_CONFIG.findall(html)]

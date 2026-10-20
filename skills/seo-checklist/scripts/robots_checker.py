@@ -33,9 +33,9 @@ except ImportError:
     from scripts.lib.typed_credential import scheme_added
 
 try:
-    from seo_common import carries_content
+    from seo_common import carries_content, unread_kind
 except ImportError:
-    from scripts.seo_common import carries_content
+    from scripts.seo_common import carries_content, unread_kind
 
 
 # AI crawlers to check for explicit management
@@ -161,7 +161,7 @@ def fetch_robots_txt(url: str, timeout: int = 15) -> dict:
 
     except requests.exceptions.RequestException as e:
         result["error"] = str(e)
-        result["error_kind"] = "unread"
+        result["error_kind"] = unread_kind(e)
 
     return result
 

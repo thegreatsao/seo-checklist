@@ -39,14 +39,14 @@ except ImportError:
 try:
     from lib.safe_http import safe_get
     from seo_common import (read_as_url, THIN_CONTENT_WORDS, declared_publication_dates,
-                            fetch_html, page_author_names, parse_html,
-                            primary_language)
+                            page_author_names, parse_html, primary_language,
+                            unread_kind)
 except ImportError:
     from scripts.lib.safe_http import safe_get
     from scripts.seo_common import (read_as_url, THIN_CONTENT_WORDS,
-                                    declared_publication_dates, fetch_html,
+                                    declared_publication_dates,
                                     page_author_names, parse_html,
-                                    primary_language)
+                                    primary_language, unread_kind)
 
 
 # ---------------------------------------------------------------------------
@@ -636,11 +636,18 @@ def main():
     args = parser.parse_args()
     args.url = read_as_url(args.url)
 
-    html = fetch_html(args.url, timeout=15)[0]
+    # With its kind, and as data under --json: the runner reads nothing from a script
+    # that exits 1, and recorded every unread article as `crash` (RUN-7, F14).
+    try:
+        html = safe_get(args.url, timeout=15).text
+        kind = "unread"
+    except Exception as exc:  # noqa: BLE001 - an unread page is data, not a crash
+        html, kind = "", unread_kind(exc)
+        print(f"Error fetching {args.url}: {exc}", file=sys.stderr)
     if not html:
-        out = {"error": "Failed to fetch URL", "url": args.url}
+        out = {"error": "Failed to fetch URL", "url": args.url, "error_kind": kind}
         print(json.dumps(out) if args.json else f"Error: Failed to fetch {args.url}")
-        sys.exit(1)
+        sys.exit(0 if args.json else 1)
 
     parsed = parse_html(html, args.url)
     soup = parsed["soup"]

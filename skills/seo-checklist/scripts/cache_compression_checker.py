@@ -142,6 +142,7 @@ def audit(source: str, include_assets: bool = False, timeout: int = 15,
             "resources": [],
             "asset_count": len(_asset_urls(soup, url)),
             "fetch_error": fetched.get("error"),
+            "fetch_error_kind": fetched.get("error_kind"),
             "truncated": False,
         }
 
@@ -172,6 +173,7 @@ def audit(source: str, include_assets: bool = False, timeout: int = 15,
         "issues": issues,
         "resources": resources,
         "fetch_error": fetched.get("error"),
+        "fetch_error_kind": fetched.get("error_kind"),
         "truncated": truncated,
     }
 

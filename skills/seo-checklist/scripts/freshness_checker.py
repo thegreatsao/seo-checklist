@@ -228,6 +228,7 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
         "schema_date_mismatch": mismatch,
         "issues": issues,
         "fetch_error": fetched.get("error"),
+        "fetch_error_kind": fetched.get("error_kind"),
     }
 
 

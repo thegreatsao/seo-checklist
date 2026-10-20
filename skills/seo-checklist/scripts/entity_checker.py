@@ -36,12 +36,12 @@ try:
     from lib.schema_types import (LOCAL_BUSINESS_TYPES, is_local_business_type,
                                   schema_types)
     from lib.safe_http import safe_get, safe_head
-    from seo_common import read_as_url, fetch_html, html_parser
+    from seo_common import read_as_url, html_parser, unread_kind
 except ImportError:
     from scripts.lib.schema_types import (LOCAL_BUSINESS_TYPES,
                                           is_local_business_type, schema_types)
     from scripts.lib.safe_http import safe_get, safe_head
-    from scripts.seo_common import read_as_url, fetch_html, html_parser
+    from scripts.seo_common import read_as_url, html_parser, unread_kind
 
 # Authoritative sameAs targets (ranked by KG signal strength)
 SAMEAS_PLATFORMS = {
@@ -478,7 +478,12 @@ def check_nap_consistency(soup: BeautifulSoup, entities: list) -> list:
 
 def run_entity_check(url: str, entity_name: str = "", kg_api_key: str = "") -> dict:
     """Run full entity SEO check."""
-    html = fetch_html(url, timeout=12)[0]
+    # Not `fetch_html`, which drops the exception and with it the kind (HTTP-13).
+    try:
+        html = safe_get(url, timeout=12).text
+    except Exception as exc:  # noqa: BLE001 - an unread page is data, not a crash
+        return {"error": f"Failed to fetch {url}: {exc}", "url": url,
+                "error_kind": unread_kind(exc)}
     if not html:
         return {"error": f"Failed to fetch {url}", "url": url,
                 "error_kind": "unread"}

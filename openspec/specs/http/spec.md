@@ -748,7 +748,9 @@ walker. `test_the_byte_budget_counts_bytes_in_all_three_walkers` serves sitemaps
 text, whose bytes pass the budget while their characters do not, and requires each walker to
 stop; `test_an_error_page_body_counts_against_the_byte_budget` gives the crawl 24 error pages
 of 1.5 MB; `test_the_indexability_matrix_holds_no_more_sitemap_urls_than_its_budget` gives
-the matrix 60,000 URLs. `test_a_gzipped_sitemap_is_expanded_no_further_than_the_protocol_limit`
+the matrix 60,000 URLs. `TheMatrixSaysWhenItStopped` gives it eleven locations, exactly ten,
+none answering, an index, a location refused and a sitemap on another host, and requires
+membership `null` with the cause named for each unread case and `true`/`false` otherwise. `test_a_gzipped_sitemap_is_expanded_no_further_than_the_protocol_limit`
 expands 200 MB of comment behind 0.9 MB on the wire and requires it returned invalid with
 the memory peak under 150 MB (bounded: about 90; unbounded: about 400);
 `test_a_gzipped_sitemap_is_not_decompressed_past_the_protocol_limit` reads the outcome only,
@@ -776,7 +778,16 @@ one of the walkers: it tries the conventional sitemap paths until one yields pag
 at most three children of each index it reads, every response under the ceiling, with no byte
 budget of its own. `indexability_matrix` held every URL it read, and
 now past `SITEMAP_URLS_BUDGET` reports membership as unknown (`null`), as past the byte
-budget. It names no reason for either: no item reads `in_sitemap`. In the crawl and the
+budget. No item reads `in_sitemap`.
+
+**Every sitemap the matrix did not read, from 0.173.0** (F14). It reads at most ten sitemap
+locations, and past the tenth, never requested, it reported `in_sitemap: false`; so it did for
+an index, whose children it does not follow, for a location that gave no answer (refused by
+this audit's guard, timed out, a 5xx or 429), and for a sitemap on another host. Each now makes
+membership `null` on every row, and `sitemap_membership_unknown` names why, the budgets
+included; it is `null` when membership is known. A location that answers 4xx, or a document
+that is not a sitemap, lists nothing Google could read and stays an answer, so a site with no
+sitemap at any location reads `false`. In the crawl and the
 checker the URL budget bounds what is held, not what is requested: past it they go on reading
 files, bounded by the byte budget and the file cap, so a broken or invalid sitemap past it is
 still reported, and the URLs they list are counted as dropped. Stopping there would have
@@ -819,7 +830,14 @@ stop is stated the way a cap is: what was cut is named, and the checker's result
 - **THEN** the walk keeps no more URLs than the URL budget, and requests no new file once the
   byte budget, counted in bytes, has been read
 - **AND** what it cut is named in its result, rather than the part read standing for the set
-- **AND** `indexability_matrix`, which keeps no list of cuts, reports membership as unknown
+- **AND** `indexability_matrix` reports membership as unknown and names the cut in
+  `sitemap_membership_unknown`
+
+#### Scenario: the matrix stops at its tenth sitemap
+- **WHEN** a site names more than ten sitemap locations, or one the matrix does not read (an
+  index, a location with no answer, a sitemap on another host)
+- **THEN** `in_sitemap` is `null` on every row, not `false`, and the output names why
+- **AND** with every location read, or none answering but 4xx, membership is `true` or `false`
 
 #### Scenario: a compressed sitemap that expands past the protocol limit
 - **WHEN** a gzipped sitemap decompresses past 50 MB
@@ -942,12 +960,16 @@ an unread one is not a defect, and a checker that said "No sitemap found" for it
 a clean set over it, would be reporting the part it read as the whole. The port rule sits in
 the guard because the guard is the one place every request passes: a same-host rule on
 redirects would not have closed it, since a page can link to the port directly.
-**Reader:** partial — two clauses are held on fewer paths than they name. The `www.` variant
+**Reader:** partial — one clause is held on fewer paths than it names. The `www.` variant
 is held as the same site only for the crawl: a checker changed to refuse it leaves every
-`OffHostSitemaps` test green. And a port refusal classifies as `blocked` in the guard and in
-`tls_certificate.py` only: `hreflang_checker.py` reports any failed fetch as `unread`, and
-`indexnow_checker.py` drops the kind, so the runner records `crash` (found by the review of
-0.172.0; filed as F14). The rest is held. `tests/test_sitemap_walk_bounds.py` `OffHostSitemaps` hands each of
+`OffHostSitemaps` test green. The rest is held. `tests/test_port_refusal_census.py` holds the
+`blocked` clause on every path a script reaches: `ThePageItselfIsRefused` runs every job the
+registry plans with its page on another port and requires each row it feeds to be `NO_DATA`,
+never `unread` or `crash` and, where the script failed, `blocked` under its label;
+`AFurtherURLIsRefused` serves the page and refuses every further URL — the key file, the
+favicon, the stylesheet, robots.txt, llms.txt, the sitemaps — and requires that no item be
+decided by the refusal; `PartsTheCensusDoesNotReach` holds one file refused among several read;
+`TheRunnersOwnRequests` the entry's kind in the artifact and `--sample`'s fallback. `tests/test_sitemap_walk_bounds.py` `OffHostSitemaps` hands each of
 the three walkers sitemaps on other hosts and ports and requires that none is requested:
 the crawl lists them in `off_host_sitemaps` and keeps only the audited host's URLs, the
 `www.` variant and the other scheme are requested as the same site, and `sitemap_checker`
@@ -972,14 +994,29 @@ runner recorded a port refusal as `crash`; it now carries `blocked` (`unresolved
 with no address). The Reader line above had said `enforced` over both, and over the port
 clause, which no test read.
 
+**Every refused path, from 0.173.0** (F14, found by the review of 0.172.0). The guard
+classified the refusal as `blocked` and the scripts lost it: twenty-six reported it as a
+`fetch_error`, which the runner records as `unread`; eight wrote `unread` themselves; three
+recorded `crash`; and where the refused URL was a file a script grades, the refusal became a
+verdict — GEO-007 failed on an IndexNow key "not found", MB-104 on a favicon "unreachable",
+TE-174 went N/A over a stylesheet it never read, TECH-002 warned "Stylesheet could not be
+fetched", CI-005 and CI-001 passed on a robots.txt read as allowing everything, TE-167 failed
+the site as down. Each now carries the kind, or leaves its item undecided with the cause.
+A census found them, by running every planned job with the switch on; the two scripts the
+review named were two of thirty-nine.
+
 **Not held, and said here so that it is not found again as a surprise.** A sitemap on the
 audited host that redirects elsewhere is still followed, as every fetch follows a redirect,
 each hop through the guard (HTTP-1); the site can make the audit request a public URL that
 way. With the switch set, requests to other public sites on the web ports remain, because
 checking outbound links means making them. The switch is off by default, so an operator
 auditing a staging site on `:8080` by hand is not refused; a public deployment sets it.
-`indexability_matrix` skips an off-host sitemap without listing it, and no item reads its
-sitemap list; `--sample`'s fallback names one on stderr only.
+`indexability_matrix` names an off-host sitemap only in `sitemap_membership_unknown`, and no
+item reads it; `--sample`'s fallback names one on stderr only. A page the crawl could not read
+because it redirects to another port carries `blocked` on its row, and what the site-wide
+items do with it is what they do with a page that timed out: `internal_links` counts no
+redirect for it (AR-149 can pass) and `duplicate_content` leaves it out of the set (CN-041 can
+pass). That is a partial crawl, not a refusal's kind, and is not held here.
 
 #### Scenario: a sitemap named on another host
 - **WHEN** `robots.txt` or a sitemap index names a sitemap on another host or port
@@ -996,6 +1033,9 @@ sitemap list; `--sample`'s fallback names one on stderr only.
   names a port other than 80 or 443
 - **THEN** the request is refused before the name is resolved, and the failure is `blocked`
 - **AND** a link refused this way is reported unchecked, not broken (HTTP-9)
+- **AND** a page or a file a script reads refused this way leaves the item it decides
+  `NO_DATA` with the kind `blocked`, or withholds a clean verdict over the part read, and is
+  never the site's defect or a clean answer
 
 #### Scenario: the switch is off
 - **WHEN** `SEO_STANDARD_PORTS_ONLY` is not set

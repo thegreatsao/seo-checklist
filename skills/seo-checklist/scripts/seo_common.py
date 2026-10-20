@@ -171,6 +171,26 @@ def fetch_error_kind(exc: BaseException) -> str:
             return "refused"
     return "other"
 
+def unread_kind(exc: BaseException) -> str:
+    """The runner's kind for a read that failed: `blocked` when this audit's own guard
+    refused it, `unread` when the site did not answer.
+
+    Eight scripts wrote `unread` for every failed read, so a port the web deployment
+    refuses (HTTP-13) read as "the site stopped answering" (F14).
+    """
+    return "blocked" if fetch_error_kind(exc) == "blocked" else "unread"
+
+
+def refused_kind(kinds) -> str | None:
+    """`blocked` when every read that failed was refused by this audit's own guard.
+
+    For a result that read several URLs and says "no URL could be read": the runner
+    records that as the site's (`unread`) unless the script says it was ours (F14).
+    """
+    kinds = list(kinds)
+    return "blocked" if kinds and all(kind == "blocked" for kind in kinds) else None
+
+
 # Class tokens that name a byline, compared against each whitespace-separated class
 # token exactly and case-insensitively, with `_` read as `-`. The substring match this
 # replaces treated `<div class="author-grid">` as a byline and handed back the

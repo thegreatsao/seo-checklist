@@ -29,9 +29,11 @@ except ImportError:
 try:
     from lib.safe_http import default_headers, safe_head
     from lib.typed_credential import scheme_added
+    from seo_common import unread_kind
 except ImportError:
     from scripts.lib.safe_http import default_headers, safe_head
     from scripts.lib.typed_credential import scheme_added
+    from scripts.seo_common import unread_kind
 
 
 HEADERS = default_headers()
@@ -173,7 +175,7 @@ def check_redirects(url: str, max_redirects: int = MAX_REDIRECT_HOPS,
         # CI-014 is already NO_DATA here — but the artifact is read by people too, and
         # on its own it would say "no loop" about a chain nobody followed.
         result["error"] = str(e)
-        result["error_kind"] = "unread"
+        result["error_kind"] = unread_kind(e)
         result["truncated"] = True
         result.pop("has_loop", None)
         # The runner replaces any result carrying `error` with NO_DATA, so a partial

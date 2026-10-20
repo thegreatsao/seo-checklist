@@ -136,7 +136,8 @@ def inventory(source: str, fetch_images: bool = False, timeout: int = 15) -> dic
            "empty_alt": empty_alt, "skipped_no_src": skipped_no_src,
            "summary": {"images": len(rows),
                        "empty_alt": empty_alt, "skipped_no_src": skipped_no_src},
-           "issues": issues, "images": rows, "fetch_error": fetched.get("error")}
+           "issues": issues, "images": rows, "fetch_error": fetched.get("error"),
+           "fetch_error_kind": fetched.get("error_kind")}
     # A page with no images is not a page whose images are missing, unlabelled or
     # undiscoverable. These three are the only fields the registry reads as a verdict
     # — MD-184 asserts `count gte 1`, CI-016 and MD-186 assert `missing_alt eq 0`,

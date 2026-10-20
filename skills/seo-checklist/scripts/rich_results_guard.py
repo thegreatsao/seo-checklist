@@ -90,7 +90,8 @@ def main() -> None:
     documents, meta = extract_schema_documents(args.source, timeout=args.timeout)
     result = guard_rich_results(documents, meta.get("invalid_blocks"))
     result.update({"source": args.source, "final_url": meta["final_url"],
-                   "fetch_error": (meta.get("fetch") or {}).get("error")})
+                   "fetch_error": (meta.get("fetch") or {}).get("error"),
+                   "fetch_error_kind": (meta.get("fetch") or {}).get("error_kind")})
     lines = [
         f"Rich results guard for {args.source}",
         f"Nodes: {result['nodes']}  Errors: {result['summary']['errors']}  "

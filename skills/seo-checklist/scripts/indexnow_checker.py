@@ -40,9 +40,9 @@ except ImportError:
     from scripts.lib.safe_http import safe_get, safe_post
 
 try:
-    from seo_common import carries_content, html_parser
+    from seo_common import carries_content, fetch_error_kind, html_parser
 except ImportError:
-    from scripts.seo_common import carries_content, html_parser
+    from scripts.seo_common import carries_content, fetch_error_kind, html_parser
 
 # basis: presentation — a key longer than eight characters is echoed as first four,
 #  last four; anything shorter is replaced outright. A masking rule for the output, and
@@ -62,12 +62,16 @@ INDEXNOW_ENDPOINTS = {
 # ---------------------------------------------------------------------------
 
 def fetch_url(url: str, timeout: int = 8) -> tuple:
-    """Return (status_code, body) or (None, error_msg)."""
+    """Return (status_code, body, None) or (None, error_msg, kind).
+
+    The kind is `seo_common.fetch_error_kind`'s. It was dropped, so a key file this
+    audit's guard refused read as one the site does not host (F14).
+    """
     try:
         resp = safe_get(url, timeout=timeout)
-        return resp.status_code, resp.text
+        return resp.status_code, resp.text, None
     except Exception as exc:
-        return None, str(exc)
+        return None, str(exc), fetch_error_kind(exc)
 
 
 # ---------------------------------------------------------------------------
@@ -79,7 +83,11 @@ def check_key_file(site_url: str, key: str) -> dict:
     parsed = urlparse(site_url)
     key_url = f"{parsed.scheme}://{parsed.netloc}/{key}.txt"
 
-    status, body = fetch_url(key_url)
+    status, body, kind = fetch_url(key_url)
+    if kind == "blocked":
+        # Never asked for, so neither hosted nor missing (HTTP-13).
+        return {"passed": None, "blocked": True, "url": key_url,
+                "finding": f"Key file not requested: {body}"}
     if carries_content(status) and key in body:
         return {
             "passed": True,
@@ -125,7 +133,7 @@ def check_robots_txt(site_url: str, key: str) -> dict:
     parsed = urlparse(site_url)
     robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
 
-    status, body = fetch_url(robots_url)
+    status, body, _kind = fetch_url(robots_url)
     if not carries_content(status):
         return {"passed": None, "finding": f"Could not fetch robots.txt (HTTP {status})."}
 
@@ -185,7 +193,7 @@ def extract_sitemap_urls(site_url: str, limit: int = 50) -> list:
     parsed = urlparse(site_url)
     sitemap_url = f"{parsed.scheme}://{parsed.netloc}/sitemap.xml"
 
-    status, body = fetch_url(sitemap_url)
+    status, body, _kind = fetch_url(sitemap_url)
     if not carries_content(status):
         return []
 
@@ -201,9 +209,12 @@ def extract_sitemap_urls(site_url: str, limit: int = 50) -> list:
 def run_indexnow_check(site_url: str, key: str) -> dict:
     """Run all IndexNow validation checks."""
     # Fetch homepage for meta tag check
-    status, html = fetch_url(site_url)
+    status, html, kind = fetch_url(site_url)
     if status is None:
-        return {"error": f"Failed to fetch {site_url}", "url": site_url}
+        # With its kind: the runner records an `error` without one as `crash`, the
+        # plugin's fault, which a page the site did not serve is not (RUN-7).
+        return {"error": f"Failed to fetch {site_url}: {html}", "url": site_url,
+                "error_kind": "blocked" if kind == "blocked" else "unread"}
 
     results = {
         "url": site_url,
@@ -240,6 +251,10 @@ def run_indexnow_check(site_url: str, key: str) -> dict:
     # optional in the protocol; hosting `/{key}.txt` is what proves the origin owns
     # the key, and that is the whole question.
     results["key_valid"] = results["checks"]["key_file"].get("passed") is True
+    if results["checks"]["key_file"].get("blocked"):
+        results["key_valid"] = None
+        results["fetch_error"] = results["checks"]["key_file"]["finding"]
+        results["fetch_error_kind"] = "blocked"
 
     return results
 

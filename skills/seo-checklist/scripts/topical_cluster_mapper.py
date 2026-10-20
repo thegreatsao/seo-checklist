@@ -11,7 +11,7 @@ import json
 import re
 from collections import Counter, defaultdict
 
-from seo_common import load_source, normalize_url, parse_html
+from seo_common import load_source, normalize_url, parse_html, refused_kind
 
 
 STOPWORDS = {
@@ -53,7 +53,7 @@ def _rows_from_csv(path: str) -> list[dict]:
 
 
 def _row_from_source(source: str, timeout: int) -> dict:
-    html, url, _ = load_source(source, timeout)
+    html, url, fetched = load_source(source, timeout)
     parsed = parse_html(html, url)
     title = parsed.get("title") or " ".join(parsed.get("headings", {}).get("h1", []))
     topic = _topic_from_text(f"{title} {' '.join(sum((v for v in parsed.get('headings', {}).values()), []))}")
@@ -64,6 +64,7 @@ def _row_from_source(source: str, timeout: int) -> dict:
         "cluster": topic,
         "parent": "",
         "links": [normalize_url(link["href"]) for link in parsed.get("links", [])],
+        "error_kind": fetched.get("error_kind"),
     }
 
 
@@ -130,7 +131,8 @@ def map_clusters(rows: list[dict]) -> dict:
             # means it produced something.
             "fetch_error": (None if any(r.get("title") or r.get("links")
                                         for r in rows)
-                            else "no page could be read")}
+                            else "no page could be read"),
+            "fetch_error_kind": refused_kind(r.get("error_kind") for r in rows)}
 
 
 def main() -> None:

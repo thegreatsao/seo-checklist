@@ -61,7 +61,8 @@ def main() -> None:
     documents, meta = extract_schema_documents(args.source, timeout=args.timeout)
     result = check_video_schema(documents)
     result.update({"source": args.source, "final_url": meta["final_url"],
-                   "fetch_error": (meta.get("fetch") or {}).get("error")})
+                   "fetch_error": (meta.get("fetch") or {}).get("error"),
+                   "fetch_error_kind": (meta.get("fetch") or {}).get("error_kind")})
     lines = [f"Video schema check for {args.source}", f"Videos: {result['videos']}  Issues: {len(result['issues'])}"]
     lines.extend(f"[{item['severity']}] {item['message']} {item.get('evidence') or ''}" for item in result["issues"][:30])
     print_json_or_text(result, args.json, lines)

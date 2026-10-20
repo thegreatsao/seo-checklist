@@ -218,6 +218,7 @@ def scan_answer_blocks(source: str, timeout: int = 15) -> dict:
         "tables": tables[:50],
         "issues": issues,
         "fetch_error": fetched.get("error"),
+        "fetch_error_kind": fetched.get("error_kind"),
     }
 
 

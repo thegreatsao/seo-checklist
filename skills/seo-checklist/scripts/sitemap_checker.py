@@ -13,6 +13,7 @@ import re
 from datetime import datetime, timezone
 
 from seo_common import (read_as_url,
+    refused_kind,
     SITEMAP_BYTES_BUDGET,
     SITEMAP_URLS_BUDGET,
     carries_content,
@@ -82,6 +83,9 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
     # Named, never requested: see `site_crawl.load_sitemap_urls`, which walks the
     # same way under the same two budgets (`seo_common.SITEMAP_*`).
     off_host_sitemaps = []
+    # Requested and refused by this audit's own guard (HTTP-13): unread, as the ones
+    # on another host are, and not a sitemap the site failed to serve.
+    refused_sitemaps = []
     read_bytes, dropped_urls = 0, 0
 
     # Recorded before the walk so the loop below can end either way without the
@@ -109,6 +113,10 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
             "error_kind": fetched.get("error_kind"),
         }
         if not carries_content(fetched.get("status")):
+            if fetched.get("error_kind") == "blocked":
+                refused_sitemaps.append(sm_url)
+                result["sitemaps_checked"].append(entry)
+                continue
             if sm_url in probed:
                 # Not there, and nothing said it would be. Recorded so the run is
                 # inspectable, but it is not an issue and must not read as one.
@@ -249,6 +257,9 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
     if off_host_sitemaps:
         reasons.append("sitemaps on another host are not requested: "
                        + ", ".join(off_host_sitemaps))
+    if refused_sitemaps:
+        reasons.append("sitemaps refused by this audit's guard are not read: "
+                       + ", ".join(refused_sitemaps))
     result["truncated"] = bool(queue) or bool(reasons)
     if reasons:
         result["truncated_reason"] = "; ".join(reasons)
@@ -269,9 +280,11 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
         result["fetch_error"] = ("no sitemap location could be reached: "
                                  + (result["sitemaps_checked"][0].get("error")
                                     or "connection failed"))
+        result["fetch_error_kind"] = refused_kind(
+            e.get("error_kind") for e in result["sitemaps_checked"])
     # A sitemap the site declared on another host is unread, not absent.
     if (not result["summary"]["loaded"] and not result.get("fetch_error")
-            and not off_host_sitemaps):
+            and not off_host_sitemaps and not refused_sitemaps):
         result["issues"].append(issue(
             "error", "No sitemap found",
             result["site"],

@@ -43,9 +43,11 @@ except ImportError:
 try:
     from lib.safe_http import default_headers, loopback_only, safe_get
     from lib.typed_credential import read_as_url
+    from seo_common import fetch_error_kind
 except ImportError:
     from scripts.lib.safe_http import default_headers, loopback_only, safe_get
     from scripts.lib.typed_credential import read_as_url
+    from scripts.seo_common import fetch_error_kind
 
 # basis: inherited — three labels, present at import, and definitional rather than
 #  calibratable: a whois lookup needs the registrable domain, and a multi-label public
@@ -80,6 +82,11 @@ def check_uptime(url: str, timeout: int) -> dict:
         out["reachable"] = resp.status_code < 500
     except Exception as exc:
         out["error"] = str(exc)[:200]
+        if fetch_error_kind(exc) == "blocked":
+            # Never asked, so not known to be down: this audit's guard refused the
+            # request (HTTP-13), and `reachable: false` would fail TE-167 on it.
+            # Absent, not null, which TE-167's truthy rule would also fail.
+            del out["reachable"]
     return out
 
 
@@ -235,7 +242,7 @@ def check(url: str, timeout: int = 20) -> dict:
     }
 
     up = result["uptime"]
-    if not up["reachable"]:
+    if up.get("reachable") is False:
         result["issues"].append({
             "severity": "critical",
             "message": f"Site not reachable: {up['error'] or 'HTTP ' + str(up['status'])}",
@@ -291,7 +298,7 @@ def main():
 
     print(f"Domain safety for {result['domain']}")
     up = result["uptime"]
-    print(f"  reachable:     {up['reachable']} (HTTP {up['status']}, {up['response_ms']} ms)")
+    print(f"  reachable:     {up.get('reachable', 'not checked')} (HTTP {up['status']}, {up['response_ms']} ms)")
     sb = result["safe_browsing"]
     state = "clean" if sb.get("clean") else (sb.get("error") or "THREATS FOUND")
     print(f"  safe browsing: {state}")

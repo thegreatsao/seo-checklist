@@ -148,7 +148,18 @@ SERVICE_LABEL = "a service this check depends on refused"
 BAD_INPUT = "input"
 BAD_INPUT_LABEL = "an input this check was given could not be used"
 
-ERROR_KINDS = tuple(FAILURE_LABEL) + (SITE_UNREADABLE, SERVICE_REFUSED, BAD_INPUT)
+# The ninth, and the fetch layer's word for it (`seo_common.fetch_error_kind`): this
+# audit's own guard stopped the request — a port the web deployment does not reach
+# (HTTP-13), an address it may not, or a body it read past its limit.
+# Not the site, which may answer anyone else perfectly well, and not the plugin, whose
+# guard did what it is for. `tls_certificate.py` carried it from 0.172.0 and the
+# runner had no sentence for it, so the row read "unlabelled failure kind 'blocked'";
+# twenty-six scripts reported the same refusal as `unread` and three as `crash` (F14).
+GUARD_REFUSED = "blocked"
+GUARD_LABEL = "this audit's own guard stopped the request"
+
+ERROR_KINDS = tuple(FAILURE_LABEL) + (SITE_UNREADABLE, SERVICE_REFUSED, BAD_INPUT,
+                                      GUARD_REFUSED)
 
 # Every kind in the vocabulary has a sentence, and a kind outside it says so rather
 # than borrowing one. `FAILURE_LABEL.get(kind, FAILURE_LABEL["crash"])` was the
@@ -158,7 +169,8 @@ ERROR_KINDS = tuple(FAILURE_LABEL) + (SITE_UNREADABLE, SERVICE_REFUSED, BAD_INPU
 KIND_LABEL = dict(FAILURE_LABEL,
                   **{SITE_UNREADABLE: UNREADABLE_LABEL,
                      SERVICE_REFUSED: SERVICE_LABEL,
-                     BAD_INPUT: BAD_INPUT_LABEL})
+                     BAD_INPUT: BAD_INPUT_LABEL,
+                     GUARD_REFUSED: GUARD_LABEL})
 
 
 def kind_label(kind: str | None) -> str:
@@ -1679,9 +1691,18 @@ def grade(items: list[dict], plan: dict, results: dict, skipped: dict,
                     # scoring. This is the case that gate cannot see: a site that
                     # answers the entry request and then stops — rate limiting, a WAF
                     # tripping after N requests, a deploy during an audit.
-                    row.update(status=NO_DATA, error_kind="unread",
-                               evidence=f"the site could not be read: "
-                                        f"{unread_reason(data)[:160]}")
+                    #
+                    # Unless our own guard stopped it: a script names the fetch layer's
+                    # kind beside its `fetch_error`, and that is ours to report, not the
+                    # site's (HTTP-13).
+                    if data.get("fetch_error_kind") == GUARD_REFUSED:
+                        row.update(status=NO_DATA, error_kind=GUARD_REFUSED,
+                                   evidence=f"{GUARD_LABEL}: "
+                                            f"{unread_reason(data)[:160]}")
+                    else:
+                        row.update(status=NO_DATA, error_kind="unread",
+                                   evidence=f"the site could not be read: "
+                                            f"{unread_reason(data)[:160]}")
                 else:
                     applies = it["check"].get("applies_when")
                     applies_ok, applies_ev = (evaluate(applies, data)
@@ -2721,6 +2742,12 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
     def same_host(u: str) -> bool:
         return urlparse(u).netloc == host
 
+    def refused(url: str, exc: Exception) -> None:
+        # Said as the off-host children are: a sitemap the guard would not request is
+        # not a site without one, which is what "no sitemap" below would claim.
+        if fetch_error_kind(exc) == GUARD_REFUSED:
+            print(f"  {url} not requested: {exc}", file=sys.stderr)
+
     if inventory:
         # Content-only: any readable success is a page, while a 404 would fail every
         # page-level check and let the worst page decide the verdict.
@@ -2731,9 +2758,11 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
     for path in CONVENTIONAL_SITEMAP_PATHS if not found else ():
         if found:
             break
+        url = f"{urlparse(base_url).scheme}://{host}{path}"
         try:
-            xml = safe_get(f"{urlparse(base_url).scheme}://{host}{path}", timeout=15).text
-        except Exception:
+            xml = safe_get(url, timeout=15).text
+        except Exception as exc:  # noqa: BLE001 - a missing sitemap is not an error here
+            refused(url, exc)
             continue
         locs = LOC_RE.findall(xml)
         # A sitemap index points at more sitemaps; follow one level.
@@ -2750,8 +2779,8 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
         for n in own[:3]:
             try:
                 pages += LOC_RE.findall(safe_get(n, timeout=15).text)
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001
+                refused(n, exc)
         # Sitemaps list PDFs and images too — the same extension filter applies.
         found += [u for u in pages if same_host(u) and looks_like_a_page(u)]
 
@@ -2768,8 +2797,8 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
                 u = h if h.startswith("http") else urljoin(base_url, h)
                 if same_host(u) and looks_like_a_page(u):
                     found.append(u)
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001
+            refused(base_url, exc)
 
     # Deduplicate before striding, or the step lands repeatedly on the same page in
     # a sitemap that lists a URL under several paths.
@@ -3951,6 +3980,9 @@ def main() -> int:
         "only": sorted(keep) if a.only else None,
         "entry_reachable": not entry_error,
         "entry_error": entry_error or None,
+        # The fetch layer's kind for it: `blocked` is this audit's guard, which the
+        # entry's text alone said only in words (F14).
+        "entry_error_kind": entry_error_kind or None,
         # What the entry page looked like, whether or not it stopped the run. A
         # `--no-page-guard` run that scored a challenge page must say so in the
         # artifact, or the file is the same lie the guard exists to prevent.

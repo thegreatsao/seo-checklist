@@ -15,6 +15,31 @@ Each entry answers: what was decided, why, when, and what alternatives were reje
 
 ---
 
+### 2026-10-20 A file the page names is excused only for a port refusal; every other guard refusal stays the fetch layer's `blocked`
+
+**Decision:** Where a refused URL is the subject of a result (the page, robots.txt, a sitemap, the IndexNow key
+file) the runner records the fetch layer's `blocked` for any `SafeHTTPError` the guard raises — a port the web
+deployment does not reach, a private address, a body over a limit. Where it is a file the page itself names and a
+script grades (the favicon, a stylesheet), only `NonStandardPort` leaves the item undecided; a private address or
+a `data:` href still fails.
+
+**Why:** a port refusal is ours: Google reaches `:8443` perfectly well. Googlebot cannot fetch a private address
+or a `data:` URL either, so for a file the site chose to point at, that refusal describes the site, and excusing it
+would turn a true MB-104 FAIL into NO_DATA. For a subject the kind changes only the label, never the status, so the
+fetch layer's single word is right there.
+
+**Alternatives rejected:**
+- **One predicate (`fetch_error_kind == "blocked"`) everywhere:** found in F14 before the review; it moved a `data:`
+  favicon from FAIL to NO_DATA.
+- **A new fetch-layer kind for the port alone:** HTTP-9's vocabulary is closed at seven, and the runner needs one
+  word for "our guard stopped it" whatever stopped it.
+
+**Consequences:** `indexability_matrix` and `favicon_check` treat a robots.txt over the 500 KB the audit reads as
+unread (CI-005, CI-001 NO_DATA), not as allowing everything. Following a sitemap index's children in the matrix,
+rather than reporting membership unknown, is a separate feature.
+
+---
+
 ### 2026-10-18 `make check` is `ci_local.py`, not a list of commands
 
 **Decision:** `make check` runs `skills/seo-checklist/tools/ci_local.py`, then `check-arch` and `vcr`. `make e2e` runs

@@ -111,8 +111,8 @@ class TheVocabulariesAreTheRegistrys(unittest.TestCase):
     def test_every_script_failure_kind_is_under_the_error_kind_gate(self):
         """`tools/audit_error_kinds.py` holds `ERROR_KINDS` against every kind the
         source assigns, both directions. `ERROR_KINDS` is `FAILURE_LABEL`'s keys plus
-        three named kinds, and this is what makes that gate `FAILURE_LABEL`'s reader."""
-        others = (r.SITE_UNREADABLE, r.SERVICE_REFUSED, r.BAD_INPUT)
+        four named kinds, and this is what makes that gate `FAILURE_LABEL`'s reader."""
+        others = (r.SITE_UNREADABLE, r.SERVICE_REFUSED, r.BAD_INPUT, r.GUARD_REFUSED)
         self.assertEqual(r.ERROR_KINDS, tuple(r.FAILURE_LABEL) + others)
         self.assertFalse(set(r.FAILURE_LABEL) & set(others))
         for kind, label in r.FAILURE_LABEL.items():

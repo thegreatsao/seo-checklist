@@ -358,6 +358,9 @@ class PageModeCompatibility(unittest.TestCase):
             # `unchecked_image_count` in the pop above.
             "truncated": False,
             "fetch_error": None,
+            # 0.173.0 (F14): the fetch layer's kind beside it, so the runner can
+            # tell this audit's guard refusing the page from the site not answering.
+            "fetch_error_kind": None,
             "modern_format_count": 0,
             "responsive_count": 0,
             # 0.93.0. Emitted whenever the page has images, because it is read from

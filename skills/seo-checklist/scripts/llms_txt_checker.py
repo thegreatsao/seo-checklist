@@ -34,9 +34,9 @@ except ImportError:
     from scripts.lib.typed_credential import scheme_added
 
 try:
-    from seo_common import carries_content
+    from seo_common import carries_content, unread_kind
 except ImportError:
-    from scripts.seo_common import carries_content
+    from scripts.seo_common import carries_content, unread_kind
 
 
 # basis: inherited — every one of these, present at import. `llms.txt` is a proposal
@@ -117,7 +117,7 @@ def check_llms_txt(url: str, timeout: int = 15) -> dict:
             )
     except requests.exceptions.RequestException as e:
         result["error"] = str(e)
-        result["error_kind"] = "unread"
+        result["error_kind"] = unread_kind(e)
 
     # Check llms-full.txt (optional extended version)
     try:

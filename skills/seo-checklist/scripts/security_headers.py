@@ -35,13 +35,13 @@ try:
     from lib.typed_credential import scheme_added
     from redirect_checker import MAX_REDIRECT_HOPS
     import seo_common
-    from seo_common import connection_refused, html_parser
+    from seo_common import connection_refused, html_parser, unread_kind
 except ImportError:
     from scripts.lib.safe_http import default_headers, robots_allows, safe_get
     from scripts.lib.typed_credential import scheme_added
     from scripts.redirect_checker import MAX_REDIRECT_HOPS
     from scripts import seo_common
-    from scripts.seo_common import connection_refused, html_parser
+    from scripts.seo_common import connection_refused, html_parser, unread_kind
 
 
 # Google Search Central, "HTTP status codes, network and DNS errors": 301 and 308 are
@@ -466,7 +466,7 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
 
     except requests.exceptions.RequestException as e:
         result["error"] = str(e)
-        result["error_kind"] = "unread"
+        result["error_kind"] = unread_kind(e)
 
     return result
 

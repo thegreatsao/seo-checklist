@@ -173,7 +173,10 @@ def analyze_source(source: str, timeout: int = 15) -> dict:
     }
     if error:
         out["error_kind"] = "crash"
-        if fetched.get("error_kind") != "other":
+        if fetched.get("error_kind") == "blocked":
+            # This audit's guard refused it (HTTP-13): not the site, not the plugin.
+            out["error_kind"] = "blocked"
+        elif fetched.get("error_kind") != "other":
             out["error_kind"] = "unread"
     return out
 

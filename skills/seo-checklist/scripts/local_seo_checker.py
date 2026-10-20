@@ -108,6 +108,7 @@ def check_local_seo(source: str, timeout: int = 15) -> dict[str, Any]:
         # signals.
         "fetch_error": (fetch.get("error")
                         or (None if html else "the page could not be read")),
+        "fetch_error_kind": fetch.get("error_kind"),
         "local_business_nodes": len(local_nodes),
         "phones_detected": phones,
         "map_embeds": map_embeds,

@@ -37,9 +37,9 @@ except ImportError:
     from scripts.lib.safe_http import default_headers, safe_get
 
 try:
-    from seo_common import read_as_url, carries_content, html_parser
+    from seo_common import read_as_url, carries_content, html_parser, unread_kind
 except ImportError:
-    from scripts.seo_common import read_as_url, carries_content, html_parser
+    from scripts.seo_common import read_as_url, carries_content, html_parser, unread_kind
 
 
 # basis: presentation — 60 characters of a tag's value in the console listing. The
@@ -115,7 +115,7 @@ def check_social_meta(url: str, timeout: int = 15) -> dict:
         soup = BeautifulSoup(resp.text, html_parser())
     except requests.exceptions.RequestException as e:
         result["error"] = str(e)
-        result["error_kind"] = "unread"
+        result["error_kind"] = unread_kind(e)
         return result
 
     total_checks = 0
