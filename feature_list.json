@@ -279,7 +279,7 @@
   },
   {
     "id": "F11",
-    "behavior": "No threshold rests on 'inherited': each of the remaining 64 is calibrated or relabelled 'convention' with its judgement written out",
+    "behavior": "No threshold rests on 'inherited' unexamined: each of the 64 is calibrated, relabelled 'convention' or 'presentation' with its judgement written out, or — one, detect_profile.MIN_SCORE — measured and held in force for the owner's decision; and no sampled verdict is decided by the crawl caps",
     "dependencies": [
       "F09"
     ],
@@ -301,9 +301,9 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "active",
-    "evidence": "",
-    "notes": "ROADMAP item 1, after F09's batch; 62 at 0.170.0 (tools/audit_thresholds.py). Nine Search Console numbers are blocked on multi-market data; ROW_LIMIT waits on a KW-070/GO-139 fix. Also found in F09's review: CI-018's sitemap_urls_never_crawled reads the crawl's sitemap set, which 0.167.0's walk budgets and off-host rule can cut without setting summary.truncated. Spans sessions: one batch per sprint contract."
+    "state": "passing",
+    "evidence": "commit 09368bd, verified 2026-10-21",
+    "notes": "ROADMAP item 1. Done at 0.174.0 in five batches, each with a sprint contract (docs/sprint-20261020-F11-*.md) and gpt-6.1-sol reviews: 161 counted -> 130, inherited 64 -> 1. The one left is MIN_SCORE: measured on 39 labelled homepages (tools/calibrate_profile_detection.py), the rule picks 5, 4 stays in force until the owner decides, since adopting it moves --profile auto verdicts."
   },
   {
     "id": "F12",
