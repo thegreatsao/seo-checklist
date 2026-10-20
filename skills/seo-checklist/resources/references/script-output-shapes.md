@@ -681,7 +681,7 @@ of this file.
     normalized verdict rather than requiring readers to reproduce normalization
 `queries_truncated` — bool — the evidence list was shortened after counting
 `truncated` — bool — the API answered with a full page of rows (`ROW_LIMIT`),
-  so there were query/page rows this analysis never saw. Upstream of every
+  so there may be query/page rows this analysis never saw. Upstream of every
   count in `summary`, unlike `queries_truncated`, which is downstream of them
 `cannibalized[]` — array, capped at 25 for human-facing output; the cap is on
   the listing only — `summary.cannibalized_queries` counts them all
@@ -712,7 +712,8 @@ human-facing 25-entry cap
 `summary.cannibalized_queries` — int
 `summary.contested_queries` — int — absent over a full page of rows (`truncated`, 0.174.0):
   a page past the cap can end a contest, so the count is not a floor; `truncated_reason`
-  says why
+  says why. `summary.cannibalized_queries` is absent then too when no brand was supplied
+  or published, since a brand inferred from the rows can change with rows past the cap
 `issues[]` — array
 `error` — str | null
 

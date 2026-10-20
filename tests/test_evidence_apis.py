@@ -1201,17 +1201,29 @@ class Cannibalization(unittest.TestCase):
         self.assertEqual(verdict("KW-071", short), FAIL)
 
     def test_a_split_count_off_a_full_page_is_a_floor_and_stands(self):
-        """The other count is a floor: a page past the cap only adds to a query's
-        pages, and the brand a spread is classified against is the operator's, the
-        site's, or inferred from the top-click row, which the API's clicks-descending
-        order always returns. So MS-023's FAIL off a full page stands, as VRD-14 asks
-        of a defect found in the part read."""
+        """With a brand the operator gave or the site published, the other count is a
+        floor: a page past the cap only adds to a query's pages. So MS-023's FAIL off a
+        full page stands, as VRD-14 asks of a defect found in the part read."""
         head, _ = self._contested()
-        for brand in (["Fixture Bakery"], None):
-            with self.subTest(brand=brand):
-                full = self.analyze(self._a_full_page(*head), brand=brand)
-                self.assertEqual(full["summary"]["cannibalized_queries"], 4)
-                self.assertEqual(verdict("MS-023", full), FAIL)
+        full = self.analyze(self._a_full_page(*head), brand=["Fixture Bakery"])
+        self.assertEqual(full["summary"]["cannibalized_queries"], 4)
+        self.assertEqual(verdict("MS-023", full), FAIL)
+
+    def test_a_split_count_off_a_full_page_with_no_known_brand_is_withheld(self):
+        """F11's last review: with no brand supplied or published, spreads are sorted
+        against a brand inferred from the top-click row, and the API orders rows with
+        equal clicks arbitrarily — in the review's case every row had zero clicks, and a
+        homepage row past the cap became the brand and moved four split queries out of
+        the count.
+        Off a full page with no known brand the count is withheld; below the cap it
+        stands."""
+        head, _ = self._contested()
+        quiet = [((q, p), 0, i, pos) for (q, p), _c, i, pos in head]
+        full = self.analyze(self._a_full_page(*quiet))
+        self.assertNotIn("cannibalized_queries", full["summary"])
+        self.assertEqual(verdict("MS-023", full), NO_DATA)
+        short = self.analyze(self.rows(quiet))
+        self.assertEqual(verdict("MS-023", short), FAIL)
 
     def test_no_brand_row_in_a_full_page_is_not_a_brand_nobody_searched(self):
         """`searched` false makes both items N/A; over a full page the brand's rows may
