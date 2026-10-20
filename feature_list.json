@@ -361,5 +361,33 @@
     "state": "passing",
     "evidence": "commit 17ba0eb, verified 2026-10-20",
     "notes": "Found by the independent gpt-6.1-sol review of f376ca6..78aed1c (20 October): F10's HTTP-1, HTTP-10 and HTTP-13 overclaimed, and the crawl caps' convention basis failed F02 criterion 3 through --sample. Contract: docs/sprint-20261020-F13.md."
+  },
+  {
+    "id": "F14",
+    "behavior": "Every path that can be refused by the web-ports switch reports it as blocked, and indexability_matrix says when it stops at its ten-sitemap cut: hreflang_checker.py stops turning a guard refusal into unread, indexnow_checker.py carries the failed fetch's kind instead of dropping it (the runner records crash), and the matrix reports sitemap membership as unknown, not false, when sitemaps past its tenth were left unread",
+    "dependencies": [
+      "F13"
+    ],
+    "verification": "make verify-feature F=F14",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "not_started",
+    "evidence": "",
+    "notes": "Found by the gpt-6.1-sol review of 78aed1c..0d5838d (20 October), after 0.172.0's main reached GitHub; F13 narrowed HTTP-10 and HTTP-13 to partial for these. Code changes, not text: kept out of 0.172.0 by the owner's decision."
   }
 ]
