@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.172.0 — see [CHANGELOG.md](CHANGELOG.md). The HTTP specification now claims no more than the code holds: `--sample`'s own sitemap fallback no longer follows a sitemap index to another host or port, the 20 MB sitemap budget counts bytes rather than characters in all three walkers, `indexability_matrix` holds at most 50,000 sitemap URLs, and a TLS check refused by the web-ports switch reports `blocked` rather than a crash. The crawl's page and depth caps are `inherited` again: under `--sample` they still decide which pages a sampled verdict is about, and that is now written down rather than claimed solved.
+Version 0.173.0 — see [CHANGELOG.md](CHANGELOG.md). A request this audit's own guard stops — a port the web deployment does not reach, chiefly — is reported as `blocked` on every path, not as the site failing to answer or as a crash, and never as the site's defect: an IndexNow key file, a favicon, a stylesheet or a robots.txt the guard refused now leaves its item undecided instead of failing or passing it. `indexability_matrix` reports sitemap membership as unknown, and says why, when it did not read a sitemap — past its tenth, an index's children, one that did not answer, one on another host.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
