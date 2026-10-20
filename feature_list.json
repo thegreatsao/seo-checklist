@@ -358,8 +358,8 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "active",
-    "evidence": "",
+    "state": "passing",
+    "evidence": "commit 17ba0eb, verified 2026-10-20",
     "notes": "Found by the independent gpt-6.1-sol review of f376ca6..78aed1c (20 October): F10's HTTP-1, HTTP-10 and HTTP-13 overclaimed, and the crawl caps' convention basis failed F02 criterion 3 through --sample. Contract: docs/sprint-20261020-F13.md."
   }
 ]
