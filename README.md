@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.169.0 — see [CHANGELOG.md](CHANGELOG.md). LO-198 (LocalBusiness markup anywhere on the site) no longer reports a FAIL when the crawl stopped at its page or depth cap before reaching the page that carries the markup: it answers NO_DATA and says the crawl was cut short. A node found on a capped crawl still passes, and a whole site read with none still fails. 0.168.1, the release before, made the local gate leave the machine it runs on as it found it.
+Version 0.169.1 — see [CHANGELOG.md](CHANGELOG.md). No audit moves: the specification in `openspec/specs/` now says what 0.167.0–0.169.0 changed. VRD-14 states that a FAIL which is itself an absence (LO-198 over a capped crawl) is withheld, HTTP-1 and HTTP-10 name the guard's globally-routable rule, the certificate check's validated connection and the sitemap walk budgets, and a new HTTP-13 says a sitemap on another host is listed and never requested and that `SEO_STANDARD_PORTS_ONLY` holds an audit to ports 80 and 443. GOV-2's count of undefended thresholds said 160 of a total that is 163, and is now held by a test. 0.169.0, the release before, stopped LO-198 failing a site on the pages a capped crawl never read.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

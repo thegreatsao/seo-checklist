@@ -10,6 +10,46 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.169.1 — the specification says what 0.167.0–0.169.0 changed
+
+Registry version: `90ba79b14b28`, unchanged. No verdict moves and no program fetches,
+prints or sends anything it did not at 0.169.0. What changes is `openspec/specs/`: three
+releases changed what an audit fetches or answers, and their spec edits only moved counts.
+
+* **VRD-14 states the failing absence.** The requirement said a FAIL established on a
+  truncated input survives; LO-198's FAIL (`local_business_nodes gte 1`) is the finding of
+  nothing, and since 0.169.0 it answers NO_DATA over a capped crawl. The requirement now
+  says a FAIL that is itself an absence becomes NO_DATA too, with a scenario, and its
+  Reader line names `test_lo_198_does_not_fail_a_site_on_the_pages_a_capped_crawl_skipped`.
+  Which items have that shape is now held by a census rather than by prose:
+  `test_a_failing_absence_over_a_capped_input_is_known_by_name` lists every item over a
+  script that can report a cap whose rule is a floor on a count — BL-086 and BL-087, which
+  count the whole links export the target cap does not shorten, and LO-198. A fourth fails
+  the test until its script withholds the count or the test says why it need not.
+* **HTTP-1 names what 0.167.0 changed in the guard.** It listed the refused ranges without
+  shared address space (100.64.0.0/10), which the guard has refused since 0.167.0 by
+  requiring `is_global`, and said nothing of a checker with a socket of its own; it now
+  says `tls_certificate.py` connects to the addresses the guard validated. Two scenarios,
+  and the Reader line names the tests that hold them.
+* **HTTP-10 covers a walk, not only a response.** A sitemap walk stops at its byte budget
+  (20 MB) and its URL budget (50,000) and names what it cut; a gzipped sitemap is expanded
+  no further than 50 MB. Both were 0.167.0's, the matrix's budget 0.168.0's.
+* **HTTP-13 is new: what the audited site names is not a licence to ask anyone else.** A
+  sitemap on another host is listed in `off_host_sitemaps` and never requested (0.167.0),
+  and `SEO_STANDARD_PORTS_ONLY` holds every request to ports 80 and 443 (0.168.0). What
+  stays open is written into the requirement: a same-host sitemap that redirects elsewhere
+  is followed, each hop guarded.
+* **The specification's totals move by that one requirement**: 157 → 158 requirements,
+  132 → 133 enforced (`tests/spec-debt.json`, ROADMAP); partial 20, unread 1, bounded 4
+  unchanged.
+* **GOV-2 said "66 of 160"; the tree counts 163.** So did the governance and evidence open
+  questions. `tests/test_prose_counts.py` bound the GOV-1 paragraph's numbers and none of
+  these four sentences, which is why it stayed green after 0.167.0 moved the total. All
+  four are bound now, and the new claims were seen red on 160 first.
+* **So this does not recur**: the sprint contract template asks which spec requirements a
+  feature touches, and `AGENTS.md` says a change to specified behaviour edits its
+  requirement in the same commit as the code.
+
 ## 0.169.0 — LO-198 no longer fails a site on the pages a capped crawl never read
 
 Registry version: `90ba79b14b28`, unchanged. **One verdict moves: LO-198 (`high`) on a
