@@ -386,8 +386,8 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "active",
-    "evidence": "",
+    "state": "passing",
+    "evidence": "commit 50accb2, verified 2026-10-20",
     "notes": "Found by the gpt-6.1-sol review of 78aed1c..0d5838d (20 October), after 0.172.0's main reached GitHub; F13 narrowed HTTP-10 and HTTP-13 to partial for these. Code changes, not text: kept out of 0.172.0 by the owner's decision."
   }
 ]
