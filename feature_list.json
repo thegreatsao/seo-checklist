@@ -329,8 +329,8 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "active",
-    "evidence": "",
+    "state": "passing",
+    "evidence": "commit 67c961c, verified 2026-10-20",
     "notes": "Found by the gpt-6.1-sol re-review of F09 (0.170.0, unpushed): the crawl caps' convention basis claimed more than the code held. Contract: docs/sprint-20261020-F12.md."
   }
 ]
