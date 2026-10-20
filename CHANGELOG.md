@@ -10,6 +10,50 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.170.0 — the crawl's caps leave `inherited`, and three items stop judging the pages a capped crawl skipped
+
+Registry version: `90ba79b14b28`, unchanged. **Three verdicts move, each only over a crawl
+that stopped at its page or depth cap: CI-018 (`medium`) was PASS and is NO_DATA; CI-008
+and AR-162 (both `high`) could be FAIL for pages the crawl never read and are NO_DATA.** On
+a crawl that read the whole site nothing moves.
+
+* **Every crawl-fed item was read again** before `site_crawl.py`'s `DEFAULT_MAX_PAGES` (100)
+  and `DEFAULT_DEPTH` (3) could leave `inherited`. 0.167.1 kept them there for LO-198 alone;
+  0.169.0 fixed LO-198, and this reading found three more.
+* **CI-008 and AR-162 counted orphans the cap made.** An orphan is a crawled page no page
+  *read* links to. The crawl starts from the sitemap's URLs as well as the entry, so on a
+  capped crawl a page reached from the sitemap was an orphan whenever the page linking to
+  it was past the cap, and CI-008 failed the site for it. AR-162 read the same finding, and
+  a site-wide average of internal links taken over whichever pages the cap let in.
+  `link_profile.py` now withholds the orphan count over a truncated crawl, says why, and
+  raises neither finding; a dead end — a page read with no outbound link — still counts.
+  Seen FAIL first on a served three-page site with a two-page budget.
+* **CI-018 passed clean off part of the site.** `server_log_audit.py` compares the log with
+  the URLs the crawl found robots.txt refusing, and a capped crawl finds fewer of them; it
+  never read the crawl's `truncated`. A truncated inventory is now a fifth caveat
+  (`inventory_truncated`), so the runner withholds the PASS, and a refused path crawlers
+  did request still stands.
+* **The audit crawls with the constants.** The runner's `--crawl-depth` and
+  `--crawl-max-pages` defaults were the literals 3 and 100, so the two constants decided
+  only a crawl run by hand. They now read `site_crawl`'s, with the same values.
+* **Four numbers leave `inherited`.** `DEFAULT_MAX_PAGES` and `DEFAULT_DEPTH` are
+  `convention`: each line names what it trades (requests against how often a site-wide
+  answer is withheld) and what it still decides (a count over the pages read is a floor;
+  five items have a warn band). `tests/test_coverage_caps.py` `TheCrawlCaps` drives both at
+  their own values, one step past and one short, over served sites, and was seen red with
+  the crawl's flag broken. `MINHASH_FUNCTIONS` and `SHINGLE_WORDS` are `presentation`: no
+  rule reads a near-duplicate field, and a test fails when one does. `inherited` goes from
+  66 of 163 to 62 of 161, `convention` 66 → 68, `presentation` 13 → 15.
+* **Spec**: `openspec/specs/verdicts/` VRD-14 names a count of things each defined by an
+  absence (an orphan) among the FAILs a truncated input withholds, with a scenario;
+  `evidence`'s caveat table lists the new caveat.
+* **Reviewed by a second model** (Codex, read-only) before release: six findings marked
+  confirmed. Two fixed (an ambiguous count in a basis line; `link_profile.py`'s plain-
+  text output now names the withheld count), two already written into the basis lines (a
+  warn band over a capped crawl; `--sample`), one filed for the next batch (CI-018's
+  sitemap side reads a sitemap set 0.167.0's walk budgets can cut), and one not a
+  problem.
+
 ## 0.169.1 — the specification says what 0.167.0–0.169.0 changed
 
 Registry version: `90ba79b14b28`, unchanged. No verdict moves and no program fetches,
