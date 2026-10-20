@@ -248,5 +248,33 @@
     "state": "not_started",
     "evidence": "",
     "notes": "ROADMAP 'What 1.0 requires' item 1, after F02's batch; 66 at 0.167.1 (tools/audit_thresholds.py). Nine Search Console numbers are blocked on multi-market data; ROW_LIMIT, DEFAULT_MAX_PAGES and DEFAULT_DEPTH wait on F08 and a KW-070/GO-139 fix. Spans sessions: one batch per sprint contract."
+  },
+  {
+    "id": "F10",
+    "behavior": "openspec/specs describes what 0.167.0-0.169.0 changed, and a feature that changes specified behaviour names the requirement IDs it touches",
+    "dependencies": [
+      "F01"
+    ],
+    "verification": "make verify-feature F=F10",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "active",
+    "evidence": "",
+    "notes": "Found 2026-10-20: 0.167.0, 0.168.0 and 0.169.0 changed behaviour without touching a spec, and GOV-2's count was stale. Contract: docs/sprint-20261020-F10.md. Separate from F04 (the partial requirements)."
   }
 ]

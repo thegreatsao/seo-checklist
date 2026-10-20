@@ -106,11 +106,11 @@ paragraph since 0.145.0 (`evidence` EVD-6 says what their going unread had cost)
 `inherited` licenses no conclusion about whether a number is right. It is the recorded
 absence of a decision, and it MUST NOT be cited as anything else.
 
-**Why:** the gate passes with 66 of 160 undefended, which is fine as an accounting and
+**Why:** the gate passes with 66 of 163 undefended, which is fine as an accounting and
 dangerous as a standard. The category exists so the debt is countable, and it stops working
 the moment it reads as a fourth kind of justification.
 **Reader:** partial. `tests/test_inherited_basis.py` holds the two halves a test can
-reach. The count may not rise — 66 of 160 today, ratcheted downward, which is the second
+reach. The count may not rise — 66 of 163 today, ratcheted downward, which is the second
 scenario as an assertion. And no `inherited` line may argue its number: a declaration
 carrying a URL or a phrase like "the industry standard" has recorded an absence where
 there was a decision, which is the same error as the reverse and harder to notice because
@@ -934,7 +934,7 @@ the Workbench session before changing a name the module holds.
 ## 6. Open questions
 
 **Should `inherited` be allowed to increase?** GOV-2 says the category is an admission.
-Sixty-six of 160 is a large admission, and the gate passes at any number. A ratchet —
+At 66 of 163 it is a large admission, and the gate passes at any number. A ratchet —
 `inherited` permitted but never permitted to rise — is the shape this tree already uses for
 other debts, costs nothing to add, and would make every new undefended constant a
 deliberate act. What would settle it: whether the count is stable enough to ratchet against,

@@ -43,7 +43,8 @@ Before touching code:
 
 `not_started → active → passing` (and `blocked`). No skipping states.
 
-1. Write a sprint contract from `templates/sprint-contract.md` to `docs/sprint-YYYYMMDD-<id>.md`.
+1. Write a sprint contract from `templates/sprint-contract.md` to `docs/sprint-YYYYMMDD-<id>.md`, naming the
+   `openspec/specs/` requirement IDs it touches (or "none" and why).
 2. Set the feature's `state` to `active`.
 3. Implement.
 4. `make verify-feature F=<id>` — the script runs the layers and is the only thing that writes `passing` and `evidence`.
@@ -120,6 +121,8 @@ Review-to-automation promotion: every new error category caught in code review b
 - One logical change per commit (atomic); the repo must be consistent after every commit.
 - Commit messages explain why, not just what.
 - Update docs in the same commit as the code they describe — no stale docs.
+- A change to specified behaviour edits its requirement in `openspec/specs/` in the same commit as the code;
+  a spec edit that only moves a count is not one (0.167.0–0.169.0 shipped that way, F10).
 - A release is two commits: `X.Y.0 code: <what changed>`, then `X.Y.0: <same>; changelog, README`, with the version
   bumped wherever it is written (`git grep` the old one), and a tag `vX.Y.0`.
 - `git config core.hooksPath .githooks` arms the pre-push hook, which runs `ci_local.py --pushed`.

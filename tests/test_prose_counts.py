@@ -152,6 +152,9 @@ CLAIMS = (
     Claim("openspec/specs/evidence/spec.md", "inherited thresholds", r"`convention`,\s+\*{0,2}(?P<n>\d+)\s+`inherited`", threshold("inherited")),
     Claim("openspec/specs/evidence/spec.md", "thresholds without basis", r"(?P<n>\d+)\s+with\s+no\s+basis", threshold("no basis")),
     Claim("openspec/specs/evidence/spec.md", "inherited debt", r"gate\s+holds\s+the\s+floor;\s+the\s+(?P<n>\d+)\s+are\s+the\s+debt", threshold("inherited")),
+    # The open question restates the totals. Unbound, it said 160 for two releases after 0.167.0 made it 163.
+    Claim("openspec/specs/evidence/spec.md", "inherited question", r"accepts\s+four\s+bases\s+and\s+(?P<n>\d+)\s+of\s+\d+", threshold("inherited")),
+    Claim("openspec/specs/evidence/spec.md", "counted question", r"accepts\s+four\s+bases\s+and\s+\d+\s+of\s+(?P<n>\d+)", threshold("counted")),
     Claim("openspec/specs/governance/spec.md", "verdict thresholds", r"It\s+counts\s+(?P<n>\d+)\s+such\s+numbers\s+at", threshold("counted")),
     Claim("openspec/specs/governance/spec.md", "standard thresholds", r"\u2014\s+(?P<n>\d+)\s+`standard`", threshold("standard")),
     Claim("openspec/specs/governance/spec.md", "measured thresholds", r"`standard`,\s+(?P<n>\d+)\s+`measured`", threshold("measured")),
@@ -159,6 +162,12 @@ CLAIMS = (
     Claim("openspec/specs/governance/spec.md", "inherited thresholds", r"`convention`,\s+\*{0,2}(?P<n>\d+)\s+`inherited`", threshold("inherited")),
     Claim("openspec/specs/governance/spec.md", "thresholds without basis", r"(?P<n>\d+)\s+without\s+a\s+basis", threshold("no basis")),
     Claim("openspec/specs/governance/spec.md", "presentation thresholds", r"plus\s+(?P<n>\d+)\s+that\s+decide\s+only\s+presentation", threshold("presentation")),
+    # GOV-2 and its open question restate GOV-1's totals; only GOV-1's paragraph was bound,
+    # so these three said 160 while the tree counted 163 (found 2026-10-20, F10).
+    Claim("openspec/specs/governance/spec.md", "GOV-2 inherited", r"(?P<n>\d+)\s+of\s+\d+\s+(?:undefended|today)", threshold("inherited"), 2),
+    Claim("openspec/specs/governance/spec.md", "GOV-2 counted", r"\d+\s+of\s+(?P<n>\d+)\s+(?:undefended|today)", threshold("counted"), 2),
+    Claim("openspec/specs/governance/spec.md", "inherited question", r"At\s+(?P<n>\d+)\s+of\s+\d+\s+it\s+is\s+a\s+large", threshold("inherited")),
+    Claim("openspec/specs/governance/spec.md", "counted question", r"At\s+\d+\s+of\s+(?P<n>\d+)\s+it\s+is\s+a\s+large", threshold("counted")),
 
     Claim("README.md", "opening registry size", r"One fixed registry of (?P<n>\d+) checks", population("items")),
     Claim("README.md", "registry contract size", r"the contract: (?P<n>\d+) items", population("items")),

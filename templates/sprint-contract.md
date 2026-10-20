@@ -8,6 +8,7 @@
 **Date:** YYYY-MM-DD
 **Feature ID:** FXX
 **Estimated sessions:** N
+**Spec requirements touched:** <IDs from openspec/specs/, e.g. VRD-14, HTTP-1 — or "none" and why no specified behaviour changes>
 
 ---
 

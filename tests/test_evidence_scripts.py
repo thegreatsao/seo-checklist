@@ -7401,6 +7401,24 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
         payload = {"local_business_nodes": 2, "truncated": True}
         self.assertEqual(self._graded(item, payload)["status"], PASS)
 
+    def test_a_failing_absence_over_a_capped_input_is_known_by_name(self):
+        """VRD-14's other half (F10). An item that fails when a count of something
+        found stays under a floor fails by absence, and a cap can fake that FAIL the
+        way it fakes a clean PASS. The runner cannot tell which floors those are, so
+        the scripts withhold the count, and this pins which items have the shape:
+        BL-086 and BL-087 count the whole links export, which the target cap does not
+        shorten; LO-198 counts LocalBusiness nodes over the crawl, and
+        `local_seo_checker.py` withholds it when the crawl was truncated (0.169.0).
+        A new member means a new script that must withhold its count or say why not."""
+        reporters = self._reporters()
+        ids = sorted(i["id"] for i in ITEMS.values()
+                     if (i.get("check") or {}).get("assert")
+                     and i["check"]["script"] in reporters
+                     and {"gte", "gt", "len_gte"} & set(i["check"]["assert"]))
+        self.assertEqual(ids, ["BL-086", "BL-087", "LO-198"],
+                         "the set moved; say why the new member's FAIL cannot be "
+                         "faked by its cap, or withhold its count")
+
     def test_the_flag_is_read_off_the_output_and_nothing_else(self):
         self.assertTrue(input_truncated({"truncated": True}))
         self.assertFalse(input_truncated({"truncated": False}))

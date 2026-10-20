@@ -584,7 +584,7 @@ asked about". Today it either omits them silently or reports them as findings. W
 settle it: whether any current rule would change its verdict if it knew, which is
 answerable from the catalogue.
 
-**Is `inherited` a basis or the absence of one?** EVD-6 accepts four bases and 66 of 160
+**Is `inherited` a basis or the absence of one?** EVD-6 accepts four bases and 66 of 163
 numbers claim the fourth, which means the gate passes while two in five of the thresholds
 in the tree are undefended. Treating `inherited` as a failure would redden CI today and for
 a long time; treating it as a basis is what allows the number to stay at 77 for releases at

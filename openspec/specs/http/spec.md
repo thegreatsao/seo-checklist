@@ -85,9 +85,11 @@ questions and a different `Accept` header is a different request.
 ### Requirement: HTTP-1 — a URL is validated before it is requested, and the address it validated is the address it connects to
 
 Every request MUST pass the guard first. The guard SHALL resolve the host, SHALL refuse
-the resolved address if it is private, link-local, reserved, multicast or unspecified, and
-the connection SHALL then be pinned to the address that was validated — so a name that
-resolves twice cannot answer the check with one address and the request with another.
+the resolved address unless it is globally routable — private, shared (100.64.0.0/10),
+link-local, reserved, multicast and unspecified addresses alike — and the connection SHALL
+then be pinned to the address that was validated, so a name that resolves twice cannot
+answer the check with one address and the request with another. A checker that opens a
+socket of its own SHALL connect to the addresses the guard validated, never to the name.
 
 **Why:** a validate-then-connect gap is the whole of DNS rebinding, and it turns the guard
 into decoration. The audited URL is attacker-controlled by construction: it is whatever the
@@ -99,6 +101,11 @@ connection to the public address only, and the `Host` header preserved;
 `test_redirect_refuses_a_private_second_hop_without_reusing_the_first_pin` pins the redirect
 case; `test_resolution_failure_is_refused_before_a_request` asserts that a name that does
 not resolve costs no request at all. All three read the path a checker's fetch takes.
+`test_shared_address_space_is_private_unless_the_run_allows_it` resolves three addresses
+in 100.64.0.0/10, by name and as literals, and requires a refusal without the allowance and
+a pass with it. `test_tls_certificate.ConnectsToTheValidatedAddress` resolves a name to a
+public address and then to loopback, and requires the one connection `tls_certificate.py`
+opens to go to the public address.
 
 The one request the substrate made on its own account was uncovered until 0.94.1, and it
 was uncovered because it was also unguarded: `_fetch_robots` called `requests.get`
@@ -131,6 +138,19 @@ of a redirect. An `https` target was not affected — Requests writes it as a pa
 proxy would be tunnelled through — and `test_the_target_is_the_path_whatever_the_scheme`
 asks the adapter for both.
 
+**Globally routable, from 0.167.0.** The list of refused ranges was the list
+`ipaddress` has flags for, and shared address space (RFC 6598: carrier NAT, Tailscale) is
+neither private nor reserved to it. A public audit could reach a tailnet peer of the machine
+running it. The guard now refuses any address that is not `is_global`; the range was
+already one of the allowance's networks (HTTP-2), so `--allow-private` still opens it.
+
+**A socket of its own, from 0.167.0.** `tls_certificate.py` reads the certificate over a
+socket it opens itself, since the request layer does not hand the certificate back. It
+validated the host and then let `socket.create_connection` resolve the name again, which is
+the validate-then-connect gap this requirement exists to close. It now connects to
+`safe_http.validated_addresses()`, in resolver order; the name still goes to SNI and to
+certificate matching, so what is verified is unchanged.
+
 #### Scenario: a name that answers the guard and the connection differently
 - **WHEN** a host resolves to a public address for the guard's lookup and to loopback for
   the one the transport would make
@@ -159,6 +179,18 @@ asks the adapter for both.
 - **THEN** the proxy receives no connection
 - **AND** the origin receives the request it would receive with no proxy configured: the
   path as its target, for the page, for `robots.txt` and for every hop of a redirect
+
+#### Scenario: an address in shared address space
+- **WHEN** a host resolves into 100.64.0.0/10, or the URL names such an address, and the
+  run has no private allowance
+- **THEN** the request is refused, as a private address is
+- **AND** with the allowance on it is permitted, because carrier-grade NAT is one of the
+  networks the allowance names
+
+#### Scenario: a checker with a socket of its own
+- **WHEN** a checker opens its own connection and the name would resolve differently the
+  second time
+- **THEN** the connection goes to an address the guard validated, not to a second lookup
 
 ### Requirement: HTTP-2 — the private allowance is per-run, narrower than "not public", and announced
 
@@ -673,6 +705,9 @@ reddens three.
 A response larger than the ceiling, or larger than a caller's own limit, SHALL raise rather
 than return a shortened body. A declared encoding MUST be honoured; where nothing is
 declared the bytes are sniffed, and what is found past the sniff window MUST NOT be read.
+A walk over many responses — the sitemaps a site names — SHALL stop at a budget and say
+what it left unread, and a compressed body SHALL be expanded no further than the protocol
+allows.
 
 **Why:** a truncated body is a document with its footer missing, and every checker that
 counts elements would answer confidently about a page that does not exist. The same is true
@@ -687,7 +722,24 @@ names the ceiling and the budget, drives a body past the ceiling with no caller 
 all, and exhausts the budget hop by hop — asserting in each case that the refusal states the
 number it enforced, since a cap that refuses without saying what it was is the silent
 truncation one step removed. Probed by setting both constants tenfold, which reddens the two
-that name them.
+that name them. The walk budget is held by `tests/test_sitemap_walk_bounds.py` `SizeBudget`:
+the crawl and `sitemap_checker` are each given an index of 60,000 URLs and of 36 MB, and
+must keep no more than the URL budget, stop requesting files past the byte budget, and name
+the cut (`cut` and `unvisited` in the crawl, `truncated_reason` in the checker);
+`test_the_indexability_matrix_stops_reading_sitemaps_past_its_byte_budget` holds the third
+walker; `test_a_gzipped_sitemap_is_not_decompressed_past_the_protocol_limit` expands a
+60 MB document and requires it returned invalid, saying why.
+
+**A walk has a budget, from 0.167.0.** One response was capped and a walk over many was
+not: 25 sitemaps of up to 8 MB each were read and every `<loc>` kept, and the crawl's page
+cap bounds pages fetched, not sitemap URLs held. A walk now stops reading new files once
+`SITEMAP_BYTES_BUDGET` (20 MB) has been read and keeps at most `SITEMAP_URLS_BUDGET`
+(50,000) URLs, one sitemap file's protocol maximum; `indexability_matrix` took the byte
+budget in 0.168.0, and with files left unread it reports a URL's sitemap membership as
+unknown rather than false. A `.xml.gz` body is expanded to at most the protocol's 50 MB
+(`SITEMAP_MAX_UNCOMPRESSED`), so 8 MB on the wire cannot become gigabytes in memory. The
+stop is stated the way a cap is: what was cut is named, and the checker's result is
+`truncated`, which withholds a clean verdict over it (`openspec/specs/verdicts/` VRD-14).
 
 #### Scenario: a body over the ceiling
 - **WHEN** a response grows past the caller's limit while it is being read
@@ -716,6 +768,16 @@ that name them.
 - **WHEN** a chain is longer than the configured number of hops
 - **THEN** the call raises rather than following one more, or handing back the last hop as
   though it were the destination
+
+#### Scenario: a sitemap walk past its budget
+- **WHEN** the sitemaps a site names hold more URLs than the URL budget, or more bytes than
+  the byte budget
+- **THEN** the walk keeps no more URLs than the budget and requests no new file past it
+- **AND** what it cut is named in its result, rather than the part read standing for the set
+
+#### Scenario: a compressed sitemap that expands past the protocol limit
+- **WHEN** a gzipped sitemap decompresses past 50 MB
+- **THEN** expansion stops there and the file is returned invalid, saying why
 
 ### Requirement: HTTP-11 — TLS verification is never relaxed
 
@@ -812,6 +874,67 @@ every time is one a reader learns to skip. Probed by hard-coding the recorded fi
 - **THEN** the parser each used can be read out of its own artifact
 - **AND** a report produced by the fallback parser says so on its face, which is what makes
   the disagreement diagnosable
+
+### Requirement: HTTP-13 — what the audited site names is not a licence to ask anyone else
+
+A sitemap SHALL be requested only on the audited host — its `www.` variant and the other
+scheme count as the same site, another port does not — and one named on another host,
+whether by `robots.txt` or by a sitemap index, SHALL be listed and never requested. The
+crawl and `sitemap_checker` SHALL name such sitemaps in `off_host_sitemaps`, and the
+checker's result SHALL be `truncated` while it has any. A process held to the web ports
+(`SEO_STANDARD_PORTS_ONLY`) SHALL refuse any port but 80 and 443 before the name is
+resolved, for the entry URL, every redirect hop and every discovered URL alike, and the
+refusal SHALL classify as `blocked`.
+
+**Why:** the audit also runs behind a public web form, for anyone, so the audited site and
+everything its `robots.txt` and sitemaps say is a stranger's input. A sitemap fetched on any
+public host and port made the audit a GET proxy aimed wherever a site pointed it; a page
+linking to `host:8443` had the engine connect there and report the status, a port prober
+running from the operator's address. Google accepts a sitemap declared on another host, so
+an unread one is not a defect, and a checker that said "No sitemap found" for it, or passed
+a clean set over it, would be reporting the part it read as the whole. The port rule sits in
+the guard because the guard is the one place every request passes: a same-host rule on
+redirects would not have closed it, since a page can link to the port directly.
+**Reader:** enforced. `tests/test_sitemap_walk_bounds.py` `OffHostSitemaps` hands each of
+the three walkers sitemaps on other hosts and ports and requires that none is requested:
+the crawl lists them in `off_host_sitemaps` and keeps only the audited host's URLs, the
+`www.` variant and the other scheme are requested as the same site, and `sitemap_checker`
+lists one named by `robots.txt` or by an index, does not say "No sitemap found", and is
+`truncated` naming it.
+`test_evidence_apis.SitemapReconciliation.test_a_walk_cut_by_its_budget_or_by_host_withholds_the_reverse_direction`
+reads what GO-137 does with such a walk. `test_safe_http.TheWebDeploymentReachesOnlyTheWebPorts`
+holds the switch in four directions: another port is refused with no lookup made and
+classifies as `blocked`, a redirect to another port is not followed, both web ports are
+fetched whether named or not, and with the switch off any port is fetched.
+
+**Not held, and said here so that it is not found again as a surprise.** A sitemap on the
+audited host that redirects elsewhere is still followed, as every fetch follows a redirect,
+each hop through the guard (HTTP-1); the site can make the audit request a public URL that
+way. With the switch set, requests to other public sites on the web ports remain, because
+checking outbound links means making them. The switch is off by default, so an operator
+auditing a staging site on `:8080` by hand is not refused; a public deployment sets it.
+`indexability_matrix` skips an off-host sitemap without listing it, and no item reads its
+sitemap list.
+
+#### Scenario: a sitemap named on another host
+- **WHEN** `robots.txt` or a sitemap index names a sitemap on another host or port
+- **THEN** it is not requested, and the crawl and the checker list it in `off_host_sitemaps`
+- **AND** the checker does not say no sitemap was found, and its clean verdict is withheld
+
+#### Scenario: the same site under another name
+- **WHEN** a sitemap sits on the `www.` variant of the audited host, or under the other
+  scheme
+- **THEN** it is requested as the audited site's own
+
+#### Scenario: a process held to the web ports
+- **WHEN** `SEO_STANDARD_PORTS_ONLY` is set and a URL, a redirect hop or a discovered link
+  names a port other than 80 or 443
+- **THEN** the request is refused before the name is resolved, and the failure is `blocked`
+- **AND** a link refused this way is reported unchecked, not broken (HTTP-9)
+
+#### Scenario: the switch is off
+- **WHEN** `SEO_STANDARD_PORTS_ONLY` is not set
+- **THEN** a URL on any port is requested, through the guard as before
 
 ## 4. Invariants
 
@@ -1001,14 +1124,19 @@ the error this method leaves open, and the halves are where to look first.
 
 | | requirements |
 |---|---|
-| **enforced** | HTTP-1, HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-7, HTTP-8, HTTP-9, HTTP-10, HTTP-11, HTTP-12 |
+| **enforced** | HTTP-1, HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-7, HTTP-8, HTTP-9, HTTP-10, HTTP-11, HTTP-12, HTTP-13 |
 | **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-H2 and INV-H3 enforced; INV-H1 and INV-H4 partial.
 
-**Twelve enforced, nothing partial, nothing unread, of twelve.**
+**Thirteen enforced, nothing partial, nothing unread, of thirteen.**
+
+HTTP-13 joined on 20 October 2026 (F10), written for behaviour 0.167.0 and 0.168.0 had
+shipped with its tests and without a requirement: what a site's own word may make the
+audit request. It entered `enforced` because each clause was already held by a test seen
+red on the code before it, not by a probe run for this document.
 
 Closed on 6 September 2026, and the shape of what was left is worth recording. Nine of the
 ten `partial` rows were not missing tests of their mechanisms — those were thorough. What

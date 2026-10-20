@@ -617,18 +617,25 @@ worst result hides a finding already measured.
 - **WHEN** every sampled page is undecided
 - **THEN** the item stays undecided
 
-### Requirement: VRD-14 — truncation withholds only a clean absence assertion
+### Requirement: VRD-14 — truncation withholds only a verdict that rests on an absence
 
 When an assertion passes because the sought defect is absent but its input is marked
 truncated, that `PASS` SHALL become `NO_DATA`. A `WARN` or `FAIL` established in the part that
-was read survives, and its evidence says the reported measurement is a floor.
+was read survives, and its evidence says the reported measurement is a floor. A `FAIL` that is
+itself an absence — a count of something required, found under its floor — is not established
+by the part that was read, and over a truncated input it SHALL become `NO_DATA` too.
 
 **Why:** a truncated input cannot prove that nothing exists beyond its cap, but a defect
 already found remains a defect. Withholding both would discard evidence; keeping both
 would turn an incomplete search into a clean bill of health.
 **Reader:** enforced. Tests census every absence-passing assertion over capped input,
 pin the `PASS` to `NO_DATA` transition, preserve both `WARN` and `FAIL`, and require floor
-evidence for the surviving non-pass.
+evidence for the surviving non-pass. The failing absence is held the same two ways:
+`test_a_failing_absence_over_a_capped_input_is_known_by_name` censuses every item over a
+script that can report a cap whose rule is a floor on a count, and
+`tests/test_evidence_scripts.py::test_lo_198_does_not_fail_a_site_on_the_pages_a_capped_crawl_skipped`
+serves a two-page site, crawls one page of it, and reads LO-198 as `NO_DATA` with the reason
+in its evidence, `PASS` when the node is on the page read, and `FAIL` over the whole site.
 
 **The withheld verdict says why, from 0.97.0.** Until then the sentence read *"this says
 nothing about what the cap left out"* whatever had happened, which was true of every
@@ -640,6 +647,18 @@ directions by `test_the_withheld_verdict_names_what_actually_stopped_it` and
 `test_the_cap_wording_survives_where_a_cap_is_what_happened`. The requirement is unchanged:
 what moved is whether its own evidence describes the case it is about.
 
+**A `FAIL` can be an absence too, from 0.169.0.** The clause above was written for a
+defect found, and LO-198 is not one: `local_business_nodes gte 1` fails by finding no
+LocalBusiness node, so on a crawl stopped at its page or depth cap the markup on a page never
+read was reported as missing from the site. The runner does not decide this case, because it
+cannot tell which floors more reading could only raise — CI-005, KW-070 and GO-139 assert
+`truthy` on values that reading more does not make true. The script that knows its count is
+an absence withholds it: `local_seo_checker.py` emits no `local_business_nodes` when the crawl
+was truncated and no node was found, says why in `truncated_reason`, and the runner reads the
+missing key as `NO_DATA` with that reason in its evidence. Of the items over a script that can
+report a cap, three fail on a floor: BL-086 and BL-087 count the whole links export, which the
+cap on checked targets does not shorten, and LO-198 is the one a cap could fake.
+
 #### Scenario: a clean bill of health over a capped search
 - **WHEN** an assertion passes by finding none of the thing it forbids, and the input
   says it was truncated
@@ -648,6 +667,13 @@ what moved is whether its own evidence describes the case it is about.
 #### Scenario: a defect found in the part that was read
 - **WHEN** a `WARN` or `FAIL` was established before the cap
 - **THEN** it survives, and its evidence says the reported measurement is a floor
+
+#### Scenario: a required thing not found in the part that was read
+- **WHEN** an assertion fails because a count of something it requires is under its floor,
+  and the input says it was truncated
+- **THEN** the script withholds the count and the item is `NO_DATA`, naming why
+- **AND** the same thing found in the part that was read still passes, and an input read
+  in full with none of it still fails
 
 #### Scenario: a pass by presence
 - **WHEN** an item passes because it found something it requires, over a truncated input
