@@ -1169,6 +1169,50 @@ class Cannibalization(unittest.TestCase):
                              source="published")
         self.assertEqual(self.brand_verdicts(short), {"KW-070": PASS, "GO-139": PASS})
 
+    def _contested(self, far=False):
+        """Four non-branded queries, each on two pages at positions 4.0 and 4.2: four
+        contests. `far` adds a third page per query at position 20, which the API
+        sorts after the filler (fewer clicks), so a full page never reads it."""
+        rows = []
+        for q in range(4):
+            rows += [((f"widget {q}", f"https://example.com/a{q}"), 5, 120, 4.0),
+                     ((f"widget {q}", f"https://example.com/b{q}"), 5, 120, 4.2)]
+        tail = ([((f"widget {q}", f"https://example.com/c{q}"), 0, 30, 20.0)
+                 for q in range(4)] if far else [])
+        return rows, tail
+
+    def test_a_contest_count_off_a_full_page_is_withheld(self):
+        """F11's review of batch 4: `contested_queries` counts queries whose pages sit
+        within three positions, and a page past the cap can widen the spread and end a
+        contest, so a count off a full page is not a floor: KW-071 FAILed four contests
+        the whole window has none of. Over a full page it says why it cannot answer;
+        below the cap the same four contests still FAIL."""
+        head, _ = self._contested()
+        full = self.analyze(self._a_full_page(*head), brand=["Fixture Bakery"])
+        self.assertTrue(full["truncated"])
+        self.assertNotIn("contested_queries", full["summary"])
+        self.assertEqual(verdict("KW-071", full), NO_DATA)
+        self.assertIn(str(self.mod.ROW_LIMIT), full["truncated_reason"])
+        head, tail = self._contested(far=True)
+        whole = self.analyze(self.rows(head + tail), brand=["Fixture Bakery"])
+        self.assertEqual(verdict("KW-071", whole), PASS,
+                         "the control: the whole window has no contest")
+        short = self.analyze(self.rows(head), brand=["Fixture Bakery"])
+        self.assertEqual(verdict("KW-071", short), FAIL)
+
+    def test_a_split_count_off_a_full_page_is_a_floor_and_stands(self):
+        """The other count is a floor: a page past the cap only adds to a query's
+        pages, and the brand a spread is classified against is the operator's, the
+        site's, or inferred from the top-click row, which the API's clicks-descending
+        order always returns. So MS-023's FAIL off a full page stands, as VRD-14 asks
+        of a defect found in the part read."""
+        head, _ = self._contested()
+        for brand in (["Fixture Bakery"], None):
+            with self.subTest(brand=brand):
+                full = self.analyze(self._a_full_page(*head), brand=brand)
+                self.assertEqual(full["summary"]["cannibalized_queries"], 4)
+                self.assertEqual(verdict("MS-023", full), FAIL)
+
     def test_no_brand_row_in_a_full_page_is_not_a_brand_nobody_searched(self):
         """`searched` false makes both items N/A; over a full page the brand's rows may
         be past the cap, so that is not known either."""

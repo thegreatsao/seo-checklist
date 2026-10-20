@@ -675,7 +675,11 @@ full page a branded row past the cap could change both, or make an unsearched br
 `branded` over a truncated read and says why in `branded.reason`, which the runner prints with
 the `NO_DATA`. Held by `test_a_branded_answer_off_a_full_page_of_rows_is_withheld` and
 `test_no_brand_row_in_a_full_page_is_not_a_brand_nobody_searched`, each with the same rows below
-the cap as control.
+the cap as control. The review of that change found the same shape in a count: KW-071 counts
+queries whose pages sit within three positions, and a page past the cap can widen a spread and
+end a contest, so its count off a full page is not a floor and the script withholds it
+(`test_a_contest_count_off_a_full_page_is_withheld`, whose whole-window control passes); MS-023's
+count of split queries is a floor — a page only adds to a split — and its FAIL stands.
 
 **And a count can be of absences, from 0.170.0.** The census above reads the rule's operator,
 and CI-008 (`orphan_pages.count eq 0`) is outside it: each page it counts is defined by a

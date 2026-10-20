@@ -710,7 +710,9 @@ human-facing 25-entry cap
 `branded.ranks_first` — bool
 `branded.homepage_ranks_first` — bool — both of the above
 `summary.cannibalized_queries` — int
-`summary.contested_queries` — int
+`summary.contested_queries` — int — absent over a full page of rows (`truncated`, 0.174.0):
+  a page past the cap can end a contest, so the count is not a floor; `truncated_reason`
+  says why
 `issues[]` — array
 `error` — str | null
 

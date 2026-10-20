@@ -82,13 +82,15 @@ HIGH_SEVERITY_IMPRESSIONS = 100
 
 # basis: convention — 5000 query/page rows, one request with no `startRow` (F11). The
 #  Search Analytics API returns up to 25,000 a request and pages past that, so the number
-#  is a request budget, not the API's. Past it no answer it could decide stands: MS-023
-#  and KW-071 pass by absence and the runner withholds them over `truncated`, and
-#  KW-070 and GO-139, whose `truthy` answers the runner cannot withhold, lose them here —
-#  the script drops `searched`, `ranks_first` and `homepage_ranks_first` from `branded`
-#  and says why (until F11 the branded query and its page were picked from the rows read).
-#  So moving it trades how many properties these four items answer for against one
-#  request, never which answer they give; paging would answer more
+#  is a request budget, not the API's. At it (a full page: the window may hold more) no
+#  answer it could decide stands. MS-023's PASS is withheld by the runner and its WARN or
+#  FAIL is a floor, since a row past the cap only adds a page to a split. KW-071's count
+#  is withheld by the script, since a page past the cap can widen a contest's spread and
+#  end it. KW-070 and GO-139, whose `truthy` answers the runner cannot withhold, lose
+#  `searched`, `ranks_first` and `homepage_ranks_first` here, with `branded.reason` (until
+#  F11 the branded query and its page were picked from the rows read). So moving it
+#  trades how many properties these four items answer for against one request, never
+#  which answer they give; paging would answer more
 ROW_LIMIT = 5000
 # basis: convention — 10 impressions, present at import (F11). A page under it is not
 #  counted among the pages sharing a query, which decides MS-023 and KW-071: two pages
@@ -583,9 +585,9 @@ def analyze(site_url: str, credentials: str, days: int,
         for key in ("searched", "ranks_first", "homepage_ranks_first"):
             result["branded"].pop(key, None)
         result["branded"]["reason"] = (
-            f"the window has more query/page rows than the {ROW_LIMIT} one request "
-            f"returns, so the brand's most-searched query and the page that owns it "
-            f"may be among the rows not read")
+            f"the request returned a full page of {ROW_LIMIT} query/page rows, so the "
+            f"window may hold more, and the brand's most-searched query and the page "
+            f"that owns it may be among them")
     spreads = find_query_spreads(rows, alternate_urls)
     if brand_names:
         result["spread_brand"] = {"source": brand_source, "names": brand_names}
@@ -623,6 +625,16 @@ def analyze(site_url: str, credentials: str, days: int,
         "cannibalized_queries": len(cannibalized_all),
         "contested_queries": len(contested_all),
     }
+    if result["truncated"]:
+        # Off a full page of rows (F11's review of batch 4). A split is a floor: a row
+        # past the cap only adds a page to a query, and the brand spreads are sorted
+        # against is supplied, published, or the top-click row the API returns first.
+        # A contest is not: a page past the cap can widen a query's position spread
+        # and end it, so KW-071's count is withheld, not read as a floor.
+        result["summary"].pop("contested_queries")
+        result["truncated_reason"] = (
+            f"the request returned a full page of {ROW_LIMIT} query/page rows, so the "
+            f"window may hold more")
     result["queries"], result["queries_truncated"] = _query_evidence(
         rows, alternate_urls, spread_brand)
 
