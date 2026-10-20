@@ -18,7 +18,7 @@ try:
 except ImportError:
     from scripts.seo_common import read_source, load_html, parse_html
 
-# basis: measured — corpus=tools/calibration/mobile-viewport.json (StatCounter worldwide mobile screen resolutions, 2025-09..2026-09, CSS pixels); date=2026-10-20; method=the narrowest viewport width the list holds, 360, a quarter of its share, since a fixed width above it overflows every phone that wide. It was 390 (F11): 48.9% of the list is narrower, so a 361-390px column passed MB-100 while scrolling sideways on half the phones listed. The list folds a third of its share into "Other", and the rule was chosen after the earlier value was checked against it.
+# basis: measured — corpus=tools/calibration/mobile-viewport.json (StatCounter worldwide mobile screen resolutions, 2025-09..2026-09, CSS pixels); date=2026-10-20; method=the narrowest viewport width the list holds, 360, a quarter of its share, since a fixed width above it overflows every phone that wide. It was 390 (F11), so a 361-390px column passed MB-100 while overflowing on 25.7% (at 361px) to 48.9% (at 390px) of the listed share, which StatCounter counts in page views, not phones. The list folds a third of its share into "Other", and the rule was chosen after the earlier value was checked against it.
 MAX_FIXED_WIDTH_PX = 360
 
 def _static_checks(source: str, timeout: int = 15) -> dict:

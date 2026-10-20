@@ -12,23 +12,29 @@ the four signal tables are forty-odd weights that a corpus of this size cannot f
 one; they are measured here only as a whole, through the answer they produce.
 
 The corpus is a fixed list of public homepages, each labelled with the kind of site it
-plainly is. **The labels are a person's judgement**, which is the stated limitation: a
-SaaS company's blog-heavy homepage, a publisher that sells, a restaurant that ships — the
-list avoids the ambiguous ones rather than resolving them, so it measures the detector on
-clear cases and says nothing about borderline ones. Only scores and fired signal names
-are stored, never page content.
+is. **The labels are a person's judgement**, which is the stated limitation, and some are
+ambiguous: three restaurants labelled `local` also run an online shop, and the detector
+answering `ecommerce` for them is arguably right. Only scores and fired signal names are
+stored, never page content.
 
-The selection rule, declared before measuring: a wrong narrowing (a profile other than
-`default` that is not the site's kind) costs items that apply, while a missed one costs
-nothing but scope the operator can still choose, so MIN_SCORE is the smallest value with
-the fewest wrong narrowings. `--check` reads only the committed report and the literal
-constant; it does not fetch and does not import the detector.
+The cost the rule weighs is items lost: an answer whose profile excludes an item the
+labelled kind's profile keeps makes an applicable item N/A. A wrong answer that excludes
+nothing more (`ecommerce` excludes nothing, like `default`) costs nothing but a label, and
+an abstention costs only scope the operator can still choose. The rule, declared before
+the first measurement and corrected after F11's review (which found the first version
+counting every wrong label as a lost item): MIN_SCORE is the smallest value with the
+fewest harmful narrowings. The exclusions are taken from the runner's `profile_excludes`
+at measuring time and stored. `--check` reads only the committed report and the literal
+constants; it does not fetch and does not import the detector. It fails when the signal
+tables have changed since the scores were taken, since the stored scores then describe a
+different detector.
 """
 from __future__ import annotations
 
 import python_floor  # noqa: F401
 
 import argparse
+import ast
 import hashlib
 import json
 import os
@@ -48,7 +54,16 @@ DETECTOR = os.path.join(SCRIPTS, "detect_profile.py")
 PROFILES = literal_constants(DETECTOR, {"PROFILES"},
                              "could not read PROFILES: {missing}")["PROFILES"]
 SWEEP = range(1, 13)
-SELECTION_RULE = "smallest MIN_SCORE with the fewest wrong narrowings"
+SELECTION_RULE = "smallest MIN_SCORE with the fewest harmful narrowings"
+
+
+def _tables() -> set[str]:
+    """Every `*_SIGNALS` table the detector assigns, and PROFILES, read off its source."""
+    with open(DETECTOR, encoding="utf-8") as fh:
+        tree = ast.parse(fh.read(), filename=DETECTOR)
+    names = {target.id for node in tree.body if isinstance(node, ast.Assign)
+             for target in node.targets if isinstance(target, ast.Name)}
+    return {name for name in names if name.endswith("_SIGNALS")} | {"PROFILES"}
 
 # Labelled by what the site plainly is; `default` is a site none of the five fits.
 SITES = (
@@ -110,26 +125,67 @@ def answer(scores: dict, min_score: int) -> str:
     return best if best_score >= min_score else "default"
 
 
-def sweep(rows: list[dict]) -> list[dict]:
+def signature() -> str:
+    """The detector the scores describe: its signal tables, as written."""
+    tables = literal_constants(DETECTOR, _tables(), "could not read the tables: {missing}")
+    blob = json.dumps({k: tables[k] for k in sorted(tables)}, sort_keys=True, default=list)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
+def sweep(rows: list[dict], excludes: dict) -> list[dict]:
     out = []
     for value in SWEEP:
-        correct = wrong = missed = 0
+        correct = harmful = wrong_label = abstained = 0
         for row in rows:
             got = answer(row["scores"], value)
             if got == row["label"]:
                 correct += 1
-            elif got == "default":
-                missed += 1
+                continue
+            if got == "default":
+                abstained += 1
             else:
-                wrong += 1
+                wrong_label += 1
+            if set(excludes[got]) - set(excludes[row["label"]]):
+                harmful += 1
         out.append({"min_score": value, "correct": correct,
-                    "wrong_narrowings": wrong, "missed": missed})
+                    "harmful_narrowings": harmful, "wrong_label": wrong_label,
+                    "abstained": abstained})
     return out
 
 
 def select(table: list[dict]) -> int:
-    fewest = min(row["wrong_narrowings"] for row in table)
-    return min(row["min_score"] for row in table if row["wrong_narrowings"] == fewest)
+    fewest = min(row["harmful_narrowings"] for row in table)
+    return min(row["min_score"] for row in table if row["harmful_narrowings"] == fewest)
+
+
+def profile_exclusions() -> dict:
+    """Which items each profile makes N/A, from the runner, at measuring time."""
+    sys.path.insert(0, SCRIPTS)
+    import checklist_runner as runner
+    with open(runner.REGISTRY, encoding="utf-8") as fh:
+        items = json.load(fh)["items"]
+    return {name: sorted(runner.profile_excludes(items, profile))
+            for name, profile in runner.all_profiles().items()}
+
+
+def derived(rows: list[dict], excludes: dict) -> dict:
+    table = sweep(rows, excludes)
+    return {"sweep": table, "selected_min_score": select(table),
+            "profile_excludes": excludes, "detector_signature": signature()}
+
+
+def description() -> dict:
+    """What the report says about how it was made, the same on a measure and a rescore."""
+    return {
+        "method": ("fetch each labelled homepage once through lib.safe_http, score it with "
+                   "detect_profile.detect, and re-derive the answer at every MIN_SCORE in "
+                   f"{SWEEP.start}..{SWEEP.stop - 1}; a harmful narrowing is an answer whose "
+                   "profile excludes an item the label's profile keeps; " + SELECTION_RULE),
+        "limitation": ("labels are a person's judgement, and three restaurants labelled local "
+                       "also run a shop, so ecommerce for them is arguably right; one fetch "
+                       "per site, so a page that changes moves its row; 39 sites"),
+        "selection_rule": SELECTION_RULE,
+    }
 
 
 def measure() -> dict:
@@ -154,23 +210,15 @@ def measure() -> dict:
                      "sha256": hashlib.sha256(html.encode("utf-8", "replace")).hexdigest(),
                      "scores": found["scores"],
                      "signals": {p: s for p, s in found["signals"].items() if s}})
-    table = sweep(rows)
     return {
         "generated": datetime.now(timezone.utc).date().isoformat(),
-        "method": ("fetch each labelled homepage once through lib.safe_http, score it with "
-                   "detect_profile.detect, and re-derive the answer at every MIN_SCORE in "
-                   f"{SWEEP.start}..{SWEEP.stop - 1}; {SELECTION_RULE}"),
-        "limitation": ("labels are a person's judgement on clear cases; borderline sites "
-                       "are left out, so this says nothing about them; one fetch per site, "
-                       "so a page that changes moves its row"),
-        "selection_rule": SELECTION_RULE,
+        **description(),
         "sites": rows,
         "unread": unread,
-        "sweep": table,
-        "selected_min_score": select(table),
+        **derived(rows, profile_exclusions()),
         # What the tree runs with, which is a decision recorded beside the rule's pick
-        # rather than assumed to be it (F11: the rule picks a value at which the
-        # detector almost always answers `default`).
+        # rather than assumed to be it (F11: adopting the pick moves `--profile auto`
+        # verdicts, and that is the owner's decision).
         "in_force_min_score": literal_constants(
             DETECTOR, {"MIN_SCORE"}, "could not read MIN_SCORE: {missing}")["MIN_SCORE"],
     }
@@ -179,8 +227,11 @@ def measure() -> dict:
 def check() -> int:
     with open(REPORT, encoding="utf-8") as fh:
         report = json.load(fh)
-    table = sweep(report["sites"])
+    table = sweep(report["sites"], report["profile_excludes"])
     problems = []
+    if report["detector_signature"] != signature():
+        problems.append("the detector's signal tables changed since the scores were taken; "
+                        "measure again")
     if table != report["sweep"]:
         problems.append("the sweep no longer follows from the stored scores")
     chosen = select(table)
@@ -203,10 +254,20 @@ def check() -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--rescore", action="store_true",
+                    help="re-derive the sweep and exclusions from the stored scores, "
+                         "without fetching")
     a = ap.parse_args()
     if a.check:
         return check()
-    report = measure()
+    if a.rescore:
+        with open(REPORT, encoding="utf-8") as fh:
+            report = json.load(fh)
+        report.update(derived(report["sites"], profile_exclusions()), **description())
+        for stale in ("wrong_narrowings",):
+            report.pop(stale, None)
+    else:
+        report = measure()
     with open(REPORT, "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2, ensure_ascii=False, sort_keys=True)
         fh.write("\n")

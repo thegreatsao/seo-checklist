@@ -907,7 +907,7 @@
       "state": "open"
     },
     "threshold-declarations-unjudged": {
-      "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants (presentation since 0.170.0: no rule reads a near-duplicate field) and the three detect_profile tables as inherited, DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and nineteen module-level numeric constants carry no basis and are beyond the name-based scan.",
+      "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants (presentation since 0.170.0: no rule reads a near-duplicate field) and the three detect_profile tables as inherited (convention since F11, with the detector measured as a whole), DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and nineteen module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
         "basis": {
           "convention": 93,

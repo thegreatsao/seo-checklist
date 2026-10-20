@@ -476,7 +476,11 @@ than a document.
 `--check`, and until now **not one of them ran in CI** — the workflow did not mention
 calibration at all. The mechanism had been built and never connected. All four were run
 while writing this requirement, all four passed in about a second each, and a CI step now
-runs them (Appendix A.1).
+runs them (Appendix A.1). F11 (0.174.0) added three, run by the same step and by
+`tests/test_calibration_reports.py`: phone viewport widths behind `MAX_FIXED_WIDTH_PX`, a
+labelled extraction benchmark behind `MIN_PARAGRAPH_WORDS`, and labelled homepages behind
+`detect_profile`'s `MIN_SCORE` — the last records the value in force beside the one its rule
+selects, and fails when the signal tables change under its stored scores.
 
 #### Scenario: a calibration report and its constant
 - **WHEN** a report justifies a live constant

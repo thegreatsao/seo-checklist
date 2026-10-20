@@ -1,10 +1,51 @@
 {
+  "detector_signature": "1115c98a838aa5b2",
   "generated": "2026-10-20",
   "in_force_min_score": 4,
-  "limitation": "labels are a person's judgement on clear cases; borderline sites are left out, so this says nothing about them; one fetch per site, so a page that changes moves its row",
-  "method": "fetch each labelled homepage once through lib.safe_http, score it with detect_profile.detect, and re-derive the answer at every MIN_SCORE in 1..12; smallest MIN_SCORE with the fewest wrong narrowings",
-  "selected_min_score": 11,
-  "selection_rule": "smallest MIN_SCORE with the fewest wrong narrowings",
+  "limitation": "labels are a person's judgement, and three restaurants labelled local also run a shop, so ecommerce for them is arguably right; one fetch per site, so a page that changes moves its row; 39 sites",
+  "method": "fetch each labelled homepage once through lib.safe_http, score it with detect_profile.detect, and re-derive the answer at every MIN_SCORE in 1..12; a harmful narrowing is an answer whose profile excludes an item the label's profile keeps; smallest MIN_SCORE with the fewest harmful narrowings",
+  "profile_excludes": {
+    "blog": [
+      "AR-154",
+      "AR-163",
+      "AR-164",
+      "LO-196",
+      "LO-197",
+      "LO-198",
+      "LO-199",
+      "LO-200"
+    ],
+    "default": [],
+    "ecommerce": [],
+    "local": [
+      "AR-154",
+      "AR-163",
+      "CN-056",
+      "CN-057"
+    ],
+    "media": [
+      "AR-154",
+      "AR-163",
+      "AR-164",
+      "LO-196",
+      "LO-197",
+      "LO-198",
+      "LO-199",
+      "LO-200"
+    ],
+    "saas": [
+      "AR-154",
+      "AR-163",
+      "AR-164",
+      "LO-196",
+      "LO-197",
+      "LO-198",
+      "LO-199",
+      "LO-200"
+    ]
+  },
+  "selected_min_score": 5,
+  "selection_rule": "smallest MIN_SCORE with the fewest harmful narrowings",
   "sites": [
     {
       "label": "ecommerce",
@@ -917,76 +958,88 @@
   ],
   "sweep": [
     {
+      "abstained": 2,
       "correct": 18,
+      "harmful_narrowings": 6,
       "min_score": 1,
-      "missed": 2,
-      "wrong_narrowings": 19
+      "wrong_label": 19
     },
     {
+      "abstained": 2,
       "correct": 19,
+      "harmful_narrowings": 5,
       "min_score": 2,
-      "missed": 2,
-      "wrong_narrowings": 18
+      "wrong_label": 18
     },
     {
+      "abstained": 5,
       "correct": 22,
+      "harmful_narrowings": 1,
       "min_score": 3,
-      "missed": 5,
-      "wrong_narrowings": 12
+      "wrong_label": 12
     },
     {
+      "abstained": 8,
       "correct": 22,
+      "harmful_narrowings": 1,
       "min_score": 4,
-      "missed": 8,
-      "wrong_narrowings": 9
+      "wrong_label": 9
     },
     {
+      "abstained": 11,
       "correct": 21,
+      "harmful_narrowings": 0,
       "min_score": 5,
-      "missed": 11,
-      "wrong_narrowings": 7
+      "wrong_label": 7
     },
     {
+      "abstained": 14,
       "correct": 20,
+      "harmful_narrowings": 0,
       "min_score": 6,
-      "missed": 14,
-      "wrong_narrowings": 5
+      "wrong_label": 5
     },
     {
+      "abstained": 26,
       "correct": 11,
+      "harmful_narrowings": 0,
       "min_score": 7,
-      "missed": 26,
-      "wrong_narrowings": 2
+      "wrong_label": 2
     },
     {
+      "abstained": 26,
       "correct": 11,
+      "harmful_narrowings": 0,
       "min_score": 8,
-      "missed": 26,
-      "wrong_narrowings": 2
+      "wrong_label": 2
     },
     {
+      "abstained": 26,
       "correct": 11,
+      "harmful_narrowings": 0,
       "min_score": 9,
-      "missed": 26,
-      "wrong_narrowings": 2
+      "wrong_label": 2
     },
     {
+      "abstained": 27,
       "correct": 11,
+      "harmful_narrowings": 0,
       "min_score": 10,
-      "missed": 27,
-      "wrong_narrowings": 1
+      "wrong_label": 1
     },
     {
+      "abstained": 30,
       "correct": 9,
+      "harmful_narrowings": 0,
       "min_score": 11,
-      "missed": 30,
-      "wrong_narrowings": 0
+      "wrong_label": 0
     },
     {
+      "abstained": 31,
       "correct": 8,
+      "harmful_narrowings": 0,
       "min_score": 12,
-      "missed": 31,
-      "wrong_narrowings": 0
+      "wrong_label": 0
     }
   ],
   "unread": [

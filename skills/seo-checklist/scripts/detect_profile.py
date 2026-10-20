@@ -70,9 +70,13 @@ except ImportError:
 # signal available because the site author declared it on purpose.
 # basis: convention — weights present at import, kept as a decision (F11). Under
 #  `--profile auto` the profile with the most weight past MIN_SCORE is the one the audit
-#  runs under, and a profile other than `default` makes 4 to 7 items N/A, so these
+#  runs under, and `local` makes 4 items N/A and `saas`, `blog` or `media` 8, so these
 #  weights decide verdicts there and nowhere else (without the flag a person chooses).
-#  Forty-odd weights across four tables cannot be fitted to a corpus one by one; the detector as a whole was measured (`tools/calibrate_profile_detection.py`, 39 labelled homepages): at MIN_SCORE 4 it answers right on 22, abstains on 8 and narrows to a wrong profile on 9, mostly from a page that merely names WooCommerce or Shopify.
+#  Forty-odd weights across four tables cannot be fitted to a corpus one by one; the
+#  detector as a whole was measured (`tools/calibrate_profile_detection.py`, 39
+#  labelled homepages): at MIN_SCORE 4 it labels 22 right, abstains on 8 and labels 9
+#  wrong, mostly a page that merely names WooCommerce or Shopify read as `ecommerce`,
+#  which excludes nothing; one wrong label narrows the audit (python.org as a blog).
 #  So each weight is a judgement of how plainly a signal names a kind of site — declared
 #  schema the strongest — and a wrong one shows in that measurement, not in a test
 SCHEMA_SIGNALS = {
@@ -102,7 +106,8 @@ SCHEMA_SIGNALS = {
 #  is why they are the highest after schema — and why the measurement's wrong answers are
 #  mostly here: a blog or a SaaS homepage whose markup mentions WooCommerce or Shopify.
 #  What a profile decides was counted for 0.80.1: `local` excludes 4 of the 217 items,
-#  `saas`, `blog` and `media` exclude 7 each, `default` and `ecommerce` none, and only
+#  `saas`, `blog` and `media` exclude 7 each (8 at 0.174.0), `default` and `ecommerce`
+#  none, and only
 #  behind `--profile auto` (`choose_profile`)
 PLATFORM_SIGNALS = [
     (r"cdn\.shopify\.com|shopify-", "ecommerce", 4, "Shopify"),
