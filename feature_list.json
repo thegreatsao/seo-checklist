@@ -245,8 +245,8 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "active",
-    "evidence": "",
+    "state": "passing",
+    "evidence": "commit ecac06e, verified 2026-10-20",
     "notes": "ROADMAP 'What 1.0 requires' item 1, second batch: docs/sprint-20261020-F09.md. Release 0.170.0: inherited 66 -> 62. Narrowed to this batch at the end of the sprint; the remaining 62 are F11."
   },
   {
