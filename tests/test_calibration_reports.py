@@ -14,7 +14,8 @@ TOOLS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 class CalibrationReports(unittest.TestCase):
     def test_each_report_still_matches_its_measurement(self):
-        for name in ("css_minification", "font_weight", "gsc_sample_floors", "serp_length"):
+        for name in ("css_minification", "font_weight", "gsc_sample_floors", "serp_length",
+                     "mobile_viewport", "profile_detection"):
             with self.subTest(tool=name):
                 result = subprocess.run(
                     [sys.executable, os.path.join(TOOLS, f"calibrate_{name}.py"), "--check"],
@@ -64,8 +65,22 @@ class CalibrationReports(unittest.TestCase):
                     source(f"{names[0]} = 1\n{names[0]} = object()")
                     self.assertEqual(call(), 1)
 
+    def test_the_profile_corpus_is_labelled_with_the_detector_s_own_profiles(self):
+        """`calibrate_profile_detection.SITES` is the corpus behind MIN_SCORE: every
+        label one of the detector's profiles or `default`, every site once, and each
+        kind represented, so a label the sweep cannot score is caught here."""
+        sys.path.insert(0, TOOLS)
+        import calibrate_profile_detection as calibration
+        labels = [label for _url, label in calibration.SITES]
+        self.assertLessEqual(set(labels), set(calibration.PROFILES) | {"default"})
+        self.assertEqual(set(labels), set(calibration.PROFILES) | {"default"})
+        urls = [url for url, _label in calibration.SITES]
+        self.assertEqual(len(urls), len(set(urls)))
+        self.assertTrue(all(url.startswith("https://") for url in urls))
+
     def test_offline_checks_load_no_runtime_scripts(self):
-        for name in ("css_minification", "font_weight", "gsc_sample_floors", "serp_length"):
+        for name in ("css_minification", "font_weight", "gsc_sample_floors", "serp_length",
+                     "mobile_viewport", "profile_detection"):
             with self.subTest(tool=name):
                 program = (
                     "import contextlib,io,json,pathlib,runpy,sys; "

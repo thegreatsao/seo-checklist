@@ -1,0 +1,103 @@
+{
+  "derived": {
+    "listed_share": 65.03,
+    "selected": 360,
+    "share_at_selected": 25.7,
+    "share_narrower_than_375": 25.7,
+    "share_narrower_than_390": 48.9
+  },
+  "generated": "2026-10-20",
+  "header": [
+    "Screen Resolution",
+    "Market Share Perc. (Sept 2025 - Sept 2026)"
+  ],
+  "method": "StatCounter worldwide mobile screen-resolution share, 2025-09..2026-09, CSS pixels; the narrowest viewport width in the list",
+  "rows": [
+    {
+      "resolution": "414x896",
+      "share": 9.81
+    },
+    {
+      "resolution": "360x800",
+      "share": 9.62
+    },
+    {
+      "resolution": "390x844",
+      "share": 6.39
+    },
+    {
+      "resolution": "393x873",
+      "share": 4.6
+    },
+    {
+      "resolution": "384x832",
+      "share": 4.25
+    },
+    {
+      "resolution": "375x812",
+      "share": 3.96
+    },
+    {
+      "resolution": "360x780",
+      "share": 3.31
+    },
+    {
+      "resolution": "412x915",
+      "share": 3.27
+    },
+    {
+      "resolution": "393x852",
+      "share": 2.54
+    },
+    {
+      "resolution": "385x854",
+      "share": 2.54
+    },
+    {
+      "resolution": "360x806",
+      "share": 2.26
+    },
+    {
+      "resolution": "412x892",
+      "share": 1.66
+    },
+    {
+      "resolution": "430x932",
+      "share": 1.58
+    },
+    {
+      "resolution": "375x667",
+      "share": 1.55
+    },
+    {
+      "resolution": "360x804",
+      "share": 1.51
+    },
+    {
+      "resolution": "384x854",
+      "share": 1.46
+    },
+    {
+      "resolution": "384x857",
+      "share": 1.37
+    },
+    {
+      "resolution": "428x926",
+      "share": 1.15
+    },
+    {
+      "resolution": "402x874",
+      "share": 1.11
+    },
+    {
+      "resolution": "432x960",
+      "share": 1.09
+    },
+    {
+      "resolution": "Other",
+      "share": 34.98
+    }
+  ],
+  "selection_rule": "the narrowest viewport width in the list",
+  "source": "https://gs.statcounter.com/chart.php?device=Mobile&device_hidden=mobile&statType_hidden=resolution&region_hidden=ww&granularity=monthly&statType=Screen%20Resolution&region=Worldwide&fromInt=202509&toInt=202609&fromMonthYear=2025-09&toMonthYear=2026-09&csv=1"
+}

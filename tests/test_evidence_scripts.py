@@ -6593,6 +6593,17 @@ class MobileRender(unittest.TestCase):
                          "mobile viewports.")])
         self.assertEqual(verdict("MB-100", wide), FAIL)
 
+    def test_a_fixed_width_wider_than_the_narrowest_common_phone_fails(self):
+        """F11: MAX_FIXED_WIDTH_PX was 390, the iPhone 14/15 width, so a 380px column
+        passed MB-100 while overflowing every 360px phone — a quarter of the phones in
+        StatCounter's worldwide list, and 48.9% of it is narrower than 390
+        (`tools/calibration/mobile-viewport.json`). 360 is the narrowest width the list
+        holds; 360 itself fits."""
+        self.assertEqual(verdict("MB-100", self._check_html(
+            '<div style="width: 380px">a column</div>')), FAIL)
+        self.assertEqual(verdict("MB-100", self._check_html(
+            '<div style="width: 360px">a column</div>')), PASS)
+
     def test_fixed_width_detection_excludes_responsive_max_widths(self):
         cases = [
             ('sizes="(max-width: 600px) 100vw, 600px"', []),

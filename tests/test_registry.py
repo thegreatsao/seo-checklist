@@ -719,14 +719,17 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # severity it writes (`tests/test_presentation_basis.py`).
         # 0.174.0 (F11) batch 3a: twelve content and URL numbers to `convention`, the
         # judgement written over each (no standard; a corpus would show practice).
+        # 0.174.0 (F11) batch 3b: MAX_FIXED_WIDTH_PX to `measured` (360, StatCounter's
+        # narrowest listed phone width), CLEAR_MARGIN to `presentation`, eight to
+        # `convention` (four cache, facet, image and link lines; four signal tables).
         self.assertEqual(by_kind, {
             "standard": 20,
-            "measured": 11,
-            "convention": 86,
-            "inherited": 22,
-            "presentation": 38,
+            "measured": 12,
+            "convention": 94,
+            "inherited": 12,
+            "presentation": 39,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 139)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 138)
         self.assertEqual(len(named), 177)
         # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
         # `lib/safe_http.py`, how long and how often a held lock is asked for on

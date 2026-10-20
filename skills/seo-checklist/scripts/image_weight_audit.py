@@ -51,10 +51,15 @@ RASTER_FORMATS = {"jpg", "jpeg", "png", "gif"}
 # actually dispatches on, and a CDN URL with no extension has nothing else.
 MODERN_MIME = {f"image/{fmt}" for fmt in MODERN_FORMATS}
 
-# basis: inherited — 250KB, present at import from Agentic-SEO-Skill. One of the five
-#  numbers KNOWN-ISSUES §2 names, and until 0.13.0 it was not even a constant: an inline
-#  `> 250_000` in the middle of a loop, which is why no inventory of thresholds could
-#  find it. A number nothing can name is a number nobody can argue with
+# basis: convention — 250KB, arrived with Agentic-SEO-Skill and kept as a decision
+#  (F11). Above it an image is a `warning` (MD-185) and counts in `legacy_or_heavy_count`
+#  (MB-097). No standard sets a byte limit for an image. The HTTP Archive Web Almanac
+#  2024 (Media chapter) measured it: a mobile image weighs 12KB at the median, 56KB at
+#  the 75th percentile and 177KB at the 90th, and a page's heaviest image 135KB at the
+#  median and 404KB at the 75th. So 250KB flags only images heavier than nine in ten on
+#  the web, which between a quarter and a half of pages carry. A distribution says what is common, not
+#  what is too heavy for the page it is on; the line is the judgement that past the
+#  90th percentile weight is worth a finding. Lowering it to the p90 would warn more
 LARGE_IMAGE_BYTES = 250_000
 
 # basis: convention — no common phone needs more than about 1280 device pixels across

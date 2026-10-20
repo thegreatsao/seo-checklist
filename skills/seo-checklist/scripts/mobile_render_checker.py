@@ -18,11 +18,8 @@ try:
 except ImportError:
     from scripts.seo_common import read_source, load_html, parse_html
 
-# basis: inherited — 390 CSS pixels, present at import. The viewport width of the
-#  iPhone 14/15 class of device, so a fixed width above it guarantees a horizontal
-#  scrollbar on the commonest phone; it is a device fact rather than a judgement, but
-#  which device is the judgement.
-MAX_FIXED_WIDTH_PX = 390
+# basis: measured — corpus=tools/calibration/mobile-viewport.json (StatCounter worldwide mobile screen resolutions, 2025-09..2026-09, CSS pixels); date=2026-10-20; method=the narrowest viewport width the list holds, 360, a quarter of its share, since a fixed width above it overflows every phone that wide. It was 390 (F11): 48.9% of the list is narrower, so a 361-390px column passed MB-100 while scrolling sideways on half the phones listed. The list folds a third of its share into "Other", and the rule was chosen after the earlier value was checked against it.
+MAX_FIXED_WIDTH_PX = 360
 
 def _static_checks(source: str, timeout: int = 15) -> dict:
     html, final_url, fetched = load_html(source, timeout=timeout)

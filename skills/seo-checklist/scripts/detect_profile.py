@@ -68,9 +68,13 @@ except ImportError:
 
 # schema.org @type -> (profile, weight, why). Structured data is the strongest
 # signal available because the site author declared it on purpose.
-# basis: inherited — present at import. Weights for guessing a site's type from its
-#  schema, and the guess is only ever a suggestion the operator confirms — which is the
-#  reason this one can stay unexamined without deciding anything
+# basis: convention — weights present at import, kept as a decision (F11). Under
+#  `--profile auto` the profile with the most weight past MIN_SCORE is the one the audit
+#  runs under, and a profile other than `default` makes 4 to 7 items N/A, so these
+#  weights decide verdicts there and nowhere else (without the flag a person chooses).
+#  Forty-odd weights across four tables cannot be fitted to a corpus one by one; the detector as a whole was measured (`tools/calibrate_profile_detection.py`, 39 labelled homepages): at MIN_SCORE 4 it answers right on 22, abstains on 8 and narrows to a wrong profile on 9, mostly from a page that merely names WooCommerce or Shopify.
+#  So each weight is a judgement of how plainly a signal names a kind of site — declared
+#  schema the strongest — and a wrong one shows in that measurement, not in a test
 SCHEMA_SIGNALS = {
     "product": ("ecommerce", 4, "Product schema"),
     "offer": ("ecommerce", 3, "Offer schema"),
@@ -93,16 +97,13 @@ SCHEMA_SIGNALS = {
 }
 
 # Platform fingerprints in markup and asset paths.
-# basis: inherited — present at import, and the same argument as `SCHEMA_SIGNALS` above,
-#  now with the measurement under it. What a profile decides was counted for 0.80.1:
-#  `local` excludes 4 of the 217 items, `saas`, `blog` and `media` exclude 7 each, and
-#  `default` and `ecommerce` exclude none — an excluded item reports N/A. What stops that
-#  from being a silent narrowing is `choose_profile`, and the order of its branches is the
-#  whole of it: `--profile auto` returns the detector's answer in any environment, with or
-#  without a terminal, because typing the flag is the decision. Every other run without an
-#  explicit profile asks a person, and where there is nobody to ask it falls back to
-#  `default` — the whole registry — and says so on stderr. So these weights narrow scope
-#  only behind a flag somebody typed, and never by themselves.
+# basis: convention — present at import; the judgement and the measurement written over
+#  `SCHEMA_SIGNALS` cover this table (F11). Its weights name a platform outright, which
+#  is why they are the highest after schema — and why the measurement's wrong answers are
+#  mostly here: a blog or a SaaS homepage whose markup mentions WooCommerce or Shopify.
+#  What a profile decides was counted for 0.80.1: `local` excludes 4 of the 217 items,
+#  `saas`, `blog` and `media` exclude 7 each, `default` and `ecommerce` none, and only
+#  behind `--profile auto` (`choose_profile`)
 PLATFORM_SIGNALS = [
     (r"cdn\.shopify\.com|shopify-", "ecommerce", 4, "Shopify"),
     (r"woocommerce|wp-content/plugins/woocommerce", "ecommerce", 4, "WooCommerce"),
@@ -117,9 +118,9 @@ PLATFORM_SIGNALS = [
 ]
 
 # Same-page link paths. Weak on their own; they matter in aggregate.
-# basis: inherited — present at import; the scope argument written over `PLATFORM_SIGNALS`
-#  covers this table too. Its weights run 1 to 3, the same span as `MARKUP_SIGNALS` and one
-#  short of `PLATFORM_SIGNALS`, which is where a fingerprint names the platform outright.
+# basis: convention — present at import; the judgement over `SCHEMA_SIGNALS` covers this
+#  table too (F11). Its weights run 1 to 3, the same span as `MARKUP_SIGNALS` and one
+#  short of `PLATFORM_SIGNALS`, which is where a fingerprint names the platform outright
 PATH_SIGNALS = [
     (r"/cart\b|/basket\b|/checkout\b|add-to-cart", "ecommerce", 3, "cart or checkout link"),
     (r"/product[s]?/|/shop\b|/collections?/", "ecommerce", 2, "product or shop paths"),
@@ -132,8 +133,9 @@ PATH_SIGNALS = [
     (r"/contacts?\b|/kontakt|/kontaktai", "local", 1, "contact page"),
 ]
 
-# basis: inherited — present at import; the third table under the same scope argument as
-#  `PLATFORM_SIGNALS`. Read together with it: `detect()` sums both against one page.
+# basis: convention — present at import; the third table under the judgement written
+#  over `SCHEMA_SIGNALS` (F11). Read together with `PLATFORM_SIGNALS`: `detect()` sums
+#  both against one page
 MARKUP_SIGNALS = [
     (r'itemprop=["\']price["\']|class=["\'][^"\']*\bprice\b', "ecommerce", 2, "price markup"),
     (r"google\.com/maps/embed|maps\.google\.|yandex\.[a-z]+/map", "local", 3, "embedded map"),
@@ -150,7 +152,10 @@ PROFILES = ("ecommerce", "local", "saas", "blog", "media")
 #  detection suggests anything at all; tuned against the two fixtures here and nothing
 #  else, which is the weakest evidence any threshold in this tree has
 MIN_SCORE = 4
-# basis: inherited — present at import; see MIN_SCORE above
+# basis: presentation — present at import. It labels the detector's answer `high` or
+#  `low` confidence and names the runner-up, which the prompt and the stderr line print;
+#  the answer itself, which `--profile auto` runs under, is the best score past MIN_SCORE
+#  whatever the margin (F11; held by `tests/test_profile_detection.py`)
 CLEAR_MARGIN = 3
 
 

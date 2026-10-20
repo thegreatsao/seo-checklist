@@ -36,9 +36,11 @@ import site_crawl
 # Build the graph from the inventory
 # ---------------------------------------------------------------------------
 
-# basis: inherited — an average of three internal links per page, present at import.
-#  The same number as `internal_links.LOW_OUTLINKS` and asked of a different quantity:
-#  that one is per page, this one is the site's mean.
+# basis: convention — an average of three internal links per page, present at import
+#  (F11). Below it, over a crawl not cut, AR-162 reads a `High` issue and fails. Google
+#  asks that every page be reachable by links and states no count; a crawl corpus would
+#  show what averages sites have, and a navigation bar alone clears three, so this flags
+#  sites whose pages barely link at all — the judgement of where "barely" is
 LOW_AVERAGE_INTERNAL_LINKS = 3
 
 def graph_from_inventory(inventory: dict) -> tuple:

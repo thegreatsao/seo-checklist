@@ -1,0 +1,1039 @@
+{
+  "generated": "2026-10-20",
+  "in_force_min_score": 4,
+  "limitation": "labels are a person's judgement on clear cases; borderline sites are left out, so this says nothing about them; one fetch per site, so a page that changes moves its row",
+  "method": "fetch each labelled homepage once through lib.safe_http, score it with detect_profile.detect, and re-derive the answer at every MIN_SCORE in 1..12; smallest MIN_SCORE with the fewest wrong narrowings",
+  "selected_min_score": 11,
+  "selection_rule": "smallest MIN_SCORE with the fewest wrong narrowings",
+  "sites": [
+    {
+      "label": "ecommerce",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 6,
+        "local": 0,
+        "media": 2,
+        "saas": 0
+      },
+      "sha256": "44113cca2e1ba170c91ddf3e2637e2219d81117f4a06e8589e2633f0113c05af",
+      "signals": {
+        "ecommerce": [
+          "Shopify",
+          "product or shop paths"
+        ],
+        "media": [
+          "news sections"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.allbirds.com/"
+    },
+    {
+      "label": "ecommerce",
+      "scores": {
+        "blog": 2,
+        "ecommerce": 6,
+        "local": 0,
+        "media": 0,
+        "saas": 3
+      },
+      "sha256": "0fe513de0926c6418261f393e09b9e781152bc3f7dbc0b55c0bba7e4782d4297",
+      "signals": {
+        "blog": [
+          "blog paths"
+        ],
+        "ecommerce": [
+          "Shopify",
+          "product or shop paths"
+        ],
+        "saas": [
+          "signup or trial link",
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.gymshark.com/"
+    },
+    {
+      "label": "ecommerce",
+      "scores": {
+        "blog": 2,
+        "ecommerce": 6,
+        "local": 0,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "c08df36d2674ccfef088759dad50050ec80cd4fb58b4c8e76af53fd66c32cb7f",
+      "signals": {
+        "blog": [
+          "blog paths"
+        ],
+        "ecommerce": [
+          "Shopify",
+          "product or shop paths"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.everlane.com/"
+    },
+    {
+      "label": "ecommerce",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 5,
+        "local": 1,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "e9638976a3ff69f32e07f3ecddff705f5b550e23ca6fcb247545c5c3b3c223d2",
+      "signals": {
+        "ecommerce": [
+          "cart or checkout link",
+          "product or shop paths"
+        ],
+        "local": [
+          "contact page"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.warbyparker.com/"
+    },
+    {
+      "label": "ecommerce",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 18,
+        "local": 1,
+        "media": 0,
+        "saas": 1
+      },
+      "sha256": "657e516b2ba5a296d8acfbbc15256c8c42113292870e31cad5cba3bd5067d473",
+      "signals": {
+        "ecommerce": [
+          "Product schema",
+          "Offer schema",
+          "Shopify",
+          "price markup",
+          "cart or checkout link",
+          "product or shop paths"
+        ],
+        "local": [
+          "contact page"
+        ],
+        "saas": [
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.glossier.com/"
+    },
+    {
+      "label": "ecommerce",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 11,
+        "local": 1,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "ee374970390ba69ac57b45b22c9144d8e9f8e65f376f7fe10cef74947e52bcec",
+      "signals": {
+        "ecommerce": [
+          "Shopify",
+          "price markup",
+          "cart or checkout link",
+          "product or shop paths"
+        ],
+        "local": [
+          "contact page"
+        ]
+      },
+      "status": 200,
+      "url": "https://colourpop.com/"
+    },
+    {
+      "label": "ecommerce",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 6,
+        "local": 1,
+        "media": 0,
+        "saas": 2
+      },
+      "sha256": "9f7d99012bf3cb809eb1ea379a7484296da74475f9d4facf2d98a8945e129566",
+      "signals": {
+        "ecommerce": [
+          "Shopify",
+          "product or shop paths"
+        ],
+        "local": [
+          "contact page"
+        ],
+        "saas": [
+          "signup or trial link"
+        ]
+      },
+      "status": 200,
+      "url": "https://ruggable.com/"
+    },
+    {
+      "label": "local",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 3,
+        "local": 0,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "562d41f03d196a16e139a2eec4fc7be3f67386d3b1aa08b566221d2ad5902e93",
+      "signals": {
+        "ecommerce": [
+          "cart or checkout link"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.joespizzanyc.com/"
+    },
+    {
+      "label": "local",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 9,
+        "local": 0,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "5ab04fc9e105fdab9453da37a5567da33741f05b9cb6aeb3c0a78b7d4abdb152",
+      "signals": {
+        "ecommerce": [
+          "Shopify",
+          "cart or checkout link",
+          "product or shop paths"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.peterluger.com/"
+    },
+    {
+      "label": "local",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 0,
+        "local": 0,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "c82ce62808a68267562d1ecd6ec5e31a2991b4dbb7a3a0483cca39e099ac820e",
+      "signals": {},
+      "status": 200,
+      "url": "https://www.gramercytavern.com/"
+    },
+    {
+      "label": "local",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 5,
+        "local": 5,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "e83b45c2bbfe84c139536c389aca98935dac690a94b4ac631699fa3224f8ab93",
+      "signals": {
+        "ecommerce": [
+          "cart or checkout link",
+          "product or shop paths"
+        ],
+        "local": [
+          "LocalBusiness schema",
+          "contact page"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.zahavrestaurant.com/"
+    },
+    {
+      "label": "local",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 0,
+        "local": 0,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "6dc9c7fc93bb488bb0520a6c780a8d3c0fb5486a4711aca49b4c53fac7393023",
+      "signals": {},
+      "status": 200,
+      "url": "https://www.frankpepe.com/"
+    },
+    {
+      "label": "local",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 5,
+        "local": 1,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "daff93f17adf788c537b8435035a5bc2e2db50bf46913e16625ffb6b4dd71790",
+      "signals": {
+        "ecommerce": [
+          "cart or checkout link",
+          "product or shop paths"
+        ],
+        "local": [
+          "contact page"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.elevenmadisonpark.com/"
+    },
+    {
+      "label": "saas",
+      "scores": {
+        "blog": 2,
+        "ecommerce": 0,
+        "local": 1,
+        "media": 2,
+        "saas": 6
+      },
+      "sha256": "36af1e9b2c676f7e35be57eaf86316644a6ebcc37f0f56a7a51e210040fbae52",
+      "signals": {
+        "blog": [
+          "blog paths"
+        ],
+        "local": [
+          "contact page"
+        ],
+        "media": [
+          "news sections"
+        ],
+        "saas": [
+          "pricing or plans page",
+          "signup or trial link",
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://slack.com/"
+    },
+    {
+      "label": "saas",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 2,
+        "local": 1,
+        "media": 0,
+        "saas": 10
+      },
+      "sha256": "f820bcc2d8e8489b2b5f024752e76a922ca2a88564b1ffe39c0365dd5ee267ac",
+      "signals": {
+        "ecommerce": [
+          "product or shop paths"
+        ],
+        "local": [
+          "contact page"
+        ],
+        "saas": [
+          "SoftwareApplication schema",
+          "pricing or plans page",
+          "signup or trial link",
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.notion.com/"
+    },
+    {
+      "label": "saas",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 2,
+        "local": 0,
+        "media": 0,
+        "saas": 4
+      },
+      "sha256": "d5542bcaf5b1cf37da0b7f9ce5ed7c2fe737a9051f4080708a62b7e5662f194c",
+      "signals": {
+        "ecommerce": [
+          "product or shop paths"
+        ],
+        "saas": [
+          "pricing or plans page",
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://asana.com/"
+    },
+    {
+      "label": "saas",
+      "scores": {
+        "blog": 2,
+        "ecommerce": 0,
+        "local": 1,
+        "media": 0,
+        "saas": 6
+      },
+      "sha256": "f3bf5ff4c0f45e52d300c2b65dd5dd08eed8b13cf356101311622866a13f9c11",
+      "signals": {
+        "blog": [
+          "blog paths"
+        ],
+        "local": [
+          "contact page"
+        ],
+        "saas": [
+          "pricing or plans page",
+          "signup or trial link",
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://trello.com/"
+    },
+    {
+      "label": "saas",
+      "scores": {
+        "blog": 2,
+        "ecommerce": 0,
+        "local": 1,
+        "media": 0,
+        "saas": 10
+      },
+      "sha256": "cbd12d88c6f53cb7f429a73edc2d4eeb437d77f0d3acd623e3ba4ed3ab7f6fcd",
+      "signals": {
+        "blog": [
+          "blog paths"
+        ],
+        "local": [
+          "contact page"
+        ],
+        "saas": [
+          "SoftwareApplication schema",
+          "pricing or plans page",
+          "signup or trial link",
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.dropbox.com/"
+    },
+    {
+      "label": "saas",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 10,
+        "local": 2,
+        "media": 0,
+        "saas": 6
+      },
+      "sha256": "c1b5253a0e7a2965b9f76e086afaed54b7d9e3a9db907bd55da5c414c044d27d",
+      "signals": {
+        "ecommerce": [
+          "Shopify",
+          "WooCommerce",
+          "price markup"
+        ],
+        "local": [
+          "click-to-call number",
+          "contact page"
+        ],
+        "saas": [
+          "pricing or plans page",
+          "signup or trial link",
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://mailchimp.com/"
+    },
+    {
+      "label": "saas",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 0,
+        "local": 1,
+        "media": 0,
+        "saas": 6
+      },
+      "sha256": "d50c2d9a3bc93f146894b6b14ea14d34530e6f90759d378024ccf415696197d5",
+      "signals": {
+        "local": [
+          "contact page"
+        ],
+        "saas": [
+          "pricing or plans page",
+          "signup or trial link",
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.airtable.com/"
+    },
+    {
+      "label": "saas",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 0,
+        "local": 1,
+        "media": 0,
+        "saas": 6
+      },
+      "sha256": "d42bbfd2366ec3b50000608d3681534461971b48f0b50eef9dc48fd5895d1eff",
+      "signals": {
+        "local": [
+          "contact page"
+        ],
+        "saas": [
+          "pricing or plans page",
+          "signup or trial link",
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://linear.app/"
+    },
+    {
+      "label": "blog",
+      "scores": {
+        "blog": 2,
+        "ecommerce": 2,
+        "local": 1,
+        "media": 2,
+        "saas": 1
+      },
+      "sha256": "e60f9226f31c4c90db6d521bf17d26ce1b93410fe44a69e36453e96ade5c161a",
+      "signals": {
+        "blog": [
+          "blog paths"
+        ],
+        "ecommerce": [
+          "product or shop paths"
+        ],
+        "local": [
+          "contact page"
+        ],
+        "media": [
+          "news sections"
+        ],
+        "saas": [
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://daringfireball.net/"
+    },
+    {
+      "label": "blog",
+      "scores": {
+        "blog": 1,
+        "ecommerce": 6,
+        "local": 1,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "b5162db527f632fd40629bb226e2b96f97524ad466a73940ab58cc4332023fe7",
+      "signals": {
+        "blog": [
+          "WordPress theme"
+        ],
+        "ecommerce": [
+          "WooCommerce",
+          "product or shop paths"
+        ],
+        "local": [
+          "contact page"
+        ]
+      },
+      "status": 200,
+      "url": "https://waitbutwhy.com/"
+    },
+    {
+      "label": "blog",
+      "scores": {
+        "blog": 4,
+        "ecommerce": 2,
+        "local": 2,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "c25d872e618e06bd72125dd8d23c43ed52af0f3b1c43eacd2362cab37965e45c",
+      "signals": {
+        "blog": [
+          "WordPress theme",
+          "article timestamps",
+          "blog paths"
+        ],
+        "ecommerce": [
+          "product or shop paths"
+        ],
+        "local": [
+          "postal address"
+        ]
+      },
+      "status": 200,
+      "url": "https://marginalrevolution.com/"
+    },
+    {
+      "label": "blog",
+      "scores": {
+        "blog": 2,
+        "ecommerce": 6,
+        "local": 1,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "279fe718f3d3fe6df10ac4940d70d8596a194cb6b350ee29f114871384756cc1",
+      "signals": {
+        "blog": [
+          "WordPress theme",
+          "article timestamps"
+        ],
+        "ecommerce": [
+          "WooCommerce",
+          "product or shop paths"
+        ],
+        "local": [
+          "contact page"
+        ]
+      },
+      "status": 200,
+      "url": "https://smittenkitchen.com/"
+    },
+    {
+      "label": "blog",
+      "scores": {
+        "blog": 1,
+        "ecommerce": 6,
+        "local": 0,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "6969c77706c0641fe217cf19ac046f13976e1aa64e1388fb9127788600040419",
+      "signals": {
+        "blog": [
+          "WordPress theme"
+        ],
+        "ecommerce": [
+          "WooCommerce",
+          "product or shop paths"
+        ]
+      },
+      "status": 200,
+      "url": "https://minimalistbaker.com/"
+    },
+    {
+      "label": "blog",
+      "scores": {
+        "blog": 2,
+        "ecommerce": 0,
+        "local": 1,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "a998d58e73e94676e2158a15bdd8dc0580e57e27e872251b64224265e7f08fdf",
+      "signals": {
+        "blog": [
+          "blog paths"
+        ],
+        "local": [
+          "contact page"
+        ]
+      },
+      "status": 200,
+      "url": "https://pinchofyum.com/"
+    },
+    {
+      "label": "blog",
+      "scores": {
+        "blog": 1,
+        "ecommerce": 4,
+        "local": 0,
+        "media": 2,
+        "saas": 0
+      },
+      "sha256": "b351ebbd21bdc31a3041fef772650ef5b82876103f9123b08b81dadf09a09124",
+      "signals": {
+        "blog": [
+          "WordPress theme"
+        ],
+        "ecommerce": [
+          "WooCommerce"
+        ],
+        "media": [
+          "news sections"
+        ]
+      },
+      "status": 200,
+      "url": "https://seths.blog/"
+    },
+    {
+      "label": "media",
+      "scores": {
+        "blog": 2,
+        "ecommerce": 2,
+        "local": 1,
+        "media": 2,
+        "saas": 0
+      },
+      "sha256": "0edad901f5f30c6196fededd61fdba743fa8134c70f57b2fbbc1626e4f53c16b",
+      "signals": {
+        "blog": [
+          "blog paths"
+        ],
+        "ecommerce": [
+          "product or shop paths"
+        ],
+        "local": [
+          "contact page"
+        ],
+        "media": [
+          "news sections"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.bbc.com/news"
+    },
+    {
+      "label": "media",
+      "scores": {
+        "blog": 1,
+        "ecommerce": 0,
+        "local": 1,
+        "media": 2,
+        "saas": 3
+      },
+      "sha256": "828bf261a3ff60544f6668ef51cf16ac1adf9f9b43d76c94dfb38f7c977341b9",
+      "signals": {
+        "blog": [
+          "article timestamps"
+        ],
+        "local": [
+          "contact page"
+        ],
+        "media": [
+          "news sections"
+        ],
+        "saas": [
+          "signup or trial link",
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.theguardian.com/international"
+    },
+    {
+      "label": "media",
+      "scores": {
+        "blog": 3,
+        "ecommerce": 0,
+        "local": 1,
+        "media": 2,
+        "saas": 0
+      },
+      "sha256": "47472b8ee4c328c5f321106d95014c3a3d05ccc2bf41b02de96cd78f2f389e08",
+      "signals": {
+        "blog": [
+          "article timestamps",
+          "blog paths"
+        ],
+        "local": [
+          "contact page"
+        ],
+        "media": [
+          "news sections"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.npr.org/"
+    },
+    {
+      "label": "media",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 0,
+        "local": 1,
+        "media": 6,
+        "saas": 0
+      },
+      "sha256": "720e337694c67a6dcfbb4b80b4f82d6211aa1190878f7e659aae10d09c72456c",
+      "signals": {
+        "local": [
+          "contact page"
+        ],
+        "media": [
+          "NewsMediaOrganization schema",
+          "news sections"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.aljazeera.com/"
+    },
+    {
+      "label": "default",
+      "scores": {
+        "blog": 4,
+        "ecommerce": 0,
+        "local": 0,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "ef9f67670981eb1fc732e883534200092e4055205fc088fba694b7cbfaa98153",
+      "signals": {
+        "blog": [
+          "author byline",
+          "article timestamps",
+          "blog paths"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.python.org/"
+    },
+    {
+      "label": "default",
+      "scores": {
+        "blog": 2,
+        "ecommerce": 0,
+        "local": 1,
+        "media": 2,
+        "saas": 0
+      },
+      "sha256": "199a3dd10c0327b5280f98326de1a0128cb00b1ad6a69cf0ea5dd84aee68f874",
+      "signals": {
+        "blog": [
+          "blog paths"
+        ],
+        "local": [
+          "contact page"
+        ],
+        "media": [
+          "news sections"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.w3.org/"
+    },
+    {
+      "label": "default",
+      "scores": {
+        "blog": 2,
+        "ecommerce": 0,
+        "local": 2,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "f5c881b5bb3f7cac594eab460750226ee799482d5506fb3706775b1981affef0",
+      "signals": {
+        "blog": [
+          "blog paths"
+        ],
+        "local": [
+          "postal address"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.usa.gov/"
+    },
+    {
+      "label": "default",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 0,
+        "local": 1,
+        "media": 2,
+        "saas": 0
+      },
+      "sha256": "cd7c6e29b152e6416d33f26f5a49a77096b9e7355ef8026eb28a9096bfbb8c8a",
+      "signals": {
+        "local": [
+          "contact page"
+        ],
+        "media": [
+          "news sections"
+        ]
+      },
+      "status": 200,
+      "url": "https://web.mit.edu/"
+    },
+    {
+      "label": "default",
+      "scores": {
+        "blog": 1,
+        "ecommerce": 0,
+        "local": 1,
+        "media": 2,
+        "saas": 2
+      },
+      "sha256": "373c9f649abdfafec33aa705d18a822e5db1147a8abee26416985369eb3fd6c6",
+      "signals": {
+        "blog": [
+          "WordPress theme"
+        ],
+        "local": [
+          "contact page"
+        ],
+        "media": [
+          "news sections"
+        ],
+        "saas": [
+          "signup or trial link"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.nasa.gov/"
+    },
+    {
+      "label": "default",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 0,
+        "local": 0,
+        "media": 0,
+        "saas": 0
+      },
+      "sha256": "7fd0001d8ff3c6122db5e3d3ef32ea3f47615ba046cebfd3a1d9d02e53b7b4ec",
+      "signals": {},
+      "status": 200,
+      "url": "https://archive.org/"
+    },
+    {
+      "label": "default",
+      "scores": {
+        "blog": 0,
+        "ecommerce": 0,
+        "local": 0,
+        "media": 0,
+        "saas": 1
+      },
+      "sha256": "862d64aa9af12fdbaf360b5ceb01307b74f998f961edfd96ba30d8e358034037",
+      "signals": {
+        "saas": [
+          "app login link"
+        ]
+      },
+      "status": 200,
+      "url": "https://www.wikipedia.org/"
+    }
+  ],
+  "sweep": [
+    {
+      "correct": 18,
+      "min_score": 1,
+      "missed": 2,
+      "wrong_narrowings": 19
+    },
+    {
+      "correct": 19,
+      "min_score": 2,
+      "missed": 2,
+      "wrong_narrowings": 18
+    },
+    {
+      "correct": 22,
+      "min_score": 3,
+      "missed": 5,
+      "wrong_narrowings": 12
+    },
+    {
+      "correct": 22,
+      "min_score": 4,
+      "missed": 8,
+      "wrong_narrowings": 9
+    },
+    {
+      "correct": 21,
+      "min_score": 5,
+      "missed": 11,
+      "wrong_narrowings": 7
+    },
+    {
+      "correct": 20,
+      "min_score": 6,
+      "missed": 14,
+      "wrong_narrowings": 5
+    },
+    {
+      "correct": 11,
+      "min_score": 7,
+      "missed": 26,
+      "wrong_narrowings": 2
+    },
+    {
+      "correct": 11,
+      "min_score": 8,
+      "missed": 26,
+      "wrong_narrowings": 2
+    },
+    {
+      "correct": 11,
+      "min_score": 9,
+      "missed": 26,
+      "wrong_narrowings": 2
+    },
+    {
+      "correct": 11,
+      "min_score": 10,
+      "missed": 27,
+      "wrong_narrowings": 1
+    },
+    {
+      "correct": 9,
+      "min_score": 11,
+      "missed": 30,
+      "wrong_narrowings": 0
+    },
+    {
+      "correct": 8,
+      "min_score": 12,
+      "missed": 31,
+      "wrong_narrowings": 0
+    }
+  ],
+  "unread": [
+    {
+      "error": "HTTP 429",
+      "label": "ecommerce",
+      "url": "https://bombas.com/"
+    },
+    {
+      "error": "HTTP 405",
+      "label": "local",
+      "url": "https://www.katzsdelicatessen.com/"
+    },
+    {
+      "error": "HTTPSConnectionPool(host='104.21.4.136', port=443): Read timed out. (read timeout=20)",
+      "label": "local",
+      "url": "https://www.langersdeli.com/"
+    },
+    {
+      "error": "HTTPSConnectionPool(host='104.21.36.86', port=443): Read timed out. (read timeout=20)",
+      "label": "blog",
+      "url": "https://kottke.org/"
+    },
+    {
+      "error": "HTTP 401",
+      "label": "media",
+      "url": "https://www.reuters.com/"
+    },
+    {
+      "error": "HTTP 403",
+      "label": "media",
+      "url": "https://apnews.com/"
+    },
+    {
+      "error": "HTTPSConnectionPool(host='2.19.193.152', port=443): Read timed out. (read timeout=20)",
+      "label": "media",
+      "url": "https://www.washingtonpost.com/"
+    },
+    {
+      "error": "Response exceeded 5242880 byte safety limit",
+      "label": "media",
+      "url": "https://edition.cnn.com/"
+    },
+    {
+      "error": "HTTP 403",
+      "label": "default",
+      "url": "https://www.redcross.org/"
+    }
+  ]
+}

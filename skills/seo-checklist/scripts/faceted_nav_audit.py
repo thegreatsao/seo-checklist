@@ -39,7 +39,12 @@ from seo_common import fetch_url, parse_html, read_urls, same_host
 #  reads (AR-163 reads `issues` and `faceted_count`), so it decides what is printed,
 #  never a verdict (F11; held by `tests/test_presentation_basis.py`)
 PARAM_COMBINATION_COUNT = 3
-# basis: inherited — five URL variants of one path, present at import.
+# basis: convention — five URL variants of one path among the URLs the page links,
+#  present at import (F11). At it AR-163 reads a `warning` and WARNs. No search engine
+#  publishes a count: Google's faceted-navigation guidance asks that variants be
+#  controlled, not that there be fewer than N. A corpus of stores would show how many
+#  variants pages link, not how many make a crawl trap, so five is the judgement that a
+#  path with that many parameter variants is a facet, not a pagination pair
 PATH_EXPLOSION_VARIANTS = 5
 # basis: presentation — a parameter seen on three URLs, present at import. It fills
 #  `frequent_params` and one `info` entry in `issues`, which the runner reads as `low`;

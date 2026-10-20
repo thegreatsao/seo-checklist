@@ -22,8 +22,14 @@ from seo_common import (BeautifulSoup, fetch_error_kind, html_parser, is_url,
                         load_source, normalize_url, require_bs4)
 
 
-# basis: inherited — one week of `max-age` for a fingerprinted static asset, present at
-#  import. Round, and the sort of number a CDN's own documentation suggests.
+# basis: convention — one week of `max-age` for a fingerprinted static asset, present at
+#  import (F11). Below it TE-170 reads a `warning` and fails. Lighthouse's
+#  `uses-long-cache-ttl` models return visits from Chrome's cache-age deciles (UMA
+#  `HttpCache.StaleEntry.Validated.Age`): one week is its 90th percentile, and Lighthouse
+#  itself flags an asset until the modelled hit rate passes 92.5%, about 96 days. So this
+#  line is deliberately more lenient than Lighthouse — it fails "short or missing", not
+#  "less than optimal" — and moving it to Lighthouse's would fail every site caching its
+#  assets between a week and three months, a decision this relabel does not make
 STATIC_MAX_AGE_MIN = 604800
 # basis: presentation — 30 days, present at import. Above it a static asset without
 #  `immutable` gets an `info` entry in `issues`, which the runner reads as `low`; TE-170

@@ -521,7 +521,8 @@ jobs:
       # what each instrument is still pointed at rather than whether it exists.
       - name: Every calibrated constant still matches the report behind it
         run: |
-          for t in css_minification font_weight gsc_sample_floors serp_length; do
+          for t in css_minification font_weight gsc_sample_floors serp_length \
+                   mobile_viewport profile_detection; do
             python skills/seo-checklist/tools/calibrate_$t.py --check
           done
 

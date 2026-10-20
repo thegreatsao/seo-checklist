@@ -81,13 +81,13 @@ robots.txt forbids, and it no longer does.
 | basis | count |
 |---|---|
 | standard | 20 |
-| measured | 11 |
-| convention | 86 |
-| inherited | 22 |
+| measured | 12 |
+| convention | 94 |
+| inherited | 12 |
 | no basis | 0 |
-| **numbers a verdict depends on** | **139** |
+| **numbers a verdict depends on** | **138** |
 
-**`inherited` at 22 of 139 is the largest single gap between this tree and 1.0.** It was
+**`inherited` at 12 of 138 is the largest single gap between this tree and 1.0.** It was
 75 of 144 at 0.87.1 and 77 of 164 until 0.167.1, which moved eleven coverage caps out: ten
 to `convention`, one to `presentation`. 0.170.0 moved the crawl's page and depth caps to
 `convention` and the MinHash pair to `presentation`; 0.172.0 moved the two crawl caps back,
@@ -96,8 +96,10 @@ since under `--sample` the cap still decided which pages a sampled verdict was a
 cut could decide; its second batch moved five definitional or prioritisation numbers to
 `convention` and twenty-three that feed only a field no item reads to `presentation` (held by
 `tests/test_presentation_basis.py`); its third wrote the judgement over twelve content and URL
-numbers that no standard or reachable corpus settles. Nothing is unnamed — that took a gate — but about one
-in six of the numbers a verdict rests on is still a number nobody here decided. The calibrations so
+numbers that no standard or reachable corpus settles, and the next measured a mobile viewport
+width (MB-100 now fails a fixed width over 360 CSS pixels, not 390), measured the profile
+detector as a whole, and wrote the judgement over the rest. Nothing is unnamed — that took a gate — what is
+left undecided is the Search Console thresholds and the profile detector's MIN_SCORE. The calibrations so
 far show what closing one costs: each took a corpus, a method and a stated limitation.
 
 `audit_reachability.py` proves 2 of the 145 script-backed assertions unable to report
@@ -118,7 +120,7 @@ modules read; no number is bound by both. It is narrower than the ask it answers
 
 ## What 1.0 requires, in the order the numbers should move
 
-1. **`inherited` 22 → 0**, by calibration or by an honest relabel to `convention` with
+1. **`inherited` 12 → 0**, by calibration or by an honest relabel to `convention` with
    the judgement written out.
 2. **REG-6's second reader** — the readings exist and are held against the registry;
    what would close the row is a check of whether each reading is true that is not the
