@@ -78,6 +78,27 @@ class CalibrationReports(unittest.TestCase):
         self.assertEqual(len(urls), len(set(urls)))
         self.assertTrue(all(url.startswith("https://") for url in urls))
 
+    def test_a_rescore_under_changed_tables_is_refused(self):
+        """F11's second review: `--rescore` kept the stored scores and signed them with
+        the tables in the tree, so a changed weight passed `--check` after it. Scores
+        taken under one detector are re-derived only under that detector."""
+        sys.path.insert(0, TOOLS)
+        import calibrate_profile_detection as calibration
+        with open(calibration.REPORT, encoding="utf-8") as fh:
+            before = fh.read()
+        work = tempfile.mkdtemp(prefix="seo-rescore-")
+        self.addCleanup(__import__("shutil").rmtree, work, True)
+        copy = os.path.join(work, "profile-detection.json")
+        with open(copy, "w", encoding="utf-8") as fh:
+            fh.write(before)
+        with mock.patch.object(calibration, "REPORT", copy), \
+                mock.patch.object(calibration, "signature", return_value="0" * 16), \
+                mock.patch.object(sys, "argv", ["calibrate", "--rescore"]), \
+                mock.patch("sys.stderr"):
+            self.assertEqual(calibration.main(), 1)
+        with open(copy, encoding="utf-8") as fh:
+            self.assertEqual(fh.read(), before)
+
     def test_offline_checks_load_no_runtime_scripts(self):
         for name in ("css_minification", "font_weight", "gsc_sample_floors", "serp_length",
                      "mobile_viewport", "paragraph_words", "profile_detection"):

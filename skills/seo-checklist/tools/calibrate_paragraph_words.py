@@ -19,7 +19,9 @@ and other paragraphs kept. **Selection rule, written before the run**: the cutof
 the highest paragraph-level F1 (every paragraph counts once, since the keyword can sit in
 any of them), ties to the smaller cutoff. Limitations: news and blog pages only, in
 English and a few other languages; a short paragraph can match the body by accident
-("Advertisement" inside a sentence), which flatters small cutoffs; the containers are
+("Advertisement" inside a sentence), which flatters small cutoffs — with every fourth
+short match counted false the rule picks 3 instead of 0, both far better than 8; the
+containers are
 the CMS-aware ones the script picks, so a page whose container misses its body counts
 nothing either way. `--check` reads only the committed report and the literal constant.
 """
@@ -79,6 +81,25 @@ def select(table: list[dict]) -> int:
     return min(row["cutoff"] for row in table if row["f1"] == best)
 
 
+def sensitivity(pages: list[list[list]], short: int = 8, every: int = 4) -> int:
+    """The cutoff the rule picks with every `every`-th short body match counted false.
+
+    The labelling calls a paragraph body when its text occurs in the labelled body, and
+    a short one can occur by accident ("National", "90"), which flatters small cutoffs.
+    Flipping a quarter of the short matches, in reading order, is the check on how far
+    that reaches: written into the report so the claim can be re-derived offline."""
+    seen, flipped = 0, []
+    for paragraphs in pages:
+        page = []
+        for words, is_body in paragraphs:
+            if is_body and words <= short:
+                seen += 1
+                is_body = seen % every != 0
+            page.append([words, is_body])
+        flipped.append(page)
+    return select(score(flipped))
+
+
 def _head_commit(checkout: str) -> str:
     """The checkout's commit, read from `.git` rather than by starting git."""
     git = os.path.join(checkout, ".git")
@@ -127,7 +148,8 @@ def measure(checkout: str) -> dict:
                        "body when its normalised text occurs in the labelled articleBody; "
                        f"cutoffs {SWEEP.start}..{SWEEP.stop - 1}; {SELECTION_RULE}"),
             "pages": pages, "skipped": skipped, "sweep": table,
-            "selected_cutoff": select(table)}
+            "selected_cutoff": select(table),
+            "quarter_short_false_selects": sensitivity(pages)}
 
 
 def check() -> int:
@@ -138,6 +160,8 @@ def check() -> int:
     if table != report["sweep"]:
         problems.append("the sweep no longer follows from the stored paragraphs")
     chosen = select(table)
+    if sensitivity(report["pages"]) != report.get("quarter_short_false_selects"):
+        problems.append("the sensitivity check no longer follows from the stored paragraphs")
     if chosen != report["selected_cutoff"]:
         problems.append(f"the rule selects {chosen}, the report says {report['selected_cutoff']}")
     constant = literal_constants(CHECKER, {"MIN_PARAGRAPH_WORDS"},

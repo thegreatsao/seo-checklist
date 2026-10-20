@@ -263,6 +263,12 @@ def main() -> int:
     if a.rescore:
         with open(REPORT, encoding="utf-8") as fh:
             report = json.load(fh)
+        # The stored scores were taken under one detector; re-deriving them under
+        # another would sign old measurements with the new tables (F11's review).
+        if report.get("detector_signature") != signature():
+            print("the signal tables changed since the scores were taken; measure again "
+                  "rather than rescore", file=sys.stderr)
+            return 1
         report.update(derived(report["sites"], profile_exclusions()), **description())
         for stale in ("wrong_narrowings",):
             report.pop(stale, None)
