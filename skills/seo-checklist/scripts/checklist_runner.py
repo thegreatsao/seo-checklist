@@ -3028,11 +3028,10 @@ def fold_sample(graded: list[dict], per_page: list[list[dict]], entry_read: bool
     """`aggregate_pages`, with the entry's primary rows standing in for its run when
     the sample's second fetch of the entry failed.
 
-    `aggregate_pages` keeps the primary row when an item has fewer than two runs, on
-    the reading that one run is the entry's own. When the entry's re-fetch was skipped,
-    the one run is another page's, and a FAIL found there was dropped for the entry's
-    PASS (review of F11 batch 1). The entry was read once already, so its primary rows
-    are its run."""
+    When the entry's re-fetch was skipped, the runs that remain are other pages', and
+    the entry — read once already — would be left out of the fold; its primary rows are
+    its run (review of F11 batch 1, where `aggregate_pages` also kept the primary row of
+    a one-run item and dropped the FAIL that run found; it folds one run now)."""
     if not entry_read:
         per_page = [[row for row in graded if row["id"] in sampled]] + per_page
     return aggregate_pages(graded, per_page)

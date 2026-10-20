@@ -42,9 +42,13 @@ except ImportError:
 # Every number below arrived with the import. `llms.txt` is a proposal with no ratified
 # spec, so none of them can be `standard` even in principle: the file format's own
 # documentation states no lengths and no section counts.
-# basis: presentation — 20 characters, present at import. Below it the description gets
-#  one entry in `quality.issues` and loses nothing from `quality.score`, the field GEO-002
-#  reads, so it decides what is printed, never a verdict (F11; held by `tests/test_presentation_basis.py`)
+# basis: convention — 20 characters, present at import. Below it the description gets
+#  one entry in `quality.issues`, and because the check is the `if` before the
+#  long-description bonus's `elif`, a value above GOOD_DESCRIPTION_CHARS would also take
+#  that bonus from `quality.score`, which GEO-002 holds to 60 (F11's review: 55 and FAIL
+#  at 61 where 20 gives 60 and PASS). At 20 it cannot, but a number that can move a
+#  verdict by moving is counted. The proposal names no length; the line is a judgement
+#  of when a description says nothing
 MIN_DESCRIPTION_CHARS = 20
 GOOD_DESCRIPTION_CHARS = 50   # basis: inherited — the "detailed enough" line, same origin
 MIN_SECTIONS = 3              # basis: inherited — a structured file has a few sections

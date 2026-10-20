@@ -2,7 +2,7 @@
 
 `tools/audit_thresholds.py` takes a basis line at its word, so a number filed as
 `presentation` leaves "numbers a verdict depends on" on the line's say-so. F11 moved
-twenty-four numbers there because the field each one feeds is read by no registry item —
+twenty-three numbers there because the field each one feeds is read by no registry item —
 or, for an entry in `issues`, read by none at the severity the number raises. The claim
 stops being true the day an item reads that field, and this is what says so: each row
 below names the script, the field, the registry severity of what the number writes there
@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import unittest
 
@@ -47,15 +48,16 @@ UNREAD = {
     "internal_links.py": [
         ("summary.pages_under_three_links", None, ("LOW_OUTLINKS",)),
         ("summary.pages_over_hundred_links", None, ("HIGH_OUTLINKS",)),
+        ("issues", None, ("LOW_OUTLINKS", "HIGH_OUTLINKS")),
         ("recommendations", None, ("LOW_AVERAGE_OUTLINKS",)),
     ],
     "cache_compression_checker.py": [
-        ("issues", SEVERITY_ALIAS["info"], ("STATIC_IMMUTABLE_MAX_AGE",))],
+        ("issues", SEVERITY_ALIAS["info"], ("STATIC_IMMUTABLE_MAX_AGE",)),
+        ("resources.issues", SEVERITY_ALIAS["info"], ("STATIC_IMMUTABLE_MAX_AGE",))],
     "duplicate_content.py": [("thin_content", None, ("NEARLY_EMPTY_WORDS",))],
     "freshness_checker.py": [("issues", None, ("STALE_CONTENT_DAYS",))],
     "collection_page_checker.py": [
         ("issues", SEVERITY_ALIAS["info"], ("MIN_PRODUCT_LINKS",))],
-    "llms_txt_checker.py": [("quality.issues", None, ("MIN_DESCRIPTION_CHARS",))],
     "lcp_subparts.py": [
         (f"subparts.{field}", None, ("MS_IF_ABOVE",))
         for field in ("resource_load_delay_ms", "resource_load_duration_ms",
@@ -81,14 +83,31 @@ def rules(check: dict) -> list[dict]:
     return found
 
 
+def _segments(path: str) -> list[str]:
+    """A rule path as named segments: list indices (`rows.0.flags`) say nothing about
+    which field is read, so they drop out."""
+    parts = re.split(r"[.\[\]]+", path)
+    return [p for p in parts if p and not p.isdigit()]
+
+
 def reads(rule: dict, field: str, severity: str | None) -> bool:
-    path = rule["path"]
-    if not (path == field or path.startswith(field + ".") or path.startswith(field + "[")):
+    """Whether a rule can see what the number writes at `field`.
+
+    The rule's effective path is its `path`, then its `field` (the runner applies a
+    `field` to each element under `path`). It reads `field` when either path contains
+    the other: reading `quality` reads `quality.issues`, and reading
+    `summary.pages_under_three_links.x` reads the summary field. A `none_severity` rule
+    counts only the severities it lists, both sides read through `SEVERITY_ALIAS` as
+    the runner does."""
+    effective = _segments(rule["path"]) + ([rule["field"]] if rule.get("field") else [])
+    wanted = _segments(field)
+    shorter = min(len(effective), len(wanted))
+    if effective[:shorter] != wanted[:shorter]:
         return False
-    # An `issues` rule that counts only other severities does not read this entry.
     counted = rule.get("none_severity")
     if severity and isinstance(counted, list):
-        return severity in counted
+        levels = {SEVERITY_ALIAS.get(s.lower(), s.lower()) for s in counted}
+        return SEVERITY_ALIAS.get(severity, severity) in levels
     return True
 
 

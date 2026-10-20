@@ -13,7 +13,7 @@ requirement a test can reach.
 
 **The count may not rise.** A new constant filed as `inherited` is a deliberate act, and
 the scenario in the requirement asks that it be visible as one rather than absorbed into
-a total nobody watches. 34 of 138 today.
+a total nobody watches. 34 of 139 today.
 
 **An `inherited` line may not defend its number.** The convention is
 `# basis: inherited — <what the number is>`, and the description is why the category is

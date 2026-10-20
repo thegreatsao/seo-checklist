@@ -62,8 +62,9 @@ PAGE_WEIGHT_FLAG_KIB = 5000
 PAGE_WEIGHT_BANDS = ("light", "heavy", "enormous")
 
 # basis: presentation — 100ms of predicted saving, present at import. Below it a
-#  Lighthouse opportunity is left out of `opportunities`, which the runner carries as
-#  `lab_performance`, reported and never scored; no item reads it (SP-107 to SP-113,
+#  Lighthouse opportunity is left out of `opportunities`, which the evidence prints and
+#  nothing reads (the runner's `lab_performance` takes `performance_score` only); no item
+#  reads it (SP-107 to SP-113,
 #  SE-119 and MB-095 read field data, metric ratings and `page_weight`), so it decides
 #  what the report lists, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 MIN_OPPORTUNITY_SAVINGS_MS = 100
