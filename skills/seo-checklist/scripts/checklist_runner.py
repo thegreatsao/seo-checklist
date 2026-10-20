@@ -2975,7 +2975,9 @@ def aggregate_pages(primary: list[dict], per_page: list[list[dict]]) -> list[dic
     out = []
     for row in primary:
         runs = by_id.get(row["id"], [])
-        if not is_page_level(row) or len(runs) < 2:
+        # One run is folded too: it is the sampled reading, and keeping the primary row
+        # instead dropped a FAIL the one surviving page found (F11's second review).
+        if not is_page_level(row) or not runs:
             out.append(row)
             continue
         decided = [r for r in runs if r["status"] in STATUS_RANK]

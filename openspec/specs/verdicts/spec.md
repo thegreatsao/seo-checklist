@@ -702,16 +702,18 @@ pool `withhold_cut_sample` applies this requirement to the sampled items: a `FAI
 stands, a `WARN` stands and says it is a floor, a `PASS` and an `N/A` read off the pages become
 `NO_DATA` with the cut named, and an `N/A` decided by scope before any page was read stands. A
 pool collapsed to the entry by the cut is withheld the same way; a sample the sitemap fallback
-supplied is not, since no crawl cap shortened it, unless its own child cap cut it — which stays
-a cut when the children it read were empty and the pool falls to the entry's links. A crawl
-that read exactly its page budget with nothing queued and no target unread is not cut, and
-says so (`summary.truncated` no longer reads `len(pages) >= max_pages` on its own). A `FAIL`
-found on a sampled page stands when the entry's second fetch failed: the entry's primary rows
-stand in for its lost run (`fold_sample`), where `aggregate_pages` had kept the primary row of
-a one-run item. Held by `tests/test_sample_pool.py`: the two measurements above and
+supplied is not, since no crawl cap shortened it, unless the fallback itself left part of the
+sitemap unread — more children than its cap, a child on another host, a child it could not
+read — which stays a cut when the children it read were empty and the pool falls to the
+entry's links. A crawl of exactly its page budget is called cut even when nothing was left: a
+page that gave no answer is a row like a page read, and only the budget clause stops such a
+crawl from calling itself complete, so the cap withholds there rather than letting a page
+never read pass. A `FAIL` found on a sampled page stands however few pages survived: one run
+is folded like several, and when the entry's second fetch failed its primary rows stand in for
+the lost run (`fold_sample`). Held by `tests/test_sample_pool.py`: the two measurements above and
 `--crawl-max-pages 1` through the runner, each with its uncapped control, the source and cut
 of every pool `discover_urls` builds, each status over a cut pool, and the lone sampled
-`FAIL`; and by `TheCrawlCaps.test_a_site_exactly_the_budget_is_read_whole`.
+`FAIL`; and by `TheCrawlCaps.test_a_site_exactly_the_budget_is_called_cut`.
 
 #### Scenario: a clean bill of health over a capped search
 - **WHEN** an assertion passes by finding none of the thing it forbids, and the input

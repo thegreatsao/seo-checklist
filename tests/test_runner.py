@@ -1174,7 +1174,7 @@ class AggregationKeepsVerdictAndMeasureTogether(unittest.TestCase):
         self.assertEqual(out["measure"]["got"], 61,
                          "the report would show a passing number under a failure")
 
-    def test_a_single_page_run_is_untouched(self):
+    def test_a_single_page_run_keeps_its_measure(self):
         primary = [self._row(PASS, 52)]
         out = aggregate_pages(primary, [[self._row(PASS, 52)]])[0]
         self.assertEqual(out["measure"]["got"], 52)

@@ -235,6 +235,15 @@ class AFoundFailIsKept(unittest.TestCase):
                             sampled={"MS-020"})[0]
         self.assertEqual((out["status"], out["pages_checked"]), (FAIL, 2))
 
+    def test_a_lone_rerun_of_the_entry_that_fails_is_kept(self):
+        """Second review: the entry re-read (with `--no-http-cache` a second read can
+        differ), every other page skipped, the re-read FAILs: one run was fewer than
+        two and the primary PASS was kept, then withheld."""
+        row = {"id": "MS-020", "status": PASS, "evidence": "50 chars"}
+        rerun = {"id": "MS-020", "status": FAIL, "evidence": "90 chars"}
+        out = r.fold_sample([row], [[rerun]], entry_read=True, sampled={"MS-020"})[0]
+        self.assertEqual(out["status"], FAIL, out)
+
     def test_the_runner_says_whether_the_entry_was_read_again(self):
         """The served path cannot make the entry's second fetch fail on its own — the
         run's HTTP cache answers it — so the line that decides is pinned, as

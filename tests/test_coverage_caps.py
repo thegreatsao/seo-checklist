@@ -229,15 +229,18 @@ class TheCrawlCaps(unittest.TestCase):
         self.assertEqual(summary["pages_fetched"], site_crawl.DEFAULT_MAX_PAGES)
         self.assertTrue(summary["truncated"])
 
-    def test_a_site_exactly_the_budget_is_read_whole(self):
-        """Review of F11 batch 1: a crawl that read exactly the budget and has nothing
-        queued and no target unread has read the whole site, and said `truncated`
-        anyway — so every sampled PASS on a 100-page site was withheld for a cut that
-        left out nothing."""
+    def test_a_site_exactly_the_budget_is_called_cut(self):
+        """The cautious side of the cap, kept on purpose (F11's second review): a page
+        that timed out is a row in `pages` like one read, so only this clause stops a
+        crawl of exactly the budget with such a page from calling itself complete. The
+        first review asked for the clause to go, since a whole 100-page site then
+        withholds; the second showed that without it a page never read let MS-022
+        pass. A withheld answer is the cap's stated trade; a PASS over an unread page
+        is a verdict."""
         import site_crawl
         summary = self.fan(site_crawl.DEFAULT_MAX_PAGES)
         self.assertEqual(summary["pages_fetched"], site_crawl.DEFAULT_MAX_PAGES)
-        self.assertFalse(summary["truncated"])
+        self.assertTrue(summary["truncated"])
 
     def test_a_site_one_page_short_of_the_budget_is_read_whole(self):
         import site_crawl
