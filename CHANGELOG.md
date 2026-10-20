@@ -58,9 +58,15 @@ stops nothing moves nothing, with the exceptions named under "Moved without a re
     `truncated`; the items are those listed in KNOWN-ISSUES' `a-truncated-crawl-decides-the-
     whole-site` (AR-149, AR-162, BL-081, CI-008, CI-015, CI-018, CN-039, CN-041, MD-187,
     MS-022, MS-026, MS-029, TE-168, TE-176 among them). A FAIL found stands.
-  * LO-198 from a crash to NO_DATA over a truncated crawl with no LocalBusiness node, by
-    hand or in a run: the result withheld the count and the text line read it anyway, with
-    `--json` too. Not a refusal's; a capped crawl did it before.
+  * LO-198 from FAIL to NO_DATA when a crawl with no LocalBusiness node had a page the guard
+    refused (the count over part of the site is withheld, as over a capped crawl), and from a
+    crash to NO_DATA over any truncated crawl with no LocalBusiness node: the result withheld
+    the count and the text line read it anyway, with `--json` too. The crash is not a
+    refusal's; a capped crawl did it before.
+  * CI-001 and CI-003 from FAIL when `indexability_matrix` is given several URLs by hand and the
+    guard refuses one of them: its row read "HTTP None" as a blocker and `no_answer` as its
+    status; it is unknown now (verdict and status class null). The registry gives the matrix
+    one URL.
 * **Kinds that move**, on items already NO_DATA:
   * `unread` ("the site could not be read") to `blocked` ("this audit's own guard stopped the
     request") on every item fed by a script whose page the guard stopped: a11y_seo_checker,
