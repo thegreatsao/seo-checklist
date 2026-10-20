@@ -10,6 +10,74 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.174.0 — no threshold rests on "inherited" but one, measured and held; no sampled verdict is decided by the crawl caps
+
+Registry version: `90ba79b14b28`, unchanged. **Verdicts move in eight places, named below; every
+other change is a threshold's stated basis, which moves no verdict.** F11, in five batches, each
+with its own sprint contract (`docs/sprint-20261020-F11-*.md`) and reviewed by `gpt-6.1-sol` at high
+effort, every finding reproduced before it was fixed.
+
+* **Verdicts that move:**
+  * **Every page-level item under `--sample`** — `PASS` and an applicability `N/A` become `NO_DATA`
+    when the sample was drawn from a cut pool: a crawl stopped at `--crawl-max-pages` or
+    `--crawl-depth` or refused a page, a crawl seeded from a sitemap list its walk did not read
+    whole, or the sitemap fallback's index with more children than it reads
+    (`SAMPLE_FALLBACK_SITEMAPS`, 3), one on another host, or one it could not read. A pool the cut
+    left with only the entry is withheld the same way. A `FAIL` found stands; a `WARN` stands and
+    says it is a floor; an `N/A` decided by profile, mode or `--only` stands. Measured: MS-020 `PASS`
+    on a three-page crawl of a site whose fourth page fails, CI-016 `N/A` on a two-page crawl.
+  * **Under `--sample`, a lone sampled `FAIL` is kept**, from the entry's `PASS`: when the entry's
+    second fetch failed, or only one page survived, `aggregate_pages` kept the primary row.
+  * **CI-018** from `PASS` to `NO_DATA` when the crawl's sitemap list was cut by the walk's byte or
+    URL budget, its 25-file cap, a sitemap on another host or one that gave no answer
+    (`sitemap_set_incomplete`); a never-crawled URL found stands as a floor.
+  * **MB-100** from `PASS` to `FAIL` for a fixed `width`/`min-width` of 361 to 390 CSS pixels:
+    `MAX_FIXED_WIDTH_PX` is 360, measured — no listed phone in StatCounter's worldwide mobile list is
+    narrower, and 25.7% (at 361px) to 48.9% (at 390px) of its listed page views are narrower than
+    the width that passed.
+  * **KW-076** from `FAIL` to `PASS` where the keyword's only mention is a paragraph of eight words
+    or fewer: `MIN_PARAGRAPH_WORDS` is 0, measured against the Zyte article-extraction benchmark
+    (best paragraph-level F1; at 8 the filter dropped 17% of labelled body paragraphs, and every
+    Japanese sentence). `paragraphs` and the readability scores printed beside it grow too.
+  * **KW-070 and GO-139** from `PASS`, `FAIL` or `N/A` to `NO_DATA` over a full page of Search
+    Console rows (5000): the brand's most-searched query and the page that owns it were picked from
+    the rows read, and `branded.reason` now says the window may hold more.
+  * **KW-071** from `FAIL` or `WARN` to `NO_DATA` over a full page of rows: a page past the cap can
+    widen a query's position spread and end a contest, so the count is not a floor. MS-023's count
+    of split queries is one against a supplied or published brand, and its `FAIL` stands.
+  * **MS-023** from `FAIL` or `WARN` to `NO_DATA` over a full page of rows when no brand was
+    supplied or published: the brand inferred from the top-click row can change with rows the API
+    orders arbitrarily on equal clicks, and move split queries out of the count.
+* **Threshold bases, by count** (`tools/audit_thresholds.py`): 161 numbers a verdict depends on
+  became 130 — standard 20 → 20, measured 11 → 13, convention 66 → 96, inherited 64 → **1** — and
+  15 that decide only what is printed became 47.
+  * The crawl's `DEFAULT_MAX_PAGES` and `DEFAULT_DEPTH` to `convention` again, now that no sampled
+    verdict rests on them; `SAMPLE_FALLBACK_SITEMAPS`, a bare `[:3]` until now, is a new one.
+  * Five definitional or prioritisation numbers to `convention`, the judgement written:
+    `SEVERITY_WEIGHT`, `EFFORT_COST`, `SECOND_LEVEL_LABELS`, `gsc_cannibalization.MIN_PAGES`, and
+    `MIN_DESCRIPTION_CHARS`, which review found reaching GEO-002's score through an `elif`.
+  * Thirty-two to `presentation`, each traced to a field no registry item reads at the severity
+    it writes — a score nothing asserts on, `issues` entries no rule counts, `opportunities`,
+    derived LCP subparts, the profile detector's confidence label. `tests/test_presentation_basis.py`
+    reads the registry and reddens the day an item reads one of those fields.
+  * Twenty-two to `convention` with the judgement written: content, URL and `llms.txt` numbers with
+    no standard and no corpus that answers their claim, the cache, facet, image and link lines (one
+    week of `max-age` is the 90th percentile of Lighthouse's cache model and more lenient than its
+    ~96-day flag, on purpose; 250KB is past the Web Almanac 2024 per-image 90th percentile), the
+    four profile-detector signal tables, and three Search Console numbers with the multi-market
+    blocker kept (`RANKS_FIRST_POSITION`, `MIN_IMPRESSIONS`, `ROW_LIMIT`).
+  * Two to `measured` (`MAX_FIXED_WIDTH_PX`, `MIN_PARAGRAPH_WORDS`), each with a calibration tool and
+    an offline `--check` in CI: `tools/calibrate_mobile_viewport.py`, `tools/calibrate_paragraph_words.py`.
+  * **The one left `inherited` is `detect_profile.MIN_SCORE`.** Measured on 39 labelled homepages
+    (`tools/calibrate_profile_detection.py`): at 4 one site is wrongly narrowed (python.org as a
+    blog, 8 items N/A) and none at 5, which the rule picks. Adopting it moves `--profile auto`
+    verdicts and is the owner's decision, so 4 stays in force and the report records both.
+* **Found and not fixed**, each written where it lives: TE-179 and BL-084 decide on `90` and `50`
+  written in their own registry rules, beside constants that now say so; below the crawl budget a
+  page that timed out is counted read by the pass-by-absence readers; the fourteen crawl-inventory
+  readers do not read a cut sitemap list (CI-018 and `--sample` now do); `gsc_checker`'s two
+  `measured` floors also feed only `opportunities`.
+
 ## 0.173.0 — a request this audit's guard stops is `blocked` on every path, and `indexability_matrix` says when it did not read a sitemap
 
 Registry version: `90ba79b14b28`, unchanged. **Verdicts move only where this audit's own guard
