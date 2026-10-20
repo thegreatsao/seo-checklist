@@ -279,7 +279,7 @@
   },
   {
     "id": "F11",
-    "behavior": "No threshold rests on 'inherited': each of the remaining 62 is calibrated or relabelled 'convention' with its judgement written out",
+    "behavior": "No threshold rests on 'inherited': each of the remaining 64 is calibrated or relabelled 'convention' with its judgement written out",
     "dependencies": [
       "F09"
     ],
@@ -332,5 +332,34 @@
     "state": "passing",
     "evidence": "commit 67c961c, verified 2026-10-20",
     "notes": "Found by the gpt-6.1-sol re-review of F09 (0.170.0, unpushed): the crawl caps' convention basis claimed more than the code held. Contract: docs/sprint-20261020-F12.md."
+  },
+  {
+    "id": "F13",
+    "behavior": "The HTTP specification claims no more than the code holds: off-host sitemaps are never requested on any path, sitemap budgets count bytes and bind every walker, a TLS port refusal classifies as blocked, every enforced Reader line names a test that fails under the violation, and the crawl caps are inherited again because under --sample they still decide which pages a sampled verdict is about",
+    "dependencies": [
+      "F10",
+      "F12"
+    ],
+    "verification": "make verify-feature F=F13",
+    "layers": [
+      {
+        "label": "Layer 1 — Syntax & Static",
+        "cmd": "make lint",
+        "repair": "Run 'make lint' and fix each ruff finding; the rule set and why it is narrow are in pyproject.toml."
+      },
+      {
+        "label": "Layer 2 — Runtime Behavior",
+        "cmd": "make test",
+        "repair": "Rerun the first failing test file alone (python -m unittest tests.<file>); fix the code, not the test, unless the test contradicts the sprint contract. Most tests carry the account of the defect they guard in their docstring."
+      },
+      {
+        "label": "Layer 3 — System Confirmation",
+        "cmd": ".venv/bin/python skills/seo-checklist/tools/ci_local.py",
+        "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
+      }
+    ],
+    "state": "active",
+    "evidence": "",
+    "notes": "Found by the independent gpt-6.1-sol review of f376ca6..78aed1c (20 October): F10's HTTP-1, HTTP-10 and HTTP-13 overclaimed, and the crawl caps' convention basis failed F02 criterion 3 through --sample. Contract: docs/sprint-20261020-F13.md."
   }
 ]

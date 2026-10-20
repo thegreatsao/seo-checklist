@@ -1181,8 +1181,10 @@ def discover_sitemap_urls(site_url: str, timeout: int = 15,
 # The bounds of one sitemap walk. The site being audited decides what its sitemaps
 # say, and on the public form that site is a stranger's input: before 0.167.0 a walk
 # read up to 25 files of 8 MB, kept every `<loc>` of them, and decompressed a gzipped
-# file with no limit at all. A walk that reaches either budget stops, and says so —
-# the walkers name what they did not read, never just read less.
+# file with no limit at all. A walk that spends the byte budget requests no more files,
+# and one past the URL budget keeps no more URLs (it still reads files, so a broken one
+# is reported); either way it says so — the walkers name what they did not read or keep,
+# never just read less. Both are counted in bytes and URLs held (0.172.0).
 #
 # basis: standard — sitemaps.org: a sitemap file is at most 50 MB (52,428,800 bytes)
 #  uncompressed. A gzipped one is decompressed no further, so 8 MB on the wire stays

@@ -207,5 +207,71 @@ class ConnectsToTheValidatedAddress(unittest.TestCase):
         self.assertNotIn("valid", out)
         self.assertEqual(out["host"], "rebind.example")
 
+    def test_the_second_pass_connects_to_the_validated_address_too_and_names_the_host(self):
+        """Pass two reads a certificate that failed verification, over a connection
+        of its own. The test above stops before a handshake, so neither the second
+        connection nor the name sent as SNI was read by anything (F13)."""
+        sys.path.insert(0, str(SCRIPT.parent))
+        import socket as socket_module
+        import ssl
+        from unittest import mock
+
+        import tls_certificate
+
+        answers: list[str] = []
+
+        def resolving(host, port, *args, **kwargs):
+            ip = self.PUBLIC if not answers else "127.0.0.1"
+            answers.append(host)
+            return [(socket_module.AF_INET, socket_module.SOCK_STREAM, 6, "", (ip, port))]
+
+        connected, names = [], []
+
+        def connect(address, *args, **kwargs):
+            connected.append(address)
+            return mock.MagicMock()
+
+        def wrap(context, raw, server_hostname=None, **kwargs):
+            names.append(server_hostname)
+            if context.verify_mode == ssl.CERT_REQUIRED:
+                error = ssl.SSLCertVerificationError(1, "self-signed certificate")
+                error.verify_message = "self-signed certificate"
+                raise error
+            tls = mock.MagicMock()
+            tls.__enter__.return_value = tls
+            tls.getpeercert.return_value = b"der"
+            tls.version.return_value = "TLSv1.3"
+            return tls
+
+        env = {"SEO_LOOPBACK_ONLY": "", "SEO_ALLOW_PRIVATE": ""}
+        with mock.patch.dict(os.environ, env), \
+                mock.patch.object(socket_module, "getaddrinfo", side_effect=resolving), \
+                mock.patch.object(socket_module, "create_connection", side_effect=connect), \
+                mock.patch.object(ssl.SSLContext, "wrap_socket", autospec=True,
+                                  side_effect=wrap):
+            out = tls_certificate.inspect("https://rebind.example/")
+        self.assertIs(out["valid"], False)
+        self.assertEqual(out["unverified_bytes"], 3, "pass two was not reached")
+        self.assertEqual(connected, [(self.PUBLIC, 443)] * 2)
+        self.assertEqual(names, ["rebind.example"] * 2)
+
+
+class APortRefusalIsBlocked(unittest.TestCase):
+    """HTTP-13: a process held to the web ports refuses another port before the name
+    is resolved, and the refusal classifies as `blocked`. `tls_certificate.py` kept
+    the refusal's text and dropped its kind, so the runner recorded `crash` (F13)."""
+
+    def test_the_runner_records_the_guard_refusal_as_blocked(self):
+        sys.path.insert(0, str(SCRIPT.parent))
+        from unittest import mock
+
+        import checklist_runner
+
+        with mock.patch.dict(os.environ, {"SEO_STANDARD_PORTS_ONLY": "1"}):
+            out = checklist_runner._timed(
+                ("tls_certificate.py", ("https://example.com:8443/",)), 60)
+        self.assertIn("port 8443", out["__error__"])
+        self.assertEqual(out["__error_kind__"], "blocked")
+
 if __name__ == "__main__":
     unittest.main()

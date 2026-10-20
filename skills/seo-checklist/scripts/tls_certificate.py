@@ -37,10 +37,11 @@ from urllib.parse import urlparse
 # `assert_safe_url` reaches only `socket` and `ipaddress`, so this file keeps the
 # stdlib-only property that lets it run where `requests` is not installed.
 try:
-    from lib.safe_http import SafeHTTPError, validated_addresses
+    from lib.safe_http import HostResolutionError, SafeHTTPError, validated_addresses
     from lib.typed_credential import read_as_url, scheme_added
 except ImportError:
-    from scripts.lib.safe_http import SafeHTTPError, validated_addresses
+    from scripts.lib.safe_http import (HostResolutionError, SafeHTTPError,
+                                       validated_addresses)
     from scripts.lib.typed_credential import read_as_url, scheme_added
 
 # basis: convention — the point of asking is to renew before it bites, and a month
@@ -114,7 +115,12 @@ def inspect(url: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
     try:
         addresses = validated_addresses(target)
     except SafeHTTPError as exc:
+        # Its kind travels with it (HTTP-9), as `seo_common.fetch_error_kind` names
+        # it: a port or address refusal is `blocked`, a name with no address
+        # `unresolved`. Without it the runner recorded `crash`.
         out["error"] = f"SafeHTTPError: {exc}"
+        out["error_kind"] = ("unresolved" if isinstance(exc, HostResolutionError)
+                             else "blocked")
         return out
 
     def connect():

@@ -95,7 +95,7 @@ component boundaries.
 | `skills/seo-checklist/tools/` | Generators and gates (`build_checklist.py`, `audit_*.py`, `ci_local.py`); not run by an audit |
 | `skills/seo-checklist/resources/` | Agent lenses, config, i18n, playbooks, references |
 | `tests/` | The unittest suite and the records the gates hold (`*.json`) |
-| `openspec/specs/` | The specification, by capability; changes go through the `opsx` workflows in `.claude/` |
+| `openspec/specs/` | The specification, by capability; a spec edit ships in the commit of the code it describes (see Commits and Docs). The `opsx` workflows in `.claude/` are installed and unused: `openspec/changes/` holds no change |
 
 Grades per module: [quality document](docs/quality-document.md).
 

@@ -84,7 +84,8 @@ questions and a different `Accept` header is a different request.
 
 ### Requirement: HTTP-1 — a URL is validated before it is requested, and the address it validated is the address it connects to
 
-Every request MUST pass the guard first. The guard SHALL resolve the host, SHALL refuse
+Every request to a URL the operator or the audited site supplied MUST pass the guard first.
+The guard SHALL resolve the host, SHALL refuse
 the resolved address unless it is globally routable — private, shared (100.64.0.0/10),
 link-local, reserved, multicast and unspecified addresses alike — and the connection SHALL
 then be pinned to the address that was validated, so a name that resolves twice cannot
@@ -105,7 +106,11 @@ not resolve costs no request at all. All three read the path a checker's fetch t
 in 100.64.0.0/10, by name and as literals, and requires a refusal without the allowance and
 a pass with it. `test_tls_certificate.ConnectsToTheValidatedAddress` resolves a name to a
 public address and then to loopback, and requires the one connection `tls_certificate.py`
-opens to go to the public address.
+opens to go to the public address; its second test fails the verifying handshake so the
+second pass runs, and requires both connections on the public address and the name, not
+the address, as SNI on both. Until 0.172.0 the first stopped before any handshake, so the
+second pass and the SNI name were unread: probed by mutation (F13), a second pass that
+resolved the name again, or either pass sending the address as SNI, stayed green.
 
 The one request the substrate made on its own account was uncovered until 0.94.1, and it
 was uncovered because it was also unguarded: `_fetch_robots` called `requests.get`
@@ -150,6 +155,14 @@ validated the host and then let `socket.create_connection` resolve the name agai
 the validate-then-connect gap this requirement exists to close. It now connects to
 `safe_http.validated_addresses()`, in resolver order; the name still goes to SNI and to
 certificate matching, so what is verified is unchanged.
+
+**Not the fixed services.** Two scripts reach a fixed third-party endpoint directly, not
+through the guard, and never connect to a URL the site supplied: `html_validator.py` asks the
+W3C Nu validator (`validator.w3.org`), which fetches the page itself, and
+`domain_safety_check.py` posts to Google Safe Browsing and runs the system `whois` binary on
+the domain. Both import the guard, so INV-H1's census, which reads imports and not calls,
+passes them: that is the gap its `partial` names. The first sentence of this
+requirement said "every request" until 0.172.0, which these do not meet (F13 review).
 
 #### Scenario: a name that answers the guard and the connection differently
 - **WHEN** a host resolves to a public address for the guard's lookup and to loopback for
@@ -705,9 +718,9 @@ reddens three.
 A response larger than the ceiling, or larger than a caller's own limit, SHALL raise rather
 than return a shortened body. A declared encoding MUST be honoured; where nothing is
 declared the bytes are sniffed, and what is found past the sniff window MUST NOT be read.
-A walk over many responses — the sitemaps a site names — SHALL stop at a budget and say
-what it left unread, and a compressed body SHALL be expanded no further than the protocol
-allows.
+A walk over the sitemaps a site names — the crawl's, `sitemap_checker`'s and
+`indexability_matrix`'s — SHALL stop requesting files at a byte budget, SHALL hold no more URLs than a URL budget, and SHALL say what it left unread or
+unkept; and a compressed body SHALL be expanded no further than the protocol allows.
 
 **Why:** a truncated body is a document with its footer missing, and every checker that
 counts elements would answer confidently about a page that does not exist. The same is true
@@ -727,8 +740,15 @@ the crawl and `sitemap_checker` are each given an index of 60,000 URLs and of 36
 must keep no more than the URL budget, stop requesting files past the byte budget, and name
 the cut (`cut` and `unvisited` in the crawl, `truncated_reason` in the checker);
 `test_the_indexability_matrix_stops_reading_sitemaps_past_its_byte_budget` holds the third
-walker; `test_a_gzipped_sitemap_is_not_decompressed_past_the_protocol_limit` expands a
-60 MB document and requires it returned invalid, saying why.
+walker. `test_the_byte_budget_counts_bytes_in_all_three_walkers` serves sitemaps of two-byte
+text, whose bytes pass the budget while their characters do not, and requires each walker to
+stop; `test_an_error_page_body_counts_against_the_byte_budget` gives the crawl 24 error pages
+of 1.5 MB; `test_the_indexability_matrix_holds_no_more_sitemap_urls_than_its_budget` gives
+the matrix 60,000 URLs. `test_a_gzipped_sitemap_is_expanded_no_further_than_the_protocol_limit`
+expands 200 MB of comment behind 0.9 MB on the wire and requires it returned invalid with
+the memory peak under 150 MB (bounded: about 90; unbounded: about 400);
+`test_a_gzipped_sitemap_is_not_decompressed_past_the_protocol_limit` reads the outcome only,
+and stays green under an unbounded expansion.
 
 **A walk has a budget, from 0.167.0.** One response was capped and a walk over many was
 not: 25 sitemaps of up to 8 MB each were read and every `<loc>` kept, and the crawl's page
@@ -736,7 +756,27 @@ cap bounds pages fetched, not sitemap URLs held. A walk now stops reading new fi
 `SITEMAP_BYTES_BUDGET` (20 MB) has been read and keeps at most `SITEMAP_URLS_BUDGET`
 (50,000) URLs, one sitemap file's protocol maximum; `indexability_matrix` took the byte
 budget in 0.168.0, and with files left unread it reports a URL's sitemap membership as
-unknown rather than false. A `.xml.gz` body is expanded to at most the protocol's 50 MB
+unknown rather than false.
+
+**Bytes, and the matrix's URL budget, from 0.172.0.** The byte budget is counted in the
+response body's bytes, `fetch_url`'s `bytes`, an error page's as well as a sitemap's: a body
+sent with `Content-Encoding: gzip` counts decoded, a `.xml.gz` file served as it is counts
+compressed, and its expansion is bounded by the protocol limit. Until then each walker added
+the decoded text's length, which is characters — eight sitemaps of UTF-8 text read 48,001,761
+bytes and counted 16,001,761, with no cut reported — and the crawl counted nothing for a
+response that failed, so 24 error pages of 1.5 MB were read whole. A response that fails
+part-way through its body — refused for passing its own 8 MB limit, or cut by the connection
+— returns no body and counts nothing, whatever was read before it failed; the file cap (25 in
+the crawl and the checker, 10 in the matrix) and the 8 MB limit are what bound those. `--sample`'s sitemap fallback is not
+one of the walkers: it tries the conventional sitemap paths until one yields pages and follows
+at most three children of each index it reads, every response under the ceiling, with no byte
+budget of its own. `indexability_matrix` held every URL it read, and
+now past `SITEMAP_URLS_BUDGET` reports membership as unknown (`null`), as past the byte
+budget. It names no reason for either: no item reads `in_sitemap`. In the crawl and the
+checker the URL budget bounds what is held, not what is requested: past it they go on reading
+files, bounded by the byte budget and the file cap, so a broken or invalid sitemap past it is
+still reported, and the URLs they list are counted as dropped. Stopping there would have
+turned the checker's FAIL on such a file into a withheld verdict. A `.xml.gz` body is expanded to at most the protocol's 50 MB
 (`SITEMAP_MAX_UNCOMPRESSED`), so 8 MB on the wire cannot become gigabytes in memory. The
 stop is stated the way a cap is: what was cut is named, and the checker's result is
 `truncated`, which withholds a clean verdict over it (`openspec/specs/verdicts/` VRD-14).
@@ -772,8 +812,10 @@ stop is stated the way a cap is: what was cut is named, and the checker's result
 #### Scenario: a sitemap walk past its budget
 - **WHEN** the sitemaps a site names hold more URLs than the URL budget, or more bytes than
   the byte budget
-- **THEN** the walk keeps no more URLs than the budget and requests no new file past it
+- **THEN** the walk keeps no more URLs than the URL budget, and requests no new file once the
+  byte budget, counted in bytes, has been read
 - **AND** what it cut is named in its result, rather than the part read standing for the set
+- **AND** `indexability_matrix`, which keeps no list of cuts, reports membership as unknown
 
 #### Scenario: a compressed sitemap that expands past the protocol limit
 - **WHEN** a gzipped sitemap decompresses past 50 MB
@@ -879,7 +921,8 @@ every time is one a reader learns to skip. Probed by hard-coding the recorded fi
 
 A sitemap SHALL be requested only on the audited host — its `www.` variant and the other
 scheme count as the same site, another port does not — and one named on another host,
-whether by `robots.txt` or by a sitemap index, SHALL be listed and never requested. The
+whether by `robots.txt` or by a sitemap index, SHALL be listed and never requested. That holds
+for every path that reads a sitemap: the three walkers and `--sample`'s own fallback. The
 crawl and `sitemap_checker` SHALL name such sitemaps in `off_host_sitemaps`, and the
 checker's result SHALL be `truncated` while it has any. A process held to the web ports
 (`SEO_STANDARD_PORTS_ONLY`) SHALL refuse any port but 80 and 443 before the name is
@@ -900,12 +943,25 @@ the three walkers sitemaps on other hosts and ports and requires that none is re
 the crawl lists them in `off_host_sitemaps` and keeps only the audited host's URLs, the
 `www.` variant and the other scheme are requested as the same site, and `sitemap_checker`
 lists one named by `robots.txt` or by an index, does not say "No sitemap found", and is
-`truncated` naming it.
+`truncated` naming it; `test_another_port_on_the_audited_host_is_another_host` holds the
+port clause for the crawl and the checker, and
+`test_the_sample_fallback_requests_no_index_child_off_the_audited_host` the fallback, both
+what it requests and the stderr line naming what it refused.
 `test_evidence_apis.SitemapReconciliation.test_a_walk_cut_by_its_budget_or_by_host_withholds_the_reverse_direction`
 reads what GO-137 does with such a walk. `test_safe_http.TheWebDeploymentReachesOnlyTheWebPorts`
 holds the switch in four directions: another port is refused with no lookup made and
 classifies as `blocked`, a redirect to another port is not followed, both web ports are
 fetched whether named or not, and with the switch off any port is fetched.
+`test_tls_certificate.APortRefusalIsBlocked` holds the one script with a socket of its own,
+through the runner.
+
+**Two paths it missed, until 0.172.0** (F13, found by an independent review of F10). With no
+crawl, `--sample` reads the conventional sitemap paths itself and requested up to three of an
+index's children on any host and port; it now refuses the ones off the host and names them on
+stderr. And `tls_certificate.py` kept the guard's refusal as text and dropped its kind, so the
+runner recorded a port refusal as `crash`; it now carries `blocked` (`unresolved` for a name
+with no address). The Reader line above had said `enforced` over both, and over the port
+clause, which no test read.
 
 **Not held, and said here so that it is not found again as a surprise.** A sitemap on the
 audited host that redirects elsewhere is still followed, as every fetch follows a redirect,
@@ -914,7 +970,7 @@ way. With the switch set, requests to other public sites on the web ports remain
 checking outbound links means making them. The switch is off by default, so an operator
 auditing a staging site on `:8080` by hand is not refused; a public deployment sets it.
 `indexability_matrix` skips an off-host sitemap without listing it, and no item reads its
-sitemap list.
+sitemap list; `--sample`'s fallback names one on stderr only.
 
 #### Scenario: a sitemap named on another host
 - **WHEN** `robots.txt` or a sitemap index names a sitemap on another host or port
@@ -946,7 +1002,8 @@ sitemap list.
 * **INV-H2** — a cached response is byte-identical to the response it replaced.
   *Reader: enforced* — seven fields plus the header mapping and the redirect chain are
   compared between a live and a restored response.
-* **INV-H3** — the audit makes no request the guard did not validate, including redirects.
+* **INV-H3** — the audit makes no request to a URL the operator or the site supplied that the
+  guard did not validate, including redirects (the fixed services HTTP-1 names are outside it).
   *Reader: enforced* — the pinned adapter is asserted to try validated addresses in resolver
   order, to refuse a private second hop without reusing the first pin, and to keep the
   original name for SNI and certificate matching.
@@ -1102,7 +1159,7 @@ is outside it.
 
 ## Appendix B — how much of this document is enforced
 
-Four rows were measured by mutation and the rest were derived from a census of what each
+Six rows were measured by mutation and the rest were derived from a census of what each
 test body asserts. The distinction is stated because it is the difference between a
 classification and a guess, and this suite has been wrong four times in the guessing
 direction.
@@ -1113,7 +1170,11 @@ the clause the Reader line singles out. HTTP-11 — turning the unconditional `v
 into a `setdefault`, so a caller may relax it, left 319 tests green when this was written
 and reddens two of its four readers now. HTTP-8 — as of 5 September 2026 the recording is read in both directions and the
 provenance omission is pinned as an absence; before that, the string
-`http_cache` appears nowhere under `tests/`.
+`http_cache` appears nowhere under `tests/`. HTTP-10 and HTTP-13, and HTTP-1's own-socket
+half (20 October 2026, F13): each clause broken in turn — a walker counting characters, the
+matrix holding every URL, the crawl skipping an error page's bytes, an unbounded expansion, a port read as the same host, the sample
+fallback following any host or not naming what it refused, the TLS refusal's kind dropped, a second TLS pass resolving the
+name, the address sent as SNI — and each reddens the test the Reader line names.
 
 **Derived, not probed:** nothing now. Every row above was probed by mutation before it
 was moved, which is the method this appendix distinguishes from a guess, and the guessing
@@ -1136,7 +1197,11 @@ Invariants: INV-H2 and INV-H3 enforced; INV-H1 and INV-H4 partial.
 HTTP-13 joined on 20 October 2026 (F10), written for behaviour 0.167.0 and 0.168.0 had
 shipped with its tests and without a requirement: what a site's own word may make the
 audit request. It entered `enforced` because each clause was already held by a test seen
-red on the code before it, not by a probe run for this document.
+red on the code before it, not by a probe run for this document — and that was wrong in three
+places, found by an independent review and probed by mutation in F13 (0.172.0): two paths
+requested what the requirement forbids, and the port clause had no reader. HTTP-1 and HTTP-10
+had the same defect from the same release: a claim written as held where the test stayed
+green under the violation.
 
 Closed on 6 September 2026, and the shape of what was left is worth recording. Nine of the
 ten `partial` rows were not missing tests of their mechanisms — those were thorough. What

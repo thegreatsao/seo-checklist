@@ -1081,6 +1081,8 @@ Inventory mode:
 `fetch_error` — NoneType or str (no URL answered; three `critical` items read `rows.0`)
 `rows[]` — array
   - item keys: url, final_url, status, status_class, robots_allowed, robots_rule, meta_robots, x_robots_tag, snippet_controls, canonical, in_sitemap, redirects, verdict, blockers, error
+`rows[].in_sitemap` — bool or null — null when the sitemap byte budget left files unread
+  or the sitemaps listed more than `SITEMAP_URLS_BUDGET` URLs (0.172.0); read by no item
 `rows[].snippet_controls` — object
   - keys: restricted, nosnippet, nosnippet_sources, max_snippet,
     max_snippet_sources, data_nosnippet_count, data_nosnippet_sources,
@@ -1887,6 +1889,8 @@ the scheme. Three shapes, and the difference between them is the whole contract:
 `days_until_expiry` — int — a `high` issue under 30 days
 `verify_error` — str — only when `valid` is false
 `error` — str — only when the handshake never completed
+`error_kind` — str — `blocked` or `unresolved`, only when the guard refused the address
+  or port before any connection (0.172.0; the runner recorded `crash` before)
 `reason` — str — only when the URL is `http://`
 `issues[]` — array
 

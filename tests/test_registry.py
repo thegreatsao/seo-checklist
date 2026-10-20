@@ -706,11 +706,13 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 0.170.0 (F09): the crawl's `DEFAULT_MAX_PAGES` and `DEFAULT_DEPTH` to
         # `convention`, and the MinHash pair to `presentation`, since no rule reads a
         # near-duplicate field.
+        # 0.172.0 (F13): the two crawl caps back to `inherited`: under `--sample` the
+        # cap still decides which pages a sampled verdict is about.
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 11,
-            "convention": 68,
-            "inherited": 62,
+            "convention": 66,
+            "inherited": 64,
             "presentation": 15,
         })
         self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 161)

@@ -2710,9 +2710,11 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
     try:
         from lib.safe_http import robots_allows, safe_get
         from seo_common import CONVENTIONAL_SITEMAP_PATHS
+        from seo_common import same_host as same_site
     except ImportError:
         from scripts.lib.safe_http import robots_allows, safe_get
         from scripts.seo_common import CONVENTIONAL_SITEMAP_PATHS
+        from scripts.seo_common import same_host as same_site
     host = urlparse(base_url).netloc
     found: list[str] = []
 
@@ -2737,7 +2739,15 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None) -> l
         # A sitemap index points at more sitemaps; follow one level.
         nested = [u for u in locs if u.endswith(".xml")]
         pages = [u for u in locs if not u.endswith(".xml")]
-        for n in nested[:3]:
+        # Never requested off the audited host, as in the three walkers (HTTP-13):
+        # an index is the site's word, and following it anywhere made this a GET
+        # proxy. Another port is another host; the www variant is not.
+        own = [u for u in nested if same_site(base_url, u)]
+        if len(own) < len(nested):
+            elsewhere = [u for u in nested if not same_site(base_url, u)]
+            print(f"  {len(elsewhere)} sitemap(s) on another host not requested: "
+                  + ", ".join(elsewhere), file=sys.stderr)
+        for n in own[:3]:
             try:
                 pages += LOC_RE.findall(safe_get(n, timeout=15).text)
             except Exception:

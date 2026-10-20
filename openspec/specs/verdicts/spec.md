@@ -687,6 +687,17 @@ count over a truncated crawl, and withholds `links_analyzed` when no link was re
 `links_analyzed gt 0` would otherwise call the item inapplicable off the pages the cap let
 in. A count is a floor only when each member, once found, stays found.
 
+**Not held under `--sample`, written down in 0.172.0.** A page-level item reads one page, so
+no cap stands between it and its input — until `--sample` folds several pages into one
+verdict. With a crawl the sampled pages are drawn from the pages it read, so a crawl cut by
+its page or depth cap decides which pages a sample can reach: measured on a served site,
+MS-020 `PASS` on 3/3 pages over a three-page crawl and `FAIL` over the whole, and CI-016 `N/A`
+over a two-page crawl and `FAIL` over the whole. Neither is withheld. Withholding the sampled
+`PASS` alone was tried and left the `N/A`, a pool the cap shrank to the entry page, and a
+sample the sitemap supplied after the crawl read no page eligible to be sampled; closing all four reaches past the
+aggregation, so the crawl caps went back to `inherited` instead, which is the debt this
+paragraph names (F13; `site_crawl.py`'s basis lines).
+
 #### Scenario: a clean bill of health over a capped search
 - **WHEN** an assertion passes by finding none of the thing it forbids, and the input
   says it was truncated

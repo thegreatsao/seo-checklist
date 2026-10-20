@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup, NavigableString
 import site_crawl
 from seo_common import (read_as_url,
     SITEMAP_BYTES_BUDGET,
+    SITEMAP_URLS_BUDGET,
     discover_sitemap_urls,
     fetch_robots,
     fetch_url,
@@ -94,8 +95,8 @@ def snippet_controls(html_text: str, x_robots_tag: str | None) -> dict:
 
 
 def urls_from_sitemaps(site: str, timeout: int) -> set[str] | None:
-    """Every URL the site's own sitemaps list, or None when the byte budget left
-    some unread: a URL missing from the ones read is then not known to be missing."""
+    """Every URL the site's own sitemaps list, or None when a budget left some unread
+    or unkept: a URL missing from the ones held is then not known to be missing."""
     urls = set()
     read_bytes = 0
     for sm in discover_sitemap_urls(site, timeout=timeout)[:10]:
@@ -104,9 +105,11 @@ def urls_from_sitemaps(site: str, timeout: int) -> set[str] | None:
         if read_bytes >= SITEMAP_BYTES_BUDGET:
             return None
         fetched = fetch_url(sm, timeout=timeout, max_bytes=8_000_000)
-        read_bytes += len(fetched.get("text") or "")
+        read_bytes += fetched.get("bytes") or 0     # the body, not its characters
         parsed = parse_sitemap_xml(fetched.get("text") or "", sm)
         urls.update(row["loc"] for row in parsed["urls"])
+        if len(urls) > SITEMAP_URLS_BUDGET:
+            return None
     return urls
 
 

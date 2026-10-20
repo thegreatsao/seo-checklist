@@ -16,9 +16,14 @@ Each case below fails on 0.166.0.
 """
 from __future__ import annotations
 
+import contextlib
 import gzip
+import io
 import sys
+import tracemalloc
 import unittest
+import zlib
+from unittest import mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent
@@ -57,7 +62,9 @@ class Documents:
         if text is None:
             return {"status": 404, "url": url, "text": "", "headers": {},
                     "redirect_chain": [], "error": None, "error_kind": None}
-        return {"status": 200, "url": url, "text": text, "bytes": len(text),
+        # `bytes` as `fetch_url` reports it: the body's length, not the text's.
+        return {"status": 200, "url": url, "text": text,
+                "bytes": len(text.encode("utf-8")),
                 "headers": {"content-type": "application/xml"},
                 "redirect_chain": [], "error": None, "error_kind": None}
 
@@ -142,6 +149,92 @@ class SizeBudget(unittest.TestCase):
         self.assertEqual(parsed["type"], "invalid")
         self.assertIn("uncompressed", parsed["error"])
 
+    def test_the_byte_budget_counts_bytes_in_all_three_walkers(self):
+        # 24 children of 1.5 MB, each 750,000 two-byte characters: 36 MB read and
+        # 18 million characters. Counting characters let 0.169.1 read all of it.
+        docs = big_index(24, 1)
+        for name in list(docs)[1:]:
+            docs[name] = docs[name].replace("<url>", f"<!--{'ж' * 750_000}--><url>", 1)
+        root = SITE + "sitemap.xml"
+
+        fetch = Documents(docs)
+        out = site_crawl.load_sitemap_urls(SITE, [root], fetch=fetch)
+        read = sum(len(docs[u].encode()) for u in fetch.requested if u in docs)
+        self.assertLess(read, seo_common.SITEMAP_BYTES_BUDGET + 2_000_000)
+        self.assertIn("byte budget", " ".join(out["cut"]))
+
+        checker = SitemapChecker(docs)
+        out = checker.run([root])
+        self.assertLess(len(checker.fetch.requested), 25)
+        self.assertIn("byte budget", out.get("truncated_reason", ""))
+
+        # The matrix reads at most ten declared sitemaps: ten of 3 MB, 15 million
+        # characters.
+        import indexability_matrix as ix
+        declared = [f"{SITE}sitemap-{i}.xml" for i in range(10)]
+        docs = {sm: urlset([f"{SITE}p{i}"]).replace(
+                    "<url>", f"<!--{'ж' * 1_500_000}--><url>", 1)
+                for i, sm in enumerate(declared)}
+        fetch = Documents(docs)
+        with mock.patch.object(ix, "fetch_url", fetch), \
+                mock.patch.object(ix, "discover_sitemap_urls",
+                                  lambda *a, **k: declared):
+            found = ix.urls_from_sitemaps(SITE, 15)
+        self.assertTrue(found is None, f"{len(found or ())} URLs held")
+        self.assertLess(len(fetch.requested), len(declared))
+
+    def test_an_error_page_body_counts_against_the_byte_budget(self):
+        # 24 children answering 404 with 1.5 MB each: the crawl skipped the count for
+        # a failed fetch, so 36 MB were read and no cut reported (F13 review).
+        root = SITE + "sitemap.xml"
+        names = [f"{SITE}part-{i}.xml" for i in range(24)]
+        body = "x" * 1_500_000
+
+        class Missing(Documents):
+            def __call__(self, url, **kwargs):
+                if url == root:
+                    return super().__call__(url, **kwargs)
+                self.requested.append(url)
+                return {"status": 404, "url": url, "text": body, "bytes": len(body),
+                        "headers": {}, "redirect_chain": [], "error": None,
+                        "error_kind": None}
+
+        fetch = Missing({root: index(names)})
+        out = site_crawl.load_sitemap_urls(SITE, [root], fetch=fetch)
+        self.assertLess(len(fetch.requested), 16)
+        self.assertIn("byte budget", " ".join(out["cut"]))
+
+    def test_the_indexability_matrix_holds_no_more_sitemap_urls_than_its_budget(self):
+        # Two sitemaps of 30,000: 60,000 held until F13. Past the budget a URL not
+        # among those kept is not known to be missing, so membership is unknown.
+        import indexability_matrix as ix
+        declared = [SITE + "a.xml", SITE + "b.xml"]
+        docs = {sm: urlset([f"{SITE}{k}/{j}" for j in range(30_000)])
+                for k, sm in enumerate(declared)}
+        with mock.patch.object(ix, "fetch_url", Documents(docs)), \
+                mock.patch.object(ix, "discover_sitemap_urls",
+                                  lambda *a, **k: declared):
+            found = ix.urls_from_sitemaps(SITE, 15)
+        self.assertTrue(found is None, f"{len(found or ())} URLs held")
+
+    def test_a_gzipped_sitemap_is_expanded_no_further_than_the_protocol_limit(self):
+        # 200 MB of comment behind 0.9 MB on the wire. Memory is what the limit is
+        # for, so memory is what is measured: the bounded read peaks under 100 MB,
+        # an unbounded one at about 400.
+        packer = zlib.compressobj(1, zlib.DEFLATED, 31)
+        parts = [packer.compress(f'<urlset xmlns="{NS}"><!--'.encode())]
+        parts += [packer.compress(b"x" * 1_000_000) for _ in range(200)]
+        parts += [packer.compress(b"--></urlset>"), packer.flush()]
+        wire = b"".join(parts).decode("latin1")
+        tracemalloc.start()
+        try:
+            parsed = seo_common.parse_sitemap_xml(wire, SITE + "sitemap.xml.gz")
+            peak = tracemalloc.get_traced_memory()[1]
+        finally:
+            tracemalloc.stop()
+        self.assertEqual(parsed["type"], "invalid")
+        self.assertLess(peak, 150_000_000, f"peak {peak:,} bytes")
+
 
 class OffHostSitemaps(unittest.TestCase):
 
@@ -191,6 +284,46 @@ class OffHostSitemaps(unittest.TestCase):
         self.assertEqual(checker.fetch.requested, [root])
         self.assertEqual(out["off_host_sitemaps"], [child])
 
+    def test_another_port_on_the_audited_host_is_another_host(self):
+        root = SITE + "sitemap.xml"
+        port = "https://site.example:8443/child.xml"
+        docs = {root: index([port]), port: urlset([SITE + "a"])}
+        fetch = Documents(docs)
+        out = site_crawl.load_sitemap_urls(SITE, [root], fetch=fetch)
+        self.assertEqual(fetch.requested, [root])
+        self.assertEqual(out["off_host_sitemaps"], [port])
+        checker = SitemapChecker(docs)
+        out = checker.run([root])
+        self.assertEqual(checker.fetch.requested, [root])
+        self.assertEqual(out["off_host_sitemaps"], [port])
+
+    def test_the_sample_fallback_requests_no_index_child_off_the_audited_host(self):
+        # `--sample` with no crawl reads the conventional sitemap paths itself and
+        # followed an index's children wherever they pointed (0.169.1).
+        import checklist_runner
+        import lib.safe_http as safe_http
+        asked = []
+        own = SITE + "own.xml"
+        docs = {SITE + "sitemap.xml": index(["https://other.example/s.xml",
+                                             "https://site.example:8443/s.xml", own]),
+                own: urlset([SITE + "a", SITE + "b"])}
+
+        def get(url, **_kwargs):
+            asked.append(url)
+            if url in docs:
+                return mock.Mock(text=docs[url])
+            raise OSError("not served")
+
+        stderr = io.StringIO()
+        with mock.patch.object(safe_http, "safe_get", get), \
+                mock.patch.object(safe_http, "robots_allows", return_value=(True, "")), \
+                contextlib.redirect_stderr(stderr):
+            found = checklist_runner.discover_urls(SITE, 5)
+        self.assertEqual(asked, [SITE + "sitemap.xml", own])
+        self.assertIn("2 sitemap(s) on another host not requested: "
+                      "https://other.example/s.xml, https://site.example:8443/s.xml",
+                      stderr.getvalue())
+        self.assertEqual(found, [SITE.rstrip("/"), SITE + "a", SITE + "b"])
 
     def test_the_indexability_matrix_requests_no_sitemap_on_another_host(self):
         import indexability_matrix as ix

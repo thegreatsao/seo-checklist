@@ -96,7 +96,7 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
             continue
         seen_sitemaps.add(sm_url)
         fetched = fetch_url(sm_url, timeout=timeout, max_bytes=8_000_000)
-        read_bytes += len(fetched.get("text") or "")
+        read_bytes += fetched.get("bytes") or 0     # the body, not its characters
         entry = {
             "url": sm_url,
             "status": fetched.get("status"),
