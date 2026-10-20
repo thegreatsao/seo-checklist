@@ -273,8 +273,8 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "active",
-    "evidence": "",
+    "state": "passing",
+    "evidence": "commit 42b8c4a, verified 2026-10-20",
     "notes": "Found 2026-10-20: 0.167.0, 0.168.0 and 0.169.0 changed behaviour without touching a spec, and GOV-2's count was stale. Contract: docs/sprint-20261020-F10.md. Separate from F04 (the partial requirements)."
   }
 ]
