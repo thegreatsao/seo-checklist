@@ -10,6 +10,38 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.171.0 — BL-081 and CI-018's never-crawled pages stop judging a site off part of a capped crawl
+
+Registry version: `90ba79b14b28`, unchanged. **Two verdicts move, each only over a crawl
+that stopped at its page or depth cap: BL-081 (`medium`) could be FAIL, WARN or N/A and is
+NO_DATA; CI-018 (`medium`) could WARN on a sitemap URL robots.txt refuses and no longer
+does.** On a crawl that read the whole site nothing moves. 0.170.0 has not been published;
+this release corrects what its `convention` basis for the crawl caps claimed.
+
+* **Found by a second review of 0.170.0** (Codex on `gpt-6.1-sol`), which reproduced both.
+  0.170.0's line said every crawl-fed answer over a capped crawl was withheld, unmoved or a
+  floor; these two were none of those.
+* **BL-081 counted a share.** A target is overused when one anchor text is on 80% or more of
+  its nonblank editorial anchors, and which links are editorial is decided by how many pages
+  carry them. Reading more pages can lower either, so the count over a capped crawl was not a
+  floor: 11 overused targets on 100 of 110 pages, none on all 110. And pages read with no
+  link made the item N/A on a site whose other pages have them. `anchor_text_audit.py`
+  withholds the count over a truncated crawl, says why, withholds `links_analyzed` when it is
+  0, and drops the two share-based issues there.
+* **CI-018's never-crawled pages subtracted only what the crawl found.** A sitemap URL robots
+  refuses, which a capped crawl never reached, was counted never crawled, and CI-018 warned
+  about a crawler obeying `Disallow`. Over a truncated crawl the count is now taken over the
+  sitemap URLs the crawl fetched, which robots allows, so what it finds is real.
+* **The crawl caps' basis line says what they still decide**, by this tree's rules: a WARN or
+  FAIL over the pages read is a floor, and four items with a warn band can WARN where the whole
+  site would FAIL; with `--sample`, the cap bounds the pool a sample is drawn from.
+* **Spec**: VRD-14 says a share is not a floor; `evidence`'s caveat table names the
+  never-crawled restriction. Threshold totals unchanged from 0.170.0.
+* **Tests**, each seen wrong first: BL-081 over an inventory marked truncated (was WARN, and
+  N/A with no links), CI-018 over a capped crawl with a refused sitemap URL (was counted).
+  Reviewed by `gpt-6.1-sol` before release; its three findings (a `--sample` qualification,
+  the CLI listing withheld issues, the share's denominator) are fixed here.
+
 ## 0.170.0 — the crawl's caps leave `inherited`, and three items stop judging the pages a capped crawl skipped
 
 Registry version: `90ba79b14b28`, unchanged. **Three verdicts move, each only over a crawl
