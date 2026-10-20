@@ -272,6 +272,7 @@ def main():
                                   truncated=bool(inventory.get("summary", {})
                                                  .get("truncated")))
     report["site_url"] = args.url
+    report["fetch_error_kind"] = inventory.get("fetch_error_kind")
 
     # Optional GSC backlinks
     if gsc_credentials:

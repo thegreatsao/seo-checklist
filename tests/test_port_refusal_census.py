@@ -37,6 +37,7 @@ REGISTRY = ROOT / "skills/seo-checklist/resources/config/checklist.json"
 sys.path.insert(0, str(SCRIPTS))
 
 import checklist_runner as cr  # noqa: E402
+import seo_common  # noqa: E402
 from lib import safe_http as sh  # noqa: E402
 
 KEY = "abcd1234abcd1234abcd"
@@ -191,10 +192,22 @@ class ThePageItselfIsRefused(unittest.TestCase):
         # A census that refused nothing would pass every assertion below.
         self.assertGreaterEqual(len(self.rows), 35, sorted(self.rows))
 
+    # The one script whose result is about several subjects (the page's uptime, whois,
+    # the neighbours' addresses): the runner keeps one kind per result, so its refused
+    # uptime is NO_DATA by an absent key, not `blocked` (narrowed in F14's review).
+    SEVERAL_SUBJECTS = {"domain_safety_check.py"}
+
     def test_no_refused_page_is_graded_or_called_unread_or_a_crash(self):
         wrong = [describe(row) for rows in self.rows.values() for row in rows
                  if row["status"] in VERDICTS
                  or row.get("error_kind") not in (None, "blocked")]
+        self.assertEqual(wrong, [], "\n".join(wrong))
+
+    def test_every_row_a_refused_page_feeds_says_blocked(self):
+        # O1 says `blocked`, and a row with no kind at all satisfied the test above.
+        wrong = [describe(row) for script, rows in self.rows.items()
+                 if script not in self.SEVERAL_SUBJECTS for row in rows
+                 if row.get("error_kind") != "blocked"]
         self.assertEqual(wrong, [], "\n".join(wrong))
 
     def test_a_script_that_failed_on_it_says_blocked(self):
@@ -396,6 +409,157 @@ class PartsTheCensusDoesNotReach(unittest.TestCase):
                 out = self.favicon(href)
                 self.assertEqual(out["favicon"]["grade"], "fails")
                 self.assertNotIn("fetch_error_kind", out)
+
+
+def port_refusal(url: str = "https://site.example:8443/"):
+    return sh.NonStandardPort(f"Blocked: port 8443 of site.example ({url})")
+
+
+class FoundByTheReviewOf0173(unittest.TestCase):
+    """The `gpt-6.1-sol` review of 0.173.0's first build: paths the census page could
+    not show, because there every further URL is refused at once — a GET read and its
+    HEAD refused, a robots.txt read and the paths behind it refused, a crawl with one
+    page refused — and two it showed and the tests let through."""
+
+    def test_a_refused_head_withholds_the_clean_header_answer(self):
+        import cache_compression_checker as cc
+        html = "<html><head><title>t</title></head><body>x</body></html>"
+        fetched = {"url": "https://site.example/", "status": 200, "error": None,
+                   "error_kind": None}
+        with mock.patch.object(cc, "load_source", return_value=(html, fetched["url"], fetched)), \
+                mock.patch.object(cc, "safe_request", side_effect=port_refusal()):
+            out = cc.audit("https://site.example/")
+        self.assertTrue(out["truncated"])
+        self.assertIn("refused by this audit's guard", out["truncated_reason"])
+
+    def test_a_refused_facet_url_withholds_the_clean_facet_answer(self):
+        import faceted_nav_audit as fn
+        page = '<html><body><a href="/?filter=red&color=blue">red</a></body></html>'
+
+        def fetch(url, **_kwargs):
+            if url == "https://site.example/":
+                return {"url": url, "status": 200, "text": page, "error": None,
+                        "error_kind": None}
+            return refused_fetch(url)
+
+        stdout = io.StringIO()
+        with mock.patch.object(fn, "fetch_url", fetch), \
+                mock.patch.object(fn, "robots_allows", return_value=(True, 0.0)), \
+                mock.patch.object(sys, "argv", ["faceted_nav_audit.py", "https://site.example/",
+                                                "--from-page", "--fetch", "--json"]), \
+                contextlib.redirect_stdout(stdout):
+            fn.main()
+        out = json.loads(stdout.getvalue())
+        self.assertGreater(out["faceted_count"], 0)
+        self.assertTrue(out["truncated"])
+        self.assertIn("refused by this audit's guard", out["truncated_reason"])
+
+    def test_paths_refused_behind_a_robots_txt_that_was_read_are_not_a_clean_answer(self):
+        import robots_path_tester as rpt
+        robots = {"url": "https://site.example/robots.txt",
+                  "fetch": {"status": 200, "error": None, "error_kind": None},
+                  "parsed": seo_common.parse_robots_txt("User-agent: *\nAllow: /\n")}
+        with mock.patch.object(rpt, "fetch_robots", return_value=robots), \
+                mock.patch.object(rpt, "safe_get", side_effect=port_refusal()):
+            out = rpt.test_paths("https://site.example/", ["/cart", "/login"],
+                                 ["Googlebot"], probe=True)
+        self.assertEqual(out["indexable_urls"], [])
+        self.assertTrue(out["truncated"])
+        self.assertIn("refused by this audit's guard", out["truncated_reason"])
+
+    def test_a_refused_font_head_withholds_the_clean_font_answer(self):
+        import font_audit
+        html = ("<html><head><style>@font-face{font-family:X;font-display:swap;"
+                "src:url(https://site.example:8443/f.woff2)}</style></head></html>")
+        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False) as handle:
+            handle.write(html)
+        self.addCleanup(os.unlink, handle.name)
+        with mock.patch.object(font_audit, "fetch_url",
+                               side_effect=lambda url, **k: refused_fetch(url)):
+            out = font_audit.audit(handle.name, fetch_fonts=True)
+        self.assertTrue(out["truncated"])
+
+    def crawl(self, routes: dict) -> dict:
+        """`site_crawl.crawl` of site.example with the switch on; `routes` maps a path
+        on 443 to (status, headers, body); anything else answers 404."""
+        import site_crawl
+
+        def send(adapter, request, **_kwargs):
+            parsed = urlparse(request.url)
+            status, headers, body = routes.get(parsed.path, (404, {"Content-Type": "text/html"}, b""))
+            return response(request, status, headers, body)
+
+        public = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
+        work = tempfile.mkdtemp(prefix="seo-census-crawl-")
+        with mock.patch.dict(os.environ, {"SEO_LOOPBACK_ONLY": "", "SEO_HTTP_CACHE": "",
+                                          "SEO_STANDARD_PORTS_ONLY": "1", "SEO_MAX_RPS": "0",
+                                          "SEO_RATE_LIMIT_DIR": work}), \
+                mock.patch.object(sh.socket, "getaddrinfo", return_value=public), \
+                mock.patch.object(sh._PinnedAdapter, "send",
+                                  new=lambda adapter, request, **kw: send(adapter, request)):
+            return site_crawl.crawl("https://site.example/", use_sitemap=False, workers=1)
+
+    def test_a_crawled_page_the_guard_refused_leaves_the_crawl_incomplete(self):
+        html = b'<html><head><title>Home</title></head><body><a href="/p">p</a></body></html>'
+        out = self.crawl({"/": (200, {"Content-Type": "text/html"}, html),
+                          "/p": (301, {"Location": "https://site.example:8443/p"}, b"")})
+        self.assertEqual(out["summary"]["refused_pages"], 1)
+        self.assertTrue(out["summary"]["truncated"])
+
+    def test_a_crawl_refused_whole_says_so_to_every_reader(self):
+        import site_crawl
+        with mock.patch.dict(os.environ, {"SEO_STANDARD_PORTS_ONLY": "1"}):
+            inventory = site_crawl.crawl("https://site.example:8443/", use_sitemap=False,
+                                         workers=1)
+        self.assertEqual(inventory["fetch_error_kind"], "blocked")
+        path = os.path.join(tempfile.mkdtemp(prefix="seo-census-inv-"), "crawl.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(inventory, handle)
+        with open(REGISTRY, encoding="utf-8") as f:
+            items = json.load(f)["items"]
+        ctx = {"url": "https://site.example:8443/", "inventory_json": path}
+        plan, skipped = cr.build_plan([i for i in items if i["id"] in
+                                       ("AR-149", "MS-022", "TE-168", "CI-015", "BL-081",
+                                        "CI-008", "TE-176", "MD-187", "LO-198")],
+                                      ctx, set(cr.MODE_CAPS["live"]), "live")
+        results = {key: cr._timed(key, 120) for key in plan}
+        rows = cr.grade([i for i in items if any(i["id"] in ids for ids in plan.values())],
+                        plan, results, skipped, False)
+        self.assertEqual(len(rows), 9, [row["id"] for row in rows])
+        wrong = [describe(row) for row in rows if row.get("error_kind") != "blocked"]
+        self.assertEqual(wrong, [], "\n".join(wrong))
+
+    def test_the_timing_request_refused_after_the_page_was_read_is_blocked(self):
+        import lcp_subparts
+        html = "<html><body><img src='/a.jpg'></body></html>"
+        fetched = {"url": "https://site.example/", "status": 200, "error": None,
+                   "error_kind": None}
+        with mock.patch.object(lcp_subparts, "load_source",
+                               return_value=(html, fetched["url"], fetched)), \
+                mock.patch.object(lcp_subparts, "safe_request", side_effect=port_refusal()):
+            out = lcp_subparts.analyze_source("https://site.example/")
+        self.assertEqual(out["error_kind"], "blocked")
+
+    def test_broken_links_says_its_own_page_was_refused(self):
+        import broken_links
+        with mock.patch.object(broken_links, "safe_get", side_effect=port_refusal()):
+            out = broken_links.check_broken_links("https://site.example:8443/")
+        self.assertEqual(out["error_kind"], "blocked")
+
+    def test_an_indexnow_key_file_behind_a_private_address_is_still_missing(self):
+        import indexnow_checker as ic
+        for failure, passed in ((sh.SafeHTTPError("Blocked: private/internal IP"), False),
+                                (port_refusal(), None)):
+            with self.subTest(failure=type(failure).__name__), \
+                    mock.patch.object(ic, "safe_get", side_effect=failure):
+                self.assertIs(ic.check_key_file("https://site.example/", KEY)["passed"],
+                              passed)
+
+    def test_the_http_variant_refused_carries_its_kind(self):
+        import security_headers
+        with mock.patch.object(security_headers, "safe_get", side_effect=port_refusal()):
+            out = security_headers.walk_http_to_https("http://site.example/")
+        self.assertEqual(out["error_kind"], "blocked")
 
 
 if __name__ == "__main__":

@@ -169,6 +169,8 @@ def audit(source: str, fetch_fonts: bool = False, timeout: int = 15) -> dict:
         if fetch_fonts and font_url.startswith(("http://", "https://")):
             head = fetch_url(font_url, method="HEAD", timeout=timeout)
             row["status"] = head.get("status")
+            if head.get("error_kind") == "blocked":
+                refused.append(font_url)    # its size is unread, not small
             headers = head.get("headers", {})
             length = headers.get("content-length")
             row["content_length"] = int(length) if length and length.isdigit() else None
@@ -196,8 +198,8 @@ def audit(source: str, fetch_fonts: bool = False, timeout: int = 15) -> dict:
         "fetch_error": fetched.get("error"),
         "fetch_error_kind": fetched.get("error_kind"),
         "truncated": bool(refused),
-        "truncated_reason": (f"{len(refused)} stylesheet(s) refused by this audit's guard"
-                             if refused else None),
+        "truncated_reason": (f"{len(refused)} stylesheet(s) or font(s) refused by this "
+                             f"audit's guard" if refused else None),
     }
 
 

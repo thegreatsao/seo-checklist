@@ -96,8 +96,8 @@ def snippet_controls(html_text: str, x_robots_tag: str | None) -> dict:
     return controls
 
 
-def urls_from_sitemaps(site: str, timeout: int,
-                       unread: list[str] | None = None) -> set[str] | None:
+def urls_from_sitemaps(site: str, timeout: int, unread: list[str] | None = None,
+                       robots: dict | None = None) -> set[str] | None:
     """Every URL the site's own sitemaps list, or None when any of them was left unread
     or unkept: a URL missing from the ones held is then not known to be missing.
     `unread`, when given, receives why.
@@ -108,12 +108,21 @@ def urls_from_sitemaps(site: str, timeout: int,
     children this does not follow; a location that gave no answer (refused by this
     audit's guard, timed out, a 5xx); a sitemap on another host. A location that
     answers 4xx, or a document that is not a sitemap, lists nothing Google could read
-    either, so it stays an answer.
+    either, so it stays an answer. `robots`, when the caller already read it, is the one
+    discovery reads; a robots.txt that gave no answer may declare sitemaps nobody saw.
     """
     why = unread if unread is not None else []
     urls = set()
     read_bytes = 0
-    locations = discover_sitemap_urls(site, timeout=timeout)
+    if robots is not None:
+        status = (robots.get("fetch") or {}).get("status")
+        if status is None or status >= 500 or status == 429:
+            why.append("robots.txt gave no answer, so the sitemaps it declares are "
+                       "unknown: " + str((robots.get("fetch") or {}).get("error")
+                                         or f"HTTP {status}"))
+        locations = discover_sitemap_urls(site, timeout=timeout, robots=robots)
+    else:
+        locations = discover_sitemap_urls(site, timeout=timeout)
     past = locations[10:]
     if past:
         why.append(f"{len(past)} sitemap location(s) past the tenth not read: "
@@ -154,7 +163,7 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
     # forbids nothing we know of, and `robots_allowed` would read it as allowing all.
     robots_refused = (robots.get("fetch") or {}).get("error_kind") == "blocked"
     unread: list[str] = []
-    sitemap_urls = urls_from_sitemaps(base, timeout, unread) if base else set()
+    sitemap_urls = urls_from_sitemaps(base, timeout, unread, robots) if base else set()
     rows = []
     for url in urls:
         url = normalize_url(url)
@@ -256,6 +265,7 @@ def evaluate_inventory(site_url: str, inventory_path: str) -> dict:
         "truncated": truncated,
         "fetch_error": (inventory.get("fetch_error")
                         or ("no page could be read" if not pages else None)),
+        "fetch_error_kind": inventory.get("fetch_error_kind"),
     }
     if truncated:
         out["truncated_reason"] = "the shared crawl was truncated"
@@ -290,6 +300,8 @@ def main() -> None:
         else:
             for row in result["rows"]:
                 print(f"{row['verdict']}\t{row['status']}\t{row['url']}\t{', '.join(row['blockers'])}")
+            if result["sitemap_membership_unknown"]:
+                print(f"Sitemap membership unknown: {result['sitemap_membership_unknown']}")
 
 
 if __name__ == "__main__":

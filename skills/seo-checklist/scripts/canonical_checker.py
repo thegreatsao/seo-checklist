@@ -180,6 +180,7 @@ def check_inventory(site_url: str, inventory_path: str,
         "issues": issues,
         "fetch_error": (inventory.get("fetch_error")
                         or (None if rows else "no URL could be read")),
+        "fetch_error_kind": inventory.get("fetch_error_kind"),
         "truncated": bool(reasons),
         "scope": "site",
     }

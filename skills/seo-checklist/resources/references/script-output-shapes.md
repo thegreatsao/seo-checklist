@@ -45,7 +45,9 @@ the existing human-readable `error`; no reader has to classify library prose.
 `fetch_error` names the fetch layer's kind beside it as `fetch_error_kind`, and one that
 reports a top-level `error` names the runner's kind as `error_kind`. The runner records a
 `fetch_error` as `unread` unless `fetch_error_kind` is `blocked` — this audit's own guard
-refused the request (HTTP-13) — and then as `blocked`.
+refused the request (HTTP-13) — and then as `blocked`. `site_crawl.py` carries the same
+`fetch_error_kind` and counts `summary.refused_pages`, a page the guard refused, which makes
+the crawl `truncated`; the scripts reading its inventory copy the kind through.
 
 **Scripts exposing a 0-100 `score`:** security_headers, social_meta, eeat_signal_checker,
 freshness_checker, answer_block_scanner, citation_readiness, a11y_seo_checker,

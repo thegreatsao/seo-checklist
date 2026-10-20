@@ -55,7 +55,7 @@ try:
     # The socket bound is imported rather than copied: a second `30` would be one
     # more constant to keep in step with the script it was copied from.
     from gsc_url_inspection import SOCKET_TIMEOUT, classify_coverage
-    from seo_common import discover_sitemap_urls, normalize_url, same_host
+    from seo_common import discover_sitemap_urls, normalize_url, refused_kind, same_host
     from site_crawl import load_sitemap_urls, page_key
 except ImportError:
     print("Error: companion SEO checklist scripts must be importable")
@@ -208,7 +208,9 @@ def analyze(site_url: str, prop: str, credentials: str, max_urls: int = MAX_URLS
             str(row.get("url") or "unknown sitemap")
             for row in result["sitemap_errors"]
         )
-        return _fail(result, f"Could not read sitemap(s): {failed}", "unread")
+        # `blocked` when this audit's guard refused every one of them (HTTP-13).
+        kind = refused_kind(row.get("error_kind") for row in result["sitemap_errors"])
+        return _fail(result, f"Could not read sitemap(s): {failed}", kind or "unread")
 
     inspected, stopped_for_time = _inspect_sitemap_urls(
         urls, prop, credentials, max_urls)

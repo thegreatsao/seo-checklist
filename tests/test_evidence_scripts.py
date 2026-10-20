@@ -7429,11 +7429,13 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
 
         Thirty-two at 0.173.0: TECH-002, whose `font_audit.py` now sets `truncated` when
         the web-ports switch refused a stylesheet, instead of a warning that blamed the
-        site for it (F14). Same definition, one new member."""
+        site for it (F14). Same definition, one new member. Thirty-four in the same
+        release: CI-013 and CI-019, whose `robots_path_tester.py` sets `truncated` when the
+        guard refused the paths it probes behind a robots.txt it read (F14 review)."""
         ids = sorted(i["id"] for i in self._covered())
         self.assertEqual(ids, [
-            "AR-149", "AR-162", "AR-163", "BL-081", "BL-083", "CI-008", "CI-014", "CI-015",
-            "CI-018", "CN-039", "CN-041", "GO-136", "GO-137", "GO-138", "KW-071", "MB-096",
+            "AR-149", "AR-162", "AR-163", "BL-081", "BL-083", "CI-008", "CI-013", "CI-014",
+            "CI-015", "CI-018", "CI-019", "CN-039", "CN-041", "GO-136", "GO-137", "GO-138", "KW-071", "MB-096",
             "MB-097", "MB-098", "MD-185", "MD-187", "MD-189", "MS-022", "MS-023",
             "MS-026", "MS-029", "TE-168", "TE-170", "TE-172", "TE-174", "TE-176",
             "TECH-001", "TECH-002",

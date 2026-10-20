@@ -19,7 +19,7 @@ try:
 except ImportError:
     from scripts.lib.safe_http import safe_request
 
-from seo_common import read_source, is_url, load_source, normalize_url, parse_html
+from seo_common import fetch_error_kind, read_source, is_url, load_source, normalize_url, parse_html
 
 
 # basis: inherited — 100, present at import, and a unit guess rather than a limit:
@@ -113,12 +113,12 @@ def _candidate_lcp_image(parsed: dict) -> dict | None:
     return (prioritized or images or [None])[0]
 
 
-def _fetch_ttfb(url: str, timeout: int) -> tuple[int | None, dict, str | None]:
+def _fetch_ttfb(url: str, timeout: int) -> tuple[int | None, dict, Exception | None]:
     started = time.perf_counter()
     try:
         response = safe_request("GET", normalize_url(url), timeout=timeout, max_response_bytes=2_000_000)
     except Exception as exc:  # noqa: BLE001 - CLI degrades gracefully for network policy/timeouts
-        return None, {}, str(exc)
+        return None, {}, exc
     elapsed_ms = round(response.elapsed.total_seconds() * 1000) if response.elapsed else round((time.perf_counter() - started) * 1000)
     headers = {str(k).lower(): v for k, v in response.headers.items()}
     return elapsed_ms, headers, None
@@ -131,9 +131,12 @@ def analyze_source(source: str, timeout: int = 15) -> dict:
     ttfb_ms = None
     headers = {}
     error = fetched.get("error")
+    error_kind = fetched.get("error_kind")
     if is_url(source) and final_url:
         ttfb_ms, headers, timing_error = _fetch_ttfb(final_url, timeout)
-        error = error or timing_error
+        if timing_error is not None and not error:
+            # The kind of the request that failed, not of the one that was read.
+            error, error_kind = str(timing_error), fetch_error_kind(timing_error)
 
     notes = [
         "Static mode cannot observe the browser's real LCP render timestamp.",
@@ -173,10 +176,10 @@ def analyze_source(source: str, timeout: int = 15) -> dict:
     }
     if error:
         out["error_kind"] = "crash"
-        if fetched.get("error_kind") == "blocked":
+        if error_kind == "blocked":
             # This audit's guard refused it (HTTP-13): not the site, not the plugin.
             out["error_kind"] = "blocked"
-        elif fetched.get("error_kind") != "other":
+        elif error_kind != "other":
             out["error_kind"] = "unread"
     return out
 

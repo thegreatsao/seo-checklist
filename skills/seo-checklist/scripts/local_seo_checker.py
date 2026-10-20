@@ -46,6 +46,7 @@ def check_local_business_inventory(source: str, inventory_path: str) -> dict[str
         "final_url": source,
         "status": None,
         "fetch_error": inventory.get("fetch_error"),
+        "fetch_error_kind": inventory.get("fetch_error_kind"),
         "scope": "site",
         "pages_checked": len(pages),
         "local_business_nodes": len(matches),
@@ -138,7 +139,7 @@ def main() -> None:
         result = check_local_seo(args.source, timeout=args.timeout)
     lines = [
         f"Local SEO check for {args.source}",
-        f"LocalBusiness nodes: {result['local_business_nodes']}  Phones: {len(result['phones_detected'])}  Issues: {len(result['issues'])}",
+        f"LocalBusiness nodes: {result.get('local_business_nodes', 'withheld')}  Phones: {len(result['phones_detected'])}  Issues: {len(result['issues'])}",
     ] + [f"[{item['severity']}] {item['message']} {item.get('evidence') or ''}" for item in result["issues"][:30]]
     print_json_or_text(result, args.json, lines)
 

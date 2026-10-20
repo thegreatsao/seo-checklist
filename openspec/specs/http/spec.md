@@ -969,7 +969,11 @@ never `unread` or `crash` and, where the script failed, `blocked` under its labe
 `AFurtherURLIsRefused` serves the page and refuses every further URL — the key file, the
 favicon, the stylesheet, robots.txt, llms.txt, the sitemaps — and requires that no item be
 decided by the refusal; `PartsTheCensusDoesNotReach` holds one file refused among several read;
-`TheRunnersOwnRequests` the entry's kind in the artifact and `--sample`'s fallback. `tests/test_sitemap_walk_bounds.py` `OffHostSitemaps` hands each of
+`FoundByTheReviewOf0173` the paths the census page cannot show — a page read and its HEAD
+refused, robots.txt read and the paths behind it refused, a facet URL, a font, a crawled page
+and a whole crawl refused, the timing request refused after the page was read, a key file
+behind a private address that still fails; `TheRunnersOwnRequests` the entry's kind in the
+artifact and `--sample`'s fallback. `tests/test_sitemap_walk_bounds.py` `OffHostSitemaps` hands each of
 the three walkers sitemaps on other hosts and ports and requires that none is requested:
 the crawl lists them in `off_host_sitemaps` and keeps only the audited host's URLs, the
 `www.` variant and the other scheme are requested as the same site, and `sitemap_checker`
@@ -1003,7 +1007,10 @@ TE-174 went N/A over a stylesheet it never read, TECH-002 warned "Stylesheet cou
 fetched", CI-005 and CI-001 passed on a robots.txt read as allowing everything, TE-167 failed
 the site as down. Each now carries the kind, or leaves its item undecided with the cause.
 A census found them, by running every planned job with the switch on; the two scripts the
-review named were two of thirty-nine.
+review named were two of thirty-nine. The review of this release's first build found the paths
+that page could not show — a page read and its HEAD refused, robots.txt read and the paths behind
+it refused, one crawled page refused, a whole crawl refused — and a key file behind a private
+address excused with the port's refusal; each is held now.
 
 **Not held, and said here so that it is not found again as a surprise.** A sitemap on the
 audited host that redirects elsewhere is still followed, as every fetch follows a redirect,
@@ -1012,11 +1019,14 @@ way. With the switch set, requests to other public sites on the web ports remain
 checking outbound links means making them. The switch is off by default, so an operator
 auditing a staging site on `:8080` by hand is not refused; a public deployment sets it.
 `indexability_matrix` names an off-host sitemap only in `sitemap_membership_unknown`, and no
-item reads it; `--sample`'s fallback names one on stderr only. A page the crawl could not read
-because it redirects to another port carries `blocked` on its row, and what the site-wide
-items do with it is what they do with a page that timed out: `internal_links` counts no
-redirect for it (AR-149 can pass) and `duplicate_content` leaves it out of the set (CN-041 can
-pass). That is a partial crawl, not a refusal's kind, and is not held here.
+item reads it; `--sample`'s fallback names one on stderr only. A page the guard refused leaves
+the crawl `truncated`, so the site-wide items withhold their clean verdict; a page that timed
+out does not, and is a partial crawl rather than a refusal's kind. `domain_safety_check` reads
+several subjects in one result, so its refused uptime request is NO_DATA by an absent key
+rather than `blocked`, and `security_headers` names `blocked` on its refused http variant's row
+while SE-117 is NO_DATA the same way: the runner keeps one kind per result. Run by hand only,
+and not held: `parse_html.py --fetch`, `detect_profile.py` with a URL,
+`canonical_checker.py --check-targets`.
 
 #### Scenario: a sitemap named on another host
 - **WHEN** `robots.txt` or a sitemap index names a sitemap on another host or port

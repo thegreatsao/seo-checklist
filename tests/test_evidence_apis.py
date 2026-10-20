@@ -668,6 +668,15 @@ class SitemapReconciliation(unittest.TestCase):
         self.assertEqual(out["summary"]["unreconciled"], 0)
         self.assertEqual(verdict("GO-137", out), PASS)
 
+    def test_sitemaps_this_audits_guard_refused_are_blocked_not_unread(self):
+        # F14 review: the walker's rows carry `blocked`, and the result said `unread`.
+        refused = {"url": "https://example.com/sitemap.xml", "status": None,
+                   "error": "Blocked: port 8443", "error_kind": "blocked"}
+        out, _ = self.reconcile([], errors=[refused])
+        self.assertEqual(out["error_kind"], "blocked")
+        out, _ = self.reconcile([], errors=[dict(refused, error_kind="timeout")])
+        self.assertEqual(out["error_kind"], "unread")
+
     def test_a_sitemap_url_google_has_not_indexed_fails(self):
         urls = [self.SITE, self.SITE + "waiting"]
         out, _ = self.reconcile(urls, states={

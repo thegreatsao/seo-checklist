@@ -446,6 +446,67 @@ class TheMatrixSaysWhenItStopped(unittest.TestCase):
             self.assertIsNone(ix.urls_from_sitemaps(SITE, 15, unread))
         self.assertIn(root, " ".join(unread))
 
+    def test_a_location_answering_503_or_429_is_unknown(self):
+        root = SITE + "sitemap.xml"
+        import indexability_matrix as ix
+        for status in (503, 429):
+            class Busy(Documents):
+                def __call__(self, url, _status=status, **kwargs):
+                    self.requested.append(url)
+                    return {"status": _status, "url": url, "text": "", "bytes": 0,
+                            "headers": {}, "redirect_chain": [], "error": None,
+                            "error_kind": None}
+
+            with self.subTest(status=status), \
+                    mock.patch.object(ix, "fetch_url", Busy({})), \
+                    mock.patch.object(ix, "discover_sitemap_urls", lambda *a, **k: [root]):
+                unread: list[str] = []
+                self.assertIsNone(ix.urls_from_sitemaps(SITE, 15, unread))
+                self.assertIn(f"HTTP {status}", " ".join(unread))
+
+    def test_a_robots_txt_that_gave_no_answer_leaves_its_sitemaps_unknown(self):
+        # Review of 0.173.0: robots.txt refused, the three conventional paths 404, and
+        # membership read `false` about sitemaps only robots.txt could have named.
+        import indexability_matrix as ix
+        robots = {"url": SITE + "robots.txt", "parsed": None,
+                  "fetch": {"status": None, "error": "Blocked: port 8443",
+                            "error_kind": "blocked"}}
+        locations = [SITE + p.lstrip("/") for p in seo_common.CONVENTIONAL_SITEMAP_PATHS]
+        with mock.patch.object(ix, "fetch_url", Documents({})), \
+                mock.patch.object(ix, "discover_sitemap_urls", lambda *a, **k: locations):
+            unread: list[str] = []
+            self.assertIsNone(ix.urls_from_sitemaps(SITE, 15, unread, robots))
+        self.assertIn("robots.txt gave no answer", " ".join(unread))
+
+    def test_each_budget_names_itself(self):
+        import indexability_matrix as ix
+        declared = [SITE + "a.xml", SITE + "b.xml"]
+        docs = {sm: urlset([f"{SITE}{k}/{j}" for j in range(30_000)])
+                for k, sm in enumerate(declared)}
+        with mock.patch.object(ix, "fetch_url", Documents(docs)), \
+                mock.patch.object(ix, "discover_sitemap_urls", lambda *a, **k: declared):
+            unread: list[str] = []
+            ix.urls_from_sitemaps(SITE, 15, unread)
+        self.assertIn("URL budget", " ".join(unread))
+        declared = [f"{SITE}sitemap-{i}.xml" for i in range(10)]
+        docs = {sm: urlset([f"{SITE}p{i}"], padding=3_000_000)
+                for i, sm in enumerate(declared)}
+        with mock.patch.object(ix, "fetch_url", Documents(docs)), \
+                mock.patch.object(ix, "discover_sitemap_urls", lambda *a, **k: declared):
+            unread = []
+            ix.urls_from_sitemaps(SITE, 15, unread)
+        self.assertIn("byte budget", " ".join(unread))
+
+    def test_the_text_output_says_membership_is_unknown(self):
+        import indexability_matrix as ix
+        out = {"rows": [], "sitemap_membership_unknown": "a reason"}
+        stdout = io.StringIO()
+        with mock.patch.object(ix, "evaluate", return_value=out), \
+                mock.patch.object(sys, "argv", ["indexability_matrix.py", SITE]), \
+                contextlib.redirect_stdout(stdout):
+            ix.main()
+        self.assertIn("Sitemap membership unknown: a reason", stdout.getvalue())
+
     def test_a_sitemap_on_another_host_is_unknown_not_absent(self):
         declared = "https://third.example:8443/sitemap.xml"
         out = self.evaluate({}, [declared])

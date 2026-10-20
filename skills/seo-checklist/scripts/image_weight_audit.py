@@ -514,6 +514,7 @@ def audit_inventory(site_url: str, inventory_path: str, timeout: int = 15,
         "truncated": bool(inventory.get("summary", {}).get("truncated")
                           or unchecked or dropped),
         "fetch_error": inventory.get("fetch_error"),
+        "fetch_error_kind": inventory.get("fetch_error_kind"),
     }
     # The same rule on the whole-site path, where there are two ways to fall short
     # of the site: an image that answered nothing, and an image past `--max-images`

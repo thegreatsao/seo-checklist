@@ -149,6 +149,8 @@ def walk_http_to_https(url: str, timeout: int = 15) -> dict:
             else:
                 result["outcome"] = "unread"
                 result["error"] = str(exc)
+                # Ours, not the site's, when this audit's guard refused the hop (HTTP-13).
+                result["error_kind"] = seo_common.fetch_error_kind(exc)
             return result
 
         try:

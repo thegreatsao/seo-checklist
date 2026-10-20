@@ -23,7 +23,7 @@ from urllib.parse import urljoin, urlsplit
 
 from bs4 import BeautifulSoup
 
-from seo_common import read_as_url, carries_content, fetch_robots, html_parser, normalize_url, robots_allowed, unread_kind
+from seo_common import read_as_url, carries_content, fetch_error_kind, fetch_robots, html_parser, normalize_url, robots_allowed, unread_kind
 
 try:
     from lib.safe_http import default_headers, safe_get
@@ -126,6 +126,7 @@ def probe_url(url: str, timeout: int = 15) -> dict:
                         allow_redirects=True)
     except Exception as exc:                       # network, DNS, TLS, refusal
         out["error"] = f"{type(exc).__name__}: {exc}"
+        out["error_kind"] = fetch_error_kind(exc)
         return out
     if resp is None:
         out["error"] = "no response"
@@ -217,6 +218,14 @@ def test_paths(site: str, paths: list[str], agents: list[str], timeout: int = 15
                 indexable.append(row["url"])
         out["indexable_urls"] = sorted(indexable)
         out["unprobed_urls"] = sorted(unprobed)
+        # A path this audit's guard refused is unprobed for a reason that is ours, and
+        # an empty `indexable_urls` over it is not a clean answer (HTTP-13).
+        refused = [row["url"] for row in rows
+                   if (row.get("probe") or {}).get("error_kind") == "blocked"]
+        if refused:
+            out["truncated"] = True
+            out["truncated_reason"] = (f"{len(refused)} path(s) refused by this "
+                                       f"audit's guard")
     return out
 
 

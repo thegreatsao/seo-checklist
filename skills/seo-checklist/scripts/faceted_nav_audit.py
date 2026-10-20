@@ -80,6 +80,8 @@ def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:
         if fetch:
             page = fetch_url(url, timeout=timeout, max_bytes=1_500_000)
             row["status"] = page.get("status")
+            # Unread, so its canonical and noindex are unknown, not absent (HTTP-13).
+            row["refused"] = page.get("error_kind") == "blocked"
             if page.get("text"):
                 html = parse_html(page["text"], page.get("url") or url)
                 row["canonical"] = html.get("canonical")
@@ -174,12 +176,16 @@ def main() -> None:
         page_urls, truncated, page = urls_from_page(urls[0], args.timeout, args.max_urls)
         urls = read_urls(page_urls)
     result = audit(urls, args.fetch, args.timeout)
+    refused = [row["url"] for row in result["rows"] if row.get("refused")]
+    if refused:
+        result["truncated_reason"] = (f"{len(refused)} facet URL(s) refused by this "
+                                      f"audit's guard")
     if page is not None and not page.get("text"):
         # A page nobody read has no facet links, and "no facets, so N/A" was the
         # verdict about it (F14). With its kind: our guard's refusal is not the site's.
         result["fetch_error"] = page.get("error") or "the page could not be read"
         result["fetch_error_kind"] = page.get("error_kind")
-    result["truncated"] = truncated
+    result["truncated"] = truncated or bool(refused)
     print(json.dumps(result, indent=2) if args.json else "\n".join(f"{','.join(r['flags']) or 'ok'}\t{r['url']}" for r in result["rows"]))
 
 

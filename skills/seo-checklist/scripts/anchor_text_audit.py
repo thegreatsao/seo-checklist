@@ -249,6 +249,7 @@ def audit_anchor_text(start_url: str, inventory: dict | None = None, depth: int 
         "fetch_error": inventory.get("fetch_error") or (
             None if len(crawl["fetch_errors"]) < len(crawl["pages"])
             else "no page could be read"),
+        "fetch_error_kind": inventory.get("fetch_error_kind"),
         # The crawl says whether it read the whole site. Carried here because
         # every count beside it is a count over what was read, and the item
         # asserting `none of these` cannot tell the difference on its own.

@@ -35,14 +35,14 @@ except ImportError:
     BeautifulSoup = None
 
 try:
-    from lib.safe_http import safe_get, safe_post
+    from lib.safe_http import NonStandardPort, safe_get, safe_post
 except ImportError:
-    from scripts.lib.safe_http import safe_get, safe_post
+    from scripts.lib.safe_http import NonStandardPort, safe_get, safe_post
 
 try:
-    from seo_common import carries_content, fetch_error_kind, html_parser
+    from seo_common import carries_content, html_parser, unread_kind
 except ImportError:
-    from scripts.seo_common import carries_content, fetch_error_kind, html_parser
+    from scripts.seo_common import carries_content, html_parser, unread_kind
 
 # basis: presentation — a key longer than eight characters is echoed as first four,
 #  last four; anything shorter is replaced outright. A masking rule for the output, and
@@ -62,16 +62,16 @@ INDEXNOW_ENDPOINTS = {
 # ---------------------------------------------------------------------------
 
 def fetch_url(url: str, timeout: int = 8) -> tuple:
-    """Return (status_code, body, None) or (None, error_msg, kind).
+    """Return (status_code, body, None) or (None, error_msg, exception).
 
-    The kind is `seo_common.fetch_error_kind`'s. It was dropped, so a key file this
-    audit's guard refused read as one the site does not host (F14).
+    The exception was dropped, so a key file the web-ports switch refused read as one
+    the site does not host (F14).
     """
     try:
         resp = safe_get(url, timeout=timeout)
         return resp.status_code, resp.text, None
     except Exception as exc:
-        return None, str(exc), fetch_error_kind(exc)
+        return None, str(exc), exc
 
 
 # ---------------------------------------------------------------------------
@@ -83,9 +83,10 @@ def check_key_file(site_url: str, key: str) -> dict:
     parsed = urlparse(site_url)
     key_url = f"{parsed.scheme}://{parsed.netloc}/{key}.txt"
 
-    status, body, kind = fetch_url(key_url)
-    if kind == "blocked":
-        # Never asked for, so neither hosted nor missing (HTTP-13).
+    status, body, failure = fetch_url(key_url)
+    if isinstance(failure, NonStandardPort):
+        # Never asked for, so neither hosted nor missing (HTTP-13). A key file behind a
+        # private address stays missing: no search engine can fetch it either.
         return {"passed": None, "blocked": True, "url": key_url,
                 "finding": f"Key file not requested: {body}"}
     if carries_content(status) and key in body:
@@ -209,12 +210,12 @@ def extract_sitemap_urls(site_url: str, limit: int = 50) -> list:
 def run_indexnow_check(site_url: str, key: str) -> dict:
     """Run all IndexNow validation checks."""
     # Fetch homepage for meta tag check
-    status, html, kind = fetch_url(site_url)
+    status, html, failure = fetch_url(site_url)
     if status is None:
         # With its kind: the runner records an `error` without one as `crash`, the
         # plugin's fault, which a page the site did not serve is not (RUN-7).
         return {"error": f"Failed to fetch {site_url}: {html}", "url": site_url,
-                "error_kind": "blocked" if kind == "blocked" else "unread"}
+                "error_kind": unread_kind(failure)}
 
     results = {
         "url": site_url,

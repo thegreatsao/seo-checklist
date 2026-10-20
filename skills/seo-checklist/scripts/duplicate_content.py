@@ -330,6 +330,7 @@ def main():
                                fetch_error=inventory.get("fetch_error"),
                                thin_words=args.thin_words or None,
                                truncated=bool(inventory.get("summary", {}).get("truncated")))
+    report["fetch_error_kind"] = inventory.get("fetch_error_kind")
 
     if args.json:
         print(json.dumps(report, indent=2))

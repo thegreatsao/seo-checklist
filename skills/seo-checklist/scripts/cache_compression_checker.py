@@ -18,8 +18,8 @@ try:
 except ImportError:
     from scripts.lib.safe_http import safe_request
 
-from seo_common import (BeautifulSoup, html_parser, is_url, load_source,
-                        normalize_url, require_bs4)
+from seo_common import (BeautifulSoup, fetch_error_kind, html_parser, is_url,
+                        load_source, normalize_url, require_bs4)
 
 
 # basis: inherited — one week of `max-age` for a fingerprinted static asset, present at
@@ -83,6 +83,7 @@ def _check_url(url: str, timeout: int) -> dict:
         response = safe_request("HEAD", normalize_url(url), timeout=timeout, max_response_bytes=0)
     except Exception as exc:  # noqa: BLE001 - network and policy errors should be reported, not fatal
         row["error"] = str(exc)
+        row["error_kind"] = fetch_error_kind(exc)
         return row
 
     headers = {str(k).lower(): v for k, v in response.headers.items()}
@@ -167,15 +168,22 @@ def audit(source: str, include_assets: bool = False, timeout: int = 15,
             issues.append({**item, "url": row["url"]})
         if row["error"]:
             issues.append({"severity": "info", "message": "Could not fetch headers", "url": row["url"], "evidence": row["error"]})
-    return {
+    # Headers this audit's guard never let us read say nothing either way (HTTP-13): the
+    # page itself can answer a GET and redirect its HEAD to another port.
+    refused = [row["url"] for row in resources if row.get("error_kind") == "blocked"]
+    out = {
         "url": url or source,
         "resources_checked": len(resources),
         "issues": issues,
         "resources": resources,
         "fetch_error": fetched.get("error"),
         "fetch_error_kind": fetched.get("error_kind"),
-        "truncated": truncated,
+        "truncated": truncated or bool(refused),
     }
+    if refused:
+        out["truncated_reason"] = (f"{len(refused)} resource(s) refused by this audit's "
+                                   f"guard")
+    return out
 
 
 def main() -> None:

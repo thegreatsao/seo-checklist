@@ -29,7 +29,7 @@ from urllib.parse import urljoin, urlparse
 
 import site_crawl
 from seo_common import (read_as_url, DEAD_FETCH_ERROR_KINDS, carries_content, check_link_status,
-                        fetch_error_kind, html_parser)
+                        fetch_error_kind, html_parser, unread_kind)
 
 try:
     import requests
@@ -187,7 +187,7 @@ def check_broken_links(url: str, internal_only: bool = False,
         html = resp.text
     except requests.exceptions.RequestException as e:
         result["error"] = f"Failed to fetch page: {e}"
-        result["error_kind"] = "unread"
+        result["error_kind"] = unread_kind(e)
         return result
 
     # Extract links
@@ -302,6 +302,7 @@ def links_from_inventory(inventory: dict, timeout: int = 10,
         "issues": [],
         "error": None,
         "fetch_error": inventory.get("fetch_error"),
+        "fetch_error_kind": inventory.get("fetch_error_kind"),
     }
 
     def anchor_for(target: str) -> str:

@@ -48,6 +48,7 @@ from datetime import datetime, timezone
 from urllib.parse import urljoin, urlparse
 
 from seo_common import (
+    refused_kind,
     SITEMAP_BYTES_BUDGET,
     SITEMAP_URLS_BUDGET,
     as_list,
@@ -587,6 +588,11 @@ def _finish(site_url: str, entry: str, pages: dict, robots_blocked: dict,
 
     internal_targets = set(inbound)
     unchecked = sorted(internal_targets - set(pages) - set(robots_blocked))
+    # A page this audit's guard refused is a key in `pages` and was never read, so the
+    # subtraction above cannot see it (HTTP-13): a redirect to another port left the
+    # crawl reporting itself complete, and MS-022, CN-041 and AR-149 passed over it.
+    refused = sorted(key for key, row in pages.items()
+                     if row.get("error_kind") == "blocked")
     # Reachable means linked-to, not fetched. The entry counts because it is where a
     # visitor and a crawler both start.
     reachable = {entry} | {key for key, sources in inbound.items() if sources}
@@ -622,6 +628,9 @@ def _finish(site_url: str, entry: str, pages: dict, robots_blocked: dict,
         # through, so the runner turns one crawl failure into NO_DATA for all
         # items rather than confident verdicts about nothing.
         "fetch_error": None if html_pages else "no page could be crawled",
+        "fetch_error_kind": (None if html_pages
+                             else refused_kind(row.get("error_kind")
+                                               for row in pages.values())),
         "summary": {
             "requests": requests,
             "pages_fetched": len(pages),
@@ -651,8 +660,9 @@ def _finish(site_url: str, entry: str, pages: dict, robots_blocked: dict,
             # `truncated` False. It is exactly the subtraction the orphan check
             # already makes — `internal_targets - pages - robots_blocked` — so a
             # page refused on purpose is politeness and does not count here.
+            "refused_pages": len(refused),
             "truncated": (more_queued or len(pages) >= max_pages
-                          or bool(unchecked)),
+                          or bool(unchecked) or bool(refused)),
         },
         "pages": pages,
         "reachable": sorted(reachable),
