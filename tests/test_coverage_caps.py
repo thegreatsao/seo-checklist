@@ -229,9 +229,17 @@ class TheCrawlCaps(unittest.TestCase):
         self.assertEqual(summary["pages_fetched"], site_crawl.DEFAULT_MAX_PAGES)
         self.assertTrue(summary["truncated"])
 
+    def test_a_site_exactly_the_budget_is_read_whole(self):
+        """Review of F11 batch 1: a crawl that read exactly the budget and has nothing
+        queued and no target unread has read the whole site, and said `truncated`
+        anyway — so every sampled PASS on a 100-page site was withheld for a cut that
+        left out nothing."""
+        import site_crawl
+        summary = self.fan(site_crawl.DEFAULT_MAX_PAGES)
+        self.assertEqual(summary["pages_fetched"], site_crawl.DEFAULT_MAX_PAGES)
+        self.assertFalse(summary["truncated"])
+
     def test_a_site_one_page_short_of_the_budget_is_read_whole(self):
-        """One short, not at: a crawl that fetched exactly the budget cannot know
-        nothing was left, and says `truncated` — the cautious side of the cap."""
         import site_crawl
         summary = self.fan(site_crawl.DEFAULT_MAX_PAGES - 1)
         self.assertEqual(summary["pages_fetched"], site_crawl.DEFAULT_MAX_PAGES - 1)

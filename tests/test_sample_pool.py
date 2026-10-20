@@ -150,7 +150,9 @@ class WhereThePoolCameFrom(unittest.TestCase):
         self.assertEqual(len(found), 3)
 
     def test_a_truncated_crawl_is_a_cut_pool_that_names_the_caps(self):
-        _found, report = self.discover({}, self.inventory(truncated=True))
+        inventory = self.inventory(truncated=True)
+        inventory["summary"].update(pages_fetched=3, unchecked_internal_targets=1)
+        _found, report = self.discover({}, inventory)
         self.assertEqual(report["source"], "crawl")
         self.assertIn("--crawl-max-pages 3", report["cut"])
         self.assertIn("--crawl-depth 3", report["cut"])
@@ -182,6 +184,26 @@ class WhereThePoolCameFrom(unittest.TestCase):
         docs.update({child: urlset(f"{SITE}page{i}") for i, child in enumerate(children)})
         self.assertEqual(self.discover(docs)[1], {"source": "sitemap", "cut": ""})
 
+    def test_a_cut_index_whose_read_children_are_empty_stays_cut(self):
+        """Review of batch 1: the first three children were empty, the fourth listed
+        the failing page, the cut was erased with the empty result and the pool fell
+        to the entry's links — PASS at three children, FAIL at four."""
+        children = [f"{SITE}s{i}.xml" for i in range(r.SAMPLE_FALLBACK_SITEMAPS + 1)]
+        docs = {SITE + "sitemap.xml": index(*children), SITE: '<a href="/good">g</a>'}
+        docs.update({child: urlset() for child in children[:-1]})
+        docs[children[-1]] = urlset(SITE + "bad")
+        _found, report = self.discover(docs)
+        self.assertIn(f"first {r.SAMPLE_FALLBACK_SITEMAPS}", report["cut"])
+
+    def test_a_crawl_cut_only_by_refusals_says_so(self):
+        """Review of batch 1: a guard refusal is not a cap, and the reason said caps."""
+        inventory = self.inventory(truncated=True)
+        inventory["summary"].update(refused_pages=1, pages_fetched=2,
+                                    unchecked_internal_targets=0)
+        _found, report = self.discover({}, inventory)
+        self.assertIn("refused", report["cut"])
+        self.assertNotIn("--crawl-max-pages", report["cut"])
+
     def test_an_index_child_on_another_host_is_a_cut_pool(self):
         docs = {SITE + "sitemap.xml": index(SITE + "own.xml", "https://cdn.test/s.xml"),
                 SITE + "own.xml": urlset(SITE + "a")}
@@ -192,6 +214,36 @@ class WhereThePoolCameFrom(unittest.TestCase):
         docs = {SITE: '<a href="/a">a</a><a href="/b">b</a>'}
         self.assertEqual(self.discover(docs)[1], {"source": "links", "cut": ""})
         self.assertEqual(self.discover({})[1], {"source": "", "cut": ""})
+
+
+class AFoundFailIsKept(unittest.TestCase):
+    """Review of batch 1: the entry's second fetch failed, one sampled page FAILed, and
+    `aggregate_pages` kept the primary row because one run is fewer than two — the
+    primary PASS, which the cut then withheld. The entry was read once already, so its
+    primary rows stand in for the run the second fetch lost."""
+
+    def test_a_lone_sampled_fail_is_not_dropped_when_the_entry_refetch_fails(self):
+        row = {"id": "MS-020", "status": PASS, "evidence": "52 chars"}
+        failed = {"id": "MS-020", "status": FAIL, "evidence": "90 chars",
+                  "url": "https://e.test/bad"}
+        out = r.fold_sample([row], [[failed]], entry_read=False,
+                            sampled={"MS-020"})[0]
+        self.assertEqual(out["status"], FAIL, out)
+        self.assertEqual(out["pages_checked"], 2)
+        # With the entry re-read, its own run is in the list and is not added twice.
+        out = r.fold_sample([row], [[dict(row)], [failed]], entry_read=True,
+                            sampled={"MS-020"})[0]
+        self.assertEqual((out["status"], out["pages_checked"]), (FAIL, 2))
+
+    def test_the_runner_says_whether_the_entry_was_read_again(self):
+        """The served path cannot make the entry's second fetch fail on its own — the
+        run's HTTP cache answers it — so the line that decides is pinned, as
+        `test_runner` pins the per-page selection."""
+        with open(r.__file__, encoding="utf-8") as handle:
+            source = handle.read()
+        self.assertIn('entry_read = not page_evidence[sampled_urls[0]].get("skipped")',
+                      source)
+        self.assertIn("graded = fold_sample(graded, per_page, entry_read, sampled)", source)
 
 
 class WithholdingByStatus(unittest.TestCase):

@@ -2772,10 +2772,21 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None,
                  and same_host(key) and looks_like_a_page(key)]
         if found:
             source = "crawl"
-            if (inventory.get("summary") or {}).get("truncated"):
-                cut.append(f"a crawl that stopped short of the whole site "
-                           f"(--crawl-max-pages {inventory.get('max_pages')}, "
-                           f"--crawl-depth {inventory.get('depth')})")
+            summary = inventory.get("summary") or {}
+            if summary.get("truncated"):
+                # Named by what stopped it: a guard refusal is not a cap, and raising
+                # the caps would not have read the page it refused.
+                capped = (summary.get("unchecked_internal_targets")
+                          or (summary.get("pages_fetched") or 0)
+                          >= (inventory.get("max_pages") or 0)
+                          or not summary.get("refused_pages"))
+                if capped:
+                    cut.append(f"a crawl that stopped at its caps "
+                               f"(--crawl-max-pages {inventory.get('max_pages')}, "
+                               f"--crawl-depth {inventory.get('depth')})")
+                if summary.get("refused_pages"):
+                    cut.append(f"a crawl whose guard refused "
+                               f"{summary['refused_pages']} page(s)")
             sitemap_cut = site_crawl.sitemap_incomplete(inventory)
             if sitemap_cut:
                 cut.append(f"a crawl seeded from a sitemap list not read whole "
@@ -2816,8 +2827,9 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None,
         found += [u for u in pages if same_host(u) and looks_like_a_page(u)]
         if found:
             source = "sitemap"
-        else:
-            cut = []
+        # Kept when the children read were empty: the pages may be in the ones the
+        # cut left unread, and the pool the links supply next is no answer to that
+        # (review of batch 1: PASS at three children, FAIL at four).
 
     if not found:
         try:
@@ -3004,6 +3016,21 @@ def sampled_item_ids(items: list[dict]) -> set[str]:
 
     Read off the registry items and not the graded rows, which carry no `check`."""
     return {i["id"] for i in items if is_page_level(i) and not reads_artifact(i)}
+
+
+def fold_sample(graded: list[dict], per_page: list[list[dict]], entry_read: bool,
+                sampled: set[str]) -> list[dict]:
+    """`aggregate_pages`, with the entry's primary rows standing in for its run when
+    the sample's second fetch of the entry failed.
+
+    `aggregate_pages` keeps the primary row when an item has fewer than two runs, on
+    the reading that one run is the entry's own. When the entry's re-fetch was skipped,
+    the one run is another page's, and a FAIL found there was dropped for the entry's
+    PASS (review of F11 batch 1). The entry was read once already, so its primary rows
+    are its run."""
+    if not entry_read:
+        per_page = [[row for row in graded if row["id"] in sampled]] + per_page
+    return aggregate_pages(graded, per_page)
 
 
 def withhold_cut_sample(graded: list[dict], why: str, sampled: set[str],
@@ -4011,8 +4038,10 @@ def main() -> int:
                 os.unlink(page_html)
             if not a.quiet:
                 print(f"  [{n}/{len(sampled_urls)}] {page_url}", file=sys.stderr)
+        # The entry is the first pick; its second fetch can fail where the first did not.
+        entry_read = not page_evidence[sampled_urls[0]].get("skipped")
         if per_page:
-            graded = aggregate_pages(graded, per_page)
+            graded = fold_sample(graded, per_page, entry_read, sampled)
     if sample_pool.get("cut"):
         # After the fold, and also when the pool collapsed to the entry alone: a cap
         # that left one candidate decided the sample as surely as one that left three.

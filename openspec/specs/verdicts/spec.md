@@ -702,10 +702,16 @@ pool `withhold_cut_sample` applies this requirement to the sampled items: a `FAI
 stands, a `WARN` stands and says it is a floor, a `PASS` and an `N/A` read off the pages become
 `NO_DATA` with the cut named, and an `N/A` decided by scope before any page was read stands. A
 pool collapsed to the entry by the cut is withheld the same way; a sample the sitemap fallback
-supplied is not, since no crawl cap shortened it. Held by `tests/test_sample_pool.py`: the two
-measurements above and `--crawl-max-pages 1` through the runner, each with its uncapped
-control, the source and cut of every pool `discover_urls` builds, and each status over a cut
-pool.
+supplied is not, since no crawl cap shortened it, unless its own child cap cut it — which stays
+a cut when the children it read were empty and the pool falls to the entry's links. A crawl
+that read exactly its page budget with nothing queued and no target unread is not cut, and
+says so (`summary.truncated` no longer reads `len(pages) >= max_pages` on its own). A `FAIL`
+found on a sampled page stands when the entry's second fetch failed: the entry's primary rows
+stand in for its lost run (`fold_sample`), where `aggregate_pages` had kept the primary row of
+a one-run item. Held by `tests/test_sample_pool.py`: the two measurements above and
+`--crawl-max-pages 1` through the runner, each with its uncapped control, the source and cut
+of every pool `discover_urls` builds, each status over a cut pool, and the lone sampled
+`FAIL`; and by `TheCrawlCaps.test_a_site_exactly_the_budget_is_read_whole`.
 
 #### Scenario: a clean bill of health over a capped search
 - **WHEN** an assertion passes by finding none of the thing it forbids, and the input

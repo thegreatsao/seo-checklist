@@ -96,8 +96,9 @@ INVENTORY_VERSION = 4
 #  runner's `--crawl-max-pages` reads it): at the default 4 requests a second it is
 #  under a minute of one site's time, and a judgement, not a measurement — nothing
 #  about a site says how many of its pages an audit should read. What the number may
-#  not do is decide a verdict, and past it none does: the crawl sets
-#  `summary.truncated`; the fourteen inventory readers that pass by absence carry the
+#  not do is decide a verdict, and past it none does: when it leaves a page queued the
+#  crawl sets `summary.truncated` (and does not when it read exactly this many and nothing
+#  was left, F11's review); the fourteen inventory readers that pass by absence carry the
 #  flag and the runner turns their PASS into NO_DATA; four withhold a non-PASS that is
 #  not a floor — LO-198 (0.169.0), CI-008 and AR-162 (0.170.0), BL-081 (0.171.0); a
 #  WARN or FAIL found in the pages read stands and says it is a floor (VRD-14), which
@@ -666,8 +667,12 @@ def _finish(site_url: str, entry: str, pages: dict, robots_blocked: dict,
             # already makes — `internal_targets - pages - robots_blocked` — so a
             # page refused on purpose is politeness and does not count here.
             "refused_pages": len(refused),
-            "truncated": (more_queued or len(pages) >= max_pages
-                          or bool(unchecked) or bool(refused)),
+            #
+            # Not `len(pages) >= max_pages` on its own, since F11's review: a crawl
+            # that read exactly the budget with nothing queued and no target unread
+            # has read the whole site, and calling it cut withheld every sampled PASS
+            # on a site of exactly that many pages.
+            "truncated": more_queued or bool(unchecked) or bool(refused),
         },
         "pages": pages,
         "reachable": sorted(reachable),
