@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.174.0 — see [CHANGELOG.md](CHANGELOG.md). No threshold rests on "inherited" but one: every number a verdict depends on is a published standard, a measurement, or a convention with its judgement written beside it, and numbers that only decide what is printed say so. Under `--sample`, a sample drawn from a crawl cut at its caps withholds what the cut could decide. MB-100 now fails a fixed width over 360 CSS pixels, and KW-076 reads every non-empty paragraph as body text, both measured.
+Version 0.174.0 — see [CHANGELOG.md](CHANGELOG.md). No threshold rests on "inherited": every number a verdict depends on is a published standard, a measurement, or a convention with its judgement written beside it, and numbers that only decide what is printed say so. Under `--sample`, a sample drawn from a crawl cut at its caps withholds what the cut could decide. MB-100 now fails a fixed width over 360 CSS pixels, KW-076 reads every non-empty paragraph as body text, and `--profile auto` needs a detector score of 5, all three measured.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -433,10 +433,9 @@ cannot show the number is right, so `tools/audit_thresholds.py` finds each one a
 depends on and requires a stated basis — an external standard (named, so you can check
 it), something measured, a convention admitted as one, or a number inherited from the
 borrowed code and not yet examined. CI refuses a bare one. The count that matters is
-how many came with code from elsewhere and are still unexamined: at 0.174.0, one of 130
-(the profile detector's `MIN_SCORE`, measured and held for a decision); 20 are standards,
-13 measured, 96 conventions with the judgement written, and 47 more decide only what is
-printed. That is in [KNOWN-ISSUES.md](KNOWN-ISSUES.md) §2 and [ROADMAP.md](ROADMAP.md).
+how many came with code from elsewhere and are still unexamined: at 0.174.0, none of
+130; 20 are standards, 14 measured, 96 conventions with the judgement written, and 47 more
+decide only what is printed. That is in [KNOWN-ISSUES.md](KNOWN-ISSUES.md) §2 and [ROADMAP.md](ROADMAP.md).
 
 **The report says what changed since last time, and hands over a task list.** Every run
 is filed under `.seo-runs/`, and a report now opens a **Since the previous audit** section

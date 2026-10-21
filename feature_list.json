@@ -279,7 +279,7 @@
   },
   {
     "id": "F11",
-    "behavior": "No threshold rests on 'inherited' unexamined: each of the 64 is calibrated, relabelled 'convention' or 'presentation' with its judgement written out, or — one, detect_profile.MIN_SCORE — measured and held in force for the owner's decision; and no sampled verdict is decided by the crawl caps",
+    "behavior": "No threshold rests on 'inherited': each of the 64 is calibrated, or relabelled 'convention' or 'presentation' with its judgement written out; and no sampled verdict is decided by the crawl caps",
     "dependencies": [
       "F09"
     ],
@@ -303,7 +303,7 @@
     ],
     "state": "passing",
     "evidence": "commit 09368bd, verified 2026-10-21",
-    "notes": "ROADMAP item 1. Done at 0.174.0 in five batches, each with a sprint contract (docs/sprint-20261020-F11-*.md) and gpt-6.1-sol reviews: 161 counted -> 130, inherited 64 -> 1. The one left is MIN_SCORE: measured on 39 labelled homepages (tools/calibrate_profile_detection.py), the rule picks 5, 4 stays in force until the owner decides, since adopting it moves --profile auto verdicts."
+    "notes": "ROADMAP item 1. Done at 0.174.0 in five batches, each with a sprint contract (docs/sprint-20261020-F11-*.md) and gpt-6.1-sol reviews: 161 counted -> 130, inherited 64 -> 0. The last, detect_profile.MIN_SCORE, was measured on 39 labelled homepages (tools/calibrate_profile_detection.py) and adopted at 5 by the owner's decision."
   },
   {
     "id": "F12",

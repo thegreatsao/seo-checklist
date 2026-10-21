@@ -10,9 +10,9 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
-## 0.174.0 — no threshold rests on "inherited" but one, measured and held; no sampled verdict is decided by the crawl caps
+## 0.174.0 — no threshold rests on "inherited"; no sampled verdict is decided by the crawl caps
 
-Registry version: `90ba79b14b28`, unchanged. **Verdicts move in eight places, named below; every
+Registry version: `90ba79b14b28`, unchanged. **Verdicts move in nine places, named below; every
 other change is a threshold's stated basis, which moves no verdict.** F11, in five batches, each
 with its own sprint contract (`docs/sprint-20261020-F11-*.md`) and reviewed by `gpt-6.1-sol` at high
 effort, every finding reproduced before it was fixed.
@@ -48,8 +48,14 @@ effort, every finding reproduced before it was fixed.
   * **MS-023** from `FAIL` or `WARN` to `NO_DATA` over a full page of rows when no brand was
     supplied or published: the brand inferred from the top-click row can change with rows the API
     orders arbitrarily on equal clicks, and move split queries out of the count.
+  * **`--profile auto`** runs under `default`, the whole registry, where the detector's best
+    score is exactly 4: `detect_profile.MIN_SCORE` is 5, measured (below), so a page with a
+    byline, article timestamps and a blog link is no longer audited as a blog, and the items its
+    profile made `N/A` are judged again (8 for `blog`, `saas`, `media`, 4 for `local`, none for
+    `ecommerce`). Without `--profile auto` nothing moves on its own: the interactive prompt's
+    Enter now offers `default` for such a page, and the no-terminal line no longer suggests one.
 * **Threshold bases, by count** (`tools/audit_thresholds.py`): 161 numbers a verdict depends on
-  became 130 — standard 20 → 20, measured 11 → 13, convention 66 → 96, inherited 64 → **1** — and
+  became 130 — standard 20 → 20, measured 11 → 14, convention 66 → 96, inherited 64 → **0** — and
   15 that decide only what is printed became 47.
   * The crawl's `DEFAULT_MAX_PAGES` and `DEFAULT_DEPTH` to `convention` again, now that no sampled
     verdict rests on them; `SAMPLE_FALLBACK_SITEMAPS`, a bare `[:3]` until now, is a new one.
@@ -66,12 +72,12 @@ effort, every finding reproduced before it was fixed.
     ~96-day flag, on purpose; 250KB is past the Web Almanac 2024 per-image 90th percentile), the
     four profile-detector signal tables, and three Search Console numbers with the multi-market
     blocker kept (`RANKS_FIRST_POSITION`, `MIN_IMPRESSIONS`, `ROW_LIMIT`).
-  * Two to `measured` (`MAX_FIXED_WIDTH_PX`, `MIN_PARAGRAPH_WORDS`), each with a calibration tool and
-    an offline `--check` in CI: `tools/calibrate_mobile_viewport.py`, `tools/calibrate_paragraph_words.py`.
-  * **The one left `inherited` is `detect_profile.MIN_SCORE`.** Measured on 39 labelled homepages
-    (`tools/calibrate_profile_detection.py`): at 4 one site is wrongly narrowed (python.org as a
-    blog, 8 items N/A) and none at 5, which the rule picks. Adopting it moves `--profile auto`
-    verdicts and is the owner's decision, so 4 stays in force and the report records both.
+  * Three to `measured`, each with a calibration tool and an offline `--check` in CI:
+    `MAX_FIXED_WIDTH_PX` (`tools/calibrate_mobile_viewport.py`), `MIN_PARAGRAPH_WORDS`
+    (`tools/calibrate_paragraph_words.py`), and `detect_profile.MIN_SCORE` 4 → 5
+    (`tools/calibrate_profile_detection.py`, 39 labelled homepages: at 4 one site was narrowed
+    wrongly — python.org as a blog, 8 items N/A — and none at 5, for one right answer fewer;
+    adopted by the owner's decision).
 * **Found and not fixed**, each written where it lives: TE-179 and BL-084 decide on `90` and `50`
   written in their own registry rules, beside constants that now say so; below the crawl budget a
   page that timed out is counted read by the pass-by-absence readers; the fourteen crawl-inventory

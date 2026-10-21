@@ -5,7 +5,7 @@
     python3 tools/calibrate_profile_detection.py --check    # offline: re-derive from the report
 
 Under `--profile auto` the detector's answer is the profile the audit runs under, and a
-profile other than `default` makes 4 to 7 items N/A. MIN_SCORE is the one number that
+profile other than `default` makes 4 or 8 items N/A (`ecommerce` none). MIN_SCORE is the one number that
 decides whether the detector answers at all: below it the answer is `default`, the whole
 registry. CLEAR_MARGIN does not reach that answer (it labels the confidence printed), and
 the four signal tables are forty-odd weights that a corpus of this size cannot fit one by
