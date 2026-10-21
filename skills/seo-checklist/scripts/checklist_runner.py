@@ -1490,18 +1490,21 @@ def synthetic_metrics(results: dict) -> list:
     return sorted(out)
 
 
-def crawlers_claimed(results: dict) -> bool | None:
-    """True when a server log was read and its crawlers were taken at their word.
+def crawlers_claimed(results: dict) -> int | None:
+    """How many crawler requests in a server log rest on their User-Agent alone.
 
-    `server_log_audit.py` says so in `bot_identity` on every run, and until F04 nothing
-    read it, so CI-018's crawler counts reached the report as measurements
-    (`openspec/specs/evidence/` EVD-10). None when no log was read or its addresses
-    were confirmed with `--verify-bots`.
+    `server_log_audit.py` counts them in `crawler_requests_unconfirmed` — every one
+    without `--verify-bots`, and with it each whose address was not confirmed — and
+    until F04 nothing carried the fact to a report, so CI-018's crawler counts read as
+    measurements (`openspec/specs/evidence/` EVD-10). None when no log was read or every
+    crawler request was confirmed. Keyed on the count rather than on the flag: a
+    verification that confirmed nothing left every count a claim (review of batch 1).
     """
     for key, payload in results.items():
-        if (key[0] == "server_log_audit.py" and isinstance(payload, dict)
-                and str(payload.get("bot_identity", "")).startswith("claimed")):
-            return True
+        if key[0] == "server_log_audit.py" and isinstance(payload, dict):
+            count = payload.get("crawler_requests_unconfirmed")
+            if isinstance(count, int) and count > 0:
+                return count
     return None
 
 

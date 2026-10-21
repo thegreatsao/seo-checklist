@@ -1724,6 +1724,10 @@ it, CI-018 decides. Same artifact pattern as `cwv_metrics.py`.
   no User-Agent. "No crawler visited" and "this file cannot say" are opposite
   findings and the second is never printed as the first
 `bot_identity` — str — a fixed sentence saying the User-Agent is a claim, not proof
+`crawler_requests_unconfirmed` — int | null — requests counted as a search or AI crawler whose
+  address was not confirmed: all of them without `--verify-bots`, and with it every one with no
+  usable PTR record, no published DNS rule, or past the address budget; null until a log was read.
+  The runner carries it to both reports (`w_log_claimed`, F04)
 `window.first` / `.last` — NoneType or str (ISO 8601)
 `window.days` — NoneType or int (rounded up, so a partial day is 1 and never 0)
 `by_status_class` — object — counts over every request, bots and humans

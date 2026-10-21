@@ -507,6 +507,12 @@ def audit(log_path: str, inventory_path: str = "", base_url: str = "",
         "bot_identity": "claimed, not verified — a User-Agent is what the client "
                         "says it is; confirming Googlebot needs a reverse DNS "
                         "lookup, which --verify-bots makes and this run did not",
+        # How many requests counted as a search or AI crawler rest on the User-Agent
+        # alone: all of them without --verify-bots; with it, every one whose address was
+        # not confirmed — no usable PTR record, no published DNS rule, past the address
+        # budget. A number rather than the sentence above, so a reader of the run can
+        # tell (EVD-10, F04). None until a log was read.
+        "crawler_requests_unconfirmed": None,
         "address_checks": {},
         "bots": {},
         "by_status_class": {},
@@ -538,6 +544,7 @@ def audit(log_path: str, inventory_path: str = "", base_url: str = "",
     params: collections.Counter = collections.Counter()
     search_paths: set[str] = set()
     ua_seen_field = False
+    unconfirmed = 0
     ua_missing_field = False
     first_at = last_at = None
 
@@ -572,6 +579,7 @@ def audit(log_path: str, inventory_path: str = "", base_url: str = "",
                         last_at = when
 
                 kind, name = classify_agent(row["ua"])
+                verdict = None
                 if checker is not None and kind == "search" and row["ip"]:
                     verdict = checker.status(name, row["ip"])
                     address_checks[name][verdict] += 1
@@ -581,6 +589,8 @@ def audit(log_path: str, inventory_path: str = "", base_url: str = "",
                         # Google's crawl budget, and leaving the requests in `search`
                         # with a note beside them would leave that number wrong.
                         kind, name = "other", f"{name} (address not confirmed)"
+                if kind in ("search", "ai") and verdict != "verified":
+                    unconfirmed += 1
                 klass = status_class(row["status"])
                 counts["all"][klass] += 1
                 counts[kind][klass] += 1
@@ -652,6 +662,7 @@ def audit(log_path: str, inventory_path: str = "", base_url: str = "",
                            f"address(es) that are not — re-attributed to 'other', so "
                            f"the crawl-budget figures above exclude them"})
 
+    result["crawler_requests_unconfirmed"] = unconfirmed
     _window(result, first_at, last_at)
     result["by_status_class"] = dict(counts["all"])
     result["bots"] = {

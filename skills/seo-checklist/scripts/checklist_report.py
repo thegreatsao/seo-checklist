@@ -890,10 +890,11 @@ def provenance_warnings(data: dict, L: "Lang | None" = None) -> list[str]:
     # so on every run and nothing carried it here (EVD-10, F04).
     if data.get("log_crawlers_claimed"):
         out.append(L.t("w_log_claimed",
-                       "The crawler counts from the server log take each request's "
-                       "User-Agent at its word: a scraper calling itself Googlebot is "
-                       "counted as Googlebot. Confirming the addresses needs a reverse "
-                       "DNS lookup (--verify-bots), which this run did not make."))
+                       "{count} crawler request(s) in the server log are counted by the "
+                       "User-Agent they sent, not by a confirmed address: a scraper "
+                       "calling itself Googlebot is counted as Googlebot. --verify-bots "
+                       "confirms an address by reverse DNS where the crawler publishes "
+                       "how.").format(count=data["log_crawlers_claimed"]))
     # The Search Console property was built from the bundled public suffix list, and
     # the list is old or cannot say when it was taken (INP-10, F04): a suffix
     # registered since would give a property nobody owns, which answers nothing.

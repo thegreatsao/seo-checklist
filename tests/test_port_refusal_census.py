@@ -718,6 +718,30 @@ class OneKindPerField(unittest.TestCase):
         self.assertEqual(row["status"], "NO_DATA")
         self.assertNotEqual(row.get("error_kind"), "blocked")
 
+    def test_a_field_absent_for_two_reasons_is_not_the_guards(self):
+        # The page's http address refused by the guard, a linked page's timing out: the
+        # field is withheld for both, and one of them is the site's (review of batch 1).
+        import security_headers
+        page = mock.Mock(status_code=200, url="https://site.example/",
+                         headers={"Content-Type": "text/html"},
+                         text='<html><body><a href="/about">About</a></body></html>')
+
+        def get(url, **_kwargs):
+            if url == "http://site.example/":
+                raise port_refusal(url)
+            if url.startswith("http://"):
+                raise sh.requests.exceptions.ReadTimeout("read timed out")
+            return page
+
+        with mock.patch.object(security_headers, "safe_get", side_effect=get), \
+                mock.patch.object(security_headers, "robots_allows",
+                                  return_value=(True, "")):
+            out = security_headers.check_security_headers("https://site.example/")
+        self.assertEqual([v["outcome"] for v in out["http_variants"]], ["unread", "unread"])
+        row = graded_row("SE-117", "security_headers.py", out)
+        self.assertEqual(row["status"], "NO_DATA")
+        self.assertNotEqual(row.get("error_kind"), "blocked")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -182,7 +182,7 @@ The list is normative, and it is this:
 | `w_url_credentials` | `url_credentials` | the site was read as somebody it lets in reads it |
 | `w_guard` | `entry_guard`, `entry_guard_enforced` | the entry page looked like an interstitial and was scored anyway |
 | `w_thin` | `entry_thin`, `entry_visible_words`, `entry_reachable` | the entry page may be an empty shell |
-| `w_log_claimed` | `log_crawlers_claimed` | the server log's crawler counts are what each request called itself (`evidence` EVD-10) |
+| `w_log_claimed` | `log_crawlers_claimed` | that many of the server log's crawler requests are counted by what each called itself (`evidence` EVD-10) |
 | `w_psl_stale` | `public_suffix_stale` | the Search Console property was derived from a public suffix list past its stated age (`inputs` INP-10) |
 | `w_psl_undated` | `public_suffix_stale` | the same, from a list that cannot say how old it is |
 | `w_artifacts` | `artifacts` | some verdicts come from measurements supplied with the run |

@@ -437,14 +437,18 @@ stops saying the identity is unverified — probed at 0.97.0, CAUGHT by both.
 **What was unread until F04 was not the label but its journey.** `bot_identity` was
 written on every run and read by nothing, so the sentence saying these counts are a claim
 reached no report surface, and the second scenario below was violated by shipped behaviour.
-The repair is the provenance warning this line asked for: the runner records
-`log_crawlers_claimed` when a log was read and its crawlers taken at their word, and both
-reports carry `w_log_claimed` (`openspec/specs/reporting/` REP-3's table).
-`tests/test_crawler_claim.py` holds it from the log through the runner to both reports
-(`test_both_reports_of_a_run_with_an_unverified_log_say_so`), and its absence when the
-addresses were verified (`test_a_verified_log_is_not`) or no log was read. Probed: the record
-taking any `bot_identity` as a claim, the record field emptied, and the report branch removed
-each redden a named test.
+The repair is the provenance warning this line asked for: the log audit counts the crawler
+requests whose address was not confirmed (`crawler_requests_unconfirmed`), the runner records
+the count as `log_crawlers_claimed`, and both reports carry `w_log_claimed` with it
+(`openspec/specs/reporting/` REP-3's table). Keyed on the count and not on the flag, because
+the review of F04's first batch ran `--verify-bots` with no address answering: every count
+stayed a claim and the caveat went away with the flag. `tests/test_crawler_claim.py` holds it
+from the log through the runner to both reports
+(`test_both_reports_of_a_run_with_an_unverified_log_say_so`), the count with verification that
+confirmed nothing, one crawler of two, or past the address budget, and its absence when every
+crawler was confirmed or no log was read. Probed: every crawler request counted whatever the
+verification, only an unverified run counted, the record field emptied, and the report branch
+removed each redden a named test.
 
 #### Scenario: two kinds of crawler in one log
 - **WHEN** a log contains both search-engine and AI-crawler requests
