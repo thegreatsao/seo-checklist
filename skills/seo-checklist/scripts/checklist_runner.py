@@ -2809,7 +2809,8 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None,
                 capped = (summary.get("unchecked_internal_targets")
                           or (summary.get("pages_fetched") or 0)
                           >= (inventory.get("max_pages") or 0)
-                          or not summary.get("refused_pages"))
+                          or not (summary.get("refused_pages")
+                                  or summary.get("unanswered_pages")))
                 if capped:
                     cut.append(f"a crawl that stopped at its caps "
                                f"(--crawl-max-pages {inventory.get('max_pages')}, "
@@ -2817,6 +2818,9 @@ def discover_urls(base_url: str, limit: int, inventory: dict | None = None,
                 if summary.get("refused_pages"):
                     cut.append(f"a crawl whose guard refused "
                                f"{summary['refused_pages']} page(s)")
+                if summary.get("unanswered_pages"):
+                    cut.append(f"a crawl in which {summary['unanswered_pages']} "
+                               f"page(s) gave no answer, asked twice")
             sitemap_cut = site_crawl.sitemap_incomplete(inventory)
             if sitemap_cut:
                 cut.append(f"a crawl seeded from a sitemap list not read whole "

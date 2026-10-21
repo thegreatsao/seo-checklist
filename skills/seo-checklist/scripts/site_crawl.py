@@ -537,6 +537,12 @@ def crawl(site_url: str, depth: int = DEFAULT_DEPTH,
         # is deliberate and load-bearing.
         fetched = _fetch(discovered_url, timeout=timeout, max_bytes=2_000_000,
                          respect_robots=source != "entry")
+        if gave_no_answer(fetched):
+            # Asked once more, then withheld (F04, the owner's decision on H13-c): a
+            # timeout or a reset is often the moment rather than the page. A second
+            # silence leaves the page unread and the crawl cut (`_finish`).
+            fetched = _fetch(discovered_url, timeout=timeout, max_bytes=2_000_000,
+                             respect_robots=source != "entry")
         return job, fetched
 
     while queue and len(pages) < max_pages:
@@ -598,6 +604,10 @@ def _finish(site_url: str, entry: str, pages: dict, robots_blocked: dict,
     # crawl reporting itself complete, and MS-022, CN-041 and AR-149 passed over it.
     refused = sorted(key for key, row in pages.items()
                      if row.get("error_kind") == "blocked")
+    # A page that gave no answer twice is the same gap from the site's side: a row,
+    # never read (F04, H13-c). Below the page budget the crawl called itself complete
+    # and MS-022 and the other readers that pass by finding nothing passed over it.
+    unanswered = sorted(key for key, row in pages.items() if gave_no_answer(row))
     # Reachable means linked-to, not fetched. The entry counts because it is where a
     # visitor and a crawler both start.
     reachable = {entry} | {key for key, sources in inbound.items() if sources}
@@ -666,6 +676,7 @@ def _finish(site_url: str, entry: str, pages: dict, robots_blocked: dict,
             # already makes — `internal_targets - pages - robots_blocked` — so a
             # page refused on purpose is politeness and does not count here.
             "refused_pages": len(refused),
+            "unanswered_pages": len(unanswered),
             #
             # `len(pages) >= max_pages` stays on its own, as the cautious side of the
             # budget (F11's second review): a page that gave no answer — a timeout —
@@ -675,7 +686,7 @@ def _finish(site_url: str, entry: str, pages: dict, robots_blocked: dict,
             # budget an answer is withheld that a crawl one page larger would give; that
             # is the trade the cap's basis line names, not a verdict the cap decides.
             "truncated": (more_queued or len(pages) >= max_pages
-                          or bool(unchecked) or bool(refused)),
+                          or bool(unchecked) or bool(refused) or bool(unanswered)),
         },
         "pages": pages,
         "reachable": sorted(reachable),
@@ -692,6 +703,16 @@ def _finish(site_url: str, entry: str, pages: dict, robots_blocked: dict,
 # ---------------------------------------------------------------------------
 # Reading one back
 # ---------------------------------------------------------------------------
+
+# The fetch layer's kinds for a request nothing answered: no status, no refusal of ours.
+# A guard refusal, a robots decline, a TLS failure and any HTTP status are answers.
+NO_ANSWER_KINDS = ("timeout", "refused")
+
+
+def gave_no_answer(fetched: dict) -> bool:
+    return (fetched.get("status") is None
+            and fetched.get("error_kind") in NO_ANSWER_KINDS)
+
 
 def load(path: str) -> dict:
     with open(path, encoding="utf-8") as fh:

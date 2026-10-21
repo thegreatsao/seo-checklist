@@ -691,6 +691,19 @@ split — and its FAIL stands, and is withheld when the brand was inferred from 
 API orders arbitrarily on equal clicks
 (`test_a_split_count_off_a_full_page_with_no_known_brand_is_withheld`).
 
+**A crawled page that gave no answer, from F04.** The crawl marked itself truncated for a page
+its cap or depth left unread and, from 0.173.0, for one this audit's guard refused; a page that
+timed out, or whose connection was refused or reset, was a row like a page read, so below the
+page budget a crawl with one such page called itself complete and MS-022 passed over a page
+nobody read. By the owner's decision ("retry, then withhold") such a page is requested once
+more; silent twice, it sets `summary.truncated` and is counted in `summary.unanswered_pages`,
+and the fourteen inventory readers that pass by absence withhold their PASS over it, a FAIL or
+WARN found in the pages read standing. An HTTP status of any kind, a guard refusal, a TLS failure
+and a robots decline are answers and are not asked again. Held by `tests/test_crawl_no_answer.py`:
+one timeout then an answer leaves the crawl complete, two silences cut it and MS-022 reads
+`NO_DATA`, a 503 and a guard refusal are asked once. The withheld evidence is the readers' cap
+wording, as for a refused page: they copy the crawl's flag and not its reason.
+
 **And a count can be of absences, from 0.170.0.** The census above reads the rule's operator,
 and CI-008 (`orphan_pages.count eq 0`) is outside it: each page it counts is defined by a
 lack — no page read links to it — so on a crawl stopped at its cap a page reached from the

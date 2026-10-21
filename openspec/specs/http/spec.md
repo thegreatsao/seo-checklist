@@ -1051,10 +1051,10 @@ checking outbound links means making them. The switch is off by default, so an o
 auditing a staging site on `:8080` by hand is not refused; a public deployment sets it.
 `indexability_matrix` names an off-host sitemap only in `sitemap_membership_unknown`, and no
 item reads it; `--sample`'s fallback names one on stderr only. A page the guard refused leaves
-the crawl `truncated`, so the site-wide items withhold their clean verdict; a page that timed
-out does not, and is a partial crawl rather than a refusal's kind — not a refusal, so not this
-requirement's; whether a clean site-wide verdict over it should be withheld is `verdicts` VRD-14's
-question, put to the owner in F04. `domain_safety_check` and `security_headers` each read several
+the crawl `truncated`, so the site-wide items withhold their clean verdict. A page that gave no
+answer — timed out, or its connection refused or reset — is not a refusal and not this
+requirement's; from F04, by the owner's decision, it is asked once more and, silent twice, cuts
+the crawl the same way (`verdicts` VRD-14). `domain_safety_check` and `security_headers` each read several
 subjects in one result, and until F04 their refused uptime request and http variant left TE-167
 and SE-117 NO_DATA by an absent key with no kind, the runner keeping one kind per result; both
 now name the kind of the field they withheld. Run by hand only,
