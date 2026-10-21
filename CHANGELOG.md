@@ -49,8 +49,11 @@ effort, every finding reproduced before it was fixed.
     supplied or published: the brand inferred from the top-click row can change with rows the API
     orders arbitrarily on equal clicks, and move split queries out of the count.
   * **`--profile auto`** runs under `default`, the whole registry, where the detector's best
-    score is exactly 4: `detect_profile.MIN_SCORE` is 5, measured (below), so a page with a
-    byline, article timestamps and a blog link is no longer audited as a blog, and the items its
+    score is exactly 4: `detect_profile.MIN_SCORE` is 5, measured (below). That includes a page
+    whose only evidence is one declared schema type (`Product`, `LocalBusiness`, `Restaurant`,
+    `Hotel`, `BlogPosting`, `NewsArticle`, `SoftwareApplication`, each weighing 4), which now
+    needs one more signal beside it; and a page with a byline, article timestamps and a blog link
+    is no longer audited as a blog. The items its
     profile made `N/A` are judged again (8 for `blog`, `saas`, `media`, 4 for `local`, none for
     `ecommerce`). A page read as `local` also loses that profile's `--thin-words 150`, so
     **CN-039** counts a page under 300 words as thin again and can move from `PASS` to `WARN` or

@@ -2028,19 +2028,27 @@ class Detection(unittest.TestCase):
               if jsonld else "")
         return f"<!doctype html><html><head>{head}{ld}</head><body>{body}</body></html>"
 
+    # One declared type weighs 4, under MIN_SCORE 5 (F11): alone it suggests nothing,
+    # so each page below carries one weak signal beside its schema.
     def test_product_schema_reads_as_a_store(self):
-        d = detect(self.page(jsonld={"@type": "Product", "name": "Thing"}))
+        d = detect(self.page('<span itemprop="price">9</span>',
+                             jsonld={"@type": "Product", "name": "Thing"}))
+        self.assertIn("Product schema", d["signals"]["ecommerce"])
         self.assertEqual(d["profile"], "ecommerce")
 
     def test_localbusiness_schema_reads_as_local(self):
-        d = detect(self.page(jsonld={"@type": "LocalBusiness", "name": "Cafe"}))
+        d = detect(self.page('<a href="tel:+35722000000">Call</a>',
+                             jsonld={"@type": "LocalBusiness", "name": "Cafe"}))
+        self.assertIn("LocalBusiness schema", d["signals"]["local"])
         self.assertEqual(d["profile"], "local")
 
     def test_graph_containers_and_multi_typed_nodes_are_flattened(self):
         """JSON-LD is legally a node, an array, or a @graph, and @type may be a
         list — a parser that assumes one shape reads most real sites as empty."""
-        d = detect(self.page(jsonld={"@graph": [{"@type": ["Organization",
+        d = detect(self.page('<a href="tel:+35722000000">Call</a>',
+                             jsonld={"@graph": [{"@type": ["Organization",
                                                            "LocalBusiness"]}]}))
+        self.assertIn("LocalBusiness schema", d["signals"]["local"])
         self.assertEqual(d["profile"], "local")
 
     def test_thin_evidence_never_narrows_anything(self):
