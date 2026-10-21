@@ -586,9 +586,9 @@ answerable from the catalogue.
 
 **Is `inherited` a basis or the absence of one?** EVD-6 accepts four bases and 0 of 130
 numbers claim the fourth since 0.174.0 (F11), so the question no longer costs anything
-today; it decides what a new undefended number may be filed as. Treating `inherited` as a failure would redden CI today and for
-a long time; treating it as a basis is what allows the number to stay at 77 for releases at
-a stretch. What would settle it: a ratchet — `inherited` permitted but never permitted to
+today; it decides what a new undefended number may be filed as. Treating `inherited` as a failure would have reddened CI for
+most of this tree's history and would not today; treating it as a basis is what let the
+number stay at 77 for releases at a stretch. What would settle it: a ratchet — `inherited` permitted but never permitted to
 *increase*, which is the shape this tree already uses for its other debts.
 
 ## Appendix A — measured disagreements, 4 September 2026

@@ -82,8 +82,9 @@ class InheritedIsAnAdmission(unittest.TestCase):
         with open(path, "w", encoding="utf-8") as fh:
             fh.write("# basis: inherited — seven, present at import\nLIMIT = 7\n"
                      "def over(value):\n    return value > LIMIT\n")
-        self.assertEqual([row["kind"] for row in audit_thresholds.numeric_constants(path)],
-                         ["inherited"], "the scan no longer reads an `inherited` line")
+        named, _unnamed = audit_thresholds.scan([path])
+        self.assertEqual([row["kind"] for row in named], ["inherited"],
+                         "the scan no longer reads an `inherited` line")
 
     def test_the_kinds_are_the_closed_set_the_tool_defines(self):
         """Read from the tool rather than listed here, so a sixth kind arrives as a

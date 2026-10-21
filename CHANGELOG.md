@@ -52,7 +52,9 @@ effort, every finding reproduced before it was fixed.
     score is exactly 4: `detect_profile.MIN_SCORE` is 5, measured (below), so a page with a
     byline, article timestamps and a blog link is no longer audited as a blog, and the items its
     profile made `N/A` are judged again (8 for `blog`, `saas`, `media`, 4 for `local`, none for
-    `ecommerce`). Without `--profile auto` nothing moves on its own: the interactive prompt's
+    `ecommerce`). A page read as `local` also loses that profile's `--thin-words 150`, so
+    **CN-039** counts a page under 300 words as thin again and can move from `PASS` to `WARN` or
+    `FAIL`. Without `--profile auto` nothing moves on its own: the interactive prompt's
     Enter now offers `default` for such a page, and the no-terminal line no longer suggests one.
 * **Threshold bases, by count** (`tools/audit_thresholds.py`): 161 numbers a verdict depends on
   became 130 — standard 20 → 20, measured 11 → 14, convention 66 → 96, inherited 64 → **0** — and
