@@ -372,6 +372,9 @@ def _read_page(fetched: dict, key: str, discovered_url: str, site_url: str,
         "bytes": fetched.get("bytes") or 0,
         "error": fetched.get("error"),
         "error_kind": fetched.get("error_kind"),
+        # The connection broke while the body was read (`fetch_url`); with a timeout
+        # and a refused connection, what makes a page one that gave no answer (F04).
+        "cut_off": bool(fetched.get("cut_off")),
         "robots_blocked": bool(fetched.get("robots_blocked")),
         "title": None,
         "meta_description": None,
@@ -711,7 +714,8 @@ NO_ANSWER_KINDS = ("timeout", "refused")
 
 def gave_no_answer(fetched: dict) -> bool:
     return (fetched.get("status") is None
-            and fetched.get("error_kind") in NO_ANSWER_KINDS)
+            and (fetched.get("error_kind") in NO_ANSWER_KINDS
+                 or bool(fetched.get("cut_off"))))
 
 
 def load(path: str) -> dict:
@@ -867,8 +871,12 @@ def main() -> None:
         f"Sitemap URLs: {s['sitemap_urls']}  reachable by link: {s['reachable_pages']}",
     ]
     if s["truncated"]:
-        lines.append(f"Truncated at --max-pages {inventory['max_pages']}: every "
-                     f"count above understates the site")
+        # Named by what cut it: a refused or silent page is not a cap (F04 review).
+        why = [f"{s[key]} page(s) {words}" for key, words in
+               (("refused_pages", "refused by this audit's guard"),
+                ("unanswered_pages", "gave no answer, asked twice")) if s.get(key)]
+        cause = "; ".join(why) or "at --max-pages %d" % inventory["max_pages"]
+        lines.append(f"Truncated ({cause}): every count above understates the site")
     for row in inventory["broken"][:25]:
         lines.append(f"  broken: {row['url']} "
                      f"[{row['status'] or row['error']}] "

@@ -30,7 +30,7 @@ other 20 partial and DEC-1: **21 requirements**.
 
 | batch | requirements | contract | state |
 |---|---|---|---|
-| 1 | HTTP-10, HTTP-13, INP-10, EVD-10 (+ H13-c) | `docs/sprint-20261021-F04-1.md` | **done**: `4be01d8` (active + contract), `005886e` (code), `f831882` (review 1 fixes), H13-c and review 2 in the commits after them (see the contract) |
+| 1 | HTTP-10, HTTP-13, INP-10, EVD-10 (+ H13-c) | `docs/sprint-20261021-F04-1.md` | **done**: `4be01d8` (active + contract), `005886e` (code), `f831882` (review 1 fixes), `3d01157` (H13-c + this plan), review 2 fixes in the commit after it (see the contract) |
 | 2 | EVD-1, EVD-2, VRD-2, VRD-3, REG-1 | `docs/sprint-20261021-F04-2.md` (`3e847cf`) | begun, **not committed**: work in progress parked as a patch outside the repository (the owner's handoff names the path) |
 | 3 | DEC-1, DEC-4, DEC-8, DEC-9 | to write | not started |
 | 4 | GOV-2, GOV-3, GOV-5, GOV-6 | to write | not started |

@@ -106,6 +106,28 @@ class APageThatAnswersOnTheRetryIsRead(unittest.TestCase):
         self.assertFalse(inventory["summary"]["truncated"])
 
 
+    def test_a_body_cut_off_then_an_answer_likewise(self):
+        # A connection broken while the body was read reaches the crawl as the fetch
+        # layer's `other` (requests' ChunkedEncodingError), not `refused`: found by the
+        # second review of batch 1, it was asked once and left a row with no content.
+        cut = sh.requests.exceptions.ChunkedEncodingError("Response ended prematurely")
+        inventory, asked = crawl({"/p": [cut]})
+        self.assertEqual(asked["/p"], 2)
+        self.assertEqual(inventory["pages"][SITE + "p"]["status"], 200)
+
+    def test_a_body_cut_off_twice_cuts_the_crawl(self):
+        cut = sh.requests.exceptions.ChunkedEncodingError("Response ended prematurely")
+        inventory, _ = crawl({"/p": [cut, cut]})
+        self.assertTrue(inventory["summary"]["truncated"])
+        self.assertEqual(inventory["summary"]["unanswered_pages"], 1)
+
+    def test_a_redirect_loop_is_an_answer_and_is_asked_once(self):
+        loop = sh.requests.exceptions.TooManyRedirects("Exceeded 30 redirects")
+        inventory, asked = crawl({"/p": [loop, loop]})
+        self.assertEqual(asked["/p"], 1)
+        self.assertEqual(inventory["summary"]["unanswered_pages"], 0)
+
+
 class APageThatNeverAnswersIsWithheld(unittest.TestCase):
 
     @classmethod

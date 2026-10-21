@@ -1781,11 +1781,16 @@ output contracts derive from it, so a change here moves them at once.
 `summary.unchecked_internal_targets` — int (beyond depth or budget: counted neither way)
 `summary.sitemaps_checked` / `.sitemap_urls` / `.sitemap_urls_off_host` — int
 `summary.reachable_pages` — int (linked-to, not fetched)
+`summary.refused_pages` — int — pages this audit's guard refused (0.173.0); each makes the crawl `truncated`
+`summary.unanswered_pages` — int — pages that gave no answer twice: timed out, connection refused or reset,
+  or the body cut off while it was read; each is asked once more and, silent again, makes the crawl
+  `truncated` (F04)
 `summary.truncated` — bool
 `pages.<key>` — object, one per deduplicated page; the key is the page key and
   `url` is the first discovered spelling that was fetched
   - `url`, `final_url`, `status`, `content_type`, `redirect_chain[]`, `redirected`,
-    `bytes`, `error`, `error_kind`, `robots_blocked`, `html`, `depth`, `discovered_by`
+    `bytes`, `error`, `error_kind`, `cut_off` (the body broke off while read, F04),
+    `robots_blocked`, `html`, `depth`, `discovered_by`
     (`entry`/`sitemap`/`link`), `in_sitemap`
   - `title`, `meta_description`, `meta_robots`, `canonical`, `noindex`
     (meta **and** `X-Robots-Tag`)

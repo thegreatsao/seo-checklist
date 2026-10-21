@@ -696,10 +696,15 @@ its cap or depth left unread and, from 0.173.0, for one this audit's guard refus
 timed out, or whose connection was refused or reset, was a row like a page read, so below the
 page budget a crawl with one such page called itself complete and MS-022 passed over a page
 nobody read. By the owner's decision ("retry, then withhold") such a page is requested once
-more; silent twice, it sets `summary.truncated` and is counted in `summary.unanswered_pages`,
-and the fourteen inventory readers that pass by absence withhold their PASS over it, a FAIL or
-WARN found in the pages read standing. An HTTP status of any kind, a guard refusal, a TLS failure
-and a robots decline are answers and are not asked again. Held by `tests/test_crawl_no_answer.py`:
+more, as is one whose body broke off while it was read (requests' `ChunkedEncodingError`, the
+fetch layer's `other`, marked `cut_off`; found by the second review of F04's first batch); silent
+twice, it sets `summary.truncated` and is counted in `summary.unanswered_pages`, and the fourteen
+inventory readers that pass by absence withhold their PASS over it. A FAIL or WARN stands, and so
+does the one this produces: a page whose connection was refused twice is a dead link to
+`broken_links.py` (`refused` is among its dead kinds, a timeout is not), so TE-168 can fail on the
+page the crawl calls unread — the owner's decision kept FAILs. An HTTP status of any kind (a
+redirect loop included), a guard refusal, a TLS failure and a robots decline are answers and are
+not asked again. Held by `tests/test_crawl_no_answer.py`:
 one timeout then an answer leaves the crawl complete, two silences cut it and MS-022 reads
 `NO_DATA`, a 503 and a guard refusal are asked once. The withheld evidence is the readers' cap
 wording, as for a refused page: they copy the crawl's flag and not its reason.

@@ -81,6 +81,23 @@ class TheRecordSaysWhetherTheCountsAreClaims(unittest.TestCase):
         self.assertEqual(claimed(sla.AddressCheck(Resolver("Googlebot", "bingbot"),
                                                   budget=1)), 21)
 
+    def test_an_ai_crawler_is_a_claim_with_the_flag_or_without_it(self):
+        # No AI crawler publishes a DNS rule, so its requests stay claims even when
+        # every search crawler is confirmed. The good fixture's log holds none, and the
+        # second review of batch 1 dropped "ai" from the count with every test green.
+        ai = ('203.0.113.7 - - [01/Jul/2026:02:00:00 +0000] "GET / HTTP/1.1" 200 10 "-" '
+              '"Mozilla/5.0 AppleWebKit/537.36; compatible; GPTBot/1.2; '
+              '+https://openai.com/gptbot"\n')
+        with tempfile.NamedTemporaryFile("w", suffix=".log", delete=False,
+                                         encoding="utf-8") as handle:
+            handle.write(LOG.read_text(encoding="utf-8") + ai * 3)
+            path = handle.name
+        self.addCleanup(os.unlink, path)
+        key = ("server_log_audit.py", (path,))
+        self.assertEqual(cr.crawlers_claimed({key: sla.audit(path)}), 129)
+        confirmed = sla.audit(path, checker=sla.AddressCheck(Resolver("Googlebot", "bingbot")))
+        self.assertEqual(cr.crawlers_claimed({key: confirmed}), 3)
+
     def test_a_run_with_no_log_says_nothing(self):
         self.assertIsNone(cr.crawlers_claimed({}))
         self.assertIsNone(cr.crawlers_claimed({KEY: {"__error__": "no log",

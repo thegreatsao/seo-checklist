@@ -436,6 +436,11 @@ def fetch_url(
     except requests.exceptions.RequestException as exc:
         result["error"] = str(exc)
         result["error_kind"] = fetch_error_kind(exc)
+        if isinstance(exc, requests.exceptions.ChunkedEncodingError):
+            # The connection broke while the body was read: no answer to read, though
+            # the kind is `other` (HTTP-9's vocabulary is closed). The crawl asks such
+            # a page again, as it does a timeout (`site_crawl.gave_no_answer`, F04).
+            result["cut_off"] = True
     return result
 
 
