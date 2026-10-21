@@ -302,7 +302,7 @@
       }
     ],
     "state": "passing",
-    "evidence": "commit 09368bd, verified 2026-10-21",
+    "evidence": "commit 9f7e650, verified 2026-10-21",
     "notes": "ROADMAP item 1. Done at 0.174.0 in five batches, each with a sprint contract (docs/sprint-20261020-F11-*.md) and gpt-6.1-sol reviews: 161 counted -> 130, inherited 64 -> 0. The last, detect_profile.MIN_SCORE, was measured on 39 labelled homepages (tools/calibrate_profile_detection.py) and adopted at 5 by the owner's decision."
   },
   {
