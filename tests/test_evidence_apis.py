@@ -1361,6 +1361,18 @@ class Cannibalization(unittest.TestCase):
         for item in self.items_for():
             self.assertEqual(verdict(item["id"], out), NO_DATA, item["id"])
 
+    def test_the_network_failing_after_the_key_opened_is_not_the_operators(self):
+        """F04 calls an `OSError` from `build_service` `input`: the key, or the `gsc`
+        extra. The same class raised by the API call is the network, and an operator sent
+        to their key file for a socket timeout looks in the wrong place."""
+        def time_out(*a, **k):
+            raise TimeoutError("timed out")
+        self.mod.build_service = lambda *a, **k: _Query(rows=[])
+        with mock.patch.object(self.mod, "fetch_query_page_rows", time_out):
+            out = self.mod.analyze("https://example.com/", "/dev/null", 90)
+        self.assertEqual(out.get("error"), "timed out")
+        self.assertNotEqual(out.get("error_kind"), "input")
+
 
 class UrlInspection(unittest.TestCase):
     """The three items reading `gsc_url_inspection.py` — Google's own answer about

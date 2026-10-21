@@ -30,27 +30,31 @@ REGISTRY = os.path.join(SCRIPTS, os.pardir, "resources", "config", "checklist.js
 BROKE = ("crash", "bad_output", "signal")
 
 
-def empty_inputs() -> dict:
-    """Every operator input the registry can ask for, as an empty file."""
+def empty_inputs(**text) -> dict:
+    """Every operator input the registry can ask for, as an empty file unless `text`
+    gives it a content."""
     work = tempfile.mkdtemp(prefix="seo-empty-inputs-")
     paths = {}
     for name in ("html", "inventory_json", "rendered_json", "cwv_json", "links_csv",
                  "server_log", "gsc_credentials"):
         path = os.path.join(work, name)
-        open(path, "w").close()
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text.get(name, ""))
         paths[name] = path
     return paths
 
 
-def run_every_job(url: str, only: set | None = None,
-                  env: dict | None = None) -> tuple[dict, dict]:
+def run_every_job(url: str, only: set | None = None, env: dict | None = None,
+                  **text) -> tuple[dict, dict]:
     with open(REGISTRY, encoding="utf-8") as f:
         items = json.load(f)["items"]
     ctx = {"url": url, "keyword": "nothing", "indexnow_key": "abcd1234abcd1234abcd",
-           "gsc_property": "sc-domain:example.com", **empty_inputs()}
+           "gsc_property": "sc-domain:example.com", **empty_inputs(**text)}
     plan, _ = cr.build_plan(items, ctx, set(cr.MODE_CAPS["live"]), "live", has_gsc=True)
     plan = {key: ids for key, ids in plan.items() if only is None or key[0] in only}
-    with mock.patch.dict(os.environ, env or offline_env()):
+    # `clear`: without it the patch only adds, and a key `offline_env` removed (a
+    # PageSpeed or Safe Browsing key on this machine) would reach the children.
+    with mock.patch.dict(os.environ, env or offline_env(), clear=True):
         results = {key: cr._timed(key, 120) for key in plan}
     return plan, results
 
@@ -83,7 +87,7 @@ EXTRA_STUB = {
         "    def from_service_account_file(cls, filename, **kwargs):\n"
         "        with open(filename, encoding='utf-8') as f:\n"
         "            info = json.load(f)\n"
-        "        missing = {'client_email', 'token_uri'} - set(info)\n"
+        "        missing = {'client_email', 'token_uri'} - set(info.keys())\n"
         "        if missing:\n"
         "            raise ValueError('Service account info was not in the expected '\n"
         "                             'format, missing fields ' + ', '.join(sorted(missing)))\n"
@@ -112,9 +116,11 @@ class NothingToReach(unittest.TestCase):
         cls.plan, cls.results = run_every_job(f"http://127.0.0.1:{closed_port()}/")
 
     def test_every_job_the_registry_plans_was_run(self):
-        # A census that planned nothing would pass the test below.
-        scripts = {key[0] for key in self.plan}
-        self.assertGreaterEqual(len(scripts), 50, sorted(scripts))
+        # A census that planned nothing, or left a script out, would pass the test below.
+        with open(REGISTRY, encoding="utf-8") as f:
+            registry = {i["check"]["script"] for i in json.load(f)["items"]
+                        if i.get("check")}
+        self.assertEqual({key[0] for key in self.plan}, registry)
 
     def test_no_checker_breaks_when_the_site_refuses_every_connection(self):
         wrong = broken(self.results)
@@ -133,9 +139,9 @@ class NothingToParse(unittest.TestCase):
 class SearchConsoleWithoutAUsableKey(unittest.TestCase):
     """Both causes are the operator's, and both are said as `input` with the remedy."""
 
-    def kinds(self, env: dict) -> dict:
+    def kinds(self, env: dict, key: str = "") -> dict:
         plan, results = run_every_job(f"http://127.0.0.1:{closed_port()}/",
-                                      only=GSC_FAMILY, env=env)
+                                      only=GSC_FAMILY, env=env, gsc_credentials=key)
         self.assertEqual({key[0] for key in plan}, GSC_FAMILY)
         return {key[0]: (data.get("__error_kind__"), str(data.get("__error__")))
                 for key, data in results.items()}
@@ -153,10 +159,12 @@ class SearchConsoleWithoutAUsableKey(unittest.TestCase):
         stub = stub_extra()
         env = offline_env()
         env["PYTHONPATH"] = os.pathsep.join([stub, env["PYTHONPATH"]])
-        for script, (kind, error) in self.kinds(env).items():
-            with self.subTest(script=script):
-                self.assertEqual(kind, "input", error)
-                self.assertIn("not a service-account key", error)
+        # Empty is not JSON; a list is JSON the real reader calls `.keys()` on.
+        for key in ("", "[]"):
+            for script, (kind, error) in self.kinds(env, key).items():
+                with self.subTest(key=key, script=script):
+                    self.assertEqual(kind, "input", error)
+                    self.assertIn("not a service-account key", error)
 
 
 class NotOneDocument(unittest.TestCase):

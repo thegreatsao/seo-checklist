@@ -27,52 +27,102 @@ REGISTRY = os.path.join(SCRIPTS, os.pardir, "resources", "config", "checklist.js
 FOUR = set(cr.SEVERITIES)
 
 
-def sources():
-    for root, _, names in os.walk(SCRIPTS):
-        for name in sorted(names):
-            if name.endswith(".py"):
-                path = os.path.join(root, name)
-                with open(path, encoding="utf-8") as f:
-                    yield os.path.relpath(path, SCRIPTS), ast.parse(f.read())
+TOOLS = os.path.join(SCRIPTS, os.pardir, "tools")
+
+
+def sources(*dirs):
+    """Every module under `dirs` (the shipped scripts by default), named from the skill."""
+    for top in dirs or (SCRIPTS,):
+        for root, _, names in os.walk(top):
+            for name in sorted(names):
+                if name.endswith(".py"):
+                    path = os.path.join(root, name)
+                    with open(path, encoding="utf-8") as f:
+                        yield (os.path.relpath(path, os.path.dirname(SCRIPTS)),
+                               ast.parse(f.read()))
+
+
+def words(node) -> list[str]:
+    """The string constants a comparison tests against, inside a tuple or set too."""
+    found = []
+    for part in [node.left, *node.comparators]:
+        for c in ([*part.elts] if isinstance(part, (ast.Tuple, ast.List, ast.Set))
+                  else [part]):
+            if isinstance(c, ast.Constant) and isinstance(c.value, str):
+                found.append(c.value)
+    return found
 
 
 class OnePlaceTranslates(unittest.TestCase):
+    """Read over the shipped scripts and `tools/`, whose gates read rule severities too:
+    a second translation there makes a gate and the runner disagree about one rule."""
 
     def test_the_table_is_read_by_one_function(self):
+        # `severity_literals` is the gate's census of what a script can say, and passes a
+        # word outside the vocabulary through on purpose, so the census sees it; nothing
+        # a rule or a report reads goes through it.
         readers = []
-        for name, tree in sources():
+        for name, tree in sources(SCRIPTS, TOOLS):
             for fn in [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]:
                 if any(isinstance(n, ast.Name) and n.id == "SEVERITY_ALIAS"
                        for n in ast.walk(fn)):
                     readers.append(f"{name}:{fn.name}")
-        self.assertEqual(readers, ["checklist_runner.py:normal_severity"])
+        self.assertEqual(sorted(readers),
+                         ["scripts/checklist_runner.py:normal_severity",
+                          "tools/audit_assertions.py:severity_literals"])
 
     def test_no_other_mapping_turns_an_inherited_word_into_one_of_the_four(self):
-        # A second table, written under any name: a dict literal taking an inherited
-        # word to one of the four, or a comparison against one inside the runner and the
-        # report, whose job is to read severities rather than to write them.
+        """A second table or a second translation, written under any name: a dict
+        literal or a `dict(...)` call taking an inherited word to one of the four; a
+        branch on an inherited word that yields one of the four; and, in the runner and
+        the report, whose job is to read severities rather than to write them, any
+        comparison against an inherited word. A checker comparing its own words to count
+        them is not a translation and is not refused."""
         inherited = set(cr.SEVERITY_ALIAS)
+
+        def maps(key, value):
+            return key.lower() in inherited and value.lower() in FOUR
+
+        def tests_inherited(test):
+            return any(isinstance(c, ast.Compare)
+                       and any(w.lower() in inherited for w in words(c))
+                       for c in ast.walk(test))
+
+        def yields_four(nodes):
+            return any(isinstance(c, ast.Constant) and isinstance(c.value, str)
+                       and c.value.lower() in FOUR
+                       for n in nodes for c in ast.walk(n))
+
         found = []
-        for name, tree in sources():
+        for name, tree in sources(SCRIPTS, TOOLS):
             for node in ast.walk(tree):
+                hit = False
                 if isinstance(node, ast.Dict):
-                    pairs = [(k.value, v.value) for k, v in zip(node.keys, node.values, strict=True)
-                             if isinstance(k, ast.Constant) and isinstance(v, ast.Constant)
-                             and isinstance(k.value, str) and isinstance(v.value, str)]
-                    if any(k.lower() in inherited and v.lower() in FOUR for k, v in pairs):
-                        found.append(f"{name}:{node.lineno}")
-                if (name in ("checklist_runner.py", "checklist_report.py")
-                        and isinstance(node, ast.Compare)):
-                    words = [c.value for c in [node.left, *node.comparators]
-                             if isinstance(c, ast.Constant) and isinstance(c.value, str)]
-                    if any(w.lower() in inherited for w in words):
-                        found.append(f"{name}:{node.lineno}")
-        with open(os.path.join(SCRIPTS, "checklist_runner.py"), encoding="utf-8") as f:
-            runner_tree = ast.parse(f.read())
-        alias_line = next(f"checklist_runner.py:{n.lineno}"
-                          for n in ast.walk(runner_tree)
+                    hit = any(isinstance(k, ast.Constant) and isinstance(v, ast.Constant)
+                              and isinstance(k.value, str) and isinstance(v.value, str)
+                              and maps(k.value, v.value)
+                              for k, v in zip(node.keys, node.values, strict=True))
+                elif isinstance(node, ast.Call) and getattr(node.func, "id", "") == "dict":
+                    hit = any(k.arg and isinstance(k.value, ast.Constant)
+                              and isinstance(k.value.value, str)
+                              and maps(k.arg, k.value.value) for k in node.keywords)
+                elif isinstance(node, ast.IfExp):
+                    hit = tests_inherited(node.test) and yields_four([node.body,
+                                                                      node.orelse])
+                elif isinstance(node, ast.If):
+                    hit = tests_inherited(node.test) and yields_four(node.body)
+                elif (isinstance(node, ast.Compare)
+                      and name in ("scripts/checklist_runner.py",
+                                   "scripts/checklist_report.py")):
+                    hit = any(w.lower() in inherited for w in words(node))
+                if hit:
+                    found.append(f"{name}:{node.lineno}")
+        alias_line = next(f"scripts/checklist_runner.py:{n.lineno}"
+                          for n in ast.walk(dict(sources(SCRIPTS))[
+                              "scripts/checklist_runner.py"])
                           if isinstance(n, ast.Assign)
-                          and any(getattr(t, "id", "") == "SEVERITY_ALIAS" for t in n.targets))
+                          and any(getattr(t, "id", "") == "SEVERITY_ALIAS"
+                                  for t in n.targets))
         self.assertEqual([f for f in found if f != alias_line], [])
 
     def test_every_word_translates_to_one_of_the_four(self):

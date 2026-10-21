@@ -108,7 +108,7 @@ sys.path.insert(0, HERE)
 # seen", or of "which severities can this script say", would drift from the one the
 # assertion audit uses, and then the two tools would disagree about the same field
 # while both reported green.
-from audit_assertions import (SEVERITY_ALIAS, path_is_probed,  # noqa: E402
+from audit_assertions import (normal_severity, path_is_probed,  # noqa: E402
                               probed_paths, severity_literals)
 
 # Every mechanism this tool can prove. A declaration naming anything else is an
@@ -411,7 +411,7 @@ def prove_severity_vocabulary(item: dict, scripts_dir: str = SCRIPTS) -> dict | 
         return None
 
     def norm(names) -> set[str]:
-        return {SEVERITY_ALIAS.get(n.lower(), n.lower()) for n in names}
+        return {normal_severity(n) for n in names} - {None}
 
     emits = severity_literals(check["script"], scripts_dir)
     graded, refused = norm(rule["none_severity"]), norm(warn["none_severity"])
@@ -485,7 +485,7 @@ def dead_warn_bands(registry_path: str = REGISTRY,
                                        f"{rule['path']}"})
         if "none_severity" in rule and "none_severity" in warn:
             def norm(names):
-                return {SEVERITY_ALIAS.get(n.lower(), n.lower()) for n in names}
+                return {normal_severity(n) for n in names} - {None}
             window = norm(rule["none_severity"]) - norm(warn["none_severity"])
             try:
                 emits = severity_literals(check["script"], scripts_dir)

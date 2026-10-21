@@ -122,7 +122,9 @@ def build_service(credentials_path: str):
         creds = service_account.Credentials.from_service_account_file(
             credentials_path, scopes=SCOPES
         )
-    except ValueError as exc:  # not JSON, or JSON without a key's fields
+    # Not JSON, or JSON without a key's fields (ValueError); JSON that is not an
+    # object, which the reader calls `.keys()` on (AttributeError). Only this call.
+    except (ValueError, AttributeError) as exc:
         raise UnusableCredentials(
             f"{credentials_path} is not a service-account key: {exc}") from exc
     return build("searchconsole", "v1", credentials=creds)

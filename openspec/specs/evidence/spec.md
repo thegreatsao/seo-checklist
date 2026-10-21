@@ -107,7 +107,8 @@ Search Console scripts stopped on `sys.exit(1)` when the `gsc` extra was absent 
 traceback — or under `service`, the wrong owner — when the key file was not a key. All
 eight now say `input`, the operator's: `gsc_checker.build_service` raises
 `UnusableCredentials` for both causes, held with the extra absent and with a stand-in for
-it that reads a key file the way the real one does. The third scenario's ground, output
+it that reads a key file the way the real one does — an empty file, and JSON that is not
+an object (the review of F04's second batch found the second still `crash`). The third scenario's ground, output
 that is not one JSON document, is held by `NotOneDocument`. Probed: each repair reverted
 alone reddens the census or the Search Console test; `run_script` reading only the first
 of two documents reddens `NotOneDocument`; a checker raising `SystemExit` reddens the
@@ -144,19 +145,26 @@ other one.
 **Reader:** enforced, at F04. `checklist_runner.normal_severity` is the one translation,
 and every rule and measurement reads severities through it; until F04 four call sites
 spelled it out, and a word in neither set passed through as itself.
-`tests/test_severity_vocabulary.py` requires it to be the only function in the shipped
-scripts that reads `SEVERITY_ALIAS`, and refuses a second table under any name — a dict
-literal taking an inherited word onto one of the four anywhere in `scripts/`, or a
-comparison against an inherited word in the runner or the report. A fifth word is caught
+`tests/test_severity_vocabulary.py` reads the shipped scripts and `tools/`, whose gates
+read rule severities too: it requires `normal_severity` to be the only function that reads
+`SEVERITY_ALIAS` beside the gate's census below, and refuses a second translation written
+as a dict literal or a `dict(...)` call taking an inherited word onto one of the four, as
+a branch on an inherited word that yields one of the four, or, in the runner and the
+report, as any comparison against an inherited word. A table assembled at run time, key by
+key, is not read. The review of F04's second batch found two translations left in
+`tools/audit_reachability.py` and a `dict(...)` table and a ternary the first scan let
+through; both readers now see them. A fifth word is caught
 on both sides. On the checker's, every literal severity a shipped script writes must
 translate, and a `none_severity` rule over an issue at a word outside the vocabulary is
 `NO_DATA` naming the word where it was `PASS`. On the rule's, `tools/audit_assertions.py`
 refuses a rule naming such a word in either position; it had refused one only by accident,
 when the word left an `assert` rule sharing nothing with its script. Probed: the
 unknown-word branch off, the alias lookup dropped, the lowercasing dropped, an inline
-second translation in `measurement`, a second table in `checklist_report.py`, a checker
-literal `Severe`, `issue("fatal", …)`, a rule naming `fatal`, and the gate's new refusal
-removed — each reddens a named test.
+second translation in `measurement`, a second table in `checklist_report.py` as a literal
+and as `dict(...)`, a ternary in `seo_common.py`, an `if` branch in a checker,
+`audit_reachability.py` passing words through, a checker literal `Severe`,
+`issue("fatal", …)`, a rule naming `fatal`, and the gate's new refusal removed — each
+reddens a named test.
 
 The gate's census of what a script can emit (`audit_assertions.severity_literals`) keeps a
 pass-through on purpose, so that a word outside the vocabulary reaches the census rather
