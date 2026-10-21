@@ -210,7 +210,8 @@
           "robots_path_tester.py",
           "server_log_audit.py",
           "site_crawl.py",
-          "sitemap_checker.py"
+          "sitemap_checker.py",
+          "topical_cluster_mapper.py"
         ],
         "still_deciding_over_a_capped_input": []
       },
@@ -910,13 +911,13 @@
       "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants (presentation since 0.170.0: no rule reads a near-duplicate field) and the three detect_profile tables as inherited (convention since F11, with the detector measured as a whole), DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and nineteen module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
         "basis": {
-          "convention": 96,
+          "convention": 97,
           "inherited": 0,
           "measured": 14,
           "presentation": 47,
           "standard": 20
         },
-        "counted": 130,
+        "counted": 131,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:36"
         ],
@@ -957,7 +958,7 @@
       "state": "open"
     },
     "titles-thinner-than-their-assertions": {
-      "claim": "AR-152 asserts that robots.txt has any user-agent group at all, and CN-056 asserts one date of any kind, while both titles promise more; MD-184's title was brought to its assertion in 0.85.0 and what an image-usage item should assert instead of `count gte 1` is still open.",
+      "claim": "AR-152 asserts that robots.txt has any user-agent group at all, and CN-056 asserts one date of any kind, while both titles promise more; MD-184's title was brought to its assertion in 0.85.0, and 0.175.0 decided it is answered by the entry page alone.",
       "measured": {
         "AR-152": {
           "assert": {

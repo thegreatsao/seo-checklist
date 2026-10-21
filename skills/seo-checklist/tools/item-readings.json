@@ -2289,16 +2289,18 @@
       "check": {
         "script": "topical_cluster_mapper.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
-        "requires": "fetch",
+        "requires": "crawl",
         "assert": {
           "path": "score",
           "gte": 70
         }
       },
       "verdict": "answers",
-      "reading": "`score` is topical_cluster_mapper's score over topical clusters and their internal-link coverage.",
+      "reading": "`score` is topical_cluster_mapper's score over topical clusters and their internal-link coverage, read since F06 over the pages the shared crawl read: a page's topic is its most frequent title word once the words more than half the titles share are set aside, and each topic's hub and spokes are expected to link both ways. The topic is a crude reading of a title, so the item answers whether pages that share a title word link to one another, not whether the site is designed in silos; a crawl cut at its caps withholds the score. A page whose title gives no readable word is a cluster of its own.",
       "shapes": {
         "conjunction": "*(Silos)* is another name for the hubs.",
         "qualifier": "*Clear* is read as the cluster score."
@@ -2468,7 +2470,7 @@
         "args": [
           "{url}"
         ],
-        "requires": "api",
+        "requires": "crawl",
         "assert": {
           "path": "uptime.reachable",
           "truthy": true
@@ -2482,7 +2484,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`uptime.reachable` is one request during the audit answered below 500; monitoring over time needs a service. On an entry the audit could not read, `entry_answer` lets the entry's own request decide it: a 5xx answer or no answer at all fails it, anything else is NO_DATA.",
+      "reading": "`uptime.reachable` is one request during the audit answered below 500; monitoring over time needs a service. On an entry the audit could not read, `entry_answer` lets the entry's own request decide it: a 5xx answer or no answer at all fails it, anything else is NO_DATA. Re-read at F06, when `requires` moved from `api` to `crawl`: the reading holds, and the item is now asked on a host only this machine reaches as well, since no third party is in its one request.",
       "shapes": {}
     },
     "TE-168": {
@@ -2788,12 +2790,13 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "count",
+          "path": "summary.images",
           "gte": 1
-        }
+        },
+        "entry_only": "Whether the audited page references an image is a question about that page. A privacy or contact page with no picture is not a defect, and under the sample's worst-page rule it failed the exemplary fixture (0.49.0); so the entry page decides, and sampled pages do not."
       },
       "verdict": "answers",
-      "reading": "`count` is the number of images the page references by src, at least one (title narrowed 0.85.0).",
+      "reading": "`summary.images` is the number of images the entry page references by src, at least one (title narrowed 0.85.0). Since F06 it reads the descriptive count, written on every page read, rather than `count`, which is withheld on a page with none, and `check.entry_only` keeps sampled pages from deciding it: the URL the operator asked about is the page the title means.",
       "shapes": {
         "existential": "The title itself says at least one."
       }

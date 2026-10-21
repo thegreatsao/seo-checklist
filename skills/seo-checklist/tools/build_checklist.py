@@ -197,6 +197,7 @@ REQUIRES = {
     "broken_links.py": "crawl",
     "sitemap_checker.py": "crawl",
     "indexability_matrix.py": "crawl",
+    "topical_cluster_mapper.py": "crawl",
     # Reads a file the user exported; no network, so even archive mode can use it.
     "gsc_links_csv.py": "offline",
     "gsc_checker.py": "gsc",
@@ -222,6 +223,20 @@ ITEM_REQUIRES = {
     "SE-114": "safe_browsing",
     "SE-116": "safe_browsing",
     "TE-171": "safe_browsing",
+    # One request of this audit, answered below 500 or not: no third party is in it,
+    # so a host only we can reach answers it too (F06). `crawl` is the site-level live
+    # requirement — `fetch` would ask it again on every sampled page, and with it whois.
+    "TE-167": "crawl",
+}
+
+# Page-level items that the entry page alone decides: `--sample` does not fold them
+# across the other pages it reads. The entry is the URL the operator asked about, and
+# for these the question is about that page, not about every page in a sample.
+ENTRY_ONLY = {
+    "MD-184": "Whether the audited page references an image is a question about that "
+              "page. A privacy or contact page with no picture is not a defect, and "
+              "under the sample's worst-page rule it failed the exemplary fixture "
+              "(0.49.0); so the entry page decides, and sampled pages do not.",
 }
 
 # Empty evidence is not positive evidence.
@@ -1512,7 +1527,11 @@ item(151, "high", S, "robots_checker.py", PAGE,
 item(152, "medium", S, "robots_checker.py", PAGE,
      {"path": "user_agents", "truthy": True},
      "Block low-value sections from crawling deliberately")
-item(153, "medium", S, "topical_cluster_mapper.py", PAGE,
+# F06 (0.175.0, Anton's decision): one URL made one cluster and scored 100, so the
+# item could not fail. It reads the shared crawl now, so a topic's hub and spokes are
+# compared across the pages read. The topic is still the most frequent title word,
+# with the words most titles share set aside (`topical_cluster_mapper.SITE_WIDE_SHARE`).
+item(153, "medium", S, "topical_cluster_mapper.py", CRAWLARG,
      {"path": "score", "gte": 70},
      "Build topic hubs (silos)")
 item(154, "medium", S, "collection_page_checker.py", PAGE,
@@ -1649,8 +1668,12 @@ item(182, "low", M, fix="Show a compliant cookie banner")
 item(183, "high", M, fix="Handle migrations, parameters and status codes correctly")
 
 # --- 13. Images / Video -----------------------------------------------------
+# `summary.images`, not `count`: `count` is withheld on a page with no image so that
+# CI-016, MD-186 and CN-054 say nothing about it (0.49.0), which left this item unable to
+# fail. It reads the descriptive count instead, and ENTRY_ONLY keeps a sampled page with
+# no picture from deciding it (F06, Anton's decision).
 item(184, "medium", S, "image_inventory.py", PAGE,
-     {"path": "count", "gte": 1},
+     {"path": "summary.images", "gte": 1},
      "Reference at least one image with a src in the served HTML")
 # `--fetch-images` since 0.50.0, and the band is why. Grading the lazy LCP candidate
 # `error` left `Large image transfer size` as the only `warning` this script can raise,
@@ -2038,6 +2061,8 @@ def build(titles: dict[int, str] | None = None,
                 entry["check"]["cannot_fail"] = CANNOT_FAIL[item_id]
             if item_id in ENTRY_ANSWERS:
                 entry["check"]["entry_answer"] = ENTRY_ANSWERS[item_id]
+            if item_id in ENTRY_ONLY:
+                entry["check"]["entry_only"] = ENTRY_ONLY[item_id]
         if source == L:
             entry["lens"] = LENS_OF.get(entry["id"], "")
         if item_id in MEASURES:

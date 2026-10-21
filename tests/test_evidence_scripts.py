@@ -5292,13 +5292,19 @@ class AnAltThatExistsAndDescribesNothing(unittest.TestCase):
         page that has none: a FAIL for MD-184 and a free PASS for the other three.
         Under `--sample 3` the FAIL was the one that showed — on the *good* fixture,
         whose `/about.html` and `/privacy.html` carry no image at all.
+
+        MD-184 left this list at F06 (0.175.0), by Anton's decision: it reads
+        `summary.images` and is answered by the entry page alone, so an image-free
+        entry fails it and an image-free sampled page decides nothing
+        (`test_entry_image_and_topic_hubs.py`). The other three keep this repair.
         """
         result = self.image_free()
         for field in ("count", "missing_alt"):
             self.assertNotIn(field, result, field)
         self.assertNotIn("lazy_lcp_candidates", result["summary"])
-        for item_id in ("MD-184", "CI-016", "MD-186", "CN-054"):
+        for item_id in ("CI-016", "MD-186", "CN-054"):
             self.assertEqual(verdict(item_id, result), NO_DATA, item_id)
+        self.assertEqual(verdict("MD-184", result), FAIL)
 
     def test_an_image_free_page_emits_these_keys_and_no_others(self):
         """Only the three fields the registry reads as a verdict are withheld. A
@@ -7221,6 +7227,19 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
         "url_quality.py": "judges the URL it was given, and still decides it",
     }
 
+    @staticmethod
+    def a_dead_host_is_its_answer(item) -> bool:
+        """An item whose own declaration says a host that did not answer fails it.
+
+        Derived from `check.entry_answer`, not listed: TE-167 asks whether one request
+        of this audit was answered below 500, so a refused connection is its FAIL —
+        the answer the entry gate itself gives (`fails_on: no_answer`). It entered this
+        sweep at F06, when it stopped being `api`; only a FAIL is excused, and only for
+        an item that declares it.
+        """
+        return "no_answer" in ((item.get("check") or {}).get("entry_answer") or {}).get(
+            "fails_on", [])
+
     def graded_status(self, item, payload):
         """The item's status as the *runner* would report it.
 
@@ -7240,6 +7259,8 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
                 if (item.get("check") or {}).get("script") != script:
                     continue
                 got = self.graded_status(item, payload)
+                if got == FAIL and self.a_dead_host_is_its_answer(item):
+                    continue
                 if got in (PASS, FAIL, WARN):
                     decided.append(f"{item['id']} ({item['severity']}, {script}) "
                                    f"= {got}")
@@ -7270,8 +7291,13 @@ class NothingIsDecidedAboutASiteThatCannotBeRead(unittest.TestCase):
         certificate, so there is no error to report and still a why to carry. The rule
         being enforced is "say why", not "name an exception".
         """
+        # A script whose verdict on a dead host is an item's declared answer to it
+        # cannot carry a top-level error: the runner would turn that FAIL into NO_DATA.
+        answering = {(i.get("check") or {}).get("script") for i in ITEMS.values()
+                     if self.a_dead_host_is_its_answer(i)}
         silent = [script for script, payload in self.dead_output.items()
                   if payload is not None and script not in self.NO_FETCH_TO_FAIL
+                  and script not in answering
                   and not any(str(payload.get(key) or "")
                               for key in ("error", "fetch_error", "fetch_errors",
                                           "reason"))]
@@ -7603,13 +7629,16 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
         BL-086 and BL-087 count the whole links export, which the target cap does not
         shorten; LO-198 counts LocalBusiness nodes over the crawl, and
         `local_seo_checker.py` withholds it when the crawl was truncated (0.169.0).
+        AR-153 (F06) scores missing hub links over the crawl, and
+        `topical_cluster_mapper.map_inventory` withholds the score when the crawl was
+        truncated: the page a cap left out can be a topic's hub.
         A new member means a new script that must withhold its count or say why not."""
         reporters = self._reporters()
         ids = sorted(i["id"] for i in ITEMS.values()
                      if (i.get("check") or {}).get("assert")
                      and i["check"]["script"] in reporters
                      and {"gte", "gt", "len_gte"} & set(i["check"]["assert"]))
-        self.assertEqual(ids, ["BL-086", "BL-087", "LO-198"],
+        self.assertEqual(ids, ["AR-153", "BL-086", "BL-087", "LO-198"],
                          "the set moved; say why the new member's FAIL cannot be "
                          "faked by its cap, or withhold its count")
 
@@ -7796,17 +7825,20 @@ class EveryCheckerHasSomethingThatJudgesIt(unittest.TestCase):
             others = set().union(*(other for name, other in arms.items() if name != label))
             unique[label] = sorted((set(scripts) & arm) - others)
         self.assertEqual({label: len(ids) for label, ids in unique.items()},
-                         {"named": 7, "through_a_key": 0, "declared": 0},
+                         {"named": 6, "through_a_key": 0, "declared": 0},
                          "an arm of the coverage union started or stopped carrying a "
                          "checker alone; say which definition moved before repinning")
         self.assertEqual(unique["named"], [
-            "domain_safety_check.py", "gsc_cannibalization.py", "gsc_checker.py",
+            "gsc_cannibalization.py", "gsc_checker.py",
             "gsc_sitemap_reconcile.py", "gsc_url_inspection.py", "html_validator.py",
             "pagespeed.py",
         ], "these are judged only by a test naming them — the fixtures cannot run them")
         # 6 -> 7 at 0.106.0: `gsc_sitemap_reconcile.py`, GO-137's new checker. Same
         # definition, new member — a Search Console script is judged by the tests that
         # stub the service, because no fixture carries credentials.
+        # 7 -> 6 at 0.175.0 (F06): `domain_safety_check.py` left, the other way. TE-167
+        # answers on a loopback host now, so the fixtures declare it and the `declared`
+        # arm reaches the script too.
 
 if __name__ == "__main__":
     unittest.main()

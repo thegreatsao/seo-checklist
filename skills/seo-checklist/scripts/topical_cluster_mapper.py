@@ -11,7 +11,8 @@ import json
 import re
 from collections import Counter, defaultdict
 
-from seo_common import load_source, normalize_url, parse_html, refused_kind
+import site_crawl
+from seo_common import load_source, normalize_url, parse_html, read_as_url, refused_kind
 
 
 STOPWORDS = {
@@ -25,6 +26,17 @@ def _topic_from_text(text: str) -> str:
     if not words:
         return "uncategorized"
     return Counter(words).most_common(1)[0][0]
+
+
+# basis: convention — a word in more than half of the titles the crawl read is the
+#  site's own (a brand, a section name), not one page's topic (F06). The topic below is the
+#  most frequent title word, and before this a brand leading every title made the whole
+#  site one cluster, so a shop whose product pages do not all link to one another failed
+#  AR-153 for a silo it never meant to build. Half is the line between a word most pages
+#  share and a word a group of them shares; nothing external sets it, and on a site about
+#  one subject it also sets that subject aside, which leaves the item passing — the side
+#  this crude a reading should err on.
+SITE_WIDE_SHARE = 0.5
 
 
 def _split_links(value: str | None) -> list[str]:
@@ -66,6 +78,46 @@ def _row_from_source(source: str, timeout: int) -> dict:
         "links": [normalize_url(link["href"]) for link in parsed.get("links", [])],
         "error_kind": fetched.get("error_kind"),
     }
+
+
+def map_inventory(inventory: dict) -> dict:
+    """AR-153 over the shared crawl: one row per page read, its topic from its title.
+
+    The crawl records each page's title and links, not its headings, so the topic is the
+    most frequent title word once the words most titles share are set aside. A crawl cut
+    at its caps does not decide the item: the page it left out can be a topic's hub, so
+    the score is withheld (as BL-081's count since 0.171.0).
+    """
+    pages = site_crawl.html_pages(inventory)
+    titles = {key: (row.get("title") or "") for key, row in pages.items()}
+    shared = Counter(word for title in titles.values()
+                     for word in set(re.findall(r"[a-z][a-z0-9'-]{2,}", title.lower())))
+    site_wide = {word for word, n in shared.items()
+                 if len(titles) > 1 and n / len(titles) > SITE_WIDE_SHARE}
+    rows = []
+    for key, row in sorted(pages.items()):
+        topic = _topic_from_text(" ".join(
+            word for word in re.findall(r"[a-z][a-z0-9'-]{2,}", titles[key].lower())
+            if word not in site_wide))
+        # A title with no word this pattern reads (empty, non-Latin, only site-wide
+        # words) says nothing about the page's topic, so the page is its own cluster
+        # rather than one shared "uncategorized" hub (F06 review 3).
+        rows.append({"url": normalize_url(key), "title": titles[key], "topic": topic,
+                     "cluster": topic if topic != "uncategorized" else key, "parent": "",
+                     "links": [normalize_url(link["target"])
+                               for link in row.get("links") or [] if link.get("internal")]})
+    result = map_clusters(rows)
+    result["site_wide_words"] = sorted(site_wide)
+    result["fetch_error"] = inventory.get("fetch_error") or (
+        None if rows else "the crawl read no page")
+    result["fetch_error_kind"] = inventory.get("fetch_error_kind")
+    result["truncated"] = bool((inventory.get("summary") or {}).get("truncated"))
+    if result["truncated"]:
+        result["truncated_reason"] = (
+            "the crawl stopped at its page or depth cap, and a page it left out can be "
+            "a topic's hub")
+        del result["score"]
+    return result
 
 
 def map_clusters(rows: list[dict]) -> dict:
@@ -138,17 +190,28 @@ def map_clusters(rows: list[dict]) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Map topical clusters from a CSV manifest or URL/local HTML inputs.")
     parser.add_argument("sources", nargs="*", help="URL or local HTML files")
+    parser.add_argument("--inventory", default=None,
+                        help="crawl inventory from site_crawl.py: map the pages it read "
+                             "(one source URL names the site; crawled here when empty)")
     parser.add_argument("--csv", dest="csv_path", help="CSV with url,title,topic,cluster,parent,links columns")
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--json", "-j", action="store_true", help="Output JSON")
     args = parser.parse_args()
 
-    rows = []
-    if args.csv_path:
-        rows.extend(_rows_from_csv(args.csv_path))
-    rows.extend(_row_from_source(source, args.timeout) for source in args.sources)
-    result = map_clusters(rows)
-    print(json.dumps(result, indent=2) if args.json else f"Score: {result['score']} Clusters: {result['cluster_count']}")
+    if args.inventory is not None:
+        if len(args.sources) != 1:
+            parser.error("--inventory takes exactly one source: the site's URL")
+        site = read_as_url(args.sources[0])
+        result = map_inventory(site_crawl.inventory_for(site, args.inventory,
+                                                        signatures=False))
+    else:
+        rows = []
+        if args.csv_path:
+            rows.extend(_rows_from_csv(args.csv_path))
+        rows.extend(_row_from_source(source, args.timeout) for source in args.sources)
+        result = map_clusters(rows)
+    print(json.dumps(result, indent=2) if args.json
+          else f"Score: {result.get('score', 'withheld')} Clusters: {result['cluster_count']}")
 
 
 if __name__ == "__main__":

@@ -92,6 +92,9 @@ HTTP_DECLARED_IDS = {
     # they can be declared on the HTTP pair and not on the TLS one — the TLS origins
     # are served without artifacts.
     "MB-107", "MB-108",
+    # F06 (0.175.0): uptime is one request of this audit, so it answers on a loopback
+    # origin and is declared like any other check of the site.
+    "TE-167",
 }
 TLS_DECLARED_IDS = {"AR-150", "CI-014", "SE-115", "SE-117", "SE-118", "SE-120",
                     "TE-175"}

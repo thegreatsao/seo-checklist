@@ -683,12 +683,14 @@ name. A column called `url` would be read as "fix this page".
   with no `src` is skipped before the count, so the assertion is about what the markup
   names.
 
-  **What that does not settle is held outside this entry**, so that a closed narrative
-  stops carrying an open question — which is what the paragraph replaced here had
-  become. Whether a page with no image should be able to fail something is one of the
-  25 never-FAIL items `tests/census.json` counts. What an image-usage item should
-  assert over a script handed one URL at a time is a title-versus-assertion question,
-  and it sits with the other two of those in the entry immediately below.
+  **Closed in 0.175.0 (F06), by Anton's decision: the entry page alone decides.** The
+  census showed the rule could not fail — `count` is written only when it is at least
+  one — and the 0.49.0 objection to letting it fail was the sample, whose worst page is a
+  privacy page with no picture. MD-184 now reads `summary.images`, the descriptive count
+  written on every page read, and carries `check.entry_only`, so `--sample` does not fold
+  it: the URL the operator asked about fails when it references no image, and a sampled
+  page decides nothing. `count` stays withheld on an image-free page, so CI-016, MD-186
+  and CN-054 still say nothing about one (`tests/test_entry_image_and_topic_hubs.py`).
   <!-- ki: image-inventory-count-on-a-page-with-no-images -->
 
 - **One item asserts a thinner thing than its title promises; the second of the pair was
@@ -717,13 +719,10 @@ name. A column called `url` would be read as "fix this page".
   assertions to the old titles. The served-versus-rendered comparison those titles
   implied is `MB-105`; scoring that comparison three times would duplicate it. `MD-184`
   was never in this table and belongs to the same shape — 0.85.0 renamed it the same
-  way, and the entry above records why. What that rename did not settle belongs here
-  with these two: `image_inventory.py` is handed one URL at a time, so no assertion
-  over it can be sitewide, and what an image-usage item should assert instead of
-  `count gte 1` is open.
+  way, and the entry above records why. What that rename did not settle was decided in
+  0.175.0: the entry page alone answers it (the entry above).
 
-  `AR-152` is not acted on here, and nor is the question `MD-184`
-  left behind: each changes what a live audit reports and the registry. They are
+  `AR-152` is not acted on here: it changes what a live audit reports and the registry. They are
   collected so that the next person deciding what a registry version is worth
   spending can see them together.
   <!-- ki: titles-thinner-than-their-assertions -->

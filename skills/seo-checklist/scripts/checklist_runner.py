@@ -3017,10 +3017,12 @@ def aggregate_pages(primary: list[dict], per_page: list[list[dict]]) -> list[dic
 
 
 def sampled_item_ids(items: list[dict]) -> set[str]:
-    """The items `--sample` folds across pages: page-level, not read off an artifact.
+    """The items `--sample` folds across pages: page-level, not read off an artifact,
+    and not one the entry page alone decides (`check.entry_only`, F06).
 
     Read off the registry items and not the graded rows, which carry no `check`."""
-    return {i["id"] for i in items if is_page_level(i) and not reads_artifact(i)}
+    return {i["id"] for i in items if is_page_level(i) and not reads_artifact(i)
+            and not (i.get("check") or {}).get("entry_only")}
 
 
 def fold_sample(graded: list[dict], per_page: list[list[dict]], entry_read: bool,

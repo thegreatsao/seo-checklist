@@ -171,20 +171,27 @@ class RecordedCensus(unittest.TestCase):
         machine cannot be had at will; the live half was measured once, in
         `local/timed-0155/`.
         """
+        other = {"PASS": "FAIL", "FAIL": "PASS"}
+
+        def first_answered(item_id):
+            # The first tree that answered with a band, not the first tree: since F06
+            # `error-entry` sorts first and times nothing.
+            answers = self.census["items"][item_id]["answers"]
+            return next((site for site in sorted(answers) if answers[site] in other),
+                        sorted(answers)[0])
+
         def fresh(item_id, answer):
             record = json.loads(json.dumps(self.census))
             row = record["items"][item_id]
-            row["answers"][sorted(row["answers"])[0]] = answer
+            row["answers"][first_answered(item_id)] = answer
             row["distinct"] = sorted(set(row["answers"].values()))
             return record
 
-        other = {"PASS": "FAIL", "FAIL": "PASS"}
         self.assertTrue(verdict_census.in_step(self.census, load(CENSUS)))
         timed = [i for i in harness.CLOCK_READ if i in self.census["items"]]
         self.assertTrue(timed, "no timed item is recorded; this reads nothing")
         for item_id in timed:
-            first = self.census["items"][item_id]["answers"]
-            answered = first[sorted(first)[0]]
+            answered = self.census["items"][item_id]["answers"][first_answered(item_id)]
             with self.subTest(item=item_id):
                 self.assertIn(answered, other, "recorded as never timed")
                 self.assertTrue(verdict_census.in_step(
@@ -192,7 +199,7 @@ class RecordedCensus(unittest.TestCase):
                 self.assertFalse(verdict_census.in_step(
                     self.census, fresh(item_id, "NO_DATA")))
         for item_id, row in self.census["items"].items():
-            answered = row["answers"][sorted(row["answers"])[0]]
+            answered = row["answers"][first_answered(item_id)]
             if item_id not in harness.CLOCK_READ and answered in other:
                 with self.subTest(item=item_id):
                     self.assertFalse(verdict_census.in_step(
@@ -205,35 +212,15 @@ class TheHarnessSaysWhatItCannotExercise(unittest.TestCase):
     where the output is read — otherwise each reader re-derives it and the third one
     files it as a defect.
 
-    Four items need a 5xx, a redirect chain, a redirect loop, or a status that varies by
-    user agent. A static file server produces none of those, so those four can never be
-    seen failing here, and that is a fact about the harness rather than about the
-    registry.
-
-    Two of the three clauses hold and are pinned below. The third — that the *census
-    output itself* says so, rather than a README beside the trees — does not exist, and
-    is pinned as an absence in the same shape `openspec/specs/http/` HTTP-8 uses: a test
-    written to fail on the day the gap closes, saying in its own message what to replace
-    it with.
+    Until 0.175.0 the third clause was pinned as an absence: the census output printed
+    the ids the corpus README named among the items they inflate and never said why. It
+    now says so beside each of them, reading the README section rather than a list of
+    its own (`verdict_census.unexercisable`). F06 moved all three the README named
+    (CI-003, AR-150, CI-014) out of it by serving their shape (`error-entry/`,
+    `redirect-chain/`, `no-location/`), and SE-118 entered it: its failure is hidden by
+    the entry gate, not by the server. Only back-ticked ids in that section are read, so
+    the section names the others without backticks.
     """
-
-    README = os.path.join(ROOT, "tests", "corpus", "README.md")
-
-    @classmethod
-    def unexercisable(cls):
-        """The ids the corpus README names as impossible here, read from the README.
-
-        Derived rather than retyped. The list is hand-kept — DEC-6's objection applies
-        to it exactly as it does to the manifest — so reading it is what makes the
-        drift visible instead of duplicating it here.
-        """
-        import re
-        with open(cls.README, encoding="utf-8") as stream:
-            text = stream.read()
-        start = text.index("## What a corpus tree can and cannot express")
-        end = text.find(chr(10) + "## ", start + 1)
-        section = text[start:end if end != -1 else len(text)]
-        return sorted(set(re.findall(r"`([A-Z]{2,4}-\d+)`", section)))
 
     def setUp(self):
         with open(CENSUS, encoding="utf-8") as stream:
@@ -241,7 +228,7 @@ class TheHarnessSaysWhatItCannotExercise(unittest.TestCase):
 
     def test_the_items_it_names_are_items(self):
         """A list of ids nobody resolves is a list that outlives the ids in it."""
-        named = self.unexercisable()
+        named = verdict_census.unexercisable()
         self.assertTrue(named, "the README section names no ids; this test is vacuous")
         missing = [i for i in named if i not in self.census["items"]]
         self.assertEqual(missing, [],
@@ -250,7 +237,7 @@ class TheHarnessSaysWhatItCannotExercise(unittest.TestCase):
     def test_none_of_them_was_ever_seen_failing(self):
         """The claim itself. If one of these does fail on some tree, the harness grew a
         capability the README says it lacks, and the sentence is now wrong."""
-        for item_id in self.unexercisable():
+        for item_id in verdict_census.unexercisable():
             with self.subTest(item=item_id):
                 distinct = self.census["items"][item_id]["distinct"]
                 self.assertNotIn(
@@ -258,30 +245,61 @@ class TheHarnessSaysWhatItCannotExercise(unittest.TestCase):
                     f"{item_id} failed somewhere, so the corpus can express what the "
                     f"README says it cannot — update the README, not this test")
 
-    def test_the_census_still_knows_nothing_of_the_limit(self):
-        """The half DEC-13 asks for and the tree does not do.
+    def test_the_census_marks_them_where_it_prints_them(self):
+        """DEC-13's third clause: the output itself records that no tree here can show
+        the item failing, on the item's own lines, and marks nothing else so."""
+        lines = verdict_census.report(self.census)
+        marked = {lines[n - 2].split()[0] for n, line in enumerate(lines)
+                  if line.strip().startswith("no tree here can show this failing")}
+        never_failed = verdict_census.verdict_groups(self.census)[0]
+        self.assertEqual(marked, set(verdict_census.unexercisable()) & never_failed)
+        self.assertTrue(marked, "nothing is marked; this reads nothing")
 
-        The output *does* print these four ids — as members of the group they inflate,
-        the way it prints every id in every group. What it never does is mark them as
-        items no tree here can exercise, so a reader sees them beside items that simply
-        did not fail and cannot tell the two apart. The connection lives only in a
-        README beside the fixtures, which is the Reader line's own complaint.
 
-        Pinned structurally, because that is where the absence is: the census tool has
-        no reference to the corpus README and no knowledge of any of the four ids. This
-        goes red on the day somebody gives it one, and says what to replace it with.
-        """
-        with open(os.path.join(ROOT, "tests", "verdict_census.py"),
-                  encoding="utf-8") as stream:
-            source = stream.read()
-        knows = [t for t in ["corpus/README", "corpus" + chr(92) + "README"]
-                            + self.unexercisable()
-                 if t in source]
-        self.assertEqual(
-            knows, [],
-            "the census now knows which items the harness cannot exercise — good; "
-            "replace this test with one asserting the output marks them, and close "
-            "DEC-13 in openspec/specs/declarations/")
+class EveryItemThatNeverAnswersNamesWhatItNeeds(unittest.TestCase):
+    """F06 (ROADMAP "What 1.0 requires", item 5). "Mostly honest — Search Console,
+    PageSpeed and Safe Browsing cannot answer offline" was prose over 35 items, and
+    twelve of them could answer on a tree this repository serves: they lacked a page
+    shape, an artifact or a key the census never passed, and one (TE-167) sat behind the
+    private-host gate for a question no third party is in.
+
+    Now the reason is a reader, not a sentence. An item that answers on no tree must be
+    one the runner itself withholds from a host only we can reach, and the census must
+    name the external input it waits for (`verdict_census.external_input`). An item that
+    could answer offline and does not fails here, by name.
+    """
+
+    def setUp(self):
+        self.census = load(CENSUS)
+        self.items = {i["id"]: i for i in harness.registry()["items"]}
+
+    def test_each_names_an_external_input(self):
+        silent = verdict_census.verdict_groups(self.census)[2]
+        self.assertTrue(silent, "nothing is silent; this reads nothing")
+        unexcused = sorted(i for i in silent
+                           if not verdict_census.external_input(self.items[i]))
+        self.assertEqual(unexcused, [],
+                         "these answered on no tree and need no input from outside: "
+                         "give the corpus the shape, the artifact or the key they need")
+
+    def test_no_reason_outlives_its_items(self):
+        """A named service that no item behind the gate reads is a reason for nothing."""
+        used = set()
+        for item in self.items.values():
+            check = item.get("check") or {}
+            path = str((check.get("assert") or {}).get("path") or "")
+            for key in (f"{check.get('script')}:{path.split('.')[0]}", check.get("script")):
+                if key in verdict_census.EXTERNAL_INPUT and \
+                        verdict_census.external_input(item):
+                    used.add(key)
+                    break
+        self.assertEqual(sorted(set(verdict_census.EXTERNAL_INPUT) - used), [])
+
+    def test_an_item_the_runner_answers_here_is_never_excused(self):
+        """The excuse is read through the runner's own gate, so an item moved out from
+        under it — TE-167 in F06 — loses the excuse with it."""
+        self.assertIsNone(verdict_census.external_input(self.items["TE-167"]))
+        self.assertIsNotNone(verdict_census.external_input(self.items["SP-108"]))
 
 
 if __name__ == "__main__":

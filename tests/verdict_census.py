@@ -2,7 +2,7 @@
 """What every item actually reports, across every site we can serve.
 
 Not a test and not an oracle. The fixture oracle answers "is this verdict right",
-one declaration at a time, and it has declared 121 of 217 items. This answers a
+one declaration at a time, and it has declared 122 of 217 items. This answers a
 different and cheaper question — **what range of answers does this item have at all**
 — and it answers it for all 217 at once.
 
@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 import tempfile
 
@@ -38,7 +39,8 @@ REGISTRY = os.path.join(ROOT, "skills", "seo-checklist", "resources", "config",
                         "checklist.json")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from harness import FixtureSite, _Site, across_runs, offline_env, spawn  # noqa: E402
+from harness import (PLACEHOLDER, FixtureSite, _Site, across_runs,  # noqa: E402
+                     offline_env, spawn, substitute)
 
 # The operator-supplied inputs, exactly as the fixture oracle hands them over. The
 # first census run omitted these and reported 43 items as "never answered on any
@@ -58,6 +60,12 @@ ARTIFACT_FLAGS = (("--rendered-json", "rendered.json"),
 # include and they anchor the table against the oracle's own numbers.
 FIXTURES = os.path.join(ROOT, "tests", "fixtures")
 CORPUS = os.path.join(ROOT, "tests", "corpus")
+# A corpus tree's operator-supplied inputs, beside the trees rather than in them so they
+# are never served: `_inputs/<tree>/` holds any of the `ARTIFACT_FLAGS` files, and
+# `indexnow_key` for the key an operator sets in INDEXNOW_KEY (F06). Without these the
+# items that read an artifact or a key could answer on no corpus tree, which is the
+# first census's mistake again: a statement about the instrument, not the registry.
+INPUTS = os.path.join(CORPUS, "_inputs")
 
 # The keyword an operator would supply. One word for every site, as an operator has
 # one site in mind — see `test_fixture_oracle.KEYWORD` for why passing one at all had
@@ -74,6 +82,26 @@ def corpus_sites() -> list[tuple[str, str]]:
             if os.path.isdir(path) and os.path.isfile(os.path.join(path, "index.html")):
                 found.append((name, path))
     return found
+
+
+def corpus_inputs(label: str, base: str, workdir: str) -> tuple[list[str], dict]:
+    """(runner flags, environment) for one corpus tree, staged and pointed at `base`."""
+    source = os.path.join(INPUTS, label)
+    if not os.path.isdir(source):
+        return [], offline_env()
+    staged = shutil.copytree(source, os.path.join(workdir, f"_inputs-{label}"))
+    substitute(staged, PLACEHOLDER, base)
+    flags = []
+    for flag, filename in ARTIFACT_FLAGS:
+        path = os.path.join(staged, filename)
+        if os.path.exists(path):
+            flags += [flag, path]
+    extra = {}
+    key = os.path.join(staged, "indexnow_key")
+    if os.path.exists(key):
+        with open(key, encoding="utf-8") as stream:
+            extra["INDEXNOW_KEY"] = stream.read().strip()
+    return flags, offline_env(**extra)
 
 
 def run_audit(url: str, out: str, env: dict, artifacts: list[str]) -> dict[str, str]:
@@ -121,9 +149,10 @@ def census(extra_sites) -> dict:
             print(f"  auditing {label}", file=sys.stderr)
             served = _Site(root, os.path.join(workdir, label))
             try:
+                artifacts, env = corpus_inputs(label, served.base, workdir)
                 per_site[label] = run_audit(
                     served.base + "/", os.path.join(workdir, f"{label}.json"),
-                    offline_env(), [])
+                    env, artifacts)
             finally:
                 served.stop()
             labels.append(label)
@@ -172,6 +201,55 @@ def verdict_groups(record: dict) -> tuple[set[str], set[str], set[str]]:
     return never_failed, never_passed, silent
 
 
+# What an item that answers on no tree here would need, named per script — and, for the
+# one script whose items need different services, per the field the item reads (F06).
+# Only an item the runner itself withholds from a host only we can reach
+# (`checklist_runner.NEEDS_THE_OUTSIDE_WORLD`, read off its `requires`) can carry one:
+# an item outside that gate that never answers could answer offline, so it is a defect,
+# and `test_census` fails on it rather than reading a reason here.
+EXTERNAL_INPUT = {
+    "gsc_url_inspection.py": "Search Console URL Inspection for a verified property",
+    "gsc_checker.py": "Search Console for a verified property",
+    "gsc_sitemap_reconcile.py": "Search Console's sitemap report for a verified property",
+    "gsc_cannibalization.py": "Search Console search analytics for a verified property",
+    "pagespeed.py": "PageSpeed Insights, which loads the URL from Google's network",
+    "html_validator.py": "the W3C Nu HTML Checker, a service on the public internet",
+    "domain_safety_check.py:safe_browsing": "a Google Safe Browsing API key",
+    "domain_safety_check.py:whois": "whois, which asks a registry on the public internet "
+                                    "about a registered domain",
+    "domain_safety_check.py:neighbors": "a paid reverse-IP service this project does not "
+                                        "buy (check.cannot_fail)",
+}
+
+
+def external_input(item: dict) -> str | None:
+    """The input no served tree can supply, or None when the item could answer here."""
+    if SCRIPTS not in sys.path:
+        sys.path.insert(0, SCRIPTS)
+    from checklist_runner import NEEDS_THE_OUTSIDE_WORLD
+    check = item.get("check") or {}
+    if check.get("requires", "fetch") not in NEEDS_THE_OUTSIDE_WORLD:
+        return None
+    path = str((check.get("assert") or {}).get("path") or "")
+    script = check.get("script") or ""
+    return (EXTERNAL_INPUT.get(f"{script}:{path.split('.')[0]}")
+            or EXTERNAL_INPUT.get(script))
+
+
+def unexercisable() -> list[str]:
+    """The ids the corpus README names as unable to fail on any tree here (DEC-13).
+
+    Read from the README rather than kept here, because the README is where the reason
+    is written, and a second list would be the drift DEC-6 objects to."""
+    import re
+    with open(os.path.join(CORPUS, "README.md"), encoding="utf-8") as stream:
+        text = stream.read()
+    start = text.index("## What a corpus tree can and cannot express")
+    end = text.find("\n## ", start + 1)
+    section = text[start:end if end != -1 else len(text)]
+    return sorted(set(re.findall(r"`([A-Z]{2,4}-\d+)`", section)))
+
+
 def report(record: dict) -> list[str]:
     lines = []
     rows = record["items"]
@@ -181,7 +259,11 @@ def report(record: dict) -> list[str]:
     lines.append(f"{len(scripted)} are script-backed; the rest are answered by a "
                  f"human, an agent or Search Console and cannot be censused this way.")
 
-    def group(ids, heading):
+    with open(REGISTRY, encoding="utf-8") as stream:
+        registry = {i["id"]: i for i in json.load(stream)["items"]}
+    limited = set(unexercisable())
+
+    def group(ids, heading, why=None):
         hits = {k: v for k, v in scripted.items() if k in ids}
         lines.append("")
         lines.append(f"== {heading}: {len(hits)}")
@@ -189,12 +271,27 @@ def report(record: dict) -> list[str]:
             lines.append(f"  {item_id} ({row['severity']:<8}) {row['title']}")
             lines.append(f"      {row['script']}  ->  "
                          f"{', '.join(row['distinct'])}")
+            reason = why(item_id) if why else None
+            if reason:
+                lines.append(f"      {reason}")
         return set(hits)
 
+    def cannot_fail_here(item_id):
+        if item_id in limited:
+            return ("no tree here can show this failing: tests/corpus/README.md, "
+                    "'What a corpus tree can and cannot express'")
+        return None
+
+    def needs(item_id):
+        found = external_input(registry[item_id]) if item_id in registry else None
+        return (f"needs {found}" if found
+                else "COULD ANSWER HERE AND DID NOT: no external input is named for it")
+
     never_failed_ids, never_passed_ids, silent_ids = verdict_groups(record)
-    never_failed = group(never_failed_ids, "answered somewhere and never FAIL")
+    never_failed = group(never_failed_ids, "answered somewhere and never FAIL",
+                         cannot_fail_here)
     never_passed = group(never_passed_ids, "answered somewhere and never PASS")
-    silent = group(silent_ids, "never answered on any site")
+    silent = group(silent_ids, "never answered on any site", needs)
     lines.append("")
     lines.append(f"{len(never_failed)} could not be seen failing, "
                  f"{len(never_passed)} could not be seen passing, "

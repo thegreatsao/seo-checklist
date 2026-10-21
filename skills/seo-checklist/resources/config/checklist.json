@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "90ba79b14b28",
+  "registry_version": "4a0ebe46be2f",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -3368,9 +3368,11 @@
       "check": {
         "script": "topical_cluster_mapper.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
-        "requires": "fetch",
+        "requires": "crawl",
         "assert": {
           "path": "score",
           "gte": 70
@@ -3657,7 +3659,7 @@
         "args": [
           "{url}"
         ],
-        "requires": "api",
+        "requires": "crawl",
         "assert": {
           "path": "uptime.reachable",
           "truthy": true
@@ -4070,9 +4072,10 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "count",
+          "path": "summary.images",
           "gte": 1
-        }
+        },
+        "entry_only": "Whether the audited page references an image is a question about that page. A privacy or contact page with no picture is not a defect, and under the sample's worst-page rule it failed the exemplary fixture (0.49.0); so the entry page decides, and sampled pages do not."
       },
       "effort": "medium",
       "fix": "Reference at least one image with a src in the served HTML"

@@ -74,7 +74,7 @@ site:** `applies_if`, a yes/no question for whoever answers it (REG-9).
 | `severity` | critical, high, medium, low | 19 / 62 / 102 / 34 |
 | `effort` | low, medium, high | 67 / 52 / 98 |
 | `lens` | copy, layout, locale, market | 19 / 13 / 3 / 3 |
-| `requires` | offline, fetch, crawl, api, gsc, safe_browsing | 28 / 72 / 21 / 12 / 9 / 3 |
+| `requires` | offline, fetch, crawl, api, gsc, safe_browsing | 28 / 71 / 23 / 11 / 9 / 3 |
 
 72 items carry no `check` and therefore no `requires`: they are the manual, model-judged
 and Search-Console items.

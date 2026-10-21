@@ -41,11 +41,12 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from lib.safe_http import default_headers, loopback_only, safe_get
+    from lib.safe_http import default_headers, is_private_host, loopback_only, safe_get
     from lib.typed_credential import read_as_url
     from seo_common import fetch_error_kind
 except ImportError:
-    from scripts.lib.safe_http import default_headers, loopback_only, safe_get
+    from scripts.lib.safe_http import (default_headers, is_private_host, loopback_only,
+                                       safe_get)
     from scripts.lib.typed_credential import read_as_url
     from scripts.seo_common import fetch_error_kind
 
@@ -241,15 +242,28 @@ def check(url: str, timeout: int = 20) -> dict:
     api_key = (os.environ.get("GOOGLE_SAFE_BROWSING_KEY")
                or os.environ.get("SAFE_BROWSING_API_KEY") or "")
 
-    result = {
-        "url": url,
-        "domain": domain,
-        "uptime": check_uptime(url, timeout),
-        "safe_browsing": check_safe_browsing(url, api_key, timeout),
-        "whois": check_whois(domain, timeout),
-        "neighbors": check_neighbors(domain),
-        "issues": [],
-    }
+    # A host only we can reach is named to no third party (F06). TE-167 runs this
+    # script there for its one request; Safe Browsing, whois and the resolver would
+    # each tell somebody else about a staging host, and none could answer for it.
+    if is_private_host(url):
+        private = "not asked: the host is only reachable from here"
+        result = {"url": url, "domain": domain,
+                  "uptime": check_uptime(url, timeout),
+                  "safe_browsing": {"checked": False, "error": private},
+                  "whois": {"checked": False, "created": None, "registrar": None,
+                            "error": private},
+                  "neighbors": {"checked": False, "ip": None, "error": private},
+                  "issues": []}
+    else:
+        result = {
+            "url": url,
+            "domain": domain,
+            "uptime": check_uptime(url, timeout),
+            "safe_browsing": check_safe_browsing(url, api_key, timeout),
+            "whois": check_whois(domain, timeout),
+            "neighbors": check_neighbors(domain),
+            "issues": [],
+        }
 
     up = result["uptime"]
     if up.get("reachable") is False:

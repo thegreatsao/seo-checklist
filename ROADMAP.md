@@ -38,8 +38,8 @@ it was last written:
 | | count | what it means |
 |---|---|---|
 | requirements | 158 | across 12 documents |
-| enforced | 131 | held by something that fails when the requirement is violated |
-| partial | 22 | held for part of what the requirement says |
+| enforced | 132 | held by something that fails when the requirement is violated |
+| partial | 21 | held for part of what the requirement says |
 | unread | 1 | held by nothing — `declarations` DEC-1 |
 | bounded | 4 | the subject is outside the program; no test could observe a violation |
 
@@ -63,9 +63,28 @@ can serve:
 
 | | count | what it means |
 |---|---|---|
-| answered somewhere, never FAIL | 19 | a rule that cannot fail, or a case the corpus does not have |
+| answered somewhere, never FAIL | 1 | a rule whose failure the entry gate hides |
 | answered somewhere, never PASS | 2 | the mirror |
-| never answered anywhere | 35 | mostly honest — Search Console, PageSpeed and Safe Browsing cannot answer offline |
+| never answered anywhere | 23 | each needs an outside service or key, and the census names which |
+
+F06 (0.175.0) took both other rows to items, one at a time, with what each was expected
+to be written down before anything was run (`docs/sprint-20261021-F06.md`). Of the 54,
+27 lacked a page, an artifact or a key on every tree served here, and seven corpus trees and
+their inputs now fail each of them for the reason its title names; one, `TE-167`, sat
+behind the gate for hosts only this machine reaches although no outside service is in its
+question, and now answers there. The 23 still silent each need an outside service or a key,
+and the census prints which beside each one — read through the runner's own gate, so an
+item that could answer offline fails `test_census.py` by name instead of being excused in a
+sentence like the one this row used to carry.
+
+`AR-153` and `MD-184` could not fail as registered, and what each should assert was
+Anton's decision: MD-184 is answered by the entry page alone and fails one that references
+no image; AR-153 reads the shared crawl and compares each topic's hub and spokes, on a topic
+read crudely from title words. The one still never seen failing is `SE-118`, which fails
+only on a certificate that also stops the audit's own request for the entry page, so the
+entry gate turns the failure into NO_DATA — the defect 0.130.0 repaired for `CI-003` — and
+the census marks it in its output (`CI-014` has the same gap for a redirect loop, and fails
+here on a redirect with no `Location`).
 
 The two that were never seen passing are `AR-158`, whose visible-breadcrumb half no
 fixture carries, and `GEO-006`, whose script reads the JSON-LD graph with no boundary.
@@ -82,12 +101,12 @@ robots.txt forbids, and it no longer does.
 |---|---|
 | standard | 20 |
 | measured | 14 |
-| convention | 96 |
+| convention | 97 |
 | inherited | 0 |
 | no basis | 0 |
-| **numbers a verdict depends on** | **130** |
+| **numbers a verdict depends on** | **131** |
 
-**`inherited` at 0 of 130 closes what was the largest single gap between this tree and 1.0.** It was
+**`inherited` at 0 of 131 closes what was the largest single gap between this tree and 1.0.** It was
 75 of 144 at 0.87.1 and 77 of 164 until 0.167.1, which moved eleven coverage caps out: ten
 to `convention`, one to `presentation`. 0.170.0 moved the crawl's page and depth caps to
 `convention` and the MinHash pair to `presentation`; 0.172.0 moved the two crawl caps back,
@@ -129,11 +148,12 @@ modules read; no number is bound by both. It is narrower than the ask it answers
 2. **REG-6's second reader** — the readings exist and are held against the registry;
    what would close the row is a check of whether each reading is true that is not the
    word of the person who wrote it.
-3. **The 22 `partial` requirements and DEC-1**, each either held or narrowed to what is
+3. **The 21 `partial` requirements and DEC-1**, each either held or narrowed to what is
    held.
 4. **The 143 unclaimed assertions**, reduced by extending the detectors
    `audit_reachability.py` already has rather than by asserting reachability in prose.
-5. **The census's 19 and 35**, each turned into an answer or a named structural reason.
+5. **The census's 1 and 23**: the 23 each name the outside service or key they wait for
+   (F06, 0.175.0); the 1, `SE-118`, needs the entry gate to answer it.
 6. **Clause 3 beyond counts** — every checkable sentence in `SKILL.md`, `README.md` and
    this file tied to observable behaviour, the way counts now are.
 

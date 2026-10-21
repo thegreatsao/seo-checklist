@@ -1,0 +1,20 @@
+{
+  "/": {
+    "status": 301,
+    "content_type": "text/html; charset=utf-8",
+    "headers": {"Location": "/hop"},
+    "body": ""
+  },
+  "/hop": {
+    "status": 301,
+    "content_type": "text/html; charset=utf-8",
+    "headers": {"Location": "/home.html"},
+    "body": ""
+  },
+  "/home.html": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "delay": 1.0,
+    "body": "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Shape Street Bakery, after two redirects</title><meta name=\"description\" content=\"The landing page of a tree whose entry reaches it through a redirect chain, and which answers its first byte a second late.\"></head><body><h1>Shape Street Bakery</h1><p>AR-150: the address the operator typed redirects to /hop, which redirects here, two hops where one is the most a link should spend. CI-014 reads the same walk and warns on the chain.</p><p>TECH-003: this page holds its first byte for one second, past the 800 ms budget for time to first byte, the first of the four LCP subparts.</p></body></html>"
+  }
+}

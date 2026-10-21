@@ -3,14 +3,24 @@
   "items": {
     "AR-146": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "N/A",
         "fixture:broken": "N/A",
         "fixture:broken_tls": "N/A",
         "fixture:good": "N/A",
-        "fixture:good_tls": "N/A"
+        "fixture:good_tls": "N/A",
+        "no-location": "N/A",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
-        "N/A"
+        "FAIL",
+        "N/A",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "parse_html.py",
       "severity": "medium",
@@ -19,13 +29,22 @@
     },
     "AR-147": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "FAIL"
       },
       "distinct": [
+        "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "url_quality.py",
@@ -35,11 +54,18 @@
     },
     "AR-148": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -51,13 +77,22 @@
     },
     "AR-149": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "FAIL",
+        "url-shapes": "PASS"
       },
       "distinct": [
+        "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "internal_links.py",
@@ -67,13 +102,22 @@
     },
     "AR-150": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "FAIL",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
+        "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "redirect_checker.py",
@@ -83,14 +127,22 @@
     },
     "AR-151": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "PASS",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "robots_checker.py",
@@ -100,14 +152,22 @@
     },
     "AR-152": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "PASS",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "PASS",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "robots_checker.py",
@@ -117,13 +177,22 @@
     },
     "AR-153": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "FAIL",
+        "url-shapes": "PASS"
       },
       "distinct": [
+        "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "topical_cluster_mapper.py",
@@ -133,14 +202,24 @@
     },
     "AR-154": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "N/A",
         "fixture:broken": "N/A",
         "fixture:broken_tls": "N/A",
         "fixture:good": "N/A",
-        "fixture:good_tls": "N/A"
+        "fixture:good_tls": "N/A",
+        "no-location": "N/A",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
-        "N/A"
+        "FAIL",
+        "N/A",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "collection_page_checker.py",
       "severity": "medium",
@@ -149,14 +228,22 @@
     },
     "AR-155": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "url_quality.py",
@@ -166,11 +253,18 @@
     },
     "AR-156": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -182,11 +276,18 @@
     },
     "AR-157": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -198,14 +299,22 @@
     },
     "AR-158": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
-        "fixture:good_tls": "FAIL"
+        "fixture:good_tls": "FAIL",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
-        "FAIL"
+        "FAIL",
+        "NO_DATA"
       ],
       "script": "parse_html.py",
       "severity": "medium",
@@ -214,11 +323,18 @@
     },
     "AR-159": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -230,11 +346,18 @@
     },
     "AR-160": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -246,11 +369,18 @@
     },
     "AR-161": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -262,14 +392,22 @@
     },
     "AR-162": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "link_profile.py",
@@ -279,14 +417,24 @@
     },
     "AR-163": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "N/A",
         "fixture:broken": "N/A",
         "fixture:broken_tls": "N/A",
         "fixture:good": "N/A",
-        "fixture:good_tls": "N/A"
+        "fixture:good_tls": "N/A",
+        "no-location": "N/A",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
-        "N/A"
+        "FAIL",
+        "N/A",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "faceted_nav_audit.py",
       "severity": "medium",
@@ -295,11 +443,18 @@
     },
     "AR-164": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -311,11 +466,18 @@
     },
     "BL-078": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -327,11 +489,18 @@
     },
     "BL-079": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -343,11 +512,18 @@
     },
     "BL-080": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -359,13 +535,23 @@
     },
     "BL-081": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "WARN",
         "fixture:broken_tls": "WARN",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "FAIL",
+        "url-shapes": "PASS"
       },
       "distinct": [
+        "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS",
         "WARN"
       ],
@@ -376,11 +562,18 @@
     },
     "BL-082": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -392,15 +585,24 @@
     },
     "BL-083": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "N/A",
+        "page-sound": "NEEDS_INPUT",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
+        "N/A",
         "NEEDS_INPUT",
+        "NO_DATA",
         "PASS"
       ],
       "script": "gsc_links_csv.py",
@@ -410,15 +612,23 @@
     },
     "BL-084": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NO_DATA",
+        "page-sound": "NEEDS_INPUT",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
         "NEEDS_INPUT",
+        "NO_DATA",
         "PASS"
       ],
       "script": "gsc_links_csv.py",
@@ -428,11 +638,18 @@
     },
     "BL-085": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -444,13 +661,21 @@
     },
     "BL-086": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "FAIL",
+        "page-sound": "NEEDS_INPUT",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
+        "FAIL",
         "NEEDS_INPUT",
         "PASS"
       ],
@@ -461,11 +686,18 @@
     },
     "BL-087": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "FAIL",
+        "page-sound": "NEEDS_INPUT",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -479,11 +711,18 @@
     },
     "BL-088": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -495,11 +734,18 @@
     },
     "BL-089": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -511,11 +757,18 @@
     },
     "BL-090": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -527,11 +780,18 @@
     },
     "BL-091": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -543,11 +803,18 @@
     },
     "BL-092": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -559,11 +826,18 @@
     },
     "CI-001": {
       "answers": {
+        "error-entry": "FAIL",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -576,13 +850,21 @@
     },
     "CI-002": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
+        "NEEDS_INPUT",
         "NO_DATA"
       ],
       "script": "gsc_url_inspection.py",
@@ -592,13 +874,21 @@
     },
     "CI-003": {
       "answers": {
+        "error-entry": "FAIL",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
+        "FAIL",
         "PASS"
       ],
       "script": "indexability_matrix.py",
@@ -608,14 +898,22 @@
     },
     "CI-004": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "parse_html.py",
@@ -625,13 +923,22 @@
     },
     "CI-005": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
+        "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "indexability_matrix.py",
@@ -641,14 +948,22 @@
     },
     "CI-006": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "robots_checker.py",
@@ -658,11 +973,18 @@
     },
     "CI-007": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -674,14 +996,22 @@
     },
     "CI-008": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "link_profile.py",
@@ -691,14 +1021,22 @@
     },
     "CI-009": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "canonical_checker.py",
@@ -708,13 +1046,21 @@
     },
     "CI-010": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
+        "NEEDS_INPUT",
         "NO_DATA"
       ],
       "script": "gsc_url_inspection.py",
@@ -724,14 +1070,22 @@
     },
     "CI-011": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "canonical_checker.py",
@@ -741,13 +1095,22 @@
     },
     "CI-012": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "FAIL"
       },
       "distinct": [
+        "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "url_quality.py",
@@ -757,14 +1120,22 @@
     },
     "CI-013": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "robots_path_tester.py",
@@ -774,14 +1145,24 @@
     },
     "CI-014": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "WARN",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
-        "PASS"
+        "FAIL",
+        "NO_DATA",
+        "PASS",
+        "WARN"
       ],
       "script": "redirect_checker.py",
       "severity": "high",
@@ -790,14 +1171,22 @@
     },
     "CI-015": {
       "answers": {
+        "error-entry": "FAIL",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "indexability_matrix.py",
@@ -807,14 +1196,23 @@
     },
     "CI-016": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
         "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS"
       ],
       "script": "image_inventory.py",
@@ -824,11 +1222,18 @@
     },
     "CI-017": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -840,15 +1245,23 @@
     },
     "CI-018": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NEEDS_INPUT",
+        "page-sound": "NEEDS_INPUT",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
         "NEEDS_INPUT",
+        "NO_DATA",
         "PASS"
       ],
       "script": "server_log_audit.py",
@@ -858,14 +1271,22 @@
     },
     "CI-019": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "robots_path_tester.py",
@@ -875,15 +1296,23 @@
     },
     "CN-034": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
         "NEEDS_INPUT",
+        "NO_DATA",
         "PASS"
       ],
       "script": "rendered_audit.py",
@@ -893,15 +1322,23 @@
     },
     "CN-035": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
         "NEEDS_INPUT",
+        "NO_DATA",
         "PASS"
       ],
       "script": "rendered_audit.py",
@@ -911,15 +1348,23 @@
     },
     "CN-036": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
         "NEEDS_INPUT",
+        "NO_DATA",
         "PASS"
       ],
       "script": "rendered_audit.py",
@@ -929,11 +1374,18 @@
     },
     "CN-037": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -945,14 +1397,22 @@
     },
     "CN-038": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "freshness_checker.py",
@@ -962,13 +1422,22 @@
     },
     "CN-039": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "WARN",
         "fixture:broken": "WARN",
         "fixture:broken_tls": "WARN",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "WARN",
+        "page-sound": "WARN",
+        "redirect-chain": "WARN",
+        "site-defects": "FAIL",
+        "url-shapes": "WARN"
       },
       "distinct": [
+        "FAIL",
+        "NO_DATA",
         "PASS",
         "WARN"
       ],
@@ -979,14 +1448,22 @@
     },
     "CN-040": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "eeat_signal_checker.py",
@@ -996,14 +1473,22 @@
     },
     "CN-041": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "duplicate_content.py",
@@ -1013,11 +1498,18 @@
     },
     "CN-042": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1029,11 +1521,18 @@
     },
     "CN-043": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1045,14 +1544,22 @@
     },
     "CN-044": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "eeat_signal_checker.py",
@@ -1062,11 +1569,18 @@
     },
     "CN-045": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1078,11 +1592,18 @@
     },
     "CN-046": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1094,11 +1615,18 @@
     },
     "CN-047": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1110,14 +1638,22 @@
     },
     "CN-048": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "parse_html.py",
@@ -1127,11 +1663,18 @@
     },
     "CN-049": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1143,11 +1686,18 @@
     },
     "CN-050": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1159,15 +1709,23 @@
     },
     "CN-051": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
         "NEEDS_INPUT",
+        "NO_DATA",
         "PASS"
       ],
       "script": "rendered_audit.py",
@@ -1177,11 +1735,18 @@
     },
     "CN-052": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1193,11 +1758,18 @@
     },
     "CN-053": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1209,13 +1781,23 @@
     },
     "CN-054": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
+        "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS"
       ],
       "script": "image_inventory.py",
@@ -1225,11 +1807,18 @@
     },
     "CN-055": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1241,14 +1830,22 @@
     },
     "CN-056": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "freshness_checker.py",
@@ -1258,14 +1855,22 @@
     },
     "CN-057": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "eeat_signal_checker.py",
@@ -1275,11 +1880,18 @@
     },
     "CN-058": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1291,11 +1903,18 @@
     },
     "CN-059": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1307,11 +1926,18 @@
     },
     "CN-060": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1323,11 +1949,18 @@
     },
     "CN-061": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1339,11 +1972,18 @@
     },
     "CN-062": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1355,11 +1995,18 @@
     },
     "CN-063": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1371,11 +2018,18 @@
     },
     "CN-064": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1387,14 +2041,22 @@
     },
     "CN-065": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "parse_html.py",
@@ -1404,14 +2066,22 @@
     },
     "CN-066": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "parse_html.py",
@@ -1421,11 +2091,18 @@
     },
     "CN-067": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1437,14 +2114,22 @@
     },
     "CN-068": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "eeat_signal_checker.py",
@@ -1454,11 +2139,18 @@
     },
     "CO-191": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1470,11 +2162,18 @@
     },
     "CO-192": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1486,11 +2185,18 @@
     },
     "CO-193": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1502,11 +2208,18 @@
     },
     "CO-194": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1518,11 +2231,18 @@
     },
     "CO-195": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1534,11 +2254,18 @@
     },
     "CONT-001": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1550,14 +2277,22 @@
     },
     "GEO-001": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "llms_txt_checker.py",
@@ -1567,14 +2302,22 @@
     },
     "GEO-002": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "llms_txt_checker.py",
@@ -1584,14 +2327,22 @@
     },
     "GEO-003": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "ai_crawler_policy_matrix.py",
@@ -1601,14 +2352,22 @@
     },
     "GEO-004": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "answer_block_scanner.py",
@@ -1618,14 +2377,22 @@
     },
     "GEO-005": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "citation_readiness.py",
@@ -1635,14 +2402,22 @@
     },
     "GEO-006": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
-        "fixture:good_tls": "FAIL"
+        "fixture:good_tls": "FAIL",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
-        "FAIL"
+        "FAIL",
+        "NO_DATA"
       ],
       "script": "entity_checker.py",
       "severity": "medium",
@@ -1651,14 +2426,24 @@
     },
     "GEO-007": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "NEEDS_INPUT",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "NEEDS_INPUT",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
-        "NEEDS_INPUT"
+        "FAIL",
+        "NEEDS_INPUT",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "indexnow_checker.py",
       "severity": "low",
@@ -1667,14 +2452,22 @@
     },
     "GEO-008": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "indexability_matrix.py",
@@ -1684,14 +2477,22 @@
     },
     "GO-131": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "ga4_tag_checker.py",
@@ -1701,14 +2502,22 @@
     },
     "GO-132": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "ga4_tag_checker.py",
@@ -1718,11 +2527,18 @@
     },
     "GO-133": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1734,13 +2550,21 @@
     },
     "GO-134": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
+        "NEEDS_INPUT",
         "NO_DATA"
       ],
       "script": "gsc_checker.py",
@@ -1750,13 +2574,21 @@
     },
     "GO-135": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
+        "NEEDS_INPUT",
         "NO_DATA"
       ],
       "script": "gsc_url_inspection.py",
@@ -1766,13 +2598,22 @@
     },
     "GO-136": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "WARN",
         "fixture:broken_tls": "WARN",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
+        "FAIL",
+        "NO_DATA",
         "PASS",
         "WARN"
       ],
@@ -1783,13 +2624,21 @@
     },
     "GO-137": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
+        "NEEDS_INPUT",
         "NO_DATA"
       ],
       "script": "gsc_sitemap_reconcile.py",
@@ -1799,14 +2648,22 @@
     },
     "GO-138": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "sitemap_checker.py",
@@ -1816,13 +2673,21 @@
     },
     "GO-139": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
+        "NEEDS_INPUT",
         "NO_DATA"
       ],
       "script": "gsc_cannibalization.py",
@@ -1832,11 +2697,18 @@
     },
     "GO-140": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1848,11 +2720,18 @@
     },
     "GO-141": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1864,11 +2743,18 @@
     },
     "GO-142": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1880,13 +2766,23 @@
     },
     "GO-143": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
+        "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS"
       ],
       "script": "schema_required_props.py",
@@ -1896,14 +2792,22 @@
     },
     "GO-144": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "answer_block_scanner.py",
@@ -1913,14 +2817,22 @@
     },
     "GO-145": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "citation_readiness.py",
@@ -1930,14 +2842,23 @@
     },
     "IN-121": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
-        "NO_DATA"
+        "FAIL",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "hreflang_checker.py",
       "severity": "medium",
@@ -1946,14 +2867,23 @@
     },
     "IN-122": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
-        "NO_DATA"
+        "FAIL",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "hreflang_checker.py",
       "severity": "high",
@@ -1962,14 +2892,22 @@
     },
     "IN-123": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "parse_html.py",
@@ -1979,11 +2917,18 @@
     },
     "IN-124": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1995,11 +2940,18 @@
     },
     "IN-125": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2011,11 +2963,18 @@
     },
     "IN-126": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2027,14 +2986,23 @@
     },
     "IN-127": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
-        "NO_DATA"
+        "FAIL",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "hreflang_checker.py",
       "severity": "medium",
@@ -2043,14 +3011,23 @@
     },
     "IN-128": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
-        "NO_DATA"
+        "FAIL",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "hreflang_checker.py",
       "severity": "medium",
@@ -2059,11 +3036,18 @@
     },
     "IN-129": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2075,11 +3059,18 @@
     },
     "IN-130": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2091,11 +3082,18 @@
     },
     "KW-069": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2107,13 +3105,21 @@
     },
     "KW-070": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
+        "NEEDS_INPUT",
         "NO_DATA"
       ],
       "script": "gsc_cannibalization.py",
@@ -2123,13 +3129,21 @@
     },
     "KW-071": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
+        "NEEDS_INPUT",
         "NO_DATA"
       ],
       "script": "gsc_cannibalization.py",
@@ -2139,11 +3153,18 @@
     },
     "KW-072": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2155,11 +3176,18 @@
     },
     "KW-073": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2171,11 +3199,18 @@
     },
     "KW-074": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2187,11 +3222,18 @@
     },
     "KW-075": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2203,14 +3245,22 @@
     },
     "KW-076": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "article_seo.py",
@@ -2220,11 +3270,18 @@
     },
     "KW-077": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2236,11 +3293,18 @@
     },
     "LO-196": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2252,11 +3316,18 @@
     },
     "LO-197": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2268,14 +3339,22 @@
     },
     "LO-198": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "local_seo_checker.py",
@@ -2285,11 +3364,18 @@
     },
     "LO-199": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2301,11 +3387,18 @@
     },
     "LO-200": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -2319,14 +3412,22 @@
     },
     "MB-093": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "PASS",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "parse_html.py",
@@ -2336,15 +3437,23 @@
     },
     "MB-094": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
         "NEEDS_INPUT",
+        "NO_DATA",
         "PASS"
       ],
       "script": "rendered_audit.py",
@@ -2354,11 +3463,18 @@
     },
     "MB-095": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -2370,14 +3486,23 @@
     },
     "MB-096": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
         "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS"
       ],
       "script": "image_weight_audit.py",
@@ -2387,14 +3512,23 @@
     },
     "MB-097": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
         "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS"
       ],
       "script": "image_weight_audit.py",
@@ -2404,13 +3538,23 @@
     },
     "MB-098": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
+        "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS"
       ],
       "script": "image_weight_audit.py",
@@ -2420,11 +3564,18 @@
     },
     "MB-099": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2436,14 +3587,22 @@
     },
     "MB-100": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "PASS",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "mobile_render_checker.py",
@@ -2453,11 +3612,18 @@
     },
     "MB-101": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2469,14 +3635,24 @@
     },
     "MB-102": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "N/A",
         "fixture:broken": "N/A",
         "fixture:broken_tls": "N/A",
         "fixture:good": "N/A",
-        "fixture:good_tls": "N/A"
+        "fixture:good_tls": "N/A",
+        "no-location": "N/A",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
-        "N/A"
+        "FAIL",
+        "N/A",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "video_schema_checker.py",
       "severity": "low",
@@ -2485,15 +3661,23 @@
     },
     "MB-103": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
         "NEEDS_INPUT",
+        "NO_DATA",
         "PASS"
       ],
       "script": "rendered_audit.py",
@@ -2503,14 +3687,22 @@
     },
     "MB-104": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "favicon_check.py",
@@ -2520,15 +3712,24 @@
     },
     "MB-105": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
+        "FAIL",
         "NEEDS_INPUT",
-        "NO_DATA"
+        "NO_DATA",
+        "PASS"
       ],
       "script": "javascript_render_audit.py",
       "severity": "high",
@@ -2537,11 +3738,18 @@
     },
     "MB-106": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2553,15 +3761,23 @@
     },
     "MB-107": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
         "NEEDS_INPUT",
+        "NO_DATA",
         "PASS"
       ],
       "script": "rendered_audit.py",
@@ -2571,15 +3787,23 @@
     },
     "MB-108": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
         "NEEDS_INPUT",
+        "NO_DATA",
         "PASS"
       ],
       "script": "rendered_audit.py",
@@ -2589,13 +3813,22 @@
     },
     "MD-184": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
+        "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "image_inventory.py",
@@ -2605,14 +3838,23 @@
     },
     "MD-185": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
         "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS"
       ],
       "script": "image_weight_audit.py",
@@ -2622,14 +3864,23 @@
     },
     "MD-186": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
         "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS"
       ],
       "script": "image_inventory.py",
@@ -2639,14 +3890,22 @@
     },
     "MD-187": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "image_weight_audit.py",
@@ -2656,11 +3915,18 @@
     },
     "MD-188": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2672,14 +3938,23 @@
     },
     "MD-189": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
         "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS"
       ],
       "script": "image_weight_audit.py",
@@ -2689,14 +3964,24 @@
     },
     "MD-190": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "N/A",
         "fixture:broken": "N/A",
         "fixture:broken_tls": "N/A",
         "fixture:good": "N/A",
-        "fixture:good_tls": "N/A"
+        "fixture:good_tls": "N/A",
+        "no-location": "N/A",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
-        "N/A"
+        "FAIL",
+        "N/A",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "video_schema_checker.py",
       "severity": "medium",
@@ -2705,14 +3990,22 @@
     },
     "MS-020": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "parse_html.py",
@@ -2722,14 +4015,22 @@
     },
     "MS-021": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "PASS",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "parse_html.py",
@@ -2739,14 +4040,22 @@
     },
     "MS-022": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "duplicate_content.py",
@@ -2756,13 +4065,21 @@
     },
     "MS-023": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
+        "NEEDS_INPUT",
         "NO_DATA"
       ],
       "script": "gsc_cannibalization.py",
@@ -2772,11 +4089,18 @@
     },
     "MS-024": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2788,11 +4112,18 @@
     },
     "MS-025": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2804,14 +4135,22 @@
     },
     "MS-026": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "duplicate_content.py",
@@ -2821,11 +4160,18 @@
     },
     "MS-027": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2837,14 +4183,22 @@
     },
     "MS-028": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "PASS",
+        "site-defects": "FAIL",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "parse_html.py",
@@ -2854,14 +4208,22 @@
     },
     "MS-029": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "duplicate_content.py",
@@ -2871,14 +4233,22 @@
     },
     "MS-030": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "parse_html.py",
@@ -2888,14 +4258,22 @@
     },
     "MS-031": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "parse_html.py",
@@ -2905,14 +4283,23 @@
     },
     "MS-032": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "WARN",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
         "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS",
         "WARN"
       ],
@@ -2923,14 +4310,22 @@
     },
     "MS-033": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "social_meta.py",
@@ -2940,13 +4335,21 @@
     },
     "SE-114": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
+        "NEEDS_INPUT",
         "NO_DATA"
       ],
       "script": "domain_safety_check.py",
@@ -2956,14 +4359,22 @@
     },
     "SE-115": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "security_headers.py",
@@ -2973,13 +4384,21 @@
     },
     "SE-116": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
+        "NEEDS_INPUT",
         "NO_DATA"
       ],
       "script": "domain_safety_check.py",
@@ -2989,14 +4408,22 @@
     },
     "SE-117": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "security_headers.py",
@@ -3006,11 +4433,18 @@
     },
     "SE-118": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "PASS",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "NO_DATA",
@@ -3023,11 +4457,18 @@
     },
     "SE-119": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -3039,14 +4480,22 @@
     },
     "SE-120": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "security_headers.py",
@@ -3056,11 +4505,18 @@
     },
     "SP-107": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -3072,11 +4528,18 @@
     },
     "SP-108": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -3088,14 +4551,22 @@
     },
     "SP-109": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "third_party_script_audit.py",
@@ -3105,14 +4576,22 @@
     },
     "SP-110": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "critical_request_chain.py",
@@ -3122,11 +4601,18 @@
     },
     "SP-111": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -3138,11 +4624,18 @@
     },
     "SP-112": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -3154,11 +4647,18 @@
     },
     "SP-113": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -3170,11 +4670,18 @@
     },
     "SP-214": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NEEDS_INPUT",
+        "page-sound": "NEEDS_INPUT",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -3188,11 +4695,18 @@
     },
     "SP-215": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NEEDS_INPUT",
+        "page-sound": "NEEDS_INPUT",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -3206,11 +4720,18 @@
     },
     "SP-216": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
-        "fixture:good_tls": "NEEDS_INPUT"
+        "fixture:good_tls": "NEEDS_INPUT",
+        "no-location": "NEEDS_INPUT",
+        "page-defects": "NEEDS_INPUT",
+        "page-sound": "NEEDS_INPUT",
+        "redirect-chain": "NEEDS_INPUT",
+        "site-defects": "NEEDS_INPUT",
+        "url-shapes": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -3224,11 +4745,18 @@
     },
     "TE-165": {
       "answers": {
+        "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
-        "fixture:good_tls": "LLM_PENDING"
+        "fixture:good_tls": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -3240,14 +4768,22 @@
     },
     "TE-166": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "parse_html.py",
@@ -3257,14 +4793,22 @@
     },
     "TE-167": {
       "answers": {
-        "failing-shapes": "NO_DATA",
-        "fixture:broken": "NO_DATA",
-        "fixture:broken_tls": "NO_DATA",
-        "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "error-entry": "FAIL",
+        "failing-shapes": "PASS",
+        "fixture:broken": "PASS",
+        "fixture:broken_tls": "PASS",
+        "fixture:good": "PASS",
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
-        "NO_DATA"
+        "FAIL",
+        "PASS"
       ],
       "script": "domain_safety_check.py",
       "severity": "medium",
@@ -3273,13 +4817,22 @@
     },
     "TE-168": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "WARN",
         "fixture:broken": "WARN",
         "fixture:broken_tls": "WARN",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "FAIL",
+        "url-shapes": "PASS"
       },
       "distinct": [
+        "FAIL",
+        "NO_DATA",
         "PASS",
         "WARN"
       ],
@@ -3290,14 +4843,22 @@
     },
     "TE-169": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "javascript_render_audit.py",
@@ -3307,14 +4868,22 @@
     },
     "TE-170": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "PASS",
+        "site-defects": "FAIL",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "cache_compression_checker.py",
@@ -3324,13 +4893,21 @@
     },
     "TE-171": {
       "answers": {
+        "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
+        "NEEDS_INPUT",
         "NO_DATA"
       ],
       "script": "domain_safety_check.py",
@@ -3340,14 +4917,23 @@
     },
     "TE-172": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "FAIL",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
         "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS"
       ],
       "script": "rich_results_guard.py",
@@ -3357,11 +4943,18 @@
     },
     "TE-173": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -3373,14 +4966,23 @@
     },
     "TE-174": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "N/A",
+        "page-sound": "N/A",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
         "FAIL",
+        "N/A",
+        "NO_DATA",
         "PASS"
       ],
       "script": "css_minify_check.py",
@@ -3390,14 +4992,22 @@
     },
     "TE-175": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "FAIL",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "security_headers.py",
@@ -3407,14 +5017,22 @@
     },
     "TE-176": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "NO_DATA",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
+        "redirect-chain": "FAIL",
+        "site-defects": "FAIL",
+        "url-shapes": "FAIL"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "canonical_checker.py",
@@ -3424,14 +5042,22 @@
     },
     "TE-177": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "javascript_render_audit.py",
@@ -3441,11 +5067,18 @@
     },
     "TE-178": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -3457,11 +5090,18 @@
     },
     "TE-179": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -3473,14 +5113,22 @@
     },
     "TE-180": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "a11y_seo_checker.py",
@@ -3490,11 +5138,18 @@
     },
     "TE-181": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA"
+        "fixture:good_tls": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "url-shapes": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -3506,11 +5161,18 @@
     },
     "TE-182": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -3522,11 +5184,18 @@
     },
     "TE-183": {
       "answers": {
+        "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
-        "fixture:good_tls": "MANUAL"
+        "fixture:good_tls": "MANUAL",
+        "no-location": "MANUAL",
+        "page-defects": "MANUAL",
+        "page-sound": "MANUAL",
+        "redirect-chain": "MANUAL",
+        "site-defects": "MANUAL",
+        "url-shapes": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -3538,14 +5207,22 @@
     },
     "TECH-001": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "N/A",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "N/A",
+        "site-defects": "N/A",
+        "url-shapes": "N/A"
       },
       "distinct": [
         "FAIL",
+        "N/A",
         "NO_DATA",
         "PASS"
       ],
@@ -3556,14 +5233,22 @@
     },
     "TECH-002": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "PASS",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
         "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "font_audit.py",
@@ -3573,13 +5258,22 @@
     },
     "TECH-003": {
       "answers": {
+        "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
-        "fixture:good_tls": "PASS"
+        "fixture:good_tls": "PASS",
+        "no-location": "PASS",
+        "page-defects": "PASS",
+        "page-sound": "PASS",
+        "redirect-chain": "FAIL",
+        "site-defects": "PASS",
+        "url-shapes": "PASS"
       },
       "distinct": [
+        "FAIL",
+        "NO_DATA",
         "PASS"
       ],
       "script": "lcp_subparts.py",
@@ -3588,12 +5282,19 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "90ba79b14b28",
+  "registry_version": "4a0ebe46be2f",
   "sites": [
     "fixture:good",
     "fixture:broken",
     "fixture:good_tls",
     "fixture:broken_tls",
-    "failing-shapes"
+    "error-entry",
+    "failing-shapes",
+    "no-location",
+    "page-defects",
+    "page-sound",
+    "redirect-chain",
+    "site-defects",
+    "url-shapes"
   ]
 }

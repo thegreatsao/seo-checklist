@@ -292,6 +292,16 @@ mutation: it reddens 22 sub-tests of the status assertion, and the denominator f
   naming the host
 - **AND** the items that need only the page itself are left to answer for themselves
 
+#### Scenario: an item whose question no outside service is in
+- **WHEN** an item's script also asks outside services but the item reads only a request
+  this audit made itself — TE-167, whether one request was answered below 500
+- **THEN** the item answers on a private host like any check of the site, because the
+  gate is for what needs the outside world, not for a script that also does (F06,
+  `test_uptime_is_one_request_of_this_audit_and_is_answered_here`)
+- **AND** that script names the private host to no outside service — no Safe Browsing
+  lookup with a key set, no whois, no reverse-IP lookup — so answering the item does not undo what
+  the gate kept from being asked (`test_a_private_host_is_named_to_no_third_party`)
+
 #### Scenario: the score is not lifted by what could not be seen
 - **WHEN** those items are set aside
 - **THEN** they stay in the denominator and the run's coverage falls

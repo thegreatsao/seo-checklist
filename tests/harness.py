@@ -408,11 +408,15 @@ class _Quiet(http.server.SimpleHTTPRequestHandler):
         if answer is not None:
             body = answer["body"].encode("utf-8")
             # Before the status line, so the wait is in the client's time to first
-            # byte. `delay` is seconds, and only `tree_served` callers set it.
+            # byte. `delay` is seconds (a corpus tree's TECH-003 shape sets it, F06).
             time.sleep(answer.get("delay", 0))
             self.send_response(answer["status"])
             self.send_header("Content-Type", answer["content_type"])
             self.send_header("Content-Length", str(len(body)))
+            # `headers` is how a table answer redirects (F06): a `Location` is all a
+            # redirect chain needs, and a static tree had no way to send one.
+            for key, value in (answer.get("headers") or {}).items():
+                self.send_header(key, value)
             self.end_headers()
             return io.BytesIO(body)
         if not self.gzip_text:

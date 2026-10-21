@@ -186,9 +186,9 @@ SAME_ON_BOTH = {
     # Measured 2026-08-14 by the fixture oracle, which declared FAIL for both
     # origins and got PASS for both. The previous reason here was the one on the
     # line below, for a different item: silos have nothing to do with catalogues.
-    "AR-153": "topical_cluster_mapper scores a flat five-page tree above its "
-              "floor, and scores the duplicate-and-orphan tree there too, so "
-              "the silo score does not separate structure from its absence",
+    "AR-153": "read over the crawl since F06: the good tree has no topic two pages "
+              "share, and the broken tree's one shared topic (its duplicate pair) "
+              "costs it 28 points, above the floor, so both pass",
     "AR-156": "neither fixture is an ecommerce catalogue",
     "AR-163": "neither fixture has faceted navigation",
     "LO-196": "neither fixture claims a physical location beyond the same address",
@@ -279,8 +279,8 @@ SAME_ON_BOTH = {
     # --- One site cannot hold a defect and its opposite ---------------------
     "GO-131": "the broken site needs two GA4 tags for GO-132, so it necessarily has "
               "at least one and passes this",
-    "MD-184": "the broken site needs images to fail the image checks, so both have "
-              "at least one image",
+    "MD-184": "the entry page alone decides it since F06, and the broken site needs "
+              "images on its entry to fail the image checks, so both entries have one",
     "MB-098": "0.93.0 moved this to `srcset_without_sizes_count`, which a fixture "
               "could express — but only by putting an `<img srcset>` in the broken "
               "tree, and that makes `responsive_count` 1 there, which hands MB-096 "

@@ -1150,9 +1150,11 @@ class AScriptStartedByHandTakesTheHostAndNothingElse(unittest.TestCase):
                 mock.patch.object(safety.socket, "gethostbyname", resolve), \
                 mock.patch.object(safety, "check_uptime", lambda *a: reachable), \
                 mock.patch.object(safety, "check_safe_browsing",
-                                  lambda *a: {"checked": False}):
-            # whois is not started at all in a loopback-only process; this test is
-            # about what it would be asked, and the recorder above is what it reaches.
+                                  lambda *a: {"checked": False}), \
+                mock.patch.object(safety, "is_private_host", lambda url: False):
+            # whois is not started at all in a loopback-only process, nor for a host
+            # only we can reach (F06); this test is about what it would be asked, and
+            # the recorder above is what it reaches.
             os.environ.pop("SEO_LOOPBACK_ONLY", None)
             asked["domain"] = safety.check(url)["domain"]
         return asked

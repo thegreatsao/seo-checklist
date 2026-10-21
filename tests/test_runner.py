@@ -764,6 +764,31 @@ class PrivateAddresses(unittest.TestCase):
             self.assertEqual(status, NO_DATA)
             self.assertIn("only reachable from here", reason)
 
+    def test_uptime_is_one_request_of_this_audit_and_is_answered_here(self):
+        """F06. TE-167 *Monitor Site Uptime* reads whether one request this audit made
+        was answered below 500 (its `measures`), and no third party is in that. It was
+        `api` only because its script also asks Safe Browsing and whois, so on a host
+        only we can reach it was NO_DATA under "no external service can measure it" —
+        never answered on any tree the census serves, while its question was answerable
+        on every one of them. The shipped registry, not a hand-built item."""
+        items = [i for i in harness.registry()["items"]
+                 if i["id"] in ("TE-167", "SE-114", "TE-179")]
+        self.assertEqual(sorted(private_host_skips(items, "127.0.0.1:8000")),
+                         ["SE-114", "TE-179"])
+
+    def test_uptime_is_out_of_a_single_page_audit_with_the_crawl_items(self):
+        """The price of the move above, found by F06's second review: `--mode page`
+        satisfies `api` and not `crawl`, so TE-167 there is N/A beside CI-001, CI-003
+        and CI-005, the other site-level checks of the live site. A single-page audit
+        of a public host answered it until 0.175.0; keeping that would need a
+        `requires` value for "site-level, one live request, no outside service",
+        which the vocabulary does not have."""
+        items = [i for i in harness.registry()["items"] if i["id"] in ("TE-167", "CI-003")]
+        _plan, skipped = runner.build_plan(items, {"url": "https://example.com/"},
+                                           set(runner.MODE_CAPS["page"]), "page")
+        self.assertEqual({i: s for i, (s, _why) in skipped.items()},
+                         {"TE-167": NA, "CI-003": NA})
+
     def test_an_explicit_property_can_keep_the_search_console_items(self):
         """Auditing a staging copy against the live site's history is a legitimate
         thing to want, and passing the flag is the operator deciding it."""
@@ -1379,10 +1404,11 @@ class BrowserArtifacts(unittest.TestCase):
         # The real guarantee is in the runner's own selection, which drops every
         # artifact reader from the per-page sample whatever its `requires`:
         #
-        #     return {i["id"] for i in items if is_page_level(i) and not reads_artifact(i)}
+        #     return {i["id"] for i in items if is_page_level(i) and not reads_artifact(i)
+        #             and not (i.get("check") or {}).get("entry_only")}
         #
         # in `sampled_item_ids`, which the per-page selection and `withhold_cut_sample`
-        # both read (F11).
+        # both read (F11; the `entry_only` clause is F06's, for MD-184).
         #
         # A site-level artifact reader is likewise safe: it runs once, against the
         # audited URL. So the thing to defend is that line, not the proxy. Reading the
@@ -1391,7 +1417,7 @@ class BrowserArtifacts(unittest.TestCase):
                                "checklist_runner.py"), encoding="utf-8") as f:
             source = f.read()
         self.assertIn('return {i["id"] for i in items if is_page_level(i) '
-                      'and not reads_artifact(i)}', source,
+                      'and not reads_artifact(i)\n', source,
                       "the per-page sample no longer excludes artifact readers; an "
                       "item reading a one-page trace could now be run against other "
                       "pages and report the same numbers for each")

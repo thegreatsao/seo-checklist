@@ -3,10 +3,10 @@
     "declarations": {
       "counts": {
         "bounded": 0,
-        "enforced": 9,
+        "enforced": 10,
         "none": 1,
         "opposed": 0,
-        "partial": 4
+        "partial": 3
       },
       "opposed": [],
       "requirements": 14,
@@ -149,10 +149,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 131,
+    "enforced": 132,
     "none": 1,
     "opposed": 0,
-    "partial": 22,
+    "partial": 21,
     "requirements": 158
   }
 }

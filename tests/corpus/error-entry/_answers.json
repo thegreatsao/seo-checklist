@@ -1,0 +1,7 @@
+{
+  "/": {
+    "status": 503,
+    "content_type": "text/html; charset=utf-8",
+    "body": "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Maintenance</title></head><body><h1>Back soon</h1><p>The entry page answers 503, the status a site in maintenance or under load sends. CI-003 and TE-167 fail on exactly this answer, and the entry gate is what gives it (check.entry_answer).</p></body></html>"
+  }
+}

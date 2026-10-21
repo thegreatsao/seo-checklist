@@ -1,0 +1,4 @@
+# CI-005: Googlebot may not crawl anything, including the page being audited. Every
+# other crawler, this audit's among them, may.
+User-agent: Googlebot
+Disallow: /

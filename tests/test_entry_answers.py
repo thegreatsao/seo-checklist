@@ -14,7 +14,7 @@ states):
   page answering 203 was NO_DATA with a sentence that was false.
 * **TE-167** *Monitor Site Uptime* asserts one request was answered below 500. A 5xx
   or a refused connection is exactly what the gate stops first, so it could not fail
-  either (and it is `api`, so no loopback fixture ever saw it).
+  either (and it was `api` until F06, so no loopback fixture ever saw it).
 * **CI-015** *Eliminate 5xx Server Errors* was failable on other pages since 0.128.0,
   never on the entry: a 503 home page was NO_DATA.
 

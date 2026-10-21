@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shape Street Bakery, the whole counter</title>
+<meta name="description" content="The sound twin of the page-defects tree: each shape that tree gets wrong, done the way the item asks.">
+<link rel="canonical" href="http://127.0.0.1:8000/">
+<!-- AR-146: page one of a listing names its next page, which exists. -->
+<link rel="next" href="http://127.0.0.1:8000/page/2.html">
+<!-- IN-121, IN-122, IN-127, IN-128: this page is the x-default, both locales live in a
+     subdirectory, and each alternate names the whole set back. -->
+<link rel="alternate" hreflang="x-default" href="http://127.0.0.1:8000/">
+<link rel="alternate" hreflang="en" href="http://127.0.0.1:8000/en/">
+<link rel="alternate" hreflang="de" href="http://127.0.0.1:8000/de/">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"Shape Street Bakery",
+ "url":"http://127.0.0.1:8000/"}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoObject","name":"Shaping a loaf",
+ "description":"Two minutes at the bench, from dough to a shaped loaf.",
+ "thumbnailUrl":"http://127.0.0.1:8000/img/loaf-480.png","uploadDate":"2026-03-14",
+ "duration":"PT2M","contentUrl":"http://127.0.0.1:8000/video/shaping.mp4",
+ "transcript":"Fold the dough over itself, turn it a quarter, and fold again.",
+ "publisher":{"@type":"Organization","name":"Shape Street Bakery"}}
+</script>
+</head>
+<body>
+<nav>
+<a href="/">Home</a>
+<!-- AR-163: the facet's target is this page, which declares its canonical, so the
+     facet is controlled. -->
+<a href="/?color=red">Red loaves only</a>
+</nav>
+<main>
+<h1>Every loaf on the counter</h1>
+<p>Every loaf on the counter today, in the order they came out of the oven. We bake in
+small batches from four in the morning, so the first loaves are cool by the time the
+door opens and the last are still warm at noon. The rye is a three-day sourdough with a
+dark crust and a close crumb; the spelt is lighter and sweeter, and keeps for most of a
+week wrapped in a cloth. The sourdough is our everyday loaf, an open crumb and a crust
+that crackles as it cools on the rack. The brioche is made with butter and eggs from a
+farm two villages away and is best on the day it is baked, toasted the day after.</p>
+<p>Everything here is baked on the premises. Ask at the counter if you want a loaf
+sliced, and tell us the day before if you need more than four of anything, because the
+ovens hold only so many and the dough needs its night in the cold to develop flavour.
+Orders placed by phone are kept on the shelf behind the counter until closing time.</p>
+<ul>
+<li><a href="/products/rye.html">Dark rye</a></li>
+<li><a href="/products/spelt.html">Spelt</a></li>
+<li><a href="/products/sourdough.html">Sourdough</a></li>
+<li><a href="/products/brioche.html">Brioche</a></li>
+</ul>
+<img src="/img/loaf-960.png" alt="A sourdough loaf on the counter" width="960" height="640">
+<img src="/img/loaf-480.png" srcset="/img/loaf-480.png 480w, /img/loaf-960.png 960w"
+     sizes="(max-width: 600px) 100vw, 480px" alt="A rye loaf, sliced" width="480" height="320">
+</main>
+</body>
+</html>

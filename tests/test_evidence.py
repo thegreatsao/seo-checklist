@@ -1351,6 +1351,29 @@ class DomainSafety(unittest.TestCase):
                 return {"matches": matches}
         self.ds.requests.post = lambda *a, **k: Resp()
 
+    def test_a_private_host_is_named_to_no_third_party(self):
+        """F06: TE-167 runs this script on a host only we can reach, where the other
+        items over it stay NO_DATA. That must not send the host to Google with a key
+        set, nor to a whois registry: the runner's private-host gate kept both from
+        ever being asked, and moving TE-167 out from under it must not undo that."""
+        asked = []
+        self.ds.requests.post = lambda *a, **k: asked.append(a) or None
+        with mock.patch.dict(os.environ, {"GOOGLE_SAFE_BROWSING_KEY": "key"}), \
+                mock.patch.object(self.ds, "check_uptime",
+                                  return_value={"checked": True, "reachable": True,
+                                                "status": 200, "response_ms": 5,
+                                                "error": None}), \
+                mock.patch.object(self.ds.subprocess, "run") as whois, \
+                mock.patch.object(self.ds.socket, "gethostbyname") as resolver, \
+                mock.patch.object(self.ds, "is_private_host", return_value=True):
+            out = self.ds.check("http://staging.internal/", timeout=5)
+        self.assertEqual(asked, [])
+        whois.assert_not_called()
+        resolver.assert_not_called()
+        self.assertIs(out["uptime"]["reachable"], True)
+        for item_id in ("SE-114", "SE-116", "TE-171", "TE-178", "TE-179"):
+            self.assertEqual(verdict(item_id, out), NO_DATA, item_id)
+
     def test_no_key_omits_the_verdict_instead_of_reporting_clean(self):
         out = {"safe_browsing": self.ds.check_safe_browsing(
             "https://example.com/", "", 10)}

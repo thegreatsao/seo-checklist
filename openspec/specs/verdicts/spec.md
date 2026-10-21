@@ -617,6 +617,13 @@ worst result hides a finding already measured.
 - **WHEN** every sampled page is undecided
 - **THEN** the item stays undecided
 
+#### Scenario: an item the entry page alone decides
+- **WHEN** an item carries `check.entry_only` — MD-184, whether the audited page references
+  an image (F06, 0.175.0)
+- **THEN** it is not combined across the sample at all: the entry page's verdict stands, and
+  a sampled privacy page with no picture neither fails nor passes it
+  (`test_a_sampled_page_does_not_decide_it`)
+
 ### Requirement: VRD-14 — truncation withholds only a verdict that rests on an absence
 
 When an assertion passes because the sought defect is absent but its input is marked

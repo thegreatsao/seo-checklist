@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shape Street Bakery, every loaf we bake</title>
+<meta name="description" content="A corpus tree whose entry page carries one defect for each page-level item the census had never seen answer or fail.">
+<!-- AR-146: rel=next pointing at this page itself, the pagination defect a template
+     produces when page one is asked for its own next. -->
+<link rel="next" href="http://127.0.0.1:8000/">
+<!-- IN-121, IN-122, IN-127, IN-128: two alternates and neither of them this page, so no
+     self-reference and no x-default; one locale in a subdirectory and one in a
+     parameter, so no single structure; and /de/ names nothing back. -->
+<link rel="alternate" hreflang="de" href="http://127.0.0.1:8000/de/">
+<link rel="alternate" hreflang="fr" href="http://127.0.0.1:8000/?lang=fr">
+<!-- GO-143: a WebSite node with a name and no url. -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"Shape Street Bakery"}
+</script>
+<!-- MB-102, MD-190: a VideoObject with no thumbnailUrl, which Google requires. -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoObject","name":"Shaping a loaf",
+ "description":"Two minutes at the bench, from dough to a shaped loaf.",
+ "uploadDate":"2026-03-14","contentUrl":"http://127.0.0.1:8000/video/shaping.mp4",
+ "publisher":{"@type":"Organization","name":"Shape Street Bakery"}}
+</script>
+</head>
+<body>
+<!-- AR-154: a collection page linking its products, with no H1. -->
+<nav>
+<a href="/">Home</a>
+<!-- AR-163: a facet link whose target, this page under ?color=red, carries neither a
+     canonical nor a noindex, so the facet is uncontrolled. -->
+<a href="/?color=red">Red loaves only</a>
+</nav>
+<main>
+<p>Every loaf on the counter today, in the order they came out of the oven. We bake in
+small batches from four in the morning, so the first loaves are cool by the time the
+door opens and the last are still warm at noon. The rye is a three-day sourdough with a
+dark crust and a close crumb; the spelt is lighter and sweeter, and keeps for most of a
+week wrapped in a cloth. The sourdough is our everyday loaf, an open crumb and a crust
+that crackles as it cools on the rack. The brioche is made with butter and eggs from a
+farm two villages away and is best on the day it is baked, toasted the day after.</p>
+<p>Everything here is baked on the premises. Ask at the counter if you want a loaf
+sliced, and tell us the day before if you need more than four of anything, because the
+ovens hold only so many and the dough needs its night in the cold to develop flavour.
+Orders placed by phone are kept on the shelf behind the counter until closing time.
+The copy is long enough that the page's one collection-page defect is its missing H1.</p>
+<ul>
+<li><a href="/products/rye.html">Dark rye</a></li>
+<li><a href="/products/spelt.html">Spelt</a></li>
+<li><a href="/products/sourdough.html">Sourdough</a></li>
+<li><a href="/products/brioche.html">Brioche</a></li>
+</ul>
+<!-- CN-054: the image's only source is data-src, an instruction to a script; a crawler
+     that does not run it finds no image here. -->
+<img data-src="/img/loaf-960.png" alt="A sourdough loaf on the counter" width="960" height="640">
+<!-- MB-098: width-described candidates and no sizes, so the browser assumes the image
+     is as wide as the viewport and a phone downloads the large file. -->
+<img src="/img/loaf-480.png" srcset="/img/loaf-480.png 480w, /img/loaf-960.png 960w"
+     alt="A rye loaf, sliced" width="480" height="320">
+<p>The words on this page are invented; each defect is named in the comment above it.</p>
+</main>
+</body>
+</html>

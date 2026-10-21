@@ -3,7 +3,7 @@
 `tests/test_entry_answers.py` runs this beside the real runner. `fetch_page` is replaced
 by one that hands the run whatever the entry URL answered — any status, any content
 type — as a readable page, and `is_private_host` answers False so the outside-world gate
-does not hide what the entry gate hides (TE-167 is `api`). Nothing else changes, so a
+does not hide what the entry gate hides (PageSpeed and W3C are `api`). Nothing else changes, so a
 verdict that differs from the shipped runner's on the same origin is one the entry gate
 decided. When nothing answers, the run goes on with no page, as a run whose entry
 answered and was not HTML would.

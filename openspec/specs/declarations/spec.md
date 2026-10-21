@@ -734,33 +734,40 @@ finding. What the mechanism cannot express MUST be written down where the output
 so the next reader does not mistake a limit of the harness for a property of the registry.
 
 **Why:** the census's three headline counts are all inflated by the corpus being small,
-and two named limits inflate them further: a static file server answers 200, 404 and a
-directory 301, and cannot serve a 5xx, a redirect chain, a redirect loop or a status that
-varies by user agent. Four items need exactly those and will never be seen failing here.
-Without that written down, each reader re-derives it, and the third one files it as a
-defect.
-**Reader:** partial, and the unread half is the half the tree does not do.
-`test_the_items_it_names_are_items` resolves the four ids the corpus README names against
-the census, so a list nobody resolves cannot outlive the ids in it, and
-`test_none_of_them_was_ever_seen_failing` holds the claim itself — if one of the four does
-fail on some tree, the harness grew a capability the README says it lacks and the sentence
-is wrong. Both read the README section rather than retyping it, because the list is
-hand-kept and DEC-6's objection applies to it exactly as to the manifest.
+and named limits inflate them further. Until 0.175.0 a static file server could not serve
+an error entry or a redirect chain; F06 gave `_answers.json` a `Location` and served both,
+and what still cannot be seen failing here is one item whose failing shape also stops the
+audit's own request for the entry page (`SE-118`, argued in `tests/corpus/README.md`). Without that written down, each reader re-derives it, and the
+third one files it as a defect.
+**Reader:** enforced, at 0.175.0 (F06). `test_the_items_it_names_are_items` resolves the
+ids the corpus README names against the census, so a list nobody resolves cannot outlive
+the ids in it, and `test_none_of_them_was_ever_seen_failing` holds the claim itself — if
+one of them does fail on some tree, the harness grew a capability the README says it lacks
+and the sentence is wrong. Both read the README section through
+`verdict_census.unexercisable`, because the list is hand-kept where its reason is written
+and DEC-6's objection applies to a second copy exactly as to the manifest.
 
-What is still absent is the connection this requirement is actually about. The census
-output *does* print those ids — as members of the group they inflate, the way it prints
-every id in every group — and never marks them as items no tree here can exercise, so a
-reader cannot tell them from items that merely did not fail. The census tool has no
-reference to the README and no knowledge of any of the four.
-`test_the_census_still_knows_nothing_of_the_limit` pins that structurally and is written
-to fail on the day somebody closes it.
+The third clause, the one this requirement is actually about, was pinned as an absence
+until F06: the census output printed those ids among the items they inflate and never
+marked them. `report()` now prints, on each such item's own lines, that no tree here can
+show it failing and where the reason is written, and
+`test_the_census_marks_them_where_it_prints_them` requires the marked set to be exactly the
+README's ids among the never-failing — so a mark nobody earned and an earned mark that went
+missing both redden. F06 also gave the never-answered group the same treatment for its own
+reason (DEC-10's census, `EveryItemThatNeverAnswersNamesWhatItNeeds` in `test_census.py`):
+each item there names the external input it waits for, read through the runner's own
+private-host gate, and an item that could answer offline fails the suite by name.
 
-Probed on 6 September 2026, three ways: renaming one id in the README, marking one of the
-four as having failed, and giving the census a reference to the README. Each reddens.
+Probed on 21 October 2026, three ways: renaming one id in the README, recording one of them
+as having failed, and removing the mark from `report()`. Each reddens its named test. The
+same day the review found the README naming `CI-014` as unable to fail here while a 301 with
+no `Location` fails it on a static tree; `no-location/` now serves that, and the README
+names `SE-118` alone.
 
-An earlier draft of this reader pinned the wrong absence — it asserted the output did not
-name the four ids, which it does. The expected value came from what I assumed `report()`
-printed rather than from running it.
+The 6 September probe of the earlier reader, and its lesson, stand: an earlier draft
+pinned the wrong absence — it asserted the output did not name the ids, which it does,
+because the expected value came from what I assumed `report()` printed rather than from
+running it.
 
 #### Scenario: an item that answered the same on every tree
 - **WHEN** the census reports an item whose range is a single answer
@@ -774,6 +781,13 @@ printed rather than from running it.
 - **THEN** the census output itself records that no tree here can exercise that item
 - **AND** the reader does not have to find that sentence in a README beside the trees to
   know it
+
+#### Scenario: an item answered on no tree
+- **WHEN** the census reports an item that gave no verdict on any served tree
+- **THEN** the output names the external input it waits for, read through the runner's own
+  gate for a host only we can reach
+- **AND** an item that gate does not withhold, and so could answer offline, fails the suite
+  by name instead of being excused
 
 #### Scenario: the list of unexercisable items drifts from the output
 - **WHEN** an item joins or leaves the set the harness cannot exercise
@@ -1232,14 +1246,14 @@ values.
 
 | | requirements |
 |---|---|
-| **enforced** | DEC-2, DEC-3, DEC-5, DEC-6, DEC-7, DEC-10, DEC-11, DEC-12, DEC-14 |
-| **partial** | DEC-4, DEC-8, DEC-9, DEC-13 |
+| **enforced** | DEC-2, DEC-3, DEC-5, DEC-6, DEC-7, DEC-10, DEC-11, DEC-12, DEC-13, DEC-14 |
+| **partial** | DEC-4, DEC-8, DEC-9 |
 | **none** | DEC-1 |
 | **opposed** | — none |
 
 Invariants: INV-D1 and INV-D2 enforced; INV-D3 and INV-D4 unread.
 
-**Nine enforced, four partial, one unread, none opposed, of fourteen.**
+**Ten enforced, three partial, one unread, none opposed, of fourteen.**
 
 DEC-2, DEC-3 and DEC-7 moved together at 0.99.0, and they had to: the ninth word, the
 vocabulary that permitted it while forbidding its replacements, and the comparison that

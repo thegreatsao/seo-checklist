@@ -309,7 +309,9 @@ class RegistryShape(unittest.TestCase):
         self.assertEqual({item_id for item_id, need in requires.items()
                           if need == "safe_browsing"},
                          {"SE-114", "SE-116", "TE-171"})
-        self.assertEqual(requires["TE-167"], "api")
+        # One request of this audit, with no third party in it (F06): answered on a
+        # host only we can reach, so not `api`.
+        self.assertEqual(requires["TE-167"], "crawl")
         self.assertEqual(requires["TE-178"], "api")
         self.assertEqual(requires["TE-179"], "api")
 
@@ -729,15 +731,17 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # `convention` (RANKS_FIRST_POSITION and MIN_IMPRESSIONS with the multi-market
         # blocker kept, ROW_LIMIT once KW-070 and GO-139 withhold over a full page).
         # Then MIN_SCORE to `measured` (5), by the owner's decision: `inherited` is 0.
+        # 0.175.0 (F06) adds one `convention`: `SITE_WIDE_SHARE`, the share of titles
+        # past which a word is the site's and not a page's topic (AR-153).
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 14,
-            "convention": 96,
+            "convention": 97,
             "inherited": 0,
             "presentation": 47,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 130)
-        self.assertEqual(len(named), 177)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 131)
+        self.assertEqual(len(named), 178)
         # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
         # `lib/safe_http.py`, how long and how often a held lock is asked for on
         # Windows. Listed and not counted, beside `ROBOTS_FETCH_WAIT` and `_CACHE_POLL`,
@@ -776,8 +780,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 190 -> 192: the two replacement numbers above at 0.157.0, uncounted.
         # 192 -> 195: the sitemap walk's three bounds in `seo_common` at 0.167.0.
         # 195 -> 196: `SAMPLE_FALLBACK_SITEMAPS` in the runner at 0.174.0 (F11).
+        # 196 -> 197: `SITE_WIDE_SHARE` in `topical_cluster_mapper.py` at 0.175.0 (F06).
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 196)
+                             for path in at._script_paths()), 197)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
