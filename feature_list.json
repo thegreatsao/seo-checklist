@@ -161,8 +161,8 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "active",
-    "evidence": "",
+    "state": "passing",
+    "evidence": "commit 588efd5, verified 2026-10-21",
     "notes": "ROADMAP item 5; tests/census.json, tests/test_census.py."
   },
   {
