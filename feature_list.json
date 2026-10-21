@@ -83,7 +83,7 @@
   },
   {
     "id": "F04",
-    "behavior": "The 20 partial requirements and DEC-1 are each held or narrowed to what is held",
+    "behavior": "The 21 partial requirements and DEC-1 (22 of 158 in tests/spec-debt.json at 0.175.0), REG-6 aside (F03), are each held or narrowed to what is held",
     "dependencies": [
       "F01"
     ],
@@ -105,7 +105,7 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "not_started",
+    "state": "active",
     "evidence": "",
     "notes": "ROADMAP item 3; counts from the spec ledger (tests/spec-debt.json, tools/spec_debt.py --check). Spans sessions."
   },
