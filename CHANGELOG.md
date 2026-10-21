@@ -10,6 +10,72 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.175.0 — every item the census never saw answer names what it waits for; 30 more can be seen failing or answering
+
+Registry version: `4a0ebe46be2f` (was `90ba79b14b28`). **Verdicts move in five places on a live audit, named
+below; every other change is what the census can serve and what it says.**
+F06 (ROADMAP "What 1.0 requires", item 5), with its sprint contract in `docs/sprint-20261021-F06.md`, where
+what each of the 54 items was expected to be is written down before anything was run.
+
+* **Verdicts that move on a live audit:**
+  * **MD-184** *Confirm the Page References at Least One Image* (Anton's decision): the entry page alone
+    answers it. An entry that references no image goes from `NO_DATA` to `FAIL` (the rule read `count`,
+    which `image_inventory.py` writes only when it is at least one, so it could not fail); an entry with an
+    image is `PASS` whatever the sampled pages carry, and a sampled page with no picture no longer decides
+    anything (`check.entry_only`, new; `--sample` does not fold such an item). CI-016, MD-186 and CN-054
+    still say nothing about an image-free page.
+  * **AR-153** *Design Clear Topic Hubs (Silos)* (Anton's decision): reads the shared crawl
+    (`requires: crawl`, `--inventory`) instead of one URL, which mapped one page into one cluster and scored
+    100 on every site. A topic's hub and spokes are now compared across the pages read, so a site whose
+    same-topic pages do not link each other goes from `PASS` to `FAIL` (score under 70); a crawl cut at its
+    caps is `NO_DATA`; under `--mode page` it is `N/A` (was answered from one URL). **The topic is a crude
+    reading**: a page's most frequent title word, once the words more than half the titles share are set aside
+    (`SITE_WIDE_SHARE`, 0.5, a convention). Two pages that share a title word without being about one
+    subject are read as one topic, and a section word under that share (a "blog" on a third of the titles)
+    makes its pages one cluster whose hub must link every post — both can fail a site whose structure is
+    fine. The script's output lists each cluster, its hub and its missing links, so a reader can tell. A page
+    whose title gives no word the pattern reads (empty, in a non-Latin script, or only site-wide words) is a
+    cluster of its own, not one shared "uncategorized" hub. Over a crawl stopped at its caps the item is
+    `NO_DATA`, which on the two larger of four real sites tried in review (50-page crawls) was the answer.
+  * **TE-167** *Monitor Site Uptime* on a host only this machine reaches (staging, loopback, a private
+    address), from `NO_DATA` to `PASS` or `FAIL`. It reads one request of this audit, answered below 500
+    or not, and no outside service is in that; it was `requires: api` only because its script also asks
+    Safe Browsing and whois, so the private-host gate withheld it under "no external service can measure
+    it". It is `crawl` now (site-level and live, never re-asked per sampled page), and
+    `domain_safety_check.py` names a private host to no outside service — no Safe Browsing lookup even
+    with a key set, no whois, no reverse-IP lookup — so SE-114, SE-116, TE-171, TE-178 and TE-179 stay `NO_DATA`
+    there as before. On a public host under `--mode live` nothing changes. The fixture oracle declares it `PASS` on both
+    origins (122 items declared, 117 on `broken`).
+  * **TE-167 under `--mode page`**, from `PASS` or `FAIL` to `N/A`, beside CI-001, CI-003 and CI-005, the
+    other site-level checks of the live site: page mode satisfies `api` and not `crawl`. Keeping it answered
+    there would need a `requires` value for "site-level, one live request, no outside service", which the
+    vocabulary does not have (found by the F06 review; `test_uptime_is_out_of_a_single_page_audit_with_the_crawl_items`).
+  * **SE-114, SE-116 and TE-171** on a private host whose entry page answered an error, with a Safe
+    Browsing key set: from whatever Safe Browsing said about the private URL to `NO_DATA`. The private-host
+    gate does not run when the entry fails, so the script was asked anyway and sent the private URL to
+    Google; it now asks no outside service about a private host on any path (found by the F06 review,
+    which saw the suite's network tripwire fire on that path at `d407aba`).
+* **The census (`tests/verdict_census.py`, `tests/census.json`)** serves seven new corpus trees and passes
+  corpus trees their operator inputs (`tests/corpus/_inputs/<tree>/`: a rendered document, a Links export,
+  an IndexNow key). Before → after: **never FAIL 19 → 1, never PASS 2 → 2, never answered 35 → 23.**
+  * Seen failing for the first time, each for the reason its title names: AR-147, AR-149, AR-150, BL-081,
+    BL-086, CI-003, CI-005, CI-012, CI-014, CN-039, CN-054, GO-136, GO-143, MB-098, TE-168, TECH-003;
+    and, after their rules changed, AR-153 (`site-defects/`) and MD-184 (three trees whose entry has no
+    image).
+  * Seen answering for the first time, both failing and passing: AR-146, AR-154, AR-163, GEO-007, IN-121,
+    IN-122, IN-127, IN-128, MB-102, MB-105, MD-190, TE-167.
+  * Each of the 23 still silent is printed with the outside service or key it waits for, read through the
+    runner's own private-host gate; `test_census.py` fails on any silent item that gate does not withhold.
+  * The one still never seen failing: SE-118 fails only on a certificate that does not verify, which
+    also stops the audit's own request for the entry page, so the entry gate turns its failure into
+    `NO_DATA`; the census output now marks it (DEC-13, enforced). CI-014 has the same gap for a redirect
+    loop and fails on a redirect with no `Location`.
+* **Harness:** an `_answers.json` route may carry `headers`, so a corpus tree can redirect.
+* **Specification:** DEC-13 is enforced (the census output records its own limits) and gains a scenario
+  for the never-answered group; HTTP-3 gains a scenario for an item whose question no outside service is
+  in; VRD-13 gains a scenario for an item the entry page alone decides. 132 of 158 requirements
+  enforced, 21 partial. Numbers a verdict depends on: 131 (97 `convention`), with `SITE_WIDE_SHARE`.
+
 ## 0.174.0 — no threshold rests on "inherited"; no sampled verdict is decided by the crawl caps
 
 Registry version: `90ba79b14b28`, unchanged. **Verdicts move in nine places, named below; every

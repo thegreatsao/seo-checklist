@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.174.0 — see [CHANGELOG.md](CHANGELOG.md). No threshold rests on "inherited": every number a verdict depends on is a published standard, a measurement, or a convention with its judgement written beside it, and numbers that only decide what is printed say so. Under `--sample`, a sample drawn from a crawl cut at its caps withholds what the cut could decide. MB-100 now fails a fixed width over 360 CSS pixels, KW-076 reads every non-empty paragraph as body text, and `--profile auto` needs a detector score of 5, all three measured.
+Version 0.175.0 — see [CHANGELOG.md](CHANGELOG.md). Every item the verdict census never saw answer now names the outside service or key it waits for, and 30 items that no served tree could fail or answer now do, on seven new corpus trees and their inputs; one still cannot be seen failing, and the census says why. MD-184 is answered by the entry page alone, and AR-153 compares topic hubs across the crawl. TE-167 (uptime) is answered on a staging or loopback host, where its script now names the host to no outside service.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -790,7 +790,7 @@ language, and the lowest Python in the CI matrix must be the floor `pyproject.to
 declares. CI runs the suite on 3.11, 3.13 and 3.14, the newest of them on Linux,
 macOS and Windows and the oldest on Linux and Windows, along with `ruff`, the gates and
 four offline end-to-end audits, and a job of its own re-takes the recorded verdict
-census over all five served trees and compares it with the one in the tree.
+census over all twelve served trees and compares it with the one in the tree.
 
 **And the pair.** The whole registry is run against two served fixture sites — one
 satisfying as much of it as a static site can, one engineered to fail — and every
