@@ -96,12 +96,26 @@ return its defined empty shape.
 **Why:** the runner classifies a non-zero exit as a crash, which is a defect report about
 the checker. A checker that exits non-zero to mean "the site was down" produces a
 maintenance ticket instead of a `NO_DATA`, and the two are read by different people.
-**Reader:** partial. The five failure kinds and their labels are pinned by the runner's
-tests, and every checker is exercised end to end against a real served origin by the
-evidence suite, so a checker that exited non-zero on a normal page would fail there. What
-is unread is the *empty* case as a contract: nothing asserts that each checker, given
-nothing to work with, exits 0 rather than raising — it is asserted for the handful whose
-tests construct that case and inherited for the rest.
+**Reader:** enforced, at F04. `tests/test_checker_contract.py` runs every job the
+registry plans in `live` mode the way the runner runs it — its own process, through
+`run_script` — against a site that refuses every connection and against one that answers
+every request with an empty 200, every operator input handed over as an empty file, and
+requires that none comes back `crash`, `bad_output` or `signal`. Its first run found eight
+that did: `cwv_metrics.py` and `rendered_audit.py` exited 1 on a file they could not use,
+`server_log_audit.py` and `html_validator.py` returned an error with no kind, and the four
+Search Console scripts stopped on `sys.exit(1)` when the `gsc` extra was absent and on a
+traceback — or under `service`, the wrong owner — when the key file was not a key. All
+eight now say `input`, the operator's: `gsc_checker.build_service` raises
+`UnusableCredentials` for both causes, held with the extra absent and with a stand-in for
+it that reads a key file the way the real one does. The third scenario's ground, output
+that is not one JSON document, is held by `NotOneDocument`. Probed: each repair reverted
+alone reddens the census or the Search Console test; `run_script` reading only the first
+of two documents reddens `NotOneDocument`; a checker raising `SystemExit` reddens the
+census.
+
+What it does not establish: an input that is not empty but unusable some other way is read
+only where a test constructs it, and the converse scenario — a checker that genuinely
+broke exits non-zero — is the runner's, held by `run_script`'s own tests.
 
 #### Scenario: the site could not be reached
 - **WHEN** a checker cannot fetch what it was asked about
@@ -127,12 +141,28 @@ MAY see the untranslated word — every consumer MUST see the normalised one.
 either word, and every one of them reported `PASS` on every site ever audited. A second
 translation site would reintroduce that failure in the half of the tree that used the
 other one.
-**Reader:** partial. The alias map is used by the assertion evaluator and exercised
-wherever a rule names a severity, and `tools/audit_assertions.py` fails the build for a
-rule asking for a severity its script cannot emit — which is the reader that closed the
-original defect. What is unread is uniqueness: nothing forbids a second normalisation
-elsewhere, and Appendix A.3 shows two checkers shipping capitalised severities that the
-map does not translate at all.
+**Reader:** enforced, at F04. `checklist_runner.normal_severity` is the one translation,
+and every rule and measurement reads severities through it; until F04 four call sites
+spelled it out, and a word in neither set passed through as itself.
+`tests/test_severity_vocabulary.py` requires it to be the only function in the shipped
+scripts that reads `SEVERITY_ALIAS`, and refuses a second table under any name — a dict
+literal taking an inherited word onto one of the four anywhere in `scripts/`, or a
+comparison against an inherited word in the runner or the report. A fifth word is caught
+on both sides. On the checker's, every literal severity a shipped script writes must
+translate, and a `none_severity` rule over an issue at a word outside the vocabulary is
+`NO_DATA` naming the word where it was `PASS`. On the rule's, `tools/audit_assertions.py`
+refuses a rule naming such a word in either position; it had refused one only by accident,
+when the word left an `assert` rule sharing nothing with its script. Probed: the
+unknown-word branch off, the alias lookup dropped, the lowercasing dropped, an inline
+second translation in `measurement`, a second table in `checklist_report.py`, a checker
+literal `Severe`, `issue("fatal", …)`, a rule naming `fatal`, and the gate's new refusal
+removed — each reddens a named test.
+
+The gate's census of what a script can emit (`audit_assertions.severity_literals`) keeps a
+pass-through on purpose, so that a word outside the vocabulary reaches the census rather
+than vanishing in it; nothing a rule or a report sees goes through it. A severity a checker
+copies from a service at run time has no literal to read, and the grading branch above is
+what catches it.
 
 #### Scenario: a checker speaks another vocabulary
 - **WHEN** a checker emits a severity word from a vocabulary it inherited
@@ -784,15 +814,17 @@ were.
 
 | | requirements |
 |---|---|
-| **enforced** | EVD-3, EVD-4, EVD-5, EVD-6, EVD-7, EVD-8, EVD-9, EVD-10, EVD-11 |
-| **partial** | EVD-1, EVD-2 |
+| **enforced** | EVD-1, EVD-2, EVD-3, EVD-4, EVD-5, EVD-6, EVD-7, EVD-8, EVD-9, EVD-10, EVD-11 |
+| **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-E1 and INV-E2 enforced; INV-E3 and INV-E4 partial.
 
-**Nine enforced, two partial, none unread, of eleven.** EVD-10 moved at F04, when its
-caveat reached the report.
+**Eleven enforced, nothing partial, nothing unread, of eleven.** EVD-10 moved at F04, when its
+caveat reached the report; EVD-1 and EVD-2 at F04's second batch, each on a census over the
+whole population — every job the registry plans, every severity a script writes or a rule
+names — and on mutation (their Reader lines).
 
 **Probed at 0.148.0:** EVD-11, written with its tests and broken afterwards. And at
 0.152.0, on the recognised templates: eight breakages of that reading, each seen on the

@@ -625,6 +625,9 @@ def audit(log_path: str, inventory_path: str = "", base_url: str = "",
             f"nothing in {os.path.basename(log_path)} parsed as an access log "
             f"({result['lines_read']} line(s) read). Supported: Combined Log "
             f"Format, Common Log Format, JSON lines")
+        # The operator's file, not this script: without a kind the runner read it as
+        # `crash` (EVD-1, F04).
+        result["error_kind"] = "input"
         return result
 
     result["user_agent_recorded"] = ua_seen_field

@@ -1921,12 +1921,34 @@ class TheRegistryStatesNothingAboutItselfItCannotProve(unittest.TestCase):
         """`registry_version` is what a stored result names to say which contract it
         was measured against. Recomputed here from the items on disk, so a hand-edited
         `checklist.json` — the one edit `--check` would catch only if somebody ran it —
-        cannot keep a stamp that belongs to a different item set."""
-        import hashlib
-        expected = hashlib.sha256(
-            json.dumps(ITEMS, ensure_ascii=False, sort_keys=True).encode("utf-8")
-        ).hexdigest()[:12]
-        self.assertEqual(DATA["registry_version"], expected)
+        cannot keep a stamp that belongs to a different item set. Through the
+        generator's own function since F04 (`registry` REG-1): a copy of the hash here
+        would hold the artifact to the test's idea of the version, not the generator's."""
+        import build_checklist
+        self.assertEqual(DATA["registry_version"],
+                         build_checklist.registry_version_of(ITEMS))
+
+    def test_any_field_of_any_item_moves_the_version(self):
+        """The other half of REG-1's *if and only if*: a version that a title, a
+        severity, an assertion or a removed item leaves where it was identifies nothing."""
+        import copy
+
+        import build_checklist
+        base = build_checklist.registry_version_of(ITEMS)
+        probe = next(i for i in ITEMS if (i.get("check") or {}).get("assert"))
+        edits = {"title": lambda i: i.update(title=i["title"] + "."),
+                 "severity": lambda i: i.update(
+                     severity="low" if i["severity"] != "low" else "high"),
+                 "assert": lambda i: i["check"]["assert"].update(_probe=1),
+                 "removed": None}
+        for field, edit in edits.items():
+            with self.subTest(field=field):
+                items = copy.deepcopy(ITEMS)
+                if edit is None:
+                    items = [i for i in items if i["id"] != probe["id"]]
+                else:
+                    edit(next(i for i in items if i["id"] == probe["id"]))
+                self.assertNotEqual(build_checklist.registry_version_of(items), base)
 
 
 class AVerdictComesFromAFieldAndNeverFromASentence(unittest.TestCase):

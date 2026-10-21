@@ -2030,6 +2030,12 @@ def merge_llm_answers(data: dict, answers: dict) -> int:
         if st not in valid:
             print(f"  skipping {item['id']}: invalid status {a.get('status')!r}", file=sys.stderr)
             continue
+        if st == NA and not str(a.get("evidence") or "").strip():
+            # An item answered by a model has no rule to declare applicability in, so
+            # its `N/A` is that declaration and must name what was sought (VRD-3, F04).
+            print(f"  skipping {item['id']}: N/A with no evidence — say what the page "
+                  f"was searched for and did not have", file=sys.stderr)
+            continue
         item["status"] = st
         item["evidence"] = f"LLM: {str(a.get('evidence') or '').strip() or 'no rationale given'}"
         item["source"] = "llm(answered)"

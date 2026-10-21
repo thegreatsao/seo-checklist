@@ -563,11 +563,17 @@ def analyze(site_url: str, credentials: str, days: int,
         "issues": [],
         "error": None,
     }
+    service = None
     try:
         service = build_service(credentials)
         rows, start, end = fetch_query_page_rows(service, site_url, days)
     except Exception as exc:
         result["error"] = str(exc)[:300]
+        if service is None and isinstance(exc, OSError):
+            # The key or the extra, both the operator's: without a kind the runner
+            # read this as a broken script (EVD-1, F04). Only before the service
+            # exists: an `OSError` after it is the network, not the file.
+            result["error_kind"] = "input"
         # And `issues`, for the same reason the summary is empty: an empty list
         # satisfies `none_severity` and reads as "nothing wrong here".
         result.pop("issues", None)

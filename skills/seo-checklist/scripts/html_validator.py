@@ -100,6 +100,8 @@ def validate(url: str, timeout: int = 45, rendered_json: str | None = None) -> d
             # summary: summary.errors == 0 would turn a missing artifact into a PASS
             # for TE-181, claiming a rendered document was valid without one existing.
             result["error"] = f"no rendered document to validate: {render_error}"
+            # The rendered artifact the operator supplied, not this script (EVD-1, F04).
+            result["error_kind"] = "input"
             return result
 
     # Once there is a document for Nu to inspect, preserve the served-mode output

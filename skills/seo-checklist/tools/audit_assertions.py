@@ -44,7 +44,7 @@ sys.path.insert(0, SCRIPTS)
 # Imported rather than restated: a copy of this table kept in the auditor would
 # drift from the runner's exactly the way the assertions themselves drifted, and
 # then the audit would clear rules the runner cannot fire.
-from checklist_runner import SEVERITY_ALIAS  # noqa: E402
+from checklist_runner import SEVERITY_ALIAS, normal_severity  # noqa: E402
 
 # Asserted paths that are absent from the probed output on purpose, because the
 # probe ran without the credential that produces them. Each one reports NO_DATA
@@ -204,7 +204,16 @@ def audit_severities(registry_path: str = REGISTRY) -> list[dict]:
     """
     dead = []
     for row in severity_rules(registry_path):
-        wants = {SEVERITY_ALIAS.get(s.lower(), s.lower()) for s in row["wants"]}
+        # A word the runner cannot translate is dropped from the levels it looks for,
+        # in either position: such a rule is narrower than it reads, or fires never
+        # (EVD-2, F04).
+        unknown = [s for s in row["wants"] if normal_severity(s) is None]
+        if unknown:
+            dead.append(dict(row, reason=f"names {', '.join(map(repr, unknown))}, which "
+                                         f"is none of critical/high/medium/low or their "
+                                         f"aliases"))
+            continue
+        wants = {normal_severity(s) for s in row["wants"]}
         try:
             emits = severity_literals(row["script"])
         except (OSError, SyntaxError) as exc:

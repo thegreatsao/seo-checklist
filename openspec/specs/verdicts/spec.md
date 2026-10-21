@@ -122,9 +122,15 @@ An item whose subject does not exist **MUST NOT** report `PASS`.
 subject awards credit the site never earned — a five-page bakery scoring for *Optimize
 E-commerce Category Pages* it does not have. It also reads to the operator as
 confirmation that something was checked.
-**Reader:** partial. `tests/test_runner.py` requires an item whose applicability subject
-is absent to be `N/A` rather than `PASS`, but only through the `applies_when` mechanism,
-which most items do not declare — see VRD-3 and Appendix A.1.
+**Reader:** enforced, at F04; the line had been stale since 0.98.0. An item that judges
+by a rule says when its subject is absent through `applies_when`, which
+`tests/test_runner.py::ApplicabilityRules` holds (a failed condition is `N/A` with a
+reason, never `PASS`), and `openspec/specs/registry/` REG-9 refuses a build that leaves
+an absence-passing rule undeclared. An item answered by a person or a model says it
+through `applies_if`, the question it is asked (VRD-3's Reader line), and its basis is
+that answerer's, recorded as provenance. Whether the answerer was right is its
+judgement, not a measurement this program could check; what is held is that the question
+reached it and that its `N/A` names what was sought.
 
 #### Scenario: the thing being judged is not on the site
 - **WHEN** an item judges the quality of an entity the site may legitimately not have,
@@ -220,6 +226,9 @@ when its subject is absent.
 The existing mechanism lives at `item["check"]["applies_when"]`, so it cannot serve a
 sourceless item such as LO-199. That schema gap, the classification of all 17, and
 CN-036's measurement defect belong to the registry document and are not solved here.
+(All three were, there: the classification at 0.96.0, CN-036 at 0.101.0, and the schema
+gap at 0.98.0, when every rule-less item came to carry `applies_if`, the question that
+decides it, or a recorded reason its subject is always present.)
 
 **Why:** a missing field describes the parser, an absent subject limits the item's scope,
 and an absent forbidden condition may satisfy the item. Treating those as one kind of
@@ -230,7 +239,7 @@ does not have.
 by evidence from this run — the sampled pages contain no such entity — never by an
 inference about what kind of business the site appears to be. Inferring the site's
 category is governed separately by VRD-11.
-**Reader:** partial, and the half that was missing is held from 0.96.0. The
+**Reader:** enforced, at F04; the half that was missing is held from 0.96.0. The
 `applies_when` mechanism is enforced where present — a failed rule yields `N/A` with a
 reason and a matching one grades normally — and where it is *absent* is now a decision
 somebody made: `openspec/specs/registry/` REG-9 derives every item whose rule passes by
@@ -238,11 +247,24 @@ finding nothing and refuses the build unless each declares applicability or reco
 its subject cannot be absent. Eighteen of the two hundred and seventeen declare it and
 forty-seven carry the recorded reason.
 
-What is still unread is the sourceless gap. `item["check"]["applies_when"]` lives inside
-a rule, so an item answered by a person or a model — LO-199 — cannot express
-applicability at all, and no reader identifies that class. It is a schema gap and belongs
-to the registry document; the difference from before is that it is the only one left
-here.
+The sourceless gap this line went on to name was closed at 0.98.0 and the line was not
+told until F04. An item answered by a person or a model — LO-199 — declares
+applicability as `applies_if`, a question put to whoever answers it, or records why its
+subject is always present (`RULELESS_SUBJECT_ALWAYS_PRESENT`); `build_checklist.py`
+refuses a rule-less item in neither table or in both, and `tests/test_registry.py::EveryRulelessItemSaysWhenItApplies`
+holds that partition. The question travels: the
+runner copies it onto the graded row and the queue prints it
+(`tests/test_report.py::Queue::test_the_question_reaches_the_queue_from_the_registry`,
+written at F04 because both renderer tests began from a row that already carried it).
+And the answer's `N/A` must name what was sought: a person's merge refused one with no
+evidence already, and a model's took it and wrote `no rationale given`, an `N/A` that
+names nothing — refused since F04
+(`tests/test_report.py::Merge::test_an_na_that_names_nothing_is_refused_from_either_answerer`),
+so the item stays `LLM_PENDING` and the merge says why. VRD-10's
+decision of 16 September 2026 stands for every other status: a model need not give a
+reason for `PASS`, `WARN` or `FAIL`. Probed: the runner not copying the question, the queue
+not printing it, the gate admitting an unclassified item, the model's merge taking a bare
+`N/A`, and `applies_when` ignored — each reddens a named test.
 
 #### Scenario: the checker never wrote the field
 - **WHEN** an item's assertion reads a key the checker did not emit
@@ -1100,13 +1122,15 @@ VRD-11.
 
 | | requirements |
 |---|---|
-| **enforced** | VRD-1, VRD-4, VRD-5, VRD-6, VRD-7, VRD-8, VRD-9, VRD-10, VRD-11, VRD-12, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
-| **partial** | VRD-2, VRD-3 |
+| **enforced** | VRD-1, VRD-2, VRD-3, VRD-4, VRD-5, VRD-6, VRD-7, VRD-8, VRD-9, VRD-10, VRD-11, VRD-12, VRD-13, VRD-14, VRD-15, VRD-16, VRD-17 |
+| **partial** | — none |
 | **none** | — none |
 
 Invariants: INV-1 enforced; INV-2, INV-3 and INV-4 partial; INV-2 is violated.
 
-**Fifteen enforced, two partial, none unread.** No requirement is violated by shipped
+**Seventeen enforced, nothing partial, nothing unread.** VRD-2 and VRD-3 moved at F04's second
+batch, their Reader lines corrected to what 0.98.0 had already built and the one link
+nothing read — a model's bare `N/A` — repaired. No requirement is violated by shipped
 behaviour or declarations: VRD-12 left that list at 0.99.0, when the manifest's ninth word
 was withdrawn and the oracle's vocabulary became the audit's own.
 
@@ -1123,9 +1147,10 @@ only over a run that fills the buckets. A.4.
 
 VRD-2 and VRD-3 left that list at 0.96.0. The missing applicability declarations were the
 violation, and `openspec/specs/registry/` REG-9 now derives which items owe one and
-refuses a build that leaves an item unjudged. Both stay `partial`, for a narrower reason
+refuses a build that leaves an item unjudged. Both stayed `partial`, for a narrower reason
 than they carried: `applies_when` lives inside a rule, so an item answered by a person or
-a model cannot express applicability at all, and that class has no reader.
+a model could not express applicability at all. 0.98.0 gave that class `applies_if` and
+these lines were not updated until F04.
 
 VRD-11 left that list at 0.95.1, with the tree repaired rather than the record kept. Its
 four tests had all been written where the defect cannot appear — the prompt called with no

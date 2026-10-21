@@ -258,7 +258,9 @@ collapsing the two markers into one, which reddens the model row.
 
 A manual answer without a stated reason SHALL be refused, by id, and the refusal
 printed. A model's answer without a rationale MAY be accepted, and MUST be recorded as
-having none.
+having none. A model's `N/A` is the exception: it is the item's applicability declaration
+(`openspec/specs/verdicts/` VRD-3) and MUST name what was sought, so one without evidence is
+refused, by id, and the refusal printed, as a person's is (F04).
 
 **Why:** this asymmetry looks backwards and is deliberate. The manual pass is where an
 operator can quietly convert an inconvenient `FAIL` into a `PASS`, and requiring a written

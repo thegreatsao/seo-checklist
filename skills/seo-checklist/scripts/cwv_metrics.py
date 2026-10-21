@@ -119,6 +119,12 @@ def main() -> int:
     try:
         result = read(a.path)
     except ValueError as exc:
+        # A file the operator supplied that cannot be used: said in the one JSON
+        # document the runner reads, under the kind that sends the reader to the file
+        # rather than to this script (EVD-1, F04). A non-zero exit read as `crash`.
+        if a.json:
+            print(json.dumps({"error": str(exc), "error_kind": "input"}, indent=2))
+            return 0
         print(exc, file=sys.stderr)
         return 1
 

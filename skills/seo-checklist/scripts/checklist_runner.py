@@ -793,6 +793,21 @@ def scoring_stamp() -> str:
 SEVERITY_ALIAS = {"error": "high", "warning": "medium", "warn": "medium",
                   "info": "low", "notice": "low"}
 
+
+def normal_severity(word) -> str | None:
+    """The registry's word for a finding's severity, or None for one outside the vocabulary.
+
+    The one place a checker's word is translated (`openspec/specs/evidence/` EVD-2): every
+    rule and every measurement reads severities through this. Until F04 four call sites
+    spelled the translation out, and a word in neither set passed through as itself, so a
+    `none_severity` rule over an issue at `fatal` found no hit and said PASS.
+    """
+    if not isinstance(word, str):
+        return None
+    word = word.strip().lower()
+    word = SEVERITY_ALIAS.get(word, word)
+    return word if word in SEVERITIES else None
+
 # Why a `source: gsc` item stays undecided even with working credentials. None
 # of these is missing wiring: the Search Console API has no endpoint for manual
 # actions, the Index Coverage report, or mobile-usability signals — the last was
@@ -929,14 +944,12 @@ def evaluate(rule: dict, data: dict) -> tuple[bool | None, str]:
         return verdict, f"{rule['path']} absent (treated as {rule['missing_is']})"
 
     if "none_severity" in rule:
-        levels = {SEVERITY_ALIAS.get(s.lower(), s.lower()) for s in rule["none_severity"]}
+        levels = {normal_severity(s) for s in rule["none_severity"]} - {None}
         if value is _MISSING:
             return None, _absent(rule, data)
         entries = value if isinstance(value, list) else []
         hits = [it for it in entries
-                if isinstance(it, dict)
-                and SEVERITY_ALIAS.get(str(it.get("severity", "")).lower(),
-                                       str(it.get("severity", "")).lower()) in levels]
+                if isinstance(it, dict) and normal_severity(it.get("severity")) in levels]
         if hits:
             msg = hits[0].get("message") or hits[0].get("finding") or ""
             return False, f"{len(hits)} issue(s) at {'/'.join(sorted(levels))}: {msg[:120]}"
@@ -948,6 +961,14 @@ def evaluate(rule: dict, data: dict) -> tuple[bool | None, str]:
         if entries and not any(isinstance(it, dict) and "severity" in it for it in entries):
             return None, (f"{rule['path']} has {len(entries)} entr(y/ies) with no "
                           f"severity field — this rule cannot judge them")
+        # A word outside the vocabulary is caught, not read as "none of these" (EVD-2).
+        unknown = sorted({str(it["severity"]) for it in entries
+                          if isinstance(it, dict) and "severity" in it
+                          and normal_severity(it["severity"]) is None})
+        if unknown:
+            return None, (f"{rule['path']} carries severity {', '.join(map(repr, unknown))}, "
+                          f"which is none of critical/high/medium/low — this rule cannot "
+                          f"judge it")
         return True, f"no {'/'.join(sorted(levels))} issues"
 
     if "none_matching" in rule:
@@ -1199,12 +1220,9 @@ def measurement(rule: dict, data: dict) -> dict:
         if hits:
             out["sample"] = hits[0][:160]
     elif op == "none_severity":
-        levels = {SEVERITY_ALIAS.get(str(lvl).lower(), str(lvl).lower())
-                  for lvl in rule["none_severity"]}
+        levels = {normal_severity(lvl) for lvl in rule["none_severity"]} - {None}
         hits = [it for it in (value if isinstance(value, list) else [])
-                if isinstance(it, dict)
-                and SEVERITY_ALIAS.get(str(it.get("severity", "")).lower(),
-                                       str(it.get("severity", "")).lower()) in levels]
+                if isinstance(it, dict) and normal_severity(it.get("severity")) in levels]
         out["got"] = len(hits)
         out["want"] = 0
         out["kind"] = "issues"

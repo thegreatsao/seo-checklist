@@ -2117,6 +2117,17 @@ def build(titles: dict[int, str] | None = None,
     return out
 
 
+def registry_version_of(items: list[dict]) -> str:
+    """A content hash of the items, so a result file can say which registry it was
+    produced from. Without it, two runs whose item sets differ silently compare as if
+    they measured the same thing. One function, read by the generator and by
+    `tests/test_registry.py`, so the version is held to the items it describes and not
+    only to the generator's own output (`openspec/specs/registry/` REG-1, F04)."""
+    return hashlib.sha256(
+        json.dumps(items, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    ).hexdigest()[:12]
+
+
 def subject_is_declared_for_every_absence_passing_item(items: list[dict]) -> list[str]:
     """Every item that can pass by finding nothing has said what its subject is.
 
@@ -2319,12 +2330,7 @@ def main() -> int:
         for line in mismatched:
             print(line, file=sys.stderr)
         return 1
-    # A content hash of the items, so a result file can say which registry it was
-    # produced from. Without it, two runs whose item sets differ silently compare
-    # as if they measured the same thing.
-    registry_version = hashlib.sha256(
-        json.dumps(items, ensure_ascii=False, sort_keys=True).encode("utf-8")
-    ).hexdigest()[:12]
+    registry_version = registry_version_of(items)
     payload = {
         "version": 1,
         "registry_version": registry_version,

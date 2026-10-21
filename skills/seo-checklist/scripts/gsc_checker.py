@@ -104,16 +104,27 @@ SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
 # GSC client
 # ---------------------------------------------------------------------------
 
+class UnusableCredentials(OSError):
+    """The operator's side of Search Console could not be used: the `gsc` extra is not
+    installed, or the key file is not a service-account key. An `OSError` because every
+    caller already reads one as `input`, a credentials path that does not open. Until
+    F04 the first was `sys.exit(1)` and the second a traceback, and the runner called
+    both a broken script (`openspec/specs/evidence/` EVD-1)."""
+
+
 def build_service(credentials_path: str):
     """Build the Search Console API service."""
     if not HAS_GSC_DEPS:
-        print("Error: google-api-python-client and google-auth-oauthlib required.", file=sys.stderr)
-        print("Install with: pip install google-api-python-client google-auth-oauthlib", file=sys.stderr)
-        sys.exit(1)
-
-    creds = service_account.Credentials.from_service_account_file(
-        credentials_path, scopes=SCOPES
-    )
+        raise UnusableCredentials(
+            "google-api-python-client and google-auth-oauthlib required — "
+            "pip install google-api-python-client google-auth-oauthlib")
+    try:
+        creds = service_account.Credentials.from_service_account_file(
+            credentials_path, scopes=SCOPES
+        )
+    except ValueError as exc:  # not JSON, or JSON without a key's fields
+        raise UnusableCredentials(
+            f"{credentials_path} is not a service-account key: {exc}") from exc
     return build("searchconsole", "v1", credentials=creds)
 
 
@@ -401,7 +412,15 @@ def main():
     credentials_path = args.credentials or get_env("GSC_CREDENTIALS_PATH")
     if not credentials_path:
         parser.error("GSC credentials required. Pass --credentials <path> or set GSC_CREDENTIALS_PATH in your environment / .env file.")
-    service = build_service(credentials_path)
+    try:
+        service = build_service(credentials_path)
+    except OSError as exc:
+        if args.json:
+            print(json.dumps({"site_url": args.site_url, "error": str(exc)[:300],
+                              "error_kind": "input"}, indent=2))
+            return
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
 
     report = {
         "site_url": args.site_url,

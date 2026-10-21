@@ -119,6 +119,24 @@ class Merge(unittest.TestCase):
         self.assertEqual(n, 1)
         self.assertEqual(data["items"][0]["status"], NA)
 
+    def test_an_na_that_names_nothing_is_refused_from_either_answerer(self):
+        """`verdicts` VRD-3 (F04): an item answered by a person or a model cannot carry
+        `applies_when`, so its answer is where applicability is decided, and an `N/A`
+        must name what was sought. The model's merge took one with no rationale and
+        wrote "no rationale given"; the person's already refused it."""
+        for merge, status, source in ((merge_llm_answers, LLM_PENDING, "llm"),
+                                      (merge_manual_answers, MANUAL, "manual")):
+            for evidence in (None, "", "   "):
+                with self.subTest(merge=merge.__name__, evidence=evidence):
+                    data = results(item("AR-157", status, source=source))
+                    printed = io.StringIO()
+                    with contextlib.redirect_stderr(printed):
+                        n = merge(data, {"AR-157": {"status": NA, "evidence": evidence}})
+                    self.assertEqual(n, 0)
+                    self.assertEqual(data["items"][0]["status"], status)
+                    self.assertIn("AR-157", printed.getvalue(),
+                                  "the refusal is not printed, so the answer vanished")
+
 
 class Priority(unittest.TestCase):
     def test_cheap_work_outranks_equally_severe_expensive_work(self):
@@ -185,6 +203,19 @@ class Queue(unittest.TestCase):
         for name, output in (("html", render_html(data)), ("markdown", render_markdown(data))):
             with self.subTest(surface=name):
                 self.assertIn(f"Applies only if: {question}", output)
+
+    def test_the_question_reaches_the_queue_from_the_registry(self):
+        # Both tests above hand the renderer a row that already carries the question;
+        # this is the link before them, which nothing held (F04): the runner copies
+        # each rule-less item's `applies_if` from the registry onto its graded row.
+        items = [i for i in harness.registry()["items"] if i.get("applies_if")]
+        self.assertTrue(items)
+        rows = runner.grade(items, {}, {}, {}, False)
+        self.assertEqual({r["id"]: r.get("applies_if") for r in rows},
+                         {i["id"]: i["applies_if"] for i in items})
+        self.assertIn(f"Applies only if: {items[0]['applies_if']}",
+                      render_llm_queue(results(*[r for r in rows
+                                                 if r["status"] == LLM_PENDING])))
 
 
 class Localisation(unittest.TestCase):
@@ -690,6 +721,21 @@ class HistoryReachesTheFile(unittest.TestCase):
         html = render_html(data, Lang())
         self.assertIn("Since the previous audit", html)
         self.assertIn("+7", html, "the score movement is not shown")
+
+
+class EveryArtifactNamesItsRegistry(unittest.TestCase):
+    """`openspec/specs/registry/` REG-1's third scenario. F04 declared it held and it
+    was not: the Markdown line and the HTML footer could each drop the version with
+    every test green, and a report that names no version cannot be compared with any
+    other."""
+
+    def test_the_markdown_and_the_html_name_the_version(self):
+        data = scored_results(item("A", PASS), item("B", FAIL))
+        data["registry_version"] = "0123456789ab"
+        for name, output in (("markdown", render_markdown(data)),
+                             ("html", render_html(data))):
+            with self.subTest(surface=name):
+                self.assertIn("0123456789ab", output)
 
 
 class TheFixListIsMachineReadable(unittest.TestCase):

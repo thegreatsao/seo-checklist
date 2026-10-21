@@ -90,12 +90,21 @@ from the items themselves. Every artifact computed from it MUST carry that versi
 same population. A version a hand can set while the content moves is the failure this
 tree has already measured elsewhere; deriving it from the content is what makes the
 claim checkable.
-**Reader:** partial. `test_registry_is_versioned`, `test_ids_unique` and the item-count
-assertion pin the identity, and two changelog tests bind the version to the release
-record. But the *if and only if* is held by the generator and its byte-comparison
-(REG-2), not by any reader of this requirement: edit a title in the artifact and leave
-the version alone, and every reader named here stays green — only `--check` objects. A
-requirement whose substance is enforced by a different requirement's reader is partial.
+**Reader:** enforced, at F04. `test_registry_is_versioned`, `test_ids_unique` and the
+item-count assertion pin the identity, and two changelog tests bind the version to the
+release record. The *if and only if* is read here and not only by the generator's byte
+comparison (REG-2): `tests/test_registry.py::test_the_version_stamp_is_the_hash_of_the_items_it_ships_with`
+recomputes the version from the items on disk through the generator's own
+`registry_version_of`, and `test_any_field_of_any_item_moves_the_version` requires a
+title, a severity, an assertion or a removed item each to move it. This line had said a
+hand-edited title stayed green everywhere but `--check`; the first of those tests already
+existed and reddened on that edit, with a copy of the hash where the generator's function
+is now read. The third scenario was not held for two of its three surfaces: the payload's
+version is read by `tests/test_contract.py`'s comparison test, and the Markdown line and
+the HTML footer could each drop it with every test green, until
+`tests/test_report.py::EveryArtifactNamesItsRegistry`. Probed: a title edited in the
+artifact, the hash taken over the ids alone, and the version removed from the payload,
+the Markdown and the HTML — each reddens a named test.
 
 #### Scenario: an item changes and the version does not
 - **WHEN** a title, a severity or an assertion in the artifact differs from what the
@@ -1185,14 +1194,15 @@ five; REG-7 now says what a rule is, so the count above is taken over all three.
 
 | | requirements |
 |---|---|
-| **enforced** | REG-2, REG-3, REG-4, REG-5, REG-7, REG-8, REG-9, REG-10, REG-11, REG-12, REG-13 |
-| **partial** | REG-1, REG-6 |
+| **enforced** | REG-1, REG-2, REG-3, REG-4, REG-5, REG-7, REG-8, REG-9, REG-10, REG-11, REG-12, REG-13 |
+| **partial** | REG-6 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-R2 enforced; INV-R1, INV-R3 and INV-R4 partial.
 
-**Eleven enforced, two partial, none unread, none opposed, of thirteen.**
+**Twelve enforced, one partial, none unread, none opposed, of thirteen.** REG-1 moved at
+F04's second batch; REG-6 is F03's.
 
 `opposed` is a fourth category this document introduced and its column is empty now.
 REG-9 earned it: a fixed-membership test pinning the two existing applicability
