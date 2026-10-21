@@ -61,12 +61,18 @@ class OnePlaceTranslates(unittest.TestCase):
         # `severity_literals` is the gate's census of what a script can say, and passes a
         # word outside the vocabulary through on purpose, so the census sees it; nothing
         # a rule or a report reads goes through it.
-        readers = []
+        # Every read of the name, a module-level alias (`_A = SEVERITY_ALIAS`) included:
+        # one counted only inside functions let the alias carry the table out.
+        readers = set()
         for name, tree in sources(SCRIPTS, TOOLS):
+            inside = {}
             for fn in [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]:
-                if any(isinstance(n, ast.Name) and n.id == "SEVERITY_ALIAS"
-                       for n in ast.walk(fn)):
-                    readers.append(f"{name}:{fn.name}")
+                for n in ast.walk(fn):
+                    inside.setdefault(id(n), fn.name)
+            for n in ast.walk(tree):
+                if (isinstance(n, ast.Name) and n.id == "SEVERITY_ALIAS"
+                        and isinstance(n.ctx, ast.Load)):
+                    readers.add(f"{name}:{inside.get(id(n), '<module>')}")
         self.assertEqual(sorted(readers),
                          ["scripts/checklist_runner.py:normal_severity",
                           "tools/audit_assertions.py:severity_literals"])
@@ -74,7 +80,8 @@ class OnePlaceTranslates(unittest.TestCase):
     def test_no_other_mapping_turns_an_inherited_word_into_one_of_the_four(self):
         """A second table or a second translation, written under any name: a dict
         literal or a `dict(...)` call taking an inherited word to one of the four; a
-        branch on an inherited word that yields one of the four; and, in the runner and
+        branch on an inherited word (`if`, either arm, a ternary, a `match` case) that
+        yields one of the four; and, in the runner and
         the report, whose job is to read severities rather than to write them, any
         comparison against an inherited word. A checker comparing its own words to count
         them is not a translation and is not refused."""
@@ -110,7 +117,15 @@ class OnePlaceTranslates(unittest.TestCase):
                     hit = tests_inherited(node.test) and yields_four([node.body,
                                                                       node.orelse])
                 elif isinstance(node, ast.If):
-                    hit = tests_inherited(node.test) and yields_four(node.body)
+                    hit = tests_inherited(node.test) and yields_four([*node.body,
+                                                                      *node.orelse])
+                elif isinstance(node, ast.Match):
+                    hit = any(any(isinstance(c, ast.MatchValue)
+                                  and isinstance(c.value, ast.Constant)
+                                  and isinstance(c.value.value, str)
+                                  and c.value.value.lower() in inherited
+                                  for c in ast.walk(case.pattern))
+                              and yields_four(case.body) for case in node.cases)
                 elif (isinstance(node, ast.Compare)
                       and name in ("scripts/checklist_runner.py",
                                    "scripts/checklist_report.py")):

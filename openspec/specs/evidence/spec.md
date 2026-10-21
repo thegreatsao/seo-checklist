@@ -146,14 +146,17 @@ other one.
 and every rule and measurement reads severities through it; until F04 four call sites
 spelled it out, and a word in neither set passed through as itself.
 `tests/test_severity_vocabulary.py` reads the shipped scripts and `tools/`, whose gates
-read rule severities too: it requires `normal_severity` to be the only function that reads
-`SEVERITY_ALIAS` beside the gate's census below, and refuses a second translation written
+read rule severities too: it requires `normal_severity` to be the only reader of
+`SEVERITY_ALIAS` beside the gate's census below — in a function or at module level, so an
+alias of the table is a reader — and refuses a second translation written
 as a dict literal or a `dict(...)` call taking an inherited word onto one of the four, as
-a branch on an inherited word that yields one of the four, or, in the runner and the
+a branch on an inherited word that yields one of the four (either arm of an `if`, a
+ternary, a `match` case), or, in the runner and the
 report, as any comparison against an inherited word. A table assembled at run time, key by
 key, is not read. The review of F04's second batch found two translations left in
 `tools/audit_reachability.py` and a `dict(...)` table and a ternary the first scan let
-through; both readers now see them. A fifth word is caught
+through, and its second pass an `else` arm, a module-level alias and a `match` case;
+the readers now see all of them. A fifth word is caught
 on both sides. On the checker's, every literal severity a shipped script writes must
 translate, and a `none_severity` rule over an issue at a word outside the vocabulary is
 `NO_DATA` naming the word where it was `PASS`. On the rule's, `tools/audit_assertions.py`
