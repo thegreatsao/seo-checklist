@@ -892,8 +892,7 @@ makes two runs of the same site differ for reasons that are not about the site. 
 list is the right trade and it goes stale, so the staleness has to be visible — but a
 warning printed on runs where no property was derived is noise, and noise is how a warning
 stops being read.
-**Reader:** partial, and since 0.94.6 the remaining half is a limit of this suite rather
-than an omission. Four test functions pin the staleness computation: that the bundled
+**Reader:** enforced, at F04, for every clause. Four test functions pin the staleness computation: that the bundled
 snapshot declares its date, that the date is read from the header, and that a snapshot
 without one reports an unknown age. `TheStaleListThresholdIsANumberSomebodyChose` adds the
 threshold — a chosen number, per its own basis line, and one that could drift to a decade
@@ -901,15 +900,25 @@ with every test still green, which is the shape HTTP-4's rate and HTTP-10's two 
 before 0.94.1 — together with the floor under it: the shipped snapshot's date must still
 parse, since a number is only useful against a date that can be read.
 
-The "only when it decided something" clause has no reader and cannot get one here. The
-warning is printed on a run that derived a property *from the list*; every fixture in this
-suite is served on loopback, `127.0.0.1` is an address, an address has no registrable domain,
-so Search Console is skipped before the list is consulted. A test written against that
-fixture would pass because the branch was never reached, which is worse than no test — it
-was written, run, and deleted on 6 September 2026 for exactly that reason. What would settle
-it: a fixture reachable by name rather than by address. The guard tests fake that with
-`getaddrinfo` inside their own process; the runner is a subprocess, so it needs a mechanism
-this suite does not have.
+The "only when it decided something" clause had no reader until F04, and this line said it
+could not get one: every fixture is served on loopback, `127.0.0.1` is an address, an address
+has no registrable domain, so Search Console is skipped before the list is consulted, and a
+test written against that fixture passed without reaching the branch (written, run, and
+deleted on 6 September 2026 for that reason). The mechanism it lacked is
+`tests/named_host_runner.py`: the real runner, in its own process, with a served fixture
+resolved under a name and the host not taken for one only this machine reaches.
+`tests/test_public_suffix_decay.py` runs it five ways and reads stderr, the results file and
+both reports: a property derived from a list dated 2020 says how old (`ADerivedPropertyOverAStaleList`);
+a property the operator named, a run with no Search Console, and a fresh list that decided
+the property say nothing (`AListThatDecidedNothing`); an undated list says its age is unknown
+(`AListThatCannotSayWhenItWasTaken`). Measuring it found two gaps in shipped behaviour, both
+repaired with the tests red first: an unreadable date was age `-1`, under any threshold, so the
+run said nothing — "we cannot tell" read as "fresh", which the second scenario forbids; and the
+warning reached stderr only, never the report a reader of the run is handed (now
+`w_psl_stale` and `w_psl_undated`, `reporting` REP-3). Probed by mutation: the undated branch
+off, the threshold dropped to "any age", the condition reduced to either half of "credentials
+and no named property", the record field emptied and the report branch removed each redden a
+named test.
 
 #### Scenario: the list is read from disk, never fetched
 - **WHEN** a property is derived on a machine with no route to the outside
@@ -1077,14 +1086,15 @@ the one `openspec/specs/evidence/` A.4 states: a test can exercise something wit
 
 | | requirements |
 |---|---|
-| **enforced** | INP-1, INP-2, INP-3, INP-4, INP-5, INP-6, INP-7, INP-8, INP-9 |
-| **partial** | INP-10 |
+| **enforced** | INP-1, INP-2, INP-3, INP-4, INP-5, INP-6, INP-7, INP-8, INP-9, INP-10 |
+| **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-I3 enforced; INV-I1 and INV-I2 partial; INV-I4 unread.
 
-**Nine enforced, one partial, nothing unread, of ten.**
+**Ten enforced, nothing partial, nothing unread, of ten.** INP-10 moved at F04, when a
+fixture could be audited by name.
 
 The split fell along one line, and it was not the line effort would predict. Both enforced
 requirements were about a *file* — is it about this page, is it applied to the right page.

@@ -428,20 +428,23 @@ reader assume it was.
 other about being ingested — and averaging them answers neither. And a user agent string is
 a claim by the client: counting unverified claims as crawler traffic is how a log audit
 reports a bot problem that is somebody's scraper.
-**Reader:** partial, and for a sharper reason than this line carried. The separation is
+**Reader:** enforced, at F04, once the caveat reached the report. The separation is
 implemented and exercised, the opt-in flag exists, and the caveat itself *is* asserted:
 `test_the_user_agent_is_reported_as_a_claim` and
 `test_nothing_asks_dns_unless_the_operator_asked_for_it` both redden when `bot_identity`
 stops saying the identity is unverified — probed at 0.97.0, CAUGHT by both.
 
-**What is unread is not the label but its journey.** `bot_identity` is written on every
-run and read by nothing: `grep` over `checklist_report.py` and `checklist_runner.py`
-returns no hit for it, so the sentence saying these counts are a claim rather than a
-measurement reaches no report surface at all. The second scenario below is therefore
-violated by shipped behaviour rather than merely unasserted — a reader of the deliverable
-is not told, because nothing tells them. The repair is a provenance warning beside the
-parser and the cache (`openspec/specs/reporting/` REP-3's table), which is a change to the
-report rather than to this checker and is not made here.
+**What was unread until F04 was not the label but its journey.** `bot_identity` was
+written on every run and read by nothing, so the sentence saying these counts are a claim
+reached no report surface, and the second scenario below was violated by shipped behaviour.
+The repair is the provenance warning this line asked for: the runner records
+`log_crawlers_claimed` when a log was read and its crawlers taken at their word, and both
+reports carry `w_log_claimed` (`openspec/specs/reporting/` REP-3's table).
+`tests/test_crawler_claim.py` holds it from the log through the runner to both reports
+(`test_both_reports_of_a_run_with_an_unverified_log_say_so`), and its absence when the
+addresses were verified (`test_a_verified_log_is_not`) or no log was read. Probed: the record
+taking any `bot_identity` as a claim, the record field emptied, and the report branch removed
+each redden a named test.
 
 #### Scenario: two kinds of crawler in one log
 - **WHEN** a log contains both search-engine and AI-crawler requests
@@ -777,14 +780,15 @@ were.
 
 | | requirements |
 |---|---|
-| **enforced** | EVD-3, EVD-4, EVD-5, EVD-6, EVD-7, EVD-8, EVD-9, EVD-11 |
-| **partial** | EVD-1, EVD-2, EVD-10 |
+| **enforced** | EVD-3, EVD-4, EVD-5, EVD-6, EVD-7, EVD-8, EVD-9, EVD-10, EVD-11 |
+| **partial** | EVD-1, EVD-2 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-E1 and INV-E2 enforced; INV-E3 and INV-E4 partial.
 
-**Eight enforced, three partial, none unread, of eleven.**
+**Nine enforced, two partial, none unread, of eleven.** EVD-10 moved at F04, when its
+caveat reached the report.
 
 **Probed at 0.148.0:** EVD-11, written with its tests and broken afterwards. And at
 0.152.0, on the recognised templates: eight breakages of that reading, each seen on the

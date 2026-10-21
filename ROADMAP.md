@@ -38,8 +38,8 @@ it was last written:
 | | count | what it means |
 |---|---|---|
 | requirements | 158 | across 12 documents |
-| enforced | 132 | held by something that fails when the requirement is violated |
-| partial | 21 | held for part of what the requirement says |
+| enforced | 136 | held by something that fails when the requirement is violated |
+| partial | 17 | held for part of what the requirement says |
 | unread | 1 | held by nothing — `declarations` DEC-1 |
 | bounded | 4 | the subject is outside the program; no test could observe a violation |
 
@@ -148,8 +148,10 @@ modules read; no number is bound by both. It is narrower than the ask it answers
 2. **REG-6's second reader** — the readings exist and are held against the registry;
    what would close the row is a check of whether each reading is true that is not the
    word of the person who wrote it.
-3. **The 21 `partial` requirements and DEC-1**, each either held or narrowed to what is
-   held.
+3. **The 17 `partial` requirements and DEC-1**, each either held or narrowed to what is
+   held. F04 is under way, a batch per specification, each with its contract
+   (`docs/sprint-20261021-F04-*.md`): its first held HTTP-10, HTTP-13, INP-10 and EVD-10 in full,
+   each on mutation of the clause that had kept it down; REG-6 stays F03's.
 4. **The 143 unclaimed assertions**, reduced by extending the detectors
    `audit_reachability.py` already has rather than by asserting reachability in prose.
 5. **The census's 1 and 23**: the 23 each name the outside service or key they wait for

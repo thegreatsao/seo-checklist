@@ -449,6 +449,12 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
         summary = summarize_http_to_https([variant["outcome"] for variant in variants])
         if summary is not None:
             result["http_to_https"] = summary
+        else:
+            unread = [v for v in variants if v["outcome"] == "unread"]
+            if unread and all(v.get("error_kind") == "blocked" for v in unread):
+                # Withheld because this audit's guard refused every variant it did
+                # not read; the runner keeps one kind per result (HTTP-13, F04).
+                result["withheld"] = {"http_to_https": "blocked"}
 
         recommend_redirect = False
         for variant in variants:

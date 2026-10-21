@@ -413,6 +413,10 @@ click-to-call), `ecommerce` at 2 (price markup), confidence `high`.
 `uptime.status` — int
 `uptime.response_ms` — int
 `uptime.error` — str | null
+`uptime.error_kind` — str — `blocked` when this audit's guard refused the request; `reachable`
+  is then absent, not false
+`withheld` — object — `{"uptime.reachable": "blocked"}` when that request was refused, so
+  the runner records TE-167's NO_DATA with the guard's kind (F04, HTTP-13); absent otherwise
 `safe_browsing.checked` — bool
 `safe_browsing.error` — str
 `whois.checked` — bool
@@ -1681,6 +1685,9 @@ to walk `rows[].decisions` directly; there is no aggregate to assert against.
   first `https://` Location, which is not requested. Empty for a page whose own read
   ended on `http://`, and for `not_listening` / `unread`
 `http_variants[].error` — str | null — why an address is `unread`
+`withheld` — object — `{"http_to_https": "blocked"}` when `http_to_https` is absent because
+  this audit's guard refused every address left `unread`, so the runner records SE-117's NO_DATA
+  with the guard's kind (F04, HTTP-13); absent otherwise
 `page_security` — str — what a browser does to the page, worst first: `plain_http` (the
   page itself ended on http://), `blocked_content` (a blockable request over http://),
   `upgraded_content` (only upgradable ones), `secure`. From 0.121.0; TE-175 reads it

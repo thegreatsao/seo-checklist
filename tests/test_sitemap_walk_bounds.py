@@ -236,6 +236,61 @@ class SizeBudget(unittest.TestCase):
         self.assertLess(peak, 150_000_000, f"peak {peak:,} bytes")
 
 
+class TheProtocolLimitIsItsOwnNumber(unittest.TestCase):
+    """HTTP-10 (F04): the decompression limit tested by the number sitemaps.org gives,
+    not by memory. The review of 0.172.0 replaced the bounded read with
+    `read(60_000_001)` and both tests above stayed green: a limit anywhere under about
+    150 MB meets a memory ceiling. The literal is written here rather than read off
+    `seo_common`, so a constant moved away from the protocol reddens too.
+    """
+
+    LIMIT = 52_428_800      # sitemaps.org: 50 MB uncompressed
+
+    @staticmethod
+    def wire(size: int) -> str:
+        """A gzipped urlset with one URL that expands to exactly `size` bytes."""
+        head = f'<urlset xmlns="{NS}"><url><loc>{SITE}a</loc></url><!--'.encode()
+        tail = b"--></urlset>"
+        body = head + b"x" * (size - len(head) - len(tail)) + tail
+        assert len(body) == size
+        return gzip.compress(body, compresslevel=1).decode("latin1")
+
+    def test_a_sitemap_of_exactly_the_limit_is_read(self):
+        parsed = seo_common.parse_sitemap_xml(self.wire(self.LIMIT),
+                                              SITE + "sitemap.xml.gz")
+        self.assertEqual(parsed["type"], "urlset", parsed.get("error"))
+        self.assertEqual([row["loc"] for row in parsed["urls"]], [SITE + "a"])
+
+    def test_one_byte_past_the_limit_is_refused_naming_it(self):
+        parsed = seo_common.parse_sitemap_xml(self.wire(self.LIMIT + 1),
+                                              SITE + "sitemap.xml.gz")
+        self.assertEqual(parsed["type"], "invalid")
+        self.assertIn(f"{self.LIMIT}", parsed["error"])
+
+    def test_no_more_than_the_limit_and_one_byte_is_ever_expanded(self):
+        # 200 MB of comment behind 0.9 MB on the wire, read through a reader that
+        # counts what it hands back: the bytes expanded, which is what the limit bounds.
+        packer = zlib.compressobj(1, zlib.DEFLATED, 31)
+        parts = [packer.compress(f'<urlset xmlns="{NS}"><!--'.encode())]
+        parts += [packer.compress(b"x" * 1_000_000) for _ in range(200)]
+        parts += [packer.compress(b"--></urlset>"), packer.flush()]
+        wire = b"".join(parts).decode("latin1")
+        expanded = []
+
+        class Counted(gzip.GzipFile):
+            def read(self, size=-1):
+                out = super().read(size)
+                expanded.append(len(out))
+                return out
+
+        with mock.patch.object(seo_common.gzip, "GzipFile", Counted):
+            parsed = seo_common.parse_sitemap_xml(wire, SITE + "sitemap.xml.gz")
+        self.assertEqual(parsed["type"], "invalid")
+        self.assertTrue(expanded, "the reader was not the one counted")
+        self.assertLessEqual(sum(expanded), self.LIMIT + 1,
+                             f"{sum(expanded):,} bytes expanded")
+
+
 class OffHostSitemaps(unittest.TestCase):
 
     def test_the_crawl_requests_no_sitemap_off_the_audited_host(self):
@@ -261,6 +316,55 @@ class OffHostSitemaps(unittest.TestCase):
         out = site_crawl.load_sitemap_urls(SITE, [root], fetch=fetch)
         self.assertEqual(fetch.requested, [root, www, plain])
         self.assertEqual(out["off_host_sitemaps"], [])
+
+    # The same clause for the other three paths that read a sitemap (F04). Until then
+    # only the crawl was asked: a checker, matrix or fallback that refused the `www.`
+    # variant left every test here green.
+    WWW = "https://www.site.example/www.xml"
+    PLAIN = "http://site.example/plain.xml"
+
+    def test_the_checker_reads_the_www_variant_and_the_other_scheme_as_its_own(self):
+        root = SITE + "sitemap.xml"
+        checker = SitemapChecker({root: index([self.WWW, self.PLAIN]),
+                                  self.WWW: urlset([SITE + "a"]),
+                                  self.PLAIN: urlset([SITE + "b"])})
+        out = checker.run([root])
+        self.assertEqual(checker.fetch.requested, [root, self.WWW, self.PLAIN])
+        self.assertEqual(out["off_host_sitemaps"], [])
+
+    def test_the_matrix_reads_the_www_variant_and_the_other_scheme_as_its_own(self):
+        import indexability_matrix as ix
+        declared = [self.WWW, self.PLAIN]
+        fetch = Documents({self.WWW: urlset([SITE + "a"]),
+                           self.PLAIN: urlset([SITE + "b"])})
+        with mock.patch.object(ix, "fetch_url", fetch), \
+                mock.patch.object(ix, "discover_sitemap_urls",
+                                  lambda *a, **k: declared):
+            found = ix.urls_from_sitemaps(SITE, 15)
+        self.assertEqual(fetch.requested, declared)
+        self.assertEqual(sorted(found or ()), [SITE + "a", SITE + "b"])
+
+    def test_the_sample_fallback_reads_a_www_child_and_the_other_scheme_as_its_own(self):
+        import checklist_runner
+        import lib.safe_http as safe_http
+        asked = []
+        docs = {SITE + "sitemap.xml": index([self.WWW, self.PLAIN]),
+                self.WWW: urlset([SITE + "a"]), self.PLAIN: urlset([SITE + "b"])}
+
+        def get(url, **_kwargs):
+            asked.append(url)
+            if url in docs:
+                return mock.Mock(text=docs[url])
+            raise OSError("not served")
+
+        stderr = io.StringIO()
+        with mock.patch.object(safe_http, "safe_get", get), \
+                mock.patch.object(safe_http, "robots_allows", return_value=(True, "")), \
+                contextlib.redirect_stderr(stderr):
+            found = checklist_runner.discover_urls(SITE, 5)
+        self.assertEqual(asked, [SITE + "sitemap.xml", self.WWW, self.PLAIN])
+        self.assertNotIn("another host", stderr.getvalue())
+        self.assertEqual(found, [SITE.rstrip("/"), SITE + "a", SITE + "b"])
 
     def test_the_checker_requests_no_sitemap_robots_txt_names_on_another_host(self):
         declared = "https://third.example:8443/sitemap.xml"

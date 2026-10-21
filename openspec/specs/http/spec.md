@@ -736,10 +736,17 @@ unkept; and a compressed body SHALL be expanded no further than the protocol all
 counts elements would answer confidently about a page that does not exist. The same is true
 of a mis-decoded one: a page read as ISO-8859-1 has different text, different word counts
 and different headings.
-**Reader:** partial — the decompression limit is held only as a memory ceiling. A review of
-0.172.0 (gpt-6.1-sol, 20 October) replaced the bounded read with `read(60_000_001)`, past the
-protocol's 52,428,800, and every test stayed green: the gzip tests require the document invalid
-and the peak under 150 MB, which a limit anywhere below about 150 MB also meets. Everything else
+**Reader:** enforced, at F04. The decompression limit was held only as a memory ceiling until
+then: a review of 0.172.0 (gpt-6.1-sol, 20 October) replaced the bounded read with
+`read(60_000_001)`, past the protocol's 52,428,800, and every test stayed green, since the gzip
+tests require the document invalid and the peak under 150 MB, which a limit anywhere below about
+150 MB also meets. `tests/test_sitemap_walk_bounds.py` `TheProtocolLimitIsItsOwnNumber` now tests
+the limit by its own number, written as sitemaps.org's literal rather than read off the code:
+`test_a_sitemap_of_exactly_the_limit_is_read` (52,428,800 bytes expanded parse, with their URL),
+`test_one_byte_past_the_limit_is_refused_naming_it`, and
+`test_no_more_than_the_limit_and_one_byte_is_ever_expanded`, which counts the bytes the gzip
+reader hands back over a 200 MB expansion. Probed: `read(60_000_001)` reddens the third, `>`
+read as `>=` the first, the constant set to 60,000,000 the second and third. Everything else
 below is held. The cap raises rather than truncating, and a smaller cap is asserted to
 cost a real refetch. The encoding recovery is covered thoroughly — fourteen tests over
 header-versus-meta precedence, BOMs, XML declarations, commented-out metas, and a
@@ -972,9 +979,19 @@ an unread one is not a defect, and a checker that said "No sitemap found" for it
 a clean set over it, would be reporting the part it read as the whole. The port rule sits in
 the guard because the guard is the one place every request passes: a same-host rule on
 redirects would not have closed it, since a page can link to the port directly.
-**Reader:** partial — one clause is held on fewer paths than it names. The `www.` variant
-is held as the same site only for the crawl: a checker changed to refuse it leaves every
-`OffHostSitemaps` test green. The rest is held. `tests/test_port_refusal_census.py` holds the
+**Reader:** enforced, at F04. Until then one clause was held on fewer paths than it names:
+the `www.` variant was held as the same site only for the crawl, and a checker changed to
+refuse it left every `OffHostSitemaps` test green. Now
+`test_the_checker_reads_the_www_variant_and_the_other_scheme_as_its_own`,
+`test_the_matrix_reads_the_www_variant_and_the_other_scheme_as_its_own` and
+`test_the_sample_fallback_reads_a_www_child_and_the_other_scheme_as_its_own` hold it on the
+other three paths; each reddens when that path alone refuses the variant or compares the scheme.
+And a script about several subjects kept the guard's kind for none of them: SE-117 and TE-167
+were `NO_DATA` with no kind when the http variant's or the uptime request was refused, which the
+third scenario does not allow. `test_port_refusal_census.OneKindPerField` holds the repair — a
+script names the kind of the field it withheld (`withheld`), and the runner records it for the
+item asserting on that field, only when the field is absent — and `ThePageItselfIsRefused` now
+requires TE-167's row `blocked` too. The rest is held. `tests/test_port_refusal_census.py` holds the
 `blocked` clause on every path a script reaches: `ThePageItselfIsRefused` runs every job the
 registry plans with its page on another port and requires each row it feeds to be `NO_DATA`,
 never `unread` or `crash` and, where the script failed, `blocked` under its label;
@@ -1035,10 +1052,12 @@ auditing a staging site on `:8080` by hand is not refused; a public deployment s
 `indexability_matrix` names an off-host sitemap only in `sitemap_membership_unknown`, and no
 item reads it; `--sample`'s fallback names one on stderr only. A page the guard refused leaves
 the crawl `truncated`, so the site-wide items withhold their clean verdict; a page that timed
-out does not, and is a partial crawl rather than a refusal's kind. `domain_safety_check` reads
-several subjects in one result, so its refused uptime request is NO_DATA by an absent key
-rather than `blocked`, and `security_headers` names `blocked` on its refused http variant's row
-while SE-117 is NO_DATA the same way: the runner keeps one kind per result. Run by hand only,
+out does not, and is a partial crawl rather than a refusal's kind — not a refusal, so not this
+requirement's; whether a clean site-wide verdict over it should be withheld is `verdicts` VRD-14's
+question, put to the owner in F04. `domain_safety_check` and `security_headers` each read several
+subjects in one result, and until F04 their refused uptime request and http variant left TE-167
+and SE-117 NO_DATA by an absent key with no kind, the runner keeping one kind per result; both
+now name the kind of the field they withheld. Run by hand only,
 and not held: `parse_html.py --fetch`, `detect_profile.py` with a URL,
 `canonical_checker.py --check-targets`.
 
@@ -1258,14 +1277,16 @@ the error this method leaves open, and the halves are where to look first.
 
 | | requirements |
 |---|---|
-| **enforced** | HTTP-1, HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-7, HTTP-8, HTTP-9, HTTP-11, HTTP-12 |
-| **partial** | HTTP-10, HTTP-13 |
+| **enforced** | HTTP-1, HTTP-2, HTTP-3, HTTP-4, HTTP-5, HTTP-6, HTTP-7, HTTP-8, HTTP-9, HTTP-10, HTTP-11, HTTP-12, HTTP-13 |
+| **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-H2 and INV-H3 enforced; INV-H1 and INV-H4 partial.
 
-**Eleven enforced, two partial, nothing unread, of thirteen.** HTTP-10 and HTTP-13 moved to
+**Thirteen enforced, nothing partial, nothing unread, of thirteen.** HTTP-10 and HTTP-13
+returned to `enforced` in F04, each on mutation of the clause that had kept it down (their Reader
+lines name the probes). They had moved to
 `partial` in 0.172.0: the review of that release mutated three clauses their Reader lines called
 held — the decompression limit raised past the protocol's, `www.` refused by the checker, a port
 refusal reported as something other than `blocked` by two scripts — and no test went red.

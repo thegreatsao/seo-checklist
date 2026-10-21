@@ -98,6 +98,7 @@ def check_uptime(url: str, timeout: int) -> dict:
             # request (HTTP-13), and `reachable: false` would fail TE-167 on it.
             # Absent, not null, which TE-167's truthy rule would also fail.
             del out["reachable"]
+            out["error_kind"] = "blocked"
     return out
 
 
@@ -266,6 +267,10 @@ def check(url: str, timeout: int = 20) -> dict:
         }
 
     up = result["uptime"]
+    if up.get("error_kind") == "blocked":
+        # Named for the runner, which keeps one kind per result: TE-167 reads this
+        # field, and the other subjects here were asked (HTTP-13, F04).
+        result["withheld"] = {"uptime.reachable": "blocked"}
     if up.get("reachable") is False:
         result["issues"].append({
             "severity": "critical",

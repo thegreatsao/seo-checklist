@@ -886,6 +886,33 @@ def provenance_warnings(data: dict, L: "Lang | None" = None) -> list[str]:
                        "client-rendered, or behind bot protection this tool does not "
                        "recognise, the page-level verdicts describe an empty shell.")
                    .format(words=data.get("entry_visible_words")))
+    # CI-018 counts crawlers by what each request calls itself. The log audit has said
+    # so on every run and nothing carried it here (EVD-10, F04).
+    if data.get("log_crawlers_claimed"):
+        out.append(L.t("w_log_claimed",
+                       "The crawler counts from the server log take each request's "
+                       "User-Agent at its word: a scraper calling itself Googlebot is "
+                       "counted as Googlebot. Confirming the addresses needs a reverse "
+                       "DNS lookup (--verify-bots), which this run did not make."))
+    # The Search Console property was built from the bundled public suffix list, and
+    # the list is old or cannot say when it was taken (INP-10, F04): a suffix
+    # registered since would give a property nobody owns, which answers nothing.
+    stale = data.get("public_suffix_stale")
+    if stale:
+        if stale.get("age_days") is None:
+            out.append(L.t("w_psl_undated",
+                           "The Search Console property was derived from the bundled "
+                           "public suffix list, which carries no readable date, so how "
+                           "old it is is unknown. Empty Search Console results may mean "
+                           "the property is wrong; pass --gsc-property to name it."))
+        else:
+            out.append(L.t("w_psl_stale",
+                           "The Search Console property was derived from a public "
+                           "suffix list taken {taken}, {days} days ago. A suffix "
+                           "registered since would give a property nobody owns, so "
+                           "empty Search Console results may mean the property is "
+                           "wrong; pass --gsc-property to name it.")
+                       .format(taken=stale.get("taken"), days=stale.get("age_days")))
     # Eight items can be decided from a file the operator measured in a browser
     # instead of from anything this run observed. The verdict is only as good as
     # that file, and a reader looking at "LCP 820 ms — PASS" has no way to tell it

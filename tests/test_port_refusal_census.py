@@ -192,10 +192,12 @@ class ThePageItselfIsRefused(unittest.TestCase):
         # A census that refused nothing would pass every assertion below.
         self.assertGreaterEqual(len(self.rows), 35, sorted(self.rows))
 
-    # The one script whose result is about several subjects (the page's uptime, whois,
-    # the neighbours' addresses): the runner keeps one kind per result, so its refused
-    # uptime is NO_DATA by an absent key, not `blocked` (narrowed in F14's review).
-    SEVERAL_SUBJECTS = {"domain_safety_check.py"}
+    # The one script whose result is about several subjects: the page's uptime, which
+    # the guard refuses here and TE-167 reads, and Safe Browsing, whois and the
+    # neighbours' addresses, which are not the page (no key, no programs here). Its
+    # other items are NO_DATA for those reasons, not for the refusal. Until F04 TE-167
+    # was among them: the runner kept one kind per result (narrowed in F14's review).
+    OTHER_SUBJECTS = {"SE-114", "SE-116", "TE-171", "TE-178", "TE-179"}
 
     def test_no_refused_page_is_graded_or_called_unread_or_a_crash(self):
         wrong = [describe(row) for rows in self.rows.values() for row in rows
@@ -205,8 +207,10 @@ class ThePageItselfIsRefused(unittest.TestCase):
 
     def test_every_row_a_refused_page_feeds_says_blocked(self):
         # O1 says `blocked`, and a row with no kind at all satisfied the test above.
+        self.assertIn("TE-167", [row["id"] for row in
+                                 self.rows.get("domain_safety_check.py", [])])
         wrong = [describe(row) for script, rows in self.rows.items()
-                 if script not in self.SEVERAL_SUBJECTS for row in rows
+                 for row in rows if row["id"] not in self.OTHER_SUBJECTS
                  if row.get("error_kind") != "blocked"]
         self.assertEqual(wrong, [], "\n".join(wrong))
 
@@ -637,6 +641,82 @@ class FoundByTheReviewOf0173(unittest.TestCase):
             out = ix.evaluate(["https://site.example/page"], "https://site.example/")
         self.assertIsNone(out["rows"][0]["in_sitemap"])
         self.assertIn("robots.txt gave no answer", out["sitemap_membership_unknown"])
+
+
+def graded_row(item_id: str, script: str, output: dict) -> dict:
+    """The row `checklist_runner.grade` writes for one item over one script result."""
+    with open(REGISTRY, encoding="utf-8") as f:
+        item = next(i for i in json.load(f)["items"] if i["id"] == item_id)
+    key = (script, ("https://site.example/",))
+    return cr.grade([item], {key: [item_id]}, {key: output}, {}, False)[0]
+
+
+class OneKindPerField(unittest.TestCase):
+    """HTTP-13 (F04): a script whose result is about several subjects withholds the
+    field whose request the guard refused, and the item reading that field was
+    `NO_DATA` with no kind at all — the runner kept one kind per result. The
+    requirement says the item it decides is `NO_DATA` with the kind `blocked`. A
+    script now names the kind of a field it withheld (`withheld`), and the runner
+    reads it for the item asserting on that field, only when the field is absent.
+    """
+
+    def test_se_117_with_its_http_variant_refused_says_blocked(self):
+        import security_headers
+        page = mock.Mock(status_code=200, url="https://site.example/",
+                         headers={"Content-Type": "text/html; charset=utf-8"},
+                         text="<html><head><title>t</title></head><body>x</body></html>")
+
+        def get(url, **_kwargs):
+            if url.startswith("http://"):
+                raise port_refusal(url)
+            return page
+
+        with mock.patch.object(security_headers, "safe_get", side_effect=get):
+            out = security_headers.check_security_headers("https://site.example/")
+        self.assertNotIn("http_to_https", out)
+        row = graded_row("SE-117", "security_headers.py", out)
+        self.assertEqual((row["status"], row.get("error_kind")), ("NO_DATA", "blocked"),
+                         describe(dict(row, script="security_headers.py")))
+        self.assertTrue(row["evidence"].startswith(cr.kind_label("blocked")), row["evidence"])
+
+    def test_te_167_with_its_uptime_request_refused_says_blocked(self):
+        import domain_safety_check as dsc
+        with mock.patch.object(dsc, "is_private_host", return_value=True), \
+                mock.patch.object(dsc, "safe_get", side_effect=port_refusal()):
+            out = dsc.check("https://site.example/")
+        self.assertNotIn("reachable", out["uptime"])
+        row = graded_row("TE-167", "domain_safety_check.py", out)
+        self.assertEqual((row["status"], row.get("error_kind")), ("NO_DATA", "blocked"),
+                         describe(dict(row, script="domain_safety_check.py")))
+
+    def test_a_named_kind_does_not_reach_an_item_whose_field_was_read(self):
+        # The kind is read only for an absent field: a script naming one for a field
+        # it did write cannot turn that field's verdict into a refusal.
+        out = {"url": "https://site.example/", "http_to_https": "permanent",
+               "withheld": {"http_to_https": "blocked"}}
+        row = graded_row("SE-117", "security_headers.py", out)
+        self.assertEqual((row["status"], row.get("error_kind")), ("PASS", None))
+        # Written and undecidable is the script's own answer, not the guard's.
+        out["http_to_https"] = "sideways"
+        row = graded_row("SE-117", "security_headers.py", out)
+        self.assertEqual((row["status"], row.get("error_kind")), ("NO_DATA", None))
+
+    def test_a_field_absent_for_another_reason_carries_no_kind(self):
+        # The http variant timed out: withheld, and not by the guard.
+        import security_headers
+        page = mock.Mock(status_code=200, url="https://site.example/",
+                         headers={"Content-Type": "text/html"}, text="<html></html>")
+
+        def get(url, **_kwargs):
+            if url.startswith("http://"):
+                raise sh.requests.exceptions.ReadTimeout("read timed out")
+            return page
+
+        with mock.patch.object(security_headers, "safe_get", side_effect=get):
+            out = security_headers.check_security_headers("https://site.example/")
+        row = graded_row("SE-117", "security_headers.py", out)
+        self.assertEqual(row["status"], "NO_DATA")
+        self.assertNotEqual(row.get("error_kind"), "blocked")
 
 
 if __name__ == "__main__":

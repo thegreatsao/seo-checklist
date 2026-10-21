@@ -1460,7 +1460,9 @@ name. A column called `url` would be read as "fix this page".
   and this project does not make those without being asked. Three crawlers —
   DuckDuckBot, SeznamBot, PetalBot — publish address ranges rather than a DNS
   convention, so they answer `no_published_rule` and remain claims even with the flag;
-  inventing a rule for them would report every visit they make as forged.
+  inventing a rule for them would report every visit they make as forged. Until F04 the
+  claim was said only in the script's output, which nothing read; both reports now say it
+  beside the other provenance caveats (`w_log_claimed`, `evidence` EVD-10).
   <!-- ki: verify-bots-and-the-default-claim -->
 - **The rendered-page artifacts are the one input that cannot be checked by
   re-measuring**, and 0.15.0 got as close as that allows. 0.7.0 closed the part that

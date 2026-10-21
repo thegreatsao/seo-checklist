@@ -1490,6 +1490,21 @@ def synthetic_metrics(results: dict) -> list:
     return sorted(out)
 
 
+def crawlers_claimed(results: dict) -> bool | None:
+    """True when a server log was read and its crawlers were taken at their word.
+
+    `server_log_audit.py` says so in `bot_identity` on every run, and until F04 nothing
+    read it, so CI-018's crawler counts reached the report as measurements
+    (`openspec/specs/evidence/` EVD-10). None when no log was read or its addresses
+    were confirmed with `--verify-bots`.
+    """
+    for key, payload in results.items():
+        if (key[0] == "server_log_audit.py" and isinstance(payload, dict)
+                and str(payload.get("bot_identity", "")).startswith("claimed")):
+            return True
+    return None
+
+
 def gsc_opportunities(results: dict) -> list:
     """The `opportunities[]` gsc_checker.py found, lifted out of its payload.
 
@@ -1719,7 +1734,16 @@ def grade(items: list[dict], plan: dict, results: dict, skipped: dict,
                     else:
                         row["measure"] = measurement(it["check"]["assert"], data)
                         ok, ev = evaluate(it["check"]["assert"], data)
-                        if ok is None:
+                        path = it["check"]["assert"].get("path", "")
+                        if (ok is None and resolve(data, path) is _MISSING
+                                and (data.get("withheld") or {}).get(path)
+                                == GUARD_REFUSED):
+                            # A script about several subjects withholds the one field
+                            # whose request our guard refused and names it (HTTP-13,
+                            # F04): one kind per result left this row with none.
+                            row.update(status=NO_DATA, error_kind=GUARD_REFUSED,
+                                       evidence=f"{GUARD_LABEL}: {ev}"[:200])
+                        elif ok is None:
                             row.update(status=NO_DATA, evidence=ev)
                         elif (ok and passes_by_absence(it["check"]["assert"])
                               and input_truncated(data)):
@@ -3770,12 +3794,23 @@ def main() -> int:
         gsc_path = ""
     if gsc_path and not a.quiet:
         print(f"  GSC property: {gsc_property}", file=sys.stderr)
-        # Only when a property was actually derived from the list: a stale snapshot
-        # is missing suffixes registered since it was taken, and the only symptom
-        # is a property that answers nothing.
-        if not a.gsc_property:
-            taken, age = psl_staleness()
-            if age > PSL_STALE_DAYS:
+    # Only when a property was actually derived from the list: a stale snapshot is
+    # missing suffixes registered since it was taken, and the only symptom is a
+    # property that answers nothing. An unreadable date is said too, never read as
+    # fresh (INP-10); and it goes into the record, so the report says it (F04).
+    psl_stale = None
+    if gsc_path and not a.gsc_property:
+        taken, age = psl_staleness()
+        if age < 0:
+            psl_stale = {"taken": None, "age_days": None}
+            if not a.quiet:
+                print("  public suffix list snapshot carries no readable date, so its "
+                      "age is unknown; refresh it with "
+                      "tools/refresh_public_suffix_list.py, or pass --gsc-property if "
+                      "that property looks wrong", file=sys.stderr)
+        elif age > PSL_STALE_DAYS:
+            psl_stale = {"taken": taken, "age_days": age}
+            if not a.quiet:
                 print(f"  public suffix list snapshot is {age} days old "
                       f"({taken}); refresh it with "
                       f"tools/refresh_public_suffix_list.py, or pass "
@@ -4139,6 +4174,9 @@ def main() -> int:
         # that decides whether "no external service could measure this" is true.
         "entry_private": entry_private,
         "public_suffix_snapshot": psl_snapshot_date() or None,
+        # Set only when the list decided the Search Console property and is past its
+        # age or cannot say it (INP-10): the report names it then, and only then.
+        "public_suffix_stale": psl_stale,
         # Which parser read every page. It belongs beside the suffix snapshot for the
         # same reason: both are substrate the verdicts rest on, chosen by this run
         # rather than by the site. `lxml` and `html.parser` agree on every field the
@@ -4184,6 +4222,8 @@ def main() -> int:
         # Two items decide from these without saying so in their titles, so the fact has
         # to travel to the report — INP-5.
         "synthetic_metrics": synthetic_metrics(results) or None,
+        # Whether the crawler counts of a server log are User-Agent claims (EVD-10).
+        "log_crawlers_claimed": crawlers_claimed(results),
         "items": graded,
     }
 
