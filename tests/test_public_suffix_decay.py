@@ -19,13 +19,20 @@ import os
 import sys
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, datetime, timezone
 from urllib.parse import urlparse
 
 from harness import SCRIPTS, offline_env, served, spawn, with_tripwire
 
 sys.path.insert(0, SCRIPTS)
 from checklist_report import render_html, render_markdown  # noqa: E402
+
+
+def today() -> date:
+    # The list's date and its age are UTC (`refresh_public_suffix_list.py`,
+    # `psl_staleness`); a local date is a day ahead between local and UTC midnight.
+    return datetime.now(timezone.utc).date()
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUNDLED = os.path.join(SCRIPTS, os.pardir, "resources", "config", "public_suffix_list.dat")
@@ -83,7 +90,7 @@ class ADerivedPropertyOverAStaleList(unittest.TestCase):
         self.assertIn("GSC property: sc-domain:example.co.uk", self.result["_stderr"])
 
     def test_the_run_says_the_list_is_old_and_how_old(self):
-        age = (date.today() - date(2020, 1, 1)).days
+        age = (today() - date(2020, 1, 1)).days
         self.assertIn(f"public suffix list snapshot is {age} days old (2020-01-01)",
                       self.result["_stderr"])
         self.assertEqual(self.result["public_suffix_stale"],
@@ -113,7 +120,7 @@ class AListThatDecidedNothing(unittest.TestCase):
         self.assertIsNone(run["public_suffix_stale"])
 
     def test_a_fresh_list_that_decided_the_property_is_not_warned_about(self):
-        run = audit(snapshot(f"// snapshot taken {date.today().isoformat()}\n"))
+        run = audit(snapshot(f"// snapshot taken {today().isoformat()}\n"))
         self.assertIn("GSC property: sc-domain:example.co.uk", run["_stderr"])
         self.assertNotIn("public suffix list", run["_stderr"])
         self.assertIsNone(run["public_suffix_stale"])
