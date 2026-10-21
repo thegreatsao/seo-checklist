@@ -1,7 +1,7 @@
 {
   "detector_signature": "1115c98a838aa5b2",
   "generated": "2026-10-20",
-  "in_force_min_score": 4,
+  "in_force_min_score": 5,
   "limitation": "labels are a person's judgement, and three restaurants labelled local also run a shop, so ecommerce for them is arguably right; one fetch per site, so a page that changes moves its row; 39 sites",
   "method": "fetch each labelled homepage once through lib.safe_http, score it with detect_profile.detect, and re-derive the answer at every MIN_SCORE in 1..12; a harmful narrowing is an answer whose profile excludes an item the label's profile keeps; smallest MIN_SCORE with the fewest harmful narrowings",
   "profile_excludes": {

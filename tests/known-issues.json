@@ -911,8 +911,8 @@
       "measured": {
         "basis": {
           "convention": 96,
-          "inherited": 1,
-          "measured": 13,
+          "inherited": 0,
+          "measured": 14,
           "presentation": 47,
           "standard": 20
         },

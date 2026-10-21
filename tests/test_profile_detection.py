@@ -46,5 +46,20 @@ class TheMarginDecidesNoProfile(unittest.TestCase):
             self.assertEqual(detect_profile.detect(PAGE)["confidence"], "low")
 
 
+class AScoreOfFourIsNotEnough(unittest.TestCase):
+    """F11, Anton's decision: MIN_SCORE 5, measured. A byline, article timestamps and a
+    blog link score `blog` 4 — python.org's homepage in the corpus, the one answer at 4
+    that made applicable items N/A (`blog` excludes 8). At 5 it is `default`."""
+
+    PAGE = ('<html><body><a rel="author" href="/team">Team</a>'
+            '<time datetime="2026-10-01">1 Oct</time><a href="/blog">Blog</a></body></html>')
+
+    def test_a_page_that_scores_four_is_not_narrowed(self):
+        found = detect_profile.detect(self.PAGE)
+        self.assertEqual(found["scores"]["blog"], 4, found["signals"])
+        self.assertEqual(found["profile"], "default")
+        self.assertEqual(checklist_runner.choose_profile("auto", False, found), "default")
+
+
 if __name__ == "__main__":
     unittest.main()

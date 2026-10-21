@@ -74,9 +74,10 @@ except ImportError:
 #  weights decide verdicts there and nowhere else (without the flag a person chooses).
 #  Forty-odd weights across four tables cannot be fitted to a corpus one by one; the
 #  detector as a whole was measured (`tools/calibrate_profile_detection.py`, 39
-#  labelled homepages): at MIN_SCORE 4 it labels 22 right, abstains on 8 and labels 9
-#  wrong, mostly a page that merely names WooCommerce or Shopify read as `ecommerce`,
-#  which excludes nothing; one wrong label narrows the audit (python.org as a blog).
+#  labelled homepages): at MIN_SCORE 4 it labelled 22 right, abstained on 8 and labelled
+#  9 wrong, mostly a page that merely names WooCommerce or Shopify read as `ecommerce`,
+#  which excludes nothing; one wrong label narrowed the audit (python.org as a blog),
+#  which MIN_SCORE 5 removes (21 right, 7 wrong, none narrowing).
 #  So each weight is a judgement of how plainly a signal names a kind of site — declared
 #  schema the strongest — and a wrong one shows in that measurement, not in a test
 SCHEMA_SIGNALS = {
@@ -153,10 +154,8 @@ MARKUP_SIGNALS = [
 
 PROFILES = ("ecommerce", "local", "saas", "blog", "media")
 # Below this the evidence is too thin to suggest narrowing anything.
-# basis: inherited — present at import. With CLEAR_MARGIN it decides whether profile
-#  detection suggests anything at all; tuned against the two fixtures here and nothing
-#  else, which is the weakest evidence any threshold in this tree has
-MIN_SCORE = 4
+# basis: measured — corpus=tools/calibration/profile-detection.json (48 public homepages labelled by kind, 39 read); date=2026-10-20; method=each page scored by detect(), the answer re-derived at MIN_SCORE 1..12, a harmful narrowing counted when the answer's profile makes N/A an item the label's profile keeps (from the runner's profile_excludes), the smallest value with the fewest harmful narrowings taken. At 4 one site was narrowed wrongly (python.org read as a blog, 8 items N/A), at 5 none, at the cost of one right answer (22 to 21). Labels are a person's judgement and three restaurants labelled local also run a shop. It was 4 until F11, adopted at 5 by the owner's decision
+MIN_SCORE = 5
 # basis: presentation — present at import. It labels the detector's answer `high` or
 #  `low` confidence and names the runner-up, which the prompt and the stderr line print;
 #  the answer itself, which `--profile auto` runs under, is the best score past MIN_SCORE

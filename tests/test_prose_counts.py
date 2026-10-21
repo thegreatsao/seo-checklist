@@ -85,7 +85,9 @@ def census_groups() -> tuple[set[str], set[str], set[str]]:
 @functools.lru_cache
 def threshold_counts() -> dict[str, int]:
     named, _unnamed = audit_thresholds.scan()
-    counts = Counter(row["kind"] for row in named)
+    # Every kind present, a zero included: `inherited` reached 0 at 0.174.0 (F11).
+    counts = Counter({kind: 0 for kind in audit_thresholds.KINDS})
+    counts.update(row["kind"] for row in named)
     counts["no basis"] = sum(not row["kind"] for row in named)
     counts["counted"] = sum(counts[kind] for kind in audit_thresholds.VERDICT_KINDS)
     return dict(counts)
@@ -166,8 +168,8 @@ CLAIMS = (
     # so these three said 160 while the tree counted 163 (found 2026-10-20, F10).
     Claim("openspec/specs/governance/spec.md", "GOV-2 inherited", r"(?P<n>\d+)\s+of\s+\d+\s+(?:undefended|today)", threshold("inherited"), 2),
     Claim("openspec/specs/governance/spec.md", "GOV-2 counted", r"\d+\s+of\s+(?P<n>\d+)\s+(?:undefended|today)", threshold("counted"), 2),
-    Claim("openspec/specs/governance/spec.md", "inherited question", r"At\s+(?P<n>\d+)\s+of\s+\d+\s+it\s+is\s+a\s+large", threshold("inherited")),
-    Claim("openspec/specs/governance/spec.md", "counted question", r"At\s+\d+\s+of\s+(?P<n>\d+)\s+it\s+is\s+a\s+large", threshold("counted")),
+    Claim("openspec/specs/governance/spec.md", "inherited question", r"At\s+(?P<n>\d+)\s+of\s+\d+\s+it\s+is\s+(?:a\s+large|no)", threshold("inherited")),
+    Claim("openspec/specs/governance/spec.md", "counted question", r"At\s+\d+\s+of\s+(?P<n>\d+)\s+it\s+is\s+(?:a\s+large|no)", threshold("counted")),
 
     Claim("README.md", "opening registry size", r"One fixed registry of (?P<n>\d+) checks", population("items")),
     Claim("README.md", "registry contract size", r"the contract: (?P<n>\d+) items", population("items")),

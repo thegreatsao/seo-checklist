@@ -217,8 +217,8 @@ def measure() -> dict:
         "unread": unread,
         **derived(rows, profile_exclusions()),
         # What the tree runs with, which is a decision recorded beside the rule's pick
-        # rather than assumed to be it (F11: adopting the pick moves `--profile auto`
-        # verdicts, and that is the owner's decision).
+        # rather than assumed to be it (F11: adopting the pick moved `--profile auto`
+        # verdicts, and the owner decided it; 5 since 0.174.0).
         "in_force_min_score": literal_constants(
             DETECTOR, {"MIN_SCORE"}, "could not read MIN_SCORE: {missing}")["MIN_SCORE"],
     }

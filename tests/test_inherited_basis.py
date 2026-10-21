@@ -13,7 +13,8 @@ requirement a test can reach.
 
 **The count may not rise.** A new constant filed as `inherited` is a deliberate act, and
 the scenario in the requirement asks that it be visible as one rather than absorbed into
-a total nobody watches. 1 of 130 today.
+a total nobody watches. 0 of 130 today: F11 (0.174.0) calibrated or relabelled every one, and
+the ceiling is what keeps a new one a deliberate act.
 
 **An `inherited` line may not defend its number.** The convention is
 `# basis: inherited — <what the number is>`, and the description is why the category is
@@ -32,7 +33,9 @@ from __future__ import annotations
 import collections
 import os
 import re
+import shutil
 import sys
+import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -43,10 +46,11 @@ import audit_thresholds  # noqa: E402
 # Measured 20 October 2026, 0.172.0, raised by two on purpose: F13 moved the crawl caps
 # back from `convention` (see their basis lines). Lowered with each batch of F11
 # (0.174.0): 62 once the crawl caps left again; 34 after the second batch's relabels; 22 after the third's; 12 after
-# 3b's; 1 after the fourth's (MIN_SCORE, held for the owner). A ceiling, not a target: the requirement's third scenario is
+# 3b's; 1 after the fourth's (MIN_SCORE, held for the owner); 0 once the owner adopted
+# MIN_SCORE 5 as measured. A ceiling, not a target: the requirement's third scenario is
 # a basis being upgraded, and every one of those lowers this number. Lower it in the
 # commit that earns it.
-INHERITED_AT_MOST = 1
+INHERITED_AT_MOST = 0
 
 # Phrasings that turn a description into a defence. A positive search, so this finds what
 # it knows and proves nothing about what it does not — the docstring says so rather than
@@ -67,11 +71,19 @@ class InheritedIsAnAdmission(unittest.TestCase):
     def test_the_scan_still_finds_the_declarations(self):
         """Everything below counts rows. A scan that stopped finding them would report
         an empty `inherited` list, which is the best possible news and would be a
-        failure of the instrument rather than progress."""
+        failure of the instrument rather than progress. Since 0.174.0 (F11) the list is
+        empty for real, so the instrument is shown to see an `inherited` line on a file
+        written here, and the ratchet below holds the tree at zero."""
         self.assertGreater(len(self.named), 100,
                            "the threshold scan found almost nothing; it has gone blind")
-        self.assertTrue(self.inherited, "no number carries `inherited` — if that is "
-                                        "real, delete this module and say so")
+        work = tempfile.mkdtemp(prefix="seo-inherited-")
+        self.addCleanup(shutil.rmtree, work, True)
+        path = os.path.join(work, "probe.py")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write("# basis: inherited — seven, present at import\nLIMIT = 7\n"
+                     "def over(value):\n    return value > LIMIT\n")
+        self.assertEqual([row["kind"] for row in audit_thresholds.numeric_constants(path)],
+                         ["inherited"], "the scan no longer reads an `inherited` line")
 
     def test_the_kinds_are_the_closed_set_the_tool_defines(self):
         """Read from the tool rather than listed here, so a sixth kind arrives as a

@@ -728,11 +728,12 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # feed `opportunities`, two word `issues`, none read by an item); three to
         # `convention` (RANKS_FIRST_POSITION and MIN_IMPRESSIONS with the multi-market
         # blocker kept, ROW_LIMIT once KW-070 and GO-139 withhold over a full page).
+        # Then MIN_SCORE to `measured` (5), by the owner's decision: `inherited` is 0.
         self.assertEqual(by_kind, {
             "standard": 20,
-            "measured": 13,
+            "measured": 14,
             "convention": 96,
-            "inherited": 1,
+            "inherited": 0,
             "presentation": 47,
         })
         self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 130)
