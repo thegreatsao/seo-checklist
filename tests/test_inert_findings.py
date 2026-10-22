@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import unittest
 
 import harness  # noqa: E402
@@ -119,15 +120,34 @@ class TheRecordFeedsNothing(unittest.TestCase):
 
     The half of that a test can hold is that nothing the plugin ships reads it: no
     file under `skills/` — the runner, the checkers, the generator, the agent's
-    instructions, its resources — names the record or the module that measures it.
-    A person citing it as grounds for a rule, or copying its rows into one by hand, is
-    the other half, and no program here reaches that.
+    instructions, its resources — names the record or the module that measures it, or
+    imports a module from `tests/` that opens it (one level: the review of F04 batch 4
+    showed `import known_issues` in a shipped tool passing the name search). A person
+    citing it as grounds for a rule, or copying its rows into one by hand, is the other
+    half, and no program here reaches that.
     """
 
     NAMES = ("inert-findings", "inert_findings")
 
+    def readers_in_tests(self) -> set[str]:
+        """Test-side modules that open the record. A shipped tool may import from
+        `tests/` (`audit_declaration_revisions.py` takes `harness` from there), so a
+        file that imports `known_issues` reaches the record without spelling it."""
+        tests = os.path.join(ROOT, "tests")
+        found = set()
+        for name in os.listdir(tests):
+            if name.endswith(".py"):
+                with open(os.path.join(tests, name), encoding="utf-8") as stream:
+                    if any(word in stream.read() for word in self.NAMES):
+                        found.add(name[:-3])
+        return found
+
     def test_nothing_the_plugin_ships_names_the_record(self):
         skills = os.path.join(ROOT, "skills")
+        readers = self.readers_in_tests()
+        self.assertIn("known_issues", readers, "the scan of tests/ found no reader of the record")
+        importing = re.compile(r"^\s*(?:from|import)\s+(" + "|".join(sorted(readers))
+                               + r")\b", re.MULTILINE)
         read = 0
         found = []
         for folder, dirs, files in os.walk(skills):
@@ -142,6 +162,8 @@ class TheRecordFeedsNothing(unittest.TestCase):
                 read += 1
                 found += [f"{os.path.relpath(path, ROOT)} names {word}"
                           for word in self.NAMES if word in text]
+                found += [f"{os.path.relpath(path, ROOT)} imports {match.group(1)}, "
+                          "which reads it" for match in importing.finditer(text)]
         self.assertGreater(read, 100, "the walk over skills/ read almost nothing")
         self.assertEqual(found, [], "the inert-findings record is read by the plugin, so "
                          "its existence can move a verdict — " + "; ".join(found))

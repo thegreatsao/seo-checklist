@@ -261,11 +261,12 @@ in `tests/test_closed_sets.py`. The finding moved; no status did, since no rule 
 
 **Partial still, for a reason this time measured.** Holding the requirement means every
 unread set either derived or read against its source, and the next ones read the same way
-are verdicts: `lib/schema_types.LOCAL_BUSINESS_TYPES`, a schema.org snapshot, lacks ten
-current `LocalBusiness` subtypes (`Hospital`, `MedicalClinic`, `Attorney`, `PostOffice`
-among them) and carries two that are not (`VeterinaryCare` is a `MedicalOrganization`;
+are verdicts: `lib/schema_types.LOCAL_BUSINESS_TYPES`, a schema.org snapshot, lacks 31 of
+the 152 current `LocalBusiness` descendants (`Hospital`, `MedicalClinic`, `Attorney`,
+`PostOffice`, and 21 `MedicalBusiness` subtypes that are also `MedicalSpecialty` values,
+`Dermatology` and `Pediatric` among them) and carries two that are not (`VeterinaryCare` is a `MedicalOrganization`;
 `SkatingRink` is not in the current vocabulary); `entity_checker.ORGANIZATION_TYPES` names
-5 of schema.org's 167 `Organization` types. Repairing either moves live verdicts, which
+5 of schema.org's 188 `Organization` types. Repairing either moves live verdicts, which
 is the owner's ruling, and the remaining classification is filed in
 `docs/sprint-20261022-F04-4.md` as the next batch's.
 
@@ -348,7 +349,9 @@ red), and its own header states the rule at length. The half of "its existence i
 argument for moving a verdict" a program can hold is that nothing the plugin ships reads
 it: `test_nothing_the_plugin_ships_names_the_record` walks every file under `skills/` —
 the runner, the checkers, the generator, the agent's instructions and resources — and
-refuses one that names the record or its module (the generator naming it: red).
+refuses one that names the record or its module, or imports a module from `tests/` that
+opens it (the generator naming it: red; a shipped tool importing `known_issues`, which a
+name search missed in review: red). One level of import is read, not the whole graph.
 
 **Narrowed, and filed in `docs/sprint-20261022-F04-4.md`.** That the rule is *followed* by
 people — that nobody adds or withholds a rule because something was listed here, or copies
@@ -389,7 +392,10 @@ deleted, one audit's sentence copied into another, a line printed after the clos
 
 **Narrowed, and filed in `docs/sprint-20261022-F04-4.md`.** The rightness search is
 positive and finds the words it knows (`test_the_search_for_a_rightness_claim_would_find_one`
-shows it firing). The second scenario is a reader taking a green audit for a right
+shows it firing), and it reads the two declared sentences, not the rest of what an audit
+prints: a line above the close saying a threshold is correct passes (found in review).
+Searching the whole output would fire on item titles such as "Use Correct Redirect
+Codes", which an audit quotes and does not claim. The second scenario is a reader taking a green audit for a right
 threshold anyway: the output says it is not one, and whether that is read is outside any
 program, GOV-5's limit.
 
@@ -1132,12 +1138,14 @@ INV-G13 enforced; INV-G1, INV-G6 and INV-G8 partial.
 **Nine enforced, three partial, none unread, of twelve.** GOV-2, GOV-5 and GOV-6 moved in
 F04, each with a narrowing its Reader line names.
 
-The two unread requirements are the two that ask the machinery to be *governed* rather than
-to govern. GOV-2 asks that an admission not become a justification; GOV-3 asks that lists be
-derived. Each is a rule about the rules, and each is exactly the kind of thing with no
-natural place to fail.
+When this document was written, the two unread requirements were the two that ask the
+machinery to be *governed* rather than to govern: GOV-2, that an admission not become a
+justification, and GOV-3, that lists be derived. Each is a rule about the rules, and each
+is exactly the kind of thing with no natural place to fail. GOV-2 found its place in F04 —
+a ratchet at zero and a probe that reads basis lines instead of repeating them; GOV-3 is
+still partial.
 
-GOV-10 was the third until writing it closed it. That is worth recording as method rather
+GOV-10 was the third unread one until writing it closed it. That is worth recording as method rather
 than as luck: the requirement was drafted `none`, the check it named took a second to run,
 and running it turned a documented gap into a CI step in the same sitting. Most of what
 these documents find cannot be closed that cheaply; this one could, and the only reason it

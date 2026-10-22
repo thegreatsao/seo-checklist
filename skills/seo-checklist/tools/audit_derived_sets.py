@@ -69,8 +69,8 @@ from scope_line import print_scope  # noqa: E402
 
 # What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
 ESTABLISHES = (
-    "the census of hand-written sets in scripts/ and tools/, and of which ones a test "
-    "imports, matches the record it is checked against"
+    "the census of hand-written sets in scripts/, scripts/lib/ and tools/, and of which "
+    "ones a test imports, matches the record it is checked against"
 )
 DOES_NOT_ESTABLISH = (
     "that any set holds the right members, since importing a name is not asserting "
@@ -256,8 +256,9 @@ def census() -> dict:
     total = sum(len(m["read"]) + len(m["unread"]) for m in modules.values())
     unread = sum(len(m["unread"]) for m in modules.values())
     return {
-        "measured": "module-level upper-case names bound to a list, tuple, set or dict "
-                    "literal in scripts/ or tools/",
+        "measured": "upper-case names bound to a list, tuple, set or dict literal, bare "
+                    "or handed to a constructor, at module level or in a function, in "
+                    "scripts/, scripts/lib/ or tools/",
         "read_means": "a test imports the name from its module, under its own name or "
                       "an alias the test bound, which is an upper bound on the "
                       "membership being asserted",
