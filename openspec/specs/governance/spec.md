@@ -174,15 +174,32 @@ hand-kept list guarded only by the mechanism that consumes it is neither.
 **Why:** this is the defect this suite found in six of its eleven layers (§1). A hand-kept
 list cannot say what is missing from it, and the reader that would notice the omission is
 the same line somebody would have had to edit to avoid it.
-**Reader:** partial. `tools/audit_derived_sets.py` enumerates every module-level
-upper-case name in `scripts/` and `tools/` bound to a list, tuple, set or dict
-**literal** — a collection built by a comprehension or a call is derived, which is what
-this requirement asks for, so it is out of scope by construction — and records which of
-them a test imports from its module. `tests/test_derived_sets.py` re-takes the census
-every run, refuses a stale record, and ratchets the unread column downward.
+**Reader:** enforced, narrowed (F04, batch 4b). `tools/audit_derived_sets.py` enumerates every
+upper-case name in `scripts/`, `scripts/lib/` and `tools/` bound to a list, tuple, set or dict
+**literal** — at module level or inside a function, bare or handed to `frozenset(...)` and its
+kin; a collection built by a comprehension or from another name is derived, which is what this
+requirement asks for, so it is out of scope by construction — and records which of them a test
+imports from its module. `tests/open-sets.json` names each set whose completeness is not
+defined — a heuristic sample, stopwords or fingerprints — with why, and the census writes the
+reason into its record. `tests/test_derived_sets.py` re-takes the census every run, refuses a
+stale record, ratchets the unread column, and refuses an unread set with no open reason
+(`unread_closed`, ceiling **0**), a reason for a set that is read and an empty one: a set
+written tomorrow fails the day it is written unless it is derived, read, or recorded as open.
+Each closed set's reader holds it against what it describes — the standard, the API's
+documented values, the registry, this tool's own outputs — in `tests/test_closed_sets.py`,
+`tests/test_tool_sets.py` and the per-module set tests before them.
 
-**Partial, and the label is the honest one twice over.** A ratchet holds "no worse",
-not the requirement; and "read" here means *imported*, which is an upper bound on the
+**Narrowed, and the narrowing named.** For an open set, completeness is a convention stated in
+its reason, not held, and "read" for it is still "imported". "Read" for a closed set is a
+reader a person wrote; whether it is the right one is the reviewer's question, recorded in the
+batch's contract. The census does not see a literal in a class body, under `try`, `if` or
+`with`, in `MappingProxyType(...)` or `dict(a=1)`, nor a lazily filled table its module marks
+`global` — none exists today. And a standard moves: each snapshot is dated, and a sync is a
+deliberate act (`tools/refresh_schemaorg_types.py` for schema.org), so a set can be right as of
+its date and stale after it.
+
+**It was partial when first measured, and the label was the honest one twice over.** A
+ratchet holds "no worse", not the requirement; and "read" here means *imported*, which is an upper bound on the
 membership being asserted. Measured on 6 September 2026: **166 sets, 16 imported by a
 test, 150 named by nothing outside the code that consumes them.** A looser match — the
 bare name anywhere in the test corpus — reports 44, by crediting `build_checklist.PAGE`
@@ -259,9 +276,9 @@ correction table filed Laos (`LA`) as "Latin America", so `hreflang="fo"`, `"mk-
 in `tests/test_closed_sets.py`. The finding moved; no status did, since no rule reads
 `language_code_issues`.
 
-**Partial still, for a reason this time measured.** Holding the requirement means every
-unread set either derived or read against its source, and the next ones read the same way
-are verdicts: `lib/schema_types.LOCAL_BUSINESS_TYPES`, a schema.org snapshot, lacks 31 of
+**It stayed partial after batch 4, for a reason measured then.** Holding the requirement
+meant every unread set either derived or read against its source, and the next ones read
+the same way were verdicts: `lib/schema_types.LOCAL_BUSINESS_TYPES`, a schema.org snapshot, lacks 31 of
 the 152 current `LocalBusiness` descendants (`Hospital`, `MedicalClinic`, `Attorney`,
 `PostOffice`, and 21 `MedicalBusiness` subtypes that are also `MedicalSpecialty` values,
 `Dermatology` and `Pediatric` among them) and carries two that are not (`VeterinaryCare` is a `MedicalOrganization`;
@@ -269,6 +286,23 @@ the 152 current `LocalBusiness` descendants (`Hospital`, `MedicalClinic`, `Attor
 5 of schema.org's 188 `Organization` types. Repairing either moves live verdicts, which
 is the owner's ruling, and the remaining classification is filed in
 `docs/sprint-20261022-F04-4.md` as the next batch's.
+
+**At F04 (batch 4b): 194 sets, 151 read, 43 unread, and every unread one is open.** The 99
+were classified before anything ran (`docs/sprint-20261022-F04-4b.md`): 43 open, the rest
+closed. The schema.org sets are derived from a bundled release (30.1, 2026-09-16) — 152
+`LocalBusiness`, 188 `Organization` and 230 `Place` types — and the copies of one concept
+became one each: the retired schema types (three copies that disagreed on HowTo and Dataset,
+five of whose eight names were Google feature names no markup carries), the AI crawler
+tokens, the facet parameters. Reading the closed sets against their sources moved verdicts,
+each with a red test first: a hospital's or an attorney's LocalBusiness
+markup read as none (LO-198), a restaurant naming itself publisher as no publisher (CN-057),
+"Indexed, though blocked by robots.txt" as not indexed (CI-002), FAQ and How-to markup
+Google no longer shows as a warning (TE-172, TECH-001), a rated product with no offer and a
+video with no description as invalid (TE-172), a `Host:` line as a directive crawlers read
+(AR-151), `?page=2` as a filtered URL (AR-154, AR-163, AR-155, CI-012), and an NGO or a
+museum as no entity whose `sameAs` counts (GEO-006). Two tool sets were
+wrong too: `audit_assertions.PATTERN_OPS` named two operators the runner does not have, and a
+dead per-page-type threshold table is gone.
 
 Two lists were converted to derivations during this suite's writing — the notebook's spec
 manifest, and this document's own reader discovering documents by glob rather than by
@@ -1127,23 +1161,23 @@ their tests.
 
 | | requirements |
 |---|---|
-| **enforced** | GOV-1, GOV-2, GOV-4, GOV-5, GOV-6, GOV-8, GOV-9, GOV-10, GOV-11 |
-| **partial** | GOV-3, GOV-7, GOV-12 |
+| **enforced** | GOV-1, GOV-2, GOV-3, GOV-4, GOV-5, GOV-6, GOV-8, GOV-9, GOV-10, GOV-11 |
+| **partial** | GOV-7, GOV-12 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-G2, INV-G3, INV-G4, INV-G5, INV-G7, INV-G9, INV-G10, INV-G11, INV-G12 and
 INV-G13 enforced; INV-G1, INV-G6 and INV-G8 partial.
 
-**Nine enforced, three partial, none unread, of twelve.** GOV-2, GOV-5 and GOV-6 moved in
-F04, each with a narrowing its Reader line names.
+**Ten enforced, two partial, none unread, of twelve.** GOV-2, GOV-3, GOV-5 and GOV-6 moved
+in F04, each with a narrowing its Reader line names.
 
 When this document was written, the two unread requirements were the two that ask the
 machinery to be *governed* rather than to govern: GOV-2, that an admission not become a
 justification, and GOV-3, that lists be derived. Each is a rule about the rules, and each
 is exactly the kind of thing with no natural place to fail. GOV-2 found its place in F04 —
-a ratchet at zero and a probe that reads basis lines instead of repeating them; GOV-3 is
-still partial.
+a ratchet at zero and a probe that reads basis lines instead of repeating them; GOV-3 in
+batch 4b, a census that refuses an unread set nobody has called open.
 
 GOV-10 was the third unread one until writing it closed it. That is worth recording as method rather
 than as luck: the requirement was drafted `none`, the check it named took a second to run,
