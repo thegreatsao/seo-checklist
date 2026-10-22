@@ -78,9 +78,8 @@ jobs:
           # ci_local.load_jobs(), which needs a YAML reader. Not in
           # requirements.txt because nothing shipped parses YAML.
           pip install pyyaml
-          # The pin "The specification is a specification" runs. Installed here
-          # rather than fetched by `npx` in that step, which until F04 asked the npm
-          # registry on every run: a gate that failed for npm's outage.
+          # The pin "The specification is a specification" runs, put in npm's cache
+          # here so that step can run it with `--offline` (GOV-7).
           npm install -g @fission-ai/openspec@1.12.0
 
 
@@ -523,13 +522,15 @@ jobs:
       # GOV-10 is about the other outcome, four calibration checks that existed, passed,
       # and gated nothing until somebody went looking.
       #
-      # The pin, 1.12.0, is installed by the install step above, which `ci_local.py`
-      # skips on a developer's machine: until 0.168.1 every local gate put 1.12.0 over
-      # whatever openspec that machine had installed globally, and from then until F04
-      # this step ran `npx -y`, which fetched the package from the npm registry on every
-      # CI run (GOV-7). Locally it runs the machine's own openspec.
+      # The pin, 1.12.0, from npm's cache and nothing else: `--offline` never asks the
+      # registry, and the install step above put the package there. Until F04 this ran
+      # `npx -y` alone, which fetched it from the npm registry on every CI run — a gate
+      # that failed for npm's outage (GOV-7). Not the global `openspec`: on a developer's
+      # machine `ci_local.py` skips the install step, and a newer openspec there fails
+      # every document on warnings 1.12.0 does not raise (1.14.3, 22 October 2026). A
+      # machine whose cache lacks the pin fails this step without reaching the network.
       - name: The specification is a specification
-        run: openspec validate --all --strict
+        run: npx --offline -y @fission-ai/openspec@1.12.0 validate --all --strict
 
       # The `measured` bases, re-read against the constants they justify. Each check is
       # offline and takes about a second, and all four existed with no CI step for as

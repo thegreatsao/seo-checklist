@@ -302,7 +302,8 @@ class EveryGateStepIsWatched(unittest.TestCase):
         """The hook cannot see a step's own shell lines, so they are read: a word
         list, and the narrowing GOV-7's Reader line names."""
         import re
-        fetchers = re.compile(r"\bnpx\b|\bnpm\s+(?:install|i|ci|exec)\b|\bpip3?\s+install\b"
+        # `npx --offline` runs a package from npm's cache and never asks the registry.
+        fetchers = re.compile(r"\bnpx\b(?!\s+--offline\b)|\bnpm\s+(?:install|i|ci|exec)\b|\bpip3?\s+install\b"
                               r"|-m\s+pip\s+install\b|\bwget\b"
                               r"|\bgit\s+(?:fetch|pull|clone|push|ls-remote|submodule)\b")
         remote = re.compile(r"https?://(?!127\.0\.0\.1[:/]|localhost[:/]|\[::1\])")
