@@ -3553,6 +3553,12 @@ def print_report(payload, a, hist, crawl_path, diff_note) -> None:
     else:
         print(f"SEO Score: {s['seo_score']}/100 — over {s['decided']} items, "
               f"{s['weight_pct']}% of the weight in scope")
+        # OPR-4: the queue unanswered makes the audit incomplete, and the line says it
+        # rather than leaving the count under "waiting on you" to imply it.
+        if s["waiting_on_you"]["llm_pending"]:
+            print(f"Incomplete: {s['waiting_on_you']['llm_pending']} item(s) wait for a "
+                  f"language model's judgement and are outside the score until the "
+                  f"queue is answered and merged (checklist_report.py --llm-answers).")
     # The partition, not a percentage. Every item is in one line and the lines add
     # up to the registry, which is the property a reader can check by eye.
     p, w = s["partition"], s["waiting_on_you"]

@@ -74,6 +74,20 @@ def provenance_line(s: dict, L) -> str:
         decided=s["decided"], parts=parts)
 
 
+def queue_not_run_line(s: dict, L) -> str:
+    """The audit is incomplete while the model-judgement queue is unanswered, and says
+    so beside the score (`openspec/specs/operator-protocol/` OPR-4). The count was on
+    every surface before F04, under "waiting on you", and a report with the queue
+    never run still read as a finished audit. Silent once nothing is pending."""
+    n = (s.get("waiting_on_you") or {}).get("llm_pending") or 0
+    if not n:
+        return ""
+    return L.t("queue_not_run",
+               "This audit is incomplete: {n} items wait for a language model's "
+               "judgement and are outside the score until the queue is answered and "
+               "merged.").format(n=n)
+
+
 def item_provenance(item: dict, L) -> str:
     """Short origin label for verdicts that were not measured here.
 
@@ -1121,13 +1135,15 @@ def render_markdown(data: dict, L: Lang | None = None) -> str:
         out += [f"> **{title}** — {body}", ""]
     else:
         p, w = s["partition"], s["waiting_on_you"]
+        queue = queue_not_run_line(s, L)
         out += [
             f"**{L.t('seo_score', 'SEO Score')} {s['seo_score']}/100** — "
             + L.t("score_weight",
                   "over {decided} decided items, {pct}% of the weight in scope")
               .format(decided=s["decided"], pct=s["weight_pct"]),
             "",
-        ] + ([provenance_line(s, L), ""] if provenance_line(s, L) else []) + [
+        ] + ([f"> **{queue}**", ""] if queue else []) + (
+            [provenance_line(s, L), ""] if provenance_line(s, L) else []) + [
             L.t("score_note",
                 "The share of the weight travels with the score because it is the "
                 "claim you can check: the same 69 over 55% of the registry and over "
@@ -1665,6 +1681,8 @@ def render_html(data: dict, L: Lang | None = None) -> str:
             "</div>",
             (f'<p class="note claimed">{html.escape(provenance_line(s, L))}</p>'
              if provenance_line(s, L) else ""),
+            (f'<p class="note claimed">{html.escape(queue_not_run_line(s, L))}</p>'
+             if queue_not_run_line(s, L) else ""),
             f'<p class="note">{html.escape(L.t("partition_note", PARTITION_NOTE))}</p>',
         ]
     parts.append(f'<div class="bar">{bar}</div><div class="legend">'

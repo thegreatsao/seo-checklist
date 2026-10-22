@@ -1530,6 +1530,49 @@ class TheScoreNeverTravelsWithoutItsShare(unittest.TestCase):
         self.assertNotIn("stopped answering", self.console(clean))
 
 
+class AQueueNotRunIsSaidToBeNotRun(unittest.TestCase):
+    """`openspec/specs/operator-protocol/` OPR-4: the model-judgement queue is run, or
+    the audit says it was not. Until F04 every surface printed the count under
+    "waiting on you" and none said the audit was incomplete, so a report with the
+    queue unanswered read as a finished audit with a score. The sentence is beside the
+    score on all three surfaces while an item is `LLM_PENDING`, and gone once none is."""
+
+    console = TheScoreNeverTravelsWithoutItsShare.console
+    surfaces = TheScoreNeverTravelsWithoutItsShare.surfaces
+
+    def pending(self, n):
+        rows = [item("A", PASS, severity="high"), item("B", FAIL, severity="high")]
+        rows += [item(f"L-{i}", LLM_PENDING, severity="low") for i in range(n)]
+        data = scored_results(*rows)
+        data.update(url="https://example.com/", requested_url="", mode="page",
+                    gsc_credentials_found=False, script_failures={})
+        return data
+
+    def test_every_surface_says_the_audit_is_incomplete_and_how_many_wait(self):
+        import html as html_escape
+        import checklist_report
+        data = self.pending(3)
+        for lang in ("en", "ru"):
+            with self.subTest(lang=lang):
+                L = Lang(lang)
+                said = checklist_report.queue_not_run_line(data["scores"], L)
+                self.assertIn("3", said)
+                self.assertIn(said, render_markdown(data, L))
+                self.assertIn(html_escape.escape(said), render_html(data, L))
+        self.assertNotEqual(Lang("ru").t("queue_not_run", "<english>"), "<english>")
+        console = self.console(data)
+        self.assertIn("incomplete", console.lower())
+        self.assertRegex(console, r"\b3 item")
+
+    def test_a_queue_answered_in_full_is_not_called_unrun(self):
+        import checklist_report
+        data = self.pending(0)
+        self.assertEqual(checklist_report.queue_not_run_line(data["scores"], Lang()), "")
+        for name, text in self.surfaces(data).items():
+            with self.subTest(surface=name):
+                self.assertNotIn("incomplete", text.lower())
+
+
 
 class TheProvenanceListIsTheOneThisDocumentNames(unittest.TestCase):
     """`openspec/specs/reporting/` REP-3, the half that was unread: the mechanism had ten
