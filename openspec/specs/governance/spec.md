@@ -246,6 +246,29 @@ to it later. Still open, measured the same day: `build_checklist.EXTRA` is in th
 column on the strength of one `mock.patch.object` that extends it for a test, the other
 half of what the 0.144.0 paragraph describes.
 
+**At F04 (batch 4): 209 sets, 110 read, 99 unread — the column rose because the census
+learned to look.** It had been blind three ways: `scripts/lib/` was not a source,
+a set bound inside a function was not counted (`parse_html()` keeps a second copy of the
+deprecated schema types there), and a literal handed to `frozenset(...)` read as a
+derivation. Twenty-four unread sets had been there all along; `SOURCES` is now held
+against the folders it lists. Reading the unread sets against what each describes found
+the first one wrong: `hreflang_checker`'s language set held 108 of the 184 two-letter
+subtags the IANA registry carries and its region set 199 of ISO 3166-1's 249, and its
+correction table filed Laos (`LA`) as "Latin America", so `hreflang="fo"`, `"mk-MK"` or
+`"lo-LA"` read as a High issue. Both sets are now the standards, held by count and digest
+in `tests/test_closed_sets.py`. The finding moved; no status did, since no rule reads
+`language_code_issues`.
+
+**Partial still, for a reason this time measured.** Holding the requirement means every
+unread set either derived or read against its source, and the next ones read the same way
+are verdicts: `lib/schema_types.LOCAL_BUSINESS_TYPES`, a schema.org snapshot, lacks ten
+current `LocalBusiness` subtypes (`Hospital`, `MedicalClinic`, `Attorney`, `PostOffice`
+among them) and carries two that are not (`VeterinaryCare` is a `MedicalOrganization`;
+`SkatingRink` is not in the current vocabulary); `entity_checker.ORGANIZATION_TYPES` names
+5 of schema.org's 167 `Organization` types. Repairing either moves live verdicts, which
+is the owner's ruling, and the remaining classification is filed in
+`docs/sprint-20261022-F04-4.md` as the next batch's.
+
 Two lists were converted to derivations during this suite's writing — the notebook's spec
 manifest, and this document's own reader discovering documents by glob rather than by
 name — and neither conversion was required by anything. That is what the census now

@@ -1,10 +1,19 @@
 {
   "measured": "module-level upper-case names bound to a list, tuple, set or dict literal in scripts/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 183,
-  "read": 103,
-  "unread": 80,
+  "total": 209,
+  "read": 110,
+  "unread": 99,
   "modules": {
+    "a11y_seo_checker": {
+      "read": [],
+      "unread": [
+        {
+          "name": "UNLABELLED_INPUT_TYPES",
+          "entries": 5
+        }
+      ]
+    },
     "ai_crawler_policy_matrix": {
       "read": [
         {
@@ -30,7 +39,20 @@
           "entries": 4
         }
       ],
-      "unread": []
+      "unread": [
+        {
+          "name": "NON_PROSE",
+          "entries": 5
+        },
+        {
+          "name": "BLOCK_TAGS",
+          "entries": 39
+        },
+        {
+          "name": "ANSWER_TAGS",
+          "entries": 4
+        }
+      ]
     },
     "article_seo": {
       "read": [],
@@ -92,16 +114,19 @@
     "audit_derived_sets": {
       "read": [
         {
+          "name": "SOURCES",
+          "entries": 3
+        },
+        {
           "name": "LITERALS",
           "entries": 4
+        },
+        {
+          "name": "WRAPPERS",
+          "entries": 6
         }
       ],
-      "unread": [
-        {
-          "name": "SOURCES",
-          "entries": 2
-        }
-      ]
+      "unread": []
     },
     "audit_item_readings": {
       "read": [
@@ -180,7 +205,16 @@
           "entries": 4
         }
       ],
-      "unread": []
+      "unread": [
+        {
+          "name": "MEASURED_KEYS",
+          "entries": 3
+        },
+        {
+          "name": "ARITHMETIC",
+          "entries": 4
+        }
+      ]
     },
     "build_checklist": {
       "read": [
@@ -525,7 +559,16 @@
           "entries": 2
         }
       ],
-      "unread": []
+      "unread": [
+        {
+          "name": "NOT_FOUND_PHRASES",
+          "entries": 24
+        },
+        {
+          "name": "NOT_FOUND_EXACT",
+          "entries": 4
+        }
+      ]
     },
     "ci_local": {
       "read": [
@@ -617,7 +660,12 @@
           "entries": 4
         }
       ],
-      "unread": []
+      "unread": [
+        {
+          "name": "ORG_TYPES",
+          "entries": 5
+        }
+      ]
     },
     "entity_checker": {
       "read": [
@@ -626,7 +674,16 @@
           "entries": 10
         }
       ],
-      "unread": []
+      "unread": [
+        {
+          "name": "ORGANIZATION_TYPES",
+          "entries": 5
+        },
+        {
+          "name": "PLACE_TYPES",
+          "entries": 2
+        }
+      ]
     },
     "faceted_nav_audit": {
       "read": [],
@@ -634,6 +691,15 @@
         {
           "name": "FACET_KEYS",
           "entries": 13
+        }
+      ]
+    },
+    "favicon_check": {
+      "read": [],
+      "unread": [
+        {
+          "name": "GOOGLE_FAVICON_FORMATS",
+          "entries": 7
         }
       ]
     },
@@ -686,11 +752,10 @@
       ]
     },
     "hreflang_checker": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "VALID_LANG_CODES",
-          "entries": 108
+          "entries": 184
         },
         {
           "name": "COMMON_LANG_MISTAKES",
@@ -698,11 +763,21 @@
         },
         {
           "name": "VALID_REGION_CODES",
-          "entries": 199
+          "entries": 249
         },
         {
           "name": "COMMON_REGION_MISTAKES",
-          "entries": 3
+          "entries": 2
+        }
+      ],
+      "unread": []
+    },
+    "image_header": {
+      "read": [],
+      "unread": [
+        {
+          "name": "JPEG_SOF_MARKERS",
+          "entries": 13
         }
       ]
     },
@@ -805,7 +880,16 @@
           "entries": 3
         }
       ],
-      "unread": []
+      "unread": [
+        {
+          "name": "parse_html.DEPRECATED_SCHEMA",
+          "entries": 8
+        },
+        {
+          "name": "parse_html.RESTRICTED_SCHEMA",
+          "entries": 1
+        }
+      ]
     },
     "probe_shapes": {
       "read": [],
@@ -856,6 +940,10 @@
         {
           "name": "STANDARD_CRAWLERS",
           "entries": 5
+        },
+        {
+          "name": "KNOWN_ROBOTS_FIELDS",
+          "entries": 7
         }
       ]
     },
@@ -865,6 +953,31 @@
         {
           "name": "DEFAULT_AGENTS",
           "entries": 11
+        }
+      ]
+    },
+    "safe_http": {
+      "read": [],
+      "unread": [
+        {
+          "name": "DEFAULT_HEADERS",
+          "entries": 5
+        },
+        {
+          "name": "PRIVATE_ALLOWED_NETWORKS",
+          "entries": 7
+        },
+        {
+          "name": "_TRUE",
+          "entries": 4
+        },
+        {
+          "name": "_BOMS",
+          "entries": 3
+        },
+        {
+          "name": "CACHEABLE_METHODS",
+          "entries": 2
         }
       ]
     },
@@ -883,6 +996,15 @@
         {
           "name": "PLACEHOLDER_MARKERS",
           "entries": 5
+        }
+      ]
+    },
+    "schema_types": {
+      "read": [],
+      "unread": [
+        {
+          "name": "LOCAL_BUSINESS_TYPES",
+          "entries": 123
         }
       ]
     },
@@ -927,6 +1049,10 @@
           "entries": 8
         },
         {
+          "name": "CONTRIBUTION_KEYS",
+          "entries": 7
+        },
+        {
           "name": "CONVENTIONAL_SITEMAP_PATHS",
           "entries": 3
         }
@@ -941,7 +1067,15 @@
           "entries": 3
         },
         {
+          "name": "BYLINE_CLASS_TOKENS",
+          "entries": 13
+        },
+        {
           "name": "HEAD_REFUSED_STATUSES",
+          "entries": 3
+        },
+        {
+          "name": "SUBJECT_KEYS",
           "entries": 3
         }
       ]

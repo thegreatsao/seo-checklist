@@ -72,7 +72,14 @@ import audit_derived_sets  # noqa: E402
 # 80 at 0.147.0, and no set was read: the census stopped counting an empty literal the
 # module fills itself. Three left it — `_RUNTIME` and `build_checklist.MAP` from the read
 # column, `env_loader._LOADED_FROM` from this one.
-UNREAD_AT_MOST = 80
+# 99 at F04 (batch 4), and the tree did not get worse: the census learned to see three
+# spellings it had missed — `scripts/lib/`, a set bound inside a function, and a literal
+# handed to `frozenset(...)` or its kin — and found 24 unread sets that had been there all
+# along (`LOCAL_BUSINESS_TYPES` among them). Five left the column: the four hreflang sets,
+# completed to their standards and held by `tests/test_closed_sets.py`, and `SOURCES`,
+# held by the folders it lists. Raised, because a ceiling below what the instrument can
+# now see would fail on the day it learned to look.
+UNREAD_AT_MOST = 99
 
 
 class TheCensusDescribesThisTree(unittest.TestCase):
@@ -138,6 +145,37 @@ class TheCensusDescribesThisTree(unittest.TestCase):
                 stream.write(source)
             self.assertEqual(audit_derived_sets.literal_sets(path),
                              [("KEPT", 0), ("GROWN", 1)])
+
+    def test_a_literal_wrapped_or_inside_a_function_is_still_hand_written(self):
+        """The two spellings the census could not see until F04. `frozenset({...})`
+        is a call, and a call was read as a derivation, which it is only when its
+        argument is not itself a literal; a list bound inside a function is as
+        hand-kept as one at module level, and no test can import it, which is the
+        point of naming it."""
+        source = ("WRAPPED = frozenset({'a', 'b'})\n"
+                  "SORTED = sorted(['b', 'a'])\n"
+                  "DERIVED = frozenset(WRAPPED)\n"
+                  "BUILT = frozenset(x for x in 'ab')\n"
+                  "def parse():\n"
+                  "    LOCAL = {'c'}\n"
+                  "    x = ['not', 'upper']\n")
+        self.assertIn("frozenset", audit_derived_sets.WRAPPERS)
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "module.py")
+            with open(path, "w", encoding="utf-8") as stream:
+                stream.write(source)
+            self.assertEqual(audit_derived_sets.literal_sets(path),
+                             [("WRAPPED", 2), ("SORTED", 2), ("parse.LOCAL", 1)])
+
+    def test_every_folder_of_shipped_code_is_a_source(self):
+        """`SOURCES`, read against the tree it lists. Until F04 it named `scripts/` and
+        `tools/` and not `scripts/lib/`, so the six sets in `safe_http` and
+        `image_header` — the fetch policy's private networks among them — were outside
+        the census by omission, the shape this module exists to find."""
+        skill = audit_derived_sets.SKILL
+        folders = {folder for folder, dirs, files in os.walk(skill)
+                   if "__pycache__" not in folder and any(f.endswith(".py") for f in files)}
+        self.assertEqual(folders, set(audit_derived_sets.SOURCES))
 
     def test_the_scan_finds_the_sets_this_suite_already_knows_about(self):
         """A floor. Every count above would read as good news if the scan quietly

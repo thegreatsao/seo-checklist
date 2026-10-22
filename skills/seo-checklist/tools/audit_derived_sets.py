@@ -14,10 +14,14 @@ it. So it is never found by looking harder at the code that consumes the list.
     python tools/audit_derived_sets.py --out F    # write the record
     python tools/audit_derived_sets.py --check F  # exit 1 if the record is stale
 
-**What is counted.** A module-level assignment in `scripts/` or `tools/` whose name is
-upper case and whose value is a list, tuple, set or dict **literal**. A literal is the
-whole point: a collection built by a comprehension or a function call is derived from
-something, which is what the requirement asks for, so it is out of scope by construction.
+**What is counted.** An assignment in `scripts/`, `scripts/lib/` or `tools/` whose name
+is upper case and whose value is a list, tuple, set or dict **literal** — at module level,
+or inside a function (named `function.NAME`), and bare or handed straight to
+`frozenset`, `set`, `tuple`, `list`, `dict` or `sorted`. A literal is the whole point: a
+collection built by a comprehension or from another name is derived from something,
+which is what the requirement asks for, so it is out of scope by construction. The three
+widenings are F04's: until then `scripts/lib/`, function bodies and `frozenset({...})`
+were outside the census, and 24 unread sets with them.
 
 **An empty literal the module fills itself is out as well** (0.147.0). `_RUNTIME = {}`
 followed by `_RUNTIME.update(...)` is where a run keeps what it found, not a list anybody
@@ -51,10 +55,15 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))))
 SKILL = os.path.join(ROOT, "skills", "seo-checklist")
-SOURCES = (os.path.join(SKILL, "scripts"), os.path.join(SKILL, "tools"))
+SOURCES = (os.path.join(SKILL, "scripts"), os.path.join(SKILL, "scripts", "lib"),
+           os.path.join(SKILL, "tools"))
 TESTS = os.path.join(ROOT, "tests")
 
 LITERALS = (ast.List, ast.Tuple, ast.Set, ast.Dict)
+# A literal handed straight to one of these is still a list a hand wrote: `frozenset({...})`
+# is how half the closed vocabularies in `scripts/` are spelled, and until F04 the census
+# read the call and called them derived (seventeen of them).
+WRAPPERS = ("frozenset", "set", "tuple", "list", "dict", "sorted")
 
 from scope_line import print_scope  # noqa: E402
 
@@ -66,7 +75,7 @@ ESTABLISHES = (
 DOES_NOT_ESTABLISH = (
     "that any set holds the right members, since importing a name is not asserting "
     "what belongs in it and the read column is a ceiling, or anything about a set "
-    "built by a call or a comprehension, which is not counted"
+    "built by a comprehension or from another name, which is not counted"
 )
 
 
@@ -88,29 +97,52 @@ def filled_by_the_module(tree: ast.Module, name: str) -> bool:
     return False
 
 
-def literal_sets(path: str) -> list[tuple[str, int]]:
-    """Upper-case module-level names bound to a collection literal, with their size.
+def written_literal(value: ast.AST | None) -> ast.AST | None:
+    """The literal a hand wrote, bare or handed to one of `WRAPPERS`; else None."""
+    if (isinstance(value, ast.Call) and getattr(value.func, "id", None) in WRAPPERS
+            and len(value.args) == 1 and not value.keywords):
+        value = value.args[0]
+    return value if isinstance(value, LITERALS) else None
 
-    An empty one the module fills itself is left out: see the module docstring."""
+
+def literal_sets(path: str) -> list[tuple[str, int]]:
+    """Upper-case names bound to a collection literal, with their size.
+
+    Module-level names, and since F04 the same inside a function, named
+    `function.NAME`: `parse_html()` kept a second copy of the deprecated schema types
+    that no import could reach and no census saw. An empty one the module fills itself
+    is left out: see the module docstring."""
     with open(path, encoding="utf-8") as stream:
         tree = ast.parse(stream.read())
+    scopes = [("", tree.body, set())] + [
+        # A name the function declares `global` is the module's, rebound: a run's
+        # result, which `filled_by_the_module` already leaves out.
+        (node.name + ".", node.body,
+         {name for inner in ast.walk(node) if isinstance(inner, ast.Global)
+          for name in inner.names})
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
     out = []
-    for node in tree.body:
-        if isinstance(node, ast.Assign):
-            targets, value = node.targets, node.value
-        elif isinstance(node, ast.AnnAssign) and node.value is not None:
-            targets, value = [node.target], node.value
-        else:
-            continue
-        if not isinstance(value, LITERALS):
-            continue
-        for target in targets:
-            name = getattr(target, "id", None)
-            if name and name.isupper():
-                size = len(value.keys) if isinstance(value, ast.Dict) else len(value.elts)
-                if size == 0 and filled_by_the_module(tree, name):
-                    continue
-                out.append((name, size))
+    for prefix, body, rebound in scopes:
+        for node in body:
+            if isinstance(node, ast.Assign):
+                targets, value = node.targets, node.value
+            elif isinstance(node, ast.AnnAssign) and node.value is not None:
+                targets, value = [node.target], node.value
+            else:
+                continue
+            value = written_literal(value)
+            if value is None:
+                continue
+            for target in targets:
+                name = getattr(target, "id", None)
+                if (name and name.isupper() and name not in rebound
+                        and (prefix == "" or len(name) > 1)):
+                    size = (len(value.keys) if isinstance(value, ast.Dict)
+                            else len(value.elts))
+                    if size == 0 and filled_by_the_module(tree, name):
+                        continue
+                    out.append((prefix + name, size))
     return out
 
 
