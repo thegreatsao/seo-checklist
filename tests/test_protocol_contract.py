@@ -22,6 +22,7 @@ is recorded in the document rather than settled here.
 from __future__ import annotations
 
 import os
+import sys
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,6 +30,10 @@ SKILL = os.path.join(ROOT, "skills", "seo-checklist", "SKILL.md")
 
 CONTRACT = "## What this tool guarantees, and what you must supply"
 HEADER = "| Section | The tool guarantees | You must |"
+
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
 
 
 def document() -> list[str]:
@@ -124,6 +129,14 @@ class TheProtocolSaysWhoseObligationEachSentenceIs(unittest.TestCase):
                 self.assertNotRegex(
                     obligation, r"^(?:the (?:tool|run|runner|report)|it) ",
                     "this obligation is written as a statement about the tool")
+
+    def test_the_document_says_its_marking_is_by_section_not_by_line(self):
+        """OPR-1's last scenario: a section marked as a whole tells a reader which kinds
+        of sentence it holds, not which kind a given line is, and the document must
+        say which of the two it provides. Until F04 it said "one row per section" and
+        never that a line is not marked on its own."""
+        contract = self.lines[self.lines.index(CONTRACT):self.lines.index(HEADER)]
+        self.assertRegex(" ".join(" ".join(contract).split()), r"by section, not by line")
 
     def test_the_contract_comes_before_the_sections_it_describes(self):
         """An operator reads top to bottom, and a contract found after the instructions

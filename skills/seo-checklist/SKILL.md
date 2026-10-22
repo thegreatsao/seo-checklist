@@ -29,7 +29,9 @@ stops checking, and the tool cannot detect that — from inside the run, everyth
 happened correctly.
 
 One row per section, in the order they appear. `—` means the section makes no claim of
-that kind. A row is not a summary of its section; it is the contract, and the section is
+that kind. The marking is by section, not by line: a line inherits its section's row, so
+a line in a section with both columns filled may be either kind, and the row says which
+kinds are there. A row is not a summary of its section; it is the contract, and the section is
 the reasoning behind it.
 
 | Section | The tool guarantees | You must |
@@ -60,7 +62,7 @@ the reasoning behind it.
 `tests/test_protocol_contract.py` holds this table against the document: every section has
 a row, every row names a section, and no row is empty on both sides. What it cannot hold
 is whether a row is *true* — that is a reading, and `openspec/specs/operator-protocol/`
-OPR-1 records it as the half still unread.
+OPR-1 records it, with the marking per line, as what its test does not reach.
 
 ## Run it
 
