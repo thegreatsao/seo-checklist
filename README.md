@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.176.0 — see [CHANGELOG.md](CHANGELOG.md). Every partial requirement of the specification is held or narrowed to what is held (153 of 158 enforced, 1 partial, 4 bounded). A crawled page that gives no answer is asked again and, silent twice, withholds the PASS of the checks that pass by absence. The schema.org type sets come from a dated release, FAQPage and HowTo are retired, the hreflang codes are the IANA registry's, and a report whose language-model queue is unanswered says the audit is incomplete.
+Version 0.176.1 — see [CHANGELOG.md](CHANGELOG.md). Every partial requirement of the specification is held or narrowed to what is held (153 of 158 enforced, 1 partial, 4 bounded). A crawled page that gives no answer is asked again and, silent twice, withholds the PASS of the checks that pass by absence. The schema.org type sets come from a dated release, FAQPage and HowTo are retired, the hreflang codes are the IANA registry's, and a report whose language-model queue is unanswered says the audit is incomplete.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

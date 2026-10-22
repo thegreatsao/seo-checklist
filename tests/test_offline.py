@@ -419,6 +419,24 @@ class EveryGateStepIsWatched(unittest.TestCase):
         self.assertTrue(ok, out)
         self.assertEqual(out.split(), ["True", "True", "file"], out)
 
+    def test_every_lint_step_passes_under_the_tripwire(self):
+        """Run as the gate runs it, on every leg. Until 0.176.1 the Windows leg ran
+        `python -m ruff check .`, whose `__main__` starts the ruff binary from a Python
+        that has the tripwire, and the tripwire refused it: CI's first run of 0.176.0
+        ended there on Windows. The Linux leg's shell starts ruff, as Windows' now does."""
+        base = {k: v for k, v in os.environ.items()
+                if k not in ("PYTHONPATH", "SEO_TRIPWIRE", "GIT_ALLOW_PROTOCOL",
+                             "SEO_LOOPBACK_ONLY")}
+        base["PATH"] = os.path.dirname(sys.executable) + os.pathsep + base.get("PATH", "")
+        lint = [(name, job, step) for name, job, step in self.run_steps()
+                if step.get("name") == "Lint"]
+        self.assertEqual({name for name, _, _ in lint}, {"test", "test-windows"})
+        for job_name, job, step in lint:
+            with self.subTest(job=job_name):
+                env = self.ci_local.step_env(base, self.workflow, job, step)
+                ok, _, out = self.ci_local.run_step("Lint", step["run"], env)
+                self.assertTrue(ok, out)
+
 
 class EveryTestModuleImportsTheHarness(unittest.TestCase):
     """A module run alone has the switches and the tripwire only if it imports

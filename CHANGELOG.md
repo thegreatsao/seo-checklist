@@ -10,6 +10,28 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.176.1 — CI's Windows legs lint the way Linux does
+
+Registry version: `abf465b3f75d`, unchanged. Nothing an audit fetches, decides or prints
+moves; no verdict moves. What changes is one line of `ci.yml`.
+
+* **The Windows Lint step starts ruff from the shell.** It ran `python -m ruff check .`,
+  and ruff's `__main__` starts the ruff binary from a Python that carries the tripwire
+  0.176.0 put under every gate step (GOV-7). The tripwire refuses a program it cannot see
+  into and `tripwire.PROGRAMS` does not name, so CI's first run of 0.176.0 ended at Lint on
+  both Windows legs (3.11, 3.14), and their test steps never ran. Linux's `ruff check .`
+  was never in the hook's sight: its shell starts ruff, and the step's line is read for a
+  program that fetches, the narrowing GOV-7's Reader line names. Windows now runs the same
+  line. Adding ruff to `PROGRAMS` would also have passed; it would have widened what every
+  Python under the tripwire may start, for a step that needs Python for nothing.
+* **A test runs every Lint step as the gate runs it.** `test_offline.EveryGateStepIsWatched`
+  runs both legs' Lint lines through `ci_local.run_step` with each step's environment. On
+  the old line it fails with CI's own message; on the new one it passes.
+* Every other process the suite and the Windows steps start was read for the same
+  refusal: python, node, git, bash and openssl, each with the quoted `C:\Program Files\…`
+  and `.EXE` shapes Windows hands the hook. None is refused. The Windows test steps have
+  still never run under the tripwire; the next CI run is the first that reaches them.
+
 ## 0.176.0 — every partial requirement held or narrowed to what is held; a page that gave no answer is asked again, then withheld
 
 Registry version: `abf465b3f75d` (was `4a0ebe46be2f`): TECH-001 asserts `summary.retired_types eq 0` (was

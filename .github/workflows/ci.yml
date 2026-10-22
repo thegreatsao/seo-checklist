@@ -631,8 +631,11 @@ jobs:
           pip install pyyaml
 
 
+      # The shell starts ruff, as on Linux. Until 0.176.1 this was `python -m ruff`,
+      # whose `__main__` starts the binary from a Python carrying the tripwire, which
+      # refuses a program it cannot see into: 0.176.0's first run ended here.
       - name: Lint
-        run: python -m ruff check .
+        run: ruff check .
 
       - name: Registry is in step with its generator
         run: python skills/seo-checklist/tools/build_checklist.py --check
