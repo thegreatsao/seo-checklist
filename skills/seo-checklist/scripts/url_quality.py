@@ -11,10 +11,9 @@ import re
 from collections import Counter, defaultdict
 from urllib.parse import parse_qs, urlparse
 
-from seo_common import read_urls
+from seo_common import FACET_PARAMS, read_urls
 
 
-FACET_PARAMS = {"sort", "filter", "color", "size", "brand", "price", "min_price", "max_price", "page", "view", "category", "tag"}
 TRACKING_PREFIXES = ("utm_", "fbclid", "gclid", "msclkid")
 
 

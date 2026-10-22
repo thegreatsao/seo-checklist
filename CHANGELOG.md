@@ -10,6 +10,13 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## Unreleased — F04, until 0.176.0 is cut
+
+Registry version: `abf465b3f75d` (was `4a0ebe46be2f`): TECH-001 reads
+`summary.retired_types` (F04 batch 4b, the owner's ruling of 2026-10-22). Every verdict
+move so far is listed in `docs/sprint-20261021-F04-plan.md`, which the 0.176.0 entry is
+written from; this heading becomes that entry.
+
 ## 0.175.0 — every item the census never saw answer names what it waits for; 30 more can be seen failing or answering
 
 Registry version: `4a0ebe46be2f` (was `90ba79b14b28`). **Verdicts move in five places on a live audit, named

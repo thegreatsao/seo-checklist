@@ -5560,7 +5560,7 @@ class SchemaRequiredProps(unittest.TestCase):
         self.assertEqual(verdict("MS-032", bad), FAIL)
 
 class RichResults(unittest.TestCase):
-    """TE-172 `summary.errors`, TECH-001 `summary.warnings`."""
+    """TE-172 `summary.errors`, TECH-001 `summary.retired_types`."""
 
     def test_valid_schema_has_no_errors(self):
         self.assertEqual(verdict("TE-172", out("rich")), PASS)

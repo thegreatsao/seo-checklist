@@ -73,6 +73,17 @@ except ImportError:  # pragma: no cover - requests normally supplies urllib3
 
 
 HTML_CTYPES = ("text/html", "application/xhtml+xml")
+
+# Query parameters that filter or reorder a listing: one list for `url_quality`,
+# `faceted_nav_audit` and `collection_page_checker`, which until F04 (batch 4b) kept three
+# that disagreed. Open — no standard names every shop's filters; `tests/test_closed_sets.py`
+# holds only that every checker reads this one. `page` and `p` are pagination, not facets (the owner's ruling,
+# 2026-10-22): Google asks each page of a sequence for its own canonical, so a `?page=2`
+# keeping its query in its canonical is right.
+FACET_PARAMS = frozenset({
+    "sort", "filter", "color", "size", "brand", "price", "min_price", "max_price",
+    "view", "category", "tag", "rating", "availability", "material",
+})
 XML_CTYPES = ("xml", "text/plain", "application/octet-stream")
 FETCH_ERROR_KINDS = (
     "unresolved", "refused", "timeout", "tls", "blocked", "robots", "other",

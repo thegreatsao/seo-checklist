@@ -45,18 +45,24 @@ PLACE_TYPES = descendants("Place")
 # disagreed. A retired feature whose markup shares its type with a live one (course
 # info and the course list both read `Course`; learning video reads `VideoObject`;
 # vehicle listing reads `Car`) cannot be told apart by type and is not here; every key
-# is a type in the snapshot, which `tests/test_closed_sets.py` holds.
+# is a type in the snapshot, which `tests/test_closed_sets.py` holds, with the
+# membership the owner ruled on 2026-10-22 (FAQPage and HowTo synced from "restricted",
+# Dataset kept).
 DEPRECATED_TYPES = {
     "SpecialAnnouncement": "special announcements deprecated from July 31, 2025; "
                            "documentation removed September 9, 2025",
     "ClaimReview": "fact-check rich results phased out from June 12, 2025",
-    "Dataset": "since November 5, 2025 used only by Dataset Search, not Google Search",
+    "Dataset": "Google, November 5, 2025: Dataset markup \"is only used by Dataset "
+               "Search, and not Google Search\"",
+    "FAQPage": "FAQ rich results no longer appear in Google Search from May 7, 2026; "
+               "documentation removed June 2026",
+    "HowTo": "How-to rich results no longer shown on desktop or mobile; documentation "
+             "removed September 2023",
 }
 
-RESTRICTED_TYPES = {
-    "FAQPage": "eligible mainly for authoritative government and health sites",
-    "HowTo": "no longer broadly shown as a Google rich result",
-}
+# Types Google shows only for some sites. None since FAQPage left on May 7, 2026; kept so
+# a restriction Google announces has a place that every reader already consults.
+RESTRICTED_TYPES: dict[str, str] = {}
 
 
 def schema_types(value) -> list[str]:

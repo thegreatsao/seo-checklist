@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "4a0ebe46be2f",
+  "registry_version": "abf465b3f75d",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -4606,7 +4606,7 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "summary.warnings",
+          "path": "summary.retired_types",
           "eq": 0
         },
         "applies_when": {
@@ -4615,7 +4615,7 @@
         }
       },
       "effort": "low",
-      "fix": "Remove HowTo (deprecated) and FAQPage outside gov/health sites"
+      "fix": "Remove HowTo, FAQPage and other markup Google no longer shows a rich result for"
     },
     {
       "id": "TECH-002",

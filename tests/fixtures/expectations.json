@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "registry_version": "4a0ebe46be2f",
+  "registry_version": "abf465b3f75d",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -413,8 +413,8 @@
       "TECH-001": {
         "expect": "PASS",
         "title": "Modern schema types only (no HowTo/FAQ misuse)",
-        "basis": "c9ffff4f62cf",
-        "why": "the schema uses current Organization, WebSite, BreadcrumbList, Bakery, and Article types with no HowTo or FAQ misuse"
+        "basis": "c70ed2a81cef",
+        "why": "the schema uses current Organization, WebSite, BreadcrumbList, Bakery, and Article types; re-read in F04 (batch 4b) against the rule summary.retired_types eq 0: none of them is a type Google has retired, so the count is zero"
       },
       "CI-004": {
         "expect": "PASS",
@@ -1117,8 +1117,8 @@
       "TECH-001": {
         "expect": "NO_DATA",
         "title": "Modern schema types only (no HowTo/FAQ misuse)",
-        "basis": "c9ffff4f62cf",
-        "why": "the page's only HowTo sits in a JSON-LD block that does not parse; since Half A the checker says so and the pass is withheld rather than awarded"
+        "basis": "c70ed2a81cef",
+        "why": "the page's only HowTo sits in a JSON-LD block that does not parse; since Half A the checker says so and the pass is withheld rather than awarded. Re-read in F04 (batch 4b) against summary.retired_types eq 0: the unparsed HowTo is counted nowhere, so the zero is withheld, not awarded"
       },
       "CI-004": {
         "expect": "FAIL",

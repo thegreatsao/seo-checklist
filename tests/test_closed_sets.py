@@ -500,5 +500,72 @@ class TheToolsOwnOutputs(unittest.TestCase):
                           "redirect_temporary"} & returned)
 
 
+
+class RetiredSchemaTypesAreGooglesChangelog(unittest.TestCase):
+    """The retired table's membership against the Search Central documentation
+    changelog (read 2026-10-22), as the owner ruled on 2026-10-22: FAQ rich results "no
+    longer appear in Google Search starting May 7, 2026"; How-to documentation was
+    removed in September 2023; Dataset markup "is only used by Dataset Search, and not
+    Google Search" (2025-11-05); special announcements and fact checks are gone. Nothing
+    is restricted to some sites any more. Until F04 (batch 4b) FAQPage and HowTo were
+    "restricted" (a warning), so TE-172 passed a page whose FAQ markup Google no longer
+    shows, and TECH-001 read the warning count rather than the retired types."""
+
+    def test_the_table_is_the_changelog(self):
+        from lib import schema_types
+        self.assertEqual(set(schema_types.DEPRECATED_TYPES),
+                         {"SpecialAnnouncement", "ClaimReview", "Dataset", "FAQPage", "HowTo"})
+        self.assertEqual(dict(schema_types.RESTRICTED_TYPES), {})
+
+    def test_an_faq_page_is_an_error_and_a_retired_type(self):
+        import rich_results_guard
+        for type_name in ("FAQPage", "HowTo", "Dataset"):
+            with self.subTest(type_name=type_name):
+                result = rich_results_guard.guard_rich_results([{"@type": type_name}])
+                self.assertEqual(result["summary"]["errors"], 1)
+                self.assertEqual(result["summary"]["retired_types"], 1)
+        live = rich_results_guard.guard_rich_results([{"@type": "Article"}])
+        self.assertEqual(live["summary"]["retired_types"], 0)
+
+    def test_tech_001_reads_the_retired_types(self):
+        sys.path.insert(0, os.path.join(SKILL, "tools"))
+        import build_checklist
+        rule = next(item for item in build_checklist.build()
+                    if item["id"] == "TECH-001")["check"]["assert"]
+        self.assertEqual(rule, {"path": "summary.retired_types", "eq": 0})
+
+
+class FacetParametersAreOneList(unittest.TestCase):
+    """The facet and filter parameter names, kept once in `seo_common.FACET_PARAMS` (an
+    open list: no standard names every shop's filters). The owner's ruling, 2026-10-22:
+    the union of the three lists the checkers kept, less `page` and `p`, which are
+    pagination — Google asks each page of a sequence to carry its own canonical, so a
+    `?page=2` that keeps its query in its canonical is right, not a filtered URL."""
+
+    def test_every_checker_reads_the_one_list(self):
+        import collection_page_checker
+        import faceted_nav_audit
+        import seo_common
+        import url_quality
+        self.assertIs(collection_page_checker.FILTER_PARAMS, seo_common.FACET_PARAMS)
+        self.assertIs(faceted_nav_audit.FACET_KEYS, seo_common.FACET_PARAMS)
+        self.assertIs(url_quality.FACET_PARAMS, seo_common.FACET_PARAMS)
+        self.assertEqual(set(seo_common.FACET_PARAMS), {
+            "sort", "filter", "color", "size", "brand", "price", "min_price",
+            "max_price", "view", "category", "tag", "rating", "availability", "material"})
+
+    def test_a_page_number_is_not_a_facet(self):
+        import faceted_nav_audit
+        import url_quality
+        page = "https://shop.example.test/shoes?page=2"
+        self.assertNotIn("facet_parameters", url_quality.analyze_urls([page])["rows"][0]["flags"])
+        self.assertEqual(faceted_nav_audit.audit([page])["rows"][0]["facet_params"], [])
+        rated = "https://shop.example.test/shoes?rating=4"
+        self.assertIn("facet_parameters", url_quality.analyze_urls([rated])["rows"][0]["flags"])
+        tagged = "https://shop.example.test/shoes?category=boots"
+        self.assertEqual(faceted_nav_audit.audit([tagged])["rows"][0]["facet_params"],
+                         ["category"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -85,13 +85,15 @@ import audit_derived_sets  # noqa: E402
 # `RICH_RESULT_REQUIRED` read against Google's pages. 71 when `tests/test_tool_sets.py`
 # read the fourteen in `tools/`. 46 when the scripts' standard vocabularies were read
 # against their sources (and the dead `THIN_CONTENT_THRESHOLDS`, `JPEG_SOF_MARKERS` and
-# `KNOWN_RATINGS` left the census).
-UNREAD_AT_MOST = 46
+# `KNOWN_RATINGS` left the census). 43 when the three facet lists became one, read:
+# what is left unread is the 43 open sets in `tests/open-sets.json`, and nothing else.
+UNREAD_AT_MOST = 43
 
 # GOV-3 in full (F04, batch 4b): an unread set must be open, with its reason in
 # `tests/open-sets.json`; a closed one is derived or read. This counts the unread sets
-# with no reason, and it is lowered as each is derived or given a reader.
-UNREAD_CLOSED_AT_MOST = 3
+# with no reason. 42 when the record was written; 0 at the end of the batch, and it
+# stays there: raising it is the only way past, and it is a reviewed commit.
+UNREAD_CLOSED_AT_MOST = 0
 
 
 class TheCensusDescribesThisTree(unittest.TestCase):

@@ -3153,7 +3153,7 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "summary.warnings",
+          "path": "summary.retired_types",
           "eq": 0
         },
         "applies_when": {
@@ -3162,7 +3162,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`summary.warnings` counts deprecated or restricted schema types such as HowTo and FAQ outside their permitted sites.",
+      "reading": "`summary.retired_types` counts the JSON-LD nodes whose type Google no longer shows a rich result for, HowTo and FAQPage among them, or shows only for some sites.",
       "shapes": {
         "conjunction": "The parenthetical names the types."
       }

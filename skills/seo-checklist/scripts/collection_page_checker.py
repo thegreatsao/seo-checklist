@@ -9,7 +9,7 @@ import argparse
 from urllib.parse import parse_qs, urlparse
 
 from schema_required_props import load_source_html
-from seo_common import read_source, issue, parse_html, print_json_or_text
+from seo_common import FACET_PARAMS as FILTER_PARAMS, read_source, issue, parse_html, print_json_or_text
 
 
 # basis: convention — 150 words, present at import, half the 300 a content page is
@@ -25,8 +25,6 @@ COLLECTION_THIN_WORDS = 150
 #  zero, a count this number does not touch, so it decides what is printed, never a
 #  verdict (F11; held by `tests/test_presentation_basis.py`)
 MIN_PRODUCT_LINKS = 4
-
-FILTER_PARAMS = {"filter", "sort", "color", "size", "brand", "price", "min_price", "max_price", "page", "p"}
 
 
 def rel_values(value) -> set[str]:

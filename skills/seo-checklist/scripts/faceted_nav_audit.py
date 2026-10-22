@@ -31,7 +31,7 @@ try:
 except ImportError:
     from scripts.lib.safe_http import robots_allows
 
-from seo_common import fetch_url, parse_html, read_urls, same_host
+from seo_common import FACET_PARAMS as FACET_KEYS, fetch_url, parse_html, read_urls, same_host
 
 
 # basis: presentation — three query parameters on one URL, present at import. It adds
@@ -63,8 +63,6 @@ FREQUENT_PARAM_COUNT = 3
 #  300th internal link is omitted from `rows` and `issues` and must mark the result
 #  incomplete rather than move the cap.
 MAX_URLS_FROM_PAGE = 300
-
-FACET_KEYS = {"sort", "filter", "color", "size", "brand", "price", "min_price", "max_price", "rating", "page", "view", "availability", "material"}
 
 
 def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:

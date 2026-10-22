@@ -1,10 +1,10 @@
 {
   "measured": "upper-case names bound to a list, tuple, set or dict literal, bare or handed to a constructor, at module level or in a function, in scripts/, scripts/lib/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 196,
-  "read": 150,
-  "unread": 46,
-  "unread_closed": 3,
+  "total": 194,
+  "read": 151,
+  "unread": 43,
+  "unread_closed": 0,
   "modules": {
     "a11y_seo_checker": {
       "read": [
@@ -601,15 +601,6 @@
         }
       ]
     },
-    "collection_page_checker": {
-      "read": [],
-      "unread": [
-        {
-          "name": "FILTER_PARAMS",
-          "entries": 10
-        }
-      ]
-    },
     "cwv_metrics": {
       "read": [
         {
@@ -678,15 +669,6 @@
         }
       ],
       "unread": []
-    },
-    "faceted_nav_audit": {
-      "read": [],
-      "unread": [
-        {
-          "name": "FACET_KEYS",
-          "entries": 13
-        }
-      ]
     },
     "favicon_check": {
       "read": [
@@ -969,11 +951,11 @@
       "read": [
         {
           "name": "DEPRECATED_TYPES",
-          "entries": 3
+          "entries": 5
         },
         {
           "name": "RESTRICTED_TYPES",
-          "entries": 2
+          "entries": 0
         }
       ],
       "unread": []
@@ -1010,6 +992,10 @@
         {
           "name": "HTML_CTYPES",
           "entries": 2
+        },
+        {
+          "name": "FACET_PARAMS",
+          "entries": 14
         },
         {
           "name": "FETCH_ERROR_KINDS",
@@ -1146,10 +1132,6 @@
     "url_quality": {
       "read": [],
       "unread": [
-        {
-          "name": "FACET_PARAMS",
-          "entries": 12
-        },
         {
           "name": "TRACKING_PREFIXES",
           "entries": 4,

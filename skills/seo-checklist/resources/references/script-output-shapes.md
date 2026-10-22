@@ -1540,6 +1540,7 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
 `summary.errors` — int
 `summary.warnings` — int
 `summary.invalid_blocks` — int
+`summary.retired_types` — int (written from the code in F04 batch 4b, not from a probe run: nodes whose type is in `lib/schema_types` `DEPRECATED_TYPES` or `RESTRICTED_TYPES`)
 `truncated` — bool
 `truncated_reason` — str
 `source` — str

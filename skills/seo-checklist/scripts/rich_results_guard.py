@@ -71,6 +71,11 @@ def guard_rich_results(documents: list[Any],
         "summary": {
             "errors": sum(1 for item in issues if item["severity"] == "error"),
             "warnings": sum(1 for item in issues if item["severity"] == "warning"),
+            # Nodes carrying a type Google no longer shows a rich result for, or shows
+            # only for some sites: what TECH-001 asks, apart from the other errors and
+            # warnings this guard counts.
+            "retired_types": sum(1 for row in rows if set(row["types"])
+                                 & (set(DEPRECATED_TYPES) | set(RESTRICTED_TYPES))),
             "invalid_blocks": len(invalid_blocks or []),
         },
     }
