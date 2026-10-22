@@ -463,11 +463,13 @@ before resolving it, and keeps `whois`, the W3C validator and Safe Browsing from
 asked. Under it a tripwire (`tests/tripwire/`, a Python audit hook) raises in the test
 process and ends a child on a connection or a name lookup for any other host, and on the
 start of a program that is not Python and not named in `tripwire.PROGRAMS` with the
-reason it reaches nothing (git, bash, openssl, node), or of a child whose environment
-leaves the tripwire out. Its switch is its own, `SEO_TRIPWIRE`. The workflow arms it for
+reason it reaches nothing (git, bash, openssl, node; git only with
+`GIT_ALLOW_PROTOCOL=file`), or of a Python child that would not load it — an environment,
+given or inherited, that leaves it out, a relative path read from the child's own
+directory, or `-I`, `-E` or `-S`. Its switch is its own, `SEO_TRIPWIRE`. The workflow arms it for
 every step and an install step disarms it; its `sitecustomize` hands every child an
 absolute path to it and `GIT_ALLOW_PROTOCOL=file`; every test module imports the harness.
-Each is probed by breaking it: twelve mutations, one at a time, each reddening
+Each is probed by breaking it: nineteen mutations, one at a time, each reddening
 `test_offline` (`docs/sprint-20261022-F04-5.md`).
 
 This line said until 0.124.0 that the guard "refuses everything but loopback unless the
@@ -487,8 +489,10 @@ and, run alone, had neither switch. `harness.offline_env()` set `PYTHONPATH` wit
 tripwire, so a child given it by anything but `spawn` ran unwatched. And the gate "The
 specification is a specification" ran `npx -y`, which fetched openspec from the npm
 registry on every CI run: a gate that failed for npm's outage. It runs the pin with
-`npx --offline` now, from npm's cache, which the install step fills; a machine whose cache
-lacks it fails the step without asking the registry.
+`npx --offline` now, from npx's cache, which the install step fills by running the pin
+once for its version (`npm install -g` and `npm cache add` were measured not to fill what
+`--offline` reads); a machine whose cache lacks it fails the step without asking the
+registry, and a test holds that a gate runs only a package an install step warmed.
 
 **What holding it found.** `html_validator.py` calls validator.w3.org with `requests`
 directly, past the guard, and it did so in every suite run where its child lacked the
@@ -500,7 +504,9 @@ not asked while `SEO_LOOPBACK_ONLY` is set, which no real audit sets — no verd
 `actions/setup-python` and the install lines — reach the network by design and are not
 gates; a gate step's own shell lines are read by a word list (`npx`, `npm install`,
 `pip install`, `wget`, `curl` to a host that is not this machine, git's network
-subcommands; `npx --offline` is allowed), not watched; a listed program is trusted on its written reason; and
+subcommands; `npx --offline` is allowed), not watched; a listed program is trusted on
+its written reason, and for `bash` and `node`, which can do anything, that reason is the
+whole fence; and
 `tests/hand_capture/`, the suite's second fence for the programs `test_url_credentials`
 runs with the guard off, is trusted in the tripwire's place on its own audit hook.
 
@@ -1200,7 +1206,7 @@ than one mechanism inside one.
 **Probed:** GOV-1 and GOV-10 by running the tools — the threshold gate reports its five
 counts and zero without a basis; the calibration search over the workflow returns nothing.
 GOV-8 and INV-G2 by reading the workflow and the test that reads argparse defaults.
-GOV-12 by eleven renames on 7 October 2026 and four on 22 October; GOV-7 by twelve
+GOV-12 by eleven renames on 7 October 2026 and four on 22 October; GOV-7 by nineteen
 mutations of the tripwire, the workflow and the harness (F04). The rest were derived by reading the gates and
 their tests.
 
