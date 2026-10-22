@@ -98,7 +98,6 @@ SCHEMA_SIGNALS = {
     "liveblogposting": ("media", 3, "LiveBlogPosting schema"),
     "softwareapplication": ("saas", 4, "SoftwareApplication schema"),
     "webapplication": ("saas", 4, "WebApplication schema"),
-    "saasapplication": ("saas", 4, "SaaSApplication schema"),
 }
 
 # Platform fingerprints in markup and asset paths.

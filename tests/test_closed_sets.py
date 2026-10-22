@@ -253,5 +253,252 @@ class AiCrawlerTokensAreOneList(unittest.TestCase):
                          ["Googlebot", "Bingbot", *tokens])
 
 
+
+class StandardVocabulariesAsPublished(unittest.TestCase):
+    """Each set below against the document that states it in full, as read on
+    2026-10-22 (the date beside each is the document's own). A member the source adds
+    or drops fails here by name."""
+
+    def test_inputs_whose_control_names_itself(self):
+        """HTML's 22 input types; of them, the ones a `<label>` is not how they get a
+        name (HTML-AAM): `hidden` is not rendered, `submit`, `reset` and `button` are
+        named by their value, `image` by its `alt`."""
+        import a11y_seo_checker
+        html_types = {"hidden", "text", "search", "tel", "url", "email", "password",
+                      "date", "month", "week", "time", "datetime-local", "number",
+                      "range", "color", "checkbox", "radio", "file", "submit", "image",
+                      "reset", "button"}
+        self.assertEqual(len(html_types), 22)
+        self.assertEqual(set(a11y_seo_checker.UNLABELLED_INPUT_TYPES),
+                         {"hidden", "submit", "reset", "button", "image"} & html_types)
+
+    def test_safe_browsing_threat_types(self):
+        """Safe Browsing v4 `ThreatType` (reference last updated 2024-09-18) less
+        `THREAT_TYPE_UNSPECIFIED`, which a lookup never asks for."""
+        import domain_safety_check
+        self.assertEqual(set(domain_safety_check.SB_THREAT_TYPES),
+                         {"MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE",
+                          "POTENTIALLY_HARMFUL_APPLICATION"})
+
+    def test_google_favicon_formats(self):
+        """Google's favicon page (last updated 2026-08-28): "BMP, GIF, ICO, PNG, JPEG,
+        PPM, and TIFF" — each spelled as `image_header` names what it recognises, or a
+        format Google accepts could never be credited."""
+        import inspect
+        import favicon_check
+        from lib import image_header
+        self.assertEqual(set(favicon_check.GOOGLE_FAVICON_FORMATS),
+                         {"bmp", "gif", "ico", "png", "jpeg", "ppm", "tiff"})
+        source = inspect.getsource(image_header)
+        for name in favicon_check.GOOGLE_FAVICON_FORMATS:
+            self.assertIn(f'"{name}"', source, name)
+
+    def test_font_files_are_the_formats_css_names(self):
+        """CSS Fonts 4 `format()`: woff2, woff, truetype, opentype, embedded-opentype,
+        collection (and svg, left out: `.svg` is an image far more often than a font).
+        Until F04 (batch 4b) `.ttc`, a collection, was not a font file here."""
+        import font_audit
+        self.assertEqual(set(font_audit.FONT_EXTENSIONS),
+                         {".woff2", ".woff", ".ttf", ".otf", ".eot", ".ttc"})
+        self.assertEqual(font_audit._font_format("https://example.test/a/b.ttc"), "ttc")
+
+    def test_jpeg_frame_markers(self):
+        """ITU-T T.81 Table B.1: SOF0–SOF15 are C0–CF less C4 (DHT), C8 (JPG) and CC
+        (DAC) — thirteen."""
+        from lib import image_header
+        self.assertEqual(set(image_header.JPEG_SOF_MARKERS),
+                         {0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7,
+                          0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF})
+
+    def test_search_console_reads_with_the_read_only_scope(self):
+        """The Search Console API's two scopes are `webmasters` and
+        `webmasters.readonly`; an audit only reads."""
+        import gsc_checker
+        self.assertEqual(list(gsc_checker.SCOPES),
+                         ["https://www.googleapis.com/auth/webmasters.readonly"])
+
+    def test_html_media_types(self):
+        """IANA's media types for HTML: `text/html` and `application/xhtml+xml`."""
+        import seo_common
+        self.assertEqual(set(seo_common.HTML_CTYPES), {"text/html", "application/xhtml+xml"})
+
+    def test_robots_fields_are_the_ones_crawlers_document(self):
+        """RFC 9309's three, the sitemap line (Google, last updated 2026-08-31; Yandex),
+        Yandex's Clean-param, and Crawl-delay, which Bing reads. `Host` was Yandex's,
+        and its robots.txt page no longer lists it (read 2026-10-22): until F04
+        (batch 4b) a `Host:` line passed as a directive a crawler reads."""
+        import robots_checker
+        self.assertEqual(set(robots_checker.KNOWN_ROBOTS_FIELDS),
+                         {"user-agent", "allow", "disallow", "sitemap", "clean-param",
+                          "crawl-delay"})
+        problems = robots_checker.correctness_problems(
+            "User-agent: *\nDisallow: /x\nHost: example.test\n", "text/plain")
+        self.assertTrue(any("`host`" in p for p in problems), problems)
+
+    def test_the_bom_sniff_is_whatwg_s(self):
+        """WHATWG Encoding, BOM sniff (Living Standard, 19 October 2026): EF BB BF is
+        UTF-8, FE FF UTF-16BE, FF FE UTF-16LE, and nothing else."""
+        from lib import safe_http
+        self.assertEqual({bom for bom, _ in safe_http._BOMS},
+                         {b"\xef\xbb\xbf", b"\xfe\xff", b"\xff\xfe"})
+        for bom, text in ((b"\xfe\xff", "\u00e9".encode("utf-16-be")),
+                          (b"\xff\xfe", "\u00e9".encode("utf-16-le"))):
+            name = dict(safe_http._BOMS)[bom]
+            self.assertEqual((bom + text).decode(name), "\u00e9")
+
+    def test_cacheable_methods(self):
+        """RFC 9110 §9.2.3: GET, HEAD and POST are cacheable; POST only with explicit
+        freshness and a Content-Location, which a fetch cache keyed by URL cannot
+        honour, so it is left out."""
+        from lib import safe_http
+        self.assertEqual(set(safe_http.CACHEABLE_METHODS), {"GET", "HEAD"})
+
+    def test_an_opt_in_reaches_private_ranges_and_never_link_local(self):
+        """Loopback, RFC 1918, RFC 4193 and RFC 6598 — each not globally routable —
+        and never link-local, where a cloud's metadata service answers."""
+        import ipaddress
+        from lib import safe_http
+        networks = [ipaddress.ip_network(n) for n in safe_http.PRIVATE_ALLOWED_NETWORKS]
+        self.assertEqual({str(n) for n in networks},
+                         {"127.0.0.0/8", "::1/128", "10.0.0.0/8", "172.16.0.0/12",
+                          "192.168.0.0/16", "fc00::/7", "100.64.0.0/10"})
+        for network in networks:
+            self.assertFalse(network.network_address.is_global, network)
+        for metadata in ("169.254.169.254", "fe80::1"):
+            address = ipaddress.ip_address(metadata)
+            self.assertFalse(any(address in n for n in networks if n.version == address.version))
+
+    def test_open_graph_requires_four(self):
+        """The Open Graph protocol: "The four required properties for every page are"
+        og:title, og:type, og:image, og:url; og:description, og:site_name and
+        og:locale are optional. Until F04 (batch 4b) og:description was required here.
+        The lengths are this tool's conventions, not the protocol's."""
+        import social_meta
+        self.assertEqual({tag for tag, rule in social_meta.OG_REQUIREMENTS.items()
+                          if rule["required"]},
+                         {"og:title", "og:type", "og:image", "og:url"})
+        self.assertTrue(set(social_meta.OG_REQUIREMENTS) <= {
+            "og:title", "og:type", "og:image", "og:url", "og:audio", "og:description",
+            "og:determiner", "og:locale", "og:site_name", "og:video"})
+
+    def test_x_card_types(self):
+        """X's card types (developer.x.com/cards/markup, found 2026-10-22; the page
+        itself answered 402 to a fetch): summary, summary_large_image, app, player."""
+        import social_meta
+        self.assertEqual(set(social_meta.TWITTER_REQUIREMENTS["twitter:card"]["valid_values"]),
+                         {"summary", "summary_large_image", "app", "player"})
+
+    def test_indexnow_engines(self):
+        """indexnow.org's `searchengines.json` (read 2026-10-22): each engine's meta
+        URL, whose directory is its endpoint. Until F04 (batch 4b) Yep, the Internet
+        Archive and Amazonbot were missing and Yandex's host lacked `www`."""
+        import indexnow_checker
+        published = {
+            "bing": "https://www.bing.com/indexnow/meta.json",
+            "yandex": "https://www.yandex.com/indexnow/meta.json",
+            "seznam": "https://search.seznam.cz/indexnow/meta.json",
+            "naver": "https://searchadvisor.naver.com/indexnow/meta.json",
+            "yep": "https://indexnow.yep.com/indexnow/meta.json",
+            "internetarchive": "https://web-static.archive.org/indexnow/meta.json",
+            "amazonbot": "https://indexnow.amazonbot.amazon/indexnow/meta.json",
+        }
+        self.assertEqual(indexnow_checker.INDEXNOW_ENDPOINTS,
+                         {engine: url.removesuffix("/meta.json")
+                          for engine, url in published.items()})
+
+
+class SearchConsoleIndexingStates(unittest.TestCase):
+    """Google's page indexing statuses (support.google.com/webmasters/answer/7440203,
+    read 2026-10-22), each on the side Google files it under. The two "warning" ones
+    are indexed. Until F04 (batch 4b) "Indexed, though blocked by robots.txt" read as
+    not indexed (it holds "blocked"), and "Server error (5xx)", "URL marked
+    'noindex'", "Alternate page with proper canonical tag" and "Page indexed without
+    content" read as unrecognised, so CI-002 was FAIL or NO_DATA where Google answers."""
+
+    INDEXED = ("Page is indexed", "Submitted and indexed",
+               "Indexed, not submitted in sitemap", "Indexed, though blocked by robots.txt",
+               "Page indexed without content")
+    NOT_INDEXED = (
+        "Server error (5xx)", "Redirect error", "URL blocked by robots.txt",
+        "URL marked \u2018noindex\u2019", "URL marked 'noindex'", "Soft 404",
+        "Blocked due to unauthorized request (401)", "Not found (404)",
+        "Blocked due to access forbidden (403)", "URL blocked due to other 4xx issue",
+        "Crawled - currently not indexed", "Discovered - currently not indexed",
+        "Alternate page with proper canonical tag",
+        "Duplicate without user-selected canonical",
+        "Duplicate, Google chose different canonical than user", "Page with redirect",
+        "URL is unknown to Google")
+
+    def test_every_documented_state_reads_as_google_files_it(self):
+        import gsc_url_inspection
+        for state in self.INDEXED:
+            self.assertIs(gsc_url_inspection.classify_coverage(state), True, state)
+        for state in self.NOT_INDEXED:
+            self.assertIs(gsc_url_inspection.classify_coverage(state), False, state)
+        self.assertIsNone(gsc_url_inspection.classify_coverage("Something new"))
+
+    def test_an_indexed_marker_never_matches_a_state_google_files_as_not_indexed(self):
+        """The indexed markers are asked first, so one that also matched a not-indexed
+        state would read it as indexed; each must earn its place on a real state."""
+        from gsc_url_inspection import INDEXED_MARKERS, NOT_INDEXED_MARKERS
+        for marker in INDEXED_MARKERS:
+            self.assertTrue(any(marker in s.lower() for s in self.INDEXED), marker)
+            self.assertFalse(any(marker in s.lower() for s in self.NOT_INDEXED), marker)
+        for marker in NOT_INDEXED_MARKERS:
+            self.assertFalse(any(marker in s.lower() and not any(
+                m in s.lower() for m in INDEXED_MARKERS) for s in self.INDEXED), marker)
+
+
+class PageSpeedVocabularies(unittest.TestCase):
+    """The PageSpeed Insights API and CrUX. `strategy` is MOBILE or DESKTOP (the API
+    reference, last updated 2024-09-03); CrUX grades a metric FAST, AVERAGE or SLOW;
+    the Core Web Vitals are LCP, INP and CLS (web.dev). The reference does not list
+    `loadingExperience`'s keys, so each key here is held to a CrUX API metric name
+    (developer.chrome.com, last updated 2026-10-13) and its label to the threshold
+    table."""
+
+    CRUX_METRICS = {"largest_contentful_paint", "interaction_to_next_paint",
+                    "cumulative_layout_shift", "first_contentful_paint",
+                    "experimental_time_to_first_byte"}
+
+    def test_the_vocabularies(self):
+        import pagespeed
+        self.assertEqual(set(pagespeed.VALID_STRATEGIES), {"mobile", "desktop"})
+        self.assertEqual(set(pagespeed.CRUX_RATING), {"fast", "average", "slow"})
+        self.assertEqual(tuple(pagespeed.KNOWN_RATINGS), tuple(pagespeed.CRUX_RATING.values()))
+        self.assertEqual(set(pagespeed.CORE_WEB_VITALS), {"LCP", "INP", "CLS"})
+        self.assertEqual(set(pagespeed.PSI_METRIC_MAP.values()), set(pagespeed.CWV_THRESHOLDS))
+        names = {key.lower().removesuffix("_ms").removesuffix("_score")
+                 for key in pagespeed.PSI_METRIC_MAP}
+        self.assertEqual(names, self.CRUX_METRICS)
+
+
+class TheToolsOwnOutputs(unittest.TestCase):
+
+    def test_detectable_profiles_are_the_profiles_file_s(self):
+        import json
+        import detect_profile
+        with open(os.path.join(SKILL, "resources", "config", "profiles.json"),
+                  encoding="utf-8") as stream:
+            profiles = set(json.load(stream)["profiles"]) - {"default"}
+        self.assertEqual(set(detect_profile.PROFILES), profiles)
+        self.assertEqual({profile for profile, _w, _l in
+                          detect_profile.SCHEMA_SIGNALS.values()} - profiles, set())
+
+    def test_profile_schema_signals_are_schema_org_types(self):
+        import detect_profile
+        from lib import schema_types
+        known = {name.lower() for name in schema_types.SNAPSHOT["types"]}
+        self.assertEqual(sorted(set(detect_profile.SCHEMA_SIGNALS) - known), [])
+
+    def test_wasted_crawls_are_status_classes_the_classifier_returns(self):
+        import server_log_audit
+        returned = {server_log_audit.status_class(code) for code in range(100, 600)}
+        self.assertTrue(set(server_log_audit.WASTED) <= returned)
+        self.assertEqual(returned - set(server_log_audit.WASTED),
+                         {"served", "not_modified", "redirect_permanent",
+                          "redirect_temporary"} & returned)
+
+
 if __name__ == "__main__":
     unittest.main()

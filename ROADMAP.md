@@ -101,12 +101,12 @@ robots.txt forbids, and it no longer does.
 |---|---|
 | standard | 20 |
 | measured | 14 |
-| convention | 97 |
+| convention | 96 |
 | inherited | 0 |
 | no basis | 0 |
-| **numbers a verdict depends on** | **131** |
+| **numbers a verdict depends on** | **130** |
 
-**`inherited` at 0 of 131 closes what was the largest single gap between this tree and 1.0.** It was
+**`inherited` at 0 of 130 closes what was the largest single gap between this tree and 1.0.** It was
 75 of 144 at 0.87.1 and 77 of 164 until 0.167.1, which moved eleven coverage caps out: ten
 to `convention`, one to `presentation`. 0.170.0 moved the crawl's page and depth caps to
 `convention` and the MinHash pair to `presentation`; 0.172.0 moved the two crawl caps back,

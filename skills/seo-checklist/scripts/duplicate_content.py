@@ -33,20 +33,6 @@ from seo_common import read_as_url, THIN_CONTENT_WORDS, carries_content, normali
 #  decides what is printed, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 NEARLY_EMPTY_WORDS = 100
 
-# Quality gates from resources/references/quality-gates.md
-# basis: convention — `default` is THIN_CONTENT_WORDS and is the only entry ever read
-#  (see the comment where it is read): the other four need a page-type detector that
-#  does not exist and have been unreachable since import. So this table decides
-#  nothing its default does not, and the judgement is the one written over
-#  THIN_CONTENT_WORDS in `seo_common.py` (F11)
-THIN_CONTENT_THRESHOLDS = {
-    "blog_post": 1500,
-    "landing_page": 800,
-    "product_page": THIN_CONTENT_WORDS,
-    "location_page": 350,
-    "default": THIN_CONTENT_WORDS,
-}
-
 
 # ---------------------------------------------------------------------------
 # Reading pages off the inventory
@@ -236,12 +222,11 @@ def detect_duplicates(pages: dict, similarity_threshold: float = 0.85,
         if data["noindex"]:
             continue
         wc = data["word_count"]
-        # Only `["default"]` is ever read: the other four entries in
-        # THIN_CONTENT_THRESHOLDS need a page-type detector that does not exist, so
-        # `location_page: 350` and its neighbours have been unreachable since import.
+        # A per-page-type table stood here until F04 (batch 4b); only its default was
+        # ever read, the other four needed a page-type detector that does not exist.
         # `thin_words` is how the number actually moves — passed per site profile, and
         # recorded in `summary` below so a verdict says what it was measured against.
-        threshold = thin_words or THIN_CONTENT_THRESHOLDS["default"]
+        threshold = thin_words or THIN_CONTENT_WORDS
         if wc < threshold:
             thin_pages.append({
                 "type": "thin_content",
@@ -286,7 +271,7 @@ def detect_duplicates(pages: dict, similarity_threshold: float = 0.85,
             # The number the verdict was reached against. Without it "thin_pages = 14"
             # is unarguable: a reader cannot tell 14 short pages from a threshold set
             # for a different kind of site.
-            "thin_words_threshold": thin_words or THIN_CONTENT_THRESHOLDS["default"],
+            "thin_words_threshold": thin_words or THIN_CONTENT_WORDS,
             "duplicate_description_groups": len(description_groups),
             "missing_title_pages": len(missing_titles),
             "title_group_exclusions": title_group_exclusions,
@@ -315,7 +300,7 @@ def main():
                         help="Jaccard similarity threshold for near-duplicates (default: 0.85)")
     parser.add_argument("--thin-words", type=int, default=0,
                         help="Word count below which a page counts as thin (default: "
-                             f"{THIN_CONTENT_THRESHOLDS['default']}). Site profiles pass "
+                             f"{THIN_CONTENT_WORDS}). Site profiles pass "
                              "this: a local business service page says what it does and "
                              "stops, and the default is written for a page with "
                              "something to explain.")

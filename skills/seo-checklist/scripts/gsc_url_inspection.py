@@ -69,11 +69,19 @@ except ImportError:
 
 # coverageState strings that mean the URL is in the index. Google returns prose
 # here rather than an enum, so match on substrings and treat anything
-# unrecognised as undecided rather than as a failure.
-INDEXED_MARKERS = ("submitted and indexed", "indexed, not submitted")
+# unrecognised as undecided rather than as a failure. The indexed markers are asked
+# first: "Indexed, though blocked by robots.txt" is indexed and holds "blocked".
+# Held against every status on Google's page indexing report by
+# `tests/test_closed_sets.py`; until F04 (batch 4b) that one read as not indexed and
+# five others as unrecognised.
+INDEXED_MARKERS = ("submitted and indexed", "indexed, not submitted",
+                   "indexed, though blocked", "page indexed without content",
+                   "page is indexed")
 NOT_INDEXED_MARKERS = ("excluded", "not found", "blocked", "redirect",
                        "duplicate", "crawled - currently not indexed",
-                       "discovered - currently not indexed", "soft 404")
+                       "discovered - currently not indexed", "soft 404",
+                       "server error", "noindex", "4xx", "alternate page",
+                       "unknown to google")
 
 
 def classify_coverage(state: str):

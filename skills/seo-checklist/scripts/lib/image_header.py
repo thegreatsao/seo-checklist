@@ -45,10 +45,9 @@ def _gif_dimensions(data: bytes) -> tuple[int, int] | None:
     return _positive_dimensions(*struct.unpack("<HH", data[6:10]))
 
 
-JPEG_SOF_MARKERS = {
-    0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7,
-    0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF,
-}
+# ITU-T T.81 Table B.1: every marker from C0 to CF starts a frame, except C4 (DHT),
+# C8 (reserved, JPG) and CC (DAC).
+JPEG_SOF_MARKERS = frozenset(range(0xC0, 0xD0)) - {0xC4, 0xC8, 0xCC}
 
 
 def _jpeg_dimensions(data: bytes) -> tuple[int, int] | None:

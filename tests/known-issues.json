@@ -914,13 +914,13 @@
       "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants (presentation since 0.170.0: no rule reads a near-duplicate field) and the three detect_profile tables as inherited (convention since F11, with the detector measured as a whole), DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and nineteen module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
         "basis": {
-          "convention": 97,
+          "convention": 96,
           "inherited": 0,
           "measured": 14,
           "presentation": 47,
           "standard": 20
         },
-        "counted": 131,
+        "counted": 130,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:38"
         ],

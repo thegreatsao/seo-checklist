@@ -54,7 +54,7 @@ HEADERS = default_headers()
 #  are what Facebook and LinkedIn truncate at rather than what Google does
 OG_REQUIREMENTS = {
     "og:title": {"required": True, "max_length": 60, "min_length": 10},
-    "og:description": {"required": True, "max_length": 200, "min_length": 50},
+    "og:description": {"required": False, "max_length": 200, "min_length": 50},
     "og:image": {"required": True},
     "og:url": {"required": True},
     "og:type": {"required": True},

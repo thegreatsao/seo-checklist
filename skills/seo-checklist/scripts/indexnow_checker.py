@@ -49,11 +49,16 @@ except ImportError:
 #  the only threshold in this tree whose purpose is to *not* report something.
 KEY_MASK_MIN_CHARS = 8
 
+# indexnow.org's `searchengines.json` as read on 2026-10-22, each engine's meta URL
+# less `/meta.json` (held by `tests/test_closed_sets.py`).
 INDEXNOW_ENDPOINTS = {
     "bing": "https://www.bing.com/indexnow",
-    "yandex": "https://yandex.com/indexnow",
+    "yandex": "https://www.yandex.com/indexnow",
     "seznam": "https://search.seznam.cz/indexnow",
     "naver": "https://searchadvisor.naver.com/indexnow",
+    "yep": "https://indexnow.yep.com/indexnow",
+    "internetarchive": "https://web-static.archive.org/indexnow",
+    "amazonbot": "https://indexnow.amazonbot.amazon/indexnow",
 }
 
 

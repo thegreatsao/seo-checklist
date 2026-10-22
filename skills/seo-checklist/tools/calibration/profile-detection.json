@@ -1,5 +1,5 @@
 {
-  "detector_signature": "1115c98a838aa5b2",
+  "detector_signature": "ebabd4da6689b26b",
   "generated": "2026-10-20",
   "in_force_min_score": 5,
   "limitation": "labels are a person's judgement, and three restaurants labelled local also run a shop, so ecommerce for them is arguably right; one fetch per site, so a page that changes moves its row; 39 sites",

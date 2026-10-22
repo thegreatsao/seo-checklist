@@ -1,19 +1,19 @@
 {
   "measured": "upper-case names bound to a list, tuple, set or dict literal, bare or handed to a constructor, at module level or in a function, in scripts/, scripts/lib/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 199,
-  "read": 128,
-  "unread": 71,
-  "unread_closed": 28,
+  "total": 196,
+  "read": 150,
+  "unread": 46,
+  "unread_closed": 3,
   "modules": {
     "a11y_seo_checker": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "UNLABELLED_INPUT_TYPES",
           "entries": 5
         }
-      ]
+      ],
+      "unread": []
     },
     "ai_crawler_policy_matrix": {
       "read": [
@@ -620,12 +620,17 @@
       "unread": []
     },
     "detect_profile": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "SCHEMA_SIGNALS",
-          "entries": 18
+          "entries": 17
         },
+        {
+          "name": "PROFILES",
+          "entries": 5
+        }
+      ],
+      "unread": [
         {
           "name": "PLATFORM_SIGNALS",
           "entries": 8,
@@ -640,30 +645,17 @@
           "name": "MARKUP_SIGNALS",
           "entries": 7,
           "open": "markup fingerprints, a sample with weights"
-        },
-        {
-          "name": "PROFILES",
-          "entries": 5
         }
       ]
     },
     "domain_safety_check": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "SB_THREAT_TYPES",
           "entries": 4
         }
-      ]
-    },
-    "duplicate_content": {
-      "read": [],
-      "unread": [
-        {
-          "name": "THIN_CONTENT_THRESHOLDS",
-          "entries": 5
-        }
-      ]
+      ],
+      "unread": []
     },
     "eeat_signal_checker": {
       "read": [
@@ -697,31 +689,31 @@
       ]
     },
     "favicon_check": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "GOOGLE_FAVICON_FORMATS",
           "entries": 7
         }
-      ]
+      ],
+      "unread": []
     },
     "font_audit": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "FONT_EXTENSIONS",
-          "entries": 5
+          "entries": 6
         }
-      ]
+      ],
+      "unread": []
     },
     "gsc_checker": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "SCOPES",
           "entries": 1
         }
-      ]
+      ],
+      "unread": []
     },
     "gsc_links_csv": {
       "read": [],
@@ -744,17 +736,17 @@
       ]
     },
     "gsc_url_inspection": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "INDEXED_MARKERS",
-          "entries": 2
+          "entries": 5
         },
         {
           "name": "NOT_INDEXED_MARKERS",
-          "entries": 8
+          "entries": 13
         }
-      ]
+      ],
+      "unread": []
     },
     "hreflang_checker": {
       "read": [
@@ -776,15 +768,6 @@
         }
       ],
       "unread": []
-    },
-    "image_header": {
-      "read": [],
-      "unread": [
-        {
-          "name": "JPEG_SOF_MARKERS",
-          "entries": 13
-        }
-      ]
     },
     "image_inventory": {
       "read": [
@@ -811,13 +794,13 @@
       ]
     },
     "indexnow_checker": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "INDEXNOW_ENDPOINTS",
-          "entries": 4
+          "entries": 7
         }
-      ]
+      ],
+      "unread": []
     },
     "local_seo_checker": {
       "read": [],
@@ -850,18 +833,16 @@
     "pagespeed": {
       "read": [
         {
+          "name": "VALID_STRATEGIES",
+          "entries": 2
+        },
+        {
           "name": "PAGE_WEIGHT_BANDS",
           "entries": 3
         },
         {
           "name": "CWV_THRESHOLDS",
           "entries": 5
-        }
-      ],
-      "unread": [
-        {
-          "name": "VALID_STRATEGIES",
-          "entries": 2
         },
         {
           "name": "PSI_METRIC_MAP",
@@ -874,12 +855,9 @@
         {
           "name": "CORE_WEB_VITALS",
           "entries": 3
-        },
-        {
-          "name": "KNOWN_RATINGS",
-          "entries": 3
         }
-      ]
+      ],
+      "unread": []
     },
     "parse_html": {
       "read": [
@@ -923,13 +901,13 @@
       "unread": []
     },
     "robots_checker": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "KNOWN_ROBOTS_FIELDS",
-          "entries": 7
+          "entries": 6
         }
-      ]
+      ],
+      "unread": []
     },
     "robots_path_tester": {
       "read": [
@@ -941,21 +919,10 @@
       "unread": []
     },
     "safe_http": {
-      "read": [],
-      "unread": [
-        {
-          "name": "DEFAULT_HEADERS",
-          "entries": 5,
-          "open": "the request this tool sends, a choice"
-        },
+      "read": [
         {
           "name": "PRIVATE_ALLOWED_NETWORKS",
           "entries": 7
-        },
-        {
-          "name": "_TRUE",
-          "entries": 4,
-          "open": "spellings of yes in an environment variable; any other reads no, so it fails closed"
         },
         {
           "name": "_BOMS",
@@ -964,6 +931,18 @@
         {
           "name": "CACHEABLE_METHODS",
           "entries": 2
+        }
+      ],
+      "unread": [
+        {
+          "name": "DEFAULT_HEADERS",
+          "entries": 5,
+          "open": "the request this tool sends, a choice"
+        },
+        {
+          "name": "_TRUE",
+          "entries": 4,
+          "open": "spellings of yes in an environment variable; any other reads no, so it fails closed"
         }
       ]
     },
@@ -1029,6 +1008,10 @@
     "seo_common": {
       "read": [
         {
+          "name": "HTML_CTYPES",
+          "entries": 2
+        },
+        {
           "name": "FETCH_ERROR_KINDS",
           "entries": 7
         },
@@ -1050,10 +1033,6 @@
         }
       ],
       "unread": [
-        {
-          "name": "HTML_CTYPES",
-          "entries": 2
-        },
         {
           "name": "XML_CTYPES",
           "entries": 3,
@@ -1093,6 +1072,10 @@
         {
           "name": "CRAWLER_DOMAINS",
           "entries": 6
+        },
+        {
+          "name": "WASTED",
+          "entries": 4
         }
       ],
       "unread": [
@@ -1100,10 +1083,6 @@
           "name": "JSON_KEYS",
           "entries": 6,
           "open": "field names across log formats, a sample"
-        },
-        {
-          "name": "WASTED",
-          "entries": 4
         }
       ]
     },
@@ -1123,8 +1102,7 @@
       ]
     },
     "social_meta": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "OG_REQUIREMENTS",
           "entries": 7
@@ -1133,7 +1111,8 @@
           "name": "TWITTER_REQUIREMENTS",
           "entries": 6
         }
-      ]
+      ],
+      "unread": []
     },
     "spec_debt": {
       "read": [

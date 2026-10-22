@@ -126,7 +126,7 @@ CORE_WEB_VITALS = ("LCP", "INP", "CLS")
 
 # The three bands CrUX and Lighthouse both grade in, after CRUX_RATING has normalised
 # them. Anything outside this set is a band nobody here enumerated.
-KNOWN_RATINGS = ("good", "needs-improvement", "poor")
+KNOWN_RATINGS = tuple(CRUX_RATING.values())
 
 
 def field_cwv_verdict(metrics: dict) -> dict | None:

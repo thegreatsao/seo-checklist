@@ -27,7 +27,7 @@ from seo_common import (
 #  not detect non-WOFF2 faces — the separate extension check below does.
 LARGE_FONT_BYTES = 100_000
 
-FONT_EXTENSIONS = (".woff2", ".woff", ".ttf", ".otf", ".eot")
+FONT_EXTENSIONS = (".woff2", ".woff", ".ttf", ".otf", ".eot", ".ttc")
 
 
 def _font_format(url: str) -> str:
