@@ -109,29 +109,43 @@ absence of a decision, and it MUST NOT be cited as anything else.
 **Why:** the gate passes at any count — 0 of 131 undefended at 0.175.0 — which is fine as an
 accounting and dangerous as a standard. The category exists so the debt is countable, and it stops working
 the moment it reads as a fourth kind of justification.
-**Reader:** partial. `tests/test_inherited_basis.py` holds the two halves a test can
-reach. The count may not rise — 0 of 131 today, ratcheted downward (it rose by two once, by
-decision: 0.172.0 moved the crawl caps back from `convention`, F13; F11 moved them out again
-once no sampled verdict rested on them), which is the second
-scenario as an assertion. And no `inherited` line may argue its number: a declaration
-carrying a URL or a phrase like "the industry standard" has recorded an absence where
-there was a decision, which is the same error as the reverse and harder to notice because
-it reads as thoroughness.
+**Reader:** enforced, since F04, with the narrowing said below.
+`tests/test_inherited_basis.py` holds the two halves a test can reach. The count may not
+rise — 0 of 131 today, ratcheted downward (it rose by two once, by decision: 0.172.0 moved
+the crawl caps back from `convention`, F13; F11 moved them out again once no sampled
+verdict rested on them), which is the second scenario as an assertion: at a ceiling of 0
+`test_the_undefended_count_does_not_rise` refuses every `inherited` line, so the
+category is no longer counted like the others — a new one is a commit that raises the
+ceiling. And no `inherited` line may argue its number: a declaration carrying a URL or a
+phrase like "the industry standard" has recorded an absence where there was a decision,
+which is the same error as the reverse and harder to notice because it reads as
+thoroughness.
 
 The full distribution over all five kinds is recorded in `tests/known-issues.json`,
 because a ratchet on one column alone is satisfied by relabelling an `inherited` line
 `convention` without arguing it — moving the debt rather than paying it. The two numbers
 then move together and the record shows it.
 
-**Partial, and it cannot be more.** The defence rule is a positive search: it finds what
-its pattern knows, and an empty result is not proof that nothing argues its number in
-words nobody thought of. A test that fires on a phrasing it has been shown to catch is
-what it is; `test_the_search_for_a_defence_would_find_one` is that demonstration. And the
-first scenario — an undefended number cited as justification in an argument with a client
-— happens outside this repository, where nothing here reaches.
+The third scenario has a reader where a basis is restated away from its line. Until F04
+the probe for the crawl caps' known issue returned `"inherited"` as a literal, and the
+record kept saying it after F11 argued both numbers `convention`; the probe now reads the
+two basis lines, so the record moves with them. Three sentences that stated a basis in
+prose were wrong the same way and were corrected: `SKILL.md` told the agent "None of them
+is `measured`" (14 are), `audit_score_sensitivity.py` said the weight tables' lines say
+`inherited` (they say `convention`), and `article_seo.py` said most of its thresholds are
+`inherited` (none is). Mutations, one at a time: an `inherited` line on a verdict
+constant, red; the same line arguing its number under a ceiling raised to 1, red; one
+crawl cap relabelled, red on both entries of `tests/known-issues.json` (on one before the
+probe was repaired).
 
-Still true, and the reason this is not `enforced`: no consumer distinguishes the kinds.
-The gate counts them and treats `inherited` exactly as it treats `standard`.
+**Narrowed, and filed in `docs/sprint-20261022-F04-4.md`.** The first scenario — an
+undefended number cited as justification in an argument with a client — happens outside
+this repository, where nothing here reaches. A sentence anywhere in the tree stating a
+constant's basis in words is found by no reader; the three above are the ones reading
+found. And the defence rule is a positive search: it finds what its pattern knows
+(`test_the_search_for_a_defence_would_find_one` shows it firing), and it can only meet an
+`inherited` line after a commit has raised the ceiling, which is a decision somebody
+reviews. None of this is a verdict bug: no verdict rests on an `inherited` number.
 
 #### Scenario: an undefended number is cited as justification
 - **WHEN** someone argues a threshold is right because it is what the code has always
@@ -305,10 +319,18 @@ verdict.
 **Why:** the code cannot tell deliberate advice from a claim an item must keep. A tool that
 called both defects would need exemptions, and the exemptions would make it useless within
 two releases.
-**Reader:** partial. The record is kept in step by a CI gate, and its own header states the
-rule at length. That the rule is *followed* — that no verdict moved because something was
-listed here — is not the kind of thing a test can hold, and the document says so rather than
-pretending otherwise.
+**Reader:** enforced, since F04, with the narrowing said below. The record is kept in step
+by `tests/test_inert_findings.py`, which re-measures it whole (a recorded finding edited:
+red), and its own header states the rule at length. The half of "its existence is not an
+argument for moving a verdict" a program can hold is that nothing the plugin ships reads
+it: `test_nothing_the_plugin_ships_names_the_record` walks every file under `skills/` —
+the runner, the checkers, the generator, the agent's instructions and resources — and
+refuses one that names the record or its module (the generator naming it: red).
+
+**Narrowed, and filed in `docs/sprint-20261022-F04-4.md`.** That the rule is *followed* by
+people — that nobody adds or withholds a rule because something was listed here, or copies
+its rows into one by hand — is not the kind of thing a test can hold. It is a person's
+argument, not a path through the tool, so it hides no verdict.
 
 #### Scenario: a finding no rule can act on
 - **WHEN** a checker reports something no registry rule reads
@@ -331,13 +353,22 @@ with what it records.
 checked. The gap between "this rule can produce FAIL" and "this rule produces FAIL on the
 right sites" is the whole of `openspec/specs/declarations/`, and a reader who conflates them stops
 looking.
-**Reader:** partial. `tests/test_audit_scope.py` holds the first scenario for every
-`tools/audit_*.py`, found by globbing: each declares `ESTABLISHES` and `DOES_NOT_ESTABLISH`,
-no two share a sentence, and a passing run closes on both — the eight gates as the
-workflow invokes them, the score-sensitivity report over a results file, the revision
-audit's `main` over an agreeing walk. The second scenario is a reader taking a green audit
-for a right threshold anyway: the output now says it is not one, and whether that is read
-is outside any program, GOV-5's limit.
+**Reader:** enforced, since F04, with the narrowing said below. `tests/test_audit_scope.py`
+holds the first scenario for every `tools/audit_*.py`, found by globbing: each declares
+`ESTABLISHES` and `DOES_NOT_ESTABLISH`, no two share a sentence, and a passing run closes on
+both — the eight gates as the workflow invokes them, the score-sensitivity report over a
+results file, the revision audit's `main` over an agreeing walk. Since F04
+`test_no_audit_claims_its_numbers_are_right` reads "none of them argues that a threshold is
+right" off the `ESTABLISHES` sentences: none may say a number or rule is right, correct,
+well chosen or accurate. Mutations, one at a time, each red: a `DOES_NOT_ESTABLISH`
+deleted, one audit's sentence copied into another, a line printed after the close, a new
+`audit_*.py` with no scope, an `ESTABLISHES` that calls its subject correct.
+
+**Narrowed, and filed in `docs/sprint-20261022-F04-4.md`.** The rightness search is
+positive and finds the words it knows (`test_the_search_for_a_rightness_claim_would_find_one`
+shows it firing). The second scenario is a reader taking a green audit for a right
+threshold anyway: the output says it is not one, and whether that is read is outside any
+program, GOV-5's limit.
 
 This line said until 0.125.0 that the disclaimers lived "in their docstrings and in no
 test". Measured on a pass: three audits of ten said somewhere in their output what they
@@ -939,12 +970,10 @@ the Workbench session before changing a name the module holds.
 
 ## 6. Open questions
 
-**Should `inherited` be allowed to increase?** GOV-2 says the category is an admission.
-At 0 of 131 it is no admission at all since 0.174.0, and the gate passes at any number. A ratchet —
-`inherited` permitted but never permitted to rise — is the shape this tree already uses for
-other debts, costs nothing to add, and would make every new undefended constant a
-deliberate act. What would settle it: whether the count is stable enough to ratchet against,
-which nobody has measured across releases.
+**Should `inherited` be allowed to increase?** Settled: no, except by a commit that says
+so. `tests/test_inherited_basis.py` ratchets the count, at 0 of 131 since 0.174.0, so a
+new undefended constant fails until the ceiling is raised in the commit that adds it —
+the deliberate act GOV-2's second scenario asks for (F04).
 
 **Why is calibration not a gate?** GOV-10 is unread because the four checks exist and CI
 does not run them. Each is offline and fast. The likeliest reason is that they were written
@@ -1069,15 +1098,16 @@ their tests.
 
 | | requirements |
 |---|---|
-| **enforced** | GOV-1, GOV-4, GOV-8, GOV-9, GOV-10, GOV-11 |
-| **partial** | GOV-2, GOV-3, GOV-5, GOV-6, GOV-7, GOV-12 |
+| **enforced** | GOV-1, GOV-2, GOV-4, GOV-5, GOV-6, GOV-8, GOV-9, GOV-10, GOV-11 |
+| **partial** | GOV-3, GOV-7, GOV-12 |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-G2, INV-G3, INV-G4, INV-G5, INV-G7, INV-G9, INV-G10, INV-G11, INV-G12 and
 INV-G13 enforced; INV-G1, INV-G6 and INV-G8 partial.
 
-**Six enforced, six partial, none unread, of twelve.**
+**Nine enforced, three partial, none unread, of twelve.** GOV-2, GOV-5 and GOV-6 moved in
+F04, each with a narrowing its Reader line names.
 
 The two unread requirements are the two that ask the machinery to be *governed* rather than
 to govern. GOV-2 asks that an admission not become a justification; GOV-3 asks that lists be

@@ -897,9 +897,12 @@ def _the_crawl_defaults_now_decide_whether_items_answer() -> dict:
     decides is now derived from `requires: crawl` in the registry, and what a script's
     own cap decides is beside it, named as such.
     """
+    import audit_thresholds
     import checklist_runner as runner
     import site_crawl
 
+    basis = {row["name"]: row["kind"] for row in audit_thresholds.scan()[0]
+             if row["file"].endswith("site_crawl.py")}
     reporters = set(_truncation_reporters())
     silenced = []
     by_own_cap = []
@@ -918,7 +921,10 @@ def _the_crawl_defaults_now_decide_whether_items_answer() -> dict:
     return {
         "max_pages": site_crawl.DEFAULT_MAX_PAGES,
         "depth": site_crawl.DEFAULT_DEPTH,
-        "both_bases": "inherited",
+        # Read from the two `# basis:` lines. Until F04 this was the literal
+        # "inherited", which stayed true in the record after F11 argued both numbers
+        # `convention` (0.174.0): a basis stated away from its line, and read by nothing.
+        "bases": {name: basis.get(name) for name in ("DEFAULT_DEPTH", "DEFAULT_MAX_PAGES")},
         "items_silenced_past_either_limit": sorted(silenced),
         # Same withholding, decided by a cap neither of these two numbers reaches:
         # nothing here is fed by the shared crawl. The list above is what these two

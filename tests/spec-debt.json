@@ -27,10 +27,10 @@
     "governance": {
       "counts": {
         "bounded": 0,
-        "enforced": 6,
+        "enforced": 9,
         "none": 0,
         "opposed": 0,
-        "partial": 6
+        "partial": 3
       },
       "opposed": [],
       "requirements": 12,
@@ -147,10 +147,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 145,
+    "enforced": 148,
     "none": 0,
     "opposed": 0,
-    "partial": 9,
+    "partial": 6,
     "requirements": 158
   }
 }

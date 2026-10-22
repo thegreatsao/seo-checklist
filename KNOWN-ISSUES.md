@@ -1891,14 +1891,15 @@ name. A column called `url` would be read as "fix this page".
   verdict.
   <!-- ki: the-other-caps-have-not-been-read -->
 
-2. **Two numbers nobody decided now decide whether fifteen items answer at all.**
+2. **Two numbers nobody had decided now decide whether fifteen items answer at all.**
    Before 0.88.0 `DEFAULT_MAX_PAGES = 100` and `DEFAULT_DEPTH = 3` bounded work: past
    them the crawl stopped and the items graded what it had. They now bound *answers* —
    a site past either reports `truncated`, and the items fed by that crawl say
    `NO_DATA` instead of `PASS`. That is the correct behaviour for the numbers as they
    stand, and it is the first time either number has been load-bearing, so neither has
-   ever been examined as one. Both are `inherited`: present at import, chosen by nobody
-   here.
+   ever been examined as one. Both were `inherited` — present at import, chosen by
+   nobody here — until F11 (0.174.0) argued them `convention`; the probe reads the two
+   basis lines rather than repeating them.
 
    **It said twenty until 0.91.0, and twenty was never this entry's number.** The probe
    collected every item whose script reports truncation and whose assertion passes by

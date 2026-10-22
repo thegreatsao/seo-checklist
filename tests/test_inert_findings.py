@@ -113,5 +113,39 @@ class RecordedInertFindings(unittest.TestCase):
             "that now acts on it, or a reader that has gone blind to it")
 
 
+class TheRecordFeedsNothing(unittest.TestCase):
+    """`openspec/specs/governance/` GOV-5: the record says what no rule reads, never
+    what is worth reading, and its existence is not an argument for moving a verdict.
+
+    The half of that a test can hold is that nothing the plugin ships reads it: no
+    file under `skills/` — the runner, the checkers, the generator, the agent's
+    instructions, its resources — names the record or the module that measures it.
+    A person citing it as grounds for a rule, or copying its rows into one by hand, is
+    the other half, and no program here reaches that.
+    """
+
+    NAMES = ("inert-findings", "inert_findings")
+
+    def test_nothing_the_plugin_ships_names_the_record(self):
+        skills = os.path.join(ROOT, "skills")
+        read = 0
+        found = []
+        for folder, dirs, files in os.walk(skills):
+            dirs[:] = [d for d in dirs if d != "__pycache__"]
+            for name in files:
+                path = os.path.join(folder, name)
+                try:
+                    with open(path, encoding="utf-8") as stream:
+                        text = stream.read()
+                except (UnicodeDecodeError, OSError):
+                    continue
+                read += 1
+                found += [f"{os.path.relpath(path, ROOT)} names {word}"
+                          for word in self.NAMES if word in text]
+        self.assertGreater(read, 100, "the walk over skills/ read almost nothing")
+        self.assertEqual(found, [], "the inert-findings record is read by the plugin, so "
+                         "its existence can move a verdict — " + "; ".join(found))
+
+
 if __name__ == "__main__":
     unittest.main()

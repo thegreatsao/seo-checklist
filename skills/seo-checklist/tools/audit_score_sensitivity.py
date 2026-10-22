@@ -3,9 +3,9 @@
 
 `SEVERITY_WEIGHT` — critical 10, high 6, medium 3, low 1 — decides the SEO Score,
 and `EFFORT_COST` — low 1, medium 2, high 4 — divides it to order the fix list.
-Both arrived with borrowed code, neither has been examined here, and their own
-`# basis:` lines say `inherited`. The score has been reported to two significant
-figures the whole time.
+Both arrived with borrowed code and were never calibrated; their own `# basis:`
+lines say `convention` since F11, an argued choice and not a measurement. The score
+has been reported to two significant figures the whole time.
 
 **This does not calibrate them, and calibrating them is not the next step.** A
 weight table says how much a critical item matters relative to a low one, and
@@ -20,7 +20,7 @@ Two outcomes, and both close the question:
   gets written down, and nobody has to buy outcome data to justify a number that
   turns out not to swing.
 - **The spread is large.** The headline is substantially an artifact of a number
-  nobody here chose, and it must either be calibrated or stop being the headline.
+  nobody here measured, and it must either be calibrated or stop being the headline.
 
 The diagnostic that explains either answer is the **per-severity pass rate**. A
 weighted mean only diverges from an unweighted one when the groups differ, so if a

@@ -168,8 +168,8 @@ CLAIMS = (
     # so these three said 160 while the tree counted 163 (found 2026-10-20, F10).
     Claim("openspec/specs/governance/spec.md", "GOV-2 inherited", r"(?P<n>\d+)\s+of\s+\d+\s+(?:undefended|today)", threshold("inherited"), 2),
     Claim("openspec/specs/governance/spec.md", "GOV-2 counted", r"\d+\s+of\s+(?P<n>\d+)\s+(?:undefended|today)", threshold("counted"), 2),
-    Claim("openspec/specs/governance/spec.md", "inherited question", r"At\s+(?P<n>\d+)\s+of\s+\d+\s+it\s+is\s+(?:a\s+large|no)", threshold("inherited")),
-    Claim("openspec/specs/governance/spec.md", "counted question", r"At\s+\d+\s+of\s+(?P<n>\d+)\s+it\s+is\s+(?:a\s+large|no)", threshold("counted")),
+    Claim("openspec/specs/governance/spec.md", "inherited question", r"ratchets\s+the\s+count,\s+at\s+(?P<n>\d+)\s+of\s+\d+", threshold("inherited")),
+    Claim("openspec/specs/governance/spec.md", "counted question", r"ratchets\s+the\s+count,\s+at\s+\d+\s+of\s+(?P<n>\d+)", threshold("counted")),
 
     Claim("README.md", "opening registry size", r"One fixed registry of (?P<n>\d+) checks", population("items")),
     Claim("README.md", "registry contract size", r"the contract: (?P<n>\d+) items", population("items")),

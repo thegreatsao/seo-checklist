@@ -685,9 +685,12 @@
       "state": "closed"
     },
     "the-crawl-defaults-now-decide-whether-items-answer": {
-      "claim": "DEFAULT_MAX_PAGES = 100 and DEFAULT_DEPTH = 3 decide whether the fifteen crawl-fed items answer at all, and both are inherited. The probe used to count every truncation reporter under that name, which was seven items too many; the crawl-fed set is now derived from requires: crawl and the rest are recorded beside it.",
+      "claim": "DEFAULT_MAX_PAGES = 100 and DEFAULT_DEPTH = 3 decide whether the fifteen crawl-fed items answer at all, and both are `convention` since F11 (0.174.0), read from their basis lines. The probe used to count every truncation reporter under that name, which was seven items too many; the crawl-fed set is now derived from requires: crawl and the rest are recorded beside it.",
       "measured": {
-        "both_bases": "inherited",
+        "bases": {
+          "DEFAULT_DEPTH": "convention",
+          "DEFAULT_MAX_PAGES": "convention"
+        },
         "depth": 3,
         "items_silenced_by_a_cap_other_than_these_two": [
           "AR-163",

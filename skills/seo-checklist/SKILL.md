@@ -605,7 +605,7 @@ processes that run starts inherit it.
 carries a `# basis:` line saying whether it is an external standard, a measurement, a
 convention, or inherited from the borrowed code unexamined. If a client argues with a
 verdict, that line is the answer — and if the line says `inherited`, the honest answer is
-that nobody here chose the number. None of them is `measured`.
+that nobody here chose the number, which is no argument that it is right.
 
 **The deliverable carries history and a task list.** A second audit of the same domain
 gets a "Since the previous audit" section — score movement and the items that changed,

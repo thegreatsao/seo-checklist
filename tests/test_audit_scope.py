@@ -23,6 +23,7 @@ import glob
 import io
 import json
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -38,6 +39,13 @@ import test_registry  # noqa: E402
 
 ESTABLISHES = "establishes: "
 DISCLAIMS = "does not establish: "
+
+# GOV-6: "None of them argues that a threshold is right." A positive search, so it
+# finds the words it knows and proves nothing about a claim made in others; shown to
+# fire below, because an empty result from a search never seen to fire says nothing.
+RIGHTNESS = re.compile(
+    r"\b(?:right|correct(?:ly)?|well[- ]chosen|accurate(?:ly)?|appropriate|justified|"
+    r"optimal|sound)\b", re.IGNORECASE)
 
 
 def audits() -> list[str]:
@@ -104,6 +112,23 @@ class EveryAuditDeclaresItsScope(unittest.TestCase):
                                      f"tools/{name} {key} is printed as one line")
                 self.assertNotEqual(scope.get("ESTABLISHES"),
                                     scope.get("DOES_NOT_ESTABLISH"))
+
+    def test_no_audit_claims_its_numbers_are_right(self):
+        """What an audit establishes is that a rule can fire, a verdict is reachable,
+        a record is in step — never that a number or a rule is well chosen. A green
+        audit whose own sentence claims that is the conflation the requirement is
+        about, said by the instrument itself."""
+        claims = [f"tools/{name}: {RIGHTNESS.search(text).group(0)!r}"
+                  for name in audits()
+                  for text in [scope_of(name).get("ESTABLISHES", "")]
+                  if RIGHTNESS.search(text)]
+        self.assertEqual(claims, [], "an audit says it establishes rightness — "
+                         + "; ".join(claims))
+
+    def test_the_search_for_a_rightness_claim_would_find_one(self):
+        self.assertTrue(RIGHTNESS.search("every threshold is set to the correct value"))
+        self.assertTrue(RIGHTNESS.search("the bands are well chosen"))
+        self.assertFalse(RIGHTNESS.search(scope_of("audit_reachability.py")["ESTABLISHES"]))
 
     def test_no_two_audits_share_a_sentence(self):
         """A sentence copied from one audit to the next is boilerplate, and boilerplate

@@ -53,11 +53,9 @@ except ImportError:
 # Constants
 # ---------------------------------------------------------------------------
 
-# Most thresholds in this file are `inherited`: article_seo.py arrived from
-# Agentic-SEO-Skill and those numbers were not decided here. The three Flesch Reading
-# Ease boundaries are the exception. Naming the rest does not calibrate them — it makes
-# them arguable, which is the step that was missing while they were literals scattered
-# through 600 lines.
+# article_seo.py arrived from Agentic-SEO-Skill with these numbers as literals scattered
+# through 600 lines. Naming them made them arguable; since F11 (0.174.0) none is
+# `inherited`, and each line below says which basis it has.
 
 # basis: measured — corpus=tools/calibration/paragraph-words.json (the Zyte article-extraction benchmark, 181 news and blog pages with hand-written article bodies, pinned by commit); date=2026-10-20; method=every paragraph extract_content considers, called body when its normalised text occurs in the labelled body, scored by paragraph-level F1 at cutoffs 0..20, the best taken (written before the run). It was 8 (F11's review of 3a): at 8 the filter dropped 17% of labelled body paragraphs for 3.5 points of precision, and a keyword said only in a short paragraph failed KW-076. At 0 every non-empty paragraph is body copy. Short paragraphs can match the body by accident, which flatters small cutoffs: with every fourth short match counted false the best is 3, not 0, so the corpus supports 0 to 3 and rules out 8, and the rule as written picks 0. A word count also reads a CJK sentence as one word, which the old cutoff dropped
 MIN_PARAGRAPH_WORDS = 0
