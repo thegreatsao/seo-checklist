@@ -31,13 +31,14 @@ other 20 partial and DEC-1: **21 requirements**.
 | batch | requirements | contract | state |
 |---|---|---|---|
 | 1 | HTTP-10, HTTP-13, INP-10, EVD-10 (+ H13-c) | `docs/sprint-20261021-F04-1.md` | **done**: `4be01d8` (active + contract), `005886e` (code), `f831882` (review 1 fixes), `3d01157` (H13-c + this plan), review 2 fixes in the commit after it (see the contract) |
-| 2 | EVD-1, EVD-2, VRD-2, VRD-3, REG-1 | `docs/sprint-20261021-F04-2.md` (`3e847cf`) | begun, **not committed**: work in progress parked as a patch outside the repository (the owner's handoff names the path) |
+| 2 | EVD-1, EVD-2, VRD-2, VRD-3, REG-1 | `docs/sprint-20261021-F04-2.md` (`3e847cf`) | **done**: `33e96b7` (batch 1's suffix-list tests in UTC), `216e620` (code), `54916fb` (review 1 fixes), `a6b4853` (review 2 fixes), this plan in the commit after it; `make test` 2570 OK |
 | 3 | DEC-1, DEC-4, DEC-8, DEC-9 | to write | not started |
 | 4 | GOV-2, GOV-3, GOV-5, GOV-6 | to write | not started |
 | 5 | GOV-7, GOV-12, OPR-1, OPR-4 | to write | not started |
 | release | 0.176.0 locally, `make verify-feature F=F04`, rubric | — | after batch 5 |
 
-Spec debt after batch 1: **136 enforced / 17 partial / 1 none / 4 bounded** (`tests/spec-debt.json`).
+Spec debt after batch 1: **136 enforced / 17 partial / 1 none / 4 bounded**. After batch 2: **141 enforced / 12
+partial / 1 none / 4 bounded** (`tests/spec-debt.json`); all five held in full, none narrowed.
 
 ## Decisions already made
 
@@ -53,27 +54,29 @@ Spec debt after batch 1: **136 enforced / 17 partial / 1 none / 4 bounded** (`te
 
 ## Open findings carried over
 
-- Batch 2, from its notes so far (with the parked patch): EVD-1's census found eight jobs labelled `crash` with nothing
-  to work with — four repaired to `input` in the patch; the four Search Console scripts are excused only while the
-  `gsc` extra is absent, and their unusable-key path is unread. **E2-c was declared wrong**: `audit_assertions.py`
-  does not refuse a rule naming an unknown severity (the patch's test does). **VRD-2/VRD-3 were declared wrong**: the
-  sourceless gap was closed at 0.98.0 by `APPLIES_IF` (`applies_if`, shown to the answerer); their Reader lines are
-  stale and both look holdable without narrowing. REG-1's tests are written (`reg1_snippet.py` beside the patch) and not
-  yet in `tests/test_registry.py`.
+- Batch 2 (filed in its contract's Outcome and Review): `gsc_url_inspection.py` labels any `OSError` in one `try` —
+  `build_service` and the inspection call — `input`, so a network timeout on the Search Console API reads as the
+  operator's key file (`gsc_cannibalization` was repaired the same way in batch 2; this one was not its change).
+  `measurement()` says `got 0` on an issue at an unknown severity where the verdict is `NO_DATA` (not graded).
+  The EVD-2 scan does not read a severity table assembled key by key at run time.
+- Batch 2, for the release CHANGELOG: eight checkers' "script failed" reads "an input this check was given could not
+  be used" (label only); a model's `N/A` with no evidence is refused and the item stays `LLM_PENDING`; an issue at a
+  severity outside the vocabulary (or `null`) reads `NO_DATA` naming it where it read `PASS` (no shipped checker
+  writes one); `audit_assertions.py` refuses a rule naming such a word.
 - Batch 1: the withheld evidence over a crawl cut by a refused or an unanswered page reads the readers' cap wording
   ("what the cap left out"); naming the cause needs the readers or the runner to carry it.
-- Batch 1, EVD-1 adjacent: none other.
+- Full-suite timing: `taskpolicy -b make test` took 67 minutes on 2026-10-22 (2569 tests), not ~9; budget for it.
 
 ## Starting the next batch
 
 ```bash
-cd ~/seo-checklist-release && git status --short --branch
-git apply <the parked b2-wip.patch>     # path in the owner's handoff
-cp <the parked test_checker_contract.py and test_severity_vocabulary.py> tests/
+cd ~/seo-checklist-release && git fetch && git status --short --branch
 ```
 
-Then finish batch 2 against its contract: REG-1's tests into `tests/test_registry.py` (red on a hand-edited artifact
-first), the five Reader lines and Appendix B rows (VRD-2/VRD-3 corrected to name `APPLIES_IF`, the partition tests,
-the merge test and `test_the_question_reaches_the_queue_from_the_registry`), ledgers together (`spec_debt.py --out`,
-ROADMAP table and item 3, `test_prose_counts`), the contract's Outcome with the mutations, `taskpolicy -b make test`,
-commit, review by a fresh `fable` agent, fixes, commit, update this file, stop.
+Batch 3 is DEC-1, DEC-4, DEC-8, DEC-9 (`openspec/specs/declarations/spec.md`); its contract is to write, from
+`templates/sprint-contract.md`, with expectations declared and committed before any test is written (as `3e847cf` did
+for batch 2). Read each requirement's Reader line and Appendix B row first, and check whether the line is stale
+against the code before declaring — batch 2 found two Reader lines (VRD-2, VRD-3) stale since 0.98.0 and two
+"held already" declarations wrong. Then implement, mutate, ledgers together (`spec_debt.py --out` / `--check`,
+ROADMAP table and item 3, `test_prose_counts`), `taskpolicy -b make test` (over an hour), commit, review by a fresh
+`fable` agent, fixes, commit, update this file, stop.
