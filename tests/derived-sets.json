@@ -2,9 +2,9 @@
   "measured": "upper-case names bound to a list, tuple, set or dict literal, bare or handed to a constructor, at module level or in a function, in scripts/, scripts/lib/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
   "total": 199,
-  "read": 114,
-  "unread": 85,
-  "unread_closed": 42,
+  "read": 128,
+  "unread": 71,
+  "unread_closed": 28,
   "modules": {
     "a11y_seo_checker": {
       "read": [],
@@ -72,6 +72,10 @@
     "audit_assertions": {
       "read": [
         {
+          "name": "PATTERN_OPS",
+          "entries": 3
+        },
+        {
           "name": "PATH_EXEMPT",
           "entries": 3
         },
@@ -80,21 +84,16 @@
           "entries": 1
         }
       ],
-      "unread": [
-        {
-          "name": "PATTERN_OPS",
-          "entries": 4
-        }
-      ]
+      "unread": []
     },
     "audit_catalogue": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "CONVENTION",
           "entries": 2
         }
-      ]
+      ],
+      "unread": []
     },
     "audit_declaration_revisions": {
       "read": [
@@ -144,16 +143,17 @@
       "unread": []
     },
     "audit_item_semantics": {
-      "read": [],
+      "read": [
+        {
+          "name": "REVIEWED",
+          "entries": 35
+        }
+      ],
       "unread": [
         {
           "name": "STOP",
           "entries": 64,
           "open": "stopwords for comparing a title with what its assertion reads"
-        },
-        {
-          "name": "REVIEWED",
-          "entries": 35
         },
         {
           "name": "_SUFFIXES",
@@ -167,9 +167,7 @@
         {
           "name": "MECHANISMS",
           "entries": 4
-        }
-      ],
-      "unread": [
+        },
         {
           "name": "COMPLEMENTS",
           "entries": 4
@@ -178,21 +176,21 @@
           "name": "EMPTY_BAND",
           "entries": 8
         }
-      ]
+      ],
+      "unread": []
     },
     "audit_score_sensitivity": {
       "read": [
         {
           "name": "CANDIDATE_WEIGHTS",
           "entries": 5
-        }
-      ],
-      "unread": [
+        },
         {
           "name": "CANDIDATE_EFFORTS",
           "entries": 4
         }
-      ]
+      ],
+      "unread": []
     },
     "audit_thresholds": {
       "read": [
@@ -203,13 +201,13 @@
         {
           "name": "VERDICT_KINDS",
           "entries": 4
-        }
-      ],
-      "unread": [
+        },
         {
           "name": "MEASURED_KEYS",
           "entries": 3
-        },
+        }
+      ],
+      "unread": [
         {
           "name": "ARITHMETIC",
           "entries": 4,
@@ -346,16 +344,17 @@
       ]
     },
     "calibrate_css_minification": {
-      "read": [],
+      "read": [
+        {
+          "name": "CONSTANT_NAMES",
+          "entries": 6
+        }
+      ],
       "unread": [
         {
           "name": "PACKAGES",
           "entries": 19,
           "open": "the calibration corpus, chosen and pinned"
-        },
-        {
-          "name": "CONSTANT_NAMES",
-          "entries": 6
         }
       ]
     },
@@ -370,13 +369,7 @@
       ]
     },
     "calibrate_gsc_sample_floors": {
-      "read": [],
-      "unread": [
-        {
-          "name": "TABLE_IMPRESSIONS",
-          "entries": 6,
-          "open": "rows of a printed table"
-        },
+      "read": [
         {
           "name": "PAIRS",
           "entries": 2
@@ -384,6 +377,13 @@
         {
           "name": "UNCALIBRATED_FLOORS",
           "entries": 2
+        }
+      ],
+      "unread": [
+        {
+          "name": "TABLE_IMPRESSIONS",
+          "entries": 6,
+          "open": "rows of a printed table"
         }
       ]
     },
@@ -397,16 +397,21 @@
       "unread": []
     },
     "calibrate_serp_length": {
-      "read": [],
+      "read": [
+        {
+          "name": "ENGLISH_LETTER_FREQUENCY",
+          "entries": 26
+        },
+        {
+          "name": "CONSTANT_NAMES",
+          "entries": 4
+        }
+      ],
       "unread": [
         {
           "name": "FONT_FILES",
           "entries": 4,
           "open": "the fonts a calibration measures with, chosen"
-        },
-        {
-          "name": "ENGLISH_LETTER_FREQUENCY",
-          "entries": 26
         },
         {
           "name": "COMPOSITION_MIXES",
@@ -417,10 +422,6 @@
           "name": "SURFACES",
           "entries": 3,
           "open": "result surfaces a calibration tries, with the pixel budgets it states"
-        },
-        {
-          "name": "CONSTANT_NAMES",
-          "entries": 4
         }
       ]
     },
@@ -836,16 +837,15 @@
     "notebook_sync": {
       "read": [
         {
+          "name": "FIXED",
+          "entries": 8
+        },
+        {
           "name": "CONFIG",
           "entries": 2
         }
       ],
-      "unread": [
-        {
-          "name": "FIXED",
-          "entries": 8
-        }
-      ]
+      "unread": []
     },
     "pagespeed": {
       "read": [
@@ -1136,13 +1136,13 @@
       ]
     },
     "spec_debt": {
-      "read": [],
-      "unread": [
+      "read": [
         {
           "name": "CLASSES",
           "entries": 5
         }
-      ]
+      ],
+      "unread": []
     },
     "third_party_script_audit": {
       "read": [],

@@ -43,7 +43,7 @@ CLASSES = ("enforced", "partial", "none", "opposed", "bounded")
 # Both grammars: `### Requirement: HST-1 — ...` after the OpenSpec conversion and
 # `### HST-1 — ...` before it. The twelve convert one at a time.
 REQUIREMENT = re.compile(r"^### (?:Requirement: )?([A-Z]{2,4}-\d+) — (.+)$")
-ROW = re.compile(r"^\| \*\*(enforced|partial|none|opposed|bounded)\*\* \| (.+?) \|$")
+ROW = re.compile(r"^\| \*\*(" + "|".join(CLASSES) + r")\*\* \| (.+?) \|$")
 ID = re.compile(r"\b([A-Z]{2,4}-\d+)\b")
 
 

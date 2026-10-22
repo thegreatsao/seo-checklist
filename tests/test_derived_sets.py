@@ -82,13 +82,14 @@ import audit_derived_sets  # noqa: E402
 # 85 at F04 (batch 4b), so far: the schema.org type sets derived from a bundled
 # release (four left the census), the retired-schema copies and the AI crawler lists
 # made one each (eight left), `STANDARD_CRAWLERS` deleted (read by nothing), and
-# `RICH_RESULT_REQUIRED` read against Google's pages.
-UNREAD_AT_MOST = 85
+# `RICH_RESULT_REQUIRED` read against Google's pages. 71 when `tests/test_tool_sets.py`
+# read the fourteen in `tools/`.
+UNREAD_AT_MOST = 71
 
 # GOV-3 in full (F04, batch 4b): an unread set must be open, with its reason in
 # `tests/open-sets.json`; a closed one is derived or read. This counts the unread sets
 # with no reason, and it is lowered as each is derived or given a reader.
-UNREAD_CLOSED_AT_MOST = 42
+UNREAD_CLOSED_AT_MOST = 28
 
 
 class TheCensusDescribesThisTree(unittest.TestCase):

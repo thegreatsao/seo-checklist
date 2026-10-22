@@ -35,7 +35,10 @@ SKILL_DIR = os.path.dirname(HERE)
 SCRIPTS = os.path.join(SKILL_DIR, "scripts")
 REGISTRY = os.path.join(SKILL_DIR, "resources", "config", "checklist.json")
 
-PATTERN_OPS = ("matching", "none_matching", "any_matching", "matches")
+# The runner's operators that take a regular expression (held by `tests/test_tool_sets.py`
+# against what the runner compiles). Until F04 (batch 4b) it named `matching` and
+# `any_matching`, which are no operator, and missed `count_matching_lte`.
+PATTERN_OPS = ("none_matching", "count_matching_lte", "matches")
 
 SHAPES = os.path.join(SKILL_DIR, "resources", "references",
                       "script-output-shapes.md")
