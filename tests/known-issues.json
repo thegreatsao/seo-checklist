@@ -922,7 +922,7 @@
         },
         "counted": 131,
         "non_numeric_basis": [
-          "scripts/robots_path_tester.py:36"
+          "scripts/robots_path_tester.py:38"
         ],
         "presentation": 47,
         "uncounted": [

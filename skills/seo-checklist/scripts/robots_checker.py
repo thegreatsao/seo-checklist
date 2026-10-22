@@ -33,36 +33,11 @@ except ImportError:
     from scripts.lib.typed_credential import scheme_added
 
 try:
+    from ai_crawler_policy_matrix import AI_CRAWLERS
     from seo_common import carries_content, unread_kind
 except ImportError:
+    from scripts.ai_crawler_policy_matrix import AI_CRAWLERS
     from scripts.seo_common import carries_content, unread_kind
-
-
-# AI crawlers to check for explicit management
-AI_CRAWLERS = [
-    "GPTBot",
-    "OAI-SearchBot",
-    "ChatGPT-User",
-    "OAI-AdsBot",
-    "ClaudeBot",
-    "PerplexityBot",
-    "Google-Extended",
-    "Applebot-Extended",
-    "Bytespider",
-    "CCBot",
-    "anthropic-ai",
-    "FacebookBot",
-    "Amazonbot",
-]
-
-# Standard crawlers for reference
-STANDARD_CRAWLERS = [
-    "Googlebot",
-    "Bingbot",
-    "Yandex",
-    "Baiduspider",
-    "DuckDuckBot",
-]
 
 
 # basis: standard — Google reads the first 500 KiB of a robots.txt and ignores the rest

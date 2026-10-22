@@ -23,6 +23,7 @@ from urllib.parse import urljoin, urlsplit
 
 from bs4 import BeautifulSoup
 
+from ai_crawler_policy_matrix import AI_CRAWLERS
 from seo_common import read_as_url, carries_content, fetch_error_kind, fetch_robots, html_parser, normalize_url, robots_allowed, unread_kind
 
 try:
@@ -31,7 +32,8 @@ except ImportError:
     from scripts.lib.safe_http import default_headers, safe_get
 
 
-DEFAULT_AGENTS = ["Googlebot", "Bingbot", "GPTBot", "OAI-SearchBot", "ChatGPT-User", "OAI-AdsBot", "ClaudeBot", "PerplexityBot", "Google-Extended", "Applebot-Extended", "CCBot"]
+# The two search engines and every AI crawler token, kept once in the policy matrix.
+DEFAULT_AGENTS = ("Googlebot", "Bingbot", *AI_CRAWLERS)
 
 # basis: standard — the two places a crawler is told not to index a page it has been
 # allowed to fetch. `<meta name="robots">` per RFC 9309's surrounding practice and the

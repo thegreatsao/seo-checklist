@@ -235,5 +235,23 @@ class RichResultRequiredPropertiesAreGoogles(unittest.TestCase):
         self.assertEqual(len(self.errors(review)), 1)
 
 
+
+class AiCrawlerTokensAreOneList(unittest.TestCase):
+    """The AI crawler tokens, kept once: `ai_crawler_policy_matrix.AI_CRAWLERS`, which
+    carries each token's scope. The list is open — no authority names every AI
+    crawler — so what is held here is that every reader asks about the same ones.
+    Until F04 (batch 4b) `robots_checker` kept a second list of 13 (two tokens the
+    matrix lacks, four it has missing) and `robots_path_tester` a third of nine."""
+
+    def test_every_reader_asks_about_the_matrix_s_tokens(self):
+        import ai_crawler_policy_matrix
+        import robots_checker
+        import robots_path_tester
+        tokens = list(ai_crawler_policy_matrix.AI_CRAWLERS)
+        self.assertEqual(list(robots_checker.AI_CRAWLERS), tokens)
+        self.assertEqual(list(robots_path_tester.DEFAULT_AGENTS),
+                         ["Googlebot", "Bingbot", *tokens])
+
+
 if __name__ == "__main__":
     unittest.main()
