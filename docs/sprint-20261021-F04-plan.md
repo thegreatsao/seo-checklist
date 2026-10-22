@@ -32,13 +32,15 @@ other 20 partial and DEC-1: **21 requirements**.
 |---|---|---|---|
 | 1 | HTTP-10, HTTP-13, INP-10, EVD-10 (+ H13-c) | `docs/sprint-20261021-F04-1.md` | **done**: `4be01d8` (active + contract), `005886e` (code), `f831882` (review 1 fixes), `3d01157` (H13-c + this plan), review 2 fixes in the commit after it (see the contract) |
 | 2 | EVD-1, EVD-2, VRD-2, VRD-3, REG-1 | `docs/sprint-20261021-F04-2.md` (`3e847cf`) | **done**: `33e96b7` (batch 1's suffix-list tests in UTC), `216e620` (code), `54916fb` (review 1 fixes), `a6b4853` (review 2 fixes), this plan in the commit after it; `make test` 2570 OK |
-| 3 | DEC-1, DEC-4, DEC-8, DEC-9 | to write | not started |
+| 3 | DEC-1, DEC-4, DEC-8, DEC-9 | `docs/sprint-20261022-F04-3.md` (`f2fec34`) | **done**: `953c5a8` (code), `c82613c` (outcome and mutations), `b692b9d` (review fixes), `c5f0d23` (epoch read at the call: the first full run's one failure), this plan in the commit after it; `make test` 2584 OK |
 | 4 | GOV-2, GOV-3, GOV-5, GOV-6 | to write | not started |
 | 5 | GOV-7, GOV-12, OPR-1, OPR-4 | to write | not started |
 | release | 0.176.0 locally, `make verify-feature F=F04`, rubric | — | after batch 5 |
 
 Spec debt after batch 1: **136 enforced / 17 partial / 1 none / 4 bounded**. After batch 2: **141 enforced / 12
-partial / 1 none / 4 bounded** (`tests/spec-debt.json`); all five held in full, none narrowed.
+partial / 1 none / 4 bounded** (`tests/spec-debt.json`); all five held in full, none narrowed. After batch 3:
+**145 enforced / 9 partial / 0 none / 4 bounded**; DEC-9 held in full, DEC-1, DEC-4 and DEC-8 narrowed, each narrowing
+said in its Reader line and filed in the contract's Outcome.
 
 ## Decisions already made
 
@@ -63,9 +65,19 @@ partial / 1 none / 4 bounded** (`tests/spec-debt.json`); all five held in full, 
   be used" (label only); a model's `N/A` with no evidence is refused and the item stays `LLM_PENDING`; an issue at a
   severity outside the vocabulary (or `null`) reads `NO_DATA` naming it where it read `PASS` (no shipped checker
   writes one); `audit_assertions.py` refuses a rule naming such a word.
+- Batch 3 (filed in its contract): DEC-1 does not hold whether a batch's `given` is the whole of what its session saw,
+  an amended commit (declare, run, adjust, amend), or the 248 declarations before `BATCH_EPOCH`; DEC-4 does not hold
+  that a reason names its tree, that its argument is true, or a run cited in words outside its list; DEC-8 does not
+  hold a checker repaired under a standing declaration. Found on the way: a rule's `truthy: false` is read as
+  `truthy` (`checklist_runner.py:1053` tests the key); no shipped rule writes it — a registry question.
+- Batch 3, for the release CHANGELOG: **no verdict moves.** The manifest is `schema_version` 3: each declaration
+  records `basis` (its item's title and rule as one digest), and `batches` records what each declaring session was
+  given; `tests/test_fixture_oracle.py` refuses to run a declaration `HEAD` does not hold; three reasons lost
+  "corrected from FAIL after the run"; ledger 141/12/1/4 → 145/9/0/4, DEC-1 no longer unread.
 - Batch 1: the withheld evidence over a crawl cut by a refused or an unanswered page reads the readers' cap wording
   ("what the cap left out"); naming the cause needs the readers or the runner to carry it.
 - Full-suite timing: `taskpolicy -b make test` took 67 minutes on 2026-10-22 (2569 tests), not ~9; budget for it.
+  Batch 3's run of 2584 tests took 65 minutes.
 
 ## Starting the next batch
 
@@ -73,10 +85,11 @@ partial / 1 none / 4 bounded** (`tests/spec-debt.json`); all five held in full, 
 cd ~/seo-checklist-release && git fetch && git status --short --branch
 ```
 
-Batch 3 is DEC-1, DEC-4, DEC-8, DEC-9 (`openspec/specs/declarations/spec.md`); its contract is to write, from
-`templates/sprint-contract.md`, with expectations declared and committed before any test is written (as `3e847cf` did
-for batch 2). Read each requirement's Reader line and Appendix B row first, and check whether the line is stale
-against the code before declaring — batch 2 found two Reader lines (VRD-2, VRD-3) stale since 0.98.0 and two
-"held already" declarations wrong. Then implement, mutate, ledgers together (`spec_debt.py --out` / `--check`,
+Batch 4 is GOV-2, GOV-3, GOV-5, GOV-6 (`openspec/specs/governance/spec.md`); its contract is to write, from
+`templates/sprint-contract.md`, with expectations declared and committed before any test is written (as `f2fec34` did
+for batch 3). Read each requirement's Reader line and Appendix B row first, and check whether the line is stale
+against the code before declaring — batch 2 found two Reader lines stale, batch 3 one (DEC-9), and both batches had
+declared forms the measurement contradicted. Confirm each mutation moved what it targets before reading a green
+result (batch 3's first census mutation was a no-op). Then implement, mutate, ledgers together (`spec_debt.py --out` / `--check`,
 ROADMAP table and item 3, `test_prose_counts`), `taskpolicy -b make test` (over an hour), commit, review by a fresh
 `fable` agent, fixes, commit, update this file, stop.
