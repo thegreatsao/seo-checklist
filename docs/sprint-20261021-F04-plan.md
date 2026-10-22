@@ -36,7 +36,7 @@ other 20 partial and DEC-1: **21 requirements**.
 | 3 | DEC-1, DEC-4, DEC-8, DEC-9 | `docs/sprint-20261022-F04-3.md` (`f2fec34`) | **done**: `953c5a8` (code), `c82613c` (outcome and mutations), `b692b9d` (review fixes), `c5f0d23` (epoch read at the call: the first full run's one failure), this plan in the commit after it; `make test` 2584 OK |
 | 4 | GOV-2, GOV-5, GOV-6 (GOV-3 begun, moved to 4b) | `docs/sprint-20261022-F04-4.md` (`d673af8`) | **done**: `905d362` (GOV-2, GOV-5, GOV-6), `3229589` (GOV-3's census widened, hreflang sets), `436a4c3` (outcome and mutations), `ef5ca4e` (review fixes), this plan in the commit after it; `make test` 2593 OK on `ef5ca4e` (717 s) |
 | 4b | GOV-3 | `docs/sprint-20261022-F04-4b.md` (`75f3c9b`) | **done**: `454c37e`, `a61e85e`, `b3b8c68`, `81c46a1`, `8561cc0`, `8c06814`, `b05a06d`, `bd77ea0` (the owner's three rulings), `47500ec` (ledgers), `744c5a5` (census re-taken), `5949c15` (review 1 fixes), `de454ca` (outcome, review 1), `0024ece` (review 2 fixes), this plan in the commit after it; `make test` 2648 OK (6 skipped) on `0024ece` (741 s) |
-| 5 | GOV-7, GOV-12, OPR-1, OPR-4 | to write | not started |
+| 5 | GOV-7, GOV-12, OPR-1, OPR-4 | `docs/sprint-20261022-F04-5.md` (`0bf7ca4`) | **done**: `112e828` (OPR-1), `f64bdda` (OPR-4), `89f4253` (GOV-12), `99e5411`, `b47ba71`, `54c3ce4`, `f9328f5` (GOV-7), `78819aa` (ledgers), `6a2de9c` (review 1 fixes), `a42be40` (outcome, review 1), `13b2fa4` (review 2 fixes), this plan in the commit after it; `make test` 2672 OK (6 skipped) on `13b2fa4` (541 s) |
 | release | 0.176.0 locally, `make verify-feature F=F04`, rubric | — | after batch 5 |
 
 Spec debt after batch 1: **136 enforced / 17 partial / 1 none / 4 bounded**. After batch 2: **141 enforced / 12
@@ -46,7 +46,9 @@ said in its Reader line and filed in the contract's Outcome. After batch 4: **14
 bounded**; GOV-2, GOV-5 and GOV-6 narrowed to the half a program reaches, each narrowing said in its Reader line;
 GOV-3 still partial. After batch 4b: **149 enforced / 5 partial / 0 none / 4 bounded**; GOV-3 enforced, narrowed (an
 open set's completeness is a convention; "read" for a closed set is a reader a person wrote; the census's blind spots;
-a snapshot is right as of its date), said in its Reader line.
+a snapshot is right as of its date), said in its Reader line. After batch 5: **153 enforced / 1 partial / 0 none / 4
+bounded**; GOV-7, GOV-12, OPR-1 and OPR-4 each enforced with a narrowing its Reader line names; the one `partial` is
+REG-6, F03's.
 
 ## Decisions already made
 
@@ -77,6 +79,9 @@ a snapshot is right as of its date), said in its Reader line.
   moved the registry, and `test_registry` requires the newest CHANGELOG entry to name the shipped registry version.
   With no version bump allowed before the release, `CHANGELOG.md` gained `## Unreleased — F04, until 0.176.0 is cut`
   naming `abf465b3f75d`; the 0.176.0 entry replaces it, written from the notes below.
+- **OPR-1's marking is by section** (the owner, 2026-10-22, "A: по секциям", relayed by the starting session): the
+  per-line marking is the narrowed part, recorded in operator-protocol §6 as answered; `SKILL.md` says it marks by
+  section, not by line.
 - The reviewer rule is a fresh context, not a different model (the owner, 2026-10-22: "another agent without the old
   memory"); `fable` stays the named reviewer until he changes it.
 
@@ -162,10 +167,52 @@ a snapshot is right as of its date), said in its Reader line.
     unreachable entries): counted thresholds 131 → 130, convention 97 → 96.
   - **GOV-3**: `tests/open-sets.json` records the 43 open sets with why; the census writes each reason and counts
     `unread_closed` (0, ceiling 0). Census 209 / 110 / 99 → 194 / 151 / 43. Ledger 148/6/0/4 → 149/5/0/4.
+- Batch 5 (filed in its contract's Outcome and Review): GOV-7 does not watch a gate step's own shell lines (a word
+  list reads them), trusts a listed program on its reason (for `bash` and `node` that reason is the whole fence) and
+  trusts `tests/hand_capture/` in the tripwire's place; GOV-12 holds the list as of Workbench `3b60660`
+  (2026-10-22), not what Workbench reads later; OPR-1 marks by section (the owner's ruling); OPR-4 holds the tool's
+  surfaces, not what the operator writes. **For Anton, Workbench's own defect:** the native build's history row
+  (`native/Sources/WorkbenchCore/ToolServices.swift`, `RunHistory`) reads `scores.partition["passed"]` and
+  `["failed"]`, which this tool has never written, so those counts never show. Unverified until the first CI run:
+  the install step's `npx -y @fission-ai/openspec@1.12.0 --version` filling what the gate's `npx --offline` reads on
+  a fresh runner (measured here from empty caches), and the Windows and macOS legs under the program check (the
+  gate-step probe is the first caller of `ci_local.run_step` with a quoted interpreter path). Found on the way:
+  `tests/test_report.py` fails to import as `python -m unittest tests.test_report` from the root (`discover -s
+  tests` works), pre-existing.
+- Batch 5, for the release CHANGELOG — **no status or score moves**:
+  - Reports (Markdown, HTML; en, ru) and the console say "This audit is incomplete: N items wait for a language
+    model's judgement and are outside the score until the queue is answered and merged" beside the score while any
+    item is `LLM_PENDING` (OPR-4); gone when none is.
+  - Under `SEO_LOOPBACK_ONLY` (the suite and CI only; no real audit sets it) `html_validator.py` and Safe Browsing
+    are not asked and say so (`error_kind: blocked`): until now the suite and the live-path gate asked
+    validator.w3.org directly, past the guard.
+  - CI and the suite: the tripwire has its own switch, `SEO_TRIPWIRE`, and refuses a program start that is not
+    Python and not in `tripwire.PROGRAMS` (git, bash, openssl, node), a Python child that would not load it
+    (environment, relative path, `-I`/`-E`/`-S`), and git without `GIT_ALLOW_PROTOCOL=file`; every gate step carries
+    it, install steps disarm it; `harness.offline_env()` carries it; every test module imports the harness; the
+    openspec gate runs `npx --offline` from npx's cache, which the install step fills.
+  - `tests/test_consumers.py` re-read against Workbench `3b60660`, native build included (version line, score range).
+  - `SKILL.md` says its marking is by section, not by line; `spec_debt.py` no longer calls `partial` the largest
+    column. Ledger 149/5/0/4 → 153/1/0/4.
 - Full-suite timing: `taskpolicy -b make test` took 67 minutes on 2026-10-22 (2569 tests), not ~9; budget for it.
   Batch 3's run of 2584 tests took 65 minutes. Under `nice -n 15` batch 4's 2593 took 12.6 minutes, 4b's 2648 12.4.
 
-## Starting the next batch
+## Starting the next session: the release
+
+All five batches are done locally; F04 stays `active`. The next session is the release, 0.176.0, in its own session
+(the owner's rule):
+
+```bash
+cd ~/seo-checklist-release && git fetch && git status --short --branch
+```
+
+It writes the 0.176.0 CHANGELOG entry from the "for the release CHANGELOG" notes above (batches 1–5, with the ledger
+before/after: 132/21/1/4 → 153/1/0/4) in place of the `Unreleased` heading, bumps the version wherever it is written
+(`git grep 0.175.0`), updates README counts, tags `v0.176.0` on the changelog commit, runs `make verify-feature
+F=F04` and scores the rubric. Pushing is the starting session's, and the first CI run is the evidence for the two
+items above that this Mac could not run (the npx cache on a fresh runner, the Windows and macOS legs).
+
+## The batches, as they were started (kept for the record)
 
 ```bash
 cd ~/seo-checklist-release && git fetch && git status --short --branch
