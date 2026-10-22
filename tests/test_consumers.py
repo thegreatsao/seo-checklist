@@ -1,14 +1,20 @@
 """What another program reads from this plugin, held so that a rename cannot be silent.
 
 `openspec/specs/governance/` GOV-12. Workbench, Anton's dashboard, starts this plugin's
-two scripts without a model in between and reads what they leave: both of its builds
-(`seo.py` on macOS, `windows/seo.py`, and `core/seo.py` they share). Nothing in this
-repository said so. A flag renamed here, or a key in the results file, breaks a button
-there, and the suite of this repository stays green while it does.
+two scripts without a model in between and reads what they leave: all three of its
+builds (`seo.py` on macOS, `windows/seo.py`, and `core/seo.py` they share; and the
+native macOS app, `native/Sources/WorkbenchCore/ToolServices.swift` and
+`SEORunSummary.swift`). Nothing in this repository said so. A flag renamed here, or a
+key in the results file, breaks a button there, and the suite of this repository stays
+green while it does.
 
-This module is the list. Every name in it was read out of Workbench's source on
-7 October 2026, at its commit `54eddd8` — not out of the list its session sent on
-4 October, which was one key short (`started_at`). It is in three parts:
+This module is the list. Every name in it was read out of Workbench's source: on
+7 October 2026 at its commit `54eddd8` — not out of the list its session sent on
+4 October, which was one key short (`started_at`) — and again on 22 October 2026 at
+`3b60660` (F04), when the three Python files were byte-identical and the native build,
+written in between, was read for the first time. It reads nothing the Python builds do
+not, and reads two of the same names more strictly: the version line, and the score's
+range. It is in three parts:
 
 * what Workbench finds by path, read from the tree;
 * the command lines its form can compose, given to the two scripts' own parsers;
@@ -16,11 +22,16 @@ This module is the list. Every name in it was read out of Workbench's source on
   `report_argv` compose, from the working directory Workbench starts them in, and read
   the way `core/seo.py::_facts_of`, `manual_items` and `run_lang` read them.
 
-What it does not hold: that this list is still what Workbench reads. That program is
-another repository and no test here can open it. Before changing anything this module
-names, tell the Workbench session; when Workbench starts reading something new, the
-name is added here. A name removed from here is a decision that Workbench no longer
-needs it.
+Not held, because this tool never wrote them: the native history row reads
+`scores.partition["passed"]` and `["failed"]`, and shows nothing for either (reported
+to Anton for the Workbench session on 22 October 2026).
+
+What it does not hold: that this list is still what Workbench reads after the date of
+its last read. That program is another repository; a name it starts to read later is
+unprotected until somebody adds it. To re-read: diff Workbench's files named above from
+the commit recorded here, read every name they take from this tree, and record the new
+commit and date. Before changing anything this module names, tell the Workbench
+session. A name removed from here is a decision that Workbench no longer needs it.
 """
 import json
 import os
@@ -51,6 +62,10 @@ VERDICTS = ("PASS", "FAIL", "WARN", "N/A")
 PARTITION = ("decided", "waiting_on_you", "needs_a_person", "undecided", "not_applicable")
 # `seo.py::version` and `windows/seo.py::version`, the same expression in both.
 VERSION = re.compile(r'^version\s*=\s*"([^"]+)"', re.M)
+# The native build's `pluginVersion`: the first line with the prefix `version =`, and
+# the text between its first two double quotes. Stricter than the expression above:
+# `version="1.0"` satisfies that one and shows "unknown" here.
+NATIVE_VERSION_PREFIX = "version ="
 # `core/seo.py::run_lang`, over the first 4096 characters of the HTML report.
 HTML_LANG = re.compile(r'<html[^>]*\blang="([a-z]{2})"')
 
@@ -86,6 +101,14 @@ class WhatWorkbenchFindsByPath(unittest.TestCase):
         self.assertIsNotNone(found, "Workbench would show v? and never see an update")
         # The same version a report is stamped with, which is the manifest's.
         self.assertEqual(found.group(1), runner.plugin_version())
+
+    def test_the_native_build_reads_the_same_version_off_the_same_line(self):
+        with open(os.path.join(ROOT, "pyproject.toml"), encoding="utf-8") as f:
+            line = next((ln for ln in f.read().split("\n")
+                         if ln.startswith(NATIVE_VERSION_PREFIX)), "")
+        pieces = line.split('"')
+        self.assertGreater(len(pieces), 1, "the native build would show unknown")
+        self.assertEqual(pieces[1], runner.plugin_version())
 
     def test_an_update_installs_from_requirements_txt_at_the_root(self):
         """Its update is `git pull --ff-only`, then `pip install -r requirements.txt`
@@ -212,12 +235,17 @@ class ARunStartedTheWayWorkbenchStartsOne(unittest.TestCase):
         self.assertIn("entry_error", r)
         self.assertIsInstance(r["allow_private"], bool)
         scores = r["scores"]
-        self.assertIsInstance(scores["seo_score"], (int, float))
+        # The native `SEORunSummary.number`: a number that is not a boolean, finite,
+        # not negative, and for the score at most 100 — anything else reads as none.
+        self.assertTrue(isinstance(scores["seo_score"], (int, float))
+                        and not isinstance(scores["seo_score"], bool))
+        self.assertTrue(0 <= scores["seo_score"] <= 100, scores["seo_score"])
         self.assertTrue(integer(scores["weight_pct"]) and integer(scores["decided"]))
         self.assertEqual(sorted(scores["partition"]), sorted(PARTITION))
-        self.assertTrue(all(integer(v) for v in scores["partition"].values()))
+        self.assertTrue(all(integer(v) and v >= 0 for v in scores["partition"].values()))
         for key in ("llm_pending", "needs_input"):
-            self.assertTrue(integer(scores["waiting_on_you"][key]), key)
+            self.assertTrue(integer(scores["waiting_on_you"][key])
+                            and scores["waiting_on_you"][key] >= 0, key)
 
     def test_the_second_run_names_the_first_as_what_it_was_compared_with(self):
         """`--diff`, from the working directory both were started in. The history is
