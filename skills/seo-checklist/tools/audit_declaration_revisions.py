@@ -130,8 +130,9 @@ from git_checkout import (  # noqa: E402, F401
     Unreadable, _git_binary, _run_git, git, git_directory)
 
 
-def epoch_is_reachable(epoch: str = EPOCH) -> None:
+def epoch_is_reachable(epoch: str | None = None) -> None:
     """Refuse a shallow clone by name, before anything reads as agreement."""
+    epoch = epoch or EPOCH  # read at the call, so a patched `EPOCH` is the one asked
     git_directory(ROOT)
     try:
         kind = git("cat-file", "-t", epoch).strip()
@@ -144,8 +145,9 @@ def epoch_is_reachable(epoch: str = EPOCH) -> None:
         raise Unreadable(f"the epoch {epoch[:8]} is a {kind}, not a commit")
 
 
-def epoch_is_an_ancestor(epoch: str = EPOCH) -> None:
+def epoch_is_an_ancestor(epoch: str | None = None) -> None:
     """A clone deep enough to hold the epoch may still not descend from it."""
+    epoch = epoch or EPOCH
     done = _run_git(["merge-base", "--is-ancestor", epoch, "HEAD"])
     if done.returncode != 0:
         raise Unreadable(
@@ -245,13 +247,14 @@ def _declared(doc: dict) -> dict[tuple[str, str], str]:
     return flat
 
 
-def states(epoch: str = EPOCH) -> list[tuple[str, dict, dict]]:
+def states(epoch: str | None = None) -> list[tuple[str, dict, dict]]:
     """Every state from the epoch to the worktree, oldest first.
 
     `(label, declarations, digests)`. Only commits that touched watched material are
     read: a release that moved neither cannot have moved a declaration through any of
     the three doors.
     """
+    epoch = epoch or EPOCH
     epoch_is_reachable(epoch)
     epoch_is_an_ancestor(epoch)
     listed = git("log", "--format=%H", "--reverse", f"{epoch}..HEAD", "--",
