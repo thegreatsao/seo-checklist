@@ -4918,7 +4918,7 @@
     "TE-172": {
       "answers": {
         "error-entry": "NO_DATA",
-        "failing-shapes": "PASS",
+        "failing-shapes": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -5282,7 +5282,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "4a0ebe46be2f",
+  "registry_version": "abf465b3f75d",
   "sites": [
     "fixture:good",
     "fixture:broken",
