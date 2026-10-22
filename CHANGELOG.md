@@ -10,12 +10,109 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
-## Unreleased — F04, until 0.176.0 is cut
+## 0.176.0 — every partial requirement held or narrowed to what is held; a page that gave no answer is asked again, then withheld
 
-Registry version: `abf465b3f75d` (was `4a0ebe46be2f`): TECH-001 reads
-`summary.retired_types` (F04 batch 4b, the owner's ruling of 2026-10-22). Every verdict
-move so far is listed in `docs/sprint-20261021-F04-plan.md`, which the 0.176.0 entry is
-written from; this heading becomes that entry.
+Registry version: `abf465b3f75d` (was `4a0ebe46be2f`): TECH-001 asserts `summary.retired_types eq 0` (was
+`summary.warnings`), and its fix text and Russian translation changed. **Verdicts move on a live audit in the
+places named below; each move had a red test first.** F04 (ROADMAP "What 1.0 requires", item 3), in six batches
+with a sprint contract each (`docs/sprint-20261021-F04-1.md` … `docs/sprint-20261022-F04-5.md`, the plan in
+`docs/sprint-20261021-F04-plan.md`), where each requirement's expected reading was written down before anything ran.
+
+**Spec ledger** (`tests/spec-debt.json`, 158 requirements): **132 enforced / 21 partial / 1 none / 4 bounded →
+153 / 1 / 0 / 4.** Each of the 21 was held in full or narrowed, the narrowed part named in its Reader line; none
+was narrowed where the gap was a verdict bug, and `enforced` rests on recorded mutations. The one `partial` left is
+REG-6 (a second reader of the item readings), which is F03's.
+
+* **Verdicts that move on a live audit:**
+  * **A crawled page that gave no answer** (the owner's decision, "retry, then withhold"): a page whose request
+    timed out, whose connection was refused or reset, or whose body was cut off mid-read is asked once more.
+    Silent twice, the crawl is `truncated` and counts it in `summary.unanswered_pages`, and the 14 inventory
+    readers that pass by absence — CI-008, CI-015, CI-018, MS-022, MS-026, MS-029, CN-039, CN-041, BL-081, AR-149,
+    AR-162, TE-168, TE-176, MD-187 — go from `PASS` to `NO_DATA`; a `FAIL` or `WARN` found in the pages read
+    stands. A page that answered on the second try is now read, so any of them can move either way on what it
+    holds. An HTTP status, a guard refusal, TLS and a robots decline are not retried. A page refused twice is
+    still a dead link to `broken_links.py`, so TE-168 can fail over it.
+  * **A language model's `N/A` with no evidence** is refused at the merge: the item stays `LLM_PENDING` (unscored
+    either way, now counted unanswered) and the merge prints why.
+  * **An issue at a severity outside the vocabulary** (or `null`) reads `NO_DATA` naming the word where a
+    `none_severity` rule read `PASS`, and a word padded with whitespace now matches its rule; no shipped checker
+    writes either. `audit_assertions.py` refuses a rule naming
+    such a word.
+  * **schema.org types derived from release 30.1** (2026-09-16, bundled; `tools/refresh_schemaorg_types.py`):
+    LO-198 / LO-200 `FAIL` → `PASS` for a Hospital, MedicalClinic, CovidTestingFacility, PhysiciansOffice,
+    IndividualPhysician, Attorney, PostOffice, PoliceStation, FireStation, VacationRental or one of the 21
+    medical specialties, and `PASS` → `FAIL` for a node typed only
+    `VeterinaryCare` (a MedicalOrganization) or `SkatingRink` (no such type); GEO-006 collects `sameAs` from every
+    Organization (188) and Place (230) type, not 5 and 2; CN-057 / CN-068 credit a Restaurant, Dentist, NGO,
+    Store… publisher.
+  * **Retired schema types, one table** (`scripts/lib/schema_types.py`; the owner's rulings): FAQPage and HowTo
+    are retired (FAQ rich results gone from 2026-05-07, How-to since September 2023), so TE-172 goes `PASS` →
+    `FAIL` on them and TECH-001, which now counts retired types, keeps failing them; TECH-001 `PASS` → `FAIL` on
+    SpecialAnnouncement, ClaimReview and Dataset, which it never read (Dataset stays retired: Google, 2025-11-05,
+    it "is only used by Dataset Search"); TE-172 `FAIL` → `PASS` on markup typed `CourseInfo`,
+    `EstimatedSalary`, `LearningVideo`, `VehicleListing` or `PracticeProblem`, which are Google feature names,
+    not types. The corpus tree `failing-shapes` moves TE-172 `PASS` → `FAIL` (its HowTo).
+  * **Google's required properties** (Product snippet, Video, Review snippet, Breadcrumb, read 2026-10-22), one
+    table read by both checks: TE-172 and MS-032 `FAIL` → `PASS` on a Product with a rating or a review and no
+    offer, a VideoObject without a description, and a review nested in its product; both fail a required value
+    that is only whitespace (TE-172 newly); MS-032 counts a VideoObject without a description as one more warning.
+  * **Search Console indexing states** (Google's page indexing report): CI-002 `FAIL` → `PASS` on "Indexed,
+    though blocked by robots.txt"; `NO_DATA` → `PASS` on "Page indexed without content" and "Page is indexed";
+    `NO_DATA` → `FAIL` on "Server error (5xx)", "URL marked 'noindex'", "Alternate page with proper canonical
+    tag" and "URL is unknown to Google", with GO-135's critical "not indexed" issue.
+  * **robots.txt fields:** AR-151 `PASS` → `FAIL` on a `Host:` line (no crawler documents it any more).
+  * **Facets, one list** (`seo_common.FACET_PARAMS`, the owner's ruling): the union of the three checkers' lists
+    less `page` and `p`, which are pagination. AR-154, AR-163, AR-155 and CI-012 move toward `PASS` on `?page=` /
+    `?p=` URLs, and toward `FAIL` where a URL carries a facet name only another checker had (`url_quality` gains
+    rating, availability, material; `faceted_nav_audit` category, tag; `collection_page_checker` view, category,
+    tag, rating, availability, material).
+  * **Fonts:** `.ttc` is a font extension now, so TECH-002 goes `PASS` → `FAIL` on a `<link>` that preloads a
+    `.ttc` without `as="font"` and without `crossorigin`, and on a `.ttc` over 100 KB that only a `<link href>`
+    names (a "large font" warning; one declared in `@font-face` was already measured).
+  * **AI crawlers, one list** (the policy matrix's 15): CI-019 asks `robots_path_tester` about six more agents
+    (Amazonbot, Applebot, Bytespider, Claude-SearchBot, Claude-User, Perplexity-User), which moves it toward
+    `FAIL` only where robots.txt names one. CI-013 names its agent (Googlebot) and does not move.
+* **Read differently, no status moves:**
+  * **The report says when an audit is incomplete** (OPR-4): beside the score, the Markdown and HTML reports (en,
+    ru) say "This audit is incomplete: N items wait for a language model's judgement and are outside the score
+    until the queue is answered and merged", and the console prints the same in one line ("Incomplete: N
+    item(s) wait …", naming `checklist_report.py --llm-answers`), while any item is `LLM_PENDING`; the line is
+    gone when none is.
+  * **hreflang codes are the standards** (IANA language subtag registry, File-Date 2026-09-17):
+    `hreflang_checker.py` no longer reports a valid ISO 639-1 or ISO 3166-1 code as "Unknown language/region
+    code" (High) — the language set held 106 of the 184 two-letter subtags, the region set 199 of 249 — and no
+    longer files `LA` (Laos) as "Latin America", so `lo-LA` is not an error; `summary.high` drops with them. No
+    rule reads either finding.
+  * SE-117 with its http variant refused by the guard, and TE-167 with its uptime request refused, are `NO_DATA`
+    with `error_kind: blocked` and the guard's label (was no kind).
+  * Two provenance caveats in both reports when they apply: a server log's crawlers taken at their word
+    (`log_crawlers_claimed`, the count of crawler requests whose address was not confirmed), and a Search Console
+    property derived from an old or undated public suffix list (`public_suffix_stale`).
+  * Eight scripts (`cwv_metrics`, `rendered_audit`, `server_log_audit`, `html_validator` and the four Search
+    Console scripts) that had nothing to work with read "an input this check was given could not be used" instead
+    of "script failed", and the run's failure line counts them as inputs; the Search Console four say so when the
+    `gsc` extra is absent (with its `pip install` line) and when the key file is not a service-account key.
+  * Output only: `og:description` is not "required" (Open Graph's four are; MS-033's score does not move);
+    `robots_checker`'s `ai_crawler_status` gains Claude-User, Claude-SearchBot, Perplexity-User and Applebot and
+    loses anthropic-ai and FacebookBot; IndexNow gains Yep, the Internet Archive and Amazonbot, and Yandex's host
+    gains `www`; `detect_profile` drops the non-type `SaaSApplication`; `article_seo` and `parse_html`'s schema
+    status follow the one table.
+  * `SKILL.md` says its guarantee/obligation marking is by section, not by line (OPR-1, the owner's ruling), and no
+    longer says no threshold is `measured` (14 are).
+* **Declarations and gates (DEC-1, DEC-4, DEC-8, DEC-9, GOV-2, GOV-3, GOV-5, GOV-6):** the fixture manifest is
+  `schema_version` 3 — each declaration records `basis` (its item's title and rule as one digest) and `batches`
+  what each declaring session was given — and `tests/test_fixture_oracle.py` refuses to run a declaration `HEAD`
+  does not hold. The derived-sets census reads `scripts/lib/`, sets inside functions and `frozenset({...})`, and
+  every unread set is either held or recorded open with its reason in `tests/open-sets.json`: 194 sets, 151
+  read, 43 unread, all open (182 sets and 80 unread at 0.175.0, counted the narrower way). `THIN_CONTENT_THRESHOLDS` is deleted (four unreachable entries): counted thresholds
+  131 → 130.
+* **Harness and CI (GOV-7, GOV-12):** under `SEO_LOOPBACK_ONLY` (the suite and CI; no real audit sets it)
+  `html_validator.py` and Safe Browsing are not asked and say so (`error_kind: blocked`); until now the suite and
+  the live-path gate asked validator.w3.org past the guard. The tripwire has its own switch, `SEO_TRIPWIRE`, and
+  refuses a program start that is not Python and not in its list (git, bash, openssl, node), a Python child that
+  would not load it, and git without `GIT_ALLOW_PROTOCOL=file`; every gate step carries it and install steps
+  disarm it. The openspec gate runs `npx --offline` from the cache the install step fills.
+  `tests/test_consumers.py` is re-read against Workbench `3b60660`, its native build included.
 
 ## 0.175.0 — every item the census never saw answer names what it waits for; 30 more can be seen failing or answering
 
