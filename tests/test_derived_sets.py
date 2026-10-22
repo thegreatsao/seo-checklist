@@ -79,7 +79,16 @@ import audit_derived_sets  # noqa: E402
 # completed to their standards and held by `tests/test_closed_sets.py`, and `SOURCES`,
 # held by the folders it lists. Raised, because a ceiling below what the instrument can
 # now see would fail on the day it learned to look.
-UNREAD_AT_MOST = 99
+# 85 at F04 (batch 4b), so far: the schema.org type sets derived from a bundled
+# release (four left the census), the retired-schema copies and the AI crawler lists
+# made one each (eight left), `STANDARD_CRAWLERS` deleted (read by nothing), and
+# `RICH_RESULT_REQUIRED` read against Google's pages.
+UNREAD_AT_MOST = 85
+
+# GOV-3 in full (F04, batch 4b): an unread set must be open, with its reason in
+# `tests/open-sets.json`; a closed one is derived or read. This counts the unread sets
+# with no reason, and it is lowered as each is derived or given a reader.
+UNREAD_CLOSED_AT_MOST = 42
 
 
 class TheCensusDescribesThisTree(unittest.TestCase):
@@ -106,6 +115,29 @@ class TheCensusDescribesThisTree(unittest.TestCase):
             f"{self.fresh['unread'] - UNREAD_AT_MOST} more hand-written set(s) that "
             f"nothing reads. Derive the new one from what it describes, or import it "
             f"into a test that asserts its membership")
+
+    def test_no_unread_set_is_closed(self):
+        """GOV-3's sentence, counted: a set nothing reads must say why it cannot be
+        read — an open sample — or it is a closed vocabulary that nothing holds to its
+        source. A new set written without either fails here the day it is written."""
+        unclassified = [f"{module}.{row['name']}"
+                        for module, columns in self.fresh["modules"].items()
+                        for row in columns["unread"] if "open" not in row]
+        self.assertLessEqual(
+            len(unclassified), UNREAD_CLOSED_AT_MOST,
+            f"unread with no open reason: {unclassified}. Derive it, give it a reader "
+            f"that holds it to its source, or, if no complete form of it exists, record "
+            f"why in tests/open-sets.json")
+
+    def test_every_open_reason_names_an_unread_set(self):
+        """The record in the other direction: a reason for a set that is read, renamed
+        or gone is a judgment about nothing, and an empty one is no judgment."""
+        unread = {f"{module}.{row['name']}"
+                  for module, columns in self.fresh["modules"].items()
+                  for row in columns["unread"]}
+        reasons = audit_derived_sets.open_sets()
+        self.assertEqual(sorted(set(reasons) - unread), [])
+        self.assertEqual([key for key, reason in reasons.items() if not reason.strip()], [])
 
     def test_a_set_that_becomes_derived_leaves_the_census_entirely(self):
         """The escape route, pinned so it stays open. A comprehension or a call is not

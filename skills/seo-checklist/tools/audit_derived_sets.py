@@ -58,6 +58,9 @@ SKILL = os.path.join(ROOT, "skills", "seo-checklist")
 SOURCES = (os.path.join(SKILL, "scripts"), os.path.join(SKILL, "scripts", "lib"),
            os.path.join(SKILL, "tools"))
 TESTS = os.path.join(ROOT, "tests")
+# The open sets and why each is open: hand-kept, because "this list has no complete
+# form" is a judgment, and the judgment is the thing a reviewer is asked to check.
+OPEN = os.path.join(TESTS, "open-sets.json")
 
 LITERALS = (ast.List, ast.Tuple, ast.Set, ast.Dict)
 # A literal handed straight to one of these is still a list a hand wrote: `frozenset({...})`
@@ -243,8 +246,15 @@ def read_by_a_test(module: str, name: str,
     return False
 
 
+def open_sets() -> dict[str, str]:
+    """`{"module.NAME": reason}` from `OPEN`; a key without a dot is commentary."""
+    with open(OPEN, encoding="utf-8") as stream:
+        return {key: reason for key, reason in json.load(stream).items() if "." in key}
+
+
 def census() -> dict:
     corpus = test_corpus()
+    reasons = open_sets()
     modules: dict[str, dict] = {}
     for directory in SOURCES:
         for path in sorted(glob.glob(os.path.join(directory, "*.py"))):
@@ -252,9 +262,16 @@ def census() -> dict:
             for name, size in literal_sets(path):
                 entry = modules.setdefault(module, {"read": [], "unread": []})
                 where = "read" if read_by_a_test(module, name, corpus) else "unread"
-                entry[where].append({"name": name, "entries": size})
+                row = {"name": name, "entries": size}
+                if where == "unread" and f"{module}.{name}" in reasons:
+                    row["open"] = reasons[f"{module}.{name}"]
+                entry[where].append(row)
     total = sum(len(m["read"]) + len(m["unread"]) for m in modules.values())
     unread = sum(len(m["unread"]) for m in modules.values())
+    # An unread set with no reason is closed by default: it describes something, and
+    # nothing holds it to what it describes. The column GOV-3 wants at zero.
+    unread_closed = sum(1 for m in modules.values() for row in m["unread"]
+                        if "open" not in row)
     return {
         "measured": "upper-case names bound to a list, tuple, set or dict literal, bare "
                     "or handed to a constructor, at module level or in a function, in "
@@ -265,6 +282,7 @@ def census() -> dict:
         "total": total,
         "read": total - unread,
         "unread": unread,
+        "unread_closed": unread_closed,
         "modules": dict(sorted(modules.items())),
     }
 
@@ -275,7 +293,8 @@ def report(record: dict) -> list[str]:
     lines = [
         f"{record['total']} hand-written sets decide behaviour in scripts/ and tools/.",
         f"{record['read']} are imported by a test; {record['unread']} are named by "
-        f"nothing outside the code that consumes them.",
+        f"nothing outside the code that consumes them; {record['unread_closed']} "
+        f"of those are not recorded as open, so nothing holds them to what they describe.",
         "",
         "Most unread, by module:",
     ]
@@ -305,7 +324,8 @@ def moved(stored: dict, fresh: dict) -> list[str]:
         for module, columns in (record.get("modules") or {}).items():
             for column, sets in columns.items():
                 for entry in sets:
-                    out[f"{module}.{entry['name']}"] = (column, entry.get("entries"))
+                    out[f"{module}.{entry['name']}"] = (column, entry.get("entries"),
+                                                        entry.get("open"))
         return out
 
     before, after = flat(stored), flat(fresh)
@@ -320,6 +340,8 @@ def moved(stored: dict, fresh: dict) -> list[str]:
             lines.append(f"{name} is recorded and is no longer in the tree")
         elif old[1] != new[1]:
             lines.append(f"{name}: {old[1]} entries -> {new[1]}")
+        elif old[2] != new[2]:
+            lines.append(f"{name}: its open reason changed")
         else:
             lines.append(f"{name}: {old[0]} -> {new[0]}")
     return lines

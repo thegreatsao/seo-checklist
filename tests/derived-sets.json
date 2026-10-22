@@ -4,6 +4,7 @@
   "total": 199,
   "read": 114,
   "unread": 85,
+  "unread_closed": 42,
   "modules": {
     "a11y_seo_checker": {
       "read": [],
@@ -28,7 +29,8 @@
       "unread": [
         {
           "name": "GENERIC_ANCHORS",
-          "entries": 11
+          "entries": 11,
+          "open": "generic link phrasings, a sample in one language; a phrasing it lacks is read as descriptive"
         }
       ]
     },
@@ -42,15 +44,18 @@
       "unread": [
         {
           "name": "NON_PROSE",
-          "entries": 5
+          "entries": 5,
+          "open": "elements whose text is skipped as not prose; HTML defines no such category"
         },
         {
           "name": "BLOCK_TAGS",
-          "entries": 39
+          "entries": 39,
+          "open": "the boundaries of a text block, a judgment across HTML's flow and phrasing content, which shares elements between them"
         },
         {
           "name": "ANSWER_TAGS",
-          "entries": 4
+          "entries": 4,
+          "open": "the elements an answer may be written in, this scanner's choice"
         }
       ]
     },
@@ -59,7 +64,8 @@
       "unread": [
         {
           "name": "STOP_WORDS",
-          "entries": 3
+          "entries": 3,
+          "open": "stopwords per language, a sample"
         }
       ]
     },
@@ -142,7 +148,8 @@
       "unread": [
         {
           "name": "STOP",
-          "entries": 64
+          "entries": 64,
+          "open": "stopwords for comparing a title with what its assertion reads"
         },
         {
           "name": "REVIEWED",
@@ -150,7 +157,8 @@
         },
         {
           "name": "_SUFFIXES",
-          "entries": 13
+          "entries": 13,
+          "open": "a crude stemmer's suffixes"
         }
       ]
     },
@@ -204,7 +212,8 @@
         },
         {
           "name": "ARITHMETIC",
-          "entries": 4
+          "entries": 4,
+          "open": "literals read as arithmetic rather than thresholds, a convention of this tool"
         }
       ]
     },
@@ -326,11 +335,13 @@
       "unread": [
         {
           "name": "STATIC_EXTENSIONS",
-          "entries": 11
+          "entries": 11,
+          "open": "asset extensions sampled for cache headers"
         },
         {
           "name": "TEXT_EXTENSIONS",
-          "entries": 8
+          "entries": 8,
+          "open": "text extensions sampled for compression"
         }
       ]
     },
@@ -339,7 +350,8 @@
       "unread": [
         {
           "name": "PACKAGES",
-          "entries": 19
+          "entries": 19,
+          "open": "the calibration corpus, chosen and pinned"
         },
         {
           "name": "CONSTANT_NAMES",
@@ -352,7 +364,8 @@
       "unread": [
         {
           "name": "PACKAGES",
-          "entries": 8
+          "entries": 8,
+          "open": "the calibration corpus, chosen and pinned"
         }
       ]
     },
@@ -361,7 +374,8 @@
       "unread": [
         {
           "name": "TABLE_IMPRESSIONS",
-          "entries": 6
+          "entries": 6,
+          "open": "rows of a printed table"
         },
         {
           "name": "PAIRS",
@@ -387,7 +401,8 @@
       "unread": [
         {
           "name": "FONT_FILES",
-          "entries": 4
+          "entries": 4,
+          "open": "the fonts a calibration measures with, chosen"
         },
         {
           "name": "ENGLISH_LETTER_FREQUENCY",
@@ -395,11 +410,13 @@
         },
         {
           "name": "COMPOSITION_MIXES",
-          "entries": 3
+          "entries": 3,
+          "open": "text compositions a calibration tries, chosen"
         },
         {
           "name": "SURFACES",
-          "entries": 3
+          "entries": 3,
+          "open": "result surfaces a calibration tries, with the pixel budgets it states"
         },
         {
           "name": "CONSTANT_NAMES",
@@ -554,11 +571,13 @@
       "unread": [
         {
           "name": "NOT_FOUND_PHRASES",
-          "entries": 24
+          "entries": 24,
+          "open": "soft-404 wordings, a sample in eight languages"
         },
         {
           "name": "NOT_FOUND_EXACT",
-          "entries": 4
+          "entries": 4,
+          "open": "whole-title soft-404 wordings, a sample"
         }
       ]
     },
@@ -576,7 +595,8 @@
       "unread": [
         {
           "name": "FOOTNOTE_WORDS",
-          "entries": 10
+          "entries": 10,
+          "open": "footnote wordings, a sample"
         }
       ]
     },
@@ -607,15 +627,18 @@
         },
         {
           "name": "PLATFORM_SIGNALS",
-          "entries": 8
+          "entries": 8,
+          "open": "platform fingerprints, a sample with weights"
         },
         {
           "name": "PATH_SIGNALS",
-          "entries": 8
+          "entries": 8,
+          "open": "URL path fingerprints, a sample with weights"
         },
         {
           "name": "MARKUP_SIGNALS",
-          "entries": 7
+          "entries": 7,
+          "open": "markup fingerprints, a sample with weights"
         },
         {
           "name": "PROFILES",
@@ -704,15 +727,18 @@
       "unread": [
         {
           "name": "SITE_SHEETS",
-          "entries": 4
+          "entries": 4,
+          "open": "sheet names of a Search Console export, by locale, a sample"
         },
         {
           "name": "ANCHOR_SHEETS",
-          "entries": 4
+          "entries": 4,
+          "open": "sheet names of a Search Console export, by locale, a sample"
         },
         {
           "name": "PAGE_SHEETS",
-          "entries": 4
+          "entries": 4,
+          "open": "sheet names of a Search Console export, by locale, a sample"
         }
       ]
     },
@@ -773,11 +799,13 @@
       "unread": [
         {
           "name": "MODERN_FORMATS",
-          "entries": 2
+          "entries": 2,
+          "open": "the formats credited as next-generation, a convention; browsers do not agree on JPEG XL"
         },
         {
           "name": "RASTER_FORMATS",
-          "entries": 4
+          "entries": 4,
+          "open": "the formats named as replaceable by a modern one, the common ones"
         }
       ]
     },
@@ -795,11 +823,13 @@
       "unread": [
         {
           "name": "MAP_PATTERNS",
-          "entries": 4
+          "entries": 4,
+          "open": "map link hosts, a sample"
         },
         {
           "name": "GBP_PATTERNS",
-          "entries": 3
+          "entries": 3,
+          "open": "business profile link hosts, a sample"
         }
       ]
     },
@@ -865,7 +895,8 @@
       "unread": [
         {
           "name": "CTX",
-          "entries": 1
+          "entries": 1,
+          "open": "the context one probe run passes, a value rather than a vocabulary"
         }
       ]
     },
@@ -914,7 +945,8 @@
       "unread": [
         {
           "name": "DEFAULT_HEADERS",
-          "entries": 5
+          "entries": 5,
+          "open": "the request this tool sends, a choice"
         },
         {
           "name": "PRIVATE_ALLOWED_NETWORKS",
@@ -922,7 +954,8 @@
         },
         {
           "name": "_TRUE",
-          "entries": 4
+          "entries": 4,
+          "open": "spellings of yes in an environment variable; any other reads no, so it fails closed"
         },
         {
           "name": "_BOMS",
@@ -948,7 +981,8 @@
       "unread": [
         {
           "name": "PLACEHOLDER_MARKERS",
-          "entries": 5
+          "entries": 5,
+          "open": "template leftovers, a sample"
         }
       ]
     },
@@ -987,7 +1021,8 @@
       "unread": [
         {
           "name": "SECURITY_HEADERS",
-          "entries": 6
+          "entries": 6,
+          "open": "the headers this tool scores and their weights, a selection"
         }
       ]
     },
@@ -1021,19 +1056,23 @@
         },
         {
           "name": "XML_CTYPES",
-          "entries": 3
+          "entries": 3,
+          "open": "content types a sitemap is accepted under, wider than XML's because servers mislabel"
         },
         {
           "name": "BYLINE_CLASS_TOKENS",
-          "entries": 13
+          "entries": 13,
+          "open": "class names authors are marked with, a sample"
         },
         {
           "name": "HEAD_REFUSED_STATUSES",
-          "entries": 3
+          "entries": 3,
+          "open": "statuses after which HEAD is retried as GET: RFC 9110's two method refusals plus 403, which servers answer to HEAD in practice; a convention"
         },
         {
           "name": "SUBJECT_KEYS",
-          "entries": 3
+          "entries": 3,
+          "open": "properties whose subtree is the page's subject rather than its own, a judgment schema.org does not make"
         }
       ]
     },
@@ -1059,7 +1098,8 @@
       "unread": [
         {
           "name": "JSON_KEYS",
-          "entries": 6
+          "entries": 6,
+          "open": "field names across log formats, a sample"
         },
         {
           "name": "WASTED",
@@ -1077,7 +1117,8 @@
       "unread": [
         {
           "name": "CHROME_TAGS",
-          "entries": 8
+          "entries": 8,
+          "open": "boilerplate elements, a judgment"
         }
       ]
     },
@@ -1108,7 +1149,8 @@
       "unread": [
         {
           "name": "KNOWN_TAGS",
-          "entries": 12
+          "entries": 12,
+          "open": "known tag vendors, a sample"
         }
       ]
     },
@@ -1117,7 +1159,8 @@
       "unread": [
         {
           "name": "STOPWORDS",
-          "entries": 26
+          "entries": 26,
+          "open": "stopwords"
         }
       ]
     },
@@ -1130,7 +1173,8 @@
         },
         {
           "name": "TRACKING_PREFIXES",
-          "entries": 4
+          "entries": 4,
+          "open": "tracking parameters, a sample"
         }
       ]
     }
