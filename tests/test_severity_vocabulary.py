@@ -38,7 +38,8 @@ def sources(*dirs):
                 if name.endswith(".py"):
                     path = os.path.join(root, name)
                     with open(path, encoding="utf-8") as f:
-                        yield (os.path.relpath(path, os.path.dirname(SCRIPTS)),
+                        yield (os.path.relpath(path, os.path.dirname(SCRIPTS))
+                               .replace(os.sep, "/"),
                                ast.parse(f.read()))
 
 
@@ -76,6 +77,19 @@ class OnePlaceTranslates(unittest.TestCase):
         self.assertEqual(sorted(readers),
                          ["scripts/checklist_runner.py:normal_severity",
                           "tools/audit_assertions.py:severity_literals"])
+
+    def test_a_module_is_named_with_forward_slashes_on_windows(self):
+        """Both tests here look modules up by `scripts/…`; Windows's `relpath` answers
+        with backslashes, and until 0.176.2 both failed there."""
+        from unittest import mock
+        relpath = os.path.relpath
+
+        def windows_relpath(path, start):
+            return relpath(path, start).replace("/", "\\")
+
+        with mock.patch.object(os.path, "relpath", windows_relpath), \
+                mock.patch.object(os, "sep", "\\"):
+            self.assertIn("scripts/checklist_runner.py", [name for name, _ in sources(SCRIPTS)])
 
     def test_no_other_mapping_turns_an_inherited_word_into_one_of_the_four(self):
         """A second table or a second translation, written under any name: a dict

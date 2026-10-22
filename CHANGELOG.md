@@ -10,6 +10,29 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.176.2 — a threshold's file is named with forward slashes on Windows; the tripwire probe carries no path in its source
+
+Registry version: `abf465b3f75d`, unchanged. Nothing an audit fetches, decides or prints
+moves; no verdict moves. 0.176.1 let CI's Windows legs past Lint for the first time, and
+their test step failed six tests (`failures=5, errors=1`, both legs). Each is fixed where
+the name or the source is made, and each has a test that reproduces the Windows shape on
+macOS: red before the fix, green after.
+
+* **`audit_thresholds` names a file `scripts/…` on every platform.** `_report_path`, the
+  one place every record of `scan()` is named, returned `os.path.relpath`, which answers
+  `scripts\gsc_checker.py` on Windows; the calibration tests look constants up by
+  `scripts/…` and found none (`test_tool_sets`, three tests). It now turns the separator
+  into `/`. A new test runs it with `ntpath` and a `D:\…` skill root.
+* **`test_severity_vocabulary` names modules the same way.** Its own `sources()` called
+  `relpath` too, so the lookup of `scripts/checklist_runner.py` raised `KeyError` and the
+  list of readers compared unequal (two tests). A new test runs it under a Windows
+  `relpath` and separator.
+* **The tripwire probe in `test_offline` passes its directory in the environment.** It
+  pasted the directory into its `-c` source as `repr()`, and on Windows each doubled
+  backslash arrived halved: `os.chdir('C:\Users\…')`, a `SyntaxError` on `\U`. The
+  probe now reads `PROBE_DIR`. A new test halves the backslashes the way CI did and
+  compiles the probe: CI's own error before, a clean compile after.
+
 ## 0.176.1 — CI's Windows legs lint the way Linux does
 
 Registry version: `abf465b3f75d`, unchanged. Nothing an audit fetches, decides or prints

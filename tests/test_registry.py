@@ -926,12 +926,23 @@ WINDOW = 7
     def test_report_path_is_relative_or_falls_back_to_absolute(self):
         at = self._tool()
         inside = os.path.join(at.SKILL, "scripts", "checklist_runner.py")
-        self.assertEqual(at._report_path(inside),
-                         os.path.relpath(inside, at.SKILL))
+        self.assertEqual(at._report_path(inside), "scripts/checklist_runner.py")
 
         outside = os.path.join(tempfile.gettempdir(), "thresholds.py")
         with mock.patch.object(at.os.path, "relpath", side_effect=ValueError):
             self.assertEqual(at._report_path(outside), os.path.abspath(outside))
+
+    def test_report_path_names_a_windows_file_with_forward_slashes(self):
+        """The name is a key callers compare with `scripts/…`: until 0.176.2 a Windows
+        run named `scripts\\gsc_checker.py`, and three calibration tests failed there."""
+        import ntpath
+        at = self._tool()
+        skill = r"D:\a\seo-checklist\seo-checklist\skills\seo-checklist"
+        with mock.patch.object(at.os, "path", ntpath), \
+                mock.patch.object(at.os, "sep", "\\"), \
+                mock.patch.object(at, "SKILL", skill):
+            self.assertEqual(at._report_path(skill + r"\scripts\lib\safe_http.py"),
+                             "scripts/lib/safe_http.py")
 
     def test_no_named_threshold_is_bare(self):
         at = self._tool()

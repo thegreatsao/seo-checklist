@@ -104,9 +104,13 @@ def _report_path(path: str) -> str:
     different drive letters — the checkout on D: and a temp file on C: is the
     ordinary case on a GitHub runner. This label is for a human reading a report,
     so an unhelpful-but-correct absolute path beats an exception.
+
+    The relative name is also a key: callers compare it with `scripts/…`, so it
+    takes forward slashes on Windows too (until 0.176.2 it did not, and three
+    calibration tests failed on CI's Windows legs).
     """
     try:
-        return os.path.relpath(path, SKILL)
+        return os.path.relpath(path, SKILL).replace(os.sep, "/")
     except ValueError:
         return os.path.abspath(path)
 

@@ -3,7 +3,7 @@
 # which Python versions the code actually runs on, and how the linter is configured.
 [project]
 name = "seo-checklist"
-version = "0.176.1"
+version = "0.176.2"
 description = "Deterministic SEO audit against a fixed 217-item registry"
 license = "MIT"
 # 3.11 since 0.166.0, by Anton's decision of 15 October 2026: an old Python that

@@ -407,17 +407,31 @@ class EveryGateStepIsWatched(unittest.TestCase):
         env = self.ci_local.step_env(base, self.workflow, job, step)
         elsewhere = tempfile.mkdtemp()
         self.addCleanup(os.rmdir, elsewhere)
+        line, extra = self.probe(elsewhere)
+        ok, _, out = self.ci_local.run_step("probe", line, {**env, **extra})
+        self.assertTrue(ok, out)
+        self.assertEqual(out.split(), ["True", "True", "file"], out)
+
+    @staticmethod
+    def probe(elsewhere: str) -> tuple[str, dict]:
+        """The step line and the environment it adds."""
         # The parent moves before it starts the child, so the child starts in another
         # directory: a relative entry on its `PYTHONPATH` would resolve to nothing there.
         child = "import os, sys; print('tripwire' in sys.modules, os.environ.get('GIT_ALLOW_PROTOCOL'))"
         probe = ("import os, subprocess, sys; print('tripwire' in sys.modules); "
-                 f"os.chdir({elsewhere!r}); "
+                 "os.chdir(os.environ['PROBE_DIR']); "
                  f"print(subprocess.run([sys.executable, '-c', {child!r}], "
                  "capture_output=True, text=True, close_fds=False).stdout.strip())")
-        ok, _, out = self.ci_local.run_step(
-            "probe", f"{shlex.quote(sys.executable)} -c {shlex.quote(probe)}", env)
-        self.assertTrue(ok, out)
-        self.assertEqual(out.split(), ["True", "True", "file"], out)
+        return f"{shlex.quote(sys.executable)} -c {shlex.quote(probe)}", {"PROBE_DIR": elsewhere}
+
+    def test_the_probe_survives_a_windows_command_line(self):
+        r"""CI's Windows legs ran the probe with each doubled backslash halved on its way
+        from bash to python.exe: `os.chdir('C:\\Users\\…')` arrived as
+        `os.chdir('C:\Users\…')`, a SyntaxError. A path in an environment variable
+        never crosses that command line."""
+        line, extra = self.probe(r"C:\Users\RUNNER~1\AppData\Local\Temp\tmpoymqk8gf")
+        source = shlex.split(line)[2].replace("\\\\", "\\")
+        compile(source, "<probe>", "exec")
 
     def test_every_lint_step_passes_under_the_tripwire(self):
         """Run as the gate runs it, on every leg. Until 0.176.1 the Windows leg ran
