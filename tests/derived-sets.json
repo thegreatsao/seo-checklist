@@ -1,9 +1,9 @@
 {
   "measured": "upper-case names bound to a list, tuple, set or dict literal, bare or handed to a constructor, at module level or in a function, in scripts/, scripts/lib/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 205,
-  "read": 110,
-  "unread": 95,
+  "total": 201,
+  "read": 113,
+  "unread": 88,
   "modules": {
     "a11y_seo_checker": {
       "read": [],
@@ -60,14 +60,6 @@
         {
           "name": "STOP_WORDS",
           "entries": 3
-        },
-        {
-          "name": "DEPRECATED_SCHEMA",
-          "entries": 8
-        },
-        {
-          "name": "RESTRICTED_SCHEMA",
-          "entries": 1
         }
       ]
     },
@@ -866,16 +858,7 @@
           "entries": 3
         }
       ],
-      "unread": [
-        {
-          "name": "parse_html.DEPRECATED_SCHEMA",
-          "entries": 8
-        },
-        {
-          "name": "parse_html.RESTRICTED_SCHEMA",
-          "entries": 1
-        }
-      ]
+      "unread": []
     },
     "probe_shapes": {
       "read": [],
@@ -900,21 +883,13 @@
       "unread": []
     },
     "rich_results_guard": {
-      "read": [],
-      "unread": [
-        {
-          "name": "DEPRECATED_TYPES",
-          "entries": 8
-        },
-        {
-          "name": "RESTRICTED_TYPES",
-          "entries": 2
-        },
+      "read": [
         {
           "name": "RICH_RESULT_REQUIRED",
           "entries": 4
         }
-      ]
+      ],
+      "unread": []
     },
     "robots_checker": {
       "read": [],
@@ -984,6 +959,19 @@
           "entries": 5
         }
       ]
+    },
+    "schema_types": {
+      "read": [
+        {
+          "name": "DEPRECATED_TYPES",
+          "entries": 3
+        },
+        {
+          "name": "RESTRICTED_TYPES",
+          "entries": 2
+        }
+      ],
+      "unread": []
     },
     "security_headers": {
       "read": [

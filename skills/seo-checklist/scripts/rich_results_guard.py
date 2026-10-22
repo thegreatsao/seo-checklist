@@ -6,34 +6,38 @@ from __future__ import annotations
 from lib import python_floor  # noqa: F401
 
 import argparse
+import re
 from typing import Any
 
+from lib.schema_types import DEPRECATED_TYPES, RESTRICTED_TYPES
 from schema_required_props import extract_schema_documents, find_schema_nodes, schema_type_names
 from seo_common import read_source, issue, print_json_or_text
 
 
-DEPRECATED_TYPES = {
-    "SpecialAnnouncement": "retired as a Google rich result on July 31, 2025",
-    "CourseInfo": "retired in June 2025",
-    "EstimatedSalary": "retired in June 2025",
-    "LearningVideo": "retired in June 2025",
-    "ClaimReview": "fact-check rich results discontinued in 2025",
-    "VehicleListing": "vehicle listing structured data discontinued in 2025",
-    "PracticeProblem": "rich result discontinued in late 2025",
-    "Dataset": "rich result discontinued in late 2025",
-}
-
-RESTRICTED_TYPES = {
-    "FAQPage": "eligible mainly for authoritative government and health sites",
-    "HowTo": "no longer broadly shown as a Google rich result",
-}
-
+# Google's required properties per rich result (each page read 2026-10-22; held by
+# `tests/test_closed_sets.py`). A tuple inside an entry is "one of these": a Product
+# snippet needs a review, a rating or an offer, not an offer.
 RICH_RESULT_REQUIRED = {
-    "BreadcrumbList": {"itemListElement"},
-    "Product": {"name", "offers"},
-    "Review": {"itemReviewed", "reviewRating", "author"},
-    "VideoObject": {"name", "description", "thumbnailUrl", "uploadDate"},
+    "BreadcrumbList": ("itemListElement",),
+    "Product": ("name", ("review", "aggregateRating", "offers")),
+    "Review": ("author", "itemReviewed", "reviewRating"),
+    "VideoObject": ("name", "thumbnailUrl", "uploadDate"),
 }
+
+
+def _missing_required(type_name: str, node: dict, path: str) -> list[str]:
+    """What a node lacks of `RICH_RESULT_REQUIRED`, each as it is printed."""
+    missing = []
+    for prop in RICH_RESULT_REQUIRED.get(type_name, ()):
+        if isinstance(prop, tuple):
+            if not any(node.get(p) for p in prop):
+                missing.append(" or ".join(prop))
+        # A review nested in the item it reviews names that item by nesting, and
+        # Google says to omit `itemReviewed` there.
+        elif not node.get(prop) and not (
+                prop == "itemReviewed" and re.search(r"\.reviews?(\[\d+\])?$", path)):
+            missing.append(prop)
+    return missing
 
 
 def guard_rich_results(documents: list[Any],
@@ -56,9 +60,8 @@ def guard_rich_results(documents: list[Any],
                 row_issues.append(issue("error", f"{type_name} is deprecated/restricted: {DEPRECATED_TYPES[type_name]}", evidence=row["path"]))
             if type_name in RESTRICTED_TYPES:
                 row_issues.append(issue("warning", f"{type_name} has eligibility limits: {RESTRICTED_TYPES[type_name]}", evidence=row["path"]))
-            for prop in sorted(RICH_RESULT_REQUIRED.get(type_name, set())):
-                if not node.get(prop):
-                    row_issues.append(issue("error", f"{type_name} missing rich-result property '{prop}'", evidence=row["path"]))
+            for prop in _missing_required(type_name, node, row["path"]):
+                row_issues.append(issue("error", f"{type_name} missing rich-result property '{prop}'", evidence=row["path"]))
         rows.append({"path": row["path"], "types": type_names, "issues": row_issues})
         issues.extend(row_issues)
     result = {

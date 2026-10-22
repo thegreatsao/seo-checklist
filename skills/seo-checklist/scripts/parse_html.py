@@ -30,9 +30,11 @@ except ImportError:
 try:
     from article_seo import META_MAX_CHARS, META_MIN_CHARS
     from lib.safe_http import safe_get
+    from lib.schema_types import DEPRECATED_TYPES, RESTRICTED_TYPES
 except ImportError:
     from scripts.article_seo import META_MAX_CHARS, META_MIN_CHARS
     from scripts.lib.safe_http import safe_get
+    from scripts.lib.schema_types import DEPRECATED_TYPES, RESTRICTED_TYPES
 
 from seo_common import (read_as_url, favicon_href, html_parser,
                         is_responsive_fill_image as _is_responsive_fill_image, issue)
@@ -380,12 +382,6 @@ def parse_html(
                 result["links"]["external"].append(link_data)
 
     # Schema (JSON-LD) — enhanced with type validation
-    DEPRECATED_SCHEMA = {
-        "HowTo", "SpecialAnnouncement", "CourseInfo", "EstimatedSalary",
-        "LearningVideo", "ClaimReview", "VehicleListing", "PracticeProblems",
-    }
-    RESTRICTED_SCHEMA = {"FAQPage"}  # government/healthcare only
-
     for script in soup.find_all("script", type="application/ld+json"):
         try:
             schema_data = json.loads(script.string)
@@ -409,10 +405,10 @@ def parse_html(
             status = "active"
             note = ""
 
-            if primary_type in DEPRECATED_SCHEMA:
+            if primary_type in DEPRECATED_TYPES:
                 status = "deprecated"
                 note = f"{primary_type} was deprecated/removed from rich results. Remove or replace."
-            elif primary_type in RESTRICTED_SCHEMA:
+            elif primary_type in RESTRICTED_TYPES:
                 status = "restricted"
                 note = f"{primary_type} is restricted to government/healthcare authority sites only."
 

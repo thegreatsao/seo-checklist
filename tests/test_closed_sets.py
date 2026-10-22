@@ -148,5 +148,92 @@ class SchemaOrgTypesAreTheVocabulary(unittest.TestCase):
             self.assertFalse(eeat_signal_checker._is_org_type(schema_type), schema_type)
 
 
+
+class RetiredSchemaTypesAreOneTable(unittest.TestCase):
+    """The schema types Google no longer shows a rich result for, held in one table
+    (`lib/schema_types.py`) and read by the three checks that classify a node.
+
+    Written in F04 (batch 4b): there were three copies. `article_seo` and `parse_html()`
+    called HowTo deprecated where `rich_results_guard` called it restricted, only the
+    guard knew Dataset, and five of the guard's eight names (`CourseInfo`,
+    `EstimatedSalary`, `LearningVideo`, `VehicleListing`, `PracticeProblem`) are Google
+    feature names, not schema.org types, so no markup could ever match them."""
+
+    @staticmethod
+    def classify(type_name: str) -> tuple[str, str, str]:
+        import article_seo
+        import parse_html
+        import rich_results_guard
+        page = ('<html><head><script type="application/ld+json">{"@type": "%s"}'
+                '</script></head><body></body></html>' % type_name)
+        parsed = parse_html.parse_html(page, "https://example.test/")
+        issues = rich_results_guard.guard_rich_results([{"@type": type_name}])["issues"]
+        guard = ("deprecated" if any(i["severity"] == "error" for i in issues)
+                 else "restricted" if issues else "active")
+        return (article_seo._describe_schema_node({"@type": type_name})["status"],
+                parsed["schema"][0]["status"], guard)
+
+    def test_every_retired_name_is_a_schema_org_type(self):
+        from lib import schema_types
+        for table in (schema_types.DEPRECATED_TYPES, schema_types.RESTRICTED_TYPES):
+            for name in table:
+                self.assertIn(name, schema_types.SNAPSHOT["types"], name)
+
+    def test_the_three_checks_classify_every_type_alike(self):
+        from lib import schema_types
+        for name in (*schema_types.DEPRECATED_TYPES, *schema_types.RESTRICTED_TYPES,
+                     "HowTo", "Dataset", "FAQPage", "Article"):
+            with self.subTest(type_name=name):
+                self.assertEqual(len(set(self.classify(name))), 1, self.classify(name))
+
+
+
+class RichResultRequiredPropertiesAreGoogles(unittest.TestCase):
+    """`rich_results_guard.RICH_RESULT_REQUIRED` against Google's pages for each rich
+    result, read 2026-10-22: Product snippet (last updated 2026-09-08) requires `name`
+    and one of `review`, `aggregateRating`, `offers`; Video (2026-09-24) requires `name`,
+    `thumbnailUrl`, `uploadDate`, with `description` recommended; Review snippet
+    (2026-09-08) requires `author`, `reviewRating`, and `itemReviewed` unless the review
+    is nested in the item it reviews; Breadcrumb (2026-09-08) requires
+    `itemListElement`. Until F04 (batch 4b) the table required `offers` and
+    `description`, so a rated product with no offer, a video with no description and a
+    product's own nested review were each a TE-172 error."""
+
+    GOOGLE = {
+        "BreadcrumbList": ("itemListElement",),
+        "Product": ("name", ("review", "aggregateRating", "offers")),
+        "Review": ("author", "itemReviewed", "reviewRating"),
+        "VideoObject": ("name", "thumbnailUrl", "uploadDate"),
+    }
+
+    @staticmethod
+    def errors(node) -> list[str]:
+        import rich_results_guard
+        return [i["message"] for i in rich_results_guard.guard_rich_results([node])["issues"]
+                if i["severity"] == "error"]
+
+    def test_the_table_is_googles(self):
+        import rich_results_guard
+        self.assertEqual(rich_results_guard.RICH_RESULT_REQUIRED, self.GOOGLE)
+
+    def test_a_product_needs_one_of_its_three_not_an_offer(self):
+        rating = {"@type": "AggregateRating", "ratingValue": 4, "reviewCount": 3}
+        self.assertEqual(self.errors({"@type": "Product", "name": "X",
+                                      "aggregateRating": rating}), [])
+        self.assertEqual(len(self.errors({"@type": "Product", "name": "X"})), 1)
+
+    def test_a_video_needs_no_description(self):
+        self.assertEqual(self.errors({"@type": "VideoObject", "name": "X",
+                                      "thumbnailUrl": "https://example.test/t.jpg",
+                                      "uploadDate": "2026-01-01"}), [])
+
+    def test_a_nested_review_names_its_item_by_nesting(self):
+        review = {"@type": "Review", "author": {"@type": "Person", "name": "A"},
+                  "reviewRating": {"@type": "Rating", "ratingValue": 5}}
+        self.assertEqual(self.errors({"@type": "Product", "name": "X",
+                                      "review": [review]}), [])
+        self.assertEqual(len(self.errors(review)), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

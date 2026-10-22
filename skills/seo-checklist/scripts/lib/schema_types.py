@@ -38,6 +38,27 @@ ORGANIZATION_TYPES = descendants("Organization")
 PLACE_TYPES = descendants("Place")
 
 
+# The schema types whose only Google Search feature is gone, with Google's own words
+# and date (Search Central documentation changelog, read 2026-10-22), keyed by the
+# `@type` the feature read. One table for `rich_results_guard` (TE-172, TECH-001),
+# `parse_html()` and `article_seo`, which until F04 (batch 4b) kept three copies that
+# disagreed. A retired feature whose markup shares its type with a live one (course
+# info and the course list both read `Course`; learning video reads `VideoObject`;
+# vehicle listing reads `Car`) cannot be told apart by type and is not here; every key
+# is a type in the snapshot, which `tests/test_closed_sets.py` holds.
+DEPRECATED_TYPES = {
+    "SpecialAnnouncement": "special announcements deprecated from July 31, 2025; "
+                           "documentation removed September 9, 2025",
+    "ClaimReview": "fact-check rich results phased out from June 12, 2025",
+    "Dataset": "since November 5, 2025 used only by Dataset Search, not Google Search",
+}
+
+RESTRICTED_TYPES = {
+    "FAQPage": "eligible mainly for authoritative government and health sites",
+    "HowTo": "no longer broadly shown as a Google rich result",
+}
+
+
 def schema_types(value) -> list[str]:
     """Return @type as a list of non-empty strings, preserving source order."""
     values = value if isinstance(value, list) else [value]

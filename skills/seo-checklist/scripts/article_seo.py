@@ -38,11 +38,13 @@ except ImportError:
 
 try:
     from lib.safe_http import safe_get
+    from lib.schema_types import DEPRECATED_TYPES, RESTRICTED_TYPES
     from seo_common import (read_as_url, THIN_CONTENT_WORDS, declared_publication_dates,
                             page_author_names, parse_html, primary_language,
                             unread_kind)
 except ImportError:
     from scripts.lib.safe_http import safe_get
+    from scripts.lib.schema_types import DEPRECATED_TYPES, RESTRICTED_TYPES
     from scripts.seo_common import (read_as_url, THIN_CONTENT_WORDS,
                                     declared_publication_dates,
                                     page_author_names, parse_html,
@@ -157,12 +159,9 @@ STOP_WORDS = {
     },
 }
 
-# Deprecated / restricted schema types (as of Feb 2026)
-DEPRECATED_SCHEMA = {
-    "HowTo", "SpecialAnnouncement", "CourseInfo", "EstimatedSalary",
-    "LearningVideo", "ClaimReview", "VehicleListing", "PracticeProblems",
-}
-RESTRICTED_SCHEMA = {"FAQPage"}  # government / healthcare only
+# Deprecated / restricted schema types: the one table `rich_results_guard` reads.
+DEPRECATED_SCHEMA = DEPRECATED_TYPES
+RESTRICTED_SCHEMA = RESTRICTED_TYPES
 
 
 # ---------------------------------------------------------------------------
