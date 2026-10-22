@@ -35,7 +35,7 @@ other 20 partial and DEC-1: **21 requirements**.
 | 2 | EVD-1, EVD-2, VRD-2, VRD-3, REG-1 | `docs/sprint-20261021-F04-2.md` (`3e847cf`) | **done**: `33e96b7` (batch 1's suffix-list tests in UTC), `216e620` (code), `54916fb` (review 1 fixes), `a6b4853` (review 2 fixes), this plan in the commit after it; `make test` 2570 OK |
 | 3 | DEC-1, DEC-4, DEC-8, DEC-9 | `docs/sprint-20261022-F04-3.md` (`f2fec34`) | **done**: `953c5a8` (code), `c82613c` (outcome and mutations), `b692b9d` (review fixes), `c5f0d23` (epoch read at the call: the first full run's one failure), this plan in the commit after it; `make test` 2584 OK |
 | 4 | GOV-2, GOV-5, GOV-6 (GOV-3 begun, moved to 4b) | `docs/sprint-20261022-F04-4.md` (`d673af8`) | **done**: `905d362` (GOV-2, GOV-5, GOV-6), `3229589` (GOV-3's census widened, hreflang sets), `436a4c3` (outcome and mutations), `ef5ca4e` (review fixes), this plan in the commit after it; `make test` 2593 OK on `ef5ca4e` (717 s) |
-| 4b | GOV-3 | to write | not started; what it starts from is below |
+| 4b | GOV-3 | `docs/sprint-20261022-F04-4b.md` (`75f3c9b`) | **done**: `454c37e`, `a61e85e`, `b3b8c68`, `81c46a1`, `8561cc0`, `8c06814`, `b05a06d`, `bd77ea0` (the owner's three rulings), `47500ec` (ledgers), `744c5a5` (census re-taken), `5949c15` (review 1 fixes), `de454ca` (outcome, review 1), `0024ece` (review 2 fixes), this plan in the commit after it; `make test` 2648 OK (6 skipped) on `0024ece` (741 s) |
 | 5 | GOV-7, GOV-12, OPR-1, OPR-4 | to write | not started |
 | release | 0.176.0 locally, `make verify-feature F=F04`, rubric | — | after batch 5 |
 
@@ -44,7 +44,9 @@ partial / 1 none / 4 bounded** (`tests/spec-debt.json`); all five held in full, 
 **145 enforced / 9 partial / 0 none / 4 bounded**; DEC-9 held in full, DEC-1, DEC-4 and DEC-8 narrowed, each narrowing
 said in its Reader line and filed in the contract's Outcome. After batch 4: **148 enforced / 6 partial / 0 none / 4
 bounded**; GOV-2, GOV-5 and GOV-6 narrowed to the half a program reaches, each narrowing said in its Reader line;
-GOV-3 still partial.
+GOV-3 still partial. After batch 4b: **149 enforced / 5 partial / 0 none / 4 bounded**; GOV-3 enforced, narrowed (an
+open set's completeness is a convention; "read" for a closed set is a reader a person wrote; the census's blind spots;
+a snapshot is right as of its date), said in its Reader line.
 
 ## Decisions already made
 
@@ -65,6 +67,16 @@ GOV-3 still partial.
 - **Any other closed set that is a standard vocabulary** — ISO, schema.org, IANA and the like (the owner, 2026-10-22,
   "То же правило"): synced to a dated snapshot of its source without asking him, red test, fix, CHANGELOG line. Ask
   only where the source itself is ambiguous.
+- **Batch 4b's three rulings** (the owner, 2026-10-22, all "A", relayed by the starting session): **Q1** FAQPage and
+  HowTo are synced to deprecated (FAQ rich results gone from 2026-05-07, How-to since September 2023); TECH-001 reads
+  `summary.retired_types` (nodes of a deprecated or restricted type) so it keeps failing them, and TE-172 fails them
+  as an error. **Q2** Dataset stays retired, with Google's 2025-11-05 wording ("only used by Dataset Search, and not
+  Google Search") as the reason. **Q3** the three facet lists are one, `seo_common.FACET_PARAMS`: their union less
+  `page` and `p`, which are pagination; pagination keys stay where a checker reads pagination.
+- **An `Unreleased` CHANGELOG heading** (batch 4b's own call, for the release session to keep or fold): `bd77ea0`
+  moved the registry, and `test_registry` requires the newest CHANGELOG entry to name the shipped registry version.
+  With no version bump allowed before the release, `CHANGELOG.md` gained `## Unreleased — F04, until 0.176.0 is cut`
+  naming `abf465b3f75d`; the 0.176.0 entry replaces it, written from the notes below.
 - The reviewer rule is a fresh context, not a different model (the owner, 2026-10-22: "another agent without the old
   memory"); `fable` stays the named reviewer until he changes it.
 
@@ -104,8 +116,54 @@ GOV-3 still partial.
   `measured` (14 are). The crawl caps' known-issues probe reads their basis lines. The derived-sets census counts
   `scripts/lib/`, sets inside functions and `frozenset({...})`: 183 → 209 sets, unread 80 → 99. Ledger 145/9/0/4 →
   148/6/0/4.
+- Batch 4b (filed in its contract's Outcome and Review): `schema_required_props`' other tables (Article, Organization,
+  LocalBusiness, … and the recommended rows of Product, Review, VideoObject) stay the open known issue
+  `the_schema_property_tables_have_not_been_re_read`; `server_log_audit.AI_BOTS` is a separate list of User-Agent
+  substrings, read; the nested-review exemption also accepts `reviews`, which is not a schema.org property
+  (pre-existing, both checks alike); the validator labels a multi-typed node's errors with its first type; a node
+  typed `["Product", "VideoObject"]` gets the shared `name` counted once by MS-032 and twice by TE-172 (both FAIL).
+  The order-dependent `one-test-robots-answers-another` failure of `test_known_issues` (above, batch 4) also appears
+  when `test_closed_sets` and `test_evidence_scripts` run before it in one process.
+- Batch 4b, for the release CHANGELOG — **verdicts move**, each with a red test first:
+  - **schema.org types derived from release 30.1** (2026-09-16, bundled, `tools/refresh_schemaorg_types.py`):
+    LO-198 / LO-200 FAIL → PASS for a Hospital, Attorney, PostOffice, PoliceStation, FireStation, MedicalClinic,
+    VacationRental or one of the 21 medical specialties; PASS → FAIL for a node typed only `VeterinaryCare` (a
+    MedicalOrganization) or `SkatingRink` (no such type); GEO-006 collects `sameAs` from every Organization (188) and
+    Place (230) type, not 5 and 2; CN-057 / CN-068 credit a Restaurant, Dentist, NGO, Store… publisher.
+  - **retired schema types, one table** (`lib/schema_types.py`): TE-172 PASS → FAIL and TECH-001 stays FAIL on
+    FAQPage and HowTo (owner, Q1); TECH-001 PASS → FAIL on SpecialAnnouncement, ClaimReview, Dataset, which it never
+    read; TE-172 FAIL → PASS on markup typed `CourseInfo`, `EstimatedSalary`, `LearningVideo`, `VehicleListing` or
+    `PracticeProblem`, which are Google feature names, not types. Registry `abf465b3f75d`: TECH-001 asserts
+    `summary.retired_types eq 0`; its fix text and Russian translation changed. Corpus: TE-172 on `failing-shapes`
+    PASS → FAIL (its HowTo).
+  - **Google's required properties** (Product snippet, Video, Review snippet, Breadcrumb, read 2026-10-22), one table
+    read by both checks: TE-172 and MS-032 FAIL → PASS on a Product with a rating or a review and no offer, a
+    VideoObject without description, a review nested in its product; both FAIL on a required value that is only
+    whitespace (TE-172 newly); MS-032 counts a VideoObject without description as one more warning.
+  - **Search Console indexing states** (Google's page indexing report): CI-002 FAIL → PASS on "Indexed, though
+    blocked by robots.txt"; NO_DATA → PASS on "Page indexed without content" and "Page is indexed"; NO_DATA → FAIL
+    on "Server error (5xx)", "URL marked 'noindex'", "Alternate page with proper canonical tag", "URL is unknown to
+    Google", with GO-135's critical "not indexed" issue.
+  - **robots.txt fields**: AR-151 PASS → FAIL on a `Host:` line (no crawler documents it any more).
+  - **facets** (owner, Q3): AR-154, AR-163, AR-155, CI-012 toward PASS on `?page=` / `?p=` URLs; toward FAIL where
+    a URL carries a facet name only another checker had (url_quality gains rating, availability, material;
+    faceted_nav category, tag; collection_page view, category, tag, rating, availability, material).
+  - **fonts**: TECH-002 PASS → FAIL on a page preloading a `.ttc` font without `crossorigin`; a `.ttc` over 100 KB
+    is a "large font" warning.
+  - **AI crawlers, one list** (the policy matrix's 15): CI-019 asks about six more agents (moves only where
+    robots.txt names one); robots_checker's `ai_crawler_status` gains Claude-User, Claude-SearchBot,
+    Perplexity-User, Applebot and loses anthropic-ai, FacebookBot (output only).
+  - **Output only**: `og:description` is not "required" (Open Graph's four are; MS-033's score does not move);
+    IndexNow gains Yep, the Internet Archive, Amazonbot, and Yandex's host gains `www`; detect_profile drops the
+    non-type `SaaSApplication` (no stored calibration site fired it); article_seo / parse_html's schema status
+    follows the one table.
+  - **Tools**: `audit_assertions.PATTERN_OPS` named two operators the runner lacks and missed `count_matching_lte`
+    (no rule uses it); `spec_debt`'s row pattern reads `CLASSES`; `THIN_CONTENT_THRESHOLDS` deleted (four
+    unreachable entries): counted thresholds 131 → 130, convention 97 → 96.
+  - **GOV-3**: `tests/open-sets.json` records the 43 open sets with why; the census writes each reason and counts
+    `unread_closed` (0, ceiling 0). Census 209 / 110 / 99 → 194 / 151 / 43. Ledger 148/6/0/4 → 149/5/0/4.
 - Full-suite timing: `taskpolicy -b make test` took 67 minutes on 2026-10-22 (2569 tests), not ~9; budget for it.
-  Batch 3's run of 2584 tests took 65 minutes. Under `nice -n 15` batch 4's 2593 took 12.6 minutes.
+  Batch 3's run of 2584 tests took 65 minutes. Under `nice -n 15` batch 4's 2593 took 12.6 minutes, 4b's 2648 12.4.
 
 ## Starting the next batch
 
@@ -113,37 +171,29 @@ GOV-3 still partial.
 cd ~/seo-checklist-release && git fetch && git status --short --branch
 ```
 
-Batch 4b is GOV-3 alone (`openspec/specs/governance/spec.md`); its contract is to write, from
-`templates/sprint-contract.md`, with expectations declared and committed before any test is written (as `d673af8` did
-for batch 4). It starts from `ef5ca4e`'s census: **209 sets, 110 read, 99 unread** (`tests/derived-sets.json`,
-ceiling 99 in `tests/test_derived_sets.py`). Already done in batch 4: the census widened to `scripts/lib/`, function
-bodies and constructor-wrapped literals; the hreflang sets synced to the IANA registry and held by count and digest
-in `tests/test_closed_sets.py` (the module for the rest of the closed sets' readers).
+Batch 5 is GOV-7, GOV-12, OPR-1 and OPR-4 (`openspec/specs/governance/spec.md`, `openspec/specs/operator-protocol/`);
+its contract is to write, from `templates/sprint-contract.md`, with expectations declared and committed before any
+test is written (as `75f3c9b` did for 4b). It starts from 4b's last commit: spec debt **149 / 5 / 0 / 4** (`partial`:
+GOV-7, GOV-12, OPR-1, OPR-4, and REG-6, which is F03's); the census at 194 sets, 151 read, 43 unread, all open
+(`UNREAD_AT_MOST = 43`, `UNREAD_CLOSED_AT_MOST = 0`): a set batch 5 adds must be derived, read, or recorded open in
+`tests/open-sets.json`. The registry is `abf465b3f75d` and `CHANGELOG.md` carries the `Unreleased` heading (above);
+the release writes 0.176.0 from the batch notes in this file.
 
-- **The rule, declared in batch 4's contract (D3-d):** every unread set is classified. *Closed* — it describes a
-  vocabulary something outside it states in full (a standard, an API's documented values, the registry, this tool's
-  own outputs) — gets a derivation or a reader holding it against that source; a standard vocabulary is synced to a
-  dated snapshot (the owner's rulings above). *Open* — a heuristic sample whose completeness is not defined
-  (stopwords, generic anchor phrasings, known tag vendors, facet parameter names) — carries a one-line reason in a
-  hand-kept record that a test holds in both directions. The test refuses an unread closed set (ceiling 0 on that
-  column), an unread set with no class, and an open set with no reason. The reviewer is asked whether any `open` is a
-  closed set hiding a verdict bug.
-- **Known defects, each to declare with its expected fix before running:** `lib/schema_types.LOCAL_BUSINESS_TYPES`
-  lacks 31 of schema.org's 152 `LocalBusiness` descendants (`Hospital`, `MedicalClinic`, `Attorney`, `PostOffice`,
-  21 `MedicalSpecialty` subtypes of `MedicalBusiness`) and carries `VeterinaryCare` and `SkatingRink`, which are not;
-  `entity_checker.ORGANIZATION_TYPES` holds 5 of 188 `Organization` types and `eeat_signal_checker.ORG_TYPES` is a
-  second copy in another shape — both live verdict moves, ruled "sync". One concept in several copies: deprecated /
-  restricted schema types (`article_seo`, `parse_html()` locally, `rich_results_guard`, which item 172 and TECH-001
-  read); AI crawler tokens (`robots_checker` 13 vs `ai_crawler_policy_matrix` 15; `robots_path_tester.DEFAULT_AGENTS`
-  overlaps and is read by item 19, a verdict); facet parameters in three checkers. `robots_checker.STANDARD_CRAWLERS`
-  is read by nothing.
-- **Census blind spots with no instance today** (batch 4 review): class bodies, literals under `try`/`if`/`with`,
-  `MappingProxyType(...)`, `dict(a=1)`; the `global` exclusion would hide a lazily filled hand table.
+Lessons 4b paid for, for the next batch:
+- A registry change moves five records at once — `tests/fixtures/expectations.json` (each moved item's `basis`, and
+  `registry_version`, re-declared and committed before the oracle runs), `tests/census.json` and
+  `tests/inert-findings.json` (re-taken with `tests/verdict_census.py --out` / `tests/inert_findings.py --out`, not
+  edited), `resources/i18n/ru.json` (`tools/i18n_digest.py`), `tools/item-readings.json` — and a CHANGELOG entry
+  naming the version. The first full run found three of them.
+- A constant with a basis line moves `test_registry`'s totals too (the fifth ledger; `b05a06d`).
+- One concept fixed in one copy leaves the other copy disagreeing (review 1's HIGH: MS-032 kept the rows TE-172 lost):
+  grep the concept, not the name, before calling a duplicate unified.
+- Do not edit test files while a full suite runs: the census reads the test corpus.
 
-Read each set against its source before declaring, and check the Reader line for staleness — batches 2, 3 and 4 each
-declared forms the measurement contradicted (batch 4: 10 missing LocalBusiness types counted, 31 real). Read each requirement's Reader line and Appendix B row first, and check whether the line is stale
+Read each requirement's Reader line and Appendix B row first, and check whether the line is stale
 against the code before declaring — batch 2 found two Reader lines stale, batch 3 one (DEC-9), and both batches had
-declared forms the measurement contradicted. Confirm each mutation moved what it targets before reading a green
+declared forms the measurement contradicted (4b: Place 209 declared, 230 real; two sets declared holding were
+wrong). Confirm each mutation moved what it targets before reading a green
 result (batch 3's first census mutation was a no-op). Then implement, mutate, ledgers together (`spec_debt.py --out` / `--check`,
 ROADMAP table and item 3, `test_prose_counts`), `nice -n 15 make test` (about 10–15 minutes, with `run_in_background`), commit, review by a fresh
 `fable` agent, fixes, commit, update this file, stop.
