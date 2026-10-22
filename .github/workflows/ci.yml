@@ -78,9 +78,12 @@ jobs:
           # ci_local.load_jobs(), which needs a YAML reader. Not in
           # requirements.txt because nothing shipped parses YAML.
           pip install pyyaml
-          # The pin "The specification is a specification" runs, put in npm's cache
-          # here so that step can run it with `--offline` (GOV-7).
-          npm install -g @fission-ai/openspec@1.12.0
+          # The pin "The specification is a specification" runs, put in npx's cache
+          # here so that step can run it with `--offline` (GOV-7). Run once for its
+          # version: `npm install -g` fills npm's cache with the full packument where
+          # npx asks for the abbreviated one, and `npm cache add` leaves out the
+          # dependencies; both were measured to fail `--offline` from an empty cache.
+          npx -y @fission-ai/openspec@1.12.0 --version
 
 
       # ruff was listed as a development dependency and never ran. Running it found

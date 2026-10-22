@@ -258,6 +258,48 @@ class AProgramIsStartedOnlyWithItsReasonWritten(unittest.TestCase):
                            env={"PATH": os.environ.get("PATH", "")})
         self.assertIn("tripwire", str(caught.exception))
 
+    def test_a_python_child_told_to_skip_its_path_or_its_site_is_refused(self):
+        """`-I`, `-E` and `-S` make an interpreter ignore `PYTHONPATH` or skip `site`,
+        so the tripwire never loads in it whatever the environment says (review, F04
+        batch 5)."""
+        import tripwire
+        for argv in (["-I", "-c", "pass"], ["-E", "-c", "pass"], ["-S", "-c", "pass"],
+                     ["-bI", "-c", "pass"], ["-X", "utf8", "-I", "x.py"]):
+            with self.subTest(argv=argv):
+                self.assertTrue(tripwire.violation(
+                    "subprocess.Popen", (sys.executable, [sys.executable, *argv], None, None)))
+        for argv in (["-c", "print('-I')"], ["-u", "x.py", "-I"], ["-m", "pip", "-E"]):
+            with self.subTest(argv=argv):
+                self.assertFalse(tripwire.violation(
+                    "subprocess.Popen", (sys.executable, [sys.executable, *argv], None, None)))
+
+    def test_a_relative_path_is_read_from_the_directory_the_child_starts_in(self):
+        import tripwire
+        env = dict(os.environ, PYTHONPATH="tests/tripwire")
+        self.assertTrue(tripwire.violation(
+            "subprocess.Popen", (sys.executable, [sys.executable, "-c", "pass"], HERE, env)))
+        self.assertFalse(tripwire.violation(
+            "subprocess.Popen", (sys.executable, [sys.executable, "-c", "pass"], ROOT, env)))
+
+    def test_an_inherited_environment_is_read_like_a_given_one(self):
+        import tripwire
+        with mock.patch.dict(os.environ, {"PYTHONPATH": ""}):
+            self.assertTrue(tripwire.violation(
+                "subprocess.Popen", (sys.executable, [sys.executable, "-c", "pass"], None, None)))
+
+    def test_git_is_started_only_without_a_transport(self):
+        """`PROGRAMS` gives git's reason as `GIT_ALLOW_PROTOCOL=file`; the hook holds it."""
+        import tripwire
+        env = {k: v for k, v in os.environ.items() if k != "GIT_ALLOW_PROTOCOL"}
+        self.assertTrue(tripwire.violation("subprocess.Popen", ("/usr/bin/git", ["git"], None, env)))
+        self.assertFalse(tripwire.violation(
+            "subprocess.Popen", ("/usr/bin/git", ["git"], None, dict(env, GIT_ALLOW_PROTOCOL="file"))))
+        # A listed program given an environment that disarms the tripwire would start its
+        # own children unwatched (the review's M13 deleted this check and stayed green).
+        disarmed = dict(env, GIT_ALLOW_PROTOCOL="file", SEO_TRIPWIRE="")
+        self.assertTrue(tripwire.violation("subprocess.Popen",
+                                           ("/usr/bin/git", ["git"], None, disarmed)))
+
     def test_python_is_known_by_its_name_or_its_first_line(self):
         import tripwire
         self.assertTrue(tripwire.is_python(sys.executable))
@@ -318,6 +360,32 @@ class EveryGateStepIsWatched(unittest.TestCase):
                     self.assertIsNone(fetchers.search(line))
                     if re.search(r"\bcurl\b", line):
                         self.assertIsNone(remote.search(line))
+
+    def test_warming_npx_is_an_install_and_running_a_package_is_not(self):
+        """`npx --offline` reads npx's own cache, which `npm install -g` does not fill
+        (npm 12: a full packument where npx asks for the abbreviated one, and no
+        `_npx` tree) and `npm cache add` fills without the dependencies. Running the
+        pin once, for its version, in the install step is what fills it — and only a
+        line that does nothing else may pass for an install, or a gate could hide in
+        one (review, F04 batch 5)."""
+        installs = self.ci_local.installs
+        self.assertTrue(installs("npx -y @fission-ai/openspec@1.12.0 --version"))
+        self.assertTrue(installs("npx --yes @fission-ai/openspec@1.12.0 --version"))
+        self.assertFalse(installs("npx -y @fission-ai/openspec@1.12.0 validate --all"))
+        self.assertFalse(installs("npx --offline -y @fission-ai/openspec@1.12.0 --version"))
+
+    def test_the_package_a_gate_runs_offline_is_the_one_the_install_warmed(self):
+        import re
+        spec = re.compile(r"npx\s+(?:--offline\s+)?(?:-y|--yes)\s+(\S+)")
+        for job_name, job in self.workflow["jobs"].items():
+            warmed, run = set(), set()
+            for step in job["steps"]:
+                for line in (step.get("run") or "").splitlines():
+                    found = spec.search(line)
+                    if found and not line.strip().startswith("#"):
+                        (warmed if self.ci_local.installs(line) else run).add(found.group(1))
+            with self.subTest(job=job_name):
+                self.assertLessEqual(run, warmed, "a gate runs a package nothing cached")
 
     def test_a_gate_steps_python_and_its_children_load_the_tripwire(self):
         """Started the way a gate step starts it — from the repository root with the

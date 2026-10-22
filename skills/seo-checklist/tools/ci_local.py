@@ -34,6 +34,7 @@ import python_floor  # noqa: F401
 
 import argparse
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -203,9 +204,16 @@ def step_env(base: dict, workflow: dict, job: dict, step: dict) -> dict:
 
 
 def installs(line: str) -> bool:
-    """True when this one line of a step installs a package."""
-    return line.strip().startswith(
-        ("pip ", "python -m pip ", "py -m pip ", "npm install ", "npm i "))
+    """True when this one line of a step installs a package.
+
+    `npx -y <package> --version` and nothing else counts too: it fills npx's cache so
+    a gate can run the package with `npx --offline` (GOV-7, F04). Only that exact
+    shape, because a line that runs the package for anything else is a gate, and a
+    gate read as an install is skipped here and disarmed in CI."""
+    line = line.strip()
+    return line.startswith(("pip ", "python -m pip ", "py -m pip ", "npm install ",
+                            "npm i ")) or bool(
+        re.fullmatch(r"npx (?:-y|--yes) [^\s-]\S* --version", line))
 
 
 def only_installs(script: str) -> bool:

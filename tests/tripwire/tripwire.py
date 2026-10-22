@@ -114,26 +114,63 @@ def is_python(path) -> bool:
 CAPTURE = os.path.join(os.path.dirname(HERE), "hand_capture")
 
 
-def _fenced(env) -> bool:
-    """The child's environment loads this tripwire, armed, or the capture fence."""
-    paths = {os.path.abspath(p) for p in str(env.get("PYTHONPATH", "")).split(os.pathsep) if p}
+def _fenced(env, cwd) -> bool:
+    """The child's environment loads this tripwire, armed, or the capture fence. A
+    relative entry is read from the directory the child starts in, as Python reads it."""
+    base = os.fsdecode(cwd) if cwd is not None else os.getcwd()
+    paths = {os.path.abspath(os.path.join(base, p))
+             for p in str(env.get("PYTHONPATH", "")).split(os.pathsep) if p}
     return (HERE in paths and armed(env)) or (CAPTURE in paths
                                               and bool(env.get("SEO_CAPTURE_LOG")))
 
 
-def _started(program, env) -> str:
+def _skips_site(argv) -> bool:
+    """Whether the interpreter's own options make it ignore `PYTHONPATH` or skip
+    `site`: `-I`, `-E`, `-S`, alone or among others (`-bI`), before the script, `-c`
+    or `-m` ends them."""
+    if isinstance(argv, (str, bytes)):
+        argv = os.fsdecode(argv).split()
+    argv = [os.fsdecode(a) if isinstance(a, bytes) else str(a) for a in argv or []]
+    i = 1
+    while i < len(argv):
+        arg = argv[i]
+        if arg in ("-", "--") or not arg.startswith("-"):
+            return False
+        if not arg.startswith("--"):
+            letters = arg[1:]
+            for j, letter in enumerate(letters):
+                if letter in "IES":
+                    return True
+                if letter in "cm":
+                    return False
+                if letter in "XW":                  # the rest, or the next word, is its value
+                    i += j == len(letters) - 1
+                    break
+        i += 1
+    return False
+
+
+def _started(program, argv, cwd, env) -> str:
+    """`env` None is the inherited one, read the same way: a test that patched it is
+    a child started with that environment."""
     if program is None:
         return ""
+    env = os.environ if env is None else env
     if is_python(program):
-        if env is not None and not _fenced(env):
+        if _skips_site(argv):
+            return (f"started {_name(program)} with an option that skips its path or its "
+                    "site, where the tripwire loads")
+        if not _fenced(env, cwd):
             return (f"started {_name(program)} with an environment that leaves the "
                     "tripwire out")
         return ""
     if _name(program) not in PROGRAMS:
         return (f"started {_name(program)!r}, a program the tripwire cannot see into "
                 "and tripwire.PROGRAMS does not name")
-    if env is not None and not armed(env):
+    if not armed(env):
         return f"started {_name(program)} with an environment that leaves the tripwire out"
+    if _name(program) == "git" and env.get("GIT_ALLOW_PROTOCOL") != "file":
+        return "started git with a transport other than this disk (GIT_ALLOW_PROTOCOL)"
     return ""
 
 
@@ -164,15 +201,18 @@ def violation(event: str, args) -> str:
         address = args[1]
         if isinstance(address, tuple) and address and not _is_loopback(address[0]):
             return f"connected to {address[0]}:{address[1] if len(address) > 1 else '?'}"
+    # On POSIX `subprocess` fires both `subprocess.Popen` and `os.posix_spawn` (or
+    # `os.exec` in the forked child), so either alone would still catch a start there;
+    # on Windows only `subprocess.Popen` fires. Both are read.
     elif event == "subprocess.Popen":
-        executable, argv, _cwd, env = args
-        return _started(_program(executable, argv), env)
+        executable, argv, cwd, env = args
+        return _started(_program(executable, argv), argv, cwd, env)
     elif event in ("os.posix_spawn", "os.exec"):
-        return _started(args[0], args[2])
+        return _started(args[0], args[1], None, args[2])
     elif event == "os.spawn":
-        return _started(args[1], args[3])
+        return _started(args[1], args[2], None, args[3])
     elif event == "os.system":
-        return _started(_program(None, args[0]), None)
+        return _started(_program(None, args[0]), args[0], None, None)
     return ""
 
 
