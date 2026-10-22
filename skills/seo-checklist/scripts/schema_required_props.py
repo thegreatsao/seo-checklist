@@ -16,18 +16,42 @@ from seo_common import (read_source, as_list, issue, load_html, parse_html, prin
                         read_as_file)
 
 
+# Google's required properties per rich result (each page read 2026-10-22; held by
+# `tests/test_closed_sets.py`). A tuple inside an entry is "one of these": a Product
+# snippet needs a review, a rating or an offer, not an offer. Read by `rich_results_guard`
+# (TE-172) and by the validator below (MS-032), which until F04 (batch 4b) kept its own
+# rows for these four types and still required `offers` and `description`.
+RICH_RESULT_REQUIRED = {
+    "BreadcrumbList": ("itemListElement",),
+    "Product": ("name", ("review", "aggregateRating", "offers")),
+    "Review": ("author", "itemReviewed", "reviewRating"),
+    "VideoObject": ("name", "thumbnailUrl", "uploadDate"),
+}
+
+
+def missing_rich_result_props(type_name: str, node: dict, path: str) -> list[str]:
+    """What a node lacks of `RICH_RESULT_REQUIRED`, each as it is printed."""
+    missing = []
+    for prop in RICH_RESULT_REQUIRED.get(type_name, ()):
+        if isinstance(prop, tuple):
+            if not any(has_value(node, p) for p in prop):
+                missing.append(" or ".join(prop))
+        # A review nested in the item it reviews names that item by nesting, and
+        # Google says to omit `itemReviewed` there.
+        elif not has_value(node, prop) and not (
+                prop == "itemReviewed" and re.search(r"\.reviews?(\[\d+\])?$", path)):
+            missing.append(prop)
+    return missing
+
+
 REQUIRED_PROPS: dict[str, set[str]] = {
     "Article": {"headline", "author", "datePublished"},
     "BlogPosting": {"headline", "author", "datePublished"},
-    "BreadcrumbList": {"itemListElement"},
     "FAQPage": {"mainEntity"},
     "HowTo": {"name", "step"},
     "LocalBusiness": {"name", "address", "telephone"},
     "Organization": {"name", "url"},
-    "Product": {"name", "offers"},
     "ProductGroup": {"name", "productGroupID", "hasVariant"},
-    "Review": {"itemReviewed", "reviewRating", "author"},
-    "VideoObject": {"name", "description", "thumbnailUrl", "uploadDate"},
     "WebSite": {"name", "url"},
 }
 
@@ -216,10 +240,13 @@ def validate_schema_required_props(documents: list[Any], schema_type: str | None
         primary_type = row["types"][0]
         required = set()
         recommended = set()
+        rich_missing = set()
         for type_name in row["types"]:
             required.update(REQUIRED_PROPS.get(type_name, set()))
             recommended.update(RECOMMENDED_PROPS.get(type_name, set()))
-        missing_required = sorted(prop for prop in required if not has_value(node, prop))
+            rich_missing.update(missing_rich_result_props(type_name, node, row["path"]))
+        missing_required = sorted({prop for prop in required if not has_value(node, prop)}
+                                  | rich_missing)
         missing_recommended = sorted(prop for prop in recommended if not has_value(node, prop))
         placeholders = sorted(prop for prop, value in node.items() if contains_placeholder(value))
         for prop in missing_required:

@@ -1010,12 +1010,16 @@ def _the_schema_property_tables_have_not_been_re_read() -> dict:
                        "Article/NewsArticle/BlogPosting and does not list "
                        "mainEntityOfPage or publisher among the recommended; read "
                        "in 0.89.0 and deliberately not acted on",
+            "BreadcrumbList, Product, Review, VideoObject": "corrected in F04 "
+                       "(batch 4b): required properties read from "
+                       "RICH_RESULT_REQUIRED, Google's pages as of 2026-10-22, the "
+                       "table rich_results_guard reads",
         },
         # Parenthesised: `a | b - c` binds as `a | (b - c)`, which left both read
         # types in the list of unread ones on the first run of this probe.
         "types_not_read": sorted(
             (set(props.REQUIRED_PROPS) | set(props.RECOMMENDED_PROPS))
-            - {"WebSite", "Article"}),
+            - {"WebSite", "Article"} - set(props.RICH_RESULT_REQUIRED)),
     }
 
 

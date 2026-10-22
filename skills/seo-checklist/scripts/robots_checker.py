@@ -45,8 +45,8 @@ except ImportError:
 GOOGLE_ROBOTS_MAX_BYTES = 500 * 1024
 
 # Fields a robots.txt line may carry and still mean something to a crawler this audit
-# cares about: RFC 9309's three, the sitemap extension, and the ones Bing and Yandex read
-# (Crawl-delay, Clean-param). `Host` was Yandex's and its robots.txt page no longer
+# cares about: RFC 9309's three, the sitemap extension, Bing's Crawl-delay and Yandex's
+# Clean-param. `Host` was Yandex's and its robots.txt page no longer
 # lists it (read 2026-10-22); held by `tests/test_closed_sets.py`.
 # Anything else — `Noindex:`, which Google stopped honouring in 2019, is the usual one —
 # is a line the site believes does something and does not.

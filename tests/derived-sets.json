@@ -873,15 +873,6 @@
       ],
       "unread": []
     },
-    "rich_results_guard": {
-      "read": [
-        {
-          "name": "RICH_RESULT_REQUIRED",
-          "entries": 4
-        }
-      ],
-      "unread": []
-    },
     "robots_checker": {
       "read": [
         {
@@ -931,8 +922,12 @@
     "schema_required_props": {
       "read": [
         {
+          "name": "RICH_RESULT_REQUIRED",
+          "entries": 4
+        },
+        {
           "name": "REQUIRED_PROPS",
-          "entries": 12
+          "entries": 8
         },
         {
           "name": "RECOMMENDED_PROPS",
@@ -1032,7 +1027,7 @@
         {
           "name": "HEAD_REFUSED_STATUSES",
           "entries": 3,
-          "open": "statuses after which HEAD is retried as GET: RFC 9110's two method refusals plus 403, which servers answer to HEAD in practice; a convention"
+          "open": "statuses after which HEAD is retried as GET: RFC 9110's two method refusals (its basis line) and 403, a firewall's refusal of HEAD; no document lists every status a server answers HEAD with instead of the resource"
         },
         {
           "name": "SUBJECT_KEYS",

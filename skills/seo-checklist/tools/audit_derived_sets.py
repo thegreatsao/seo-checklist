@@ -37,7 +37,8 @@ measures available and the only honest one. A bare word match over the test corp
 have nothing to do with them; and even the strict measure is an **upper bound** on being
 read, since importing a name is not asserting what belongs in it. The number this prints
 is therefore the most flattering one that is defensible, and the requirement is still
-violated 150 times.
+violated wherever a closed set is unread — which since F04 (batch 4b) the record counts as
+`unread_closed`, and the test holds at zero.
 """
 from __future__ import annotations
 
@@ -172,7 +173,7 @@ def aliases_in(source: str) -> dict[str, frozenset[str]]:
     `import lib.safe_http as sh` binds the alias to the last component, which is how
     the census names its modules, so the key is the basename.
 
-    Cached because the question is asked once per set and there are 173 of them: the
+    Cached because the question is asked once per set and there are some two hundred: the
     uncached version re-parsed forty test modules for each, and turned a census that
     ran in a second into one that ran for two minutes. A gate nobody will wait for is
     a gate somebody will take out of CI.

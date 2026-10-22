@@ -1,4 +1,4 @@
-"""What the tool does is decided by 173 hand-written sets, and 43 of them are read.
+"""What the tool does is decided by hand-written sets, and each is derived, read, or open.
 
 `openspec/specs/governance/` GOV-3: where a list, tuple or mapping decides behaviour, it
 is derived from what it describes or read by something. A hand-kept list guarded only by
@@ -10,9 +10,10 @@ it: **a list cannot say what is missing from it, and the reader that would have 
 the omission is the same line somebody would have had to edit to avoid it.**
 
 `tools/audit_derived_sets.py` counts them. This module holds the count and the direction:
-the record must describe the tree, and the unread column may not grow. That is `partial`
-and is labelled `partial` — a ratchet holds "no worse", not "every set is derived or
-read", and 130 unread is not a state any test here should be read as endorsing.
+the record must describe the tree, and the unread column may not grow. A ratchet alone
+holds "no worse", not "every set is derived or read", which is why GOV-3 was `partial`
+until F04 (batch 4b): since then an unread set must also be recorded as open, with its
+reason in `tests/open-sets.json`, and an unread set with no reason fails here.
 
 **Why the number is the flattering one.** "Read" means a test imports the name from its
 module. Importing a name is not asserting what belongs in it, so 43 is a ceiling. A bare

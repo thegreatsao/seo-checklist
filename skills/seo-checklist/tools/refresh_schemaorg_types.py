@@ -31,7 +31,7 @@ SKILL_DIR = os.path.dirname(HERE)
 TARGET = os.path.join(SKILL_DIR, "resources", "config", "schemaorg-types.json")
 SOURCE = "https://schema.org/version/{release}/schemaorg-current-https.jsonld"
 
-# Below this the download is not the vocabulary (30.1 has 1038).
+# Below this the download is not the vocabulary (30.1 has 961 schema.org types).
 MIN_TYPES = 800
 
 

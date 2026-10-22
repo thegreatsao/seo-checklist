@@ -775,7 +775,7 @@
       "state": "closed"
     },
     "the-schema-property-tables-have-not-been-re-read": {
-      "claim": "schema_required_props.py carries required and recommended property tables for twenty-three types and reads as though it quoted Google. Two were examined in 0.89.0 and both diverged; the rest have not been read against the documentation they claim to follow.",
+      "claim": "schema_required_props.py carries required and recommended property tables for twenty-three types and reads as though it quoted Google. Two were examined in 0.89.0 and both diverged; in F04 (batch 4b) the required properties of four more (BreadcrumbList, Product, Review, VideoObject) moved to the table rich_results_guard reads, synced to Google's pages; the rest have not been read against the documentation they claim to follow.",
       "measured": {
         "recommended": {
           "Article": [
@@ -845,9 +845,6 @@
             "datePublished",
             "headline"
           ],
-          "BreadcrumbList": [
-            "itemListElement"
-          ],
           "FAQPage": [
             "mainEntity"
           ],
@@ -864,25 +861,10 @@
             "name",
             "url"
           ],
-          "Product": [
-            "name",
-            "offers"
-          ],
           "ProductGroup": [
             "hasVariant",
             "name",
             "productGroupID"
-          ],
-          "Review": [
-            "author",
-            "itemReviewed",
-            "reviewRating"
-          ],
-          "VideoObject": [
-            "description",
-            "name",
-            "thumbnailUrl",
-            "uploadDate"
           ],
           "WebSite": [
             "name",
@@ -891,19 +873,16 @@
         },
         "types_not_read": [
           "BlogPosting",
-          "BreadcrumbList",
           "FAQPage",
           "HowTo",
           "ListItem",
           "LocalBusiness",
           "Organization",
-          "Product",
-          "ProductGroup",
-          "Review",
-          "VideoObject"
+          "ProductGroup"
         ],
         "verified_against_google": {
           "Article": "diverges — Google documents no required properties for Article/NewsArticle/BlogPosting and does not list mainEntityOfPage or publisher among the recommended; read in 0.89.0 and deliberately not acted on",
+          "BreadcrumbList, Product, Review, VideoObject": "corrected in F04 (batch 4b): required properties read from RICH_RESULT_REQUIRED, Google's pages as of 2026-10-22, the table rich_results_guard reads",
           "WebSite": "corrected in 0.89.0: name and url required, nothing recommended; the sitelinks search box is gone"
         }
       },

@@ -36,7 +36,7 @@
   "security_headers.SECURITY_HEADERS": "the headers this tool scores and their weights, a selection",
   "seo_common.XML_CTYPES": "content types a sitemap is accepted under, wider than XML's because servers mislabel",
   "seo_common.BYLINE_CLASS_TOKENS": "class names authors are marked with, a sample",
-  "seo_common.HEAD_REFUSED_STATUSES": "statuses after which HEAD is retried as GET: RFC 9110's two method refusals plus 403, which servers answer to HEAD in practice; a convention",
+  "seo_common.HEAD_REFUSED_STATUSES": "statuses after which HEAD is retried as GET: RFC 9110's two method refusals (its basis line) and 403, a firewall's refusal of HEAD; no document lists every status a server answers HEAD with instead of the resource",
   "seo_common.SUBJECT_KEYS": "properties whose subtree is the page's subject rather than its own, a judgment schema.org does not make",
   "server_log_audit.JSON_KEYS": "field names across log formats, a sample",
   "site_crawl.CHROME_TAGS": "boilerplate elements, a judgment",

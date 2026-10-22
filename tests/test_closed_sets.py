@@ -197,7 +197,8 @@ class RichResultRequiredPropertiesAreGoogles(unittest.TestCase):
     is nested in the item it reviews; Breadcrumb (2026-09-08) requires
     `itemListElement`. Until F04 (batch 4b) the table required `offers` and
     `description`, so a rated product with no offer, a video with no description and a
-    product's own nested review were each a TE-172 error."""
+    product's own nested review were each a TE-172 error, and `schema_required_props`
+    kept the same wrong rows for MS-032 (which the first fix in this batch left behind)."""
 
     GOOGLE = {
         "BreadcrumbList": ("itemListElement",),
@@ -208,13 +209,21 @@ class RichResultRequiredPropertiesAreGoogles(unittest.TestCase):
 
     @staticmethod
     def errors(node) -> list[str]:
+        """TE-172's errors and MS-032's, which read the same table and must agree."""
         import rich_results_guard
-        return [i["message"] for i in rich_results_guard.guard_rich_results([node])["issues"]
-                if i["severity"] == "error"]
+        import schema_required_props
+        guard = [i["message"] for i in rich_results_guard.guard_rich_results([node])["issues"]
+                 if i["severity"] == "error"]
+        validator = [i["message"] for i in
+                     schema_required_props.validate_schema_required_props([node])["issues"]
+                     if i["severity"] == "error"]
+        assert len(guard) == len(validator), (guard, validator)
+        return guard
 
     def test_the_table_is_googles(self):
-        import rich_results_guard
-        self.assertEqual(rich_results_guard.RICH_RESULT_REQUIRED, self.GOOGLE)
+        import schema_required_props
+        self.assertEqual(schema_required_props.RICH_RESULT_REQUIRED, self.GOOGLE)
+        self.assertEqual(set(schema_required_props.REQUIRED_PROPS) & set(self.GOOGLE), set())
 
     def test_a_product_needs_one_of_its_three_not_an_offer(self):
         rating = {"@type": "AggregateRating", "ratingValue": 4, "reviewCount": 3}
