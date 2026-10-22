@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import unittest
 import urllib.parse
@@ -25,12 +26,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
 MANIFEST = os.path.join(ROOT, "tests", "fixtures", "expectations.json")
 sys.path.insert(0, SCRIPTS)
+sys.path.insert(0, os.path.join(ROOT, "skills", "seo-checklist", "tools"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import harness  # noqa: E402
 from harness import FixtureSite, spawn  # noqa: E402
 from checklist_report import STATUS_ORDER  # noqa: E402
 import checklist_runner as runner  # noqa: E402
+import audit_declaration_revisions as revisions  # noqa: E402
+from build_checklist import registry_version_of  # noqa: E402
 
 HTTP_DECLARED_IDS = {
     "AR-146", "AR-151", "AR-158", "AR-162", "BL-081", "BL-084",
@@ -139,6 +143,14 @@ def manifest() -> dict:
         return json.load(stream)
 
 
+def basis(item: dict) -> str:
+    """What a declaration is reasoned from in the registry — the item's title and its rule
+    — as one digest, through the generator's own hash (`openspec/specs/declarations/`
+    DEC-9). The rest of an item (its fix, its effort, its prose) moves no prediction, and
+    a basis over it would mark declarations unre-read for nothing."""
+    return registry_version_of([{"title": item["title"], "check": item.get("check")}])
+
+
 def audit(label: str, url: str) -> dict[str, str]:
     """Run the unmodified checker against one served fixture.
 
@@ -240,6 +252,16 @@ def coverage() -> tuple[int, int, int]:
 
 def setUpModule():
     global SITE
+    # DEC-1: the prediction precedes the measurement, in the one order git can witness.
+    # A declaration added or re-predicted in the working tree would meet this run before
+    # any commit holds it, and could be adjusted to the answer and committed as if it had
+    # never been anything else.
+    unsettled = revisions.uncommitted_predictions()
+    if unsettled:
+        raise AssertionError(
+            "commit these declarations before the oracle runs them, so the prediction "
+            "is in history before the run answers it (openspec/specs/declarations/ "
+            "DEC-1):\n  " + "\n  ".join(unsettled))
     SITE = FixtureSite().start()
     for label, url in (("good", SITE.good), ("broken", SITE.broken),
                        ("good_tls", SITE.good_tls),
@@ -311,6 +333,32 @@ class ADeclarationRecordsWhatItWasReasonedFrom(unittest.TestCase):
                         f"longer carries. Re-read the `why` against the new one, then "
                         f"update the stored title — not the other way round")
 
+    def test_every_declaration_stores_the_rule_it_was_reasoned_from(self):
+        """`openspec/specs/declarations/` DEC-9: the stamp is not the whole check.
+
+        The manifest's `registry_version` is a string a hand sets when the registry
+        moves, and comparing it with the registry's cannot tell that edit from a
+        re-reading. The title above was the only other tie, so an item's rule could be
+        rewritten under its declarations, the stamp moved, and every reader stay green —
+        measured in F04 with TE-167's `check`. `basis` is the item's title and rule as one
+        digest, compared here with the registry's item: a stamp moved onto declarations
+        whose items moved now reddens, and a stamp moved over items nobody declared
+        describes declarations that are, item for item, what they were.
+
+        Written in bulk in F04 from the registry as it stood, like the titles: it makes
+        the next move visible and is no evidence that each `why` was composed against
+        that rule.
+        """
+        items = {item["id"]: item for item in harness.registry()["items"]}
+        for label, declarations in manifest()["fixtures"].items():
+            for item_id, declared in declarations.items():
+                with self.subTest(fixture=label, item=item_id):
+                    self.assertEqual(
+                        declared.get("basis"), basis(items[item_id]),
+                        f"{item_id}'s title or rule is not the one this declaration "
+                        f"was reasoned from. Re-read the `why` against the item as it "
+                        f"is, then record its basis — not the other way round")
+
     def test_the_manifest_records_the_pages_each_origin_was_declared_against(self):
         """The second basis. A declaration is made against the pages the run visits,
         which is a sample; recording it in a comment beside the harness does not make
@@ -355,7 +403,9 @@ class ManifestContract(unittest.TestCase):
         # 2 since 0.104.0, when the manifest gained `fixture_digest` and `triage`.
         # DEC-8 asks that neither side of a disagreement move without a recorded
         # decision, and both fields are read by `tests/test_declaration_revisions.py`.
-        self.assertEqual(declared["schema_version"], 2)
+        # 3 since F04, when each declaration gained `basis` (DEC-9) and the manifest
+        # `batches` (DEC-1).
+        self.assertEqual(declared["schema_version"], 3)
         self.assertEqual(declared["registry_version"], registry_version)
         self.assertEqual(
             declared["declared_from"],
@@ -445,6 +495,40 @@ class ManifestContract(unittest.TestCase):
                     len(whys), 1,
                     f"{item_id} is predicted {sorted(expects)} across origins and "
                     f"gives one reason for both, so it argues from neither")
+
+    def test_a_reason_is_an_argument_and_not_a_note_about_the_run(self):
+        """DEC-4, the two refusals a reader can make of prose.
+
+        A floor, as DEC-8's `MIN_ARGUMENT` is: "expected PASS because it passes" is 31
+        characters and was accepted, and no reason in the manifest is shorter than 42.
+        It cannot tell an argument from forty characters of filler, and does not claim
+        to. And a reason may not cite what a run answered: that is a recording, and a
+        `why` resting on one argues from the run rather than the tree. Measured in F04:
+        three reasons opened "corrected from FAIL after the run", corrections made before
+        `triage` existed; the record of a correction is `triage` now, and the three keep
+        their argument and lose the note.
+
+        Not read, and narrowed out of the requirement: that a reason names what the tree
+        contains. 194 of 248 name nothing a scan finds in their tree — absences, rules,
+        the item's own question — and what a reason names that the tree lacks is often
+        the argument ("there is no llms.txt anywhere in this tree").
+        """
+        cites_a_run = re.compile(
+            r"after the run|(?:the|a|this|previous|earlier) (?:run|audit) "
+            r"(?:said|answered|returned|reported|gave|printed)|census|was printed",
+            re.IGNORECASE)
+        for label, declarations in manifest()["fixtures"].items():
+            for item_id, declared in declarations.items():
+                why = declared["why"].strip()
+                with self.subTest(fixture=label, item=item_id):
+                    self.assertGreaterEqual(
+                        len(why), revisions.MIN_ARGUMENT,
+                        f"{item_id} on {label}: {why!r} is too short to argue from the "
+                        f"fixture")
+                    self.assertIsNone(
+                        cites_a_run.search(why),
+                        f"{item_id} on {label} cites a run: {why!r}. A reason argues "
+                        f"from the tree; a correction is recorded in `triage`")
 
     def test_the_permitted_vocabulary_is_the_audits_own_eight(self):
         """`openspec/specs/declarations/` DEC-3, read across two modules rather than one.

@@ -1,4 +1,5 @@
-"""`openspec/specs/declarations/` DEC-8, carried into the suite rather than left in CI.
+"""`openspec/specs/declarations/` DEC-8 and DEC-1, carried into the suite rather than left
+in CI.
 
 The gate lives in `tools/audit_declaration_revisions.py`; this module is what makes it
 run on every machine that runs the suite. A gate that exists only as a workflow step is
@@ -11,7 +12,10 @@ name should not have to open the tool to learn which door was left open:
 * `HistoryIsReadableAtAll` — the refusal that must never become a skip;
 * `EveryMoveCarriesItsDecision` — the ledger, both directions;
 * `TheStampIsRecomputedNotReadBack` — the fixture digest against the files;
-* `TheRecordHasAShape` — a malformed record is not a record.
+* `TheRecordHasAShape` — a malformed record is not a record;
+* `EveryDeclarationNamesTheBatchThatWroteIt` and `TheOracleRunsOnlyCommittedPredictions`
+  — DEC-1's two readable halves, since F04: what a declaring session was given, and that
+  git holds a prediction before the oracle answers it.
 
 Probed at 0.104.0 against one mutation per door plus two that attack the gate itself;
 `local/dec8/probe-0104.py` holds them and prints which class caught each.
@@ -21,6 +25,7 @@ from __future__ import annotations
 import os
 import sys
 import unittest
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "skills", "seo-checklist", "tools"))
@@ -242,6 +247,108 @@ class TheRecordHasAShape(unittest.TestCase):
                  "why": "the page was given a case a new check needs, and no side "
                         "was wrong"}]
         self.assertEqual(revisions.malformed(rows), [])
+
+
+
+class EveryDeclarationNamesTheBatchThatWroteIt(unittest.TestCase):
+    """DEC-1: *the batch records what it was given*, and the record can be read.
+
+    Whether a person had seen an answer is outside any program; a list of what the
+    declaring session was handed is not. Every declaration added since `BATCH_EPOCH` is
+    named by a batch in the manifest's `batches`, both directions as `triage` is held,
+    and a batch's `given` holds fixture material and the registry only — so the census,
+    a run's output, Appendix A or a transcript is refused without being listed. What
+    stays unread, and is said in the Reader line: whether the list is the whole of what
+    that session had seen.
+    """
+
+    GIVEN = ["tests/fixtures/good", "skills/seo-checklist/resources/config/checklist.json"]
+
+    def test_every_declaration_since_the_ledger_began_names_its_batch(self):
+        problems = revisions.unbatched(revisions.additions(), revisions.recorded_batches())
+        self.assertEqual(problems, [], "\n".join(["DEC-1:", *problems]))
+
+    def test_an_added_declaration_no_batch_names_is_refused(self):
+        problems = revisions.unbatched([("good", "ZZ-001")], [])
+        self.assertTrue(any("no batch" in line for line in problems), problems)
+
+    def test_a_batch_naming_a_declaration_nobody_added_is_refused(self):
+        batch = {"given": self.GIVEN, "declared": {"good": ["ZZ-001"]}}
+        problems = revisions.unbatched([], [batch])
+        self.assertTrue(any("not a record" in line for line in problems), problems)
+
+    def test_a_declaration_added_twice_owes_two_batches(self):
+        batch = {"given": self.GIVEN, "declared": {"good": ["ZZ-001"]}}
+        problems = revisions.unbatched([("good", "ZZ-001")] * 2, [batch])
+        self.assertTrue(any("no batch" in line for line in problems), problems)
+
+    def test_a_batch_given_a_recording_is_refused(self):
+        for entry in ("tests/census.json", "openspec/specs/declarations/spec.md",
+                      "tests/fixtures/expectations.json", "HANDOFF.md",
+                      "tests/fixtures/good/../../census.json"):
+            with self.subTest(given=entry):
+                batch = {"given": [*self.GIVEN, entry],
+                         "declared": {"good": ["ZZ-001"]}}
+                problems = revisions.unbatched([("good", "ZZ-001")], [batch])
+                self.assertTrue(any(repr(entry) in line for line in problems), problems)
+
+    def test_a_batch_listing_nothing_it_was_given_is_refused(self):
+        for given in (None, []):
+            with self.subTest(given=given):
+                batch = {"given": given, "declared": {"good": ["ZZ-001"]}}
+                problems = revisions.unbatched([("good", "ZZ-001")], [batch])
+                self.assertTrue(any("lists nothing" in line for line in problems),
+                                problems)
+
+    def test_the_tree_and_the_registry_are_what_a_batch_may_be_given(self):
+        batch = {"given": [*self.GIVEN, "tests/fixtures/good/index.html"],
+                 "declared": {"good": ["ZZ-001"]}}
+        self.assertEqual(revisions.unbatched([("good", "ZZ-001")], [batch]), [])
+
+    def test_the_permitted_inputs_are_derived_from_what_the_harness_serves(self):
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from harness import FixtureSite
+
+        permitted = set(revisions.permitted_inputs())
+        for dirs in FixtureSite.material().values():
+            for part in dirs:
+                with self.subTest(tree=part):
+                    self.assertIn(f"tests/fixtures/{part}", permitted)
+        self.assertTrue(os.path.isfile(os.path.join(ROOT, revisions.REGISTRY_PATH)),
+                        "the registry a batch may be given is not where it is named")
+
+
+class TheOracleRunsOnlyCommittedPredictions(unittest.TestCase):
+    """DEC-1's other readable half: the prediction precedes the measurement in the one
+    order git witnesses. Declared, run, adjusted to the answer and committed, a
+    declaration is one clean addition in history and DEC-8's walk sees no move, so the
+    oracle refuses to run over a prediction `HEAD` does not hold."""
+
+    def test_the_oracle_refuses_a_prediction_git_does_not_hold(self):
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import test_fixture_oracle as oracle
+
+        started = mock.Mock(side_effect=RuntimeError("the oracle started its origins"))
+        with mock.patch.object(oracle.revisions, "uncommitted_predictions",
+                               return_value=["good ZZ-001: undeclared -> PASS"]), \
+                mock.patch.object(oracle, "FixtureSite", started):
+            with self.assertRaises(AssertionError) as caught:
+                oracle.setUpModule()
+        self.assertIn("DEC-1", str(caught.exception))
+        self.assertIn("good ZZ-001", str(caught.exception))
+        started.assert_not_called()
+
+    def test_an_addition_and_a_re_prediction_are_both_uncommitted(self):
+        def doc(rows):
+            return {"fixtures": {"good": {item: {"expect": expect}
+                                          for item, expect in rows.items()}}}
+        head = doc({"AR-151": "PASS", "AR-158": "FAIL"})
+        tree = doc({"AR-151": "WARN", "AR-158": "FAIL", "ZZ-001": "PASS"})
+        with mock.patch.object(revisions, "manifest_at",
+                               side_effect=lambda sha: tree if sha is None else head):
+            rows = revisions.uncommitted_predictions()
+        self.assertEqual(rows, ["good AR-151: PASS -> WARN",
+                                "good ZZ-001: undeclared -> PASS"])
 
 
 if __name__ == "__main__":

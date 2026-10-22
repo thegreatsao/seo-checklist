@@ -11,7 +11,11 @@ the exact moment somebody is trying to get a release out.
 good one, and it does not try. What it refuses is the *unrecorded* edit: a `PASS` that
 became a `FAIL`, a declaration that quietly left the manifest, or a fixture page edited
 under a prediction, with nothing in the tree saying a decision was taken. That much is
-mechanical, which is why DEC-8 is buildable and DEC-1 is not.
+mechanical, which is why DEC-8 is buildable. So is the half of DEC-1 that is a record:
+since F04 every declaration added after `BATCH_EPOCH` names the batch that wrote it and
+what that batch was given (`unbatched`), and the oracle runs no prediction git does not
+hold (`uncommitted_predictions`). The half that is a mind — what the session had seen
+beyond its list — is not.
 
 Three doors, all three measured in this repository's own history before the gate was
 written (`local/dec8/expect-moves.txt`):
@@ -56,7 +60,9 @@ import argparse
 import hashlib
 import json
 import os
+import posixpath
 import sys
+from collections import Counter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
@@ -106,11 +112,14 @@ from scope_line import print_scope  # noqa: E402
 # What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
 ESTABLISHES = (
     "every move of a declaration or of served fixture material since the epoch has a "
-    "recorded decision, and every recorded decision names a move that happened"
+    "recorded decision, and every recorded decision names a move that happened; every "
+    "declaration added since the batch ledger began names its batch, and the batch "
+    "lists what it was given from the fixture material and the registry only"
 )
 DOES_NOT_ESTABLISH = (
-    "that a recorded decision was the right one, or anything about a checker repaired "
-    "under a standing declaration, which moves nothing this walk can see"
+    "that a recorded decision was the right one, anything about a checker repaired "
+    "under a standing declaration, which moves nothing this walk can see, or that a "
+    "batch's list is the whole of what its session had seen"
 )
 
 
@@ -121,26 +130,26 @@ from git_checkout import (  # noqa: E402, F401
     Unreadable, _git_binary, _run_git, git, git_directory)
 
 
-def epoch_is_reachable() -> None:
+def epoch_is_reachable(epoch: str = EPOCH) -> None:
     """Refuse a shallow clone by name, before anything reads as agreement."""
     git_directory(ROOT)
     try:
-        kind = git("cat-file", "-t", EPOCH).strip()
+        kind = git("cat-file", "-t", epoch).strip()
     except Unreadable as exc:
         raise Unreadable(
-            f"the epoch commit {EPOCH[:8]} is not in this clone ({exc}). A shallow "
+            f"the epoch commit {epoch[:8]} is not in this clone ({exc}). A shallow "
             f"checkout finds no commits and agrees with an empty record, which is a "
             f"pass that means nothing — give the job `fetch-depth: 0`") from exc
     if kind != "commit":
-        raise Unreadable(f"the epoch {EPOCH[:8]} is a {kind}, not a commit")
+        raise Unreadable(f"the epoch {epoch[:8]} is a {kind}, not a commit")
 
 
-def epoch_is_an_ancestor() -> None:
+def epoch_is_an_ancestor(epoch: str = EPOCH) -> None:
     """A clone deep enough to hold the epoch may still not descend from it."""
-    done = _run_git(["merge-base", "--is-ancestor", EPOCH, "HEAD"])
+    done = _run_git(["merge-base", "--is-ancestor", epoch, "HEAD"])
     if done.returncode != 0:
         raise Unreadable(
-            f"the epoch {EPOCH[:8]} is not an ancestor of HEAD. This branch does not "
+            f"the epoch {epoch[:8]} is not an ancestor of HEAD. This branch does not "
             f"descend from the release the record starts at, so the walk would compare "
             f"two unrelated trees")
 
@@ -236,18 +245,18 @@ def _declared(doc: dict) -> dict[tuple[str, str], str]:
     return flat
 
 
-def states() -> list[tuple[str, dict, dict]]:
+def states(epoch: str = EPOCH) -> list[tuple[str, dict, dict]]:
     """Every state from the epoch to the worktree, oldest first.
 
     `(label, declarations, digests)`. Only commits that touched watched material are
     read: a release that moved neither cannot have moved a declaration through any of
     the three doors.
     """
-    epoch_is_reachable()
-    epoch_is_an_ancestor()
-    listed = git("log", "--format=%H", "--reverse", f"{EPOCH}..HEAD", "--",
+    epoch_is_reachable(epoch)
+    epoch_is_an_ancestor(epoch)
+    listed = git("log", "--format=%H", "--reverse", f"{epoch}..HEAD", "--",
                  *watched_paths())
-    shas = [EPOCH, *[line.strip() for line in listed.splitlines() if line.strip()]]
+    shas = [epoch, *[line.strip() for line in listed.splitlines() if line.strip()]]
     out = [(sha, _declared(manifest_at(sha)), digest_at(sha)) for sha in shas]
     out.append(("worktree", _declared(manifest_at(None)), digest_at(None)))
     return out
@@ -372,6 +381,101 @@ def stamp_disagreement() -> list[str]:
     return out
 
 
+# DEC-1. The ledger of declaring batches starts here: the tree as it stood when the
+# ledger was introduced (F04, batch 3). The 248 declarations before it carry no record of
+# what their sessions were given, and back-filling one would be writing down inputs
+# nobody listed at the time — the same honesty `EPOCH` keeps for DEC-8.
+BATCH_EPOCH = "f2fec34f67a34a2d379d89968a9d7931c2fd8b79"
+
+REGISTRY_PATH = "skills/seo-checklist/resources/config/checklist.json"
+
+
+def permitted_inputs() -> tuple[str, ...]:
+    """What a declaring session may be handed: the material an origin is built from, and
+    the registry, which carries each item's title and rule (DEC-1). Derived from the
+    harness like `watched_paths`. Everything else — the census, a run's output, the
+    spec's Appendix A, the manifest's `triage`, a transcript — is refused by not being
+    here, so a new kind of recording needs no entry to be refused."""
+    trees = {f"{FIXTURES_PATH}/{part}"
+             for dirs in FixtureSite.material().values() for part in dirs}
+    return (REGISTRY_PATH, *sorted(trees))
+
+
+def additions() -> list[tuple[str, str]]:
+    """Every (origin, item) declared since `BATCH_EPOCH`, once per time it was added: a
+    declaration withdrawn and declared again is a second prediction, and owes a second
+    batch."""
+    series = states(BATCH_EPOCH)
+    added = []
+    for (_before, was, _was_digest), (_after, now, _now_digest) in zip(
+            series, series[1:], strict=False):
+        added += sorted(set(now) - set(was))
+    return added
+
+
+def recorded_batches() -> list:
+    return list(manifest_at(None).get("batches", []))
+
+
+def unbatched(added: list[tuple[str, str]], batches: list) -> list[str]:
+    """Both directions, as `disagreements` does for `triage`: an added declaration no batch
+    names, and a batch naming a declaration nobody added. A batch also has to say what it
+    was given, from `permitted_inputs()` only — the record DEC-1's Reader line names."""
+    problems = []
+    allowed = permitted_inputs()
+    named = Counter()
+    for index, batch in enumerate(batches):
+        where = f"batches[{index}]"
+        if not isinstance(batch, dict):
+            problems.append(f"{where} is not an object")
+            continue
+        given = batch.get("given")
+        if not isinstance(given, list) or not given:
+            problems.append(f"{where} lists nothing it was given, and that list is the "
+                            f"whole of what DEC-1 can read")
+            given = []
+        for entry in given:
+            path = posixpath.normpath(str(entry))
+            if not any(path == root or path.startswith(root + "/") for root in allowed):
+                problems.append(
+                    f"{where} was given {entry!r}, which is neither fixture material nor "
+                    f"the registry. A declaration made from anything else — the census, "
+                    f"a run's output, Appendix A, a triage note, a transcript — predicts "
+                    f"nothing (DEC-1)")
+        declared = batch.get("declared")
+        if not isinstance(declared, dict) or not declared:
+            problems.append(f"{where} names no declaration it wrote")
+            continue
+        for origin, items in declared.items():
+            for item in items if isinstance(items, list) else []:
+                named[(origin, item)] += 1
+    seen = Counter(added)
+    for key in sorted(set(seen) | set(named)):
+        if seen[key] > named[key]:
+            problems.append(
+                f"{key[0]} {key[1]} was declared after the ledger began and no batch "
+                f"names it: record what the declaring session was given (DEC-1)")
+        elif named[key] > seen[key]:
+            problems.append(
+                f"a batch names {key[0]} {key[1]}, and no commit since the ledger began "
+                f"declared it. A batch written ahead of its declarations is not a record")
+    return problems
+
+
+def uncommitted_predictions() -> list[str]:
+    """Each declaration the working tree adds or re-predicts against `HEAD`.
+
+    The oracle refuses to run over any (`tests/test_fixture_oracle.py`): a prediction
+    meets its first comparison only once git holds it, so a revision after that run is a
+    move between commits, which `observed()` sees and `triage` must answer for. Without
+    it, declare, run, adjust and commit is one clean addition (DEC-1, DEC-8)."""
+    head = _declared(manifest_at("HEAD"))
+    now = _declared(manifest_at(None))
+    return [f"{origin} {item}: {head.get((origin, item), 'undeclared')} -> {expect}"
+            for (origin, item), expect in sorted(now.items())
+            if head.get((origin, item)) != expect]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true",
@@ -400,12 +504,23 @@ def main() -> int:
     print(f"recorded {len(recorded())} decision(s)")
     print()
 
-    problems = stamp_disagreement() + disagreements()
+    try:
+        added = additions()
+    except Unreadable as exc:
+        print(f"cannot read history: {exc}", file=sys.stderr)
+        return 1
+    print(f"declared since the batch ledger began ({BATCH_EPOCH[:8]}): {len(added)}; "
+          f"batches recorded: {len(recorded_batches())}")
+    print()
+
+    problems = (stamp_disagreement() + disagreements()
+                + unbatched(added, recorded_batches()))
     for line in problems:
         print(f"  {line}", file=sys.stderr)
     if not problems:
         print("every move since the epoch carries a recorded decision, and every "
-              "recorded decision names a move that happened")
+              "recorded decision names a move that happened; every declaration since "
+              "the batch ledger began names the batch that wrote it and what it was given")
     if args.check and problems:
         return 1
     print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)

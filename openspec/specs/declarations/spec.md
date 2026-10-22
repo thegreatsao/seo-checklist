@@ -135,18 +135,32 @@ artifact here into a second copy of the output. It is not thereby useless — it
 detects a checker that changes later — but a regression pin is not an oracle, and the two
 are indistinguishable in the file. The cost is invisible afterwards: the commit proves
 when a declaration was written, never from what.
-**Reader:** **none.** *Unenforceable in principle* is what this line said until 0.103.0,
-and it overstates the limit in the flattering direction. No reader can establish that a
-person had not seen the answer — that half is genuinely outside the program. But the
-requirement above does not rest there: it says the obligation is discharged by
-*arranging* a blind session, and that **the batch records what it was given**. A record
-of inputs is an artifact, and an artifact can be read — a gate could require one per
-batch and refuse a batch whose input list contains the results. No such record exists
-here: `declared_from` is a single sentence about the whole file, not a ledger per batch.
-So this is `none` because the instrument the requirement itself names was never built,
-which is a different thing from impossible, and the distinction is the one
-`openspec/specs/operator-protocol/` drew when it introduced `bounded` — nothing removes
-the limit there, and something removes half of it here.
+**Reader:** enforced, since F04.
+The requirement says the obligation is discharged by *arranging* a blind session and that
+**the batch records what it was given**, and that record is now kept and read. The
+manifest's `batches` names, for every declaration added since `BATCH_EPOCH` in
+`tools/audit_declaration_revisions.py` — the tree as it stood when the ledger began — the
+batch that wrote it and, under `given`, what its session was handed.
+`tests/test_declaration_revisions.py::EveryDeclarationNamesTheBatchThatWroteIt` refuses,
+in both directions as `triage` is held, a declaration no batch names and a batch naming a
+declaration nobody added; and it refuses a `given` holding anything but the fixture
+material the harness serves and the registry, so the census, a run's output, Appendix A,
+the manifest's `triage` and a transcript are refused without having to be listed. The
+order is held where git can witness it: `test_fixture_oracle.setUpModule` refuses to audit
+while the working tree declares or re-predicts anything `HEAD` does not
+(`TheOracleRunsOnlyCommittedPredictions`), so a prediction meets its first comparison only
+once history holds it, and a revision after that run is a move DEC-8's walk sees. Each
+refusal was probed by mutation in F04 (`docs/sprint-20261022-F04-3.md`).
+
+**One narrowing, and it is the half this line always said was outside the program.**
+Whether a batch's list is the whole of what its session had seen — a transcript, a run in
+another checkout, a census read the day before — no reader can establish. The obligation
+stays on the session; the record turns it into a claim somebody wrote down rather than a
+state of mind, which is all a program can do with it. Not claimed either: the 248
+declarations before the epoch, whose batches survive only as prose beside the id ledger
+(Stage 2b, 2c), and which the ledger does not back-fill. Until F04 this line read
+**none**: the instrument the requirement names had never been built, which is a different
+thing from impossible.
 
 `test_metadata_matches_the_registry`
 pins the sentence `declared_from: "item title plus fixture construction; never from a
@@ -286,10 +300,17 @@ restatement of the status, and MUST NOT be a note about the run.
 **Why:** the reason is what a triage reads when the declaration and the run disagree.
 "expected PASS because it passes" leaves the reader with two claims and no argument, and
 the natural resolution of a disagreement without an argument is to edit the declaration.
-**Reader:** partial, and narrower than it was.
+**Reader:** enforced, since F04.
 `test_every_declaration_has_a_supported_verdict_and_reason` requires `why` to be a
-non-empty string after stripping. Whether the prose is *true* is not mechanically
-checkable and this document does not pretend otherwise.
+non-empty string after stripping, and
+`test_a_reason_is_an_argument_and_not_a_note_about_the_run` holds the first two scenarios
+as far as prose can be held: a reason clears the floor DEC-8's records use
+(`MIN_ARGUMENT`, 40 characters), which refuses "expected PASS because it passes" as
+written, and it cites no run — "after the run", "the audit returned", the census. Measured
+when it was written: no reason was shorter than 42 characters, and three opened
+"corrected from FAIL after the run", corrections made before `triage` existed. Those three
+keep their argument and lose the note; the correction is in git, and a correction made now
+is recorded in `triage`.
 
 One consequence of arguing from the fixture is, and is read since 0.103.0:
 `test_a_reason_that_argues_from_the_fixture_moves_when_the_fixture_does` refuses a reason
@@ -300,9 +321,17 @@ property the manifest already had rather than one it was edited to acquire. The 
 way to declare an item on two origins is to write one reason and paste it, and that is
 exactly the shape this refuses.
 
-Still unread: that the reason names something the fixture tree contains. Measured before
-the above existed — a reason reading *"because it felt about right on the day"* passed the
-whole suite.
+**One narrowing: that the reason names what the tree contains, and that the construction
+it names produces the status.** Neither is read, and F04 measured why the first is not a
+rule the honest manifest keeps: 194 of 248 reasons name nothing a scan finds in their
+tree — an absence, the item's rule, the item's own question — and what a reason names that
+its tree lacks is often the argument itself ("there is no llms.txt anywhere in this
+tree"). So "names something present" refuses most of the manifest and "names nothing
+absent" refuses the absences. Whether prose is *true* is not mechanically checkable, and
+the floor cannot tell an argument from forty characters of filler; neither claims to.
+Measured before 0.103.0, a reason reading *"because it felt about right on the day"*
+passed the whole suite; it is 38 characters and is refused now, by its length, which is
+all that refuses it.
 
 #### Scenario: a reason that restates the status
 - **WHEN** `why` says "expected PASS because it passes"
@@ -495,7 +524,8 @@ being written down.
 **Why:** the cheapest way to make this test pass is always to edit the declaration, and
 it is available at the exact moment somebody is trying to get a release out. The whole
 value of the manifest is spent the first time that happens quietly.
-**Reader:** partial — two of the three subjects, since 0.104.0.
+**Reader:** enforced, since F04, with the one narrowing said below; two of the three
+subjects were held since 0.104.0.
 `tests/test_declaration_revisions.py` walks this repository's own history from a named
 epoch and compares every move it finds with the manifest's `triage` log:
 `EveryMoveCarriesItsDecision.test_no_declaration_or_fixture_moved_without_a_recorded_decision`
@@ -521,10 +551,18 @@ the gate goes green over it. `new-material` is the fourth. **What did not change
 the move must be recorded** — this requirement asks that no edit to either side be silent,
 never that every edit is a mistake.
 
-**The third subject is the checker, and it is not held.** Where triage decides the code
-was defective, the declaration stands and the fixture stands, so the walk sees no move
-and asks for no record; that half still lives in the release ritual and in a CHANGELOG
-entry. What the gate buys is that the two *cheap* resolutions — rewrite the prediction,
+**One narrowing, since F04: the third subject, the checker.** Where triage decides the
+code was defective, the declaration stands and the fixture stands, so the walk sees no
+move and asks for no record; seeing one would need the oracle re-run at every commit. The
+requirement is held for the two sides whose edit is a move in the tree, and the checker's
+decision lives in its commit and its CHANGELOG entry, not in `triage`. It is not a verdict
+bug in disguise: the declaration stands and is compared on every run (DEC-7), so a checker
+bent to fit the fixture is still held to the prediction — what goes unrecorded is the
+argument, not the verdict. The two held sides were re-probed in F04, one change at a time:
+an `expect` edited, a declaration withdrawn and a fixture page edited, each with no
+`triage` row, each redden
+`EveryMoveCarriesItsDecision.test_no_declaration_or_fixture_moved_without_a_recorded_decision`.
+What the gate buys is that the two *cheap* resolutions — rewrite the prediction,
 edit the page — are no longer the silent ones, and the expensive honest one was never
 the risk. What it cannot do in any of the three is judge whether a recorded argument is
 a good one: it binds the record, exactly as the scenario below says the rule does.
@@ -556,13 +594,33 @@ registry and no other.
 
 **Why:** a manifest or a census taken against an older contract describes a checklist that
 no longer exists, and nothing inside the file shows it.
-**Reader:** partial, on both instruments, for the same reason and with different
-consequences. `test_metadata_matches_the_registry` and `test_it_describes_this_registry`
-each assert the stored string equals the registry's — which forces an edit when the
-registry moves and cannot tell an edit of the stamp from a re-recording of the content.
-The census closed that hole from the other side by re-reading its copied fields (DEC-11);
-the manifest copies nothing, so for it the stamp is still the whole check. This is the
-same shape as REG-1: a version a hand can set while the content stays put.
+**Reader:** enforced, since F04, on both instruments and by a different reader on each.
+`test_metadata_matches_the_registry` and `test_it_describes_this_registry` each assert the
+stored string equals the registry's — which forces an edit when the registry moves and
+cannot tell an edit of the stamp from a re-recording of the content. Neither is the whole
+check any more.
+
+The manifest: each declaration records `basis`, its item's title and rule (`check`) as
+one digest through the generator's own `registry_version_of`, and
+`test_fixture_oracle.py::ADeclarationRecordsWhatItWasReasonedFrom::test_every_declaration_stores_the_rule_it_was_reasoned_from`
+compares all 248 with the registry. Moved onto declarations whose items moved, the stamp
+now reddens; moved over a registry that changed only items nobody declared, it describes
+declarations that are, item for item, what a re-reading would leave, which is the honest
+case. Measured before the repair: TE-167's `check` edited, the registry re-hashed and both
+stamps set by hand — every reader of the manifest and of the census green. This line used
+to say the manifest copies nothing; it had copied titles since 0.93.2 (DEC-5), which is
+why the hole was the rule and not the item.
+
+The census: `verdict_census.py --check` (DEC-12, the CI `census` job) re-takes the record,
+so a stamp moved over a rule change that moves any answer exits 1, and one that moves no
+answer leaves a record equal to its re-taking. Probed in F04 with TE-167's assertion
+inverted and the census stamp set by hand. Its copied fields are DEC-11's.
+
+What it gives up is said, as DEC-5 says it: `basis` was written in bulk from the registry
+as it stood, so it makes the next move visible and is no evidence that each `why` was
+composed against that rule. A field outside `title` and `check` moves no basis on
+purpose — a declaration is reasoned from the title, the rule and the tree, and a basis
+over an item's prose would mark declarations unre-read for nothing.
 
 #### Scenario: the registry moves under a record
 - **WHEN** the registry changes and a record taken against the previous one is not
@@ -1246,14 +1304,19 @@ values.
 
 | | requirements |
 |---|---|
-| **enforced** | DEC-2, DEC-3, DEC-5, DEC-6, DEC-7, DEC-10, DEC-11, DEC-12, DEC-13, DEC-14 |
-| **partial** | DEC-4, DEC-8, DEC-9 |
-| **none** | DEC-1 |
+| **enforced** | DEC-1, DEC-2, DEC-3, DEC-4, DEC-5, DEC-6, DEC-7, DEC-8, DEC-9, DEC-10, DEC-11, DEC-12, DEC-13, DEC-14 |
+| **partial** | — none |
+| **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-D1 and INV-D2 enforced; INV-D3 and INV-D4 unread.
 
-**Ten enforced, three partial, one unread, none opposed, of fourteen.**
+**Fourteen enforced, nothing partial, nothing unread, none opposed, of fourteen.** DEC-1, DEC-4,
+DEC-8 and DEC-9 moved at F04, three of them narrowed and each narrowing said in its own
+line: DEC-1 to the record of what a declaring session was given and to the order git can
+witness, DEC-4 to what a reader can refuse of prose, DEC-8 to the two sides whose edit is
+a move in the tree. DEC-9 was held in full, the manifest by a basis per declaration and the
+census by its re-taking. The paragraphs below are the history of how the table got here.
 
 DEC-2, DEC-3 and DEC-7 moved together at 0.99.0, and they had to: the ninth word, the
 vocabulary that permitted it while forbidding its replacements, and the comparison that
