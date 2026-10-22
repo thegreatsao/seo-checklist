@@ -37,7 +37,7 @@ other 20 partial and DEC-1: **21 requirements**.
 | 4 | GOV-2, GOV-5, GOV-6 (GOV-3 begun, moved to 4b) | `docs/sprint-20261022-F04-4.md` (`d673af8`) | **done**: `905d362` (GOV-2, GOV-5, GOV-6), `3229589` (GOV-3's census widened, hreflang sets), `436a4c3` (outcome and mutations), `ef5ca4e` (review fixes), this plan in the commit after it; `make test` 2593 OK on `ef5ca4e` (717 s) |
 | 4b | GOV-3 | `docs/sprint-20261022-F04-4b.md` (`75f3c9b`) | **done**: `454c37e`, `a61e85e`, `b3b8c68`, `81c46a1`, `8561cc0`, `8c06814`, `b05a06d`, `bd77ea0` (the owner's three rulings), `47500ec` (ledgers), `744c5a5` (census re-taken), `5949c15` (review 1 fixes), `de454ca` (outcome, review 1), `0024ece` (review 2 fixes), this plan in the commit after it; `make test` 2648 OK (6 skipped) on `0024ece` (741 s) |
 | 5 | GOV-7, GOV-12, OPR-1, OPR-4 | `docs/sprint-20261022-F04-5.md` (`0bf7ca4`) | **done**: `112e828` (OPR-1), `f64bdda` (OPR-4), `89f4253` (GOV-12), `99e5411`, `b47ba71`, `54c3ce4`, `f9328f5` (GOV-7), `78819aa` (ledgers), `6a2de9c` (review 1 fixes), `a42be40` (outcome, review 1), `13b2fa4` (review 2 fixes), this plan in the commit after it; `make test` 2672 OK (6 skipped) on `13b2fa4` (541 s) |
-| release | 0.176.0 locally, `make verify-feature F=F04`, rubric | — | after batch 5 |
+| release | 0.176.0 locally, `make verify-feature F=F04`, rubric | — | **done**: `930761e` (version, CHANGELOG, README; tag `v0.176.0`, local), this plan and `feature_list.json` in the commit after it; `make verify-feature F=F04` all three layers green (`make test` 2672 OK, 6 skipped, 573 s; `ci_local` 27 of 27), F04 `passing`. Not pushed |
 
 Spec debt after batch 1: **136 enforced / 17 partial / 1 none / 4 bounded**. After batch 2: **141 enforced / 12
 partial / 1 none / 4 bounded** (`tests/spec-debt.json`); all five held in full, none narrowed. After batch 3:
@@ -196,6 +196,20 @@ REG-6, F03's.
     column. Ledger 149/5/0/4 → 153/1/0/4.
 - Full-suite timing: `taskpolicy -b make test` took 67 minutes on 2026-10-22 (2569 tests), not ~9; budget for it.
   Batch 3's run of 2584 tests took 65 minutes. Under `nice -n 15` batch 4's 2593 took 12.6 minutes, 4b's 2648 12.4.
+
+## The release review (0.176.0, before the release commit)
+
+A fresh general-purpose agent (`model: fable`), read-only, over the uncommitted entry against `git diff
+efce43e..HEAD`. Each finding was reproduced here before it was acted on.
+
+| # | severity | finding | reproduced | done |
+|---|---|---|---|---|
+| 1 | high | CI-013 moves with CI-019 on the six added agents | **no**: CI-013 passes `--agent Googlebot` (`action="append"` replaces `DEFAULT_AGENTS`), so the list does not reach it | the entry says CI-013 does not move, and names CI-019's direction (toward `FAIL`) |
+| 2 | medium | the `.ttc` "large font" warning is a TECH-002 `FAIL` (warning aliases to medium), only for a `.ttc` named by a `<link href>`; the preload move needs no `as="font"` | yes (`font_audit.py:111,119,179`) | rewritten with both conditions |
+| 3 | medium | LO-198 / LO-200's `FAIL` → `PASS` named 28 of the 31 gained types | yes: CovidTestingFacility, IndividualPhysician, PhysiciansOffice absent at `efce43e` | named |
+| 4 | medium | the census at 0.175.0 was 182 sets, not 183 | yes (`tests/derived-sets.json` at `efce43e`: 182 / 102 / 80) | 182 |
+| 5 | low | the console prints its own wording of OPR-4's line | yes (`checklist_runner.py:3558`) | both wordings given |
+| 6 | low | `normal_severity` strips the word, so a padded severity now matches | yes (`checklist_runner.py:807`) | added |
 
 ## Starting the next session: the release
 

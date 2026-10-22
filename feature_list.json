@@ -105,8 +105,8 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "active",
-    "evidence": "",
+    "state": "passing",
+    "evidence": "commit 930761e, verified 2026-10-22",
     "notes": "ROADMAP item 3; counts from the spec ledger (tests/spec-debt.json, tools/spec_debt.py --check). Spans sessions."
   },
   {
