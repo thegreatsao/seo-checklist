@@ -46,8 +46,9 @@ class HistoryIsReadableAtAll(unittest.TestCase):
 
     def test_the_epoch_is_reachable_from_here(self):
         try:
-            revisions.epoch_is_reachable()
-            revisions.epoch_is_an_ancestor()
+            for epoch in (revisions.EPOCH, revisions.BATCH_EPOCH):
+                revisions.epoch_is_reachable(epoch)
+                revisions.epoch_is_an_ancestor(epoch)
         except revisions.Unreadable as exc:
             self.fail(f"DEC-8's gate cannot read history, so it is checking nothing: "
                       f"{exc}")
@@ -291,6 +292,20 @@ class EveryDeclarationNamesTheBatchThatWroteIt(unittest.TestCase):
                          "declared": {"good": ["ZZ-001"]}}
                 problems = revisions.unbatched([("good", "ZZ-001")], [batch])
                 self.assertTrue(any(repr(entry) in line for line in problems), problems)
+
+    def test_a_batch_given_a_path_the_tree_does_not_hold_is_refused(self):
+        entry = "tests/fixtures/good/run-output-that-does-not-exist.json"
+        batch = {"given": [*self.GIVEN, entry], "declared": {"good": ["ZZ-001"]}}
+        problems = revisions.unbatched([("good", "ZZ-001")], [batch])
+        self.assertTrue(any("does not exist" in line for line in problems), problems)
+
+    def test_a_batch_whose_declarations_are_not_a_list_of_ids_is_refused(self):
+        for items in ("ZZ-001", [], [["ZZ-001"]], [None]):
+            with self.subTest(declared=items):
+                batch = {"given": self.GIVEN, "declared": {"good": items}}
+                problems = revisions.unbatched([], [batch])
+                self.assertTrue(any("list of item ids" in line for line in problems),
+                                problems)
 
     def test_a_batch_listing_nothing_it_was_given_is_refused(self):
         for given in (None, []):

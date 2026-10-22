@@ -442,12 +442,21 @@ def unbatched(added: list[tuple[str, str]], batches: list) -> list[str]:
                     f"the registry. A declaration made from anything else — the census, "
                     f"a run's output, Appendix A, a triage note, a transcript — predicts "
                     f"nothing (DEC-1)")
+            elif not os.path.exists(os.path.join(ROOT, *path.split("/"))):
+                # A path under the tree that is not in it names nothing a session read,
+                # and a run's output left there would pass the prefix test.
+                problems.append(f"{where} was given {entry!r}, which does not exist here")
         declared = batch.get("declared")
         if not isinstance(declared, dict) or not declared:
             problems.append(f"{where} names no declaration it wrote")
             continue
         for origin, items in declared.items():
-            for item in items if isinstance(items, list) else []:
+            if (not isinstance(items, list) or not items
+                    or not all(isinstance(item, str) and item for item in items)):
+                problems.append(f"{where} declares {items!r} on {origin}; a list of item "
+                                f"ids is what a batch names")
+                continue
+            for item in items:
                 named[(origin, item)] += 1
     seen = Counter(added)
     for key in sorted(set(seen) | set(named)):

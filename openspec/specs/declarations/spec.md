@@ -149,14 +149,19 @@ the manifest's `triage` and a transcript are refused without having to be listed
 order is held where git can witness it: `test_fixture_oracle.setUpModule` refuses to audit
 while the working tree declares or re-predicts anything `HEAD` does not
 (`TheOracleRunsOnlyCommittedPredictions`), so a prediction meets its first comparison only
-once history holds it, and a revision after that run is a move DEC-8's walk sees. Each
-refusal was probed by mutation in F04 (`docs/sprint-20261022-F04-3.md`).
+once history holds it, and a revision after that run is a move between commits, which
+DEC-8's walk sees. Each refusal was probed by mutation in F04
+(`docs/sprint-20261022-F04-3.md`).
 
 **One narrowing, and it is the half this line always said was outside the program.**
 Whether a batch's list is the whole of what its session had seen — a transcript, a run in
 another checkout, a census read the day before — no reader can establish. The obligation
 stays on the session; the record turns it into a claim somebody wrote down rather than a
-state of mind, which is all a program can do with it. Not claimed either: the 248
+state of mind, which is all a program can do with it. Nor is a rewritten history: a declaration
+committed, run, adjusted and folded into the same commit by `git commit --amend` (or a
+reset and a fresh commit) is one clean addition again, and all three readers are green —
+the order is held where git witnesses it, and an amended commit is git forgetting. Not
+claimed either: the 248
 declarations before the epoch, whose batches survive only as prose beside the id ledger
 (Stage 2b, 2c), and which the ledger does not back-fill. Until F04 this line read
 **none**: the instrument the requirement names had never been built, which is a different
@@ -306,7 +311,8 @@ non-empty string after stripping, and
 `test_a_reason_is_an_argument_and_not_a_note_about_the_run` holds the first two scenarios
 as far as prose can be held: a reason clears the floor DEC-8's records use
 (`MIN_ARGUMENT`, 40 characters), which refuses "expected PASS because it passes" as
-written, and it cites no run — "after the run", "the audit returned", the census. Measured
+written, and it does not cite a run in the words a correction used here — "after the run",
+"the run answered", "the audit returned", the census. Measured
 when it was written: no reason was shorter than 42 characters, and three opened
 "corrected from FAIL after the run", corrections made before `triage` existed. Those three
 keep their argument and lose the note; the correction is in git, and a correction made now
@@ -321,8 +327,14 @@ property the manifest already had rather than one it was edited to acquire. The 
 way to declare an item on two origins is to write one reason and paste it, and that is
 exactly the shape this refuses.
 
-**One narrowing: that the reason names what the tree contains, and that the construction
-it names produces the status.** Neither is read, and F04 measured why the first is not a
+**One narrowing: that the reason names what the tree contains, that the construction it
+names produces the status, and that it cites no run in other words.** None is read. The
+review of F04 wrote five reasons that pass — "expected PASS because this origin passes
+it", "the checker returned PASS on this tree when I ran it" — and a list of phrases cannot
+close that: the second scenario is held for the vocabulary named above and no further. A
+note that a declaration or a fixture was *corrected* ("Flipped from FAIL, which described
+the tree before this commit") cites no answer of a run and is history, not a source; it is
+left where it stands. Neither of the first two is read, and F04 measured why the first is not a
 rule the honest manifest keeps: 194 of 248 reasons name nothing a scan finds in their
 tree — an absence, the item's rule, the item's own question — and what a reason names that
 its tree lacks is often the argument itself ("there is no llms.txt anywhere in this
@@ -620,7 +632,11 @@ What it gives up is said, as DEC-5 says it: `basis` was written in bulk from the
 as it stood, so it makes the next move visible and is no evidence that each `why` was
 composed against that rule. A field outside `title` and `check` moves no basis on
 purpose — a declaration is reasoned from the title, the rule and the tree, and a basis
-over an item's prose would mark declarations unre-read for nothing.
+over an item's prose would mark declarations unre-read for nothing. `check` carries some
+prose of its own (`entry_answer.why`, on four declared items), and it moves the basis with
+the rule: one digest over the rule as written, at the price of a re-read nobody needed.
+`source` is outside it too, and a declared item turned from `script` to anything else is
+caught at run time by DEC-7, since its row stops being a checker's answer.
 
 #### Scenario: the registry moves under a record
 - **WHEN** the registry changes and a record taken against the previous one is not
