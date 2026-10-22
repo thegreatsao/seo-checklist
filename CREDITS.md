@@ -54,6 +54,16 @@ audit time for the same reason the registry is: a run has to produce the same
 answer offline and next month. It is used only to derive the default
 `sc-domain:` Search Console property.
 
+## schema.org type hierarchy
+
+`skills/seo-checklist/resources/config/schemaorg-types.json` is each type's parents,
+taken from one release of the [schema.org](https://schema.org/) vocabulary (the
+release, its date, the file's URL and its digest are in the file), which schema.org
+publishes under the **Creative Commons Attribution-ShareAlike 3.0** licence. It is
+reduced to type names and their parents, and replaced deliberately with
+`tools/refresh_schemaorg_types.py`. The LocalBusiness, Organization and Place sets
+the checks decide by are derived from it.
+
 ## Bundled playbooks
 
 `skills/seo-checklist/resources/playbooks/local-seo.md` is adapted from the

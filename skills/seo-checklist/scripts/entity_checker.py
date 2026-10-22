@@ -33,13 +33,14 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from lib.schema_types import (LOCAL_BUSINESS_TYPES, is_local_business_type,
-                                  schema_types)
+    from lib.schema_types import (LOCAL_BUSINESS_TYPES, ORGANIZATION_TYPES,
+                                  PLACE_TYPES, is_local_business_type, schema_types)
     from lib.safe_http import safe_get, safe_head
     from seo_common import read_as_url, html_parser, unread_kind
 except ImportError:
-    from scripts.lib.schema_types import (LOCAL_BUSINESS_TYPES,
-                                          is_local_business_type, schema_types)
+    from scripts.lib.schema_types import (LOCAL_BUSINESS_TYPES, ORGANIZATION_TYPES,
+                                          PLACE_TYPES, is_local_business_type,
+                                          schema_types)
     from scripts.lib.safe_http import safe_get, safe_head
     from scripts.seo_common import read_as_url, html_parser, unread_kind
 
@@ -57,11 +58,6 @@ SAMEAS_PLATFORMS = {
     "instagram.com": {"name": "Instagram", "priority": "Low", "kg_signal": "Weak"},
 }
 
-ORGANIZATION_TYPES = frozenset({
-    "Organization", "Corporation", "MedicalOrganization",
-    "EducationalOrganization", "GovernmentOrganization",
-})
-PLACE_TYPES = frozenset({"Place", "TouristAttraction"})
 ENTITY_TYPES = (LOCAL_BUSINESS_TYPES | ORGANIZATION_TYPES | PLACE_TYPES
                 | {"Person", "Brand"})
 

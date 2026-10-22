@@ -3,39 +3,39 @@
 from __future__ import annotations
 
 
-# Snapshot of schema.org's LocalBusiness hierarchy in August 2026. Unknown future
-# subtypes remain unknown rather than being guessed from their spelling.
-LOCAL_BUSINESS_TYPES = frozenset({
-    "LocalBusiness",
-    "AnimalShelter", "ArchiveOrganization", "AutomotiveBusiness", "ChildCare",
-    "Dentist", "DryCleaningOrLaundry", "EmergencyService", "EmploymentAgency",
-    "EntertainmentBusiness", "FinancialService", "FoodEstablishment",
-    "GovernmentOffice", "HealthAndBeautyBusiness", "HomeAndConstructionBusiness",
-    "InternetCafe", "LegalService", "Library", "LodgingBusiness",
-    "MedicalBusiness", "ProfessionalService", "RadioStation", "RealEstateAgent",
-    "RecyclingCenter", "SelfStorage", "ShoppingCenter", "SportsActivityLocation",
-    "Store", "TelevisionStation", "TouristInformationCenter", "TravelAgency",
-    "Bakery", "BarOrPub", "Brewery", "CafeOrCoffeeShop", "Distillery",
-    "FastFoodRestaurant", "IceCreamShop", "Restaurant", "Winery",
-    "BedAndBreakfast", "Campground", "Hostel", "Hotel", "Motel", "Resort",
-    "SkiResort", "BeautySalon", "DaySpa", "HairSalon", "HealthClub",
-    "NailSalon", "TattooParlor", "Physician", "Optician", "Pharmacy",
-    "VeterinaryCare", "AutoBodyShop", "AutoDealer", "AutoPartsStore",
-    "AutoRental", "AutoRepair", "AutoWash", "GasStation", "MotorcycleDealer",
-    "MotorcycleRepair", "Electrician", "GeneralContractor", "HVACBusiness",
-    "HousePainter", "Locksmith", "MovingCompany", "Plumber", "RoofingContractor",
-    "AdultEntertainment", "AmusementPark", "ArtGallery", "Casino", "ComedyClub",
-    "MovieTheater", "NightClub", "BowlingAlley", "ExerciseGym", "GolfCourse",
-    "PublicSwimmingPool", "SkatingRink", "SportsClub", "StadiumOrArena",
-    "TennisComplex", "BikeStore", "BookStore", "ClothingStore", "ComputerStore",
-    "ConvenienceStore", "DepartmentStore", "ElectronicsStore", "Florist",
-    "FurnitureStore", "GardenStore", "GroceryStore", "HardwareStore", "HobbyShop",
-    "HomeGoodsStore", "JewelryStore", "LiquorStore", "MensClothingStore",
-    "MobilePhoneStore", "MovieRentalStore", "MusicStore", "OfficeEquipmentStore",
-    "OutletStore", "PawnShop", "PetStore", "ShoeStore", "SportingGoodsStore",
-    "TireShop", "ToyStore", "WholesaleStore", "AccountingService",
-    "AutomatedTeller", "BankOrCreditUnion", "InsuranceAgency", "Notary",
-})
+import json
+import os
+
+# schema.org's type hierarchy at one named release, bundled so a run gives the same
+# answer offline; `tools/refresh_schemaorg_types.py` replaces it and says which
+# release it took. The sets below are derived from it: until F04 (batch 4b)
+# `LOCAL_BUSINESS_TYPES` was a hand copy that lacked 31 of the 152 types — Hospital,
+# Attorney, PostOffice among them — and carried two that are not LocalBusiness.
+# A type newer than the release remains unknown rather than guessed from its spelling.
+SNAPSHOT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))), "resources", "config", "schemaorg-types.json")
+with open(SNAPSHOT_PATH, encoding="utf-8") as _stream:
+    SNAPSHOT = json.load(_stream)
+
+
+def descendants(root: str) -> frozenset[str]:
+    """`root` and every type that has it as an ancestor in the snapshot."""
+    children: dict[str, list[str]] = {}
+    for name, parents in SNAPSHOT["types"].items():
+        for parent in parents:
+            children.setdefault(parent, []).append(name)
+    found, todo = set(), [root]
+    while todo:
+        name = todo.pop()
+        if name not in found:
+            found.add(name)
+            todo.extend(children.get(name, ()))
+    return frozenset(found)
+
+
+LOCAL_BUSINESS_TYPES = descendants("LocalBusiness")
+ORGANIZATION_TYPES = descendants("Organization")
+PLACE_TYPES = descendants("Place")
 
 
 def schema_types(value) -> list[str]:
