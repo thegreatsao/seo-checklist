@@ -733,15 +733,18 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # Then MIN_SCORE to `measured` (5), by the owner's decision: `inherited` is 0.
         # 0.175.0 (F06) adds one `convention`: `SITE_WIDE_SHARE`, the share of titles
         # past which a word is the site's and not a page's topic (AR-153).
+        # 0.176.0 (F04 batch 4b) removes one `convention`: `THIN_CONTENT_THRESHOLDS`,
+        # whose four non-default entries needed a page-type detector that does not
+        # exist; the default it was read for is `THIN_CONTENT_WORDS`.
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 14,
-            "convention": 97,
+            "convention": 96,
             "inherited": 0,
             "presentation": 47,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 131)
-        self.assertEqual(len(named), 178)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 130)
+        self.assertEqual(len(named), 177)
         # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
         # `lib/safe_http.py`, how long and how often a held lock is asked for on
         # Windows. Listed and not counted, beside `ROBOTS_FETCH_WAIT` and `_CACHE_POLL`,
@@ -781,8 +784,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 192 -> 195: the sitemap walk's three bounds in `seo_common` at 0.167.0.
         # 195 -> 196: `SAMPLE_FALLBACK_SITEMAPS` in the runner at 0.174.0 (F11).
         # 196 -> 197: `SITE_WIDE_SHARE` in `topical_cluster_mapper.py` at 0.175.0 (F06).
+        # 197 -> 196: `THIN_CONTENT_THRESHOLDS` deleted at 0.176.0 (F04 batch 4b).
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 197)
+                             for path in at._script_paths()), 196)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
