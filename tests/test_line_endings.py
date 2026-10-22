@@ -23,6 +23,10 @@ import ci_local  # noqa: E402
 BINARY_SUFFIXES = (".png", ".webp", ".jpg", ".jpeg", ".gif", ".ico", ".avif", ".gz",
                    ".woff", ".woff2", ".ttf", ".pdf", ".zip", ".xlsx")
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 class EveryTextFileIsStoredWithLF(unittest.TestCase):
     def test_no_tracked_text_file_is_stored_as_crlf_or_as_binary(self):

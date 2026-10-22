@@ -29,6 +29,10 @@ sys.path.insert(0, SCRIPTS)
 
 PAGE = "https://example.test/p"
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 def _person(name):
     return {"@type": "Person", "name": name}

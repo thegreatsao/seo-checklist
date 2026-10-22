@@ -21,6 +21,10 @@ import broken_links  # noqa: E402
 import seo_common  # noqa: E402
 from lib import safe_http  # noqa: E402
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 class FetchErrorKinds(unittest.TestCase):
 

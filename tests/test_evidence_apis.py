@@ -356,6 +356,11 @@ class HtmlValidator(unittest.TestCase):
 
         html_validator.requests.get = unexpected
         html_validator.requests.post = unexpected
+        # Nu is stubbed, so the guard's switch comes off for it (`html_validator` refuses
+        # to ask under it, GOV-7); the tripwire, on its own switch, stays armed.
+        guard = mock.patch.dict(os.environ, {"SEO_LOOPBACK_ONLY": ""})
+        guard.start()
+        self.addCleanup(guard.stop)
 
     def tearDown(self):
         self.mod.requests.get = self.saved_get

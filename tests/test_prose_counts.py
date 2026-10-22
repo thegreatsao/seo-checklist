@@ -34,6 +34,10 @@ import test_fixture_oracle  # noqa: E402
 import test_protocol_counts as protocol  # noqa: E402
 import verdict_census  # noqa: E402
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 @functools.lru_cache
 def populations() -> dict:

@@ -11,6 +11,10 @@ from unittest import mock
 TOOLS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "skills", "seo-checklist", "tools")
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 class CalibrationReports(unittest.TestCase):
     def test_each_report_still_matches_its_measurement(self):

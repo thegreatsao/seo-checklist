@@ -108,6 +108,11 @@ def check_safe_browsing(url: str, api_key: str, timeout: int) -> dict:
     if not api_key:
         return {"checked": False,
                 "error": "no API key (set GOOGLE_SAFE_BROWSING_KEY)"}
+    if loopback_only():
+        # A fixed service, called without the guard (GOV-7): under the switch it is a
+        # host other than this machine, and the key does not change that.
+        return {"checked": False,
+                "error": "Safe Browsing not asked: loopback-only (SEO_LOOPBACK_ONLY)"}
     body = {
         "client": {"clientId": "agentic-seo", "clientVersion": "1.0"},
         "threatInfo": {

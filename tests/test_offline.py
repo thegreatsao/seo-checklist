@@ -21,6 +21,7 @@ Two layers hold it now, and each is read here:
 from __future__ import annotations
 
 import os
+import shlex
 import socket
 import sys
 import unittest
@@ -175,6 +176,210 @@ class AChildBinaryTheTripwireCannotSee(unittest.TestCase):
             ["ls-remote", "https://example.invalid/nothing.git"], timeout=60)
         self.assertNotEqual(done.returncode, 0)
         self.assertIn("not allowed", done.stderr)
+
+
+class TheTripwireHasASwitchOfItsOwn(unittest.TestCase):
+    """Until F04 the tripwire read `SEO_LOOPBACK_ONLY`, so a test that cleared the
+    guard's switch to exercise its public-address policy stood both layers down for
+    itself and for whatever it started. The tripwire's switch is `SEO_TRIPWIRE`, which
+    no test has a reason to clear."""
+
+    def test_the_harness_arms_it_for_this_process_and_every_child(self):
+        self.assertEqual(os.environ.get("SEO_TRIPWIRE"), "1")
+        self.assertEqual(harness.with_tripwire({}).get("SEO_TRIPWIRE"), "1")
+
+    def test_clearing_the_guards_switch_leaves_the_tripwire_armed(self):
+        import tripwire
+        with mock.patch.dict(os.environ, {"SEO_LOOPBACK_ONLY": ""}):
+            with self.assertRaises(tripwire.NetworkTripped):
+                socket.getaddrinfo("example.com", 443)
+
+    def test_a_child_whose_guard_is_off_is_still_ended(self):
+        child = harness.spawn([sys.executable, "-c",
+                               "import socket\n"
+                               f"socket.create_connection(({TEST_NET!r}, 80), timeout=0.5)\n"
+                               "print('reached')"],
+                              env=harness.offline_env(SEO_LOOPBACK_ONLY=""))
+        import tripwire
+        self.assertEqual(child.returncode, tripwire.EXIT_CODE, child.stderr)
+        self.assertNotIn("reached", child.stdout)
+
+
+class AProgramIsStartedOnlyWithItsReasonWritten(unittest.TestCase):
+    """The tripwire is a Python audit hook, so a binary a Python process starts is
+    beyond it. Until F04 that was the Reader line's "a new binary would be unread":
+    `whois` was held only because its caller consults the switch. The hook now sees
+    the start itself, and a program that is not Python and not in
+    `tripwire.PROGRAMS`, with the reason it reaches nothing, is refused — before it
+    runs, so the program need not exist for the refusal to be read."""
+
+    def test_in_this_process_an_unlisted_program_raises_before_it_starts(self):
+        import subprocess
+        import tripwire
+        missing = os.path.join(HERE, "no-such-directory", "whois")
+        with self.assertRaises(tripwire.NetworkTripped) as caught:
+            subprocess.run([missing], close_fds=False)
+        self.assertIn("whois", str(caught.exception))
+
+    def test_a_child_that_starts_an_unlisted_program_is_ended_and_says_why(self):
+        missing = os.path.join(HERE, "no-such-directory", "notebooklm")
+        child = harness.spawn([sys.executable, "-c",
+                               "import subprocess, sys\n"
+                               "try:\n"
+                               f"    subprocess.run([{missing!r}], close_fds=False)\n"
+                               "except Exception:\n"
+                               "    pass\n"
+                               "print('carried on')"])
+        import tripwire
+        self.assertEqual(child.returncode, tripwire.EXIT_CODE, child.stderr)
+        self.assertNotIn("carried on", child.stdout)
+        self.assertIn("notebooklm", child.stderr)
+
+    def test_every_listed_program_says_why_it_reaches_nothing(self):
+        import tripwire
+        self.assertIn("git", tripwire.PROGRAMS)
+        self.assertNotIn("whois", tripwire.PROGRAMS)
+        for name, reason in tripwire.PROGRAMS.items():
+            with self.subTest(program=name):
+                self.assertGreater(len(reason.split()), 5, reason)
+
+    def test_a_python_child_started_with_the_tripwire_left_out_is_refused(self):
+        """An environment a test builds from nothing drops both switches, and a child
+        given it would run unwatched; `harness.spawn` puts them back, a bare
+        `subprocess.run` cannot."""
+        import subprocess
+        import tripwire
+        with self.assertRaises(tripwire.NetworkTripped) as caught:
+            subprocess.run([sys.executable, "-c", "pass"], close_fds=False,
+                           env={"PATH": os.environ.get("PATH", "")})
+        self.assertIn("tripwire", str(caught.exception))
+
+    def test_python_is_known_by_its_name_or_its_first_line(self):
+        import tripwire
+        self.assertTrue(tripwire.is_python(sys.executable))
+        self.assertTrue(tripwire.is_python("/usr/bin/python3.11"))
+        self.assertTrue(tripwire.is_python(r"C:\Python311\python.exe"))
+        self.assertFalse(tripwire.is_python("/usr/bin/whois"))
+        script = os.path.join(HERE, "tripwire", "sitecustomize.py")
+        self.assertFalse(tripwire.is_python(script))     # no `#!` line
+
+
+class EveryGateStepIsWatched(unittest.TestCase):
+    """The guard's switch reached every step of the workflow and the tripwire only
+    the `Tests` step, until F04: the smoke runs, the live path and every `tools/` gate
+    ran with nothing under the guard. And one gate step fetched its program from the
+    npm registry on every run, which is a gate that fails for npm's outage."""
+
+    @classmethod
+    def setUpClass(cls):
+        import ci_local
+        cls.ci_local = ci_local
+        cls.workflow = ci_local.load_workflow()
+
+    def run_steps(self):
+        for job_name, job in self.workflow["jobs"].items():
+            for step in job["steps"]:
+                if "run" in step:
+                    yield job_name, job, step
+
+    def test_every_gate_step_arms_the_tripwire_and_only_an_install_disarms_it(self):
+        for job_name, job, step in self.run_steps():
+            with self.subTest(job=job_name, step=step.get("name", "(unnamed)")):
+                env = self.ci_local.step_env({}, self.workflow, job, step)
+                if self.ci_local.only_installs(step["run"]):
+                    self.assertEqual(env.get("SEO_TRIPWIRE", ""), "",
+                                     "an install reaches its package index by design")
+                else:
+                    self.assertEqual(env.get("SEO_TRIPWIRE"), "1")
+                    self.assertIn("tests/tripwire",
+                                  env.get("PYTHONPATH", "").split(os.pathsep))
+
+    def test_a_gate_step_names_no_program_that_fetches(self):
+        """The hook cannot see a step's own shell lines, so they are read: a word
+        list, and the narrowing GOV-7's Reader line names."""
+        import re
+        fetchers = re.compile(r"\bnpx\b|\bnpm\s+(?:install|i|ci|exec)\b|\bpip3?\s+install\b"
+                              r"|-m\s+pip\s+install\b|\bwget\b"
+                              r"|\bgit\s+(?:fetch|pull|clone|push|ls-remote|submodule)\b")
+        remote = re.compile(r"https?://(?!127\.0\.0\.1[:/]|localhost[:/]|\[::1\])")
+        for job_name, _job, step in self.run_steps():
+            if self.ci_local.only_installs(step["run"]):
+                continue
+            for line in step["run"].splitlines():
+                line = line.strip()
+                if line.startswith("#"):
+                    continue
+                with self.subTest(job=job_name, step=step.get("name"), line=line):
+                    self.assertIsNone(fetchers.search(line))
+                    if re.search(r"\bcurl\b", line):
+                        self.assertIsNone(remote.search(line))
+
+    def test_a_gate_steps_python_and_its_children_load_the_tripwire(self):
+        """Started the way a gate step starts it — from the repository root with the
+        workflow's relative `PYTHONPATH` — and its child from another directory, which
+        a relative path alone would not reach."""
+        import tempfile
+        step = next(s for _, _, s in self.run_steps() if s.get("name") == "Tests")
+        job = self.workflow["jobs"]["test"]
+        base = {k: v for k, v in os.environ.items()
+                if k not in ("PYTHONPATH", "SEO_TRIPWIRE", "GIT_ALLOW_PROTOCOL",
+                             "SEO_LOOPBACK_ONLY")}
+        env = self.ci_local.step_env(base, self.workflow, job, step)
+        elsewhere = tempfile.mkdtemp()
+        self.addCleanup(os.rmdir, elsewhere)
+        child = ("import os, sys; os.chdir(sys.argv[1]); "
+                 "print('tripwire' in sys.modules, os.environ.get('GIT_ALLOW_PROTOCOL'))")
+        probe = ("import subprocess, sys; print('tripwire' in sys.modules); "
+                 f"print(subprocess.run([sys.executable, '-c', {child!r}, {elsewhere!r}], "
+                 "capture_output=True, text=True, close_fds=False).stdout.strip())")
+        ok, _, out = self.ci_local.run_step(
+            "probe", f"{shlex.quote(sys.executable)} -c {shlex.quote(probe)}", env)
+        self.assertTrue(ok, out)
+        self.assertEqual(out.split(), ["True", "True", "file"], out)
+
+
+class EveryTestModuleImportsTheHarness(unittest.TestCase):
+    """A module run alone has the switches and the tripwire only if it imports
+    `tests/harness.py`; under `discover` another module's import covered it. Until F04
+    twenty did not."""
+
+    def test_every_test_module_imports_the_harness(self):
+        import re
+        missing = []
+        for name in sorted(os.listdir(HERE)):
+            if name.startswith("test_") and name.endswith(".py"):
+                with open(os.path.join(HERE, name), encoding="utf-8") as f:
+                    if not re.search(r"^\s*(?:import harness\b|from harness import\b)",
+                                     f.read(), re.M):
+                        missing.append(name)
+        self.assertEqual(missing, [])
+
+
+class AThirdPartyServiceIsNotAskedEither(unittest.TestCase):
+    """Two scripts call `requests` directly because they address a fixed service, not
+    the audited site, so the guard never saw them. Until F04 `html_validator.py` asked
+    validator.w3.org on every run of the suite where its child lacked the tripwire —
+    found when the tripwire began refusing such children — and in the live-path gate
+    step, which had none. Under the switch both say they did not ask."""
+
+    def refuse(self, *args, **kwargs):
+        raise AssertionError(f"asked {args[0] if args else kwargs}")
+
+    def test_the_html_validator_is_not_asked(self):
+        import html_validator
+        with mock.patch.object(html_validator.requests, "get", side_effect=self.refuse), \
+                mock.patch.object(html_validator.requests, "post", side_effect=self.refuse):
+            out = html_validator.validate("http://127.0.0.1:9/")
+        self.assertEqual(out["error_kind"], "blocked")
+        self.assertIn("loopback-only", out["error"])
+        self.assertNotIn("errors", out.get("summary", {}))
+
+    def test_safe_browsing_is_not_asked_even_with_a_key(self):
+        import domain_safety_check
+        with mock.patch.object(domain_safety_check.requests, "post", side_effect=self.refuse):
+            out = domain_safety_check.check_safe_browsing("https://example.com/", "k", 5)
+        self.assertFalse(out["checked"])
+        self.assertIn("loopback-only", out["error"])
 
 
 class ALookupNotAskedIsNotALookupThatFoundNothing(unittest.TestCase):

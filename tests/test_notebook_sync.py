@@ -39,6 +39,10 @@ REPO = Path(ROOT)
 AUTH_ERROR = ("Unexpected error: Authentication expired or invalid.\n"
               "Run 'notebooklm login' to re-authenticate.")
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 def setUpModule():
     """`do_check` opens by asking git how far the clone is behind `origin`, with a

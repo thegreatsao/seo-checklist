@@ -70,6 +70,10 @@ UNREAD = {
                       "element_render_delay_ms")],
 }
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 def rules(check: dict) -> list[dict]:
     """Every leaf rule an item's check reads, through `all`/`any`-style nesting."""

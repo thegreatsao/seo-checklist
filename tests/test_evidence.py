@@ -1339,6 +1339,11 @@ class DomainSafety(unittest.TestCase):
         import domain_safety_check as ds
         self.ds = ds
         self.saved = ds.requests.post
+        # Safe Browsing is stubbed, so the guard's switch comes off for it
+        # (`check_safe_browsing` refuses to ask under it, GOV-7); the tripwire stays armed.
+        guard = mock.patch.dict(os.environ, {"SEO_LOOPBACK_ONLY": ""})
+        guard.start()
+        self.addCleanup(guard.stop)
 
     def tearDown(self):
         self.ds.requests.post = self.saved

@@ -4869,7 +4869,8 @@ class EvidenceArtifact(unittest.TestCase):
             raise safety.requests.RequestException(
                 f"connection failed for {safety.SB_ENDPOINT}?key={secret}")
 
-        with mock.patch.object(safety.requests, "post", new=fail):
+        with mock.patch.object(safety.requests, "post", new=fail), \
+                mock.patch.dict(os.environ, {"SEO_LOOPBACK_ONLY": ""}):
             out = safety.check_safe_browsing("https://example.com", secret, 10)
         self.assertNotIn(secret, out["error"])
         self.assertIn("?key=<redacted>", out["error"])

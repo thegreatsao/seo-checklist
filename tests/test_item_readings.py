@@ -21,6 +21,10 @@ import audit_item_readings as R  # noqa: E402
 REGISTRY = R.load(R.REGISTRY)
 READINGS = R.load(R.READINGS)
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 def named(problems: list[str], item_id: str, words: str) -> bool:
     return any(line.startswith(f"{item_id}:") and words in line for line in problems)

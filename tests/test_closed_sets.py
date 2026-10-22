@@ -26,6 +26,10 @@ sys.path.insert(0, os.path.join(SKILL, "scripts"))
 
 import hreflang_checker  # noqa: E402
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 class HreflangCodesAreTheStandards(unittest.TestCase):
     """BCP 47, which hreflang is: the language subtag is ISO 639-1 where it has two

@@ -10,6 +10,10 @@ sys.path.insert(0, str(SCRIPTS))
 
 from seo_common import read_urls
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 class URLInputs(unittest.TestCase):
     def test_values_and_file_share_normalization_and_order(self):

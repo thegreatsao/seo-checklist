@@ -9,8 +9,17 @@ on:
 # the suite sets it for itself too (`tests/harness.py`), and the local pre-push gate
 # applies this block to the steps it runs. Until 0.124.0 nothing was set, and a
 # fixture audit asked Wikidata and Wikipedia about the fixture's name on every run.
+#
+# The tripwire under the guard (`tests/tripwire/`) is armed here for every step too,
+# not only for the suite: until F04 the smoke runs, the live path and every `tools/`
+# gate ran with the guard and nothing under it. Its `sitecustomize` makes the relative
+# path absolute for every child and sets `GIT_ALLOW_PROTOCOL=file`. An install step
+# disarms it, because an install reaches its package index by design — the one kind of
+# step that may, and `tests/test_offline.py` holds which steps those are.
 env:
   SEO_LOOPBACK_ONLY: "1"
+  SEO_TRIPWIRE: "1"
+  PYTHONPATH: tests/tripwire
 
 jobs:
   test:
@@ -59,6 +68,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
+        env:
+          SEO_TRIPWIRE: ""
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -67,6 +78,10 @@ jobs:
           # ci_local.load_jobs(), which needs a YAML reader. Not in
           # requirements.txt because nothing shipped parses YAML.
           pip install pyyaml
+          # The pin "The specification is a specification" runs. Installed here
+          # rather than fetched by `npx` in that step, which until F04 asked the npm
+          # registry on every run: a gate that failed for npm's outage.
+          npm install -g @fission-ai/openspec@1.12.0
 
 
       # ruff was listed as a development dependency and never ran. Running it found
@@ -508,11 +523,13 @@ jobs:
       # GOV-10 is about the other outcome, four calibration checks that existed, passed,
       # and gated nothing until somebody went looking.
       #
-      # `npx` and not `npm install -g`: `ci_local.py` runs this step on a developer's
-      # machine, and until 0.168.1 every local gate put 1.12.0 over whatever openspec
-      # that machine had installed globally. The pin holds here and installs nothing.
+      # The pin, 1.12.0, is installed by the install step above, which `ci_local.py`
+      # skips on a developer's machine: until 0.168.1 every local gate put 1.12.0 over
+      # whatever openspec that machine had installed globally, and from then until F04
+      # this step ran `npx -y`, which fetched the package from the npm registry on every
+      # CI run (GOV-7). Locally it runs the machine's own openspec.
       - name: The specification is a specification
-        run: npx -y @fission-ai/openspec@1.12.0 validate --all --strict
+        run: openspec validate --all --strict
 
       # The `measured` bases, re-read against the constants they justify. Each check is
       # offline and takes about a second, and all four existed with no CI step for as
@@ -598,6 +615,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
+        env:
+          SEO_TRIPWIRE: ""
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -693,6 +712,8 @@ jobs:
           python-version: "3.13"
 
       - name: Install dependencies
+        env:
+          SEO_TRIPWIRE: ""
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt

@@ -9,6 +9,10 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "skills/seo-checklist/scripts"))
 import seo_common as common
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 class SourceLoading(unittest.TestCase):
     def test_files_hosts_urls_and_filesystem_errors(self):

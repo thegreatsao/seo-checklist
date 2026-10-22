@@ -60,6 +60,10 @@ DEFENCE = re.compile(
     r"recommended by|google (?:says|recommends)|the norm|correct value|"
     r"known to be right)\b", re.IGNORECASE)
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 class InheritedIsAnAdmission(unittest.TestCase):
 

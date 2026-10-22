@@ -100,9 +100,11 @@ PLACEHOLDER_EXTERNAL = "http://127.0.0.1:8001"
 # `SEO_LOOPBACK_ONLY` is set — here, for this process and, through `os.environ`, for
 # every child. And a tripwire at the socket catches whatever does not go through the
 # guard: raised in this process, fatal in a child, where `spawn` and the inherited
-# `PYTHONPATH` put its `sitecustomize` first.
+# `PYTHONPATH` put its `sitecustomize` first. Its switch is its own, `SEO_TRIPWIRE`:
+# until F04 it was the guard's, and a test that cleared that one disarmed both.
 TRIPWIRE = os.path.join(HERE, "tripwire")
 os.environ["SEO_LOOPBACK_ONLY"] = "1"
+os.environ["SEO_TRIPWIRE"] = "1"
 # `git` is a binary the tripwire cannot see, and it has transports of its own. With
 # only `file` allowed, a git this suite starts can read a repository on this disk and
 # nothing else. Until 0.150.0 two tests ran `git fetch` against the real `origin` on
@@ -110,7 +112,7 @@ os.environ["SEO_LOOPBACK_ONLY"] = "1"
 os.environ["GIT_ALLOW_PROTOCOL"] = "file"
 os.environ["PYTHONPATH"] = os.pathsep.join(
     [TRIPWIRE] + [p for p in os.environ.get("PYTHONPATH", "").split(os.pathsep)
-                  if p and p != TRIPWIRE])
+                  if p and os.path.abspath(p) != TRIPWIRE])
 sys.path.insert(0, TRIPWIRE)
 import tripwire  # noqa: E402
 sys.path.remove(TRIPWIRE)
@@ -216,11 +218,12 @@ def through_html(html, check):
 
 
 def with_tripwire(env: dict) -> dict:
-    """`env` with the tripwire's directory first on `PYTHONPATH`."""
+    """`env` with the tripwire's directory first on `PYTHONPATH`, and armed."""
     env = dict(env)
     rest = [p for p in env.get("PYTHONPATH", "").split(os.pathsep)
-            if p and p != TRIPWIRE]
+            if p and os.path.abspath(p) != TRIPWIRE]
     env["PYTHONPATH"] = os.pathsep.join([TRIPWIRE] + rest)
+    env["SEO_TRIPWIRE"] = "1"
     return env
 
 
@@ -1247,6 +1250,11 @@ def offline_env(**extra) -> dict:
     minutes to be polite to itself. Every credential is cleared: a machine that
     happens to have a Search Console key must not make these tests do something a
     CI runner cannot.
+
+    With the tripwire on it: `PYTHONPATH` is set here, and until F04 that dropped the
+    tripwire's directory, so a child started with this environment by anything but
+    `spawn` — a bare `subprocess.run`, or a test that made it `os.environ` — ran
+    unwatched. The tripwire now refuses such a child, which is how it was found.
     """
     env = dict(os.environ)
     env.update({
@@ -1259,4 +1267,4 @@ def offline_env(**extra) -> dict:
                 "PAGESPEED_API_KEY", "INDEXNOW_KEY"):
         env.pop(key, None)
     env.update(extra)
-    return env
+    return with_tripwire(env)

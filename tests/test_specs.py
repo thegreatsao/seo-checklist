@@ -79,6 +79,10 @@ ID = re.compile(r"\b([A-Z]{2,4}-\d+)\b")
 # qualification, and a qualified claim is not the bare word the table repeats.
 TERMINATORS = ".,:;—"
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 def documents():
     """(name, path) for every spec, discovered rather than listed.

@@ -96,6 +96,10 @@ UNREAD_AT_MOST = 43
 # stays there: raising it is the only way past, and it is a reviewed commit.
 UNREAD_CLOSED_AT_MOST = 0
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 class TheCensusDescribesThisTree(unittest.TestCase):
 

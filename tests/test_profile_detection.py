@@ -23,6 +23,10 @@ import detect_profile  # noqa: E402
 PAGE = ('<html><head><link rel="stylesheet" href="https://cdn.shopify.com/t.css"></head>'
         '<body><a href="/cart">cart</a><a href="/pricing">pricing</a></body></html>')
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 class TheMarginDecidesNoProfile(unittest.TestCase):
 

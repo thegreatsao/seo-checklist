@@ -38,6 +38,10 @@ HOME = (b'<html><head><title>Home of the example site</title></head><body>'
 PAGE = (b'<html><head><title>%s</title></head><body><p>Some words about %s.</p>'
         b'</body></html>')
 
+# The suite's switches and tripwire, also when this module runs alone (GOV-7).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import harness  # noqa: E402,F401
+
 
 def response(request, status, headers, body: bytes):
     made = sh.requests.Response()

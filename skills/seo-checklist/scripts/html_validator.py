@@ -30,12 +30,12 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from lib.safe_http import (MAX_RETRY_AFTER_WAIT, default_headers, pace,
-                               retry_after_seconds)
+    from lib.safe_http import (MAX_RETRY_AFTER_WAIT, default_headers, loopback_only,
+                               pace, retry_after_seconds)
     from lib.typed_credential import read_as_url
 except ImportError:
-    from scripts.lib.safe_http import (MAX_RETRY_AFTER_WAIT, default_headers, pace,
-                                       retry_after_seconds)
+    from scripts.lib.safe_http import (MAX_RETRY_AFTER_WAIT, default_headers,
+                                       loopback_only, pace, retry_after_seconds)
     from scripts.lib.typed_credential import read_as_url
 
 NU_ENDPOINT = "https://validator.w3.org/nu/"
@@ -119,6 +119,14 @@ def validate(url: str, timeout: int = 45, rendered_json: str | None = None) -> d
                                  data=document.encode("utf-8"), headers=headers,
                                  timeout=timeout)
         return requests.get(f"{NU_ENDPOINT}?{query}", headers=headers, timeout=timeout)
+
+    # Under `SEO_LOOPBACK_ONLY` — the suite and every CI step — the validator is a host
+    # other than this machine. The guard below never sees this call, and until F04 the
+    # suite and the live-path gate asked validator.w3.org on every run (GOV-7).
+    if loopback_only():
+        result["error"] = "validator not asked: loopback-only (SEO_LOOPBACK_ONLY)"
+        result["error_kind"] = "blocked"
+        return result
 
     # This is the one script that calls requests directly rather than through
     # safe_request, because it addresses a fixed third-party endpoint rather than
