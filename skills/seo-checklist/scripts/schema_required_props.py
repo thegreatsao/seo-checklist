@@ -70,7 +70,10 @@ RECOMMENDED_PROPS: dict[str, set[str]] = {
     "Product": {"image", "description", "sku", "brand", "aggregateRating", "review"},
     "ProductGroup": {"variesBy", "brand", "description"},
     "Review": {"reviewBody", "datePublished", "publisher"},
-    "VideoObject": {"duration", "contentUrl", "embedUrl", "publisher", "transcript"},
+    # `description` is Google's recommended property (Video page, 2026-09-24), moved here
+    # from the required rows in F04 (batch 4b).
+    "VideoObject": {"description", "duration", "contentUrl", "embedUrl", "publisher",
+                    "transcript"},
     # `WebSite: {potentialAction}` was here and is gone. It asked every site for the
     # `SearchAction` of the Sitelinks Search Box, and there are two things wrong with
     # that, either of which is enough.

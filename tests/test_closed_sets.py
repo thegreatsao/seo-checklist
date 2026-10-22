@@ -189,7 +189,7 @@ class RetiredSchemaTypesAreOneTable(unittest.TestCase):
 
 
 class RichResultRequiredPropertiesAreGoogles(unittest.TestCase):
-    """`rich_results_guard.RICH_RESULT_REQUIRED` against Google's pages for each rich
+    """`schema_required_props.RICH_RESULT_REQUIRED` against Google's pages for each rich
     result, read 2026-10-22: Product snippet (last updated 2026-09-08) requires `name`
     and one of `review`, `aggregateRating`, `offers`; Video (2026-09-24) requires `name`,
     `thumbnailUrl`, `uploadDate`, with `description` recommended; Review snippet
@@ -235,6 +235,18 @@ class RichResultRequiredPropertiesAreGoogles(unittest.TestCase):
         self.assertEqual(self.errors({"@type": "VideoObject", "name": "X",
                                       "thumbnailUrl": "https://example.test/t.jpg",
                                       "uploadDate": "2026-01-01"}), [])
+
+    def test_a_value_that_is_only_whitespace_is_missing(self):
+        """The validator's rule since before F04, now the guard's too: a property
+        written as spaces states nothing."""
+        self.assertEqual(len(self.errors({"@type": "Product", "name": "   ",
+                                          "offers": {"@type": "Offer"}})), 1)
+        self.assertEqual(len(self.errors({"@type": "Product", "name": "X",
+                                          "offers": "  "})), 1)
+
+    def test_a_video_s_description_is_recommended(self):
+        import schema_required_props
+        self.assertIn("description", schema_required_props.RECOMMENDED_PROPS["VideoObject"])
 
     def test_a_nested_review_names_its_item_by_nesting(self):
         review = {"@type": "Review", "author": {"@type": "Person", "name": "A"},

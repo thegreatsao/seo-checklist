@@ -775,7 +775,7 @@
       "state": "closed"
     },
     "the-schema-property-tables-have-not-been-re-read": {
-      "claim": "schema_required_props.py carries required and recommended property tables for twenty-three types and reads as though it quoted Google. Two were examined in 0.89.0 and both diverged; in F04 (batch 4b) the required properties of four more (BreadcrumbList, Product, Review, VideoObject) moved to the table rich_results_guard reads, synced to Google's pages; the rest have not been read against the documentation they claim to follow.",
+      "claim": "schema_required_props.py carries required and recommended property tables for twelve types and reads as though it quoted Google. Two were examined in 0.89.0 and both diverged; in F04 (batch 4b) the required properties of four more (BreadcrumbList, Product, Review, VideoObject) moved to the table rich_results_guard reads, synced to Google's pages, and VideoObject's description became recommended; the recommended rows of Product, Review and VideoObject were not read; the rest have not been read against the documentation they claim to follow.",
       "measured": {
         "recommended": {
           "Article": [
@@ -828,6 +828,7 @@
           ],
           "VideoObject": [
             "contentUrl",
+            "description",
             "duration",
             "embedUrl",
             "publisher",
@@ -878,7 +879,10 @@
           "ListItem",
           "LocalBusiness",
           "Organization",
-          "ProductGroup"
+          "Product",
+          "ProductGroup",
+          "Review",
+          "VideoObject"
         ],
         "verified_against_google": {
           "Article": "diverges — Google documents no required properties for Article/NewsArticle/BlogPosting and does not list mainEntityOfPage or publisher among the recommended; read in 0.89.0 and deliberately not acted on",

@@ -1019,7 +1019,8 @@ def _the_schema_property_tables_have_not_been_re_read() -> dict:
         # types in the list of unread ones on the first run of this probe.
         "types_not_read": sorted(
             (set(props.REQUIRED_PROPS) | set(props.RECOMMENDED_PROPS))
-            - {"WebSite", "Article"} - set(props.RICH_RESULT_REQUIRED)),
+            - {"WebSite", "Article"}
+            - (set(props.RICH_RESULT_REQUIRED) - set(props.RECOMMENDED_PROPS))),
     }
 
 
