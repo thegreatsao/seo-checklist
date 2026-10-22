@@ -11,13 +11,15 @@ correctly, so nothing here can detect it.
 module holds the table against the document: every section has a row, every row names a
 section that exists, the order matches, and no row is empty on both sides.
 
-**What it does not hold, and why the requirement stays `partial`.** Whether a row is
+It also holds that the document says its marking is by section, not by line.
+
+**What it does not hold, and the narrowing OPR-1 is enforced with.** Whether a row is
 *true* is a reading, and no test can perform it. Nor is the marking per line — a reader
 who lands in the middle of a section learns which kinds of sentence that section contains
 and not which kind the line in front of them is. Marking every instruction inline was the
 other design, and it turns on identifying an instruction mechanically; the closed list of
-imperative verbs that would take is the hand-kept list GOV-3 is about. The open question
-is recorded in the document rather than settled here.
+imperative verbs that would take is the hand-kept list GOV-3 is about. Anton settled the
+open question on 22 October 2026: by section (F04, batch 5).
 """
 from __future__ import annotations
 

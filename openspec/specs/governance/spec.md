@@ -455,12 +455,20 @@ from a fixture inside the job.
 **Why:** a gate that depends on somebody else's uptime fails for reasons that are not about
 the change, and a suite that fails for reasons that are not about the change gets ignored or
 re-run until green. That is how a real failure gets merged.
-**Reader:** partial. `tests/test_offline.py` holds two layers. `SEO_LOOPBACK_ONLY`, set by
-`tests/harness.py` for the suite and every child and by `ci.yml`'s workflow `env` for every
-job (which `tools/ci_local.py` applies locally), makes the guard refuse any host but this
-machine before resolving it, and keeps `whois` from starting; a tripwire at the socket
-(`tests/tripwire/`) raises in the test process and ends a child on any other request, so a
-path around the guard fails loudly. Each is probed by breaking it.
+**Reader:** enforced, since F04 (batch 5), with the narrowing said below.
+`tests/test_offline.py` holds two layers. `SEO_LOOPBACK_ONLY`, set by `tests/harness.py`
+for the suite and every child and by `ci.yml`'s workflow `env` for every job (which
+`tools/ci_local.py` applies locally), makes the guard refuse any host but this machine
+before resolving it, and keeps `whois`, the W3C validator and Safe Browsing from being
+asked. Under it a tripwire (`tests/tripwire/`, a Python audit hook) raises in the test
+process and ends a child on a connection or a name lookup for any other host, and on the
+start of a program that is not Python and not named in `tripwire.PROGRAMS` with the
+reason it reaches nothing (git, bash, openssl, node), or of a child whose environment
+leaves the tripwire out. Its switch is its own, `SEO_TRIPWIRE`. The workflow arms it for
+every step and an install step disarms it; its `sitecustomize` hands every child an
+absolute path to it and `GIT_ALLOW_PROTOCOL=file`; every test module imports the harness.
+Each is probed by breaking it: twelve mutations, one at a time, each reddening
+`test_offline` (`docs/sprint-20261022-F04-5.md`).
 
 This line said until 0.124.0 that the guard "refuses everything but loopback unless the
 allowance is set". It refused *private* addresses; the public internet was open, and an
@@ -468,11 +476,33 @@ audit hook over one suite run counted 68 connections to Wikimedia and 6 to Cloud
 `entity_checker.py` inside fixture audits and from the known-issues probes. The same hook
 after the repair: none outside the tripwire's own tests.
 
-**Partial, for what the tripwire cannot see:** it is a Python audit hook, so a non-Python
-child binary is held only if the script starting it consults the switch, as
-`domain_safety_check.py` does for `whois` — a new binary would be unread. And a test that
-clears the switch for itself stands both layers down for whatever it starts; two did, and
-were given it back.
+**Until F04 it was partial, for what the tripwire could not see, and each is held now.**
+The tripwire read the guard's switch, so a test that cleared `SEO_LOOPBACK_ONLY` to
+exercise the guard's public policy stood both layers down — six modules do. A non-Python
+binary was held only if the script starting it consulted the switch, as
+`domain_safety_check.py` does for `whois`; a new one would have been unread. Only the
+`Tests` step carried the tripwire: the smoke runs, the live path and every `tools/` gate
+ran with the guard alone. Twenty of seventy-nine test modules did not import the harness
+and, run alone, had neither switch. `harness.offline_env()` set `PYTHONPATH` without the
+tripwire, so a child given it by anything but `spawn` ran unwatched. And the gate "The
+specification is a specification" ran `npx -y`, which fetched openspec from the npm
+registry on every CI run: a gate that failed for npm's outage. It runs the pin with
+`npx --offline` now, from npm's cache, which the install step fills; a machine whose cache
+lacks it fails the step without asking the registry.
+
+**What holding it found.** `html_validator.py` calls validator.w3.org with `requests`
+directly, past the guard, and it did so in every suite run where its child lacked the
+tripwire, and in the live-path gate, which had none: the first full run under the new
+rule refused those children and named the host. It and Safe Browsing now say they were
+not asked while `SEO_LOOPBACK_ONLY` is set, which no real audit sets — no verdict moves.
+
+**Narrowed, and not a verdict:** the setup steps — `actions/checkout`,
+`actions/setup-python` and the install lines — reach the network by design and are not
+gates; a gate step's own shell lines are read by a word list (`npx`, `npm install`,
+`pip install`, `wget`, `curl` to a host that is not this machine, git's network
+subcommands; `npx --offline` is allowed), not watched; a listed program is trusted on its written reason; and
+`tests/hand_capture/`, the suite's second fence for the programs `test_url_credentials`
+runs with the guard off, is trusted in the tripwire's place on its own audit hook.
 
 **`git` was such a binary, and it was reaching GitHub.** Eight tests of the notebook tool
 hand `notebook_sync.do_check` this repository, and the check opens with `git fetch`. So
@@ -485,8 +515,8 @@ moved in between because a release went out while it ran. Two things hold it now
 the suite starts has no transport but this disk, and
 `test_git_is_allowed_no_transport_but_this_disk` asks for a remote and requires the
 refusal. And `tests/test_notebook_sync.py` supplies the clone's state for its whole
-module and fails any test in it that starts git. **Still partial:** a test module that
-does not import the harness, run alone, has no such switch.
+module and fails any test in it that starts git. Since F04 the tripwire's `sitecustomize`
+sets the same variable for every gate step's processes.
 
 #### Scenario: the matrix runs with no network
 - **WHEN** any job in CI runs
@@ -748,8 +778,13 @@ search of this repository for the program's name found a changelog and one reaso
 requirement — so the suite stayed green through any such change. Its session sent a list
 on 4 October 2026. The list was one key short, and that is the reason the list is taken
 from source and not from a message.
-**Reader:** partial. `tests/test_consumers.py` is the list, read on 7 October 2026 from
-Workbench at its commit `54eddd8`. It reads the paths off the tree; gives every scope,
+**Reader:** enforced, since F04 (batch 5), with the narrowing said below.
+`tests/test_consumers.py` is the list, read on 7 October 2026 from Workbench at its commit
+`54eddd8`, and again on 22 October 2026 at `3b60660`: the three Python files unchanged,
+and the native macOS build written in between read for the first time. It reads no name
+the Python builds do not, and two of them more strictly — the version line, by a prefix
+`version =` and the text between its first quotes, and the score only as a number in
+`[0, 100]` — and both are held now. It reads the paths off the tree; gives every scope,
 profile and language the form offers, and the rest of the form, to the parsers the two
 scripts parse with; and starts two audits of a local copy and their reports with
 Workbench's own command lines, from the working directory Workbench starts them in, then
@@ -758,11 +793,20 @@ Workbench reads them. Measured on 7 October 2026 by renaming or retyping, one at
 eleven of the names it holds: every one reddens it. Two of the eleven were first tried
 in a form that changed nothing Workbench would notice — a flag renamed to a longer word
 that the parser still takes the old one for, an attribute renamed to one Workbench's own
-expression still finds — and stayed green, rightly. Not held, and what keeps this
-`partial`: that the list is still what Workbench reads. That program is another
-repository; nothing here can open it, and a name it starts to read tomorrow is absent
-from the list until somebody adds it. The procedure is in the module's first lines: tell
-the Workbench session before changing a name the module holds.
+expression still finds — and stayed green, rightly. Measured again on 22 October by four
+(`weight_pct`, `--llm-queue`, `category_label`, and the version line written without its
+spaces, which the 7 October expression still reads): every one reddens it.
+
+The native build's history row reads `scores.partition["passed"]` and `["failed"]`, which
+this tool has never written, so it shows neither: a Workbench defect, reported, and not a
+name the list can hold.
+
+**Narrowed, and not a verdict:** that the list is still what Workbench reads after the
+date of its last read. That program is another repository; a name it starts to read
+later is unprotected until somebody adds it. Like a vocabulary snapshot (GOV-3), the list
+is right as of its date, and the module says how to re-read it: diff Workbench's files
+from the commit recorded there, read every name they take from this tree, record the new
+commit and date. Before changing a name the module holds, tell the Workbench session.
 
 #### Scenario: a key Workbench reads is renamed
 - **WHEN** a key of the results file that the list names is renamed, removed, or given a
@@ -776,8 +820,8 @@ the Workbench session before changing a name the module holds.
 
 #### Scenario: Workbench starts reading something new
 - **WHEN** the other program begins to depend on a name the list does not hold
-- **THEN** nothing here fails, and the name is unprotected until it is added: the limit
-  this requirement is `partial` for
+- **THEN** nothing here fails, and the name is unprotected until the list is re-read: the
+  narrowing this requirement is enforced with, and the reason each read is dated
 
 ## 4. Invariants
 
@@ -1156,21 +1200,22 @@ than one mechanism inside one.
 **Probed:** GOV-1 and GOV-10 by running the tools — the threshold gate reports its five
 counts and zero without a basis; the calibration search over the workflow returns nothing.
 GOV-8 and INV-G2 by reading the workflow and the test that reads argparse defaults.
-GOV-12 by eleven renames on 7 October 2026. The rest were derived by reading the gates and
+GOV-12 by eleven renames on 7 October 2026 and four on 22 October; GOV-7 by twelve
+mutations of the tripwire, the workflow and the harness (F04). The rest were derived by reading the gates and
 their tests.
 
 | | requirements |
 |---|---|
-| **enforced** | GOV-1, GOV-2, GOV-3, GOV-4, GOV-5, GOV-6, GOV-8, GOV-9, GOV-10, GOV-11 |
-| **partial** | GOV-7, GOV-12 |
+| **enforced** | GOV-1, GOV-2, GOV-3, GOV-4, GOV-5, GOV-6, GOV-7, GOV-8, GOV-9, GOV-10, GOV-11, GOV-12 |
+| **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 
 Invariants: INV-G2, INV-G3, INV-G4, INV-G5, INV-G7, INV-G9, INV-G10, INV-G11, INV-G12 and
 INV-G13 enforced; INV-G1, INV-G6 and INV-G8 partial.
 
-**Ten enforced, two partial, none unread, of twelve.** GOV-2, GOV-3, GOV-5 and GOV-6 moved
-in F04, each with a narrowing its Reader line names.
+**Twelve enforced, nothing partial, nothing unread, of twelve.** GOV-2, GOV-3, GOV-5, GOV-6,
+GOV-7 and GOV-12 moved in F04, each with a narrowing its Reader line names.
 
 When this document was written, the two unread requirements were the two that ask the
 machinery to be *governed* rather than to govern: GOV-2, that an admission not become a

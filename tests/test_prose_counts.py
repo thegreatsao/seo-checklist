@@ -232,7 +232,7 @@ CLAIMS = (
     Claim("ROADMAP.md", "assertion-total prose", r"proves \d+ of the (?P<n>\d+) script-backed", assertion("total")),
     Claim("ROADMAP.md", "unclaimed assertion prose", r"the other (?P<n>\d+) either way", assertion("unclaimed")),
     Claim("ROADMAP.md", "inherited target", r"`inherited` (?P<n>\d+) → 0", threshold("inherited")),
-    Claim("ROADMAP.md", "partial target", r"The (?P<n>\d+) `partial` requirements", specification("partial")),
+    Claim("ROADMAP.md", "partial target", r"The (?P<n>\d+) `partial` requirements?", specification("partial")),
     Claim("ROADMAP.md", "unclaimed target", r"The (?P<n>\d+) unclaimed assertions", assertion("unclaimed")),
     Claim("ROADMAP.md", "never-fail target", r"The census's (?P<n>\d+) and \d+", census(0)),
     Claim("ROADMAP.md", "silent target", r"The census's \d+ and (?P<n>\d+)", census(2)),

@@ -27,10 +27,10 @@
     "governance": {
       "counts": {
         "bounded": 0,
-        "enforced": 10,
+        "enforced": 12,
         "none": 0,
         "opposed": 0,
-        "partial": 2
+        "partial": 0
       },
       "opposed": [],
       "requirements": 12,
@@ -75,10 +75,10 @@
     "operator-protocol": {
       "counts": {
         "bounded": 4,
-        "enforced": 2,
+        "enforced": 4,
         "none": 0,
         "opposed": 0,
-        "partial": 2
+        "partial": 0
       },
       "opposed": [],
       "requirements": 8,
@@ -147,10 +147,10 @@
   },
   "totals": {
     "bounded": 4,
-    "enforced": 149,
+    "enforced": 153,
     "none": 0,
     "opposed": 0,
-    "partial": 5,
+    "partial": 1,
     "requirements": 158
   }
 }

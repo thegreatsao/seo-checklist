@@ -38,13 +38,13 @@ it was last written:
 | | count | what it means |
 |---|---|---|
 | requirements | 158 | across 12 documents |
-| enforced | 149 | held by something that fails when the requirement is violated |
-| partial | 5 | held for part of what the requirement says |
+| enforced | 153 | held by something that fails when the requirement is violated |
+| partial | 1 | held for part of what the requirement says |
 | unread | 0 | held by nothing |
 | bounded | 4 | the subject is outside the program; no test could observe a violation |
 
 The `partial` column is where the work is, and a count does not say how much of each row
-is held — read the document. The largest single debt is `registry` REG-6: five items
+is held — read the document. The one row left is `registry` REG-6: five items
 measured something other than their titles, all five were repaired by 0.108.0, and every
 one was found by a person reading a rule against its title. Since 0.114.0
 `tools/audit_item_readings.py` holds a written reading of every rule-carrying item
@@ -148,16 +148,18 @@ modules read; no number is bound by both. It is narrower than the ask it answers
 2. **REG-6's second reader** — the readings exist and are held against the registry;
    what would close the row is a check of whether each reading is true that is not the
    word of the person who wrote it.
-3. **The 5 `partial` requirements**, each either held or narrowed to what is
-   held. F04 is under way, a batch per specification, each with its contract
-   (`docs/sprint-20261021-F04-*.md`): its first held HTTP-10, HTTP-13, INP-10 and EVD-10 in full,
-   each on mutation of the clause that had kept it down; its second EVD-1, EVD-2, VRD-2, VRD-3
-   and REG-1, none narrowed; its third DEC-1, DEC-4, DEC-8 and DEC-9, the first three narrowed
-   with the narrowing said in each line; its fourth GOV-2, GOV-5 and GOV-6, each narrowed to
-   the half a program can reach; its fifth (4b) GOV-3, every unread set now an open one with
-   its reason and every closed one derived or read against its source, synced to dated
-   snapshots of schema.org, Google's documentation and the other standards it names;
-   REG-6 stays F03's.
+3. **The 1 `partial` requirement left**, REG-6, which is item 2; the other twenty, and
+   DEC-1 unread, were each held or narrowed to what is held — done locally in F04, five batches, each with its contract
+   (`docs/sprint-20261021-F04-*.md`); 0.176.0 releases it. Its first held HTTP-10, HTTP-13,
+   INP-10 and EVD-10 in full, each on mutation of the clause that had kept it down; its
+   second EVD-1, EVD-2, VRD-2, VRD-3 and REG-1, none narrowed; its third DEC-1, DEC-4, DEC-8
+   and DEC-9, the first three narrowed with the narrowing said in each line; its fourth
+   GOV-2, GOV-5 and GOV-6, each narrowed to the half a program can reach; its fifth (4b)
+   GOV-3, every unread set now an open one with its reason and every closed one derived or
+   read against its source; its last GOV-7, GOV-12, OPR-1 and OPR-4, each narrowed — every
+   gate step watched by the tripwire, the consumer list re-read against Workbench's native
+   build, the protocol marked by section by Anton's ruling, and an unanswered model queue
+   said on every surface.
 4. **The 143 unclaimed assertions**, reduced by extending the detectors
    `audit_reachability.py` already has rather than by asserting reachability in prose.
 5. **The census's 1 and 23**: the 23 each name the outside service or key they wait for

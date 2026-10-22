@@ -127,9 +127,10 @@ def report(data: dict, with_titles: bool = False) -> list[str]:
     out.append("%d are bounded — their subject is outside the program, so no fixture, "
                "harness or gate could observe the violation." % totals["bounded"])
     out.append("")
-    out.append("A count is not a verdict on the tree: `partial` is the largest column "
-               "and says nothing about")
-    out.append("how much of each requirement is held. Read the document.")
+    # It said "`partial` is the largest column" until F04 took that column to one.
+    out.append("A count is not a verdict on the tree: it says nothing about how much of "
+               "each requirement")
+    out.append("is held, or what a narrowing left out. Read the document.")
     return out
 
 

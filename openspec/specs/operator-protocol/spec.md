@@ -69,7 +69,7 @@ list it runs over is not.
 | the sample size is stated | in the evidence | repeating it |
 | an evidence string is never pasted at a client | no | yes |
 | a checklist item is never answered from memory | no | yes |
-| the model-judgement queue is run | no | yes |
+| the model-judgement queue is run | that the audit says it was not, beside the score (since F04) | running it, and saying so when it was not |
 | a playbook never moves a status | no | yes |
 
 Six of the eight rows have no mechanical enforcement in their right-hand column, which is
@@ -86,21 +86,23 @@ able to tell, per line, which it is.
 **Why:** an operator who believes the tool guarantees something it merely recommends will
 stop checking. The failure is silent, delayed, and lands on a client — and the tool cannot
 detect it, because from inside the run everything happened correctly.
-**Reader:** partial. `SKILL.md` opens with a contract table — one row per `##` section,
-two columns, in document order — and `tests/test_protocol_contract.py` holds it against
-the document: every section has a row, every row names a section that exists, the order
-matches, no row is empty on both sides, and the obligation column is not written in the
-third person about the tool, which is the specific way the two voices collapsed before.
+**Reader:** enforced, since F04 (batch 5), with the narrowing said below. `SKILL.md`
+opens with a contract table — one row per `##` section, two columns, in document order —
+and `tests/test_protocol_contract.py` holds it against the document: every section has a
+row, every row names a section that exists, the order matches, no row is empty on both
+sides, the obligation column is not written in the third person about the tool, which is
+the specific way the two voices collapsed before, and the document says in so many words
+that its marking is by section, not by line, which the last scenario requires and which
+it did not say until F04. Measured by four mutations, one at a time — a row deleted, two
+swapped, an obligation rewritten about the tool, that sentence removed: each reddens it.
 
-**Partial for two reasons, both worth naming.** Whether a row is *true* is a reading, and
-no test can perform it. And the marking is per section rather than per line: a reader who
+**Narrowed, and not a verdict:** the marking is per section, not per line, by Anton's
+ruling of 22 October 2026 ("A: по секциям") on the question §6 left open; a reader who
 lands in the middle of a section learns which kinds of sentence it contains, not which
-kind the line in front of them is. Marking every instruction inline was the other design
-and it turns on deciding mechanically what an instruction is — the closed list of
-imperative verbs that would take is exactly the hand-kept list
-`openspec/specs/governance/` GOV-3 objects to. That choice belongs to whoever owns the
-document's voice; it is an open question below rather than a gap this suite may close on
-its own.
+kind the line in front of them is, and the document says so. Marking every instruction
+inline would have meant a visible marker on every line or a closed list of imperative
+verbs, the hand-kept list `openspec/specs/governance/` GOV-3 objects to. And whether a
+row is *true* is a reading, which no test performs.
 
 #### Scenario: an instruction the tool guarantees
 - **WHEN** the protocol states something the code does on its own
@@ -176,9 +178,20 @@ as incomplete with the count outstanding.
 **Why:** an unanswered queue caps the audit — those items are `LLM_PENDING`, out of the
 scored set, and the score is a fraction of what remains. Reporting that number as the
 result of a completed audit overstates coverage by exactly the size of the queue.
-**Reader:** partial, on the tool's side only. The pending items appear in the payload's
-waiting list and the renderers show them, so the *information* is present in every
-artifact. Whether the operator acts on it is unread, and unreadable.
+**Reader:** enforced, since F04 (batch 5), on the tool's side, with the narrowing said
+below. While an item is `LLM_PENDING`, the Markdown report and the HTML report (English
+and Russian) and the runner's console say beside the score that the audit is incomplete,
+how many items wait for a model's judgement, and that they are outside the score until the
+queue is answered and merged (`checklist_report.queue_not_run_line`); the sentence is gone
+once nothing is pending. `tests/test_report.py::AQueueNotRunIsSaidToBeNotRun` holds both
+halves on all three surfaces; four mutations — the condition inverted, and each surface's
+line removed in turn — redden it. Until F04 the count was on every surface, under
+"waiting on you", and none said the audit was incomplete: a report whose queue was never
+run read as a finished audit with a score.
+
+**Narrowed, and not a verdict:** whether the operator, writing outside these surfaces,
+reports the audit as incomplete — the boundary OPR-2 argues, and `bounded` for the same
+reason.
 
 #### Scenario: the queue is run
 - **WHEN** the model-judgement queue is answered and merged
@@ -336,7 +349,10 @@ GOV-3's general absence, and it stands.
 
 ## 6. Open questions
 
-**Should every instruction be marked inline, rather than by section?** The contract
+**Should every instruction be marked inline, rather than by section?** *Answered on
+22 October 2026 by Anton: by section* ("A: по секциям"); OPR-1 is enforced with that
+narrowing, and `SKILL.md` says it marks by section, not by line. The question as it
+stood: the contract
 table added in 0.93.5 marks each `##` section with what it guarantees and what it asks
 of the operator, which is what a test can hold. Per-line marking is what the requirement
 literally asks for, and reaching it means either a visible marker on every instruction —
@@ -441,15 +457,16 @@ mechanical surface to probe.
 
 | | requirements |
 |---|---|
-| **enforced** | OPR-7, OPR-8 |
-| **partial** | OPR-1, OPR-4 |
+| **enforced** | OPR-1, OPR-4, OPR-7, OPR-8 |
+| **partial** | — none |
 | **none** | — none |
 | **opposed** | — none |
 | **bounded** | OPR-2, OPR-3, OPR-5, OPR-6 |
 
 Invariants: INV-O3 and INV-O4 enforced; INV-O2 partial; INV-O1 unread.
 
-**Two enforced, two partial, none unread, four bounded, of eight.**
+**Four enforced, nothing partial, nothing unread, four bounded, of eight.** OPR-1 and OPR-4
+moved in F04 (batch 5), each with a narrowing its Reader line names.
 
 `bounded` is a fifth class, introduced here at 0.96.3 because this is where the suite runs
 out of program. A bounded requirement's subject is a sentence a person writes to a client,
