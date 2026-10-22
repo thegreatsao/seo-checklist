@@ -4,8 +4,9 @@
 **Rule from the owner (2026-10-21):** one batch per session — a batch is finished with its review and fixes, committed,
 and the session stops; the next batch starts in a fresh session from this file. No version bump and no tag until the
 last batch; then 0.176.0 is released locally in one go (version, CHANGELOG with every verdict move and the ledger
-before/after, README counts, tag on the changelog commit, `make verify-feature F=F04`). Heavy commands run under
-`taskpolicy -b`, one at a time; a single mutation runs only the named test module.
+before/after, README counts, tag on the changelog commit, `make verify-feature F=F04`). Heavy commands (make test, make check,
+ci_local, mutations, the reviewer's runs) run under `nice -n 15` (the owner, 2026-10-22; `taskpolicy -b` before it took
+about 65 minutes a suite), one full run at a time; a single mutation runs only the named test module.
 
 ## The list, derived from the specs
 
@@ -91,5 +92,5 @@ for batch 3). Read each requirement's Reader line and Appendix B row first, and 
 against the code before declaring — batch 2 found two Reader lines stale, batch 3 one (DEC-9), and both batches had
 declared forms the measurement contradicted. Confirm each mutation moved what it targets before reading a green
 result (batch 3's first census mutation was a no-op). Then implement, mutate, ledgers together (`spec_debt.py --out` / `--check`,
-ROADMAP table and item 3, `test_prose_counts`), `taskpolicy -b make test` (over an hour), commit, review by a fresh
+ROADMAP table and item 3, `test_prose_counts`), `nice -n 15 make test` (about 10–15 minutes, with `run_in_background`), commit, review by a fresh
 `fable` agent, fixes, commit, update this file, stop.
