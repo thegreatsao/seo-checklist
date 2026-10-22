@@ -268,6 +268,13 @@ class AProgramIsStartedOnlyWithItsReasonWritten(unittest.TestCase):
             with self.subTest(argv=argv):
                 self.assertTrue(tripwire.violation(
                     "subprocess.Popen", (sys.executable, [sys.executable, *argv], None, None)))
+        # Review pass 2: a long option's value hid a later flag, and a quoted Windows path
+        # with a space split into words that were not options.
+        self.assertTrue(tripwire.violation("subprocess.Popen", (
+            sys.executable, [sys.executable, "--check-hash-based-pycs", "always", "-I", "-c",
+                             "pass"], None, None)))
+        self.assertTrue(tripwire.violation("subprocess.Popen", (
+            None, '"C:\\Program Files\\Python311\\python.exe" -I -c pass', None, None)))
         for argv in (["-c", "print('-I')"], ["-u", "x.py", "-I"], ["-m", "pip", "-E"]):
             with self.subTest(argv=argv):
                 self.assertFalse(tripwire.violation(

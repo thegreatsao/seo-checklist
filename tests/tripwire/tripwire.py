@@ -30,6 +30,7 @@ from __future__ import annotations
 import ipaddress
 import os
 import re
+import shlex
 import sys
 
 EXIT_CODE = 97
@@ -128,15 +129,21 @@ def _skips_site(argv) -> bool:
     """Whether the interpreter's own options make it ignore `PYTHONPATH` or skip
     `site`: `-I`, `-E`, `-S`, alone or among others (`-bI`), before the script, `-c`
     or `-m` ends them."""
-    if isinstance(argv, (str, bytes)):
-        argv = os.fsdecode(argv).split()
+    if isinstance(argv, (str, bytes)):              # Windows: one command line
+        text = os.fsdecode(argv)
+        try:
+            argv = shlex.split(text, posix=False)       # a quoted path stays one word
+        except ValueError:
+            argv = text.split()
     argv = [os.fsdecode(a) if isinstance(a, bytes) else str(a) for a in argv or []]
     i = 1
     while i < len(argv):
         arg = argv[i]
         if arg in ("-", "--") or not arg.startswith("-"):
             return False
-        if not arg.startswith("--"):
+        if arg == "--check-hash-based-pycs":           # the one long option with a value
+            i += 1
+        elif not arg.startswith("--"):
             letters = arg[1:]
             for j, letter in enumerate(letters):
                 if letter in "IES":
