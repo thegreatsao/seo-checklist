@@ -50,6 +50,10 @@ class TheSuiteIsLoopbackOnly(unittest.TestCase):
                           ("tls_env", harness.tls_env())):
             with self.subTest(env=name):
                 self.assertEqual(env.get("SEO_LOOPBACK_ONLY"), "1")
+                # And the tripwire, which until F04 `offline_env` dropped from
+                # `PYTHONPATH`: a child given it by a bare `subprocess.run` ran unwatched.
+                self.assertEqual(env.get("SEO_TRIPWIRE"), "1")
+                self.assertEqual(env["PYTHONPATH"].split(os.pathsep)[0], harness.TRIPWIRE)
 
     def test_every_spawned_child_carries_the_tripwire_whatever_env_it_was_given(self):
         """A child started with this process's environment inherits the tripwire
