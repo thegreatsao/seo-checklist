@@ -331,10 +331,12 @@ class EveryGateStepIsWatched(unittest.TestCase):
         env = self.ci_local.step_env(base, self.workflow, job, step)
         elsewhere = tempfile.mkdtemp()
         self.addCleanup(os.rmdir, elsewhere)
-        child = ("import os, sys; os.chdir(sys.argv[1]); "
-                 "print('tripwire' in sys.modules, os.environ.get('GIT_ALLOW_PROTOCOL'))")
-        probe = ("import subprocess, sys; print('tripwire' in sys.modules); "
-                 f"print(subprocess.run([sys.executable, '-c', {child!r}, {elsewhere!r}], "
+        # The parent moves before it starts the child, so the child starts in another
+        # directory: a relative entry on its `PYTHONPATH` would resolve to nothing there.
+        child = "import os, sys; print('tripwire' in sys.modules, os.environ.get('GIT_ALLOW_PROTOCOL'))"
+        probe = ("import os, subprocess, sys; print('tripwire' in sys.modules); "
+                 f"os.chdir({elsewhere!r}); "
+                 f"print(subprocess.run([sys.executable, '-c', {child!r}], "
                  "capture_output=True, text=True, close_fds=False).stdout.strip())")
         ok, _, out = self.ci_local.run_step(
             "probe", f"{shlex.quote(sys.executable)} -c {shlex.quote(probe)}", env)
