@@ -40,7 +40,7 @@ groups that no offline run reaches (D) get a run they can reach rather than an a
 |---|---|---|---|
 | 1 | A (116): `observed_failures`, the contradiction check, summary line, prose counts, REG-10 | `docs/sprint-20261023-F05-1.md` | **done**: `9f62895` (active + plan + contract), `f01fff8` (code), `3189206` (review fixes), this plan in the commit after it; 143 → 27 unclaimed; `make test` 2685 OK (6 skipped) on `f01fff8`; `ci_local` 27/27 on `3189206` |
 | 2 | B (4) and A′ (1): verdict provenance in the census; a slow-by-construction tree | `docs/sprint-20261023-F05-2.md` | **done**: `fcb039e` (contract), `60ed85b` (code), `48fceed` (review: TE-167 by `went-down/`), this plan in the commit after it; 27 → 22 unclaimed; `make test` 2695 OK (6 skipped) and `ci_local` 27/27 on `48fceed` |
-| 3 | D1 (7): PageSpeed stand-in | — | not started |
+| 3 | D1 (7): PageSpeed stand-in | `docs/sprint-20261023-F05-3.md` | **done**: `1e3a62f` (contract), `c53765d` (code), `4268584` (review fixes), this plan in the commit after it; 22 → 15 unclaimed; `make test` 2707 OK (6 skipped) and `ci_local` 27/27 on `4268584` |
 | 4 | D2 (5): validator and Safe Browsing stand-ins | — | not started |
 | 5 | D3 (9): Search Console stand-in (may split 5a/5b) | — | not started |
 | release | version, CHANGELOG, README, tag, `make verify-feature F=F05`, rubric | — | not started |
@@ -71,3 +71,8 @@ as waiting on stand-in services.
   does not). For the release CHANGELOG: no verdict moves; see the contract's last paragraph.
 - Batch 2: nothing open. For the release CHANGELOG: no runner verdict moves; the census gains `entry_gated` and
   the `went-down/` tree; see the batch-2 contract's last paragraph.
+- Batch 3: one low finding filed, not fixed (pre-existing): the console prints CrUX's CLS percentile unscaled (`38`
+  for 0.38); no verdict reads it. For the release CHANGELOG: no verdict of a real audit moves; the census gains
+  `slow-field/` and `fast-field/`; see the batch-3 contract's last paragraph. Batch 4 can reuse the mechanism: a
+  script's stand-in variable in `checklist_runner.STAND_INS`, read under `loopback_only()` by the script and the
+  runner's private-host gate, and an `_inputs/<tree>/` file `corpus_inputs` turns into it.
