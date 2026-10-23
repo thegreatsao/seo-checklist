@@ -328,6 +328,7 @@ class TheReadOnlyCommands(unittest.TestCase):
         self.assertIn("### Item CN-065", done.stdout)
         self.assertIn("### Item CN-066", done.stdout)
         self.assertEqual(done.stdout.count("### Script parse_html.py"), 1)
+        self.assertNotIn(READINGS["items"]["CN-065"]["reading"], done.stdout)
 
     def test_open_prints_each_first_reading(self):
         done = self.run_tool("--open", "CN-065")
