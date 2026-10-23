@@ -1,4 +1,7 @@
 {
+  "entry_gated": [
+    "error-entry"
+  ],
   "item_count": 217,
   "items": {
     "AR-146": {

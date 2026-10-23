@@ -51,8 +51,9 @@ source the registry's arguments never reached — so `observed_failures` reads t
 recorded census instead: the runner, with the registry's own arguments, on every tree
 the repository serves, re-derived by its own job. A FAIL there is a FAIL the item gave.
 A rule proved unable from source and seen failing is a finding, `contradicted`. What
-no served tree answers — the credential-gated checks, and the items only the entry
-gate can fail — stays unclaimed until a run reaches it.
+no served tree answers — the credential-gated checks, and an assertion only the entry
+gate's own answer fails (TE-167, whose request the run's response cache answers with
+the entry page the gate already judged) — stays unclaimed until a run reaches it.
 
 The runner's entry gate is a mechanism this tool cannot see from a script's source:
 CI-003 and TE-167 could not fail because of it until 0.130.0. That mechanism is derived
@@ -518,21 +519,30 @@ def dead_warn_bands(registry_path: str = REGISTRY,
     return dead
 
 
-def clock_read(harness_path: str = HARNESS) -> set[str]:
-    """The items whose census answer is the recording machine's clock.
-
-    `harness.CLOCK_READ`, read as data: importing `harness` arms the suite's network
-    tripwire, which a tool run in CI has no business doing. Not finding it is an
-    error rather than an empty set, which would claim TECH-003 on the recording
-    machine's FAIL (review of F05's first batch).
+def _harness_names(name: str, harness_path: str) -> set[str]:
+    """The keys of a table in `tests/harness.py`, read as data: importing `harness`
+    arms the suite's network tripwire, which a tool run in CI has no business doing.
+    Not finding it is an error rather than an empty set (review of F05's first batch).
     """
     with open(harness_path, encoding="utf-8") as f:
         for node in ast.parse(f.read()).body:
             targets = (node.targets if isinstance(node, ast.Assign)
                        else [node.target] if isinstance(node, ast.AnnAssign) else [])
-            if any(getattr(t, "id", None) == "CLOCK_READ" for t in targets):
+            if any(getattr(t, "id", None) == name for t in targets):
                 return set(ast.literal_eval(node.value))
-    raise LookupError(f"{harness_path} no longer assigns CLOCK_READ")
+    raise LookupError(f"{harness_path} no longer assigns {name}")
+
+
+def clock_read(harness_path: str = HARNESS) -> set[str]:
+    """The items whose census answer is the recording machine's clock
+    (`harness.CLOCK_READ`); an empty set would claim TECH-003 on that machine's FAIL."""
+    return _harness_names("CLOCK_READ", harness_path)
+
+
+def slow_by_construction(harness_path: str = HARNESS) -> set[str]:
+    """The trees whose answer to a clock item is the tree's own, because their page
+    holds its first byte back past the budget (`harness.SLOW_BY_CONSTRUCTION`)."""
+    return _harness_names("SLOW_BY_CONSTRUCTION", harness_path)
 
 
 def observed_failures(registry_path: str = REGISTRY, census_path: str = CENSUS,
@@ -547,12 +557,15 @@ def observed_failures(registry_path: str = REGISTRY, census_path: str = CENSUS,
     Three recorded FAILs are not the assertion's, and each is refused:
 
       * a census of another registry answered other rules;
-      * an item carrying `entry_answer` can be failed by the runner's entry gate,
-        which never reads the assertion — CI-003 and TE-167 fail only where the
-        entry page does;
-      * an item in `CLOCK_READ` is held by the census check only as "timed"
-        (`verdict_census.as_held`), so its recorded word is the recording
-        machine's and nothing re-derives it.
+      * an item carrying `entry_answer`, on a tree whose entry the runner's gate
+        stopped (the census's `entry_gated`): the gate writes that FAIL without
+        reading the assertion. On every other tree the gate writes nothing, so a
+        FAIL there is the assertion's; a census that does not say which trees were
+        stopped claims no such item;
+      * an item in `CLOCK_READ`, on a tree outside `SLOW_BY_CONSTRUCTION`: the
+        census check holds that answer only as "timed" (`verdict_census.as_held`),
+        so it is the recording machine's word and nothing re-derives it. On a slow
+        tree it is held exactly.
     """
     with open(registry_path, encoding="utf-8") as f:
         registry = json.load(f)
@@ -560,13 +573,17 @@ def observed_failures(registry_path: str = REGISTRY, census_path: str = CENSUS,
         census = json.load(f)
     if census.get("registry_version") != registry.get("registry_version"):
         return {}
-    timed = clock_read(harness_path)
+    timed, slow = clock_read(harness_path), slow_by_construction(harness_path)
+    gated = census.get("entry_gated")
     found = {}
     for item in script_backed(registry):
-        if item["check"].get("entry_answer") or item["id"] in timed:
-            continue
         answers = (census["items"].get(item["id"]) or {}).get("answers") or {}
-        trees = sorted(tree for tree, verdict in answers.items() if verdict == "FAIL")
+        trees = [tree for tree, verdict in answers.items() if verdict == "FAIL"]
+        if item["check"].get("entry_answer"):
+            trees = [t for t in trees if gated is not None and t not in gated]
+        if item["id"] in timed:
+            trees = [t for t in trees if t in slow]
+        trees.sort()
         if trees:
             found[item["id"]] = {"id": item["id"], "script": item["check"]["script"],
                                  "path": item["check"]["assert"].get("path"),

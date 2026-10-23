@@ -62,7 +62,8 @@ class Tree:
     """
 
     def __init__(self, registry, source, shapes="### `probe.py`\n\n`value` — a value\n",
-                 answers=None, census_version=None, clock_read=()):
+                 answers=None, census_version=None, clock_read=(), gated=(),
+                 slow=()):
         self.dir = tempfile.mkdtemp()
         self.scripts = os.path.join(self.dir, "scripts")
         os.makedirs(self.scripts, exist_ok=True)
@@ -74,16 +75,22 @@ class Tree:
             f.write(source)
         with open(self.shapes, "w", encoding="utf-8") as f:
             f.write(shapes)
-        # A census row per item, in the recorded file's own shape, and a harness
-        # naming the items whose answer is the recording machine's clock.
+        # A census row per item, in the recorded file's own shape, with the trees the
+        # entry gate stopped (`gated=None` is a census that does not say), and a
+        # harness naming the items whose answer is the recording machine's clock and
+        # the trees whose first byte is late by construction.
         self.census = os.path.join(self.dir, "census.json")
         self.harness = os.path.join(self.dir, "harness.py")
+        record = {"registry_version": census_version or registry["registry_version"],
+                  "items": {item_id: {"answers": row}
+                            for item_id, row in (answers or {}).items()}}
+        if gated is not None:
+            record["entry_gated"] = sorted(gated)
         with open(self.census, "w", encoding="utf-8") as f:
-            json.dump({"registry_version": census_version or registry["registry_version"],
-                       "items": {item_id: {"answers": row}
-                                 for item_id, row in (answers or {}).items()}}, f)
+            json.dump(record, f)
         with open(self.harness, "w", encoding="utf-8") as f:
-            f.write(f"CLOCK_READ = {dict.fromkeys(clock_read, 'timed')!r}\n")
+            f.write(f"CLOCK_READ = {dict.fromkeys(clock_read, 'timed')!r}\n"
+                    f"SLOW_BY_CONSTRUCTION = {dict.fromkeys(slow, 'late')!r}\n")
 
     def proved(self):
         return R.proofs(self.registry, self.shapes, self.scripts)
@@ -476,23 +483,55 @@ class AFailTheCensusSawIsAClaim(unittest.TestCase):
                     census_version="000000000000")
         self.assertEqual(tree.seen(), {})
 
-    def test_a_fail_the_entry_gate_can_write_is_not_claimed(self):
-        """CI-003 and TE-167 fail only where the entry page does, and the runner's
-        gate writes that FAIL from `entry_answer` without reading the assertion."""
+    def entry_answered(self):
         registry = a_registry({"path": "value", "truthy": True})
         registry["items"][0]["check"]["entry_answer"] = {
             "fails_on": ["server_error"], "why": "the gate measured it"}
-        tree = Tree(registry, self.FAILABLE,
-                    answers={"ZZ-001": {"error-entry": "FAIL"}})
+        return registry
+
+    def test_a_fail_the_entry_gate_wrote_is_not_claimed(self):
+        """TE-167 fails only where the entry page does, and on such a tree the
+        runner's gate writes the FAIL from `entry_answer` without reading the
+        assertion."""
+        tree = Tree(self.entry_answered(), self.FAILABLE,
+                    answers={"ZZ-001": {"error-entry": "FAIL", "page-sound": "PASS"}},
+                    gated=("error-entry",))
+        self.assertEqual(tree.seen(), {})
+
+    def test_a_fail_on_a_tree_the_entry_gate_let_through_is_the_assertion_s(self):
+        """The gate writes nothing on a tree whose entry it let through, so a FAIL
+        there is the assertion's: CI-003 on `no-location`, CI-001 and CI-015 on the
+        broken fixture (F05-2). The gated tree's FAIL beside it is still refused."""
+        tree = Tree(self.entry_answered(), self.FAILABLE,
+                    answers={"ZZ-001": {"error-entry": "FAIL", "no-location": "FAIL"}},
+                    gated=("error-entry",))
+        self.assertEqual(tree.seen()["ZZ-001"]["trees"], ["no-location"])
+
+    def test_a_census_that_does_not_say_where_the_gate_stopped_claims_no_entry_item(self):
+        """Without `entry_gated` no FAIL of such an item is known to be the
+        assertion's; the items without `entry_answer` are claimed as before."""
+        tree = Tree(self.entry_answered(), self.FAILABLE,
+                    answers={"ZZ-001": {"no-location": "FAIL"}}, gated=None)
         self.assertEqual(tree.seen(), {})
 
     def test_a_fail_the_recording_machine_timed_is_not_claimed(self):
-        """TECH-003's census answer is compared only as timed (`verdict_census.as_held`),
-        so a FAIL recorded on a slow machine is that machine's and no check holds it."""
+        """TECH-003's census answer is compared only as timed (`verdict_census.as_held`)
+        on a tree that does not hold its first byte back, so a FAIL recorded there on
+        a slow machine is that machine's and no check holds it."""
         tree = Tree(a_registry({"path": "value", "truthy": True}), self.FAILABLE,
-                    answers={"ZZ-001": {"redirect-chain": "FAIL"}},
-                    clock_read=("ZZ-001",))
+                    answers={"ZZ-001": {"failing-shapes": "FAIL"}},
+                    clock_read=("ZZ-001",), slow=("redirect-chain",))
         self.assertEqual(tree.seen(), {})
+
+    def test_a_fail_on_a_tree_slow_by_construction_is_the_tree_s(self):
+        """`redirect-chain` holds its page's first byte past TECH-003's budget, so no
+        machine answers PASS there and the census holds its FAIL to the letter
+        (F05-2). The timed FAIL on another tree beside it is still refused."""
+        tree = Tree(a_registry({"path": "value", "truthy": True}), self.FAILABLE,
+                    answers={"ZZ-001": {"redirect-chain": "FAIL",
+                                        "failing-shapes": "FAIL"}},
+                    clock_read=("ZZ-001",), slow=("redirect-chain",))
+        self.assertEqual(tree.seen()["ZZ-001"]["trees"], ["redirect-chain"])
 
     def test_proved_unable_and_seen_failing_is_a_contradiction(self):
         """One of the two is wrong, and it is not the run. The oracle check above
@@ -505,6 +544,16 @@ class AFailTheCensusSawIsAClaim(unittest.TestCase):
 
     def test_the_clock_is_read_from_the_harness_the_census_uses(self):
         self.assertEqual(R.clock_read(), set(harness.CLOCK_READ))
+        self.assertEqual(R.slow_by_construction(), set(harness.SLOW_BY_CONSTRUCTION))
+
+    def test_a_harness_that_no_longer_names_the_slow_trees_stops_the_tool(self):
+        """An empty set would be safe here, and silent: TECH-003 would drop out of
+        the claims with nothing saying why. Same rule as the clock's."""
+        tree = Tree(a_registry({"path": "value", "truthy": True}), self.FAILABLE)
+        with open(tree.harness, "w", encoding="utf-8") as f:
+            f.write("CLOCK_READ = {}\n")
+        with self.assertRaises(LookupError):
+            R.slow_by_construction(tree.harness)
 
     def test_a_harness_that_no_longer_names_the_clock_stops_the_tool(self):
         """An empty set here would claim TECH-003 on its machine's FAIL, and the
@@ -535,9 +584,9 @@ class AFailTheCensusSawIsAClaim(unittest.TestCase):
             fixtures = json.load(f)["fixtures"]
         declared = {item_id for origin in fixtures.values()
                     for item_id, row in origin.items() if row["expect"] == "FAIL"}
-        refused = {i["id"] for i in DATA["items"]
-                   if (i.get("check") or {}).get("entry_answer")} | R.clock_read()
-        owed = {i["id"] for i in R.script_backed(DATA)} & declared - refused
+        # The oracle's trees are the fixture pair, which no entry gate stops, so only
+        # the clock's refusal is left (F05-2).
+        owed = {i["id"] for i in R.script_backed(DATA)} & declared - R.clock_read()
         self.assertEqual(sorted(owed - set(R.observed_failures())), [])
 
 

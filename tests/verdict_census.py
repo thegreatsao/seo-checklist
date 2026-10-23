@@ -104,7 +104,9 @@ def corpus_inputs(label: str, base: str, workdir: str) -> tuple[list[str], dict]
     return flags, offline_env(**extra)
 
 
-def run_audit(url: str, out: str, env: dict, artifacts: list[str]) -> dict[str, str]:
+def run_audit(url: str, out: str, env: dict,
+              artifacts: list[str]) -> tuple[dict[str, str], bool]:
+    """(status per item, whether the runner's entry gate let the run go on)."""
     proc = spawn(
         [sys.executable, os.path.join(SCRIPTS, "checklist_runner.py"), url,
          "--allow-private", "--sample", "3", "--max-rps", "0",
@@ -117,8 +119,10 @@ def run_audit(url: str, out: str, env: dict, artifacts: list[str]) -> dict[str, 
         data = json.load(stream)
     rows = data["items"]
     if isinstance(rows, dict):
-        return {item_id: row["status"] for item_id, row in rows.items()}
-    return {row["id"]: row["status"] for row in rows}
+        statuses = {item_id: row["status"] for item_id, row in rows.items()}
+    else:
+        statuses = {row["id"]: row["status"] for row in rows}
+    return statuses, data["entry_reachable"]
 
 
 def census(extra_sites) -> dict:
@@ -127,6 +131,10 @@ def census(extra_sites) -> dict:
     items = {i["id"]: i for i in registry["items"]}
     per_site = {}
     labels = []
+    # The trees whose entry the runner's gate stopped. On those the gate writes the
+    # FAIL of an `entry_answer` item without its assertion; everywhere else a FAIL is
+    # the assertion's, which is what `audit_reachability` claims (F05-2).
+    gated = []
 
     # The fixture trees go through `FixtureSite`, not through a bare server, so the
     # census sees exactly what the oracle sees: four origins, the TLS pair among them,
@@ -139,10 +147,12 @@ def census(extra_sites) -> dict:
                 if path:
                     artifacts += [flag, path]
             print(f"  auditing fixture:{label}", file=sys.stderr)
-            per_site[f"fixture:{label}"] = run_audit(
+            per_site[f"fixture:{label}"], reached = run_audit(
                 getattr(site, label), os.path.join(site.dir, f"census-{label}.json"),
                 site.environment(label), artifacts)
             labels.append(f"fixture:{label}")
+            if not reached:
+                gated.append(f"fixture:{label}")
 
     with tempfile.TemporaryDirectory(prefix="seo-census-") as workdir:
         for label, root in extra_sites:
@@ -150,12 +160,14 @@ def census(extra_sites) -> dict:
             served = _Site(root, os.path.join(workdir, label))
             try:
                 artifacts, env = corpus_inputs(label, served.base, workdir)
-                per_site[label] = run_audit(
+                per_site[label], reached = run_audit(
                     served.base + "/", os.path.join(workdir, f"{label}.json"),
                     env, artifacts)
             finally:
                 served.stop()
             labels.append(label)
+            if not reached:
+                gated.append(label)
 
     rows = {}
     for item_id, item in items.items():
@@ -172,6 +184,7 @@ def census(extra_sites) -> dict:
     return {"registry_version": registry["registry_version"],
             "item_count": registry["item_count"],
             "sites": labels,
+            "entry_gated": sorted(gated),
             "items": rows}
 
 
@@ -307,11 +320,13 @@ def as_held(record: dict) -> dict:
     own words. For an item whose band is a time the run measured that word is the
     recording machine's (`harness.CLOCK_READ`): with every time to first byte five
     seconds longer `--check` refused a tree nothing was wrong with. So two records
-    are compared on such an answer as far as that the item was timed.
+    are compared on such an answer as far as that the item was timed — except on a
+    tree that holds its first byte back past the budget (`harness.
+    SLOW_BY_CONSTRUCTION`), where the answer is the tree's and is held exactly.
     """
     held = json.loads(json.dumps(record, sort_keys=True))
     for item_id, row in held["items"].items():
-        row["answers"] = {site: across_runs(item_id, answer)
+        row["answers"] = {site: across_runs(item_id, answer, site)
                           for site, answer in row["answers"].items()}
         row["distinct"] = sorted(set(row["answers"].values()))
     return held

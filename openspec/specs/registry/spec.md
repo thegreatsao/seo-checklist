@@ -580,10 +580,14 @@ explicit turns an invisible defect into a recorded decision.
 **Reader:** enforced. `tools/audit_reachability.py` in CI checks all three directions,
 and `tests/test_reachability.py` covers the mechanism vocabulary. Since F05 it also
 claims the other way, from a run only: a rule the recorded census saw `FAIL` is counted
-able to fail, and a rule proved unable *and* seen failing is an error. Not held: a rule
-no served tree reaches (the credential-gated checks), and every item carrying
-`entry_answer` — even where its assertion failed too — is claimed neither way, and the
-claim is as current as the census, which its own job re-runs.
+able to fail, and a rule proved unable *and* seen failing is an error. An item carrying
+`entry_answer` is counted only from a tree whose entry the gate let through (the census
+records the ones it stopped), and an item whose band is a measured time only from a tree
+that holds its first byte back past the budget (`harness.SLOW_BY_CONSTRUCTION`). Not held:
+a rule no served tree reaches (the credential-gated checks), an assertion only the entry
+gate's own answer fails (TE-167: the run's response cache hands its request the entry
+answer the gate already judged), and the claim is as current as the census, which its
+own job re-runs.
 
 #### Scenario: a field written only when it would pass
 - **WHEN** a checker writes the field a rule asserts only when that field already holds
@@ -613,8 +617,8 @@ claim is as current as the census, which its own job re-runs.
   gave an item through its assertion on at least one served tree
 - **THEN** the item is counted able to report FAIL, and is not among those claimed
   neither way
-- **AND** a `FAIL` the entry gate can write, or one the census holds only as timed, is
-  not counted
+- **AND** a `FAIL` the entry gate wrote (an `entry_answer` item on a tree the census
+  records the gate stopping), or one the census holds only as timed, is not counted
 
 #### Scenario: a proof from source against a failure on record
 - **WHEN** a rule is proved unable to report FAIL and the census saw it fail

@@ -141,15 +141,27 @@ CLOCK_READ = {
 }
 TIMED = "TIMED"
 
+# The served trees whose time to first byte is the tree's own. A `delay` in the tree's
+# `_answers.json` holds the audited page back past every budget in `CLOCK_READ`, and a
+# faster machine only adds less to it, so no machine answers PASS there: the census
+# holds such a tree's answer exactly, and `audit_reachability` counts its FAIL as the
+# item able to fail (F05-2). `test_census` holds the census to it.
+SLOW_BY_CONSTRUCTION = {
+    "redirect-chain": "`/home.html`, where its redirects end, holds its first byte for "
+                      "1000 ms, past TECH-003's 800 ms budget",
+}
 
-def across_runs(item_id: str, status: str) -> str:
+
+def across_runs(item_id: str, status: str, tree: str | None = None) -> str:
     """`status` as two live runs can be compared on it.
 
     PASS, WARN and FAIL of an item in `CLOCK_READ` are one answer here, `TIMED`:
-    which of them a run got is the machine's. NO_DATA and the rest stay themselves,
-    so a run that stopped measuring is still a difference.
+    which of them a run got is the machine's — except on a tree in
+    `SLOW_BY_CONSTRUCTION`, where it is the tree's. NO_DATA and the rest stay
+    themselves, so a run that stopped measuring is still a difference.
     """
-    if item_id in CLOCK_READ and status in ("PASS", "WARN", "FAIL"):
+    if (item_id in CLOCK_READ and tree not in SLOW_BY_CONSTRUCTION
+            and status in ("PASS", "WARN", "FAIL")):
         return TIMED
     return status
 

@@ -205,6 +205,46 @@ class RecordedCensus(unittest.TestCase):
                     self.assertFalse(verdict_census.in_step(
                         self.census, fresh(item_id, other[answered])))
 
+    def test_a_tree_slow_by_construction_holds_its_clock_answer_exactly(self):
+        """F05-2. On a tree whose audited page is held back past the budget
+        (`harness.SLOW_BY_CONSTRUCTION`) no machine answers PASS, so the record's
+        FAIL there is the tree's: the other band is out of step, and the tool counts
+        that FAIL as the item able to fail."""
+        self.assertTrue(harness.SLOW_BY_CONSTRUCTION, "no tree is slow; this reads nothing")
+        for item_id in harness.CLOCK_READ:
+            for tree in harness.SLOW_BY_CONSTRUCTION:
+                with self.subTest(item=item_id, tree=tree):
+                    self.assertEqual(self.census["items"][item_id]["answers"][tree], "FAIL")
+                    record = json.loads(json.dumps(self.census))
+                    record["items"][item_id]["answers"][tree] = "PASS"
+                    self.assertFalse(verdict_census.in_step(self.census, record))
+
+
+class TheCensusSaysWhereTheEntryGateStopped(unittest.TestCase):
+    """F05-2. The runner's entry gate writes the FAIL of an `entry_answer` item without
+    its assertion, so the census records the trees it stopped (`entry_reachable`
+    false), and `audit_reachability` counts such an item's FAIL only on the others."""
+
+    def setUp(self):
+        self.census = load(CENSUS)
+
+    def test_it_names_trees_it_served(self):
+        self.assertLessEqual(set(self.census["entry_gated"]), set(self.census["sites"]))
+        self.assertIn("error-entry", self.census["entry_gated"])
+        self.assertNotIn("fixture:broken", self.census["entry_gated"])
+
+    def test_a_record_that_moved_the_gate_is_out_of_step(self):
+        record = json.loads(json.dumps(self.census))
+        record["entry_gated"] = sorted(set(record["entry_gated"]) ^ {"no-location"})
+        self.assertFalse(verdict_census.in_step(self.census, record))
+
+    def test_every_slow_tree_holds_a_first_byte_back(self):
+        """A name here is a promise about a served tree's table, so it must be one."""
+        for tree in harness.SLOW_BY_CONSTRUCTION:
+            with self.subTest(tree=tree):
+                answers = load(os.path.join(verdict_census.CORPUS, tree, "_answers.json"))
+                self.assertTrue(any(row.get("delay", 0) > 0 for row in answers.values()))
+
 
 class TheHarnessSaysWhatItCannotExercise(unittest.TestCase):
     """`openspec/specs/declarations/` DEC-13. An item that gave one answer everywhere is
