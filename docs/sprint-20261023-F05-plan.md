@@ -43,7 +43,7 @@ groups that no offline run reaches (D) get a run they can reach rather than an a
 | 3 | D1 (7): PageSpeed stand-in | `docs/sprint-20261023-F05-3.md` | **done**: `1e3a62f` (contract), `c53765d` (code), `4268584` (review fixes), this plan in the commit after it; 22 → 15 unclaimed; `make test` 2707 OK (6 skipped) and `ci_local` 27/27 on `4268584` |
 | 4 | D2 (5): validator and Safe Browsing stand-ins | `docs/sprint-20261023-F05-4.md` | **done**: `d73de17` (contract), `22b02a1` (code), `b32c0f6` (review fixes), this plan in the commit after it; 15 → 10 unclaimed; `make test` 2725 OK (6 skipped) on `22b02a1`; `ci_local` 27/27 on `b32c0f6` |
 | 5 | D3 (9): Search Console stand-in (not split: one seam, `gsc_checker.build_service`) | `docs/sprint-20261023-F05-5.md` | **done**: `e6c9c16` (contract), `2845510` (code), `f5149a6` (review fixes), this plan in the commit after it; 10 → 1 unclaimed (SE-118); `make test` 2746 OK (6 skipped) and `ci_local` 27/27 on `f5149a6` |
-| release | version, CHANGELOG, README, tag | — | `make verify-feature F=F05` and the rubric done in batch 5 (F05 `passing`, evidence `f5149a6`); version, CHANGELOG, tag not started — Anton's call |
+| release | version, CHANGELOG, README, tag | — | **done locally, not pushed**: `7272960` (code: review fix), `8f53791` (0.177.0 changelog, README, versions; tag `v0.177.0`); `make test` 2748 OK (6 skipped) and `make check` exit 0 (`ci_local` 27/27, arch 3/3, VCR 1.0) on `8f53791`. F05's evidence stays `f5149a6`; verify-feature was not re-run |
 
 ## Done criterion — decided by the owner, 2026-10-23 ("Ruling Q2: A")
 
@@ -86,3 +86,15 @@ as waiting on stand-in services.
   stand-in, the audited origin; a `when` answer with no `else` resets instead of 404). For the release CHANGELOG: no
   verdict of a real audit moves; the census gains `unindexed/` and `indexed/`; see the batch-5 contract's last
   paragraph. F05 is `passing` (verify-feature on `f5149a6`); the one unclaimed assertion is SE-118.
+- Release review (fresh-context Claude agent, read-only, on `5bdba06..865c3f2`, the first release commit, later
+  rebuilt as `7272960` + `8f53791`). Nothing high.
+  - **medium, fixed in `7272960`:** `pagespeed.py` sent the key to whatever endpoint it asked, the stand-in included;
+    the suite clears `PAGESPEED_API_KEY`, but `env_loader` also reads `~/.agentic-seo/.env`, so every census run on
+    `slow-field/`/`fast-field/` on such a machine sent the real key to the loopback tree server. Reproduced by the
+    reviewer through `verdict_census.corpus_inputs` + `run_audit` with a fake key. F05-3's "low, no action" filing of
+    this path was wrong: the suite and the census set the switch themselves. New test red before, green after.
+  - **low, fixed in `8f53791`:** README's version line said four of the seven trees serve recorded answers (six do);
+    the CHANGELOG heading said every claim is "by a run" (two are proofs from source).
+  - **low, filed in the CHANGELOG entry:** `env_loader` copies any `.env` line into the environment, so a `.env`
+    naming `SEO_LOOPBACK_ONLY` and a stand-in points that script at a local port; "never by a real audit" holds for
+    the shell environment only. No key reaches a stand-in after the fix.
