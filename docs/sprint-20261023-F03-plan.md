@@ -57,7 +57,7 @@ decides"), and REG-6's Reader line keeps the requirement `partial` for that one 
 | batch | what | contract | state |
 |---|---|---|---|
 | 1 | The instrument: the `second_reading` record, its digest, every malformed or stale record named by `--check`, `--digest ID`, the summary line (`N of 145 second-read: A agree, D disputed`), `ESTABLISHES`/`DOES_NOT_ESTABLISH`, REG-6's Reader line. No second reading is written | `docs/sprint-20261023-F03-1.md` | **done**: `1155f47` (active + plan + contract), `22c5f62` (code), `f084a3a` (Codex review fixes), `062830b` (suite-rule and derived-set fixes found by `make check`), this plan in the commit after it; `ci_local` 27/27 on `062830b` (Tests step 557 s), arch 3/3; `make check` exit 2 only at VCR, because F03 is `active` |
-| 2 | The reader, calibrated: the brief in the repo (`tools/second-reading-brief.md`, shaped by Q1); a command that prints one item's brief input; **calibration** — Codex reads the seven pairs `TheShapesWouldHaveExposedEveryItemRepairedByHand` holds as they stood at `v0.104.0`, mixed with seven current items, blind to which is which; the threshold of Q4 must hold before any real reading counts; then the first real second readings, script by script from the largest group (`parse_html.py` 14, `rendered_audit.py` 8, …), about 25 items | `docs/sprint-<date>-F03-2.md` | waits on Q1–Q4 |
+| 2 | The reader, calibrated: the brief in the repo (`tools/second-reading-brief.md`, shaped by Q1); a command that prints one item's brief input; **calibration** — Codex reads the seven pairs `TheShapesWouldHaveExposedEveryItemRepairedByHand` holds as they stood at `v0.104.0`, mixed with seven current items, blind to which is which; the threshold of Q4 must hold before any real reading counts; then the first real second readings, script by script from the largest group (`parse_html.py` 14, `rendered_audit.py` 8, …), about 25 items | `docs/sprint-<date>-F03-2.md` | next: Q1–Q6 answered |
 | 3 | Second readings, ~40 items, continuing script by script | `-F03-3.md` | — |
 | 4 | Second readings, ~40 items | `-F03-4.md` | — |
 | 5 | Second readings, the rest (~40) | `-F03-5.md` | — |
@@ -66,13 +66,13 @@ decides"), and REG-6's Reader line keeps the requirement `partial` for that one 
 Each reading batch hands its disputes to the owner as one list (item, first verdict, second verdict, the dispute) and
 does not resolve them itself. Batches 3–5 may merge if Codex's per-item cost turns out small; batch 2 measures it.
 
-## Done criterion (proposed; the owner rules on it as Q5)
+## Done criterion — decided by the owner, 2026-10-23 (Q5: all 145)
 
 **F03 is done when every one of the 145 rule-carrying items carries a current second reading by Codex, no dispute is
 unresolved, `audit_item_readings.py --check` fails on a missing, stale or disputed second reading, REG-6's Reader line
 says `enforced`, and `make verify-feature F=F03` passes.** The partial count in ROADMAP goes 1 → 0.
 
-## Questions for the owner (Anton)
+## Questions for the owner (Anton) — all six answered 2026-10-23: the recommended option of each (see Decisions)
 
 Batch 1 depends on none of them: it builds the record and its checks, which every answer below needs, and writes no
 second reading. Batch 2 starts only once Q1–Q4 are answered.
@@ -104,6 +104,15 @@ second reading. Batch 2 starts only once Q1–Q4 are answered.
    session, and the record's `reader` says so.
 
 ## Decisions already made
+
+- **Q1–Q6 ruled by the owner, 2026-10-23** ("F03: accept the recommended answers to Q1–Q6"): (1) blind, then open —
+  Codex writes its own verdict from title, check, `measures` and the script's source before it sees the first
+  reading, then is shown it and asked for a dispute; (2) a dispute is red until the owner resolves it (a recorded
+  `resolution`, or the item or reading changed, which re-stales the record) — counted, not red, during batches 2–5 and
+  listed for the owner at the end of each; (3) after F03 a new or changed reading is red until Codex has read it;
+  (4) calibration bar: Codex calls all seven `v0.104.0` pairs defective and leaves at least six of seven current
+  controls undisputed, or no real reading counts and the brief is rewritten; (5) done = all 145; (6) the 145 are taken
+  as Claude's, nothing recorded per entry, and a future reading Codex writes is second-read by a fresh Claude session.
 
 - **The second reader is Codex** (`gpt-6.1-sol`, reasoning effort high), and so is the review of each batch's code
   (the owner, 2026-10-23, F03 planning session: "Чеки кодексу отдавай"). This replaces the F05 practice of a fresh
