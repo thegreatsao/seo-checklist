@@ -152,11 +152,18 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
                          {"current": 1, "agree": 1, "disputed": 0})
 
     def test_the_digest_ignores_key_order_and_the_record_itself(self):
-        item = self.items["TE-167"]
-        before = R.digest(item, self.entry)
-        reordered = dict(reversed(list(self.entry.items())))
-        reordered.pop("second_reading")
-        self.assertEqual(R.digest(item, reordered), before)
+        """Nested order too (Codex's review of 22c5f62: reordering only the entry's own
+        keys passed with `sort_keys` gone)."""
+        def reverse(value):
+            if isinstance(value, dict):
+                return {k: reverse(v) for k, v in reversed(list(value.items()))}
+            return value
+        item = self.items["CN-048"]
+        entry = self.readings["items"]["CN-048"]
+        before = R.digest(item, entry)
+        reordered = reverse(entry)
+        reordered["second_reading"] = {"reader": "x"}
+        self.assertEqual(R.digest(reverse(item), reordered), before)
 
     def test_the_digest_moves_with_everything_the_second_reader_judged(self):
         item = self.items["TE-167"]
@@ -192,6 +199,11 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
             ("no session", {"session": None}, "no session"),
             ("no digest", {"read": ""}, "no read"),
             ("unknown verdict", {"verdict": "fine"}, "is not one of"),
+            # Codex's review of 22c5f62: `str()` let `true` and `[null]` stand for a
+            # reader and a session, and the record was counted current.
+            ("reader not text", {"reader": True}, "no reader"),
+            ("session not text", {"session": [None]}, "no session"),
+            ("dispute not text", {"dispute": ["x"]}, "dispute"),
         )
         for name, change, words in cases:
             with self.subTest(name):
@@ -203,6 +215,7 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
                 readings = copy.deepcopy(self.readings)
                 readings["items"]["TE-167"]["second_reading"] = record
                 self.assertTrue(named(R.problems(self.registry, readings), "TE-167", words))
+                self.assertEqual(R.second_readings(self.registry, readings)["current"], 0)
 
     def test_a_dispute_is_counted_and_not_a_problem(self):
         for change in ({"verdict": "owed"}, {"dispute": "reads half the title"}):

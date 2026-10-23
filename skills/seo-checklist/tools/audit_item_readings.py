@@ -156,12 +156,15 @@ def _second_reading_problems(item_id: str, item: dict, entry: dict) -> list[str]
         out.append(f"{item_id}: the second reading carries keys it does not define: "
                    + ", ".join(extra))
     for key in ("reader", "session", "read"):
-        if not str(record.get(key) or "").strip():
+        if not isinstance(record.get(key), str) or not record[key].strip():
             out.append(f"{item_id}: the second reading has no {key}")
+    if not isinstance(record.get("dispute", ""), str):
+        out.append(f"{item_id}: the second reading's dispute is not text")
     if record.get("verdict") not in VERDICTS:
         out.append(f"{item_id}: second-reading verdict {record.get('verdict')!r} is not "
                    f"one of {', '.join(VERDICTS)}")
-    if record.get("read") and record["read"] != digest(item, entry):
+    if isinstance(record.get("read"), str) and record["read"].strip() \
+            and record["read"] != digest(item, entry):
         out.append(f"{item_id}: the reading changed under its second reading, which "
                    "must be read again")
     return out
@@ -178,7 +181,7 @@ def second_readings(registry: dict, readings: dict) -> dict[str, int]:
             continue
         counts["current"] += 1
         agrees = (record["verdict"] == entry.get("verdict")
-                  and not str(record.get("dispute") or "").strip())
+                  and not record.get("dispute", "").strip())
         counts["agree" if agrees else "disputed"] += 1
     return counts
 
