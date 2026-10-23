@@ -63,9 +63,10 @@ CORPUS = os.path.join(ROOT, "tests", "corpus")
 # A corpus tree's operator-supplied inputs, beside the trees rather than in them so they
 # are never served: `_inputs/<tree>/` holds any of the `ARTIFACT_FLAGS` files,
 # `indexnow_key` for the key an operator sets in INDEXNOW_KEY (F06), and
-# `pagespeed_standin.txt` for the address of a PageSpeed stand-in the tree serves (F05-3). Without these the
-# items that read an artifact or a key could answer on no corpus tree, which is the
-# first census's mistake again: a statement about the instrument, not the registry.
+# `pagespeed_standin.txt` for the address of a PageSpeed stand-in the tree serves
+# (F05-3). Without these the items that read an artifact or a key could answer on no
+# corpus tree, which is the first census's mistake again: a statement about the
+# instrument, not the registry.
 INPUTS = os.path.join(CORPUS, "_inputs")
 
 # The keyword an operator would supply. One word for every site, as an operator has

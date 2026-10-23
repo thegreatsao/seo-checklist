@@ -1,8 +1,8 @@
 {
   "measured": "upper-case names bound to a list, tuple, set or dict literal, bare or handed to a constructor, at module level or in a function, in scripts/, scripts/lib/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 194,
-  "read": 151,
+  "total": 195,
+  "read": 152,
   "unread": 43,
   "unread_closed": 0,
   "modules": {
@@ -551,6 +551,10 @@
         {
           "name": "NO_ANSWER_KINDS",
           "entries": 3
+        },
+        {
+          "name": "STAND_INS",
+          "entries": 1
         },
         {
           "name": "GSC_FALLBACKS",

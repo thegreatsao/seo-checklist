@@ -75,9 +75,9 @@ behind the gate for hosts only this machine reaches although no outside service 
 question, and now answers there. F05's third batch took the seven PageSpeed items out of
 this row: `slow-field/` and `fast-field/` serve a recorded PageSpeed Insights answer on
 loopback, which `pagespeed.py` asks only in a loopback-only process. The 16 still silent
-each need an outside service or a key, and the census prints which beside each one — read through the runner's own gate, so an
-item that could answer offline fails `test_census.py` by name instead of being excused in a
-sentence like the one this row used to carry.
+each need an outside service or a key, and the census prints which beside each one — read
+through the runner's own gate, so an item that could answer offline fails `test_census.py`
+by name instead of being excused in a sentence like the one this row used to carry.
 
 `AR-153` and `MD-184` could not fail as registered, and what each should assert was
 Anton's decision: MD-184 is answered by the entry page alone and fails one that references

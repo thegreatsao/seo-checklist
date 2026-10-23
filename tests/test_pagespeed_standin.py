@@ -5,8 +5,9 @@ SE-119 answered NO_DATA on every tree the census serves, and nothing showed any 
 able to FAIL. `slow-field/` answers the API's own path with a recorded PageSpeed
 Insights v5 response for a slow page, `fast-field/` with one for a fast page, and
 `pagespeed.py` asks them, instead of Google, only when `SEO_PAGESPEED_STANDIN` names one
-in a loopback-only process: the suite and CI are, no real audit is. These tests hold the three halves: the switch, the guard under it, and
-that the recorded answer is the API's shape rather than one written to suit the parser.
+in a loopback-only process: the suite and CI are, no real audit is. These tests hold the
+three halves: the switch, the guard under it, and that the recorded answer is the API's
+shape rather than one written to suit the parser.
 """
 from __future__ import annotations
 
@@ -98,6 +99,8 @@ class TheStandInIsReadOnlyOffline(unittest.TestCase):
             out = pagespeed.get_pagespeed("http://127.0.0.1:9/", "mobile")
         self.assertEqual(out["error_kind"], "service")
         self.assertIn("loopback-only", out["error"])
+        # The stand-in's own name: Google's would be refused with the same words.
+        self.assertIn("psi.example.test", out["error"])
 
 
 class TheRecordedAnswerIsTheApiS(unittest.TestCase):
