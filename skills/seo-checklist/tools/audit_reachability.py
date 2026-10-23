@@ -522,14 +522,17 @@ def clock_read(harness_path: str = HARNESS) -> set[str]:
     """The items whose census answer is the recording machine's clock.
 
     `harness.CLOCK_READ`, read as data: importing `harness` arms the suite's network
-    tripwire, which a tool run in CI has no business doing.
+    tripwire, which a tool run in CI has no business doing. Not finding it is an
+    error rather than an empty set, which would claim TECH-003 on the recording
+    machine's FAIL (review of F05's first batch).
     """
     with open(harness_path, encoding="utf-8") as f:
         for node in ast.parse(f.read()).body:
-            if (isinstance(node, ast.Assign)
-                    and any(getattr(t, "id", None) == "CLOCK_READ" for t in node.targets)):
+            targets = (node.targets if isinstance(node, ast.Assign)
+                       else [node.target] if isinstance(node, ast.AnnAssign) else [])
+            if any(getattr(t, "id", None) == "CLOCK_READ" for t in targets):
                 return set(ast.literal_eval(node.value))
-    return set()
+    raise LookupError(f"{harness_path} no longer assigns CLOCK_READ")
 
 
 def observed_failures(registry_path: str = REGISTRY, census_path: str = CENSUS,

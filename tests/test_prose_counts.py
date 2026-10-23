@@ -233,6 +233,7 @@ CLAIMS = (
     Claim("ROADMAP.md", "counted-threshold prose", r"`inherited` at \d+ of (?P<n>\d+)", threshold("counted")),
     Claim("ROADMAP.md", "proved assertion prose", r"proves (?P<n>\d+) of the \d+ script-backed", assertion("proved")),
     Claim("ROADMAP.md", "assertion-total prose", r"proves \d+ of the (?P<n>\d+) script-backed", assertion("total")),
+    Claim("KNOWN-ISSUES.md", "unclaimed assertions", r"(?P<n>\d+) of \d+ script-backed assertions are still not claimed", assertion("unclaimed")),
     Claim("ROADMAP.md", "seen assertion prose", r"census saw (?P<n>\d+) of them fail", assertion("seen")),
     Claim("ROADMAP.md", "unclaimed assertion prose", r"the other (?P<n>\d+) either way", assertion("unclaimed")),
     Claim("ROADMAP.md", "inherited target", r"`inherited` (?P<n>\d+) → 0", threshold("inherited")),

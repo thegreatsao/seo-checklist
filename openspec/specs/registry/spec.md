@@ -581,8 +581,9 @@ explicit turns an invisible defect into a recorded decision.
 and `tests/test_reachability.py` covers the mechanism vocabulary. Since F05 it also
 claims the other way, from a run only: a rule the recorded census saw `FAIL` is counted
 able to fail, and a rule proved unable *and* seen failing is an error. Not held: a rule
-no served tree reaches (the credential-gated checks) or one only the entry gate fails is
-claimed neither way, and the claim is as current as the census, which its own job re-runs.
+no served tree reaches (the credential-gated checks), and every item carrying
+`entry_answer` — even where its assertion failed too — is claimed neither way, and the
+claim is as current as the census, which its own job re-runs.
 
 #### Scenario: a field written only when it would pass
 - **WHEN** a checker writes the field a rule asserts only when that field already holds

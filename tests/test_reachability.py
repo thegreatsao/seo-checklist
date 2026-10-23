@@ -506,6 +506,20 @@ class AFailTheCensusSawIsAClaim(unittest.TestCase):
     def test_the_clock_is_read_from_the_harness_the_census_uses(self):
         self.assertEqual(R.clock_read(), set(harness.CLOCK_READ))
 
+    def test_a_harness_that_no_longer_names_the_clock_stops_the_tool(self):
+        """An empty set here would claim TECH-003 on its machine's FAIL, and the
+        tool's own CI step would print one more claim and pass (review of batch 1)."""
+        tree = Tree(a_registry({"path": "value", "truthy": True}), self.FAILABLE)
+        for text in ("TIMED_ITEMS = {}\n", "CLOCK_READ: dict = {'ZZ-001': 'timed'}\n"):
+            with open(tree.harness, "w", encoding="utf-8") as f:
+                f.write(text)
+            with self.subTest(harness=text):
+                if text.startswith("CLOCK_READ"):
+                    self.assertEqual(R.clock_read(tree.harness), {"ZZ-001"})
+                else:
+                    with self.assertRaises(LookupError):
+                        R.clock_read(tree.harness)
+
     def test_every_claim_on_the_shipped_tree_is_a_recorded_fail(self):
         with open(R.CENSUS, encoding="utf-8") as f:
             census = json.load(f)["items"]
