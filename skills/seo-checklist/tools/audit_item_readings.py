@@ -32,6 +32,8 @@ is re-read by hand, or the build stays red.
     python tools/audit_item_readings.py           # summary
     python tools/audit_item_readings.py --check   # exit 1 naming every problem
     python tools/audit_item_readings.py --digest CI-001   # what a second reading records as `read`
+    python tools/audit_item_readings.py --blind CI-001 CI-002   # the second reader's blind input
+    python tools/audit_item_readings.py --open CI-001     # then the first reading it is shown
 """
 
 from __future__ import annotations
@@ -49,6 +51,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REGISTRY = HERE.parent / "resources/config/checklist.json"
 READINGS = HERE / "item-readings.json"
+SCRIPTS = HERE.parent / "scripts"
+BRIEF = HERE / "second-reading-brief.md"
 
 VERDICTS = ("answers", "measures", "owed")
 SECOND_READING = ("reader", "session", "read", "verdict", "dispute")
@@ -146,6 +150,34 @@ def digest(item: dict, entry: dict) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
 
+def sources(items) -> dict[str, str]:
+    """The source of every script these items run, by file name."""
+    return {item["check"]["script"]: (SCRIPTS / item["check"]["script"]).read_text(
+        encoding="utf-8") for item in items}
+
+
+def blind_input(items: list[tuple[str, dict]], scripts: dict[str, str]) -> str:
+    """What a second reader judges before it sees the first reading (the brief's blind
+    pass): each item's title, check and `measures` sentence, then each script once."""
+    out = []
+    for label, item in items:
+        out += [f"### Item {label}", f"Title: {item['title']}",
+                "Check: " + json.dumps(item["check"], sort_keys=True, ensure_ascii=False),
+                "Measures: " + (item.get("measures")
+                                or "(none: the item carries no `measures` sentence)"), ""]
+    for script in dict.fromkeys(item["check"]["script"] for _, item in items):
+        out += [f"### Script {script}", "```python", scripts[script].rstrip("\n"), "```", ""]
+    return "\n".join(out)
+
+
+def open_input(item_id: str, entry: dict) -> str:
+    """The first reading, shown to the second reader once its own verdict is written."""
+    return "\n".join([f"### Item {item_id}: the first reading",
+                      f"Verdict: {entry.get('verdict')}", f"Reading: {entry.get('reading')}",
+                      "Shapes: " + json.dumps(entry.get("shapes") or {}, ensure_ascii=False),
+                      ""])
+
+
 def _second_reading_problems(item_id: str, item: dict, entry: dict) -> list[str]:
     record = entry["second_reading"]
     if not isinstance(record, dict):
@@ -233,8 +265,24 @@ def main() -> int:
                         help="exit 1 and name every problem")
     parser.add_argument("--digest", metavar="ID",
                         help="print the digest a second reading of ID records as `read`")
+    parser.add_argument("--blind", metavar="ID", nargs="+",
+                        help="print what the second reader of these items is shown first")
+    parser.add_argument("--open", metavar="ID", nargs="+",
+                        help="print the first readings it is shown after its own verdict")
     args = parser.parse_args()
     registry, readings = load(REGISTRY), load(READINGS)
+    if args.blind or args.open:
+        items, entries = rule_items(registry), readings.get("items") or {}
+        ids = args.blind or args.open
+        unknown = [i for i in ids if i not in items or i not in entries]
+        if unknown:
+            print(", ".join(unknown) + ": no reading of a rule-carrying item by that id")
+            return 1
+        if args.blind:
+            print(blind_input([(i, items[i]) for i in ids], sources(items[i] for i in ids)))
+        else:
+            print("\n".join(open_input(i, entries[i]) for i in ids))
+        return 0
     if args.digest:
         item = rule_items(registry).get(args.digest)
         entry = (readings.get("items") or {}).get(args.digest)

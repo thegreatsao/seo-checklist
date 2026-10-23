@@ -329,8 +329,11 @@ unnoticed, not that it was right. Since F03's first batch a reading can carry a
 optional dispute, and a digest of what it judged (title, rule, `measures`, and the first
 reading's verdict, reading and shape answers): a malformed record, or one whose digest is
 no longer current, fails like a changed rule, and the audit prints how many are current,
-agree and dispute. None is recorded yet, and a missing one fails nothing; the second
-reader is Codex (`docs/sprint-20261023-F03-plan.md`).
+agree and dispute. A missing one fails nothing yet, and a dispute is counted, not failed,
+until the plan's last batch. The second reader is Codex (`docs/sprint-20261023-F03-plan.md`),
+given the fixed brief `tools/second-reading-brief.md`: blind first — the title, rule,
+`measures` sentence and script source (`--blind ID`), from which it writes its own verdict —
+then, in the same session, the first reading (`--open ID`), to dispute or not.
 
 **Repairing an item does not move this line, and 0.105.0 is the test of that.** CI-016
 and MD-186 stopped measuring something other than their title in that release, and

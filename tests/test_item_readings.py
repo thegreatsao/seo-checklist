@@ -263,6 +263,85 @@ class TheDigestCommand(unittest.TestCase):
                       "0 disputed", done.stdout)
 
 
+class WhatTheSecondReaderIsShown(unittest.TestCase):
+    """F03-2: the blind pass shows the item and its script and nothing of the first
+    reading; the open pass then shows the first reading. The brief is the fixed prompt."""
+
+    def setUp(self):
+        self.items = R.rule_items(REGISTRY)
+
+    def blind(self, *ids):
+        return R.blind_input([(i, self.items[i]) for i in ids], R.sources(
+            self.items[i] for i in ids))
+
+    def test_it_carries_the_title_check_measures_and_source(self):
+        text = self.blind("CN-065")
+        item = self.items["CN-065"]
+        self.assertIn(item["title"], text)
+        self.assertIn(json.dumps(item["check"], sort_keys=True, ensure_ascii=False), text)
+        self.assertIn(item["measures"], text)
+        with open(os.path.join(R.SCRIPTS, "parse_html.py"), encoding="utf-8") as f:
+            self.assertIn(f.read().rstrip("\n"), text)
+
+    def test_it_says_when_there_is_no_measures_sentence(self):
+        self.assertNotIn("measures", self.items["CN-066"])
+        self.assertIn("Measures: (none", self.blind("CN-066"))
+
+    def test_each_script_once(self):
+        text = self.blind("CN-065", "CN-066", "CN-036")
+        self.assertEqual(text.count("### Script parse_html.py"), 1)
+        self.assertEqual(text.count("### Script rendered_audit.py"), 1)
+
+    def test_nothing_of_the_first_reading(self):
+        for item_id, entry in READINGS["items"].items():
+            with self.subTest(item_id):
+                text = self.blind(item_id)
+                self.assertNotIn(entry["reading"], text)
+                for answer in (entry.get("shapes") or {}).values():
+                    self.assertNotIn(answer, text)
+
+    def test_the_open_pass_shows_the_first_reading(self):
+        entry = READINGS["items"]["CN-065"]
+        text = R.open_input("CN-065", entry)
+        self.assertIn(entry["verdict"], text)
+        self.assertIn(entry["reading"], text)
+        for answer in entry["shapes"].values():
+            self.assertIn(answer, text)
+
+    def test_the_brief_names_both_passes_and_the_three_verdicts(self):
+        with open(R.BRIEF, encoding="utf-8") as f:
+            brief = f.read()
+        for words in ("## Blind pass", "## Open pass", *R.VERDICTS):
+            self.assertIn(words, brief)
+
+
+class TheReadOnlyCommands(unittest.TestCase):
+    def run_tool(self, *args):
+        return subprocess.run(
+            [sys.executable, os.path.join(TOOLS, "audit_item_readings.py"), *args],
+            capture_output=True, encoding="utf-8",
+            env=dict(os.environ, PYTHONIOENCODING="utf-8"), close_fds=False)
+
+    def test_blind_prints_each_item(self):
+        done = self.run_tool("--blind", "CN-065", "CN-066")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("### Item CN-065", done.stdout)
+        self.assertIn("### Item CN-066", done.stdout)
+        self.assertEqual(done.stdout.count("### Script parse_html.py"), 1)
+
+    def test_open_prints_each_first_reading(self):
+        done = self.run_tool("--open", "CN-065")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn(READINGS["items"]["CN-065"]["reading"], done.stdout)
+
+    def test_both_refuse_an_id_with_no_reading(self):
+        for flag in ("--blind", "--open"):
+            with self.subTest(flag):
+                done = self.run_tool(flag, "CN-065", "ZZ-999")
+                self.assertEqual(done.returncode, 1)
+                self.assertIn("ZZ-999", done.stdout + done.stderr)
+
+
 class TheShapesAreTheFourTheRequirementNames(unittest.TestCase):
     """REG-6's scenarios name an adjacent subject, a weaker question and half a title;
     the four shapes are how a reading is made to answer each. Held here so a fifth, or a
