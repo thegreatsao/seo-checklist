@@ -56,7 +56,7 @@ decides"), and REG-6's Reader line keeps the requirement `partial` for that one 
 
 | batch | what | contract | state |
 |---|---|---|---|
-| 1 | The instrument: the `second_reading` record, its digest, every malformed or stale record named by `--check`, `--digest ID`, the summary line (`N of 145 second-read: A agree, D disputed`), `ESTABLISHES`/`DOES_NOT_ESTABLISH`, REG-6's Reader line. No second reading is written | `docs/sprint-20261023-F03-1.md` | in progress |
+| 1 | The instrument: the `second_reading` record, its digest, every malformed or stale record named by `--check`, `--digest ID`, the summary line (`N of 145 second-read: A agree, D disputed`), `ESTABLISHES`/`DOES_NOT_ESTABLISH`, REG-6's Reader line. No second reading is written | `docs/sprint-20261023-F03-1.md` | **done**: `1155f47` (active + plan + contract), `22c5f62` (code), `f084a3a` (Codex review fixes), `062830b` (suite-rule and derived-set fixes found by `make check`), this plan in the commit after it; `ci_local` 27/27 on `062830b` (Tests step 557 s), arch 3/3; `make check` exit 2 only at VCR, because F03 is `active` |
 | 2 | The reader, calibrated: the brief in the repo (`tools/second-reading-brief.md`, shaped by Q1); a command that prints one item's brief input; **calibration** — Codex reads the seven pairs `TheShapesWouldHaveExposedEveryItemRepairedByHand` holds as they stood at `v0.104.0`, mixed with seven current items, blind to which is which; the threshold of Q4 must hold before any real reading counts; then the first real second readings, script by script from the largest group (`parse_html.py` 14, `rendered_audit.py` 8, …), about 25 items | `docs/sprint-<date>-F03-2.md` | waits on Q1–Q4 |
 | 3 | Second readings, ~40 items, continuing script by script | `-F03-3.md` | — |
 | 4 | Second readings, ~40 items | `-F03-4.md` | — |
@@ -116,4 +116,10 @@ second reading. Batch 2 starts only once Q1–Q4 are answered.
 
 ## Open findings carried over
 
-(none yet)
+- Batch 1: Codex's review of `22c5f62` (gpt-6.1-sol, high, read-only): one medium (a non-string `reader`/`session`
+  passed and was counted current) and one low (the key-order test did not exercise `sort_keys`), both fixed red-first
+  in `f084a3a`. The follow-up `062830b` was not re-reviewed: it changes a test's subprocess call to the suite's rules
+  and re-records `tests/derived-sets.json`. For the release CHANGELOG: no verdict moves; `audit_item_readings.py`
+  gains the `second_reading` record, `--digest`, and a summary line.
+- `make check` cannot exit 0 while a feature is `active` (its last gate, `make vcr`, fails by design); batches report
+  `ci_local` and `check-arch`, as F05's did.
