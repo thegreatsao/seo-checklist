@@ -132,8 +132,9 @@ class TheSafeBrowsingStandInIsReadOnlyOffline(unittest.TestCase):
         url, kwargs = self.asked({"SEO_LOOPBACK_ONLY": "1",
                                   "SEO_SAFE_BROWSING_STANDIN": self.STANDIN})
         self.assertEqual(url, self.STANDIN)
-        self.assertNotIn(self.KEY, json.dumps([url, kwargs.get("json"),
-                                               kwargs.get("headers")]))
+        # Every argument, not only the body and headers: `params` or `auth` would put
+        # the key on the stand-in's request as surely as the URL would (review of F05-4).
+        self.assertNotIn(self.KEY, json.dumps([url, kwargs], default=str))
 
     def test_any_other_process_asks_google_whatever_its_environment_says(self):
         url, _ = self.asked({"SEO_LOOPBACK_ONLY": "",
@@ -228,16 +229,27 @@ class TheTreesServeThem(unittest.TestCase):
             try:
                 with mock.patch.dict(os.environ, {
                         "SEO_VALIDATOR_STANDIN": site.base + NU_ROUTE,
-                        "SEO_SAFE_BROWSING_STANDIN": site.base + SB_ROUTE}):
+                        "SEO_SAFE_BROWSING_STANDIN": site.base + SB_ROUTE}), \
+                        mock.patch.object(html_validator, "safe_get",
+                                          wraps=html_validator.safe_get) as get, \
+                        mock.patch.object(html_validator, "safe_post",
+                                          wraps=html_validator.safe_post) as post:
                     page = site.base + "/"
-                    return {
-                        "served": html_validator.validate(page),
-                        "rendered": html_validator.validate(
-                            page, rendered_json=os.path.join(INPUTS, tree, "rendered.json")),
-                        "safety": dsc.check(page),
-                    }
+                    rendered = os.path.join(INPUTS, tree, "rendered.json")
+                    out = {"served": html_validator.validate(page),
+                           "rendered": html_validator.validate(page, rendered_json=rendered),
+                           "safety": dsc.check(page)}
             finally:
                 site.stop()
+        # The table answers GET and POST alike, so the method and the body are held
+        # here (review of F05-4): served mode names the page, rendered mode sends it.
+        self.assertEqual(get.call_count, 1)
+        self.assertIn("doc=", get.call_args.args[0])
+        self.assertEqual(post.call_count, 1)
+        with open(rendered, encoding="utf-8") as stream:
+            self.assertEqual(post.call_args.kwargs["data"],
+                             json.load(stream)["html"].encode("utf-8"))
+        return out
 
     def test_each_item_fails_on_flagged_and_passes_on_cleared(self):
         reads = {"CI-017": "served", "TE-181": "rendered",

@@ -406,7 +406,8 @@ class _Quiet(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         """A table route answers a POST too — the stand-in services take one (F05-4) —
         and any other POST is refused as `SimpleHTTPRequestHandler` always did. The body
-        is read first: with keep-alive an unread one becomes the next request line."""
+        is read first: this handler closes after each answer, and closing a socket with
+        the request body still unread can reset it under the answer."""
         length = int(self.headers.get("Content-Length") or 0)
         if length > 0:
             self.rfile.read(length)

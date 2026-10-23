@@ -2,7 +2,7 @@
   "/nu/": {
     "status": 200,
     "content_type": "application/json; charset=utf-8",
-    "body": "{\n  \"messages\": [\n    {\n      \"type\": \"error\",\n      \"lastLine\": 11,\n      \"lastColumn\": 16,\n      \"firstColumn\": 1,\n      \"message\": \"Duplicate ID “counter”.\",\n      \"extract\": \"</h1>\\n<p id=\\\"counter\\\">This \",\n      \"hiliteStart\": 6,\n      \"hiliteLength\": 16\n    },\n    {\n      \"type\": \"error\",\n      \"lastLine\": 16,\n      \"lastColumn\": 6,\n      \"firstColumn\": 1,\n      \"message\": \"Stray end tag “div”.\",\n      \"extract\": \"ess.</p>\\n</div>\\n</bod\",\n      \"hiliteStart\": 9,\n      \"hiliteLength\": 6\n    }\n  ]\n}"
+    "body": "{\n  \"messages\": [\n    {\n      \"type\": \"error\",\n      \"lastLine\": 11,\n      \"lastColumn\": 16,\n      \"firstColumn\": 1,\n      \"message\": \"Duplicate ID “counter”.\",\n      \"extract\": \"</h1>\\n<p id=\\\"counter\\\">This \",\n      \"hiliteStart\": 6,\n      \"hiliteLength\": 16\n    },\n    {\n      \"type\": \"info\",\n      \"lastLine\": 10,\n      \"lastColumn\": 17,\n      \"firstColumn\": 1,\n      \"message\": \"The first occurrence of ID “counter” was here.\",\n      \"extract\": \"<body>\\n<h1 id=\\\"counter\\\">Shape\",\n      \"hiliteStart\": 7,\n      \"hiliteLength\": 17\n    },\n    {\n      \"type\": \"error\",\n      \"lastLine\": 16,\n      \"lastColumn\": 6,\n      \"firstColumn\": 1,\n      \"message\": \"Stray end tag “div”.\",\n      \"extract\": \"ess.</p>\\n</div>\\n</bod\",\n      \"hiliteStart\": 9,\n      \"hiliteLength\": 6\n    }\n  ]\n}"
   },
   "/v4/threatMatches:find": {
     "status": 200,
