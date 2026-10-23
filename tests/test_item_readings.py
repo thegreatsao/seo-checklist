@@ -128,6 +128,122 @@ class EachWayAReadingFallsOutOfStep(unittest.TestCase):
         self.assertTrue(named(self.found(), "CI-005", "is not one of"))
 
 
+class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
+    """F03: a second reader's record sits in the entry it read, bound by a digest to what
+    it judged. A record that no longer matches is named; one that is absent or disputes
+    the first reading is counted, not named, until the plan's last batch."""
+
+    def setUp(self):
+        self.registry = copy.deepcopy(REGISTRY)
+        self.readings = copy.deepcopy(READINGS)
+        self.items = {i["id"]: i for i in self.registry["items"]}
+        self.entry = self.readings["items"]["TE-167"]
+        self.entry["second_reading"] = {
+            "reader": "codex gpt-6.1-sol high", "session": "s-1",
+            "read": R.digest(self.items["TE-167"], self.entry),
+            "verdict": self.entry["verdict"]}
+
+    def found(self):
+        return R.problems(self.registry, self.readings)
+
+    def test_a_current_record_is_no_problem_and_is_counted(self):
+        self.assertEqual(self.found(), [])
+        self.assertEqual(R.second_readings(self.registry, self.readings),
+                         {"current": 1, "agree": 1, "disputed": 0})
+
+    def test_the_digest_ignores_key_order_and_the_record_itself(self):
+        item = self.items["TE-167"]
+        before = R.digest(item, self.entry)
+        reordered = dict(reversed(list(self.entry.items())))
+        reordered.pop("second_reading")
+        self.assertEqual(R.digest(item, reordered), before)
+
+    def test_the_digest_moves_with_everything_the_second_reader_judged(self):
+        item = self.items["TE-167"]
+        before = R.digest(item, self.entry)
+        changes = (
+            ("title", lambda i, e: i.__setitem__("title", i["title"] + "!")),
+            ("check", lambda i, e: i["check"].__setitem__("args", ["{other}"])),
+            ("measures", lambda i, e: i.__setitem__("measures", i["measures"] + " More.")),
+            ("verdict", lambda i, e: e.__setitem__("verdict", "answers")),
+            ("reading", lambda i, e: e.__setitem__("reading", e["reading"] + " More.")),
+            ("shapes", lambda i, e: e.__setitem__("shapes", {"qualifier": "x"})),
+        )
+        for name, change in changes:
+            with self.subTest(name):
+                i, e = copy.deepcopy(item), copy.deepcopy(self.entry)
+                change(i, e)
+                self.assertNotEqual(R.digest(i, e), before)
+
+    def test_a_changed_reading_makes_the_record_stale(self):
+        self.entry["reading"] += " Amended."
+        self.assertTrue(named(self.found(), "TE-167", "changed under its second reading"))
+        self.assertEqual(R.second_readings(self.registry, self.readings)["current"], 0)
+
+    def test_a_changed_measures_sentence_makes_the_record_stale(self):
+        self.items["TE-167"]["measures"] += " Amended."
+        self.assertTrue(named(self.found(), "TE-167", "changed under its second reading"))
+
+    def test_each_malformed_record_is_named(self):
+        cases = (
+            ("not an object", "a string", "not an object"),
+            ("unknown key", {"agrees": True}, "carries keys"),
+            ("empty reader", {"reader": " "}, "no reader"),
+            ("no session", {"session": None}, "no session"),
+            ("no digest", {"read": ""}, "no read"),
+            ("unknown verdict", {"verdict": "fine"}, "is not one of"),
+        )
+        for name, change, words in cases:
+            with self.subTest(name):
+                record = copy.deepcopy(self.entry["second_reading"])
+                if isinstance(change, dict):
+                    record.update(change)
+                else:
+                    record = change
+                readings = copy.deepcopy(self.readings)
+                readings["items"]["TE-167"]["second_reading"] = record
+                self.assertTrue(named(R.problems(self.registry, readings), "TE-167", words))
+
+    def test_a_dispute_is_counted_and_not_a_problem(self):
+        for change in ({"verdict": "owed"}, {"dispute": "reads half the title"}):
+            with self.subTest(change):
+                readings = copy.deepcopy(self.readings)
+                readings["items"]["TE-167"]["second_reading"].update(change)
+                self.assertEqual(R.problems(self.registry, readings), [])
+                self.assertEqual(R.second_readings(self.registry, readings),
+                                 {"current": 1, "agree": 0, "disputed": 1})
+
+    def test_the_shipped_file_is_counted(self):
+        counts = R.second_readings(REGISTRY, READINGS)
+        self.assertEqual(counts, {"current": 0, "agree": 0, "disputed": 0})
+
+
+class TheDigestCommand(unittest.TestCase):
+    def run_tool(self, *args):
+        import subprocess
+        return subprocess.run(
+            [sys.executable, os.path.join(TOOLS, "audit_item_readings.py"), *args],
+            capture_output=True, text=True, encoding="utf-8")
+
+    def test_it_prints_the_digest_of_a_read_item(self):
+        done = self.run_tool("--digest", "TE-167")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        items = {i["id"]: i for i in REGISTRY["items"]}
+        self.assertEqual(done.stdout.strip(),
+                         R.digest(items["TE-167"], READINGS["items"]["TE-167"]))
+
+    def test_it_refuses_an_id_with_no_reading(self):
+        done = self.run_tool("--digest", "ZZ-999")
+        self.assertEqual(done.returncode, 1)
+        self.assertIn("ZZ-999", done.stdout + done.stderr)
+
+    def test_the_summary_counts_second_readings(self):
+        done = self.run_tool()
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn(f"second readings: 0 of {len(READINGS['items'])} current — 0 agree, "
+                      "0 disputed", done.stdout)
+
+
 class TheShapesAreTheFourTheRequirementNames(unittest.TestCase):
     """REG-6's scenarios name an adjacent subject, a weaker question and half a title;
     the four shapes are how a reading is made to answer each. Held here so a fifth, or a

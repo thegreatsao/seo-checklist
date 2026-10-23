@@ -16,6 +16,13 @@ copy, when the reading stops naming the path, when the `measures` verdict and th
 `measures` field disagree, or when a shape fires with no answer — or an answer is kept for
 a shape that no longer fires.
 
+An entry may also carry `second_reading`, the record of a second reader (F03; the plan is
+`docs/sprint-20261023-F03-plan.md`): who read it, the session that is the trace, its own
+verdict, an optional dispute, and `read`, the digest of what it judged — the item's title,
+check and `measures` sentence and the first reading's verdict, reading and shape answers.
+A malformed record, or one whose digest is no longer current, fails like a changed rule.
+A missing record and a dispute are counted, not failed, until the plan's last batch.
+
 What it does not do: judge meaning. A person decides whether a reading is true; this
 guarantees only that nothing changes under a reading unnoticed. It also cannot see a
 script whose field changes meaning under an unchanged path — the copy is of the registry,
@@ -24,6 +31,7 @@ is re-read by hand, or the build stays red.
 
     python tools/audit_item_readings.py           # summary
     python tools/audit_item_readings.py --check   # exit 1 naming every problem
+    python tools/audit_item_readings.py --digest CI-001   # what a second reading records as `read`
 """
 
 from __future__ import annotations
@@ -31,6 +39,7 @@ from __future__ import annotations
 import python_floor  # noqa: F401
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -42,6 +51,7 @@ REGISTRY = HERE.parent / "resources/config/checklist.json"
 READINGS = HERE / "item-readings.json"
 
 VERDICTS = ("answers", "measures", "owed")
+SECOND_READING = ("reader", "session", "read", "verdict", "dispute")
 
 # Title words naming a subject only an outside source holds, and the scripts that can
 # reach that source. GO-137 said *Indexed* and counted the crawl's own orphans; BL-083
@@ -76,11 +86,13 @@ from scope_line import print_scope  # noqa: E402
 ESTABLISHES = (
     "every rule-carrying item has a reading whose copy of its title and rule is "
     "current, which names the path the rule asserts and answers every shape that fires "
-    "on the item"
+    "on the item; every recorded second reading is of the reading as it now stands"
 )
 DOES_NOT_ESTABLISH = (
-    "that any reading is true, which a person decides, or that a script's field still "
-    "means what it meant when the reading was written"
+    "that any reading is true, which a person decides, that a script's field still "
+    "means what it meant when the reading was written, that every item has a second "
+    "reading, or that a second reader was independent of the first, which only the "
+    "session it names can show"
 )
 
 
@@ -125,6 +137,52 @@ def rule_items(registry: dict) -> dict[str, dict]:
             if (item.get("check") or {}).get("script")}
 
 
+def digest(item: dict, entry: dict) -> str:
+    """What a second reading judged: change any of it and the record is stale."""
+    judged = {"title": item["title"], "check": item["check"],
+              "measures": item.get("measures"), "verdict": entry.get("verdict"),
+              "reading": entry.get("reading"), "shapes": entry.get("shapes")}
+    text = json.dumps(judged, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+def _second_reading_problems(item_id: str, item: dict, entry: dict) -> list[str]:
+    record = entry["second_reading"]
+    if not isinstance(record, dict):
+        return [f"{item_id}: the second reading is not an object"]
+    out = []
+    extra = sorted(set(record) - set(SECOND_READING))
+    if extra:
+        out.append(f"{item_id}: the second reading carries keys it does not define: "
+                   + ", ".join(extra))
+    for key in ("reader", "session", "read"):
+        if not str(record.get(key) or "").strip():
+            out.append(f"{item_id}: the second reading has no {key}")
+    if record.get("verdict") not in VERDICTS:
+        out.append(f"{item_id}: second-reading verdict {record.get('verdict')!r} is not "
+                   f"one of {', '.join(VERDICTS)}")
+    if record.get("read") and record["read"] != digest(item, entry):
+        out.append(f"{item_id}: the reading changed under its second reading, which "
+                   "must be read again")
+    return out
+
+
+def second_readings(registry: dict, readings: dict) -> dict[str, int]:
+    """Current second readings, and how many of them agree with the first."""
+    items = rule_items(registry)
+    counts = {"current": 0, "agree": 0, "disputed": 0}
+    for item_id, entry in (readings.get("items") or {}).items():
+        record = entry.get("second_reading")
+        if (item_id not in items or not isinstance(record, dict)
+                or _second_reading_problems(item_id, items[item_id], entry)):
+            continue
+        counts["current"] += 1
+        agrees = (record["verdict"] == entry.get("verdict")
+                  and not str(record.get("dispute") or "").strip())
+        counts["agree" if agrees else "disputed"] += 1
+    return counts
+
+
 def problems(registry: dict, readings: dict) -> list[str]:
     """Every way the recorded readings fail to describe the registry, one line each."""
     items = rule_items(registry)
@@ -157,6 +215,8 @@ def problems(registry: dict, readings: dict) -> list[str]:
                            "answer it")
         for shape in sorted(set(answers) - shapes):
             out.append(f"{item_id}: an answer for the {shape} shape, which no longer fires")
+        if "second_reading" in entry:
+            out.extend(_second_reading_problems(item_id, item, entry))
     return out
 
 
@@ -168,8 +228,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true",
                         help="exit 1 and name every problem")
+    parser.add_argument("--digest", metavar="ID",
+                        help="print the digest a second reading of ID records as `read`")
     args = parser.parse_args()
     registry, readings = load(REGISTRY), load(READINGS)
+    if args.digest:
+        item = rule_items(registry).get(args.digest)
+        entry = (readings.get("items") or {}).get(args.digest)
+        if item is None or entry is None:
+            print(f"{args.digest}: no reading of a rule-carrying item by that id")
+            return 1
+        print(digest(item, entry))
+        return 0
     found = problems(registry, readings)
     if found:
         for line in found:
@@ -189,6 +259,9 @@ def main() -> int:
     print("owed: " + ", ".join(sorted(k for k, e in entries.items()
                                       if e["verdict"] == "owed")))
     print("shapes: " + ", ".join(f"{shapes[s]} {s}" for s in SHAPES))
+    second = second_readings(registry, readings)
+    print(f"second readings: {second['current']} of {len(entries)} current — "
+          f"{second['agree']} agree, {second['disputed']} disputed")
     print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
     return 0
 

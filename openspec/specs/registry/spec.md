@@ -324,7 +324,13 @@ at `v0.104.0`, which `tools/audit_item_semantics.py`'s word overlap passed. It s
 `partial` for one reason — no reading has been `owed` since 0.122.0 (A.10), and the
 audit prints that count on every run: whether a reading is
 true is still a person's judgement — the reader guarantees that nothing changes under one
-unnoticed, not that it was right.
+unnoticed, not that it was right. Since F03's first batch a reading can carry a
+`second_reading` — the reader, the session that is its trace, its own verdict, an
+optional dispute, and a digest of what it judged (title, rule, `measures`, and the first
+reading's verdict, reading and shape answers): a malformed record, or one whose digest is
+no longer current, fails like a changed rule, and the audit prints how many are current,
+agree and dispute. None is recorded yet, and a missing one fails nothing; the second
+reader is Codex (`docs/sprint-20261023-F03-plan.md`).
 
 **Repairing an item does not move this line, and 0.105.0 is the test of that.** CI-016
 and MD-186 stopped measuring something other than their title in that release, and
