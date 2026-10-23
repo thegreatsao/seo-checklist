@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.176.2 — see [CHANGELOG.md](CHANGELOG.md). Every partial requirement of the specification is held or narrowed to what is held (153 of 158 enforced, 1 partial, 4 bounded). A crawled page that gives no answer is asked again and, silent twice, withholds the PASS of the checks that pass by absence. The schema.org type sets come from a dated release, FAQPage and HowTo are retired, the hreflang codes are the IANA registry's, and a report whose language-model queue is unanswered says the audit is incomplete.
+Version 0.177.0 — see [CHANGELOG.md](CHANGELOG.md). Of the 145 script-backed assertions, `audit_reachability.py` now claims all but one either way: 2 proved unable to fail, as before, and 142 seen to fail in the recorded verdict census, which its CI job re-derives from runs (was 143 claimed neither way). The one left, SE-118, is the entry gate's. Seven new corpus trees make that possible, six of them serving recorded answers of PageSpeed Insights, the Nu HTML validator, Safe Browsing and Search Console on loopback, which the scripts ask only in a loopback-only test process. No verdict of a real audit moves.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
@@ -793,7 +793,7 @@ language, and the lowest Python in the CI matrix must be the floor `pyproject.to
 declares. CI runs the suite on 3.11, 3.13 and 3.14, the newest of them on Linux,
 macOS and Windows and the oldest on Linux and Windows, along with `ruff`, the gates and
 four offline end-to-end audits, and a job of its own re-takes the recorded verdict
-census over all twelve served trees and compares it with the one in the tree.
+census over all nineteen served trees and compares it with the one in the tree.
 
 **And the pair.** The whole registry is run against two served fixture sites — one
 satisfying as much of it as a static site can, one engineered to fail — and every

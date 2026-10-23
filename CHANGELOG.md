@@ -10,6 +10,68 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## 0.177.0 — every script-backed assertion but one is claimed either way: 142 seen to fail in the recorded census, 2 proved unable, 1 left (SE-118)
+
+Registry version: `abf465b3f75d`, unchanged. **No verdict of a real audit moves**: nothing an audit fetches, decides
+or prints changes unless the process is loopback-only (`SEO_LOOPBACK_ONLY`, set by `tests/harness.py` and `ci.yml`,
+never by a real audit). What changes is what `tools/audit_reachability.py` can say, the verdict census it reads, and
+the outside services the census can now play on this machine. F05 (ROADMAP "What 1.0 requires", item 4), in five
+batches with a sprint contract each (`docs/sprint-20261023-F05-1.md` … `-5.md`, the plan in
+`docs/sprint-20261023-F05-plan.md`), each reviewed by a fresh-context agent before the next began.
+
+**`audit_reachability.py`: 145 script-backed assertions, 143 claimed neither way → 1.** Its four detectors prove only
+that a rule *cannot* report FAIL (2, TE-178 and TE-179, unchanged). A FAIL the runner gave on a served tree, through
+the registry's own arguments, is now the proof that it *can* (the owner's ruling): 142 are seen to fail in
+`tests/census.json`, which the census job (CI, and `ci_local`'s default jobs) re-derives from runs and compares on
+every run. The one left is **SE-118**, whose failure the entry gate hides (ROADMAP item 5). The summary line prints
+the three counts, and a rule both proved unable and seen to fail is reported as `contradicted`. REG-10 and DEC-12
+say so; README, ROADMAP and KNOWN-ISSUES carry the counts, held by `tests/test_prose_counts.py`.
+
+* **A FAIL the entry gate wrote is not counted.** CI-001, CI-003, CI-015 and TE-167 carry `entry_answer`, so the gate
+  can fail them without their assertion. The census now records `entry_gated`, the trees whose run reported
+  `entry_reachable: false`, and only a FAIL on a tree the gate did not stop is claimed; a census without the field
+  claims none of them.
+* **A clock item is claimed only where the tree is slow, not the machine.** `harness.SLOW_BY_CONSTRUCTION` names the
+  trees whose first byte is held back past every `CLOCK_READ` budget (`redirect-chain/`, 1000 ms against TECH-003's
+  800), the census holds TECH-003's FAIL there to the letter, and only there is it claimed. A harness that stops
+  naming either set stops the tool instead of reading it as empty.
+* **Seven corpus trees** (fifteen in all; the census serves nineteen with the four fixtures):
+  * `went-down/` — the entry redirects to the same server under its other loopback name, whose page answers once and
+    503 after, so TE-167's own uptime request fails where the gate let the run through. The fixture server's table
+    answers gain `then` (the answer from the second request on) and a `localhost` placeholder.
+  * `slow-field/` and `fast-field/` — a recorded PageSpeed Insights v5 answer, slow and fast: MB-095, SP-107, SP-108,
+    SP-111, SP-112, SP-113, SE-119.
+  * `flagged/` and `cleared/` — recorded Nu HTML Checker and Safe Browsing v4 answers, with and without findings:
+    CI-017, TE-181, SE-114, SE-116, TE-171. A table route answers a POST too.
+  * `unindexed/` and `indexed/` — recorded Search Console answers (Search Analytics, sitemaps, URL Inspection), left
+    out and indexed: CI-002, CI-010, GO-134, GO-135, GO-137, MS-023, KW-070, KW-071, GO-139. The census passes
+    `--gsc-property` from `_inputs/`; the server rewrites a URL-encoded placeholder and answers by the POSTed body
+    (`when`/`else`).
+* **Loopback stand-ins, honoured only under `SEO_LOOPBACK_ONLY`** (`checklist_runner.STAND_INS`, the HTTP
+  requirement's new scenario, GOV-7's paragraph): `pagespeed.py` asks `SEO_PAGESPEED_STANDIN` instead of Google,
+  `html_validator.py` `SEO_VALIDATOR_STANDIN` instead of the W3C, `domain_safety_check.py`
+  `SEO_SAFE_BROWSING_STANDIN`, without a key, instead of Safe Browsing, and the four Search Console scripts
+  `SEO_SEARCH_CONSOLE_STANDIN`, through a client `gsc_checker.build_service` returns before it checks the `gsc` extra
+  or opens a key file; the runner looks for no Search Console key while that stand-in plays. The guard refuses a
+  stand-in that is not this machine, and outside a loopback-only process the variables change nothing. The runner's
+  private-host gate lets those items answer on a loopback tree because the service they ask is on this machine too.
+  Each has its own test module (`test_pagespeed_standin`, `test_validator_and_safe_browsing_standins`,
+  `test_search_console_standin`) that holds no key, token or credential in any argument sent to a stand-in.
+* **The PageSpeed key goes to Google only** (the release review): `pagespeed.py` added `key` to whatever endpoint it
+  asked, and it reads the key from `~/.agentic-seo/.env` as well as the environment the suite clears, so every census
+  run on `slow-field/` and `fast-field/` on a machine with that file sent the key to the tree server on loopback. It
+  never left the machine; it now stays out of the stand-in's request, held by
+  `test_a_loopback_only_process_asks_the_stand_in_without_the_key`, red before the fix.
+* Filed, not fixed (each in its batch contract's Review, none moves a verdict): `observed_failures()` returns nothing
+  on a census of another registry, and `main()` reads the shipped census whatever `--registry` says; the console
+  prints CrUX's CLS percentile unscaled (`38` for 0.38); a Safe Browsing stand-in the guard refuses carries no
+  `error_kind`; `html_validator.py` counts Nu's warnings as info, so `summary.warnings` is always 0;
+  `check_safe_browsing` calls `resp.json()` unguarded; under the switch the public branch of
+  `domain_safety_check.check()` still resolves the host; a census URL carrying `user:pw@` would send that credential
+  to the stand-in, which is the audited loopback origin; a `when` route with no `else` resets instead of answering 404;
+  `env_loader` copies any line of a `.env` it finds into the environment, so a `.env` naming `SEO_LOOPBACK_ONLY` and a
+  stand-in would point that script at a local port (the release review; no key reaches a stand-in now).
+
 ## 0.176.2 — a threshold's file is named with forward slashes on Windows; the tripwire probe carries no path in its source
 
 Registry version: `abf465b3f75d`, unchanged. Nothing an audit fetches, decides or prints
