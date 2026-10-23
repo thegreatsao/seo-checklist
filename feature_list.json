@@ -133,8 +133,8 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "active",
-    "evidence": "",
+    "state": "passing",
+    "evidence": "commit f5149a6, verified 2026-10-23",
     "notes": "ROADMAP item 4. Spans sessions."
   },
   {

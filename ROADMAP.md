@@ -168,7 +168,8 @@ modules read; no number is bound by both. It is narrower than the ask it answers
    build, the protocol marked by section by Anton's ruling, and an unanswered model queue
    said on every surface.
 4. **The 1 unclaimed assertion**, reduced by extending the detectors
-   `audit_reachability.py` already has rather than by asserting reachability in prose
+   `audit_reachability.py` already has rather than by asserting reachability in prose —
+   done locally in F05, five batches, each with its contract, and not yet released
    (F05, `docs/sprint-20261023-F05-plan.md`; its five batches claimed the 142 the
    census saw fail, the second by recording which trees the entry gate stopped, naming
    the tree that is slow by construction, and serving `went-down/` for TE-167, the third

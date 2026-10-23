@@ -1,6 +1,6 @@
 # F05 plan — the unclaimed assertions, claimed by detectors, one batch per session
 
-**Feature:** F05 (ROADMAP "What 1.0 requires", item 4), state `active` from batch 1 until the last batch and the release.
+**Feature:** F05 (ROADMAP "What 1.0 requires", item 4), state `active` from batch 1, `passing` since batch 5's `make verify-feature F=F05` on `f5149a6`; the release is not done.
 **Rule from the owner (carried from F04):** one batch per session — a batch is finished with its review and fixes,
 committed, and the session stops; the next batch starts in a fresh session from this file. No version bump and no tag
 until the last batch. Heavy commands (`make test`, `make check`, `ci_local`, mutations, the reviewer's runs) run under
@@ -42,8 +42,8 @@ groups that no offline run reaches (D) get a run they can reach rather than an a
 | 2 | B (4) and A′ (1): verdict provenance in the census; a slow-by-construction tree | `docs/sprint-20261023-F05-2.md` | **done**: `fcb039e` (contract), `60ed85b` (code), `48fceed` (review: TE-167 by `went-down/`), this plan in the commit after it; 27 → 22 unclaimed; `make test` 2695 OK (6 skipped) and `ci_local` 27/27 on `48fceed` |
 | 3 | D1 (7): PageSpeed stand-in | `docs/sprint-20261023-F05-3.md` | **done**: `1e3a62f` (contract), `c53765d` (code), `4268584` (review fixes), this plan in the commit after it; 22 → 15 unclaimed; `make test` 2707 OK (6 skipped) and `ci_local` 27/27 on `4268584` |
 | 4 | D2 (5): validator and Safe Browsing stand-ins | `docs/sprint-20261023-F05-4.md` | **done**: `d73de17` (contract), `22b02a1` (code), `b32c0f6` (review fixes), this plan in the commit after it; 15 → 10 unclaimed; `make test` 2725 OK (6 skipped) on `22b02a1`; `ci_local` 27/27 on `b32c0f6` |
-| 5 | D3 (9): Search Console stand-in (may split 5a/5b) | — | not started |
-| release | version, CHANGELOG, README, tag, `make verify-feature F=F05`, rubric | — | not started |
+| 5 | D3 (9): Search Console stand-in (not split: one seam, `gsc_checker.build_service`) | `docs/sprint-20261023-F05-5.md` | **done**: `e6c9c16` (contract), `2845510` (code), `f5149a6` (review fixes), this plan in the commit after it; 10 → 1 unclaimed (SE-118); `make test` 2746 OK (6 skipped) and `ci_local` 27/27 on `f5149a6` |
+| release | version, CHANGELOG, README, tag | — | `make verify-feature F=F05` and the rubric done in batch 5 (F05 `passing`, evidence `f5149a6`); version, CHANGELOG, tag not started — Anton's call |
 
 ## Done criterion — decided by the owner, 2026-10-23 ("Ruling Q2: A")
 
@@ -82,3 +82,7 @@ as waiting on stand-in services.
   the census gains `flagged/` and `cleared/` and its server answers a table POST; see the batch-4 contract's last
   paragraph. Batch 5 can reuse `verdict_census.STANDIN_INPUTS` (one line per stand-in file) and `_Quiet.do_POST`;
   the Search Console scripts call `googleapiclient`, not `safe_http`, so their stand-in needs a different seam.
+- Batch 5: two low findings filed, not fixed (a census URL with userinfo would send its Basic credential to the
+  stand-in, the audited origin; a `when` answer with no `else` resets instead of 404). For the release CHANGELOG: no
+  verdict of a real audit moves; the census gains `unindexed/` and `indexed/`; see the batch-5 contract's last
+  paragraph. F05 is `passing` (verify-feature on `f5149a6`); the one unclaimed assertion is SE-118.
