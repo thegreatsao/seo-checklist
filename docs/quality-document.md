@@ -37,14 +37,14 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
-## `skills/seo-checklist/tools/` — graded 2026-10-23, F03 batch 1 (`audit_item_readings.py` only)
+## `skills/seo-checklist/tools/` — graded 2026-10-23, F03 batch 2 (`audit_item_readings.py` and `second-reading-brief.md` only)
 
 | Dimension | Grade | Basis |
 |---|---|---|
-| Verification passing | A | `tests.test_item_readings` 27/27; `--check` exit 0 in `ci_local` |
-| Agent understandable | A | the docstring says what the tool fails on and what it does not establish; the plan file carries F03's state |
+| Verification passing | A | `tests.test_item_readings` 41/41; `--check` exit 0 in `ci_local`; 9 of 9 batch-2 mutations red |
+| Agent understandable | B | the docstring says what the tool fails on and what it does not establish; the plan file carries F03's state; the brief does not yet show the code that produces the JSON a script like `rendered_audit.py` reads (batch 2's calibration) |
 | Test stability | A | pure functions over deep copies of the shipped files; one subprocess per CLI test |
 | Architecture boundaries | A | `make check-arch` 3/3 |
 | Code conventions | A | ruff clean; no command writes the readings file |
 
-Only this tool was read for the grade; the rest of `tools/` is not graded.
+Only these two files were read for the grade; the rest of `tools/` is not graded.
