@@ -1,0 +1,12 @@
+{
+  "/nu/": {
+    "status": 200,
+    "content_type": "application/json; charset=utf-8",
+    "body": "{\n  \"messages\": []\n}"
+  },
+  "/v4/threatMatches:find": {
+    "status": 200,
+    "content_type": "application/json; charset=UTF-8",
+    "body": "{}"
+  }
+}

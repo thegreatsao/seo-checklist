@@ -274,6 +274,59 @@ class ATreeCanNameAPageSpeedStandIn(unittest.TestCase):
                     self.assertIsNone(self.inputs(label).get("SEO_PAGESPEED_STANDIN"))
 
 
+class ATreeCanNameTheValidatorAndSafeBrowsingStandIns(unittest.TestCase):
+    """F05-4. `_inputs/<tree>/validator_standin.txt` and `safe_browsing_standin.txt` are
+    handed to the run as `SEO_VALIDATOR_STANDIN` and `SEO_SAFE_BROWSING_STANDIN`, pointed
+    at the bound port, and to no other tree's run."""
+
+    VARS = {"SEO_VALIDATOR_STANDIN": "http://127.0.0.1:4321/nu/",
+            "SEO_SAFE_BROWSING_STANDIN": "http://127.0.0.1:4321/v4/threatMatches:find"}
+
+    def inputs(self, label):
+        with tempfile.TemporaryDirectory() as workdir:
+            return verdict_census.corpus_inputs(label, "http://127.0.0.1:4321", workdir)[1]
+
+    def test_each_tree_that_names_them_is_pointed_at_its_own_port(self):
+        for label in ("flagged", "cleared"):
+            env = self.inputs(label)
+            for var, value in self.VARS.items():
+                with self.subTest(tree=label, var=var):
+                    self.assertEqual(env[var], value)
+
+    def test_no_other_tree_inherits_one(self):
+        with mock.patch.dict(os.environ, {var: "http://127.0.0.1:9/" for var in self.VARS}):
+            for label in ("page-sound", "slow-field"):
+                env = self.inputs(label)
+                for var in self.VARS:
+                    with self.subTest(tree=label, var=var):
+                        self.assertIsNone(env.get(var))
+
+
+class ATreeAnswersAPostFromItsTable(unittest.TestCase):
+    """F05-4. Rendered-mode validation and Safe Browsing both POST, and
+    `SimpleHTTPRequestHandler` answers no POST (501). A served tree answers one from its
+    `_answers.json` and refuses every other POST as before."""
+
+    def test_a_table_route_answers_and_nothing_else_does(self):
+        import requests
+        with tempfile.TemporaryDirectory() as workdir:
+            site = harness._Site(os.path.join(verdict_census.CORPUS, "flagged"),
+                                 os.path.join(workdir, "flagged"))
+            try:
+                with requests.Session() as session:
+                    session.trust_env = False
+                    answered = session.post(site.base + "/v4/threatMatches:find",
+                                            json={"threatInfo": {}}, timeout=5)
+                    refused = session.post(site.base + "/", data=b"x", timeout=5)
+                    after = session.get(site.base + "/", timeout=5)
+            finally:
+                site.stop()
+        self.assertEqual(answered.status_code, 200)
+        self.assertEqual(answered.json()["matches"][0]["threatType"], "SOCIAL_ENGINEERING")
+        self.assertEqual(refused.status_code, 501)
+        self.assertEqual(after.status_code, 200)
+
+
 class TheHarnessSaysWhatItCannotExercise(unittest.TestCase):
     """`openspec/specs/declarations/` DEC-13. An item that gave one answer everywhere is
     a question for a person, and what the mechanism cannot express has to be written

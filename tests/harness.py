@@ -403,6 +403,21 @@ class _Quiet(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *args):  # noqa: D102 - silence the access log
         pass
 
+    def do_POST(self):
+        """A table route answers a POST too — the stand-in services take one (F05-4) —
+        and any other POST is refused as `SimpleHTTPRequestHandler` always did. The body
+        is read first: with keep-alive an unread one becomes the next request line."""
+        length = int(self.headers.get("Content-Length") or 0)
+        if length > 0:
+            self.rfile.read(length)
+        if self.path.split("?", 1)[0] not in self.route_answers:
+            self.send_error(501, "Unsupported method ('POST')")
+            return
+        body = self.send_head()
+        if body is not None:
+            with body:
+                self.copyfile(body, self.wfile)
+
     def end_headers(self):
         for key, value in self.response_headers.items():
             self.send_header(key, value)
@@ -1292,7 +1307,8 @@ def offline_env(**extra) -> dict:
                                    "scripts"),
     })
     for key in ("GSC_CREDENTIALS_PATH", "GV_SA_KEY", "GOOGLE_SAFE_BROWSING_KEY",
-                "PAGESPEED_API_KEY", "INDEXNOW_KEY", "SEO_PAGESPEED_STANDIN"):
+                "PAGESPEED_API_KEY", "INDEXNOW_KEY", "SEO_PAGESPEED_STANDIN",
+                "SEO_VALIDATOR_STANDIN", "SEO_SAFE_BROWSING_STANDIN"):
         env.pop(key, None)
     env.update(extra)
     return with_tripwire(env)

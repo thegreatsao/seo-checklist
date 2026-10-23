@@ -83,8 +83,16 @@ the comment above each shape names its item.
   ways (F05). The census points the script at the tree's own answer through
   `SEO_PAGESPEED_STANDIN`, which the script and the runner read only in a loopback-only
   process; no real audit is one.
+- `flagged/` and `cleared/` — each also answers the Nu HTML Checker's path, `/nu/`, with a
+  recorded JSON answer and Safe Browsing's, `/v4/threatMatches:find`, with a recorded v4
+  answer (a table route answers a POST too): the first page has markup errors and a
+  listed address, the second neither, so `CI-017`, `TE-181`, `SE-114`, `SE-116` and
+  `TE-171` are seen both ways (F05). The census points `html_validator.py` and
+  `domain_safety_check.py` at them through `SEO_VALIDATOR_STANDIN` and
+  `SEO_SAFE_BROWSING_STANDIN`, read the same way; Safe Browsing's is asked without a key.
 
 `_inputs/<tree>/` holds what an operator would hand the run for that tree — the
 `ARTIFACT_FLAGS` files of `verdict_census.py`, an `indexnow_key`, and a
-`pagespeed_standin.txt` naming the PageSpeed stand-in the tree serves — outside the trees,
+`*_standin.txt` naming each stand-in the tree serves (`verdict_census.STANDIN_INPUTS`) —
+outside the trees,
 so nothing in it is ever served.

@@ -305,10 +305,17 @@ mutation: it reddens 22 sub-tests of the status assertion, and the denominator f
 #### Scenario: an outside service a loopback stand-in plays
 - **WHEN** the process is loopback-only (`SEO_LOOPBACK_ONLY`: the suite and CI, never a
   real audit) and a script's outside service is named by its stand-in variable
-  (`checklist_runner.STAND_INS`: `SEO_PAGESPEED_STANDIN` for `pagespeed.py`)
+  (`checklist_runner.STAND_INS`: `SEO_PAGESPEED_STANDIN` for `pagespeed.py`,
+  `SEO_VALIDATOR_STANDIN` for `html_validator.py`, `SEO_SAFE_BROWSING_STANDIN` for
+  `domain_safety_check.py`)
 - **THEN** that script's items answer for themselves on a private host, because the service
   they ask is on this machine too; the census serves PageSpeed so from `slow-field/` and
-  `fast-field/` (F05, `test_a_loopback_stand_in_answers_for_the_service_it_plays`)
+  `fast-field/`, the validator and Safe Browsing from `flagged/` and `cleared/` (F05,
+  `test_a_loopback_stand_in_answers_for_the_service_it_plays`)
+- **AND** the Safe Browsing stand-in is asked without a key and needs none, so its items
+  are not set aside for want of one (`test_a_safe_browsing_stand_in_needs_no_key`), and
+  `domain_safety_check.py` names the private host to it and to no one else
+  (`test_a_private_host_is_named_only_to_the_stand_in`)
 - **AND** outside a loopback-only process the variable changes nothing
 
 #### Scenario: the score is not lifted by what could not be seen

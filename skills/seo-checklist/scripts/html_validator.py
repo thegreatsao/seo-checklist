@@ -19,6 +19,7 @@ except ImportError:
 
 import argparse
 import json
+import os
 import sys
 import time
 from urllib.parse import urlencode
@@ -30,15 +31,22 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from lib.safe_http import (MAX_RETRY_AFTER_WAIT, default_headers, loopback_only,
-                               pace, retry_after_seconds)
+    from lib.safe_http import (MAX_RETRY_AFTER_WAIT, LoopbackOnly, default_headers,
+                               loopback_only, pace, retry_after_seconds, safe_get,
+                               safe_post)
     from lib.typed_credential import read_as_url
 except ImportError:
-    from scripts.lib.safe_http import (MAX_RETRY_AFTER_WAIT, default_headers,
-                                       loopback_only, pace, retry_after_seconds)
+    from scripts.lib.safe_http import (MAX_RETRY_AFTER_WAIT, LoopbackOnly,
+                                       default_headers, loopback_only, pace,
+                                       retry_after_seconds, safe_get, safe_post)
     from scripts.lib.typed_credential import read_as_url
 
 NU_ENDPOINT = "https://validator.w3.org/nu/"
+# The census's validator stand-in (F05-4): a corpus tree answering Nu's path with a
+# recorded JSON answer, so CI-017 and TE-181 are seen to fail by a run. Read only in a
+# loopback-only process, which the suite and CI are and no real audit is; asked through
+# the guard, which under the same switch refuses a stand-in that is not this machine.
+NU_STANDIN_ENV = "SEO_VALIDATOR_STANDIN"
 # basis: presentation — more than 10 validation warnings, present at import. It raises
 #  one `low` entry in `issues`; CI-017 and TE-181 read `summary.errors`, and warnings
 #  are advisory in Nu's own output, so it decides what is printed, never a verdict (F11;
@@ -77,6 +85,12 @@ def rendered_document(path: str) -> tuple[str | None, str | None]:
     return document, None
 
 
+def nu_standin() -> str:
+    """The census's stand-in for Nu, or "" — always "" outside a loopback-only process."""
+    standin = os.environ.get(NU_STANDIN_ENV, "").strip()
+    return standin if standin and loopback_only() else ""
+
+
 def validate(url: str, timeout: int = 45, rendered_json: str | None = None) -> dict:
     rendered = rendered_json is not None
     result = {
@@ -113,7 +127,13 @@ def validate(url: str, timeout: int = 45, rendered_json: str | None = None) -> d
     if rendered:
         headers["Content-Type"] = "text/html; charset=utf-8"
 
+    standin = nu_standin()
+
     def ask_nu():
+        if standin:
+            send = safe_post if rendered else safe_get
+            return send(f"{standin}?{query}", headers=headers, timeout=timeout,
+                        **({"data": document.encode("utf-8")} if rendered else {}))
         if rendered:
             return requests.post(f"{NU_ENDPOINT}?{query}",
                                  data=document.encode("utf-8"), headers=headers,
@@ -123,7 +143,7 @@ def validate(url: str, timeout: int = 45, rendered_json: str | None = None) -> d
     # Under `SEO_LOOPBACK_ONLY` — the suite and every CI step — the validator is a host
     # other than this machine. The guard below never sees this call, and until F04 the
     # suite and the live-path gate asked validator.w3.org on every run (GOV-7).
-    if loopback_only():
+    if loopback_only() and not standin:
         result["error"] = "validator not asked: loopback-only (SEO_LOOPBACK_ONLY)"
         result["error_kind"] = "blocked"
         return result
@@ -140,6 +160,11 @@ def validate(url: str, timeout: int = 45, rendered_json: str | None = None) -> d
             time.sleep(wait)
             pace("validator.w3.org")
             resp = ask_nu()
+    except LoopbackOnly as exc:
+        # A stand-in that is not this machine, refused by the guard before it was asked.
+        result["error"] = f"validator not asked: {exc}"
+        result["error_kind"] = "blocked"
+        return result
     except requests.RequestException as exc:
         # The validator is a service this check depends on. Whether it is unreachable,
         # answers with a status, answers with something that is not JSON, or declines

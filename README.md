@@ -618,9 +618,9 @@ mechanism other than the one proved. The third is the one an exemption list can
 never catch, and this repository has watched one rot in exactly that spot.
 
 It proves rather than surveys. Of 145 script-backed assertions, 2 are proved
-unable to fail, 128 are **seen to fail** — the recorded census, which its CI job
+unable to fail, 133 are **seen to fail** — the recorded census, which its CI job
 re-derives from runs, holds a FAIL the runner gave them through the registry's own
-arguments — and the other 15 are **not claimed either way**: the summary line prints
+arguments — and the other 10 are **not claimed either way**: the summary line prints
 that count instead of implying coverage it does not have.
 
 The same tool audits the other unreachable verdict. A `warn` band fires only when

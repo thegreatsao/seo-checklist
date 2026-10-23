@@ -2141,10 +2141,12 @@ NEEDS_THE_OUTSIDE_WORLD = {req for req, gates in REQUIREMENT_GATES.items()
 
 
 # The outside services a loopback stand-in can play, by the script that asks them, and the
-# variable naming the stand-in (F05-3). The census serves one and points the script at it.
-# The script reads the variable only in a loopback-only process, and so does `stood_in`,
-# so in a real audit nothing here applies.
-STAND_INS = {"pagespeed.py": "SEO_PAGESPEED_STANDIN"}
+# variable naming the stand-in (F05-3, F05-4). The census serves one and points the script
+# at it. The script reads the variable only in a loopback-only process, and so does
+# `stood_in`, so in a real audit nothing here applies.
+STAND_INS = {"pagespeed.py": "SEO_PAGESPEED_STANDIN",
+             "html_validator.py": "SEO_VALIDATOR_STANDIN",
+             "domain_safety_check.py": "SEO_SAFE_BROWSING_STANDIN"}
 
 
 def stood_in() -> set[str]:
@@ -2156,6 +2158,13 @@ def stood_in() -> set[str]:
     if not loopback_only():
         return set()
     return {script for script, var in STAND_INS.items() if os.environ.get(var, "").strip()}
+
+
+def safe_browsing_available() -> bool:
+    """A Safe Browsing key is set, or the census's stand-in plays the service, which
+    is asked without one (F05-4)."""
+    return (any(os.environ.get(key) for key in SAFE_BROWSING_ENV_KEYS)
+            or "domain_safety_check.py" in stood_in())
 
 
 def private_host_skips(items: list[dict], host: str,
@@ -4055,7 +4064,7 @@ def main() -> int:
 
     opt_in = opt_in_flags(mode, a.verify_bots, a.brand)
     secrets = artifact_secrets(ctx) + url_credential_secrets(userinfo)
-    has_safe_browsing = any(os.environ.get(key) for key in SAFE_BROWSING_ENV_KEYS)
+    has_safe_browsing = safe_browsing_available()
     prof_args = {k: list(v) for k, v in (profile.get("script_args") or {}).items()}
     plan, skipped = build_plan(items, ctx, caps, mode, preskip, bool(gsc_path),
                                rejected, opt_in, prof_args,

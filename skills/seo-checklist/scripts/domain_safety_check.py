@@ -41,12 +41,13 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from lib.safe_http import default_headers, is_private_host, loopback_only, safe_get
+    from lib.safe_http import (default_headers, is_private_host, loopback_only, safe_get,
+                               safe_post)
     from lib.typed_credential import read_as_url
     from seo_common import fetch_error_kind
 except ImportError:
     from scripts.lib.safe_http import (default_headers, is_private_host, loopback_only,
-                                       safe_get)
+                                       safe_get, safe_post)
     from scripts.lib.typed_credential import read_as_url
     from scripts.seo_common import fetch_error_kind
 
@@ -74,6 +75,12 @@ SLOW_RESPONSE_MS = 3000
 YOUNG_DOMAIN_DAYS = 90
 
 SB_ENDPOINT = "https://safebrowsing.googleapis.com/v4/threatMatches:find"
+# The census's Safe Browsing stand-in (F05-4): a corpus tree answering this API's path
+# with a recorded v4 answer, so SE-114, SE-116 and TE-171 are seen to fail by a run. Read
+# only in a loopback-only process, which the suite and CI are and no real audit is;
+# asked through the guard, which under the same switch refuses a stand-in that is not
+# this machine, and asked without a key, which it neither needs nor gets.
+SB_STANDIN_ENV = "SEO_SAFE_BROWSING_STANDIN"
 REDACTED = "<redacted>"
 SB_THREAT_TYPES = ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE",
                    "POTENTIALLY_HARMFUL_APPLICATION"]
@@ -102,13 +109,21 @@ def check_uptime(url: str, timeout: int) -> dict:
     return out
 
 
+def sb_standin() -> str:
+    """The census's stand-in for Safe Browsing, or "" — always "" outside a loopback-only
+    process."""
+    standin = os.environ.get(SB_STANDIN_ENV, "").strip()
+    return standin if standin and loopback_only() else ""
+
+
 def check_safe_browsing(url: str, api_key: str, timeout: int) -> dict:
     """Without a key the verdict keys are omitted entirely, so the checklist
     reports NO_DATA rather than a clean bill of health."""
-    if not api_key:
+    standin = sb_standin()
+    if not api_key and not standin:
         return {"checked": False,
                 "error": "no API key (set GOOGLE_SAFE_BROWSING_KEY)"}
-    if loopback_only():
+    if loopback_only() and not standin:
         # A fixed service, called without the guard (GOV-7): under the switch it is a
         # host other than this machine, and the key does not change that.
         return {"checked": False,
@@ -122,14 +137,19 @@ def check_safe_browsing(url: str, api_key: str, timeout: int) -> dict:
             "threatEntries": [{"url": url}],
         },
     }
+    headers = default_headers({"Content-Type": "application/json"})
     try:
-        resp = requests.post(f"{SB_ENDPOINT}?key={api_key}", json=body,
-                             headers=default_headers({"Content-Type": "application/json"}),
-                             timeout=timeout)
+        if standin:
+            resp = safe_post(standin, json=body, headers=headers, timeout=timeout)
+        else:
+            resp = requests.post(f"{SB_ENDPOINT}?key={api_key}", json=body,
+                                 headers=headers, timeout=timeout)
     except requests.RequestException as exc:
         # requests includes the complete request URL in connection errors, including
         # its key query parameter. Nothing returned by this function may carry it.
-        error = f"Safe Browsing unreachable: {exc}".replace(api_key, REDACTED)
+        error = f"Safe Browsing unreachable: {exc}"
+        if api_key:
+            error = error.replace(api_key, REDACTED)
         return {"checked": False, "error": error[:200]}
 
     if resp.status_code != 200:
@@ -255,7 +275,10 @@ def check(url: str, timeout: int = 20) -> dict:
         private = "not asked: the host is only reachable from here"
         result = {"url": url, "domain": domain,
                   "uptime": check_uptime(url, timeout),
-                  "safe_browsing": {"checked": False, "error": private},
+                  # Unless the census's stand-in plays it, which is this machine too.
+                  "safe_browsing": (check_safe_browsing(url, api_key, timeout)
+                                    if sb_standin() else
+                                    {"checked": False, "error": private}),
                   "whois": {"checked": False, "created": None, "registrar": None,
                             "error": private},
                   "neighbors": {"checked": False, "ip": None, "error": private},

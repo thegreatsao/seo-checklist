@@ -601,6 +601,18 @@ class AFailTheCensusSawIsAClaim(unittest.TestCase):
                 with self.subTest(item=item["id"]):
                     self.assertIn("slow-field", seen.get(item["id"], {}).get("trees", []))
 
+    def test_every_validator_and_safe_browsing_rule_is_claimed_from_flagged(self):
+        """F05-4. Offline the switch keeps validator.w3.org and Safe Browsing from being
+        asked; `flagged/` serves both on loopback, which the scripts read only in a
+        loopback-only process, and each item fails there."""
+        seen = R.observed_failures()
+        for item in R.script_backed(DATA):
+            check = item["check"]
+            if (check["script"] == "html_validator.py"
+                    or check.get("requires") == "safe_browsing"):
+                with self.subTest(item=item["id"]):
+                    self.assertIn("flagged", seen.get(item["id"], {}).get("trees", []))
+
     def test_every_fail_the_oracle_declares_is_claimed(self):
         """The oracle's FAILs are re-run by `make test`, the census's only by its own
         job; an oracle FAIL left unclaimed would mean the detector misreads the census."""

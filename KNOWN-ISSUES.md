@@ -748,7 +748,7 @@ name. A column called `url` would be read as "fix this page".
   of a defect is not evidence the defect is still there**, and this one read as open
   through every audit of this file until somebody ran the detector it asked for. Since
   F05 `audit_reachability.py` claims reachability only from a run — a FAIL the recorded
-  census saw — and 15 of 145 script-backed assertions are still not claimed either way;
+  census saw — and 10 of 145 script-backed assertions are still not claimed either way;
   that number is the honest measure of how much of the registry this tool speaks about.
   <!-- ki: items-that-could-not-fail -->
 

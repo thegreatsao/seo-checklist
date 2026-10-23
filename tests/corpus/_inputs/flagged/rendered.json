@@ -1,0 +1,5 @@
+{
+ "url": "http://127.0.0.1:8000/",
+ "source": "hand-written corpus input, not a browser measurement: the served page exactly, for TE-181",
+ "html": "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>Shape Street Bakery, flagged by two services</title>\n<meta name=\"description\" content=\"A page whose markup the W3C validator rejects and whose address Safe Browsing lists, both answered by this tree.\">\n</head>\n<body>\n<h1 id=\"counter\">Shape Street Bakery</h1>\n<p id=\"counter\">This tree also answers the Nu HTML Checker's path, `/nu/`, and Safe Browsing's,\n`/v4/threatMatches:find`, from `_answers.json`: the validator reports this page's markup\nerrors and Safe Browsing lists its address. The census points `html_validator.py` and\n`domain_safety_check.py` at them (`_inputs/flagged/`), which read them only in a\nloopback-only process.</p>\n</div>\n</body>\n</html>\n"
+}

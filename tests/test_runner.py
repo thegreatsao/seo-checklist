@@ -816,8 +816,35 @@ class PrivateAddresses(unittest.TestCase):
                              ["SE-114", "SP-108"])
 
     def test_the_runner_and_the_script_name_the_same_stand_in(self):
+        import domain_safety_check
+        import html_validator
         import pagespeed
-        self.assertEqual(runner.STAND_INS, {"pagespeed.py": pagespeed.PSI_STANDIN_ENV})
+        self.assertEqual(runner.STAND_INS, {
+            "pagespeed.py": pagespeed.PSI_STANDIN_ENV,
+            "html_validator.py": html_validator.NU_STANDIN_ENV,
+            "domain_safety_check.py": domain_safety_check.SB_STANDIN_ENV})
+
+    def test_a_safe_browsing_stand_in_needs_no_key(self):
+        """F05-4. `flagged/` and `cleared/` serve Safe Browsing's own path, asked without
+        a key, so the items reading it pass both the private-host gate and the key gate
+        that would otherwise ask the operator for GOOGLE_SAFE_BROWSING_KEY. Only in a
+        loopback-only process: elsewhere the variable changes nothing."""
+        items = [i for i in harness.registry()["items"]
+                 if i["id"] in ("SE-114", "CI-017", "TE-167")]
+        standin = {"SEO_SAFE_BROWSING_STANDIN": "http://127.0.0.1:9/v4/threatMatches:find",
+                   "SEO_VALIDATOR_STANDIN": "http://127.0.0.1:9/nu/",
+                   "GOOGLE_SAFE_BROWSING_KEY": "", "SAFE_BROWSING_API_KEY": ""}
+        with mock.patch.dict(os.environ, dict(standin, SEO_LOOPBACK_ONLY="1")):
+            self.assertEqual(private_host_skips(items, "127.0.0.1:8000"), {})
+            self.assertIs(runner.safe_browsing_available(), True)
+        with mock.patch.dict(os.environ, dict(standin, SEO_LOOPBACK_ONLY="")):
+            self.assertEqual(sorted(private_host_skips(items, "127.0.0.1:8000")),
+                             ["CI-017", "SE-114"])
+            self.assertIs(runner.safe_browsing_available(), False)
+        with mock.patch.dict(os.environ, {"SEO_LOOPBACK_ONLY": "",
+                                          "SEO_SAFE_BROWSING_STANDIN": "",
+                                          "GOOGLE_SAFE_BROWSING_KEY": "set"}):
+            self.assertIs(runner.safe_browsing_available(), True)
 
     def test_the_flag_alone_does_not_make_a_host_private(self):
         """`is_private_host` answers where the host resolves, not what was permitted.

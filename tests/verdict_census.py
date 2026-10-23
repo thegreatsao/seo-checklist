@@ -62,12 +62,17 @@ FIXTURES = os.path.join(ROOT, "tests", "fixtures")
 CORPUS = os.path.join(ROOT, "tests", "corpus")
 # A corpus tree's operator-supplied inputs, beside the trees rather than in them so they
 # are never served: `_inputs/<tree>/` holds any of the `ARTIFACT_FLAGS` files,
-# `indexnow_key` for the key an operator sets in INDEXNOW_KEY (F06), and
-# `pagespeed_standin.txt` for the address of a PageSpeed stand-in the tree serves
-# (F05-3). Without these the items that read an artifact or a key could answer on no
-# corpus tree, which is the first census's mistake again: a statement about the
-# instrument, not the registry.
+# `indexnow_key` for the key an operator sets in INDEXNOW_KEY (F06), and a
+# `*_standin.txt` for the address of each stand-in service the tree serves
+# (`STANDIN_INPUTS`, F05-3 and F05-4). Without these the items that read an artifact or
+# a key could answer on no corpus tree, which is the first census's mistake again: a
+# statement about the instrument, not the registry.
 INPUTS = os.path.join(CORPUS, "_inputs")
+# Each `_inputs/<tree>/` file naming a stand-in the tree serves, and the variable the
+# census hands it to the run as.
+STANDIN_INPUTS = (("pagespeed_standin.txt", "SEO_PAGESPEED_STANDIN"),
+                  ("validator_standin.txt", "SEO_VALIDATOR_STANDIN"),
+                  ("safe_browsing_standin.txt", "SEO_SAFE_BROWSING_STANDIN"))
 
 # The keyword an operator would supply. One word for every site, as an operator has
 # one site in mind — see `test_fixture_oracle.KEYWORD` for why passing one at all had
@@ -103,12 +108,13 @@ def corpus_inputs(label: str, base: str, workdir: str) -> tuple[list[str], dict]
     if os.path.exists(key):
         with open(key, encoding="utf-8") as stream:
             extra["INDEXNOW_KEY"] = stream.read().strip()
-    # The address of a PageSpeed stand-in the tree serves, which `pagespeed.py` asks
-    # instead of Google in a loopback-only process (F05-3).
-    standin = os.path.join(staged, "pagespeed_standin.txt")
-    if os.path.exists(standin):
-        with open(standin, encoding="utf-8") as stream:
-            extra["SEO_PAGESPEED_STANDIN"] = stream.read().strip()
+    # The address of each stand-in the tree serves, which its script asks instead of the
+    # real service in a loopback-only process (F05-3, F05-4).
+    for filename, var in STANDIN_INPUTS:
+        standin = os.path.join(staged, filename)
+        if os.path.exists(standin):
+            with open(standin, encoding="utf-8") as stream:
+                extra[var] = stream.read().strip()
     return flags, offline_env(**extra)
 
 
