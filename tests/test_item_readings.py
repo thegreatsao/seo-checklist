@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import subprocess
 import sys
 import unittest
 
@@ -226,6 +227,11 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
                 self.assertEqual(R.second_readings(self.registry, readings),
                                  {"current": 1, "agree": 0, "disputed": 1})
 
+    def test_the_record_defines_the_five_keys_the_plan_names(self):
+        """A sixth key is a decision about what a second reading says, not a drift."""
+        self.assertEqual(set(R.SECOND_READING),
+                         {"reader", "session", "read", "verdict", "dispute"})
+
     def test_the_shipped_file_is_counted(self):
         counts = R.second_readings(REGISTRY, READINGS)
         self.assertEqual(counts, {"current": 0, "agree": 0, "disputed": 0})
@@ -233,10 +239,10 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
 
 class TheDigestCommand(unittest.TestCase):
     def run_tool(self, *args):
-        import subprocess
         return subprocess.run(
             [sys.executable, os.path.join(TOOLS, "audit_item_readings.py"), *args],
-            capture_output=True, text=True, encoding="utf-8")
+            capture_output=True, encoding="utf-8",
+            env=dict(os.environ, PYTHONIOENCODING="utf-8"), close_fds=False)
 
     def test_it_prints_the_digest_of_a_read_item(self):
         done = self.run_tool("--digest", "TE-167")
