@@ -38,7 +38,7 @@ groups that no offline run reaches (D) get a run they can reach rather than an a
 
 | batch | groups | contract | state |
 |---|---|---|---|
-| 1 | A (116): `observed_failures`, the contradiction check, summary line, prose counts, REG-10 | `docs/sprint-20261023-F05-1.md` | **in progress** |
+| 1 | A (116): `observed_failures`, the contradiction check, summary line, prose counts, REG-10 | `docs/sprint-20261023-F05-1.md` | **done**: `9f62895` (active + plan + contract), `f01fff8` (code), `3189206` (review fixes), this plan in the commit after it; 143 → 27 unclaimed; `make test` 2685 OK (6 skipped) on `f01fff8`; `ci_local` 27/27 on `3189206` |
 | 2 | B (4) and A′ (1): verdict provenance in the census; a slow-by-construction tree | — | not started |
 | 3 | D1 (7): PageSpeed stand-in | — | not started |
 | 4 | D2 (5): validator and Safe Browsing stand-ins | — | not started |
@@ -64,4 +64,6 @@ as waiting on stand-in services.
 
 ## Open findings carried over
 
-- none yet.
+- Batch 1 (filed in its contract's Review): `main()` reads the shipped census and harness whatever `--registry` says;
+  `observed_failures()` returns `{}` silently on a census of another registry (the suite reddens, the tool's step
+  does not). For the release CHANGELOG: no verdict moves; see the contract's last paragraph.
