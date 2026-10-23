@@ -340,7 +340,9 @@ class TheReadOnlyCommands(unittest.TestCase):
             with self.subTest(flag):
                 done = self.run_tool(flag, "CN-065", "ZZ-999")
                 self.assertEqual(done.returncode, 1)
-                self.assertIn("ZZ-999", done.stdout + done.stderr)
+                # Refused, not crashed: a KeyError also exits 1 and names the id.
+                self.assertIn("ZZ-999: no reading", done.stdout)
+                self.assertEqual(done.stderr, "")
 
 
 class TheShapesAreTheFourTheRequirementNames(unittest.TestCase):
