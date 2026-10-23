@@ -55,6 +55,7 @@ as waiting on stand-in services.
 
 ## Decisions already made
 
+- **A FAIL the recorded census saw is F05's reachability proof** (the owner, 2026-10-23, "Ruling Q1: A"): batch 1 stays as built; later batches claim their groups by a run the census can reach, not by a source argument.
 - One batch per session, the plan file carries state (the owner's F04 rule, carried by the starting session).
 - Only `make verify-feature F=F05` writes `passing`.
 - Review is a separate Claude agent with a fresh context, read-only, in its own scratchpad subdirectory (`fable` stays
