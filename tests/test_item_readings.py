@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 import unittest
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(ROOT, "skills", "seo-checklist", "tools")
@@ -25,6 +26,13 @@ READINGS = R.load(R.READINGS)
 # The suite's switches and tripwire, also when this module runs alone (GOV-7).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import harness  # noqa: E402,F401
+
+
+def item_lines(text: str) -> list[str]:
+    """The lines of a blind input's items that are not one of its three fields."""
+    head = text.split("### Script ", 1)[0]
+    return [line for line in head.splitlines() if line and not line.startswith(
+        ("### Item ", "Title: ", "Check: ", "Measures: "))]
 
 
 def named(problems: list[str], item_id: str, words: str) -> bool:
@@ -289,8 +297,21 @@ class WhatTheSecondReaderIsShown(unittest.TestCase):
 
     def test_each_script_once(self):
         text = self.blind("CN-065", "CN-066", "CN-036")
-        self.assertEqual(text.count("### Script parse_html.py"), 1)
-        self.assertEqual(text.count("### Script rendered_audit.py"), 1)
+        for script in ("parse_html.py", "rendered_audit.py"):
+            self.assertEqual(text.count(f"### Script {script}"), 1)
+            # Codex's review of the batch: only the first script's source was read.
+            with open(os.path.join(R.SCRIPTS, script), encoding="utf-8") as f:
+                self.assertIn(f.read().rstrip("\n"), text)
+
+    def test_an_item_is_its_title_check_and_measures_and_nothing_else(self):
+        """Codex's review of the batch: a first verdict added to the item passed every
+        test, because only the reading's text and shape answers were looked for."""
+        text = self.blind("CN-065", "CN-036")
+        self.assertEqual(item_lines(text), [])
+
+    def test_it_does_not_read_the_readings_file(self):
+        with mock.patch.object(R, "load", side_effect=AssertionError("read")):
+            self.blind("CN-065")
 
     def test_nothing_of_the_first_reading(self):
         for item_id, entry in READINGS["items"].items():
@@ -307,6 +328,13 @@ class WhatTheSecondReaderIsShown(unittest.TestCase):
         self.assertIn(entry["reading"], text)
         for answer in entry["shapes"].values():
             self.assertIn(answer, text)
+
+    def test_the_brief_resumes_where_it_started(self):
+        """Codex's review of the batch: the resume step outside a git checkout needs the
+        same `--skip-git-repo-check` as the first, or codex refuses to run it."""
+        with open(R.BRIEF, encoding="utf-8") as f:
+            recipe = f.read().split("## How this brief is run", 1)[1]
+        self.assertEqual(recipe.count("--skip-git-repo-check"), 2)
 
     def test_the_brief_names_both_passes_and_the_three_verdicts(self):
         with open(R.BRIEF, encoding="utf-8") as f:
@@ -329,11 +357,20 @@ class TheReadOnlyCommands(unittest.TestCase):
         self.assertIn("### Item CN-066", done.stdout)
         self.assertEqual(done.stdout.count("### Script parse_html.py"), 1)
         self.assertNotIn(READINGS["items"]["CN-065"]["reading"], done.stdout)
+        self.assertEqual(item_lines(done.stdout), [])
 
     def test_open_prints_each_first_reading(self):
         done = self.run_tool("--open", "CN-065")
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertIn(READINGS["items"]["CN-065"]["reading"], done.stdout)
+
+    def test_one_command_at_a_time(self):
+        """Codex's review of the batch: `--blind` silently won over `--open ZZ-999`."""
+        for other in (("--open", "ZZ-999"), ("--digest", "ZZ-999")):
+            with self.subTest(other[0]):
+                done = self.run_tool("--blind", "CN-065", *other)
+                self.assertEqual(done.returncode, 2)
+                self.assertIn("not allowed with", done.stderr)
 
     def test_both_refuse_an_id_with_no_reading(self):
         for flag in ("--blind", "--open"):

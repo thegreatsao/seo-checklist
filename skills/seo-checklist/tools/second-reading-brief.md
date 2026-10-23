@@ -24,8 +24,9 @@ Give each item one verdict:
 
 - `answers` — the asserted path decides the title's question: on a site where the check applies, PASS means the site
   does what the title asks and FAIL means it does not, for the pages the check reads.
-- `measures` — the rule decides a narrower question than the title, and the item's `measures` sentence states
-  accurately what it decides instead. Only an item that carries a `measures` sentence can get this verdict.
+- `measures` — the rule decides a narrower or a different question than the title asks, and the item's `measures`
+  sentence states accurately what it decides and where that falls short of the title. Only an item that carries a
+  `measures` sentence can get this verdict.
 - `owed` — neither: the rule decides something other than, or less than, the title asks, and no accurate `measures`
   sentence covers the gap. The item needs repair.
 
@@ -68,8 +69,9 @@ Not sent to the reader. The blind prompt is this file up to `## Open pass` follo
 `audit_item_readings.py --blind ID ...`; the open prompt, sent by resuming the same Codex session, is the section
 `## Open pass` followed by `audit_item_readings.py --open ID ...`. The run:
 `codex exec -m gpt-6.1-sol -c model_reasoning_effort=high -s read-only --skip-git-repo-check -C <a copy of
-skills/seo-checklist/scripts/> -o <answer file> - < <prompt file>`, then `codex exec resume <session id> -o <answer
-file> - < <open prompt file>`. The copy holds no readings, tests, docs or history. Each answer is entered by hand into
+skills/seo-checklist/scripts/> -o <answer file> - < <prompt file>`, then, from that same copy as the working directory, `codex exec resume
+--skip-git-repo-check <session id> -m gpt-6.1-sol -c model_reasoning_effort=high -o <answer file> - < <open prompt
+file>` (`resume` takes no `-C` or `-s`; the session keeps its read-only sandbox). The copy holds no readings, tests, docs or history. Each answer is entered by hand into
 `item-readings.json` as the entry's `second_reading` (plan: `docs/sprint-20261023-F03-plan.md`): `reader` `codex
 gpt-6.1-sol high`, `session` the Codex session id, `verdict` the blind verdict, `dispute` the open pass's when it is
 not `none`, `read` from `audit_item_readings.py --digest ID`.

@@ -263,12 +263,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true",
                         help="exit 1 and name every problem")
-    parser.add_argument("--digest", metavar="ID",
-                        help="print the digest a second reading of ID records as `read`")
-    parser.add_argument("--blind", metavar="ID", nargs="+",
-                        help="print what the second reader of these items is shown first")
-    parser.add_argument("--open", metavar="ID", nargs="+",
-                        help="print the first readings it is shown after its own verdict")
+    one = parser.add_mutually_exclusive_group()
+    one.add_argument("--digest", metavar="ID",
+                     help="print the digest a second reading of ID records as `read`")
+    one.add_argument("--blind", metavar="ID", nargs="+",
+                     help="print what the second reader of these items is shown first")
+    one.add_argument("--open", metavar="ID", nargs="+",
+                     help="print the first readings it is shown after its own verdict")
     args = parser.parse_args()
     registry, readings = load(REGISTRY), load(READINGS)
     if args.blind or args.open:
