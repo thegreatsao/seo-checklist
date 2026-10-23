@@ -45,7 +45,7 @@ groups that no offline run reaches (D) get a run they can reach rather than an a
 | 5 | D3 (9): Search Console stand-in (may split 5a/5b) | — | not started |
 | release | version, CHANGELOG, README, tag, `make verify-feature F=F05`, rubric | — | not started |
 
-## Proposed done criterion — PROPOSED, for Anton
+## Done criterion — decided by the owner, 2026-10-23 ("Ruling Q2: A")
 
 **F05 is done when `audit_reachability.py` prints at most 1 unclaimed assertion, and that one is SE-118 (ROADMAP item
 5's).** Every claim is derived on each run from a record a gate re-derives (the census) or from source (the four
@@ -56,6 +56,7 @@ as waiting on stand-in services.
 ## Decisions already made
 
 - **A FAIL the recorded census saw is F05's reachability proof** (the owner, 2026-10-23, "Ruling Q1: A"): batch 1 stays as built; later batches claim their groups by a run the census can reach, not by a source argument.
+- **F05 is done at ≤1 unclaimed, and that one is SE-118** (the owner, 2026-10-23, "Ruling Q2: A"), with loopback stand-ins for PageSpeed, the HTML validator, Safe Browsing and Search Console in batches 3–5; the smaller alternative (stop at 22) is rejected.
 - One batch per session, the plan file carries state (the owner's F04 rule, carried by the starting session).
 - Only `make verify-feature F=F05` writes `passing`.
 - Review is a separate Claude agent with a fresh context, read-only, in its own scratchpad subdirectory (`fable` stays
