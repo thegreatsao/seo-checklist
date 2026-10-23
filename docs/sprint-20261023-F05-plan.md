@@ -39,7 +39,7 @@ groups that no offline run reaches (D) get a run they can reach rather than an a
 | batch | groups | contract | state |
 |---|---|---|---|
 | 1 | A (116): `observed_failures`, the contradiction check, summary line, prose counts, REG-10 | `docs/sprint-20261023-F05-1.md` | **done**: `9f62895` (active + plan + contract), `f01fff8` (code), `3189206` (review fixes), this plan in the commit after it; 143 → 27 unclaimed; `make test` 2685 OK (6 skipped) on `f01fff8`; `ci_local` 27/27 on `3189206` |
-| 2 | B (4) and A′ (1): verdict provenance in the census; a slow-by-construction tree | — | not started |
+| 2 | B (4) and A′ (1): verdict provenance in the census; a slow-by-construction tree | `docs/sprint-20261023-F05-2.md` | **done**: `fcb039e` (contract), `60ed85b` (code), `48fceed` (review: TE-167 by `went-down/`), this plan in the commit after it; 27 → 22 unclaimed; `make test` 2695 OK (6 skipped) and `ci_local` 27/27 on `48fceed` |
 | 3 | D1 (7): PageSpeed stand-in | — | not started |
 | 4 | D2 (5): validator and Safe Browsing stand-ins | — | not started |
 | 5 | D3 (9): Search Console stand-in (may split 5a/5b) | — | not started |
@@ -69,3 +69,5 @@ as waiting on stand-in services.
 - Batch 1 (filed in its contract's Review): `main()` reads the shipped census and harness whatever `--registry` says;
   `observed_failures()` returns `{}` silently on a census of another registry (the suite reddens, the tool's step
   does not). For the release CHANGELOG: no verdict moves; see the contract's last paragraph.
+- Batch 2: nothing open. For the release CHANGELOG: no runner verdict moves; the census gains `entry_gated` and
+  the `went-down/` tree; see the batch-2 contract's last paragraph.
