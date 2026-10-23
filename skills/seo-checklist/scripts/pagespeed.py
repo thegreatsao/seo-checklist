@@ -348,13 +348,16 @@ def get_pagespeed(url: str, strategy: str = "mobile", api_key: str = None) -> di
         "strategy": strategy,
         "category": "performance",
     }
-    if api_key:
+    endpoint = psi_endpoint()
+    # Only Google gets the key: a stand-in needs none, and the key may come from
+    # ~/.agentic-seo/.env, which the suite's environment does not clear.
+    if api_key and endpoint == PSI_API:
         params["key"] = api_key
 
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            resp = safe_get(psi_endpoint(), params=params, timeout=60)
+            resp = safe_get(endpoint, params=params, timeout=60)
 
             if resp.status_code == 429:
                 if attempt < max_retries - 1:

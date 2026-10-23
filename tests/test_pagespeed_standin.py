@@ -68,17 +68,20 @@ class TheStandInIsReadOnlyOffline(unittest.TestCase):
     """`SEO_LOOPBACK_ONLY` is the switch: set by `tests/harness.py` and `ci.yml`, never by
     the runner or the skill. Without it the variable is ignored and Google is asked."""
 
-    def asked(self, env: dict) -> str:
-        urls = []
+    KEY = "test-pagespeed-key"
 
-        def fake(url, **_kwargs):
-            urls.append(url)
+    def asked(self, env: dict, api_key: str | None = None) -> str:
+        calls = []
+
+        def fake(url, **kwargs):
+            calls.append((url, kwargs))
             raise pagespeed.requests.exceptions.ConnectionError("not asked")
 
         with mock.patch.dict(os.environ, env), \
                 mock.patch.object(pagespeed, "safe_get", side_effect=fake):
-            pagespeed.get_pagespeed("http://127.0.0.1:9/", "mobile")
-        return urls[0]
+            pagespeed.get_pagespeed("http://127.0.0.1:9/", "mobile", api_key=api_key)
+        self.kwargs = calls[0][1]
+        return calls[0][0]
 
     def test_a_loopback_only_process_asks_the_stand_in(self):
         standin = "http://127.0.0.1:9" + ROUTE
@@ -89,6 +92,21 @@ class TheStandInIsReadOnlyOffline(unittest.TestCase):
         self.assertEqual(self.asked({"SEO_LOOPBACK_ONLY": "",
                                      "SEO_PAGESPEED_STANDIN": "http://127.0.0.1:9" + ROUTE}),
                          pagespeed.PSI_API)
+
+    def test_a_loopback_only_process_asks_the_stand_in_without_the_key(self):
+        """The suite strips `PAGESPEED_API_KEY` from the environment, but the script also
+        reads `~/.agentic-seo/.env`, so a census run handed the owner's key to the tree
+        server (release review of 0.177.0). Every argument is read, as the Safe Browsing
+        and Search Console stand-ins' tests read theirs."""
+        standin = "http://127.0.0.1:9" + ROUTE
+        url = self.asked({"SEO_LOOPBACK_ONLY": "1", "SEO_PAGESPEED_STANDIN": standin},
+                         api_key=self.KEY)
+        self.assertEqual(url, standin)
+        self.assertNotIn(self.KEY, json.dumps([url, self.kwargs], default=str))
+
+    def test_google_is_still_asked_with_the_key(self):
+        self.asked({"SEO_LOOPBACK_ONLY": ""}, api_key=self.KEY)
+        self.assertEqual(self.kwargs["params"]["key"], self.KEY)
 
     def test_a_stand_in_that_is_not_this_machine_is_refused_not_asked(self):
         """The guard, not the script, keeps the stand-in on loopback: a name it
