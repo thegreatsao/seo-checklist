@@ -613,6 +613,16 @@ class AFailTheCensusSawIsAClaim(unittest.TestCase):
                 with self.subTest(item=item["id"]):
                     self.assertIn("flagged", seen.get(item["id"], {}).get("trees", []))
 
+    def test_every_search_console_rule_is_claimed_from_unindexed(self):
+        """F05-5. Offline the census had no key and every tree is private; `unindexed/`
+        serves Search Console's own paths on loopback, which `build_service` reads only
+        in a loopback-only process, and each item fails there."""
+        seen = R.observed_failures()
+        for item in R.script_backed(DATA):
+            if item["check"].get("requires") == "gsc":
+                with self.subTest(item=item["id"]):
+                    self.assertIn("unindexed", seen.get(item["id"], {}).get("trees", []))
+
     def test_every_fail_the_oracle_declares_is_claimed(self):
         """The oracle's FAILs are re-run by `make test`, the census's only by its own
         job; an oracle FAIL left unclaimed would mean the detector misreads the census."""

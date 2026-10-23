@@ -818,11 +818,17 @@ class PrivateAddresses(unittest.TestCase):
     def test_the_runner_and_the_script_name_the_same_stand_in(self):
         import domain_safety_check
         import html_validator
+        import gsc_checker
         import pagespeed
         self.assertEqual(runner.STAND_INS, {
             "pagespeed.py": pagespeed.PSI_STANDIN_ENV,
             "html_validator.py": html_validator.NU_STANDIN_ENV,
-            "domain_safety_check.py": domain_safety_check.SB_STANDIN_ENV})
+            "domain_safety_check.py": domain_safety_check.SB_STANDIN_ENV,
+            # One client for all four, built by `gsc_checker.build_service` (F05-5).
+            "gsc_checker.py": gsc_checker.GSC_STANDIN_ENV,
+            "gsc_url_inspection.py": gsc_checker.GSC_STANDIN_ENV,
+            "gsc_cannibalization.py": gsc_checker.GSC_STANDIN_ENV,
+            "gsc_sitemap_reconcile.py": gsc_checker.GSC_STANDIN_ENV})
 
     def test_a_safe_browsing_stand_in_needs_no_key(self):
         """F05-4. `flagged/` and `cleared/` serve Safe Browsing's own path, asked without
@@ -3224,6 +3230,27 @@ class ArchiveModeTouchesNothing(unittest.TestCase):
         self.assertEqual(runner.resolve_gsc(args, {"offline"}, "archive"), "")
         self.assertEqual(runner.resolve_gsc(args, {"offline", "fetch", "api"}, "live"),
                          path, "the same key must still work where the mode allows it")
+
+    def test_a_search_console_stand_in_is_passed_no_key(self):
+        """F05-5. `unindexed/` and `indexed/` serve Search Console's own paths, asked with
+        no key, so with the stand-in playing the runner looks for no key file and passes
+        a marker the scripts never open: a key on this machine is neither found nor
+        handed to a script. Only in a loopback-only process, and only where the mode may
+        ask an API at all."""
+        path = self.key_on_disk()
+        args = argparse.Namespace(gsc_credentials=path, quiet=True)
+        live = {"offline", "fetch", "api"}
+        standin = {"SEO_SEARCH_CONSOLE_STANDIN": "http://127.0.0.1:9"}
+        with mock.patch.dict(os.environ, dict(standin, SEO_LOOPBACK_ONLY="1")), \
+                mock.patch.object(runner, "find_gsc_credentials",
+                                  side_effect=AssertionError("looked for a key")):
+            self.assertEqual(runner.resolve_gsc(args, live, "live"),
+                             runner.GSC_STANDIN_CREDENTIALS)
+            self.assertFalse(os.path.exists(runner.GSC_STANDIN_CREDENTIALS))
+        with mock.patch.dict(os.environ, dict(standin, SEO_LOOPBACK_ONLY="1")):
+            self.assertEqual(runner.resolve_gsc(args, {"offline"}, "archive"), "")
+        with mock.patch.dict(os.environ, dict(standin, SEO_LOOPBACK_ONLY="")):
+            self.assertEqual(runner.resolve_gsc(args, live, "live"), path)
 
     def test_the_operator_is_told_the_key_was_ignored(self):
         """Silently dropping it would leave an operator believing Search Console ran."""

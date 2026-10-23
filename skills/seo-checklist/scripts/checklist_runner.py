@@ -2141,12 +2141,21 @@ NEEDS_THE_OUTSIDE_WORLD = {req for req, gates in REQUIREMENT_GATES.items()
 
 
 # The outside services a loopback stand-in can play, by the script that asks them, and the
-# variable naming the stand-in (F05-3, F05-4). The census serves one and points the script
-# at it. The script reads the variable only in a loopback-only process, and so does
-# `stood_in`, so in a real audit nothing here applies.
+# variable naming the stand-in (F05-3, F05-4, F05-5). The census serves one and points the
+# script at it. The script reads the variable only in a loopback-only process, and so does
+# `stood_in`, so in a real audit nothing here applies. The four Search Console scripts share
+# one: each gets its client from `gsc_checker.build_service`.
 STAND_INS = {"pagespeed.py": "SEO_PAGESPEED_STANDIN",
              "html_validator.py": "SEO_VALIDATOR_STANDIN",
-             "domain_safety_check.py": "SEO_SAFE_BROWSING_STANDIN"}
+             "domain_safety_check.py": "SEO_SAFE_BROWSING_STANDIN",
+             "gsc_checker.py": "SEO_SEARCH_CONSOLE_STANDIN",
+             "gsc_url_inspection.py": "SEO_SEARCH_CONSOLE_STANDIN",
+             "gsc_cannibalization.py": "SEO_SEARCH_CONSOLE_STANDIN",
+             "gsc_sitemap_reconcile.py": "SEO_SEARCH_CONSOLE_STANDIN"}
+# What the runner passes as `--credentials` while the Search Console stand-in plays: not a
+# path, so no key on this machine is found or handed on; the scripts' `build_service`
+# returns the stand-in's client without opening it (F05-5).
+GSC_STANDIN_CREDENTIALS = "(Search Console stand-in: no key)"
 
 
 def stood_in() -> set[str]:
@@ -3552,6 +3561,9 @@ def resolve_mode(a) -> tuple[str, set[str]]:
 
 
 def resolve_gsc(a, caps, mode) -> str:
+    # The census's stand-in plays Search Console (F05-5): no key is looked for or passed.
+    if "api" in caps and "gsc_checker.py" in stood_in():
+        return GSC_STANDIN_CREDENTIALS
     gsc_path = find_gsc_credentials(a.gsc_credentials)
     # Search Console is an external API, so it is offered only by modes allowed
     # to reach external services at all. Without this gate a key that merely

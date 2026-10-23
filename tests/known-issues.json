@@ -923,6 +923,7 @@
           "REPLACE_POLL",
           "ROBOTS_FETCH_WAIT",
           "SOCKET_TIMEOUT",
+          "STANDIN_TIMEOUT",
           "TEMPORARY_REDIRECTS",
           "TOP_N",
           "WINDOWS_LOCK_PATIENCE",

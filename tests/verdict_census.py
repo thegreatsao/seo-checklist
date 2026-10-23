@@ -72,7 +72,12 @@ INPUTS = os.path.join(CORPUS, "_inputs")
 # census hands it to the run as.
 STANDIN_INPUTS = (("pagespeed_standin.txt", "SEO_PAGESPEED_STANDIN"),
                   ("validator_standin.txt", "SEO_VALIDATOR_STANDIN"),
-                  ("safe_browsing_standin.txt", "SEO_SAFE_BROWSING_STANDIN"))
+                  ("safe_browsing_standin.txt", "SEO_SAFE_BROWSING_STANDIN"),
+                  ("search_console_standin.txt", "SEO_SEARCH_CONSOLE_STANDIN"))
+# Each `_inputs/<tree>/` file holding a value the operator types, and its runner flag:
+# the Search Console property a staging copy is pointed at (F05-5), without which the
+# runner sets Search Console aside on a host only this machine reaches.
+VALUE_FLAGS = (("--gsc-property", "gsc_property.txt"),)
 
 # The keyword an operator would supply. One word for every site, as an operator has
 # one site in mind — see `test_fixture_oracle.KEYWORD` for why passing one at all had
@@ -103,13 +108,18 @@ def corpus_inputs(label: str, base: str, workdir: str) -> tuple[list[str], dict]
         path = os.path.join(staged, filename)
         if os.path.exists(path):
             flags += [flag, path]
+    for flag, filename in VALUE_FLAGS:
+        path = os.path.join(staged, filename)
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as stream:
+                flags += [flag, stream.read().strip()]
     extra = {}
     key = os.path.join(staged, "indexnow_key")
     if os.path.exists(key):
         with open(key, encoding="utf-8") as stream:
             extra["INDEXNOW_KEY"] = stream.read().strip()
     # The address of each stand-in the tree serves, which its script asks instead of the
-    # real service in a loopback-only process (F05-3, F05-4).
+    # real service in a loopback-only process (F05-3, F05-4, F05-5).
     for filename, var in STANDIN_INPUTS:
         standin = os.path.join(staged, filename)
         if os.path.exists(standin):

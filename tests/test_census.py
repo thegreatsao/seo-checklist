@@ -327,6 +327,62 @@ class ATreeAnswersAPostFromItsTable(unittest.TestCase):
         self.assertEqual(after.status_code, 200)
 
 
+class ATreeCanNameASearchConsoleStandIn(unittest.TestCase):
+    """F05-5. `_inputs/<tree>/search_console_standin.txt` is handed to the run as
+    `SEO_SEARCH_CONSOLE_STANDIN` and `gsc_property.txt` as `--gsc-property`, the way an
+    operator points a staging copy at a property, both at the bound port, and to no
+    other tree's run."""
+
+    BASE = "http://127.0.0.1:4321"
+
+    def inputs(self, label):
+        with tempfile.TemporaryDirectory() as workdir:
+            return verdict_census.corpus_inputs(label, self.BASE, workdir)
+
+    def test_each_tree_that_names_them_is_pointed_at_its_own_port(self):
+        for label in ("unindexed", "indexed"):
+            with self.subTest(tree=label):
+                flags, env = self.inputs(label)
+                self.assertEqual(env["SEO_SEARCH_CONSOLE_STANDIN"], self.BASE)
+                at = flags.index("--gsc-property")
+                self.assertEqual(flags[at + 1], self.BASE + "/")
+
+    def test_no_other_tree_inherits_one(self):
+        with mock.patch.dict(os.environ, {"SEO_SEARCH_CONSOLE_STANDIN": "http://127.0.0.1:9"}):
+            for label in ("page-sound", "flagged"):
+                with self.subTest(tree=label):
+                    flags, env = self.inputs(label)
+                    self.assertIsNone(env.get("SEO_SEARCH_CONSOLE_STANDIN"))
+                    self.assertNotIn("--gsc-property", flags)
+
+
+class ATreeAnswersSearchConsolesPaths(unittest.TestCase):
+    """F05-5. The property travels URL-encoded inside Search Console's paths, so the
+    server rewrites the encoded placeholder too; and one Search Analytics path answers by
+    the dimensions posted (`when`), anything else from `else`."""
+
+    def test_an_encoded_route_and_an_answer_picked_by_the_body(self):
+        import requests
+        from urllib.parse import quote
+        with tempfile.TemporaryDirectory() as workdir:
+            site = harness._Site(os.path.join(verdict_census.CORPUS, "unindexed"),
+                                 os.path.join(workdir, "unindexed"))
+            try:
+                sites = site.base + "/webmasters/v3/sites/" + quote(site.base + "/", safe="")
+                with requests.Session() as session:
+                    session.trust_env = False
+                    both = session.post(sites + "/searchAnalytics/query", timeout=5,
+                                        json={"dimensions": ["query", "page"]})
+                    pages = session.post(sites + "/searchAnalytics/query", timeout=5,
+                                         json={"dimensions": ["page"]})
+                    listed = session.get(sites + "/sitemaps", timeout=5)
+            finally:
+                site.stop()
+        self.assertEqual({len(r["keys"]) for r in both.json()["rows"]}, {2})
+        self.assertEqual({len(r["keys"]) for r in pages.json()["rows"]}, {1})
+        self.assertEqual(listed.json()["sitemap"][0]["path"], site.base + "/sitemap.xml")
+
+
 class TheHarnessSaysWhatItCannotExercise(unittest.TestCase):
     """`openspec/specs/declarations/` DEC-13. An item that gave one answer everywhere is
     a question for a person, and what the mechanism cannot express has to be written

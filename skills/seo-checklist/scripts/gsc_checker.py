@@ -23,8 +23,16 @@ except ImportError:
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timedelta
+from types import SimpleNamespace
+from urllib.parse import quote
+
+try:
+    from lib.safe_http import loopback_only, safe_get, safe_post
+except ImportError:
+    from scripts.lib.safe_http import loopback_only, safe_get, safe_post
 
 try:
     from google.oauth2 import service_account
@@ -98,6 +106,15 @@ HIGH_IMPRESSIONS = 200
 VERY_LOW_CTR_PCT = 2
 
 SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
+# The census's Search Console stand-in (F05-5): a corpus tree answering Google's own REST
+# paths with recorded responses, so the items over the four Search Console scripts are
+# seen to fail by a run. Read only in a loopback-only process, which the suite and CI are
+# and no real audit is; asked through the guard, which under the same switch refuses a
+# stand-in that is not this machine, and asked with no key, token or header a real call
+# would carry. `googleapiclient` is an optional extra no CI job installs, so the stand-in
+# is a client of its own, not a discovery document.
+GSC_STANDIN_ENV = "SEO_SEARCH_CONSOLE_STANDIN"
+STANDIN_TIMEOUT = 30
 
 
 # ---------------------------------------------------------------------------
@@ -112,8 +129,57 @@ class UnusableCredentials(OSError):
     both a broken script (`openspec/specs/evidence/` EVD-1)."""
 
 
+class StandInError(Exception):
+    """The stand-in did not answer. Not an `OSError`, which every caller reads as the
+    operator's key file: the stand-in plays the service, as `googleapiclient`'s
+    `HttpError` would."""
+
+
+def gsc_standin() -> str:
+    """The census's stand-in for Search Console, or "" — always "" outside a loopback-only
+    process."""
+    standin = os.environ.get(GSC_STANDIN_ENV, "").strip()
+    return standin if standin and loopback_only() else ""
+
+
+def _standin_service(base: str):
+    """The three call chains these scripts use, on the paths Google's client sends them
+    to, asked of the stand-in."""
+    base = base.rstrip("/")
+
+    def call(method: str, path: str, body: dict | None = None):
+        def execute():
+            try:
+                if method == "POST":
+                    resp = safe_post(base + path, json=body, timeout=STANDIN_TIMEOUT)
+                else:
+                    resp = safe_get(base + path, timeout=STANDIN_TIMEOUT)
+            except Exception as exc:
+                raise StandInError(f"Search Console stand-in not asked: {exc}") from exc
+            if resp.status_code != 200:
+                raise StandInError(f"Search Console stand-in returned HTTP {resp.status_code}")
+            return resp.json()
+        return SimpleNamespace(execute=execute)
+
+    def site(site_url: str) -> str:
+        return "/webmasters/v3/sites/" + quote(site_url, safe="")
+
+    return SimpleNamespace(
+        searchanalytics=lambda: SimpleNamespace(
+            query=lambda siteUrl, body: call(  # noqa: N803 - Google's spelling
+                "POST", site(siteUrl) + "/searchAnalytics/query", body)),
+        sitemaps=lambda: SimpleNamespace(
+            list=lambda siteUrl: call("GET", site(siteUrl) + "/sitemaps")),  # noqa: N803
+        urlInspection=lambda: SimpleNamespace(index=lambda: SimpleNamespace(
+            inspect=lambda body: call("POST", "/v1/urlInspection/index:inspect", body))))
+
+
 def build_service(credentials_path: str):
-    """Build the Search Console API service."""
+    """Build the Search Console API service: the census's stand-in under the offline
+    switch, before the extra is required or the key file opened."""
+    standin = gsc_standin()
+    if standin:
+        return _standin_service(standin)
     if not HAS_GSC_DEPS:
         raise UnusableCredentials(
             "google-api-python-client and google-auth-oauthlib required — "

@@ -1,0 +1,28 @@
+{
+  "/webmasters/v3/sites/http%3A%2F%2F127.0.0.1%3A8000%2F/searchAnalytics/query": {
+    "status": 200,
+    "content_type": "application/json; charset=UTF-8",
+    "body": "{\n  \"rows\": [\n    {\n      \"keys\": [\n        \"lantern rye bakery\",\n        \"http://127.0.0.1:8000/guides/\"\n      ],\n      \"clicks\": 9,\n      \"impressions\": 120,\n      \"ctr\": 0.075,\n      \"position\": 3.4\n    },\n    {\n      \"keys\": [\n        \"sourdough starter feeding\",\n        \"http://127.0.0.1:8000/\"\n      ],\n      \"clicks\": 4,\n      \"impressions\": 48,\n      \"ctr\": 0.0833,\n      \"position\": 5.2\n    },\n    {\n      \"keys\": [\n        \"sourdough starter feeding\",\n        \"http://127.0.0.1:8000/guides/\"\n      ],\n      \"clicks\": 3,\n      \"impressions\": 41,\n      \"ctr\": 0.0732,\n      \"position\": 6.8\n    },\n    {\n      \"keys\": [\n        \"rye flour hydration\",\n        \"http://127.0.0.1:8000/\"\n      ],\n      \"clicks\": 4,\n      \"impressions\": 47,\n      \"ctr\": 0.0851,\n      \"position\": 5.3\n    },\n    {\n      \"keys\": [\n        \"rye flour hydration\",\n        \"http://127.0.0.1:8000/guides/\"\n      ],\n      \"clicks\": 3,\n      \"impressions\": 40,\n      \"ctr\": 0.075,\n      \"position\": 6.8999999999999995\n    },\n    {\n      \"keys\": [\n        \"proofing basket care\",\n        \"http://127.0.0.1:8000/\"\n      ],\n      \"clicks\": 4,\n      \"impressions\": 46,\n      \"ctr\": 0.087,\n      \"position\": 5.4\n    },\n    {\n      \"keys\": [\n        \"proofing basket care\",\n        \"http://127.0.0.1:8000/guides/\"\n      ],\n      \"clicks\": 3,\n      \"impressions\": 39,\n      \"ctr\": 0.0769,\n      \"position\": 7.0\n    },\n    {\n      \"keys\": [\n        \"bread scoring patterns\",\n        \"http://127.0.0.1:8000/\"\n      ],\n      \"clicks\": 4,\n      \"impressions\": 45,\n      \"ctr\": 0.0889,\n      \"position\": 5.5\n    },\n    {\n      \"keys\": [\n        \"bread scoring patterns\",\n        \"http://127.0.0.1:8000/guides/\"\n      ],\n      \"clicks\": 3,\n      \"impressions\": 38,\n      \"ctr\": 0.0789,\n      \"position\": 7.1\n    }\n  ],\n  \"responseAggregationType\": \"byPage\"\n}",
+    "when": {
+      "dimensions": [
+        "query",
+        "page"
+      ]
+    },
+    "else": {
+      "status": 200,
+      "content_type": "application/json; charset=UTF-8",
+      "body": "{\n  \"rows\": [\n    {\n      \"keys\": [\n        \"http://127.0.0.1:8000/\"\n      ],\n      \"clicks\": 16,\n      \"impressions\": 186,\n      \"ctr\": 0.086,\n      \"position\": 2.0\n    },\n    {\n      \"keys\": [\n        \"http://127.0.0.1:8000/guides/\"\n      ],\n      \"clicks\": 21,\n      \"impressions\": 278,\n      \"ctr\": 0.0755,\n      \"position\": 2.0\n    }\n  ],\n  \"responseAggregationType\": \"byPage\"\n}"
+    }
+  },
+  "/webmasters/v3/sites/http%3A%2F%2F127.0.0.1%3A8000%2F/sitemaps": {
+    "status": 200,
+    "content_type": "application/json; charset=UTF-8",
+    "body": "{\n  \"sitemap\": [\n    {\n      \"path\": \"http://127.0.0.1:8000/sitemap.xml\",\n      \"lastSubmitted\": \"2026-10-01T09:30:00.000Z\",\n      \"isPending\": false,\n      \"isSitemapsIndex\": false,\n      \"type\": \"sitemap\",\n      \"lastDownloaded\": \"2026-10-19T22:04:11.000Z\",\n      \"warnings\": \"1\",\n      \"errors\": \"2\",\n      \"contents\": [\n        {\n          \"type\": \"web\",\n          \"submitted\": \"2\"\n        }\n      ]\n    }\n  ]\n}"
+  },
+  "/v1/urlInspection/index:inspect": {
+    "status": 200,
+    "content_type": "application/json; charset=UTF-8",
+    "body": "{\n  \"inspectionResult\": {\n    \"inspectionResultLink\": \"https://search.google.com/search-console/inspect?resource_id=http://127.0.0.1:8000/&id=standin\",\n    \"indexStatusResult\": {\n      \"verdict\": \"NEUTRAL\",\n      \"coverageState\": \"Duplicate, Google chose different canonical than user\",\n      \"robotsTxtState\": \"ALLOWED\",\n      \"indexingState\": \"INDEXING_ALLOWED\",\n      \"lastCrawlTime\": \"2026-10-20T06:12:44Z\",\n      \"pageFetchState\": \"SUCCESSFUL\",\n      \"googleCanonical\": \"http://127.0.0.1:8000/guides/\",\n      \"userCanonical\": \"http://127.0.0.1:8000/\",\n      \"crawledAs\": \"MOBILE\",\n      \"sitemap\": [\n        \"http://127.0.0.1:8000/sitemap.xml\"\n      ],\n      \"referringUrls\": [\n        \"http://127.0.0.1:8000/guides/\"\n      ]\n    },\n    \"richResultsResult\": {\n      \"verdict\": \"VERDICT_UNSPECIFIED\"\n    }\n  }\n}"
+  }
+}

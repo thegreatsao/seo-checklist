@@ -62,6 +62,7 @@ import sys
 import tempfile
 import threading
 import time
+from urllib.parse import quote
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIXTURES = os.path.join(HERE, "fixtures")
@@ -409,8 +410,8 @@ class _Quiet(http.server.SimpleHTTPRequestHandler):
         is read first: this handler closes after each answer, and closing a socket with
         the request body still unread can reset it under the answer."""
         length = int(self.headers.get("Content-Length") or 0)
-        if length > 0:
-            self.rfile.read(length)
+        # Kept for a `when` answer, which picks by what was posted (F05-5).
+        self.posted = self.rfile.read(length) if length > 0 else b""
         if self.path.split("?", 1)[0] not in self.route_answers:
             self.send_error(501, "Unsupported method ('POST')")
             return
@@ -447,6 +448,17 @@ class _Quiet(http.server.SimpleHTTPRequestHandler):
                 self.answered.add(request_path)
             if again:
                 answer = answer["then"]
+        if answer is not None and "when" in answer:
+            # `when` names fields a POSTed JSON body must hold for this answer, and `else`
+            # answers any other request: how one Search Analytics path answers both the
+            # dimension sets the scripts ask for (F05-5).
+            try:
+                posted = json.loads(getattr(self, "posted", b"") or b"null")
+            except ValueError:
+                posted = None
+            if not (isinstance(posted, dict)
+                    and all(posted.get(k) == v for k, v in answer["when"].items())):
+                answer = answer["else"]
         if answer is not None:
             body = answer["body"].encode("utf-8")
             # Before the status line, so the wait is in the client's time to first
@@ -566,6 +578,9 @@ class _Site:
         substitute(self.dir, PLACEHOLDER, self.base)
         substitute(self.dir, PLACEHOLDER_OTHER_NAME,
                    self.base.replace("127.0.0.1", "localhost", 1))
+        # URL-encoded too, as a table route carries a URL inside its path: Search Console
+        # names the property there (F05-5).
+        substitute(self.dir, quote(PLACEHOLDER, safe=""), quote(self.base, safe=""))
 
     def link_external(self, other_base: str) -> None:
         """Point this tree's external-link placeholder at the neighbouring origin."""
@@ -1309,7 +1324,8 @@ def offline_env(**extra) -> dict:
     })
     for key in ("GSC_CREDENTIALS_PATH", "GV_SA_KEY", "GOOGLE_SAFE_BROWSING_KEY",
                 "PAGESPEED_API_KEY", "INDEXNOW_KEY", "SEO_PAGESPEED_STANDIN",
-                "SEO_VALIDATOR_STANDIN", "SEO_SAFE_BROWSING_STANDIN"):
+                "SEO_VALIDATOR_STANDIN", "SEO_SAFE_BROWSING_STANDIN",
+                "SEO_SEARCH_CONSOLE_STANDIN"):
         env.pop(key, None)
     env.update(extra)
     return with_tripwire(env)

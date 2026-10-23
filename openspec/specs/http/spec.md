@@ -307,15 +307,20 @@ mutation: it reddens 22 sub-tests of the status assertion, and the denominator f
   real audit) and a script's outside service is named by its stand-in variable
   (`checklist_runner.STAND_INS`: `SEO_PAGESPEED_STANDIN` for `pagespeed.py`,
   `SEO_VALIDATOR_STANDIN` for `html_validator.py`, `SEO_SAFE_BROWSING_STANDIN` for
-  `domain_safety_check.py`)
+  `domain_safety_check.py`, `SEO_SEARCH_CONSOLE_STANDIN` for the four Search Console
+  scripts)
 - **THEN** that script's items answer for themselves on a private host, because the service
   they ask is on this machine too; the census serves PageSpeed so from `slow-field/` and
-  `fast-field/`, the validator and Safe Browsing from `flagged/` and `cleared/` (F05,
+  `fast-field/`, the validator and Safe Browsing from `flagged/` and `cleared/`, Search
+  Console from `unindexed/` and `indexed/` (F05,
   `test_a_loopback_stand_in_answers_for_the_service_it_plays`)
 - **AND** the Safe Browsing stand-in is asked without a key and needs none, so its items
   are not set aside for want of one (`test_a_safe_browsing_stand_in_needs_no_key`), and
   `domain_safety_check.py` names the private host to it and to no one else
   (`test_a_private_host_is_named_only_to_the_stand_in`)
+- **AND** the runner looks for no Search Console key while that stand-in plays and passes
+  the scripts a marker in its place, which `build_service` never opens, so a key on this
+  machine is neither read nor sent (`test_a_search_console_stand_in_is_passed_no_key`)
 - **AND** outside a loopback-only process the variable changes nothing
 
 #### Scenario: the score is not lifted by what could not be seen

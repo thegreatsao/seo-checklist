@@ -29,7 +29,9 @@ missing file, and **301** for a directory requested without its trailing slash. 
 error entry page (CI-003 fails on `error-entry/`) and a redirect chain (AR-150 fails on
 `redirect-chain/`). Since F05 a route may carry `then`, the answer it gives from its second
 request on, and a table may name the same server under its other loopback name,
-`http://localhost:8000`, rewritten to the bound port like the usual placeholder. It still
+`http://localhost:8000`, rewritten to the bound port like the usual placeholder, and
+URL-encoded inside a path, as Search Console's carry the property. A route may also carry
+`when`, fields a POSTed JSON body must hold, and `else`, the answer to anything else. It still
 cannot serve a status that varies by user agent, and every corpus tree is served over
 plain HTTP.
 
@@ -90,9 +92,21 @@ the comment above each shape names its item.
   `TE-171` are seen both ways (F05). The census points `html_validator.py` and
   `domain_safety_check.py` at them through `SEO_VALIDATOR_STANDIN` and
   `SEO_SAFE_BROWSING_STANDIN`, read the same way; Safe Browsing's is asked without a key.
+- `unindexed/` and `indexed/` — each also answers Search Console's own paths with recorded
+  responses: Search Analytics (`/webmasters/v3/sites/<property>/searchAnalytics/query`, by
+  the dimensions posted), the sitemaps list and URL Inspection
+  (`/v1/urlInspection/index:inspect`). On the first Google chose another canonical and left
+  the page out, the submitted sitemap carries errors, four queries split across two pages
+  and the brand's own query lands on the inner page; the second is indexed as declared,
+  so `CI-002`, `CI-010`, `GO-134`, `GO-135`, `GO-137`, `MS-023`, `KW-070`, `KW-071` and
+  `GO-139` are seen both ways (F05). The census points the four Search Console scripts at
+  them through `SEO_SEARCH_CONSOLE_STANDIN`, read only in a loopback-only process, where
+  `gsc_checker.build_service` returns a client of the stand-in without opening a key file,
+  and passes the property as `--gsc-property`, as an operator points a staging copy at one.
 
 `_inputs/<tree>/` holds what an operator would hand the run for that tree — the
-`ARTIFACT_FLAGS` files of `verdict_census.py`, an `indexnow_key`, and a
-`*_standin.txt` naming each stand-in the tree serves (`verdict_census.STANDIN_INPUTS`) —
+`ARTIFACT_FLAGS` files of `verdict_census.py`, an `indexnow_key`, a
+`*_standin.txt` naming each stand-in the tree serves (`verdict_census.STANDIN_INPUTS`), and
+a `gsc_property.txt` handed over as `--gsc-property` (`verdict_census.VALUE_FLAGS`) —
 outside the trees,
 so nothing in it is ever served.
