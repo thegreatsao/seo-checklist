@@ -67,6 +67,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 FIXTURES = os.path.join(HERE, "fixtures")
 SCRIPTS = os.path.join(os.path.dirname(HERE), "skills", "seo-checklist", "scripts")
 PLACEHOLDER = "http://127.0.0.1:8000"
+# The same origin under its other loopback name: a tree whose entry redirects here has
+# its run audit another host (`went-down/`, F05-2).
+PLACEHOLDER_OTHER_NAME = "http://localhost:8000"
 
 # One directory for everything this suite, and every child it starts, puts in "the
 # temporary directory" — removed when the process ends.
@@ -420,6 +423,14 @@ class _Quiet(http.server.SimpleHTTPRequestHandler):
             self.send_error(404)
             return None
         answer = self.route_answers.get(request_path)
+        if answer is not None and "then" in answer:
+            # `then` is what the route answers from its second request on: a page that
+            # answered once and went down (`went-down/`, F05-2).
+            with self.answered_lock:
+                again = request_path in self.answered
+                self.answered.add(request_path)
+            if again:
+                answer = answer["then"]
         if answer is not None:
             body = answer["body"].encode("utf-8")
             # Before the status line, so the wait is in the client's time to first
@@ -502,11 +513,8 @@ class _Site:
         if plain not in (None, "redirect", "serve"):
             raise ValueError(f"unknown plain policy: {plain!r}")
         self.dir = shutil.copytree(source, into)
-        answers_path = os.path.join(self.dir, "_answers.json")
+        # Filled after `_rewrite`, so a table answer can name the bound port.
         route_answers = {}
-        if os.path.isfile(answers_path):
-            with open(answers_path, encoding="utf-8") as stream:
-                route_answers = json.load(stream)
         # Threading: several evidence scripts fetch concurrently, and a
         # single-threaded server deadlocks the moment one of them holds a connection
         # open while asking for the next page.
@@ -514,6 +522,8 @@ class _Site:
             "root": self.dir,
             "response_headers": dict(response_headers or {}),
             "route_answers": route_answers,
+            "answered": set(),
+            "answered_lock": threading.Lock(),
             "gzip_text": gzip_text,
         })
         context = tls_context() if tls else None
@@ -528,12 +538,18 @@ class _Site:
         self.port = self.server.server_address[1]
         self.base = f"{'https' if tls else 'http'}://127.0.0.1:{self.port}"
         self._rewrite()
+        answers_path = os.path.join(self.dir, "_answers.json")
+        if os.path.isfile(answers_path):
+            with open(answers_path, encoding="utf-8") as stream:
+                route_answers.update(json.load(stream))
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
 
     def _rewrite(self) -> None:
         """Point every absolute URL in this tree at the port we actually got."""
         substitute(self.dir, PLACEHOLDER, self.base)
+        substitute(self.dir, PLACEHOLDER_OTHER_NAME,
+                   self.base.replace("127.0.0.1", "localhost", 1))
 
     def link_external(self, other_base: str) -> None:
         """Point this tree's external-link placeholder at the neighbouring origin."""

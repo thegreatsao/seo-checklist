@@ -17,7 +17,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -43,7 +44,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -68,7 +70,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -91,7 +94,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -116,7 +120,8 @@
         "page-sound": "PASS",
         "redirect-chain": "FAIL",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -141,7 +146,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "PASS",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -166,7 +172,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "PASS",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -191,7 +198,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -216,7 +224,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -242,7 +251,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -267,7 +277,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -290,7 +301,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -313,7 +325,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -337,7 +350,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -360,7 +374,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -383,7 +398,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -406,7 +422,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -431,7 +448,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -457,7 +475,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -480,7 +499,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -503,7 +523,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -526,7 +547,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -549,7 +571,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "FAIL",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -576,7 +599,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -599,7 +623,8 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -626,7 +651,8 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -652,7 +678,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -675,7 +702,8 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -700,7 +728,8 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -725,7 +754,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -748,7 +778,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -771,7 +802,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -794,7 +826,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -817,7 +850,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -840,7 +874,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -864,7 +899,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NEEDS_INPUT",
@@ -888,7 +924,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -912,7 +949,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -937,7 +975,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -962,7 +1001,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -987,7 +1027,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1010,7 +1051,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -1035,7 +1077,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -1060,7 +1103,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NEEDS_INPUT",
@@ -1084,7 +1128,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -1109,7 +1154,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -1134,7 +1180,8 @@
         "page-sound": "PASS",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -1159,7 +1206,8 @@
         "page-sound": "PASS",
         "redirect-chain": "WARN",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -1185,7 +1233,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -1210,7 +1259,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -1236,7 +1286,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -1259,7 +1310,8 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -1285,7 +1337,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -1310,7 +1363,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -1336,7 +1390,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -1362,7 +1417,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -1388,7 +1444,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1411,7 +1468,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -1436,7 +1494,8 @@
         "page-sound": "WARN",
         "redirect-chain": "WARN",
         "site-defects": "FAIL",
-        "url-shapes": "WARN"
+        "url-shapes": "WARN",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -1462,7 +1521,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -1487,7 +1547,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -1512,7 +1573,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1535,7 +1597,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1558,7 +1621,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -1583,7 +1647,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -1606,7 +1671,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1629,7 +1695,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1652,7 +1719,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -1677,7 +1745,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1700,7 +1769,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1723,7 +1793,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -1749,7 +1820,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1772,7 +1844,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1795,7 +1868,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -1821,7 +1895,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1844,7 +1919,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -1869,7 +1945,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -1894,7 +1971,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1917,7 +1995,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1940,7 +2019,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1963,7 +2043,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -1986,7 +2067,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2009,7 +2091,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2032,7 +2115,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2055,7 +2139,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -2080,7 +2165,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -2105,7 +2191,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2128,7 +2215,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -2153,7 +2241,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -2176,7 +2265,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2199,7 +2289,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2222,7 +2313,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2245,7 +2337,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2268,7 +2361,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2291,7 +2385,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -2316,7 +2411,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -2341,7 +2437,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -2366,7 +2463,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -2391,7 +2489,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -2416,7 +2515,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -2440,7 +2540,8 @@
         "page-sound": "PASS",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -2466,7 +2567,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -2491,7 +2593,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -2516,7 +2619,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -2541,7 +2645,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2564,7 +2669,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NEEDS_INPUT",
@@ -2588,7 +2694,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NEEDS_INPUT",
@@ -2612,7 +2719,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -2638,7 +2746,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NEEDS_INPUT",
@@ -2662,7 +2771,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -2687,7 +2797,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NEEDS_INPUT",
@@ -2711,7 +2822,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2734,7 +2846,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2757,7 +2870,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2780,7 +2894,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -2806,7 +2921,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -2831,7 +2947,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -2856,7 +2973,8 @@
         "page-sound": "PASS",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -2881,7 +2999,8 @@
         "page-sound": "PASS",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -2906,7 +3025,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -2931,7 +3051,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2954,7 +3075,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -2977,7 +3099,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -3000,7 +3123,8 @@
         "page-sound": "PASS",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -3025,7 +3149,8 @@
         "page-sound": "PASS",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -3050,7 +3175,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -3073,7 +3199,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -3096,7 +3223,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -3119,7 +3247,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NEEDS_INPUT",
@@ -3143,7 +3272,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NEEDS_INPUT",
@@ -3167,7 +3297,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -3190,7 +3321,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -3213,7 +3345,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -3236,7 +3369,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -3259,7 +3393,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -3284,7 +3419,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -3307,7 +3443,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -3330,7 +3467,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -3353,7 +3491,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -3378,7 +3517,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -3401,7 +3541,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -3426,7 +3567,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -3451,7 +3593,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -3477,7 +3620,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -3500,7 +3644,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -3526,7 +3671,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -3552,7 +3698,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -3578,7 +3725,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -3601,7 +3749,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -3626,7 +3775,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -3649,7 +3799,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -3675,7 +3826,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -3701,7 +3853,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -3726,7 +3879,8 @@
         "page-sound": "PASS",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -3752,7 +3906,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -3775,7 +3930,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -3801,7 +3957,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -3827,7 +3984,8 @@
         "page-sound": "PASS",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -3852,7 +4010,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -3878,7 +4037,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -3904,7 +4064,8 @@
         "page-sound": "PASS",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -3929,7 +4090,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -3952,7 +4114,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -3978,7 +4141,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -4004,7 +4168,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -4029,7 +4194,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -4054,7 +4220,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -4079,7 +4246,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NEEDS_INPUT",
@@ -4103,7 +4271,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -4126,7 +4295,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -4149,7 +4319,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -4174,7 +4345,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -4197,7 +4369,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -4222,7 +4395,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -4247,7 +4421,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -4272,7 +4447,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -4297,7 +4473,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -4324,7 +4501,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -4349,7 +4527,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NEEDS_INPUT",
@@ -4373,7 +4552,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -4398,7 +4578,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NEEDS_INPUT",
@@ -4422,7 +4603,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -4447,7 +4629,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NO_DATA",
@@ -4471,7 +4654,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -4494,7 +4678,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -4519,7 +4704,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -4542,7 +4728,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -4565,7 +4752,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -4590,7 +4778,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -4615,7 +4804,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -4638,7 +4828,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -4661,7 +4852,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -4684,7 +4876,8 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -4709,7 +4902,8 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -4734,7 +4928,8 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
-        "url-shapes": "NEEDS_INPUT"
+        "url-shapes": "NEEDS_INPUT",
+        "went-down": "NEEDS_INPUT"
       },
       "distinct": [
         "FAIL",
@@ -4759,7 +4954,8 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
-        "url-shapes": "LLM_PENDING"
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
         "LLM_PENDING"
@@ -4782,7 +4978,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -4807,7 +5004,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -4831,7 +5029,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -4857,7 +5056,8 @@
         "page-sound": "PASS",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -4882,7 +5082,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -4907,7 +5108,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NEEDS_INPUT",
@@ -4931,7 +5133,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -4957,7 +5160,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -4980,7 +5184,8 @@
         "page-sound": "N/A",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -5006,7 +5211,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "FAIL"
       },
       "distinct": [
         "FAIL",
@@ -5031,7 +5237,8 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
-        "url-shapes": "FAIL"
+        "url-shapes": "FAIL",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -5056,7 +5263,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -5081,7 +5289,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -5104,7 +5313,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -5127,7 +5337,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -5152,7 +5363,8 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
-        "url-shapes": "NO_DATA"
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "NO_DATA"
@@ -5175,7 +5387,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -5198,7 +5411,8 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
-        "url-shapes": "MANUAL"
+        "url-shapes": "MANUAL",
+        "went-down": "MANUAL"
       },
       "distinct": [
         "MANUAL"
@@ -5221,7 +5435,8 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
-        "url-shapes": "N/A"
+        "url-shapes": "N/A",
+        "went-down": "N/A"
       },
       "distinct": [
         "FAIL",
@@ -5247,7 +5462,8 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -5272,7 +5488,8 @@
         "page-sound": "PASS",
         "redirect-chain": "FAIL",
         "site-defects": "PASS",
-        "url-shapes": "PASS"
+        "url-shapes": "PASS",
+        "went-down": "PASS"
       },
       "distinct": [
         "FAIL",
@@ -5298,6 +5515,7 @@
     "page-sound",
     "redirect-chain",
     "site-defects",
-    "url-shapes"
+    "url-shapes",
+    "went-down"
   ]
 }

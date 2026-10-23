@@ -27,8 +27,11 @@ missing file, and **301** for a directory requested without its trailing slash. 
 `Content-Type` and a body per path, a `delay` before the first byte, and since 0.175.0
 `headers`, which is how a table answer sends a `Location`. So a tree can now serve an
 error entry page (CI-003 fails on `error-entry/`) and a redirect chain (AR-150 fails on
-`redirect-chain/`). It still cannot serve a status that varies by user agent, and every
-corpus tree is served over plain HTTP.
+`redirect-chain/`). Since F05 a route may carry `then`, the answer it gives from its second
+request on, and a table may name the same server under its other loopback name,
+`http://localhost:8000`, rewritten to the bound port like the usual placeholder. It still
+cannot serve a status that varies by user agent, and every corpus tree is served over
+plain HTTP.
 
 One item still cannot be seen failing here, and **it is not a limit of this server
 alone**: `SE-118` fails on a certificate that does not verify, and the runner's own
@@ -65,6 +68,11 @@ the comment above each shape names its item.
 - `url-shapes/` — one page at a long, deep, mixed-case address (`AR-147`, `CI-012`).
 - `no-location/` — the entry answers 301 and names no `Location` (`CI-014`; found by the
   F06 review).
+- `went-down/` — the entry redirects to the same server under its other name, whose page
+  answers the audit's own request and 503 after it (`TE-167`, F05). The run audits the
+  host it landed on, so the uptime check asks that page again instead of reading the
+  answer the entry gate judged from the run's response cache, and the assertion fails
+  where the gate did not stop the run.
 - `page-defects/` and `page-sound/` — one entry page carrying a defect for each
   page-level item that had never failed or answered, and its twin doing each the way the
   item asks, so those items are seen both ways.

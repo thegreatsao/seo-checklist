@@ -238,12 +238,18 @@ class TheCensusSaysWhereTheEntryGateStopped(unittest.TestCase):
         record["entry_gated"] = sorted(set(record["entry_gated"]) ^ {"no-location"})
         self.assertFalse(verdict_census.in_step(self.census, record))
 
-    def test_every_slow_tree_holds_a_first_byte_back(self):
-        """A name here is a promise about a served tree's table, so it must be one."""
+    def test_every_slow_tree_holds_a_first_byte_back_past_every_budget(self):
+        """A name here is a promise about a served tree's table, so it must be one: a
+        route held back longer than each `CLOCK_READ` item's budget (its `lte`, in
+        ms). Which route the item times is not read here; the census holds that, by
+        its exact answer on the tree (review of F05-2)."""
+        items = {item["id"]: item for item in harness.registry()["items"]}
+        budgets = [items[i]["check"]["assert"]["lte"] for i in harness.CLOCK_READ]
         for tree in harness.SLOW_BY_CONSTRUCTION:
             with self.subTest(tree=tree):
                 answers = load(os.path.join(verdict_census.CORPUS, tree, "_answers.json"))
-                self.assertTrue(any(row.get("delay", 0) > 0 for row in answers.values()))
+                held = max(row.get("delay", 0) for row in answers.values()) * 1000
+                self.assertGreater(held, max(budgets))
 
 
 class TheHarnessSaysWhatItCannotExercise(unittest.TestCase):

@@ -1,0 +1,20 @@
+{
+  "/": {
+    "status": 301,
+    "content_type": "text/html; charset=utf-8",
+    "headers": {
+      "Location": "http://localhost:8000/home.html"
+    },
+    "body": ""
+  },
+  "/home.html": {
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "body": "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Shape Street Bakery, up for one request</title><meta name=\"description\" content=\"The landing page of a tree whose entry redirects to another host, which answers the audit once and goes down.\"></head><body><h1>Shape Street Bakery</h1><p>TE-167: the address the operator typed redirects to this host, which answers the audit's own request and 503 to every request after it, the way a site falls over under load. The run audits this host, so the uptime check asks it again rather than reading the answer the entry gate judged, and fails.</p></body></html>",
+    "then": {
+      "status": 503,
+      "content_type": "text/html; charset=utf-8",
+      "body": "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Maintenance</title></head><body><h1>Back soon</h1><p>Every request for this page after the first answers 503.</p></body></html>"
+    }
+  }
+}

@@ -584,10 +584,8 @@ able to fail, and a rule proved unable *and* seen failing is an error. An item c
 `entry_answer` is counted only from a tree whose entry the gate let through (the census
 records the ones it stopped), and an item whose band is a measured time only from a tree
 that holds its first byte back past the budget (`harness.SLOW_BY_CONSTRUCTION`). Not held:
-a rule no served tree reaches (the credential-gated checks), an assertion only the entry
-gate's own answer fails (TE-167: the run's response cache hands its request the entry
-answer the gate already judged), and the claim is as current as the census, which its
-own job re-runs.
+a rule no served tree reaches (the credential-gated checks, and SE-118 behind the entry
+gate), and the claim is as current as the census, which its own job re-runs.
 
 #### Scenario: a field written only when it would pass
 - **WHEN** a checker writes the field a rule asserts only when that field already holds

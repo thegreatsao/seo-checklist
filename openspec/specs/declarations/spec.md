@@ -774,8 +774,8 @@ that item is in step, the item taking no time is not, and the other band of any 
 item is not. What it gives up is said: the band of such an item in the
 record is not protected from a hand — except on a tree that holds its page's first byte
 back past the budget (`harness.SLOW_BY_CONSTRUCTION`, F05-2), where no machine answers the
-other band and the answer is held exactly (`test_a_tree_slow_by_construction_holds_its_
-clock_answer_exactly`). The record also names the trees whose entry the runner's gate
+other band and the answer is held exactly
+(`test_a_tree_slow_by_construction_holds_its_clock_answer_exactly`). The record also names the trees whose entry the runner's gate
 stopped (`entry_gated`), compared like any answer.
 
 #### Scenario: the census is re-taken on a slower machine

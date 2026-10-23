@@ -577,6 +577,20 @@ class AFailTheCensusSawIsAClaim(unittest.TestCase):
         for item_id in seen:
             self.assertIn("FAIL", census[item_id]["answers"].values(), item_id)
 
+    def test_every_entry_answer_item_is_claimed_from_a_tree_the_gate_let_through(self):
+        """F05-2. TE-167's uptime request is answered from the run's response cache
+        with the entry answer the gate judged, unless the run audits another host:
+        `went-down/` redirects to the same server under its other name, which answers
+        once and then 503, so the assertion fails where the gate did not stop."""
+        with open(R.CENSUS, encoding="utf-8") as f:
+            gated = set(json.load(f)["entry_gated"])
+        seen = R.observed_failures()
+        for item in DATA["items"]:
+            if (item.get("check") or {}).get("entry_answer"):
+                with self.subTest(item=item["id"]):
+                    self.assertIn(item["id"], set(seen))
+                    self.assertFalse(set(seen[item["id"]]["trees"]) & gated)
+
     def test_every_fail_the_oracle_declares_is_claimed(self):
         """The oracle's FAILs are re-run by `make test`, the census's only by its own
         job; an oracle FAIL left unclaimed would mean the detector misreads the census."""

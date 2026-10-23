@@ -51,9 +51,8 @@ source the registry's arguments never reached — so `observed_failures` reads t
 recorded census instead: the runner, with the registry's own arguments, on every tree
 the repository serves, re-derived by its own job. A FAIL there is a FAIL the item gave.
 A rule proved unable from source and seen failing is a finding, `contradicted`. What
-no served tree answers — the credential-gated checks, and an assertion only the entry
-gate's own answer fails (TE-167, whose request the run's response cache answers with
-the entry page the gate already judged) — stays unclaimed until a run reaches it.
+no served tree answers — the credential-gated checks, and SE-118, which the entry gate
+turns into NO_DATA — stays unclaimed until a run reaches it.
 
 The runner's entry gate is a mechanism this tool cannot see from a script's source:
 CI-003 and TE-167 could not fail because of it until 0.130.0. That mechanism is derived
