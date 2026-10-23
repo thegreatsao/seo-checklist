@@ -1292,7 +1292,7 @@ def offline_env(**extra) -> dict:
                                    "scripts"),
     })
     for key in ("GSC_CREDENTIALS_PATH", "GV_SA_KEY", "GOOGLE_SAFE_BROWSING_KEY",
-                "PAGESPEED_API_KEY", "INDEXNOW_KEY"):
+                "PAGESPEED_API_KEY", "INDEXNOW_KEY", "SEO_PAGESPEED_STANDIN"):
         env.pop(key, None)
     env.update(extra)
     return with_tripwire(env)

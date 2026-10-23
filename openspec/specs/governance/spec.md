@@ -460,7 +460,10 @@ re-run until green. That is how a real failure gets merged.
 for the suite and every child and by `ci.yml`'s workflow `env` for every job (which
 `tools/ci_local.py` applies locally), makes the guard refuse any host but this machine
 before resolving it, and keeps `whois`, the W3C validator and Safe Browsing from being
-asked. Under it a tripwire (`tests/tripwire/`, a Python audit hook) raises in the test
+asked. Under it, and only under it, `pagespeed.py` asks the address in
+`SEO_PAGESPEED_STANDIN` instead of Google — a census tree's recorded answer on this machine
+(F05, `tests/test_pagespeed_standin.py`) — which the guard refuses like any other host unless
+it is this machine. Under it a tripwire (`tests/tripwire/`, a Python audit hook) raises in the test
 process and ends a child on a connection or a name lookup for any other host, and on the
 start of a program that is not Python and not named in `tripwire.PROGRAMS` with the
 reason it reaches nothing (git, bash, openssl, node; git only with

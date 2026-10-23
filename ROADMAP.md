@@ -65,15 +65,17 @@ can serve:
 |---|---|---|
 | answered somewhere, never FAIL | 1 | a rule whose failure the entry gate hides |
 | answered somewhere, never PASS | 2 | the mirror |
-| never answered anywhere | 23 | each needs an outside service or key, and the census names which |
+| never answered anywhere | 16 | each needs an outside service or key, and the census names which |
 
 F06 (0.175.0) took both other rows to items, one at a time, with what each was expected
 to be written down before anything was run (`docs/sprint-20261021-F06.md`). Of the 54,
 27 lacked a page, an artifact or a key on every tree served here, and seven corpus trees and
 their inputs now fail each of them for the reason its title names; one, `TE-167`, sat
 behind the gate for hosts only this machine reaches although no outside service is in its
-question, and now answers there. The 23 still silent each need an outside service or a key,
-and the census prints which beside each one — read through the runner's own gate, so an
+question, and now answers there. F05's third batch took the seven PageSpeed items out of
+this row: `slow-field/` and `fast-field/` serve a recorded PageSpeed Insights answer on
+loopback, which `pagespeed.py` asks only in a loopback-only process. The 16 still silent
+each need an outside service or a key, and the census prints which beside each one — read through the runner's own gate, so an
 item that could answer offline fails `test_census.py` by name instead of being excused in a
 sentence like the one this row used to carry.
 
@@ -126,8 +128,8 @@ measured and adopted at 5 by Anton's decision. The calibrations so
 far show what closing one costs: each took a corpus, a method and a stated limitation.
 
 `audit_reachability.py` proves 2 of the 145 script-backed assertions unable to report
-FAIL; the recorded census saw 121 of them fail, and the tool counts those as able; it
-claims nothing about the other 22 either way. Proving more of them reachable is
+FAIL; the recorded census saw 128 of them fail, and the tool counts those as able; it
+claims nothing about the other 15 either way. Proving more of them reachable is
 this clause's other half.
 
 ### Clause 3 — the document says what the code does
@@ -161,12 +163,14 @@ modules read; no number is bound by both. It is narrower than the ask it answers
    gate step watched by the tripwire, the consumer list re-read against Workbench's native
    build, the protocol marked by section by Anton's ruling, and an unanswered model queue
    said on every surface.
-4. **The 22 unclaimed assertions**, reduced by extending the detectors
+4. **The 15 unclaimed assertions**, reduced by extending the detectors
    `audit_reachability.py` already has rather than by asserting reachability in prose
-   (F05, `docs/sprint-20261023-F05-plan.md`; its first two batches claimed the 121 the
+   (F05, `docs/sprint-20261023-F05-plan.md`; its first three batches claimed the 128 the
    census saw fail, the second by recording which trees the entry gate stopped, naming
-   the tree that is slow by construction, and serving `went-down/` for TE-167).
-5. **The census's 1 and 23**: the 23 each name the outside service or key they wait for
+   the tree that is slow by construction, and serving `went-down/` for TE-167, the third
+   by serving a recorded PageSpeed answer on loopback from `slow-field/` and
+   `fast-field/`).
+5. **The census's 1 and 16**: the 16 each name the outside service or key they wait for
    (F06, 0.175.0); the 1, `SE-118`, needs the entry gate to answer it.
 6. **Clause 3 beyond counts** — every checkable sentence in `SKILL.md`, `README.md` and
    this file tied to observable behaviour, the way counts now are.

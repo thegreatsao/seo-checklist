@@ -8,6 +8,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "N/A",
+        "fast-field": "N/A",
         "fixture:broken": "N/A",
         "fixture:broken_tls": "N/A",
         "fixture:good": "N/A",
@@ -17,6 +18,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -35,6 +37,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -44,6 +47,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "FAIL",
         "went-down": "PASS"
       },
@@ -61,6 +65,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -70,6 +75,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -85,6 +91,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -94,6 +101,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "NO_DATA"
       },
@@ -111,6 +119,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -120,6 +129,7 @@
         "page-sound": "PASS",
         "redirect-chain": "FAIL",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -137,6 +147,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -146,6 +157,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "PASS",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -163,6 +175,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -172,6 +185,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "PASS",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -189,6 +203,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -198,6 +213,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "NO_DATA"
       },
@@ -215,6 +231,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "N/A",
+        "fast-field": "N/A",
         "fixture:broken": "N/A",
         "fixture:broken_tls": "N/A",
         "fixture:good": "N/A",
@@ -224,6 +241,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -242,6 +260,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -251,6 +270,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "FAIL",
         "went-down": "PASS"
       },
@@ -268,6 +288,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -277,6 +298,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -292,6 +314,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -301,6 +324,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -316,6 +340,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
@@ -325,6 +350,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -341,6 +367,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -350,6 +377,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -365,6 +393,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -374,6 +403,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -389,6 +419,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -398,6 +429,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -413,6 +445,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -422,6 +455,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "NO_DATA"
       },
@@ -439,6 +473,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "N/A",
+        "fast-field": "N/A",
         "fixture:broken": "N/A",
         "fixture:broken_tls": "N/A",
         "fixture:good": "N/A",
@@ -448,6 +483,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -466,6 +502,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -475,6 +512,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -490,6 +528,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -499,6 +538,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -514,6 +554,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -523,6 +564,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -538,6 +580,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -547,6 +590,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -562,6 +606,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "N/A",
         "fixture:broken": "WARN",
         "fixture:broken_tls": "WARN",
         "fixture:good": "PASS",
@@ -571,6 +616,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "FAIL",
+        "slow-field": "N/A",
         "url-shapes": "PASS",
         "went-down": "NO_DATA"
       },
@@ -590,6 +636,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -599,6 +646,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -614,6 +662,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -623,6 +672,7 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -642,6 +692,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -651,6 +702,7 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -669,6 +721,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -678,6 +731,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -693,6 +747,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -702,6 +757,7 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -719,6 +775,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -728,6 +785,7 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -745,6 +803,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -754,6 +813,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -769,6 +829,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -778,6 +839,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -793,6 +855,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -802,6 +865,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -817,6 +881,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -826,6 +891,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -841,6 +907,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -850,6 +917,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -865,6 +933,7 @@
       "answers": {
         "error-entry": "FAIL",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -874,6 +943,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "FAIL"
       },
@@ -890,6 +960,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -899,6 +970,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -915,6 +987,7 @@
       "answers": {
         "error-entry": "FAIL",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -924,6 +997,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "FAIL"
       },
@@ -940,6 +1014,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -949,6 +1024,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -966,6 +1042,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -975,6 +1052,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -992,6 +1070,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1001,6 +1080,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -1018,6 +1098,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -1027,6 +1108,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -1042,6 +1124,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1051,6 +1134,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "NO_DATA"
       },
@@ -1068,6 +1152,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1077,6 +1162,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "NO_DATA"
       },
@@ -1094,6 +1180,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -1103,6 +1190,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -1119,6 +1207,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1128,6 +1217,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "NO_DATA"
       },
@@ -1145,6 +1235,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -1154,6 +1245,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "FAIL",
         "went-down": "PASS"
       },
@@ -1171,6 +1263,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "NO_DATA",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -1180,6 +1273,7 @@
         "page-sound": "PASS",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -1197,6 +1291,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -1206,6 +1301,7 @@
         "page-sound": "PASS",
         "redirect-chain": "WARN",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -1224,6 +1320,7 @@
       "answers": {
         "error-entry": "FAIL",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1233,6 +1330,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "NO_DATA"
       },
@@ -1250,6 +1348,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "N/A",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1259,6 +1358,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -1277,6 +1377,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -1286,6 +1387,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -1301,6 +1403,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -1310,6 +1413,7 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -1328,6 +1432,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1337,6 +1442,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -1354,6 +1460,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -1363,6 +1470,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -1381,6 +1489,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -1390,6 +1499,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -1408,6 +1518,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -1417,6 +1528,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -1435,6 +1547,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -1444,6 +1557,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -1459,6 +1573,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1468,6 +1583,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -1485,6 +1601,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "WARN",
+        "fast-field": "WARN",
         "fixture:broken": "WARN",
         "fixture:broken_tls": "WARN",
         "fixture:good": "PASS",
@@ -1494,6 +1611,7 @@
         "page-sound": "WARN",
         "redirect-chain": "WARN",
         "site-defects": "FAIL",
+        "slow-field": "WARN",
         "url-shapes": "WARN",
         "went-down": "NO_DATA"
       },
@@ -1512,6 +1630,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1521,6 +1640,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -1538,6 +1658,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1547,6 +1668,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "NO_DATA"
       },
@@ -1564,6 +1686,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -1573,6 +1696,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -1588,6 +1712,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -1597,6 +1722,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -1612,6 +1738,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1621,6 +1748,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -1638,6 +1766,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -1647,6 +1776,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -1662,6 +1792,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -1671,6 +1802,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -1686,6 +1818,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -1695,6 +1828,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -1710,6 +1844,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1719,6 +1854,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -1736,6 +1872,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -1745,6 +1882,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -1760,6 +1898,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -1769,6 +1908,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -1784,6 +1924,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -1793,6 +1934,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -1811,6 +1953,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -1820,6 +1963,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -1835,6 +1979,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -1844,6 +1989,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -1859,6 +2005,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "N/A",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -1868,6 +2015,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -1886,6 +2034,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -1895,6 +2044,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -1910,6 +2060,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1919,6 +2070,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -1936,6 +2088,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -1945,6 +2098,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -1962,6 +2116,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -1971,6 +2126,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -1986,6 +2142,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -1995,6 +2152,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -2010,6 +2168,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -2019,6 +2178,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -2034,6 +2194,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -2043,6 +2204,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -2058,6 +2220,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -2067,6 +2230,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -2082,6 +2246,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -2091,6 +2256,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -2106,6 +2272,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -2115,6 +2282,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -2130,6 +2298,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2139,6 +2308,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -2156,6 +2326,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2165,6 +2336,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -2182,6 +2354,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -2191,6 +2364,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -2206,6 +2380,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2215,6 +2390,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -2232,6 +2408,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -2241,6 +2418,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -2256,6 +2434,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -2265,6 +2444,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -2280,6 +2460,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -2289,6 +2470,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -2304,6 +2486,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -2313,6 +2496,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -2328,6 +2512,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -2337,6 +2522,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -2352,6 +2538,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -2361,6 +2548,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -2376,6 +2564,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2385,6 +2574,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -2402,6 +2592,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2411,6 +2602,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -2428,6 +2620,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2437,6 +2630,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -2454,6 +2648,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2463,6 +2658,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -2480,6 +2676,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2489,6 +2686,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -2506,6 +2704,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
@@ -2515,6 +2714,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -2531,6 +2731,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "NEEDS_INPUT",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "NEEDS_INPUT",
@@ -2540,6 +2741,7 @@
         "page-sound": "PASS",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -2558,6 +2760,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2567,6 +2770,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -2584,6 +2788,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2593,6 +2798,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -2610,6 +2816,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2619,6 +2826,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -2636,6 +2844,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -2645,6 +2854,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -2660,6 +2870,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -2669,6 +2880,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -2685,6 +2897,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -2694,6 +2907,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -2710,6 +2924,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "FAIL",
         "fixture:broken": "WARN",
         "fixture:broken_tls": "WARN",
         "fixture:good": "PASS",
@@ -2719,6 +2934,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -2737,6 +2953,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -2746,6 +2963,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -2762,6 +2980,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "NO_DATA",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2771,6 +2990,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -2788,6 +3008,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -2797,6 +3018,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -2813,6 +3035,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -2822,6 +3045,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -2837,6 +3061,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -2846,6 +3071,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -2861,6 +3087,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -2870,6 +3097,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -2885,6 +3113,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "N/A",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -2894,6 +3123,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -2912,6 +3142,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2921,6 +3152,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -2938,6 +3170,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -2947,6 +3180,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -2964,6 +3198,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -2973,6 +3208,7 @@
         "page-sound": "PASS",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -2990,6 +3226,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -2999,6 +3236,7 @@
         "page-sound": "PASS",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -3016,6 +3254,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -3025,6 +3264,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -3042,6 +3282,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -3051,6 +3292,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -3066,6 +3308,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -3075,6 +3318,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -3090,6 +3334,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -3099,6 +3344,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -3114,6 +3360,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -3123,6 +3370,7 @@
         "page-sound": "PASS",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -3140,6 +3388,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -3149,6 +3398,7 @@
         "page-sound": "PASS",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -3166,6 +3416,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -3175,6 +3426,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -3190,6 +3442,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -3199,6 +3452,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -3214,6 +3468,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -3223,6 +3478,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -3238,6 +3494,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -3247,6 +3504,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -3263,6 +3521,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -3272,6 +3531,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -3288,6 +3548,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -3297,6 +3558,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -3312,6 +3574,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -3321,6 +3584,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -3336,6 +3600,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -3345,6 +3610,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -3360,6 +3626,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -3369,6 +3636,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -3384,6 +3652,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -3393,6 +3662,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -3410,6 +3680,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -3419,6 +3690,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -3434,6 +3706,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -3443,6 +3716,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -3458,6 +3732,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -3467,6 +3742,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -3482,6 +3758,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -3491,6 +3768,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "NO_DATA"
       },
@@ -3508,6 +3786,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -3517,6 +3796,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -3532,6 +3812,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "PASS",
@@ -3541,6 +3822,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -3558,6 +3840,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -3567,6 +3850,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
+        "slow-field": "PASS",
         "url-shapes": "FAIL",
         "went-down": "PASS"
       },
@@ -3584,6 +3868,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -3593,6 +3878,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -3611,6 +3897,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "PASS",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -3620,11 +3907,14 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "FAIL",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
       "distinct": [
-        "NO_DATA"
+        "FAIL",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "pagespeed.py",
       "severity": "medium",
@@ -3635,6 +3925,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "N/A",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -3644,6 +3935,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -3662,6 +3954,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "N/A",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -3671,6 +3964,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -3689,6 +3983,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "N/A",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -3698,6 +3993,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -3716,6 +4012,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -3725,6 +4022,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -3740,6 +4038,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -3749,6 +4048,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
+        "slow-field": "PASS",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -3766,6 +4066,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -3775,6 +4076,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -3790,6 +4092,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "N/A",
+        "fast-field": "N/A",
         "fixture:broken": "N/A",
         "fixture:broken_tls": "N/A",
         "fixture:good": "N/A",
@@ -3799,6 +4102,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -3817,6 +4121,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -3826,6 +4131,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -3844,6 +4150,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -3853,6 +4160,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "NO_DATA"
       },
@@ -3870,6 +4178,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "NO_DATA",
@@ -3879,6 +4188,7 @@
         "page-sound": "PASS",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -3897,6 +4207,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -3906,6 +4217,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -3921,6 +4233,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -3930,6 +4243,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -3948,6 +4262,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -3957,6 +4272,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -3975,6 +4291,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "FAIL",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -3984,6 +4301,7 @@
         "page-sound": "PASS",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -4001,6 +4319,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "N/A",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4010,6 +4329,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -4028,6 +4348,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "N/A",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4037,6 +4358,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -4055,6 +4377,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "NO_DATA",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4064,6 +4387,7 @@
         "page-sound": "PASS",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -4081,6 +4405,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -4090,6 +4415,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -4105,6 +4431,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "N/A",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4114,6 +4441,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -4132,6 +4460,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "N/A",
+        "fast-field": "N/A",
         "fixture:broken": "N/A",
         "fixture:broken_tls": "N/A",
         "fixture:good": "N/A",
@@ -4141,6 +4470,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -4159,6 +4489,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -4168,6 +4499,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -4185,6 +4517,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4194,6 +4527,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
+        "slow-field": "PASS",
         "url-shapes": "FAIL",
         "went-down": "PASS"
       },
@@ -4211,6 +4545,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4220,6 +4555,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "NO_DATA"
       },
@@ -4237,6 +4573,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -4246,6 +4583,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -4262,6 +4600,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -4271,6 +4610,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -4286,6 +4626,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -4295,6 +4636,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -4310,6 +4652,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4319,6 +4662,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "NO_DATA"
       },
@@ -4336,6 +4680,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -4345,6 +4690,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -4360,6 +4706,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4369,6 +4716,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -4386,6 +4734,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4395,6 +4744,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "NO_DATA"
       },
@@ -4412,6 +4762,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4421,6 +4772,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
+        "slow-field": "PASS",
         "url-shapes": "FAIL",
         "went-down": "PASS"
       },
@@ -4438,6 +4790,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4447,6 +4800,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -4464,6 +4818,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "WARN",
+        "fast-field": "N/A",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4473,6 +4828,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -4492,6 +4848,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4501,6 +4858,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "NO_DATA"
       },
@@ -4518,6 +4876,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -4527,6 +4886,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -4543,6 +4903,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
@@ -4552,6 +4913,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -4569,6 +4931,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -4578,6 +4941,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -4594,6 +4958,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
@@ -4603,6 +4968,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -4620,6 +4986,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "PASS",
         "fixture:good": "NO_DATA",
@@ -4629,6 +4996,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -4645,6 +5013,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "PASS",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -4654,11 +5023,14 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "FAIL",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
       "distinct": [
-        "NO_DATA"
+        "FAIL",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "pagespeed.py",
       "severity": "medium",
@@ -4669,6 +5041,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
@@ -4678,6 +5051,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -4695,6 +5069,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "PASS",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -4704,11 +5079,14 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "FAIL",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
       "distinct": [
-        "NO_DATA"
+        "FAIL",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "pagespeed.py",
       "severity": "high",
@@ -4719,6 +5097,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "PASS",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -4728,11 +5107,14 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "FAIL",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
       "distinct": [
-        "NO_DATA"
+        "FAIL",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "pagespeed.py",
       "severity": "critical",
@@ -4743,6 +5125,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -4752,6 +5135,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -4769,6 +5153,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4778,6 +5163,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -4795,6 +5181,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "PASS",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -4804,11 +5191,14 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "FAIL",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
       "distinct": [
-        "NO_DATA"
+        "FAIL",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "pagespeed.py",
       "severity": "high",
@@ -4819,6 +5209,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "PASS",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -4828,11 +5219,14 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "FAIL",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
       "distinct": [
-        "NO_DATA"
+        "FAIL",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "pagespeed.py",
       "severity": "high",
@@ -4843,6 +5237,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "PASS",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -4852,11 +5247,14 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "FAIL",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
       "distinct": [
-        "NO_DATA"
+        "FAIL",
+        "NO_DATA",
+        "PASS"
       ],
       "script": "pagespeed.py",
       "severity": "critical",
@@ -4867,6 +5265,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -4876,6 +5275,7 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -4893,6 +5293,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -4902,6 +5303,7 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -4919,6 +5321,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NEEDS_INPUT",
+        "fast-field": "NEEDS_INPUT",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "NEEDS_INPUT",
         "fixture:good": "PASS",
@@ -4928,6 +5331,7 @@
         "page-sound": "NEEDS_INPUT",
         "redirect-chain": "NEEDS_INPUT",
         "site-defects": "NEEDS_INPUT",
+        "slow-field": "NEEDS_INPUT",
         "url-shapes": "NEEDS_INPUT",
         "went-down": "NEEDS_INPUT"
       },
@@ -4945,6 +5349,7 @@
       "answers": {
         "error-entry": "LLM_PENDING",
         "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
         "fixture:broken": "LLM_PENDING",
         "fixture:broken_tls": "LLM_PENDING",
         "fixture:good": "LLM_PENDING",
@@ -4954,6 +5359,7 @@
         "page-sound": "LLM_PENDING",
         "redirect-chain": "LLM_PENDING",
         "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
         "url-shapes": "LLM_PENDING",
         "went-down": "LLM_PENDING"
       },
@@ -4969,6 +5375,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -4978,6 +5385,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -4995,6 +5403,7 @@
       "answers": {
         "error-entry": "FAIL",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -5004,6 +5413,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "FAIL"
       },
@@ -5020,6 +5430,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "WARN",
+        "fast-field": "PASS",
         "fixture:broken": "WARN",
         "fixture:broken_tls": "WARN",
         "fixture:good": "PASS",
@@ -5029,6 +5440,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "NO_DATA"
       },
@@ -5047,6 +5459,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -5056,6 +5469,7 @@
         "page-sound": "PASS",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "PASS",
         "went-down": "FAIL"
       },
@@ -5073,6 +5487,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -5082,6 +5497,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -5099,6 +5515,7 @@
       "answers": {
         "error-entry": "NEEDS_INPUT",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -5108,6 +5525,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -5124,6 +5542,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "N/A",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -5133,6 +5552,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -5151,6 +5571,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -5160,6 +5581,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -5175,6 +5597,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "N/A",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -5184,6 +5607,7 @@
         "page-sound": "N/A",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -5202,6 +5626,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
@@ -5211,6 +5636,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "FAIL"
       },
@@ -5228,6 +5654,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -5237,6 +5664,7 @@
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
         "site-defects": "FAIL",
+        "slow-field": "FAIL",
         "url-shapes": "FAIL",
         "went-down": "NO_DATA"
       },
@@ -5254,6 +5682,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -5263,6 +5692,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -5280,6 +5710,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -5289,6 +5720,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -5304,6 +5736,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -5313,6 +5746,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -5328,6 +5762,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
@@ -5337,6 +5772,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -5354,6 +5790,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "NO_DATA",
@@ -5363,6 +5800,7 @@
         "page-sound": "NO_DATA",
         "redirect-chain": "NO_DATA",
         "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
         "url-shapes": "NO_DATA",
         "went-down": "NO_DATA"
       },
@@ -5378,6 +5816,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -5387,6 +5826,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -5402,6 +5842,7 @@
       "answers": {
         "error-entry": "MANUAL",
         "failing-shapes": "MANUAL",
+        "fast-field": "MANUAL",
         "fixture:broken": "MANUAL",
         "fixture:broken_tls": "MANUAL",
         "fixture:good": "MANUAL",
@@ -5411,6 +5852,7 @@
         "page-sound": "MANUAL",
         "redirect-chain": "MANUAL",
         "site-defects": "MANUAL",
+        "slow-field": "MANUAL",
         "url-shapes": "MANUAL",
         "went-down": "MANUAL"
       },
@@ -5426,6 +5868,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "N/A",
         "fixture:broken": "NO_DATA",
         "fixture:broken_tls": "NO_DATA",
         "fixture:good": "PASS",
@@ -5435,6 +5878,7 @@
         "page-sound": "PASS",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
+        "slow-field": "N/A",
         "url-shapes": "N/A",
         "went-down": "N/A"
       },
@@ -5453,6 +5897,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -5462,6 +5907,7 @@
         "page-sound": "PASS",
         "redirect-chain": "PASS",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -5479,6 +5925,7 @@
       "answers": {
         "error-entry": "NO_DATA",
         "failing-shapes": "PASS",
+        "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
@@ -5488,6 +5935,7 @@
         "page-sound": "PASS",
         "redirect-chain": "FAIL",
         "site-defects": "PASS",
+        "slow-field": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -5510,11 +5958,13 @@
     "fixture:broken_tls",
     "error-entry",
     "failing-shapes",
+    "fast-field",
     "no-location",
     "page-defects",
     "page-sound",
     "redirect-chain",
     "site-defects",
+    "slow-field",
     "url-shapes",
     "went-down"
   ]

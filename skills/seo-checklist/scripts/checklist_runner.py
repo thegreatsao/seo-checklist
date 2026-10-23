@@ -2140,6 +2140,24 @@ NEEDS_THE_OUTSIDE_WORLD = {req for req, gates in REQUIREMENT_GATES.items()
                            if "outside_world" in gates}
 
 
+# The outside services a loopback stand-in can play, by the script that asks them, and the
+# variable naming the stand-in (F05-3). The census serves one and points the script at it.
+# The script reads the variable only in a loopback-only process, and so does `stood_in`,
+# so in a real audit nothing here applies.
+STAND_INS = {"pagespeed.py": "SEO_PAGESPEED_STANDIN"}
+
+
+def stood_in() -> set[str]:
+    """The scripts whose outside service a loopback stand-in plays in this run."""
+    try:
+        from lib.safe_http import loopback_only
+    except ImportError:
+        from scripts.lib.safe_http import loopback_only
+    if not loopback_only():
+        return set()
+    return {script for script, var in STAND_INS.items() if os.environ.get(var, "").strip()}
+
+
 def private_host_skips(items: list[dict], host: str,
                        gate: set | None = None) -> dict[str, tuple[str, str]]:
     """Mark the external-API checks undecided when the site is not public.
@@ -2154,12 +2172,17 @@ def private_host_skips(items: list[dict], host: str,
     Found by running it: pointed at a fixture server, `pagespeed.py` crashed twice
     with `HTTP 400` and the two Search Console scripts crashed on a property
     derived from an IP. "Script failed" sends the reader to open a working script.
+
+    A script a loopback stand-in answers for (`stood_in`) is left to answer for itself:
+    the service it asks is on this machine too.
     """
     gate = NEEDS_THE_OUTSIDE_WORLD if gate is None else gate
+    standing_in = stood_in()
     out = {}
     for it in items:
-        need = (it.get("check") or {}).get("requires", "fetch")
-        if need in gate:
+        check = it.get("check") or {}
+        if (check.get("requires", "fetch") in gate
+                and check.get("script") not in standing_in):
             out[it["id"]] = (NO_DATA, f"{host} is only reachable from here, so no "
                                       f"external service can measure it or hold "
                                       f"history for it")

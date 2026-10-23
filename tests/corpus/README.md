@@ -76,7 +76,15 @@ the comment above each shape names its item.
 - `page-defects/` and `page-sound/` — one entry page carrying a defect for each
   page-level item that had never failed or answered, and its twin doing each the way the
   item asks, so those items are seen both ways.
+- `slow-field/` and `fast-field/` — each also answers PageSpeed Insights' own path,
+  `/pagespeedonline/v5/runPagespeed`, with a recorded v5 response: real users find the
+  first page slow and heavy, the second fast and light, so the seven `pagespeed.py` items
+  (`MB-095`, `SP-107`, `SP-108`, `SP-111`, `SP-112`, `SP-113`, `SE-119`) are seen both
+  ways (F05). The census points the script at the tree's own answer through
+  `SEO_PAGESPEED_STANDIN`, which the script and the runner read only in a loopback-only
+  process; no real audit is one.
 
 `_inputs/<tree>/` holds what an operator would hand the run for that tree — the
-`ARTIFACT_FLAGS` files of `verdict_census.py` and an `indexnow_key` — outside the trees,
+`ARTIFACT_FLAGS` files of `verdict_census.py`, an `indexnow_key`, and a
+`pagespeed_standin.txt` naming the PageSpeed stand-in the tree serves — outside the trees,
 so nothing in it is ever served.

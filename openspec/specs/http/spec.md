@@ -298,6 +298,15 @@ mutation: it reddens 22 sub-tests of the status assertion, and the denominator f
 - **THEN** the item answers on a private host like any check of the site, because the
   gate is for what needs the outside world, not for a script that also does (F06,
   `test_uptime_is_one_request_of_this_audit_and_is_answered_here`)
+
+#### Scenario: an outside service a loopback stand-in plays
+- **WHEN** the process is loopback-only (`SEO_LOOPBACK_ONLY`: the suite and CI, never a
+  real audit) and a script's outside service is named by its stand-in variable
+  (`checklist_runner.STAND_INS`: `SEO_PAGESPEED_STANDIN` for `pagespeed.py`)
+- **THEN** that script's items answer for themselves on a private host, because the service
+  they ask is on this machine too; the census serves PageSpeed so from `slow-field/` and
+  `fast-field/` (F05, `test_a_loopback_stand_in_answers_for_the_service_it_plays`)
+- **AND** outside a loopback-only process the variable changes nothing
 - **AND** that script names the private host to no outside service — no Safe Browsing
   lookup with a key set, no whois, no reverse-IP lookup — so answering the item does not undo what
   the gate kept from being asked (`test_a_private_host_is_named_to_no_third_party`)

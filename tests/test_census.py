@@ -18,7 +18,9 @@ from __future__ import annotations
 import json
 import os
 import sys
+import tempfile
 import unittest
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "skills", "seo-checklist", "scripts"))
@@ -250,6 +252,26 @@ class TheCensusSaysWhereTheEntryGateStopped(unittest.TestCase):
                 answers = load(os.path.join(verdict_census.CORPUS, tree, "_answers.json"))
                 held = max(row.get("delay", 0) for row in answers.values()) * 1000
                 self.assertGreater(held, max(budgets))
+
+
+class ATreeCanNameAPageSpeedStandIn(unittest.TestCase):
+    """F05-3. `_inputs/<tree>/pagespeed_standin.txt` names the stand-in's address under
+    the usual placeholder; the census rewrites it to the bound port and hands it to the
+    run as `SEO_PAGESPEED_STANDIN`, and to no other tree's run."""
+
+    def inputs(self, label):
+        with tempfile.TemporaryDirectory() as workdir:
+            return verdict_census.corpus_inputs(label, "http://127.0.0.1:4321", workdir)[1]
+
+    def test_the_tree_that_names_one_is_pointed_at_its_own_port(self):
+        self.assertEqual(self.inputs("slow-field")["SEO_PAGESPEED_STANDIN"],
+                         "http://127.0.0.1:4321/pagespeedonline/v5/runPagespeed")
+
+    def test_no_other_tree_inherits_one(self):
+        with mock.patch.dict(os.environ, {"SEO_PAGESPEED_STANDIN": "http://127.0.0.1:9/"}):
+            for label in ("page-sound", "went-down"):
+                with self.subTest(tree=label):
+                    self.assertIsNone(self.inputs(label).get("SEO_PAGESPEED_STANDIN"))
 
 
 class TheHarnessSaysWhatItCannotExercise(unittest.TestCase):

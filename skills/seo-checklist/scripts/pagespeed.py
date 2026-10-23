@@ -27,6 +27,7 @@ except ImportError:
 import argparse
 import json
 import math
+import os
 import sys
 import time
 from typing import Any
@@ -40,15 +41,21 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from lib.safe_http import safe_get
+    from lib.safe_http import loopback_only, safe_get
     from lib.typed_credential import read_as_url
 except ImportError:
-    from scripts.lib.safe_http import safe_get
+    from scripts.lib.safe_http import loopback_only, safe_get
     from scripts.lib.typed_credential import read_as_url
 
 
 PSI_API = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 VALID_STRATEGIES = ("mobile", "desktop")
+# The census's PageSpeed stand-in (F05-3): a corpus tree answering this API's path with a
+# recorded v5 response, so the items reading this script are seen to fail by a run.
+# Read only in a loopback-only process, which the suite and CI are and no real audit
+# is, so a real audit asks Google whatever its environment holds; under the same switch
+# `safe_get` refuses a stand-in that is not this machine.
+PSI_STANDIN_ENV = "SEO_PAGESPEED_STANDIN"
 
 # basis: standard — Lighthouse's documented target for its total-byte-weight audit:
 #  "Aim to keep your total byte size below 1,600 KiB", what a 3G connection downloads
@@ -312,6 +319,12 @@ def parse_pagespeed_response(data: dict[str, Any], url: str, strategy: str = "mo
     return result
 
 
+def psi_endpoint() -> str:
+    """Where `get_pagespeed` asks: Google, or the census's stand-in under the offline switch."""
+    standin = os.environ.get(PSI_STANDIN_ENV, "").strip()
+    return standin if standin and loopback_only() else PSI_API
+
+
 def get_pagespeed(url: str, strategy: str = "mobile", api_key: str = None) -> dict:
     """
     Fetch PageSpeed Insights data for a URL.
@@ -341,7 +354,7 @@ def get_pagespeed(url: str, strategy: str = "mobile", api_key: str = None) -> di
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            resp = safe_get(PSI_API, params=params, timeout=60)
+            resp = safe_get(psi_endpoint(), params=params, timeout=60)
 
             if resp.status_code == 429:
                 if attempt < max_retries - 1:

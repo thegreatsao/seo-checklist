@@ -797,6 +797,28 @@ class PrivateAddresses(unittest.TestCase):
         gate = set(NEEDS_THE_OUTSIDE_WORLD) - {"gsc"}
         self.assertEqual(sorted(private_host_skips(items, "10.0.0.5", gate)), ["SP-108"])
 
+    def test_a_loopback_stand_in_answers_for_the_service_it_plays(self):
+        """F05-3. The census serves PageSpeed's own path from `slow-field/` and points
+        `pagespeed.py` at it, so on that run the PageSpeed items are measured by a
+        service this machine reaches, and answer for themselves. Only in a
+        loopback-only process, as the script reads it: no real audit is one, so there
+        the variable changes nothing."""
+        items = [{"id": "SP-108", "check": {"script": "pagespeed.py", "requires": "api"}},
+                 {"id": "SE-114", "check": {"script": "domain_safety_check.py",
+                                             "requires": "safe_browsing"}}]
+        standin = {"SEO_PAGESPEED_STANDIN":
+                   "http://127.0.0.1:9/pagespeedonline/v5/runPagespeed"}
+        with mock.patch.dict(os.environ, dict(standin, SEO_LOOPBACK_ONLY="1")):
+            self.assertEqual(sorted(private_host_skips(items, "127.0.0.1:8000")),
+                             ["SE-114"])
+        with mock.patch.dict(os.environ, dict(standin, SEO_LOOPBACK_ONLY="")):
+            self.assertEqual(sorted(private_host_skips(items, "127.0.0.1:8000")),
+                             ["SE-114", "SP-108"])
+
+    def test_the_runner_and_the_script_name_the_same_stand_in(self):
+        import pagespeed
+        self.assertEqual(runner.STAND_INS, {"pagespeed.py": pagespeed.PSI_STANDIN_ENV})
+
     def test_the_flag_alone_does_not_make_a_host_private(self):
         """`is_private_host` answers where the host resolves, not what was permitted.
         Confusing the two would drop PageSpeed and Search Console from an ordinary

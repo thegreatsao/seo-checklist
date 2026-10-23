@@ -591,6 +591,16 @@ class AFailTheCensusSawIsAClaim(unittest.TestCase):
                     self.assertIn(item["id"], set(seen))
                     self.assertFalse(set(seen[item["id"]]["trees"]) & gated)
 
+    def test_every_pagespeed_rule_is_claimed_from_the_stand_in_s_tree(self):
+        """F05-3. Offline the guard refuses Google and every PageSpeed item answers
+        NO_DATA; `slow-field/` serves a recorded v5 response on loopback, which the
+        script reads only in a loopback-only process, and each item fails there."""
+        seen = R.observed_failures()
+        for item in R.script_backed(DATA):
+            if item["check"]["script"] == "pagespeed.py":
+                with self.subTest(item=item["id"]):
+                    self.assertIn("slow-field", seen.get(item["id"], {}).get("trees", []))
+
     def test_every_fail_the_oracle_declares_is_claimed(self):
         """The oracle's FAILs are re-run by `make test`, the census's only by its own
         job; an oracle FAIL left unclaimed would mean the detector misreads the census."""
