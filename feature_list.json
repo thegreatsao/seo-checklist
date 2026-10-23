@@ -77,9 +77,9 @@
         "repair": "ci_local.py names the CI step that failed; run that step's command from .github/workflows/ci.yml by hand. '--list' shows what it runs and skips."
       }
     ],
-    "state": "not_started",
+    "state": "active",
     "evidence": "",
-    "notes": "ROADMAP item 2. Readings: tools/item-readings.json, held by tools/audit_item_readings.py --check."
+    "notes": "ROADMAP item 2. Readings: tools/item-readings.json, held by tools/audit_item_readings.py --check. Plan: docs/sprint-20261023-F03-plan.md. Spans sessions."
   },
   {
     "id": "F04",
