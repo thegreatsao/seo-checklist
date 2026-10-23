@@ -12,7 +12,7 @@
     "else": {
       "status": 200,
       "content_type": "application/json; charset=UTF-8",
-      "body": "{\n  \"rows\": [\n    {\n      \"keys\": [\n        \"http://127.0.0.1:8000/\"\n      ],\n      \"clicks\": 69,\n      \"impressions\": 232,\n      \"ctr\": 0.2974,\n      \"position\": 2.0\n    },\n    {\n      \"keys\": [\n        \"http://127.0.0.1:8000/guides/\"\n      ],\n      \"clicks\": 8,\n      \"impressions\": 94,\n      \"ctr\": 0.0851,\n      \"position\": 2.0\n    }\n  ],\n  \"responseAggregationType\": \"byPage\"\n}"
+      "body": "{\n  \"rows\": [\n    {\n      \"keys\": [\n        \"http://127.0.0.1:8000/\"\n      ],\n      \"clicks\": 69,\n      \"impressions\": 232,\n      \"ctr\": 0.2974,\n      \"position\": 2.7\n    },\n    {\n      \"keys\": [\n        \"http://127.0.0.1:8000/guides/\"\n      ],\n      \"clicks\": 8,\n      \"impressions\": 94,\n      \"ctr\": 0.0851,\n      \"position\": 5.3\n    }\n  ],\n  \"responseAggregationType\": \"byPage\"\n}"
     }
   },
   "/webmasters/v3/sites/http%3A%2F%2F127.0.0.1%3A8000%2F/sitemaps": {

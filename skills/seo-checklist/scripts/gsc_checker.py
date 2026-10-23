@@ -114,7 +114,6 @@ SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
 # would carry. `googleapiclient` is an optional extra no CI job installs, so the stand-in
 # is a client of its own, not a discovery document.
 GSC_STANDIN_ENV = "SEO_SEARCH_CONSOLE_STANDIN"
-STANDIN_TIMEOUT = 30
 
 
 # ---------------------------------------------------------------------------
@@ -151,14 +150,18 @@ def _standin_service(base: str):
         def execute():
             try:
                 if method == "POST":
-                    resp = safe_post(base + path, json=body, timeout=STANDIN_TIMEOUT)
+                    resp = safe_post(base + path, json=body)
                 else:
-                    resp = safe_get(base + path, timeout=STANDIN_TIMEOUT)
+                    resp = safe_get(base + path)
             except Exception as exc:
                 raise StandInError(f"Search Console stand-in not asked: {exc}") from exc
             if resp.status_code != 200:
                 raise StandInError(f"Search Console stand-in returned HTTP {resp.status_code}")
-            return resp.json()
+            # Inside a `StandInError` too: requests' `JSONDecodeError` is an `OSError`.
+            try:
+                return resp.json()
+            except ValueError as exc:
+                raise StandInError(f"Search Console stand-in answered no JSON: {exc}") from exc
         return SimpleNamespace(execute=execute)
 
     def site(site_url: str) -> str:

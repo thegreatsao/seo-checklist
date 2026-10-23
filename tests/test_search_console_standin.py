@@ -148,10 +148,10 @@ class EachCallIsGooglesAndCarriesNoCredential(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         return calls[0]
 
-    def assert_carries_nothing(self, kwargs: dict):
-        sent = json.dumps(kwargs, default=str).lower()
-        for word in ("key.json", "authorization", "bearer", "access_token", "key="):
-            self.assertNotIn(word, sent)
+    def assert_carries_nothing(self, kwargs: dict, expected: set):
+        # Exactly these arguments: `params`, `auth` or a header would carry a key or token
+        # as surely as the URL would, under any name (review of F05-5).
+        self.assertEqual(set(kwargs), expected)
 
     def test_search_analytics(self):
         body = {"startDate": "2026-09-25", "endDate": "2026-10-23",
@@ -160,12 +160,12 @@ class EachCallIsGooglesAndCarriesNoCredential(unittest.TestCase):
             lambda s: s.searchanalytics().query(siteUrl=PROPERTY, body=body))
         self.assertEqual((method, url), ("POST", self.STANDIN + QUERY_ROUTE))
         self.assertEqual(kwargs["json"], body)
-        self.assert_carries_nothing(kwargs)
+        self.assert_carries_nothing(kwargs, {"json"})
 
     def test_the_sitemaps_list(self):
         method, url, kwargs = self.call(lambda s: s.sitemaps().list(siteUrl=PROPERTY))
         self.assertEqual((method, url), ("GET", self.STANDIN + SITEMAPS_ROUTE))
-        self.assert_carries_nothing(kwargs)
+        self.assert_carries_nothing(kwargs, set())
 
     def test_url_inspection(self):
         body = {"inspectionUrl": PROPERTY, "siteUrl": PROPERTY, "languageCode": "en-US"}
@@ -173,7 +173,7 @@ class EachCallIsGooglesAndCarriesNoCredential(unittest.TestCase):
             lambda s: s.urlInspection().index().inspect(body=body))
         self.assertEqual((method, url), ("POST", self.STANDIN + INSPECT_ROUTE))
         self.assertEqual(kwargs["json"], body)
-        self.assert_carries_nothing(kwargs)
+        self.assert_carries_nothing(kwargs, {"json"})
 
     def test_a_stand_in_that_is_not_this_machine_is_refused_not_asked(self):
         with mock.patch.dict(os.environ, {"SEO_LOOPBACK_ONLY": "1",
@@ -184,6 +184,24 @@ class EachCallIsGooglesAndCarriesNoCredential(unittest.TestCase):
                 service.sitemaps().list(siteUrl=PROPERTY).execute()
         self.assertIn("loopback-only", str(caught.exception))
         self.assertIn("gsc.example.test", str(caught.exception))
+
+
+class AnAnswerTheStandInCannotGiveIsTheServices(unittest.TestCase):
+    """A stand-in that answers with something other than JSON is the service failing, as
+    `googleapiclient`'s `HttpError` would be, never the operator's key file: requests'
+    `JSONDecodeError` is an `OSError`, which every caller reads as `input` (review of
+    F05-5)."""
+
+    def test_a_body_that_is_not_json_is_a_stand_in_error(self):
+        import requests
+        answer = mock.Mock(status_code=200)
+        answer.json.side_effect = requests.JSONDecodeError("Expecting value", "<html>", 0)
+        with mock.patch.dict(os.environ, {"SEO_LOOPBACK_ONLY": "1",
+                                          "SEO_SEARCH_CONSOLE_STANDIN": "http://127.0.0.1:9"}), \
+                mock.patch.object(gsc_checker, "safe_get", return_value=answer):
+            service = gsc_checker.build_service("/nowhere/key.json")
+            with self.assertRaises(gsc_checker.StandInError):
+                service.sitemaps().list(siteUrl=PROPERTY).execute()
 
 
 class TheRecordedAnswersAreGooglesShape(unittest.TestCase):
@@ -213,6 +231,23 @@ class TheRecordedAnswersAreGooglesShape(unittest.TestCase):
                 both, pages = (json.loads(a["body"])["rows"] for a in (answer, answer["else"]))
                 self.assertEqual({len(r["keys"]) for r in both}, {2})
                 self.assertEqual({len(r["keys"]) for r in pages}, {1})
+
+    def test_the_page_rows_are_the_query_rows_summed(self):
+        """One property's data seen two ways: per page, the clicks and impressions of its
+        queries summed and their positions averaged by impressions (review of F05-5)."""
+        for tree in TREES:
+            with self.subTest(tree=tree):
+                answer = table(tree)[QUERY_ROUTE]
+                both, pages = (json.loads(a["body"])["rows"] for a in (answer, answer["else"]))
+                for page in pages:
+                    rows = [r for r in both if r["keys"][1] == page["keys"][0]]
+                    impressions = sum(r["impressions"] for r in rows)
+                    self.assertEqual(page["clicks"], sum(r["clicks"] for r in rows))
+                    self.assertEqual(page["impressions"], impressions)
+                    self.assertAlmostEqual(
+                        page["position"],
+                        sum(r["position"] * r["impressions"] for r in rows) / impressions,
+                        places=1)
 
     def test_the_sitemaps_list(self):
         for tree in TREES:

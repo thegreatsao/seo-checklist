@@ -74,6 +74,9 @@ SERVICE_ANSWERS = {
         (1, "the PageSpeed Insights API answers 200 with a report"),
     ("indexnow_checker.py", "ping_indexnow"):
         (1, "the IndexNow protocol names 200 and 202 as an accepted submission"),
+    ("gsc_checker.py", "execute"):
+        (1, "the Search Console API answers 200 with its JSON resource; the census's "
+            "stand-in plays it (F05-5)"),
     ("seo_common.py", "status_class"):
         (1, "the one place 200 is named: the class `ok`, which CI-003 reads"),
 }
