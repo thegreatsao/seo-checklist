@@ -20,14 +20,15 @@ the CI `census` job and `ci_local` re-derive from five audits and compare on eve
 
 | group | n | what proves it | detector extension | batch |
 |---|---|---|---|---|
-| **A — seen to fail** | **117** | the recorded census holds a `FAIL` for the item on at least one served tree, through the registry's own arguments. 84 of them are also declared `FAIL` by the oracle and re-run by `make test` | `observed_fail`: read the census; a `FAIL` the runner gave is the claim. Plus the contradiction check: an item proved unable *and* seen to fail is a finding | 1 |
-| **B — seen to fail, maybe by the gate** | 4 | CI-001, CI-003, CI-015, TE-167 carry `entry_answer`, so the runner's entry gate can write their `FAIL` without the assertion (`checklist_runner.py`, the entry-gate block). Their census `FAIL`s: CI-003 and TE-167 only where the entry fails (`error-entry`, and `no-location` for CI-003); CI-015 also on `fixture:broken` and `fixture:broken_tls`; CI-001 also there and on `page-defects` | the census records where each verdict came from (gate or assertion), or the detector reads the tree's entry status; then `observed_fail` claims the ones the assertion failed | 2 |
+| **A — seen to fail** | **116** | the recorded census holds a `FAIL` for the item on at least one served tree, through the registry's own arguments. 84 of them are also declared `FAIL` by the oracle and re-run by `make test` | `observed_failures`: read the census; a `FAIL` the runner gave is the claim. Plus the contradiction check: an item proved unable *and* seen to fail is a finding | 1 |
+| **B — seen to fail, maybe by the gate** | 4 | CI-001, CI-003, CI-015, TE-167 carry `entry_answer`, so the runner's entry gate can write their `FAIL` without the assertion (`checklist_runner.py`, the entry-gate block). Their census `FAIL`s: CI-003 and TE-167 only where the entry fails (`error-entry`, and `no-location` for CI-003); CI-015 also on `fixture:broken` and `fixture:broken_tls`; CI-001 also there and on `page-defects` | the census records where each verdict came from (gate or assertion), or the detector reads the tree's entry status; then `observed_failures` claims the ones the assertion failed | 2 |
+| **A′ — seen to fail, by the clock** | 1 | TECH-003 (`lcp_subparts.py`, `subparts.ttfb_ms`): census `FAIL` on `redirect-chain`, but the census check holds a `harness.CLOCK_READ` item's answer only as "timed", so the recorded `FAIL` is the recording machine's and nothing re-derives it. Found in batch 1: the classification above counted it in A | a served tree whose first byte is slow by construction (a delay the fixture server adds), so the `FAIL` is the tree's, and TECH-003 leaves `CLOCK_READ` for that tree, or the census holds it beyond "timed" | 2 |
 | **C — the entry gate hides it** | 1 | SE-118 (`tls_certificate.py`, `valid` truthy): census `NO_DATA`/`PASS` only; the TLS failure stops the run at the gate | none in this tool: ROADMAP item 5 ("SE-118 needs the entry gate to answer it") owns it; `tests/test_entry_answers.py` is the reader of that mechanism | — |
 | **D1 — PageSpeed** | 7 | MB-095, SP-107, SP-108, SP-111, SP-112, SP-113, SE-119 (`pagespeed.py`, `requires: api`): census `NO_DATA` everywhere, no key offline | a census tree serving a recorded PageSpeed response on loopback (the script's `PSI_API` constant needs an override under the offline switch), so the runner reaches the assertion with the registry's arguments | 3 |
 | **D2 — HTML validator, Safe Browsing** | 5 | CI-017, TE-181 (`html_validator.py`); SE-114, SE-116, TE-171 (`domain_safety_check.py` `safe_browsing.threats`): refused under `SEO_LOOPBACK_ONLY` by design since F04-5 | as D1: a loopback stand-in per service, admitted by the offline switch only for the census | 4 |
 | **D3 — Search Console** | 9 | CI-002, CI-010, GO-135 (`gsc_url_inspection.py`); MS-023, KW-070, KW-071, GO-139 (`gsc_cannibalization.py`); GO-134 (`gsc_checker.py`); GO-137 (`gsc_sitemap_reconcile.py`): census `NEEDS_INPUT`/`NO_DATA` | the scripts call `googleapiclient`'s `build_service`; a stand-in is a recorded discovery document plus responses, or an injected service under the offline switch. The largest of the four; may split | 5 |
 
-117 + 4 + 1 + 7 + 5 + 9 = 143. **Why not source-shape proofs of reachability.** This tool's own history is the reason:
+116 + 1 + 4 + 1 + 7 + 5 + 9 = 143. **Why not source-shape proofs of reachability.** This tool's own history is the reason:
 the retired fourth detector was wrong four times out of four reading values from source, and 0.50.0's `if fetch:` put
 a failing severity in source that the registry's arguments never reached. A `FAIL` the runner gave on a served tree is
 the one proof that takes the registry's own invocation into account, so every group above is claimed by a run, and the
@@ -37,8 +38,8 @@ groups that no offline run reaches (D) get a run they can reach rather than an a
 
 | batch | groups | contract | state |
 |---|---|---|---|
-| 1 | A (117): `observed_fail`, the contradiction check, summary line, prose counts, REG-10 | `docs/sprint-20261023-F05-1.md` | **in progress** |
-| 2 | B (4): verdict provenance in the census | — | not started |
+| 1 | A (116): `observed_failures`, the contradiction check, summary line, prose counts, REG-10 | `docs/sprint-20261023-F05-1.md` | **in progress** |
+| 2 | B (4) and A′ (1): verdict provenance in the census; a slow-by-construction tree | — | not started |
 | 3 | D1 (7): PageSpeed stand-in | — | not started |
 | 4 | D2 (5): validator and Safe Browsing stand-ins | — | not started |
 | 5 | D3 (9): Search Console stand-in (may split 5a/5b) | — | not started |

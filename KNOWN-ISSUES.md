@@ -746,10 +746,10 @@ name. A column called `url` would be read as "fix this page".
 
   Kept, rewritten rather than deleted, because the entry itself is the finding: **a record
   of a defect is not evidence the defect is still there**, and this one read as open
-  through every audit of this file until somebody ran the detector it asked for. What
-  `audit_reachability.py` still cannot do is claim reachability — 143 of 145 script-backed
-  assertions are not claimed either way, and that number is the honest measure of how much
-  of the registry this tool speaks about at all.
+  through every audit of this file until somebody ran the detector it asked for. Since
+  F05 `audit_reachability.py` claims reachability only from a run — a FAIL the recorded
+  census saw — and 27 of 145 script-backed assertions are still not claimed either way;
+  that number is the honest measure of how much of the registry this tool speaks about.
   <!-- ki: items-that-could-not-fail -->
 
 - **Closed in 0.43.0, and this entry read as open for the thirty-six releases after

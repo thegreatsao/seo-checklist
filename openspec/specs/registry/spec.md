@@ -578,7 +578,11 @@ declared-but-unprovable one, and a declaration naming the wrong mechanism are al
 **Why:** an unfailable rule scores a pass on every site forever. Making the claim
 explicit turns an invisible defect into a recorded decision.
 **Reader:** enforced. `tools/audit_reachability.py` in CI checks all three directions,
-and `tests/test_reachability.py` covers the mechanism vocabulary.
+and `tests/test_reachability.py` covers the mechanism vocabulary. Since F05 it also
+claims the other way, from a run only: a rule the recorded census saw `FAIL` is counted
+able to fail, and a rule proved unable *and* seen failing is an error. Not held: a rule
+no served tree reaches (the credential-gated checks) or one only the entry gate fails is
+claimed neither way, and the claim is as current as the census, which its own job re-runs.
 
 #### Scenario: a field written only when it would pass
 - **WHEN** a checker writes the field a rule asserts only when that field already holds
@@ -602,6 +606,18 @@ and `tests/test_reachability.py` covers the mechanism vocabulary.
 - **THEN** the rule still cannot fail, and the requirement is violated
 - **AND** the proof tool falls silent, because it reads the literal in the source
   rather than whether the line is reachable from the arguments the registry passes
+
+#### Scenario: a rule a served tree saw fail
+- **WHEN** the recorded census, taken against this registry, holds a `FAIL` the runner
+  gave an item through its assertion on at least one served tree
+- **THEN** the item is counted able to report FAIL, and is not among those claimed
+  neither way
+- **AND** a `FAIL` the entry gate can write, or one the census holds only as timed, is
+  not counted
+
+#### Scenario: a proof from source against a failure on record
+- **WHEN** a rule is proved unable to report FAIL and the census saw it fail
+- **THEN** it is an error, because the proof is the one of the two that can be wrong
 
 ### Requirement: REG-11 — two items sharing one check are ruled on, not left to chance
 

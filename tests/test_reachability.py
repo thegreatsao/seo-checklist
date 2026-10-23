@@ -61,7 +61,8 @@ class Tree:
     `article_seo.py` at `v0.44.0`, where it found the defect at line 705.
     """
 
-    def __init__(self, registry, source, shapes="### `probe.py`\n\n`value` — a value\n"):
+    def __init__(self, registry, source, shapes="### `probe.py`\n\n`value` — a value\n",
+                 answers=None, census_version=None, clock_read=()):
         self.dir = tempfile.mkdtemp()
         self.scripts = os.path.join(self.dir, "scripts")
         os.makedirs(self.scripts, exist_ok=True)
@@ -73,12 +74,26 @@ class Tree:
             f.write(source)
         with open(self.shapes, "w", encoding="utf-8") as f:
             f.write(shapes)
+        # A census row per item, in the recorded file's own shape, and a harness
+        # naming the items whose answer is the recording machine's clock.
+        self.census = os.path.join(self.dir, "census.json")
+        self.harness = os.path.join(self.dir, "harness.py")
+        with open(self.census, "w", encoding="utf-8") as f:
+            json.dump({"registry_version": census_version or registry["registry_version"],
+                       "items": {item_id: {"answers": row}
+                                 for item_id, row in (answers or {}).items()}}, f)
+        with open(self.harness, "w", encoding="utf-8") as f:
+            f.write(f"CLOCK_READ = {dict.fromkeys(clock_read, 'timed')!r}\n")
 
     def proved(self):
         return R.proofs(self.registry, self.shapes, self.scripts)
 
+    def seen(self):
+        return R.observed_failures(self.registry, self.census, self.harness)
+
     def findings(self):
-        return R.audit(self.registry, self.shapes, self.scripts)
+        return R.audit(self.registry, self.shapes, self.scripts, self.census,
+                       self.harness)
 
 
 class TheRegistryAgreesWithItsOwnCode(unittest.TestCase):
@@ -426,6 +441,90 @@ class ADeclarationCannotOutliveItsReason(unittest.TestCase):
                                             "why": "  "}),
                     self.UNFAILABLE)
         self.assertEqual([f["kind"] for f in tree.findings()], ["unexplained"])
+
+
+class AFailTheCensusSawIsAClaim(unittest.TestCase):
+    """The claim of the other kind: this rule can report FAIL, because it did.
+
+    Until F05 the tool proved only *unable*, and printed 143 of 145 as claimed
+    neither way. A source argument for *able* is the one this tool has the worst
+    record with — the retired fourth detector was wrong four times out of four, and
+    0.50.0's `if fetch:` put a failing severity where the registry's arguments never
+    reached — so the claim is a run: the recorded census is the runner, with the
+    registry's own arguments, on every served tree, and its job re-derives it.
+    Each refusal below is a recorded FAIL that would not be the assertion's.
+    """
+
+    FAILABLE = "def main():\n    return {'value': measure() > 0}\n"
+
+    def test_a_rule_the_census_saw_fail_is_claimed(self):
+        tree = Tree(a_registry({"path": "value", "truthy": True}), self.FAILABLE,
+                    answers={"ZZ-001": {"site-defects": "FAIL", "page-sound": "PASS"}})
+        self.assertEqual(tree.seen()["ZZ-001"]["trees"], ["site-defects"])
+
+    def test_a_rule_seen_only_passing_or_silent_is_not_claimed(self):
+        tree = Tree(a_registry({"path": "value", "truthy": True}), self.FAILABLE,
+                    answers={"ZZ-001": {"page-sound": "PASS", "site-defects": "WARN",
+                                        "error-entry": "NO_DATA"}})
+        self.assertEqual(tree.seen(), {})
+
+    def test_a_census_of_another_registry_claims_nothing(self):
+        """Its rows answered other rules. `test_census` reddens on the stamp too; this
+        is so that the tool, run alone, cannot count a claim the record does not hold."""
+        tree = Tree(a_registry({"path": "value", "truthy": True}), self.FAILABLE,
+                    answers={"ZZ-001": {"site-defects": "FAIL"}},
+                    census_version="000000000000")
+        self.assertEqual(tree.seen(), {})
+
+    def test_a_fail_the_entry_gate_can_write_is_not_claimed(self):
+        """CI-003 and TE-167 fail only where the entry page does, and the runner's
+        gate writes that FAIL from `entry_answer` without reading the assertion."""
+        registry = a_registry({"path": "value", "truthy": True})
+        registry["items"][0]["check"]["entry_answer"] = {
+            "fails_on": ["server_error"], "why": "the gate measured it"}
+        tree = Tree(registry, self.FAILABLE,
+                    answers={"ZZ-001": {"error-entry": "FAIL"}})
+        self.assertEqual(tree.seen(), {})
+
+    def test_a_fail_the_recording_machine_timed_is_not_claimed(self):
+        """TECH-003's census answer is compared only as timed (`verdict_census.as_held`),
+        so a FAIL recorded on a slow machine is that machine's and no check holds it."""
+        tree = Tree(a_registry({"path": "value", "truthy": True}), self.FAILABLE,
+                    answers={"ZZ-001": {"redirect-chain": "FAIL"}},
+                    clock_read=("ZZ-001",))
+        self.assertEqual(tree.seen(), {})
+
+    def test_proved_unable_and_seen_failing_is_a_contradiction(self):
+        """One of the two is wrong, and it is not the run. The oracle check above
+        caught the retired detector this way; this asks every recorded answer."""
+        tree = Tree(a_registry({"path": "value", "truthy": True}),
+                    ADeclarationCannotOutliveItsReason.UNFAILABLE,
+                    answers={"ZZ-001": {"site-defects": "FAIL"}})
+        self.assertIn(("ZZ-001", "contradicted"),
+                      [(f["id"], f["kind"]) for f in tree.findings()])
+
+    def test_the_clock_is_read_from_the_harness_the_census_uses(self):
+        self.assertEqual(R.clock_read(), set(harness.CLOCK_READ))
+
+    def test_every_claim_on_the_shipped_tree_is_a_recorded_fail(self):
+        with open(R.CENSUS, encoding="utf-8") as f:
+            census = json.load(f)["items"]
+        seen = R.observed_failures()
+        self.assertGreater(len(seen), 100)
+        for item_id in seen:
+            self.assertIn("FAIL", census[item_id]["answers"].values(), item_id)
+
+    def test_every_fail_the_oracle_declares_is_claimed(self):
+        """The oracle's FAILs are re-run by `make test`, the census's only by its own
+        job; an oracle FAIL left unclaimed would mean the detector misreads the census."""
+        with open(EXPECTATIONS, encoding="utf-8") as f:
+            fixtures = json.load(f)["fixtures"]
+        declared = {item_id for origin in fixtures.values()
+                    for item_id, row in origin.items() if row["expect"] == "FAIL"}
+        refused = {i["id"] for i in DATA["items"]
+                   if (i.get("check") or {}).get("entry_answer")} | R.clock_read()
+        owed = {i["id"] for i in R.script_backed(DATA)} & declared - refused
+        self.assertEqual(sorted(owed - set(R.observed_failures())), [])
 
 
 class TheOtherExemptionListStaysHonest(unittest.TestCase):

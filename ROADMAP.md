@@ -126,7 +126,8 @@ measured and adopted at 5 by Anton's decision. The calibrations so
 far show what closing one costs: each took a corpus, a method and a stated limitation.
 
 `audit_reachability.py` proves 2 of the 145 script-backed assertions unable to report
-FAIL and claims nothing about the other 143 either way. Proving more of them reachable is
+FAIL; the recorded census saw 116 of them fail, and the tool counts those as able; it
+claims nothing about the other 27 either way. Proving more of them reachable is
 this clause's other half.
 
 ### Clause 3 — the document says what the code does
@@ -160,8 +161,10 @@ modules read; no number is bound by both. It is narrower than the ask it answers
    gate step watched by the tripwire, the consumer list re-read against Workbench's native
    build, the protocol marked by section by Anton's ruling, and an unanswered model queue
    said on every surface.
-4. **The 143 unclaimed assertions**, reduced by extending the detectors
-   `audit_reachability.py` already has rather than by asserting reachability in prose.
+4. **The 27 unclaimed assertions**, reduced by extending the detectors
+   `audit_reachability.py` already has rather than by asserting reachability in prose
+   (F05, `docs/sprint-20261023-F05-plan.md`; its first batch claimed the 116 the census
+   saw fail).
 5. **The census's 1 and 23**: the 23 each name the outside service or key they wait for
    (F06, 0.175.0); the 1, `SE-118`, needs the entry gate to answer it.
 6. **Clause 3 beyond counts** — every checkable sentence in `SKILL.md`, `README.md` and

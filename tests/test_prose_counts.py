@@ -100,8 +100,10 @@ def threshold_counts() -> dict[str, int]:
 @functools.lru_cache
 def assertion_counts() -> dict[str, int]:
     total = populations()["asserted"]
-    proved = len(audit_reachability.proofs())
-    return {"total": total, "proved": proved, "unclaimed": total - proved}
+    proved = audit_reachability.proofs()
+    seen = audit_reachability.observed_failures()
+    return {"total": total, "proved": len(proved), "seen": len(seen),
+            "unclaimed": total - len(proved.keys() | seen.keys())}
 
 
 @functools.lru_cache
@@ -189,6 +191,7 @@ CLAIMS = (
     Claim("README.md", "per-item translations", r"(?P<n>\d+) would drift out of", population("items")),
     Claim("README.md", "reachability assertions", r"Of (?P<n>\d+) script-backed assertions", assertion("total")),
     Claim("README.md", "proved unreachable assertions", r"assertions, (?P<n>\d+) are proved", assertion("proved")),
+    Claim("README.md", "assertions seen failing", r"(?P<n>\d+) are \*\*seen to fail\*\*", assertion("seen")),
     Claim("README.md", "unclaimed assertions", r"the other (?P<n>\d+) are \*\*not claimed either way", assertion("unclaimed")),
     Claim("README.md", "unopposed model judgements", r"(?P<n>\d+) unopposed judgements", source("llm")),
 
@@ -230,6 +233,7 @@ CLAIMS = (
     Claim("ROADMAP.md", "counted-threshold prose", r"`inherited` at \d+ of (?P<n>\d+)", threshold("counted")),
     Claim("ROADMAP.md", "proved assertion prose", r"proves (?P<n>\d+) of the \d+ script-backed", assertion("proved")),
     Claim("ROADMAP.md", "assertion-total prose", r"proves \d+ of the (?P<n>\d+) script-backed", assertion("total")),
+    Claim("ROADMAP.md", "seen assertion prose", r"census saw (?P<n>\d+) of them fail", assertion("seen")),
     Claim("ROADMAP.md", "unclaimed assertion prose", r"the other (?P<n>\d+) either way", assertion("unclaimed")),
     Claim("ROADMAP.md", "inherited target", r"`inherited` (?P<n>\d+) → 0", threshold("inherited")),
     Claim("ROADMAP.md", "partial target", r"The (?P<n>\d+) `partial` requirements?", specification("partial")),

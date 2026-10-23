@@ -44,6 +44,16 @@ this registry has actually held. Silence about an item is not a finding that it 
 fail; it is the absence of a proof either way, and the summary line prints that count
 rather than implying coverage it does not have.
 
+**The claim of the other kind is a run, not a reading.** Until F05 that count was 143 of
+145, because nothing here could say a rule *can* fail. Source is the wrong place to
+look for that — the fourth detector below and 0.50.0's `if fetch:` are both a line in
+source the registry's arguments never reached — so `observed_failures` reads the
+recorded census instead: the runner, with the registry's own arguments, on every tree
+the repository serves, re-derived by its own job. A FAIL there is a FAIL the item gave.
+A rule proved unable from source and seen failing is a finding, `contradicted`. What
+no served tree answers — the credential-gated checks, and the items only the entry
+gate can fail — stays unclaimed until a run reaches it.
+
 The runner's entry gate is a mechanism this tool cannot see from a script's source:
 CI-003 and TE-167 could not fail because of it until 0.130.0. That mechanism is derived
 by `tests/test_entry_answers.py`, which serves an error entry and compares the runner
@@ -102,6 +112,9 @@ SCRIPTS = os.path.join(SKILL_DIR, "scripts")
 REGISTRY = os.path.join(SKILL_DIR, "resources", "config", "checklist.json")
 SHAPES = os.path.join(SKILL_DIR, "resources", "references",
                       "script-output-shapes.md")
+TESTS = os.path.join(os.path.dirname(os.path.dirname(SKILL_DIR)), "tests")
+CENSUS = os.path.join(TESTS, "census.json")
+HARNESS = os.path.join(TESTS, "harness.py")
 
 sys.path.insert(0, HERE)
 # Imported rather than restated. A second copy of "is this path one the probe has
@@ -126,14 +139,16 @@ from scope_line import print_scope  # noqa: E402
 # What a passing run establishes, and what it does not (openspec/specs/governance/ GOV-6).
 ESTABLISHES = (
     "no rule this tool can prove unable to report FAIL is left undeclared, every "
-    "cannot_fail declaration still has the proof it names, and no warn band is left "
-    "with no verdict to reach"
+    "cannot_fail declaration still has the proof it names, no warn band is left "
+    "with no verdict to reach, and every rule it counts as able to fail was seen "
+    "failing in the recorded census, through the registry's own arguments"
 )
 DOES_NOT_ESTABLISH = (
-    "that the rules it proves nothing about can fail, since silence here is the "
+    "that the rules it claims neither way can fail, since silence here is the "
     "absence of a proof either way, that a rule able to fail fails on the right "
-    "sites, or that the runner's entry gate leaves every rule able to fail, which "
-    "only a run can show and tests/test_entry_answers.py derives from runs"
+    "sites, that the census it reads is current, which only the census job's "
+    "re-run shows, or that the runner's entry gate leaves every rule able to fail, "
+    "which tests/test_entry_answers.py derives from runs"
 )
 
 
@@ -503,6 +518,60 @@ def dead_warn_bands(registry_path: str = REGISTRY,
     return dead
 
 
+def clock_read(harness_path: str = HARNESS) -> set[str]:
+    """The items whose census answer is the recording machine's clock.
+
+    `harness.CLOCK_READ`, read as data: importing `harness` arms the suite's network
+    tripwire, which a tool run in CI has no business doing.
+    """
+    with open(harness_path, encoding="utf-8") as f:
+        for node in ast.parse(f.read()).body:
+            if (isinstance(node, ast.Assign)
+                    and any(getattr(t, "id", None) == "CLOCK_READ" for t in node.targets)):
+                return set(ast.literal_eval(node.value))
+    return set()
+
+
+def observed_failures(registry_path: str = REGISTRY, census_path: str = CENSUS,
+                      harness_path: str = HARNESS) -> dict[str, dict]:
+    """Every script-backed item the recorded census saw report FAIL, by item id.
+
+    The claim of the other kind, and the only one this tool makes from a run rather
+    than from source: the census is the runner, with the registry's own arguments,
+    on every tree the repository serves, and the census job audits them all again
+    and refuses a record that has moved. A FAIL in it is a FAIL the item gave.
+
+    Three recorded FAILs are not the assertion's, and each is refused:
+
+      * a census of another registry answered other rules;
+      * an item carrying `entry_answer` can be failed by the runner's entry gate,
+        which never reads the assertion — CI-003 and TE-167 fail only where the
+        entry page does;
+      * an item in `CLOCK_READ` is held by the census check only as "timed"
+        (`verdict_census.as_held`), so its recorded word is the recording
+        machine's and nothing re-derives it.
+    """
+    with open(registry_path, encoding="utf-8") as f:
+        registry = json.load(f)
+    with open(census_path, encoding="utf-8") as f:
+        census = json.load(f)
+    if census.get("registry_version") != registry.get("registry_version"):
+        return {}
+    timed = clock_read(harness_path)
+    found = {}
+    for item in script_backed(registry):
+        if item["check"].get("entry_answer") or item["id"] in timed:
+            continue
+        answers = (census["items"].get(item["id"]) or {}).get("answers") or {}
+        trees = sorted(tree for tree, verdict in answers.items() if verdict == "FAIL")
+        if trees:
+            found[item["id"]] = {"id": item["id"], "script": item["check"]["script"],
+                                 "path": item["check"]["assert"].get("path"),
+                                 "trees": trees,
+                                 "evidence": f"FAIL on {', '.join(trees)}"}
+    return found
+
+
 def proofs(registry_path: str = REGISTRY, shapes_path: str = SHAPES,
            scripts_dir: str = SCRIPTS) -> dict[str, dict]:
     """Every item this tool can prove unable to report FAIL, by item id."""
@@ -528,13 +597,21 @@ def proofs(registry_path: str = REGISTRY, shapes_path: str = SHAPES,
 
 
 def audit(registry_path: str = REGISTRY, shapes_path: str = SHAPES,
-          scripts_dir: str = SCRIPTS) -> list[dict]:
+          scripts_dir: str = SCRIPTS, census_path: str = CENSUS,
+          harness_path: str = HARNESS) -> list[dict]:
     """Every disagreement between what the code proves and what the registry says."""
     with open(registry_path, encoding="utf-8") as f:
         registry = json.load(f)
     proven = proofs(registry_path, shapes_path, scripts_dir)
+    seen = observed_failures(registry_path, census_path, harness_path)
     findings = [{"id": row["id"], "kind": "dead warn band", "detail": row["detail"]}
                 for row in dead_warn_bands(registry_path, scripts_dir)]
+    # A proof from source against a FAIL the runner gave: the proof is wrong. This
+    # is how the retired fourth detector was caught, by the oracle's four.
+    findings += [{"id": item_id, "kind": "contradicted",
+                  "detail": f"proved {proven[item_id]['mechanism']}, and the census "
+                            f"saw it {seen[item_id]['evidence']}"}
+                 for item_id in sorted(proven.keys() & seen.keys())]
     for item in registry["items"]:
         declared = ((item.get("check") or {}).get("cannot_fail") or {})
         hit = proven.get(item["id"])
@@ -586,6 +663,7 @@ def main() -> int:
     items = script_backed(registry)
     banded = [i for i in registry["items"] if (i.get("check") or {}).get("warn")]
     proven = proofs(a.registry, a.shapes, a.scripts)
+    seen = observed_failures(a.registry)
     findings = audit(a.registry, a.shapes, a.scripts)
 
     if a.verbose:
@@ -595,8 +673,10 @@ def main() -> int:
 
     print(f"\n{len(items)} script-backed assertion(s); {len(proven)} proved unable to "
           f"report FAIL, {len(findings)} disagreeing with the registry")
-    print(f"the other {len(items) - len(proven)} are not claimed either way: no "
-          f"detector here proves them reachable")
+    print(f"{len(seen)} seen to report FAIL in the recorded census, which its job "
+          f"re-derives from runs")
+    print(f"the other {len(items) - len(proven.keys() | seen.keys())} are not claimed "
+          f"either way: nothing here proves them able or unable to report FAIL")
     print(f"{len(banded)} warn band(s) audited for a middle verdict nothing reaches")
     for f_ in findings:
         print(f"  {f_['id']} [{f_['kind']}] {f_['detail']}", file=sys.stderr)
