@@ -392,7 +392,7 @@
   },
   {
     "id": "F15",
-    "behavior": "CI-004 reads every robots meta tag on the page and treats `none` as noindex; MS-028 fails a meta description that is empty after whitespace is stripped",
+    "behavior": "CI-004 reads every robots meta tag on the page, matches `noindex` in any letter case, and treats `none` as noindex; MS-028 fails a meta description that is empty after whitespace is stripped",
     "dependencies": [
       "F01"
     ],
@@ -416,6 +416,6 @@
     ],
     "state": "not_started",
     "evidence": "",
-    "notes": "Found by F03 batch 2's calibration (Codex's blind reading of the controls, confirmed in parse_html.py:247-250); the owner's ruling 2026-10-24: repaired as its own feature. A changed rule re-stales the items' readings (REG-6)."
+    "notes": "Found by F03 batch 2's calibration (Codex's blind reading of the controls, confirmed in parse_html.py:247-250); the owner's ruling 2026-10-24: repaired as its own feature. A changed rule re-stales the items' readings (REG-6). Added 2026-10-24 from the repo audit (snapshot 5f80d43): CI-004's `none_matching: noindex` is case-sensitive (checklist_runner.py evaluate compiles it as written), so `content=\"NOINDEX, FOLLOW\"` passes while indexability_matrix.py lowercases and calls the page not indexable."
   }
 ]
