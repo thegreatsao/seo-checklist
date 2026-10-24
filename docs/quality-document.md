@@ -37,13 +37,13 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
-## `skills/seo-checklist/tools/` — graded 2026-10-23, F03 batch 2 (`audit_item_readings.py` and `second-reading-brief.md` only)
+## `skills/seo-checklist/tools/` — graded 2026-10-24, F03 batch 3 (`audit_item_readings.py` and `second-reading-brief.md` only)
 
 | Dimension | Grade | Basis |
 |---|---|---|
-| Verification passing | A | `tests.test_item_readings` 41/41; `--check` exit 0 in `ci_local`; 9 of 9 batch-2 mutations red |
-| Agent understandable | B | the docstring says what the tool fails on and what it does not establish; the plan file carries F03's state; the brief does not yet show the code that produces the JSON a script like `rendered_audit.py` reads (batch 2's calibration) |
-| Test stability | A | pure functions over deep copies of the shipped files; one subprocess per CLI test |
+| Verification passing | A | `tests.test_item_readings` 54/54; `--check` exit 0 with 29 second readings current; 11 of 11 batch-3 mutations red |
+| Agent understandable | B | the docstring and brief say what the reader is shown, including the rendered-page producer, and what the digest leaves out (helpers); the brief does not yet show the crawl inventory's producer or how an assertion operator is evaluated (`docs/sprint-20261024-F03-4-brief.md`) |
+| Test stability | A | pure functions over deep copies of the shipped files; temp copies of `scripts/` and `SKILL.md` for the digest tests; one subprocess per CLI test |
 | Architecture boundaries | A | `make check-arch` 3/3 |
 | Code conventions | A | ruff clean; no command writes the readings file |
 
