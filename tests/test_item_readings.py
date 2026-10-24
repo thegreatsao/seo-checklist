@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import io
 import json
 import os
 import pathlib
@@ -406,14 +407,30 @@ class WhatTheSecondReaderIsShown(unittest.TestCase):
     def test_a_script_that_reads_the_page_itself_is_shown_no_producer(self):
         self.assertNotIn("### Input of", self.blind("CN-065", "MS-028"))
 
-    def test_every_script_whose_input_skill_md_writes_names_its_producer(self):
-        for script in sorted(os.listdir(R.SCRIPTS)):
-            if not script.endswith(".py"):
-                continue
-            with open(os.path.join(R.SCRIPTS, script), encoding="utf-8") as f:
-                if "`SKILL.md` carries the snippet" in f.read():
-                    with self.subTest(script):
-                        self.assertIn(script, R.PRODUCERS)
+    def test_every_script_reading_the_rendered_artifact_names_its_producer(self):
+        """Codex's review of the batch: MB-105's javascript_render_audit.py reads the same
+        artifact and was missed by a test that looked for a phrase in a docstring."""
+        readers = {item["check"]["script"] for item in self.items.values()
+                   if "{rendered_json}" in json.dumps(item["check"].get("args"))}
+        self.assertIn("javascript_render_audit.py", readers)
+        for script in sorted(readers):
+            with self.subTest(script):
+                self.assertEqual(R.PRODUCERS.get(script), "## Measuring the rendered page")
+
+    def test_the_producer_is_the_block_and_nothing_else(self):
+        """Codex's review of the batch: printing all of SKILL.md in its place passed."""
+        text = self.blind("CN-036")
+        after = text.split("### Input of rendered_audit.py", 1)[1].split("\n", 1)[1]
+        self.assertEqual(after.strip(), snippet("## Measuring the rendered page"))
+
+    def test_an_empty_block_is_an_error(self):
+        """Codex's review of the batch: the fences kept and the code deleted passed."""
+        with tempfile.TemporaryDirectory() as tmp:
+            skill = pathlib.Path(tmp) / "SKILL.md"
+            skill.write_text("# x\n\n## Measuring the rendered page\n\n```js\n\n```\n",
+                             encoding="utf-8")
+            with mock.patch.object(R, "SKILL", skill), self.assertRaises(ValueError):
+                R.producers({"rendered_audit.py": ""})
 
     def test_a_producer_that_cannot_be_found_is_an_error(self):
         with mock.patch.dict(R.PRODUCERS, {"rendered_audit.py": "## No such section"}):
@@ -464,6 +481,25 @@ class TheReadOnlyCommands(unittest.TestCase):
         self.assertEqual(done.stderr.splitlines(), [
             f"{i} {R.digest(items[i], READINGS['items'][i])}" for i in ("CN-065", "CN-036")])
         self.assertNotIn(done.stderr.split()[1], done.stdout)
+
+    def test_blind_digests_the_code_it_printed(self):
+        """Codex's review of the batch: the digest re-read each file after the prompt was
+        printed, so an edit in between was stamped as read."""
+        reads = {"sources": 0, "producers": 0}
+        def counted(name):
+            real = getattr(R, name)
+            def wrapper(*args):
+                reads[name] += 1
+                return real(*args)
+            return wrapper
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(R, "sources", counted("sources")), \
+                mock.patch.object(R, "producers", counted("producers")), \
+                mock.patch.object(sys, "argv", ["x", "--blind", "CN-036", "CN-035", "CN-065"]), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            self.assertEqual(R.main(), 0)
+        self.assertEqual(reads, {"sources": 1, "producers": 1})
+        self.assertEqual(len(err.getvalue().splitlines()), 3)
 
     def test_a_change_after_the_capture_leaves_the_record_stale(self):
         captured = self.run_tool("--blind", "CN-065").stderr.split()[1]

@@ -29,7 +29,7 @@ A missing record and a dispute are counted, not failed, until the plan's last ba
 What it does not do: judge meaning. A person decides whether a reading is true; this
 guarantees only that nothing changes under a reading unnoticed. It also cannot see a
 script whose field changes meaning under an unchanged path — the copy is of the registry,
-not of the script. There is deliberately no command that writes the file: a changed rule
+not of the script; only a second reading's digest covers the script's source. There is deliberately no command that writes the file: a changed rule
 is re-read by hand, or the build stays red.
 
     python tools/audit_item_readings.py           # summary
@@ -63,7 +63,8 @@ SKILL = HERE.parent / "SKILL.md"
 # block is that program: the second reader is shown it, or it judges numbers whose
 # computation it cannot see (F03-2: three rendered_audit.py items read without it).
 PRODUCERS = {"rendered_audit.py": "## Measuring the rendered page",
-             "html_validator.py": "## Measuring the rendered page"}
+             "html_validator.py": "## Measuring the rendered page",
+             "javascript_render_audit.py": "## Measuring the rendered page"}
 
 VERDICTS = ("answers", "measures", "owed")
 SECOND_READING = ("reader", "session", "read", "verdict", "dispute")
@@ -153,15 +154,21 @@ def rule_items(registry: dict) -> dict[str, dict]:
             if (item.get("check") or {}).get("script")}
 
 
-def digest(item: dict, entry: dict) -> str:
+def digest(item: dict, entry: dict, code: dict | None = None,
+           made_by: dict | None = None) -> str:
     """What a second reading judged: change any of it and the record is stale. The
     script's helpers are not in it — a shared helper's edit would re-stale every script
-    that imports one, and the reader is sent to them only for what a value means."""
-    code = sources([item])
+    that imports one, and the reader is sent to them only for what a value means.
+    `code` and `made_by` are the sources and producers a caller printed, so the digest
+    is of what was shown; left out, they are read now."""
+    script = item["check"]["script"]
+    code = {script: (code or sources([item]))[script]}
+    made_by = {s: t for s, t in (producers(code) if made_by is None else made_by).items()
+               if s == script}
     judged = {"title": item["title"], "check": item["check"],
               "measures": item.get("measures"), "verdict": entry.get("verdict"),
               "reading": entry.get("reading"), "shapes": entry.get("shapes"),
-              "source": code, "producer": producers(code)}
+              "source": code, "producer": made_by}
     text = json.dumps(judged, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
@@ -181,9 +188,9 @@ def producers(scripts) -> dict[str, str]:
         if heading is None:
             continue
         parts = SKILL.read_text(encoding="utf-8").split(f"\n{heading}\n", 1)
-        block = re.search(r"^```\w*\n.*?^```$", parts[1].split("\n## ", 1)[0],
+        block = re.search(r"^```\w*\n(.*?)^```$", parts[1].split("\n## ", 1)[0],
                           re.S | re.M) if len(parts) == 2 else None
-        if block is None:
+        if block is None or not block.group(1).strip():
             raise ValueError(f"{script}: no code block under {heading!r} in {SKILL.name}")
         out[script] = block.group(0)
     return out
@@ -319,9 +326,11 @@ def main() -> int:
             return 1
         if args.blind:
             scripts = sources(items[i] for i in ids)
-            print(blind_input([(i, items[i]) for i in ids], scripts, producers(scripts)))
+            made_by = producers(scripts)
+            print(blind_input([(i, items[i]) for i in ids], scripts, made_by))
             for i in ids:
-                print(f"{i} {digest(items[i], entries[i])}", file=sys.stderr)
+                print(f"{i} {digest(items[i], entries[i], scripts, made_by)}",
+                      file=sys.stderr)
         else:
             print("\n".join(open_input(i, entries[i]) for i in ids))
         return 0

@@ -334,8 +334,8 @@ agree and dispute. A missing one fails nothing yet, and a dispute is counted, no
 until the plan's last batch. The second reader is Codex (`docs/sprint-20261023-F03-plan.md`),
 given the fixed brief `tools/second-reading-brief.md`: blind first — the title, rule,
 `measures` sentence and script source, and for a script that only reads JSON another
-program wrote, that program (`SKILL.md`'s rendered-page snippet for `rendered_audit.py`
-and `html_validator.py`) (`--blind ID`), from which it writes its own verdict —
+program wrote, that program (`SKILL.md`'s rendered-page snippet for `rendered_audit.py`,
+`html_validator.py` and `javascript_render_audit.py`) (`--blind ID`), from which it writes its own verdict —
 then, in the same session, the first reading (`--open ID`), to dispute or not.
 
 **Repairing an item does not move this line, and 0.105.0 is the test of that.** CI-016
