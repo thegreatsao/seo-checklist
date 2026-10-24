@@ -114,6 +114,13 @@ second reading. Batch 2 starts only once Q1–Q4 are answered.
   controls undisputed, or no real reading counts and the brief is rewritten; (5) done = all 145; (6) the 145 are taken
   as Claude's, nothing recorded per entry, and a future reading Codex writes is second-read by a fresh Claude session.
 
+- **Batch 2's calibration questions ruled by the owner, 2026-10-24** ("F03: take the recommended options"): (1) the
+  blind input shows the code that produces the JSON a script reads, where that code is not the script (first case:
+  `rendered_audit.py`'s numbers come from the browser snippet in `SKILL.md`); (2) a control dispute that the source
+  confirms is scored as a finding, not as the reader's miss, and calibration is re-run on the same fourteen items
+  with the rewritten brief; (3) CI-004 and MS-028, confirmed defective by that calibration, are repaired as their own
+  feature (F15), not inside F03.
+
 - **The second reader is Codex** (`gpt-6.1-sol`, reasoning effort high), and so is the review of each batch's code
   (the owner, 2026-10-23, F03 planning session: "Чеки кодексу отдавай"). This replaces the F05 practice of a fresh
   Claude reviewer for this feature.
