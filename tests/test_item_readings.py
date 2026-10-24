@@ -6,11 +6,15 @@ reading can fall out of step. See the tool's docstring for what it does not do.
 """
 from __future__ import annotations
 
+import contextlib
 import copy
 import json
 import os
+import pathlib
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -33,6 +37,40 @@ def item_lines(text: str) -> list[str]:
     head = text.split("### Script ", 1)[0]
     return [line for line in head.splitlines() if line and not line.startswith(
         ("### Item ", "Title: ", "Check: ", "Measures: "))]
+
+
+@contextlib.contextmanager
+def edited_scripts(script: str):
+    """`R.SCRIPTS` pointed at a copy of the scripts folder with one script edited."""
+    with tempfile.TemporaryDirectory() as tmp:
+        copy_ = pathlib.Path(tmp) / "scripts"
+        shutil.copytree(R.SCRIPTS, copy_)
+        with open(copy_ / script, "a", encoding="utf-8") as f:
+            f.write("\n# edited\n")
+        with mock.patch.object(R, "SCRIPTS", copy_):
+            yield
+
+
+@contextlib.contextmanager
+def edited_skill(script: str):
+    """`R.SKILL` pointed at a copy of SKILL.md whose producer of `script` is edited."""
+    with tempfile.TemporaryDirectory() as tmp:
+        copy_ = pathlib.Path(tmp) / "SKILL.md"
+        text = R.SKILL.read_text(encoding="utf-8")
+        head, section = text.split(R.PRODUCERS[script], 1)
+        copy_.write_text(head + R.PRODUCERS[script] + section.replace(
+            "```js\n", "```js\n// edited\n", 1), encoding="utf-8")
+        with mock.patch.object(R, "SKILL", copy_):
+            yield
+
+
+def snippet(heading: str) -> str:
+    """The first fenced block under a SKILL.md heading, read here independently."""
+    with open(os.path.join(ROOT, "skills", "seo-checklist", "SKILL.md"),
+              encoding="utf-8") as f:
+        section = f.read().split("\n" + heading + "\n", 1)[1].split("\n## ", 1)[0]
+    start = section.index("```")
+    return section[start:section.index("\n```", start + 3) + 4]
 
 
 def named(problems: list[str], item_id: str, words: str) -> bool:
@@ -191,6 +229,19 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
                 change(i, e)
                 self.assertNotEqual(R.digest(i, e), before)
 
+    def test_the_digest_moves_with_the_code_the_second_reader_was_shown(self):
+        """F03-3, a review of batches 1-2: the reader judges the script's source and the
+        code that writes its input, and an edit to either left the record current."""
+        item, entry = self.items["CN-036"], READINGS["items"]["CN-036"]
+        before = R.digest(item, entry)
+        for name, edit in (("source", edited_scripts), ("producer", edited_skill)):
+            with self.subTest(name), edit("rendered_audit.py"):
+                self.assertNotEqual(R.digest(item, entry), before)
+
+    def test_a_changed_script_makes_the_record_stale(self):
+        with edited_scripts(self.items["TE-167"]["check"]["script"]):
+            self.assertTrue(named(self.found(), "TE-167", "changed under its second reading"))
+
     def test_a_changed_reading_makes_the_record_stale(self):
         self.entry["reading"] += " Amended."
         self.assertTrue(named(self.found(), "TE-167", "changed under its second reading"))
@@ -279,8 +330,9 @@ class WhatTheSecondReaderIsShown(unittest.TestCase):
         self.items = R.rule_items(REGISTRY)
 
     def blind(self, *ids):
-        return R.blind_input([(i, self.items[i]) for i in ids], R.sources(
-            self.items[i] for i in ids))
+        scripts = R.sources(self.items[i] for i in ids)
+        return R.blind_input([(i, self.items[i]) for i in ids], scripts,
+                             R.producers(scripts))
 
     def test_it_carries_the_title_check_measures_and_source(self):
         text = self.blind("CN-065")
@@ -336,6 +388,48 @@ class WhatTheSecondReaderIsShown(unittest.TestCase):
             recipe = f.read().split("## How this brief is run", 1)[1]
         self.assertEqual(recipe.count("--skip-git-repo-check"), 2)
 
+    def test_a_script_reading_a_browser_artifact_is_shown_the_code_that_wrote_it(self):
+        """F03-2's calibration: CN-035, CN-036 and MB-103 were judged without the SKILL.md
+        snippet that computes every number rendered_audit.py reads."""
+        text = self.blind("CN-036", "CN-035", "MB-103")
+        code = snippet("## Measuring the rendered page")
+        self.assertIn("const bgOf", code)
+        self.assertEqual(text.count(code), 1)
+        self.assertEqual(text.count("### Input of rendered_audit.py"), 1)
+        self.assertLess(text.index("### Script rendered_audit.py"),
+                        text.index("### Input of rendered_audit.py"))
+
+    def test_a_script_that_reads_the_page_itself_is_shown_no_producer(self):
+        self.assertNotIn("### Input of", self.blind("CN-065", "MS-028"))
+
+    def test_every_script_whose_input_skill_md_writes_names_its_producer(self):
+        for script in sorted(os.listdir(R.SCRIPTS)):
+            if not script.endswith(".py"):
+                continue
+            with open(os.path.join(R.SCRIPTS, script), encoding="utf-8") as f:
+                if "`SKILL.md` carries the snippet" in f.read():
+                    with self.subTest(script):
+                        self.assertIn(script, R.PRODUCERS)
+
+    def test_a_producer_that_cannot_be_found_is_an_error(self):
+        with mock.patch.dict(R.PRODUCERS, {"rendered_audit.py": "## No such section"}):
+            with self.assertRaises(ValueError):
+                R.producers({"rendered_audit.py": ""})
+
+    def test_the_brief_asks_for_english_and_reads_the_producer_as_the_script(self):
+        with open(R.BRIEF, encoding="utf-8") as f:
+            blind = f.read().split("## Open pass", 1)[0]
+        self.assertIn("in English", blind)
+        self.assertIn("### Input of", blind)
+
+    def test_the_brief_takes_the_digest_when_the_input_is_printed(self):
+        """F03-3, a review of batches 1-2: `read` came from `--digest ID` at entry, hours
+        after the run, so a change in between was stamped as read."""
+        with open(R.BRIEF, encoding="utf-8") as f:
+            recipe = f.read().split("## How this brief is run", 1)[1]
+        self.assertNotIn("--digest", recipe)
+        self.assertIn("2>", recipe)
+
     def test_the_brief_names_both_passes_and_the_three_verdicts(self):
         with open(R.BRIEF, encoding="utf-8") as f:
             brief = f.read()
@@ -358,6 +452,25 @@ class TheReadOnlyCommands(unittest.TestCase):
         self.assertEqual(done.stdout.count("### Script parse_html.py"), 1)
         self.assertNotIn(READINGS["items"]["CN-065"]["reading"], done.stdout)
         self.assertEqual(item_lines(done.stdout), [])
+
+    def test_blind_writes_each_digest_to_stderr_and_nothing_else(self):
+        items = R.rule_items(REGISTRY)
+        done = self.run_tool("--blind", "CN-065", "CN-036")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertEqual(done.stderr.splitlines(), [
+            f"{i} {R.digest(items[i], READINGS['items'][i])}" for i in ("CN-065", "CN-036")])
+        self.assertNotIn(done.stderr.split()[1], done.stdout)
+
+    def test_a_change_after_the_capture_leaves_the_record_stale(self):
+        captured = self.run_tool("--blind", "CN-065").stderr.split()[1]
+        registry, readings = copy.deepcopy(REGISTRY), copy.deepcopy(READINGS)
+        entry = readings["items"]["CN-065"]
+        entry["second_reading"] = {"reader": "codex gpt-6.1-sol high", "session": "s-1",
+                                   "read": captured, "verdict": entry["verdict"]}
+        self.assertEqual(R.problems(registry, readings), [])
+        entry["reading"] += " Amended after the run."
+        self.assertTrue(named(R.problems(registry, readings), "CN-065",
+                              "changed under its second reading"))
 
     def test_open_prints_each_first_reading(self):
         done = self.run_tool("--open", "CN-065")

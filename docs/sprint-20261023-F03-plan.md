@@ -35,7 +35,12 @@ decides"), and REG-6's Reader line keeps the requirement `partial` for that one 
 2. **What makes it current.** `read` is a digest of everything the second reader judged: the item's title, check and
    `measures` sentence (from the registry) and the first reading's verdict, reading and shape answers. Any change to
    any of them makes the second reading stale and the audit names the item — the same rule the first reading already
-   lives under ("a changed rule is re-read by hand, or the build stays red"), one level up. The tool prints the digest
+   lives under ("a changed rule is re-read by hand, or the build stays red"), one level up. From batch 3 the digest
+   also covers what the reader was shown of the code — the script's source and, for a script that reads another
+   program's JSON, that program — and is taken when `--blind` prints the input, not when the answer is entered.
+   **Trade-off:** an edit to a script re-stales every item that script backs (F15's `parse_html.py` repair sends all
+   14 back to Codex). Imported helpers are left out, so a helper's edit re-stales nothing; the tool's
+   `DOES_NOT_ESTABLISH` says so. The tool prints the digest
    (`--digest ID`); it never writes the file.
 
 3. **What makes it count as independent.** The owner's ruling (2026-10-23, in the F03 planning session: "Чеки кодексу

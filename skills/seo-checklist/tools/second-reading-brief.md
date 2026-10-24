@@ -16,7 +16,9 @@ question its title asks.
 ## Blind pass
 
 Below the instructions come the items — title, check, `measures` sentence or none — and then the source of every
-script they run. The working directory is a copy of the plugin's `scripts/` folder: read the helper modules a script
+script they run. A script that only reads a JSON file another program wrote is followed by that program, under
+`### Input of <script>`: what it computes is part of how the asserted path is computed, and is judged as the script's
+own. The working directory is a copy of the plugin's `scripts/` folder: read the helper modules a script
 imports there when its source alone does not show what a value means. Use nothing else: no other files, no search,
 no network, and do not run anything.
 
@@ -40,7 +42,7 @@ Ways a rule has failed its title before, each worth checking and none a verdict 
   presence;
 - a path whose computation, in the source, counts something adjacent to what the title names.
 
-Answer in exactly this form, one block per item, in the order given, and nothing else:
+Answer in English, in exactly this form, one block per item, in the order given, and nothing else:
 
 ```
 ITEM <the item's label>
@@ -65,8 +67,9 @@ DISPUTE: none | <one to three sentences naming what the first reading gets wrong
 
 ## How this brief is run
 
-Not sent to the reader. The blind prompt is this file up to `## Open pass` followed by
-`audit_item_readings.py --blind ID ...`; the open prompt, sent by resuming the same Codex session, is the section
+Not sent to the reader. The blind prompt is this file up to `## Open pass` followed by the standard output of
+`audit_item_readings.py --blind ID ... 2> <read file>`, whose standard error, saved beside the prompt, is one line
+per item: its id and the digest of what this prompt shows (with the first reading the open pass shows); the open prompt, sent by resuming the same Codex session, is the section
 `## Open pass` followed by `audit_item_readings.py --open ID ...`. The run:
 `codex exec -m gpt-6.1-sol -c model_reasoning_effort=high -s read-only --skip-git-repo-check -C <a copy of
 skills/seo-checklist/scripts/> -o <answer file> - < <prompt file>`, then, from that same copy as the working directory, `codex exec resume
@@ -74,4 +77,5 @@ skills/seo-checklist/scripts/> -o <answer file> - < <prompt file>`, then, from t
 file>` (`resume` takes no `-C` or `-s`; the session keeps its read-only sandbox). The copy holds no readings, tests, docs or history. Each answer is entered by hand into
 `item-readings.json` as the entry's `second_reading` (plan: `docs/sprint-20261023-F03-plan.md`): `reader` `codex
 gpt-6.1-sol high`, `session` the Codex session id, `verdict` the blind verdict, `dispute` the open pass's when it is
-not `none`, `read` from `audit_item_readings.py --digest ID`.
+not `none`, `read` the item's digest in the read file, never one taken later: a reading, rule or source changed since the
+prompt was printed then leaves the record stale, as it should.

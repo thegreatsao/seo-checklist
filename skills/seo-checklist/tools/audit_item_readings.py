@@ -19,8 +19,11 @@ a shape that no longer fires.
 An entry may also carry `second_reading`, the record of a second reader (F03; the plan is
 `docs/sprint-20261023-F03-plan.md`): who read it, the session that is the trace, its own
 verdict, an optional dispute, and `read`, the digest of what it judged — the item's title,
-check and `measures` sentence and the first reading's verdict, reading and shape answers.
-A malformed record, or one whose digest is no longer current, fails like a changed rule.
+check and `measures` sentence, the script's source and the code that writes its input
+when that is not the script (`PRODUCERS`), and the first reading's verdict, reading and
+shape answers. `--blind` writes that digest to stderr as it prints the input, so `read`
+is what the reader was shown, not what stands when the answer is entered. A malformed
+record, or one whose digest is no longer current, fails like a changed rule.
 A missing record and a dispute are counted, not failed, until the plan's last batch.
 
 What it does not do: judge meaning. A person decides whether a reading is true; this
@@ -32,7 +35,8 @@ is re-read by hand, or the build stays red.
     python tools/audit_item_readings.py           # summary
     python tools/audit_item_readings.py --check   # exit 1 naming every problem
     python tools/audit_item_readings.py --digest CI-001   # what a second reading records as `read`
-    python tools/audit_item_readings.py --blind CI-001 CI-002   # the second reader's blind input
+    python tools/audit_item_readings.py --blind CI-001 CI-002 2> read.txt   # the second
+        # reader's blind input on stdout, each item's digest on stderr
     python tools/audit_item_readings.py --open CI-001     # then the first reading it is shown
 """
 
@@ -53,6 +57,13 @@ REGISTRY = HERE.parent / "resources/config/checklist.json"
 READINGS = HERE / "item-readings.json"
 SCRIPTS = HERE.parent / "scripts"
 BRIEF = HERE / "second-reading-brief.md"
+SKILL = HERE.parent / "SKILL.md"
+
+# Scripts that only read JSON another program wrote, and the SKILL.md section whose code
+# block is that program: the second reader is shown it, or it judges numbers whose
+# computation it cannot see (F03-2: three rendered_audit.py items read without it).
+PRODUCERS = {"rendered_audit.py": "## Measuring the rendered page",
+             "html_validator.py": "## Measuring the rendered page"}
 
 VERDICTS = ("answers", "measures", "owed")
 SECOND_READING = ("reader", "session", "read", "verdict", "dispute")
@@ -95,6 +106,7 @@ ESTABLISHES = (
 DOES_NOT_ESTABLISH = (
     "that any reading is true, which a person decides, that a script's field still "
     "means what it meant when the reading was written, that every item has a second "
+    "reading, that the helper modules a script imports are unchanged since its second "
     "reading, or that a second reader was independent of the first, which only the "
     "session it names can show"
 )
@@ -142,10 +154,14 @@ def rule_items(registry: dict) -> dict[str, dict]:
 
 
 def digest(item: dict, entry: dict) -> str:
-    """What a second reading judged: change any of it and the record is stale."""
+    """What a second reading judged: change any of it and the record is stale. The
+    script's helpers are not in it — a shared helper's edit would re-stale every script
+    that imports one, and the reader is sent to them only for what a value means."""
+    code = sources([item])
     judged = {"title": item["title"], "check": item["check"],
               "measures": item.get("measures"), "verdict": entry.get("verdict"),
-              "reading": entry.get("reading"), "shapes": entry.get("shapes")}
+              "reading": entry.get("reading"), "shapes": entry.get("shapes"),
+              "source": code, "producer": producers(code)}
     text = json.dumps(judged, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
@@ -156,9 +172,28 @@ def sources(items) -> dict[str, str]:
         encoding="utf-8") for item in items}
 
 
-def blind_input(items: list[tuple[str, dict]], scripts: dict[str, str]) -> str:
+def producers(scripts) -> dict[str, str]:
+    """The fenced code block that writes each of these scripts' input, where that is not
+    the script; a named section or block that is missing is an error, not an omission."""
+    out = {}
+    for script in scripts:
+        heading = PRODUCERS.get(script)
+        if heading is None:
+            continue
+        parts = SKILL.read_text(encoding="utf-8").split(f"\n{heading}\n", 1)
+        block = re.search(r"^```\w*\n.*?^```$", parts[1].split("\n## ", 1)[0],
+                          re.S | re.M) if len(parts) == 2 else None
+        if block is None:
+            raise ValueError(f"{script}: no code block under {heading!r} in {SKILL.name}")
+        out[script] = block.group(0)
+    return out
+
+
+def blind_input(items: list[tuple[str, dict]], scripts: dict[str, str],
+                made_by: dict[str, str]) -> str:
     """What a second reader judges before it sees the first reading (the brief's blind
-    pass): each item's title, check and `measures` sentence, then each script once."""
+    pass): each item's title, check and `measures` sentence, then each script once, and
+    after it the code that writes its input when that is not the script."""
     out = []
     for label, item in items:
         out += [f"### Item {label}", f"Title: {item['title']}",
@@ -167,6 +202,9 @@ def blind_input(items: list[tuple[str, dict]], scripts: dict[str, str]) -> str:
                                 or "(none: the item carries no `measures` sentence)"), ""]
     for script in dict.fromkeys(item["check"]["script"] for _, item in items):
         out += [f"### Script {script}", "```python", scripts[script].rstrip("\n"), "```", ""]
+        if script in made_by:
+            out += [f"### Input of {script}: written by this code, `{SKILL.name}` "
+                    f"{PRODUCERS[script].lstrip('# ')}", made_by[script], ""]
     return "\n".join(out)
 
 
@@ -280,7 +318,10 @@ def main() -> int:
             print(", ".join(unknown) + ": no reading of a rule-carrying item by that id")
             return 1
         if args.blind:
-            print(blind_input([(i, items[i]) for i in ids], sources(items[i] for i in ids)))
+            scripts = sources(items[i] for i in ids)
+            print(blind_input([(i, items[i]) for i in ids], scripts, producers(scripts)))
+            for i in ids:
+                print(f"{i} {digest(items[i], entries[i])}", file=sys.stderr)
         else:
             print("\n".join(open_input(i, entries[i]) for i in ids))
         return 0
