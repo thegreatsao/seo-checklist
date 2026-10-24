@@ -183,6 +183,9 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
     def setUp(self):
         self.registry = copy.deepcopy(REGISTRY)
         self.readings = copy.deepcopy(READINGS)
+        # One record under test: the shipped file's own (F03-3 on) would be counted too.
+        for entry in self.readings["items"].values():
+            entry.pop("second_reading", None)
         self.items = {i["id"]: i for i in self.registry["items"]}
         self.entry = self.readings["items"]["TE-167"]
         self.entry["second_reading"] = {
@@ -293,7 +296,8 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
 
     def test_the_shipped_file_is_counted(self):
         counts = R.second_readings(REGISTRY, READINGS)
-        self.assertEqual(counts, {"current": 0, "agree": 0, "disputed": 0})
+        # F03-3: parse_html.py, rendered_audit.py and pagespeed.py, 29 items.
+        self.assertEqual(counts, {"current": 29, "agree": 8, "disputed": 21})
 
 
 class TheDigestCommand(unittest.TestCase):
@@ -318,8 +322,8 @@ class TheDigestCommand(unittest.TestCase):
     def test_the_summary_counts_second_readings(self):
         done = self.run_tool()
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertIn(f"second readings: 0 of {len(READINGS['items'])} current — 0 agree, "
-                      "0 disputed", done.stdout)
+        self.assertIn(f"second readings: 29 of {len(READINGS['items'])} current — 8 agree, "
+                      "21 disputed", done.stdout)
 
 
 class WhatTheSecondReaderIsShown(unittest.TestCase):

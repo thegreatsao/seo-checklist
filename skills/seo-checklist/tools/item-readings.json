@@ -119,6 +119,13 @@
       "reading": "`meta_robots` is the page's robots meta content, reported as `None` when the page has no such tag; the rule passes when no directive says noindex, a page without the tag included, and is undecided when the script's output has no `meta_robots` key at all.",
       "shapes": {
         "external": "The word is *Indexing*, but the title's subject is the meta tag, which the page itself carries; no search engine data is needed."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16cc9-ce33-7be2-968d-dd4ffb83cf91",
+        "read": "1e8dc1f559356fe0",
+        "verdict": "owed",
+        "dispute": "`parse_html()` overwrites `meta_robots` for each matching tag, so the asserted value contains only the last tag's content, not every directive. Testing that value for `noindex` can miss an earlier restrictive tag or the restrictive `none` directive, contradicting the claim that PASS means no directive disallows indexing."
       }
     },
     "CI-005": {
@@ -464,6 +471,13 @@
       "reading": "`title` length at most 60 characters, the character proxy for SERP truncation.",
       "shapes": {
         "conjunction": "The parenthetical is the reason for the limit."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccd-1620-70c3-b990-beb36e4b3c4d",
+        "read": "65b6fc7eb004d86f",
+        "verdict": "owed",
+        "dispute": "The reading correctly calls the 60-character limit a proxy, but that limitation contradicts its `answers` verdict. `title_tag.get_text(strip=True)` supplies text for a character-count assertion, which does not determine rendered width or SERP truncation; calling the parenthetical a reason does not establish that outcome."
       }
     },
     "MS-021": {
@@ -485,6 +499,12 @@
       "reading": "`title` length at least 30 characters, the number the title states.",
       "shapes": {
         "conjunction": "The parenthetical is the threshold."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccd-1620-70c3-b990-beb36e4b3c4d",
+        "read": "44bdf5475d9f1f60",
+        "verdict": "answers"
       }
     },
     "MS-022": {
@@ -571,6 +591,13 @@
       "reading": "`meta_description` present and non-empty.",
       "shapes": {
         "conjunction": "*High-value pages first* is an order of work, not a second subject."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16cc9-ce33-7be2-968d-dd4ffb83cf91",
+        "read": "0aaa7be79a3196ca",
+        "verdict": "owed",
+        "dispute": "`parse_html()` assigns the raw description `content`, so whitespace-only content satisfies truthiness. Although “high-value pages first” describes an order of work, the rule neither identifies those pages nor checks that order, leaving the `answers` verdict unsupported."
       }
     },
     "MS-029": {
@@ -616,6 +643,13 @@
       "shapes": {
         "conjunction": "*Characters* is the band; *Clear & Relevant* has no reader, which `measures` states.",
         "qualifier": "*Clear* and *relevant* are judgements about the text, which the rule does not make; `measures` states it."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16cc9-ce33-7be2-968d-dd4ffb83cf91",
+        "read": "4de617d236cf6668",
+        "verdict": "owed",
+        "dispute": "The numeric reading is correct, but the `measures` verdict overlooks the sentence's attribution of the 100–144 band to snippet calibration. `article_seo.py` explicitly identifies `META_MIN_CHARS = 100` as editorial convention rather than a result measured from glyph widths, so that explanation is not fully accurate."
       }
     },
     "MS-031": {
@@ -635,7 +669,14 @@
       },
       "verdict": "answers",
       "reading": "`meta_keywords` is the tag's content, `None` when the page has no such tag; the rule passes on `None` or an empty value and is undecided when the output has no `meta_keywords` key at all.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccd-1620-70c3-b990-beb36e4b3c4d",
+        "read": "78b6556f8d95df1d",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict overlooks how the meta-tag loop repeatedly overwrites `meta_keywords`. A populated keywords tag followed by an empty one leaves a falsy asserted value and passes despite the page containing populated meta keywords."
+      }
     },
     "MS-032": {
       "title": "Implement & Validate Structured Data (Where Relevant)",
@@ -701,6 +742,13 @@
       "reading": "`text_nodes_below_12px` counts rendered text nodes under 12px.",
       "shapes": {
         "qualifier": "*Readable* is operationalised as the 12px floor."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16cce-99fa-7051-91ea-28ef3aa8be42",
+        "read": "5bd87e12c162b576",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict overstates coverage: `small++` counts elements matching `body *` with a direct text node longer than three trimmed characters and computed font size below 12px, rather than all rendered text nodes. Calling readability a 12px floor does not address the excluded short text, text directly inside `body`, or whether that floor establishes readability."
       }
     },
     "CN-035": {
@@ -721,6 +769,13 @@
       "shapes": {
         "conjunction": "Clear and distinct are one property: a link must look like a link.",
         "qualifier": "Read as visual distinctness from body text."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16cc9-ce33-7be2-968d-dd4ffb83cf91",
+        "read": "2c5c79ea4938c18b",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict overstates the browser snippet: it scans only `p a, li a, td a, article a` and accepts any computed color difference, however imperceptible. Its comparison is against the immediate parent's styles, and it never assesses anchor clarity; redefining “clear and distinct” as this limited styling test does not answer the qualifier."
       }
     },
     "CN-036": {
@@ -740,6 +795,13 @@
       "reading": "`text_nodes_below_contrast` counts rendered text below the WCAG contrast ratio, computed from styles (0.101.0).",
       "shapes": {
         "qualifier": "*Sufficient* is WCAG AA's ratio."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16cc9-ce33-7be2-968d-dd4ffb83cf91",
+        "read": "173483c9f4cea9cf",
+        "verdict": "owed",
+        "dispute": "The snippet excludes elements without their own text longer than three trimmed characters, while `bgOf()` ignores background images and gradients and the luminance calculation does not composite alpha. Naming WCAG AA thresholds answers which ratio is used, but these computation gaps mean zero does not establish sufficient contrast for the page's text."
       }
     },
     "CN-038": {
@@ -867,6 +929,13 @@
       "reading": "`issues` carries heading-level skips and a missing <main>; nav and footer absence are deliberately not faults.",
       "shapes": {
         "conjunction": "Both halves are read: the heading hierarchy and the one landmark every page needs."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccd-1620-70c3-b990-beb36e4b3c4d",
+        "read": "4c713c9a237c7186",
+        "verdict": "owed",
+        "dispute": "The reading accurately describes `_structure_issues()`, but its `answers` verdict and conjunction answer equate checking for `<main>` with checking semantic HTML. The function checks only that landmark’s presence and consecutive heading-level skips; it does not determine whether other page structures use appropriate semantic markup."
       }
     },
     "CN-051": {
@@ -886,6 +955,13 @@
       "reading": "`overlays_covering_content` counts rendered overlays that cover content at load.",
       "shapes": {
         "conjunction": "*Especially on mobile* is MB-094's own item; this one reads the rendered page."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16cce-99fa-7051-91ea-28ef3aa8be42",
+        "read": "3979058fa375e49f",
+        "verdict": "owed",
+        "dispute": "The source counts visible fixed or sticky elements whose viewport intersection occupies at least 25% of its area (`covered / area >= 0.25`), without checking whether they cover content or are intrusive interstitials. It also contains no load-timing requirement; referring mobile coverage to MB-094 does not resolve these gaps, so I disagree with `answers`."
       }
     },
     "CN-054": {
@@ -976,6 +1052,12 @@
       "reading": "`h1` must hold exactly one non-empty heading; *clear* is read as that and nothing more.",
       "shapes": {
         "qualifier": "Exactly one non-empty H1; `measures` says the word means no more here."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16cc9-ce33-7be2-968d-dd4ffb83cf91",
+        "read": "9f2f6f72278dd373",
+        "verdict": "measures"
       }
     },
     "CN-066": {
@@ -995,7 +1077,14 @@
       },
       "verdict": "answers",
       "reading": "`h2` holds at least two subheadings.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccd-1620-70c3-b990-beb36e4b3c4d",
+        "read": "bedb4f25423cc0b7",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict confuses a count with structural use: the headings loop merely appends every nonempty H2’s text, and `len_gte: 2` tests their number. It neither establishes that those headings organize content nor permits an appropriately structured page with only one H2."
+      }
     },
     "CN-068": {
       "title": "Strengthen Authorship & E-E-A-T Signals",
@@ -1223,6 +1312,12 @@
       "reading": "`viewport` is the declared viewport meta; whether the layout fits a phone is MB-107's, which renders it.",
       "shapes": {
         "conjunction": "Mobile-first is the reason; the declared viewport is what is read."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccd-1620-70c3-b990-beb36e4b3c4d",
+        "read": "ea7fad1540027179",
+        "verdict": "measures"
       }
     },
     "MB-094": {
@@ -1240,7 +1335,14 @@
       },
       "verdict": "answers",
       "reading": "`mobile_overlays_covering_content` counts overlays covering content in the phone-width render.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16cce-99fa-7051-91ea-28ef3aa8be42",
+        "read": "0446cebfca789f84",
+        "verdict": "owed",
+        "dispute": "`read()` supplies the phone-width gate, but the underlying `overlays++` counts fixed or sticky rectangles occupying at least 25% of the viewport, without establishing content obstruction or intrusion. The reading therefore overstates what the metric computes, and the `answers` verdict is unsupported."
+      }
     },
     "MB-095": {
       "title": "Keep Mobile Page Weight Light",
@@ -1271,7 +1373,13 @@
       },
       "verdict": "answers",
       "reading": "`page_weight` bands Lighthouse's `total-byte-weight` from PageSpeed's mobile run — the bytes of every resource the page requested, scripts' own requests included: below 1,600 KiB, Lighthouse's documented target, passes; up to 5,000 KiB, where Lighthouse flags a payload, warns; above fails (0.119.0; it counted images over 250 KB and allowed five, and never totalled the page).",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccf-9b47-73b1-a31c-f54620fa1d0a",
+        "read": "6e3411792bcd6d3d",
+        "verdict": "answers"
+      }
     },
     "MB-096": {
       "title": "Use Responsive Images",
@@ -1415,6 +1523,13 @@
       "reading": "`tap_targets_below_48px` counts rendered tap targets under 48px.",
       "shapes": {
         "external": "*Click* is the user's click, not search clicks; nothing external is asked."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16cc9-ce33-7be2-968d-dd4ffb83cf91",
+        "read": "a247bb56d7c2cd63",
+        "verdict": "owed",
+        "dispute": "The snippet counts selected visible elements whose bounding rectangle has either dimension below 48 pixels; it does not establish usable click areas or test occlusion and overlap. The shape answer correctly distinguishes user clicks from search clicks, but that does not support the broader `answers` verdict about ease of clicking."
       }
     },
     "MB-104": {
@@ -1499,6 +1614,13 @@
       "shapes": {
         "conjunction": "Above-the-fold priority is what FCP times.",
         "qualifier": "*Fast* is the FCP band."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccf-9b47-73b1-a31c-f54620fa1d0a",
+        "read": "21dab21608c9aab5",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: `parse_pagespeed_response()` computes an FCP rating, which does not establish that above-the-fold content loads quickly or receives priority. The conjunction answer incorrectly equates above-the-fold prioritization with first contentful paint. The reading also overstates the fallback: Lighthouse supplies FCP only when `field_data_available` is false, not whenever CrUX lacks FCP specifically."
       }
     },
     "SP-108": {
@@ -1523,6 +1645,13 @@
       "reading": "`field_cwv.verdict` passes only when every graded Core Web Vital is good in CrUX field data, and is absent when there is none.",
       "shapes": {
         "conjunction": "The parenthetical names the data source the rule requires."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccf-9b47-73b1-a31c-f54620fa1d0a",
+        "read": "b85d766aaf75406c",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: `field_cwv_verdict()` restricts grading to metrics included in `present` and permits pass even when only one recognized, good metric is present. “Every graded Core Web Vital” accurately describes that subset, but does not establish sufficient coverage for an overall Core Web Vitals pass."
       }
     },
     "SP-109": {
@@ -1596,6 +1725,12 @@
       "reading": "`field_cwv.verdict` for the desktop strategy, from CrUX through PageSpeed Insights — the dataset the Search Console report is built from.",
       "shapes": {
         "conjunction": "Desktop is the strategy passed; Search Console is the report the same data feeds."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccf-9b47-73b1-a31c-f54620fa1d0a",
+        "read": "ac988123d1d03eee",
+        "verdict": "measures"
       }
     },
     "SP-112": {
@@ -1620,6 +1755,12 @@
       "reading": "`field_cwv.verdict` for the mobile strategy, from CrUX through PageSpeed Insights — the dataset the Search Console report is built from.",
       "shapes": {
         "conjunction": "Mobile is the strategy passed; Search Console is the report the same data feeds."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccf-9b47-73b1-a31c-f54620fa1d0a",
+        "read": "2df9a7d01f4f833a",
+        "verdict": "measures"
       }
     },
     "SP-113": {
@@ -1642,7 +1783,14 @@
       },
       "verdict": "answers",
       "reading": "`field_cwv.verdict` on mobile field data: every graded Core Web Vital within Google's good thresholds.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccf-9b47-73b1-a31c-f54620fa1d0a",
+        "read": "895e663b92af60a9",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: the `present` comprehension in `field_cwv_verdict()` excludes missing metrics, and the final pass branch requires no minimum coverage. Every graded metric being good therefore does not establish that the page meets the Core Web Vitals thresholds comprehensively."
+      }
     },
     "SE-114": {
       "title": "Run Malware & Security Checks",
@@ -1783,6 +1931,12 @@
       "reading": "`metrics.CLS.rating` is the page's layout shift as a whole; the cookie banner is not identified.",
       "shapes": {
         "conjunction": "*(No CLS)* names the metric read; the banner is what `measures` says is not isolated."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccf-9b47-73b1-a31c-f54620fa1d0a",
+        "read": "043abccff44441b0",
+        "verdict": "measures"
       }
     },
     "SE-120": {
@@ -1862,7 +2016,14 @@
       },
       "verdict": "answers",
       "reading": "`lang` is the html lang attribute, required present.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccd-1620-70c3-b990-beb36e4b3c4d",
+        "read": "6891338f7c660185",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict equates a declaration with making the language obvious. `result[\"lang\"] = html_tag.get(\"lang\")` and the truthiness assertion accept any nonempty value without checking its validity or agreement with the page’s language."
+      }
     },
     "IN-127": {
       "title": "Use a Clear International URL Structure",
@@ -2185,7 +2346,14 @@
       },
       "verdict": "answers",
       "reading": "`pagination.issues` carries rel=prev/next pointing off-host or at the page itself, applicable only to a paginated page.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccd-1620-70c3-b990-beb36e4b3c4d",
+        "read": "dbaed7f483828ee3",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict overstates the check: `parse_html()` only adds pagination issues for off-host and self-referencing rel links. Correct destinations, sequence, and usable pagination navigation are not established by an empty `pagination.issues` list."
+      }
     },
     "AR-147": {
       "title": "Use Short, Descriptive URLs",
@@ -2381,6 +2549,13 @@
       "reading": "`breadcrumbs` requires both a BreadcrumbList schema and a detectable breadcrumb UI.",
       "shapes": {
         "conjunction": "Both halves are read, as a two-key object."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccd-1620-70c3-b990-beb36e4b3c4d",
+        "read": "fd104866a158f194",
+        "verdict": "owed",
+        "dispute": "The claim that both halves are independently established is unsupported: `_has_breadcrumb_ui()` immediately returns true when `_breadcrumb_markup()` finds a Microdata/RDFa BreadcrumbList carrier. Neither that carrier nor the JSON-LD type check requires populated breadcrumb entries, and UI markers do not establish a visible trail, so the `answers` verdict and conjunction answer overstate coverage."
       }
     },
     "AR-162": {
@@ -2461,7 +2636,14 @@
       },
       "verdict": "answers",
       "reading": "`favicon` is the first declared icon link.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16ccd-1620-70c3-b990-beb36e4b3c4d",
+        "read": "2b389f1530ff5832",
+        "verdict": "owed",
+        "dispute": "“The first declared icon link” overstates `seo_common.favicon_href()`, which also accepts a `shortcut` rel token alone without an `icon` token. Its truthy href establishes neither a working icon resource nor the absence of a favicon when no declaration exists, so the `answers` verdict is unsupported."
+      }
     },
     "TE-167": {
       "title": "Monitor Site Uptime",
@@ -3284,7 +3466,13 @@
       },
       "verdict": "answers",
       "reading": "`horizontal_overflow_px` at most 1 at phone width in the rendered artifact.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16cce-99fa-7051-91ea-28ef3aa8be42",
+        "read": "c376649b266460d4",
+        "verdict": "answers"
+      }
     },
     "MB-108": {
       "title": "Text is not clipped or cut off at a phone width",
@@ -3301,7 +3489,14 @@
       },
       "verdict": "answers",
       "reading": "`text_nodes_clipped` counts text cut off at phone width in the rendered artifact.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a16cce-99fa-7051-91ea-28ef3aa8be42",
+        "read": "2356a5af774172e3",
+        "verdict": "owed",
+        "dispute": "The `clipped++` condition measures scroll dimensions exceeding client dimensions for selected elements, without establishing that their text is cut off. It omits other text-bearing elements and ancestor clipping, while counting scrollable overflow, so both the reading and the `answers` verdict overstate its coverage."
+      }
     }
   }
 }
