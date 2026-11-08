@@ -37,6 +37,21 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `skills/seo-checklist/scripts/` — graded 2026-11-08, audit-fix batch P2 (canonical, noindex, sitemap names, orphans)
+
+Read for the grade: `seo_common.py` (`comparable_url`, `google_robots_rules`, `google_noindex`, `_link_canonicals`,
+`declared_canonicals`, `parse_html`'s canonicals, `fetch_url`'s `x_robots_tags`), `lib/safe_http.py` (`header_values`,
+cache entry version 2), `canonical_checker.py` (`check_canonicals`), `indexability_matrix.py` (`evaluate`),
+`sitemap_checker.py`, `link_profile.py`.
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `ci_local` 27/27 on `b598ab9` (2026-11-08, 605 s); every fix red on the commit before it (52 tests in `tests/test_audit_fixes_p2.py`); Codex's fifth pass "ship" |
+| Agent understandable | B | each helper cites the Google or RFC text it follows; `comparable_url` leans on requests' `prepare()`, so what "the same URL" means lives partly in a dependency |
+| Test stability | B | one test bounds time (1 s for 100,000 `<` in a Link header, linear in practice); the rest are pure functions over fakes |
+| Architecture boundaries | A | `make check-arch` 3/3 |
+| Code conventions | A | ruff clean; no new module constant left unread (`tests/derived-sets.json` unchanged) |
+
 ## `skills/seo-checklist/scripts/` — graded 2026-11-08, audit-fix batch P1 (robots.txt and sitemap reading only)
 
 Read for the grade: `lib/robots_rules.py` (`_matches`), `lib/safe_http.py` (`_fetch_robots`), `seo_common.py`

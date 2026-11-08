@@ -20,7 +20,9 @@ Registry version: `bbc0b87fd8f2` (was `abf465b3f75d`): CI-009 maps `conflicting`
 * **Batch P2:** guessed sitemap names that answer HTML are absent, not invalid (GO-136); URLs past `--max-urls` make
   the sitemap check `truncated` (GO-138). CI-001, CI-009 and CI-011 compare a canonical by its encoded form, read the
   `Link` header and `rel` in any case, treat two canonicals that disagree as none (Google ignores them all), and take
-  `noindex` from `<meta name="googlebot">` and from header rules for Googlebot only (`none` included). CI-011 fails
+  `noindex` from `<meta name="googlebot">` and from header rules for Googlebot only (`none` included; repeated
+  `X-Robots-Tag` headers are read apart, also from the HTTP cache, whose entry version is now 2; the `Link` header is
+  parsed per RFC 8288; a URL is compared as requests sends it). CI-011 fails
   noindex beside a canonical naming another URL. CI-008 and AR-162 count no self-link as inbound and credit a link
   through a redirect to the page it lands on.
 
