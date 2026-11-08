@@ -730,10 +730,13 @@ item(8, "high", S, "link_profile.py", CRAWLARG,
 # CI-011 on purpose: this item is "serve content at a single canonical URL", and
 # declaring no canonical at all is the failure it names. `unknown` is deliberately
 # unmapped — it means the script could not read the page, which is NO_DATA.
+# `conflicting` (two canonicals that disagree, tag or `Link` header) fails with
+# `missing`: Google ignores every one of them, so the page names none it can use.
 item(9, "critical", S, "canonical_checker.py", PAGE,
      {"path": "rows", "field": "verdict",
       "value_map": {"self_canonical": "pass", "canonicalized": "pass",
-                    "cross_host": "fail", "missing": "fail"}},
+                    "cross_host": "fail", "missing": "fail",
+                    "conflicting": "fail"}},
      "Self-canonical on the primary version, 301 from duplicates")
 # A page can point rel=canonical at itself and still have Google pick another
 # URL. Nothing in the page reveals the disagreement — only URL Inspection does.
@@ -748,9 +751,12 @@ item(11, "high", S, "canonical_checker.py", PAGE,
      # "mismatch" or "conflict", so the old pattern passed every page. Mapping
      # its actual vocabulary also fixes the other half: "unknown" means the
      # script could not tell, which is NO_DATA, not a pass.
-     {"path": "rows", "field": "verdict",
-      "value_map": {"self_canonical": "pass", "missing": "pass",
-                    "canonicalized": "pass", "cross_host": "fail"}},
+     # Until P2 (finding 9, 2026-11-04) this read `verdict`, which holds the
+     # canonical alone: noindex beside a canonical elsewhere read `canonicalized`
+     # and passed the one item about that pair. `signal` reads both.
+     {"path": "rows", "field": "signal",
+      "value_map": {"consistent": "pass", "cross_host": "fail",
+                    "conflicting": "fail", "noindex_canonicalized": "fail"}},
      "Do not combine noindex with a canonical pointing elsewhere")
 item(12, "medium", S, "url_quality.py", PAGE,
      {"path": "rows.0.score", "gte": 70},

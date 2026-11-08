@@ -88,6 +88,7 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
     # on another host are, and not a sitemap the site failed to serve.
     refused_sitemaps = []
     read_bytes, dropped_urls = 0, 0
+    unrequested = 0     # listed and kept, but past `max_urls`, so never requested
 
     # Recorded before the walk so the loop below can end either way without the
     # caller having to reconstruct which way it ended.
@@ -128,6 +129,16 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
             result["sitemaps_checked"].append(entry)
             continue
         parsed = parse_sitemap_xml(sitemap_document(fetched), sm_url)
+        if parsed["error"] and sm_url in probed:
+            # A guessed name answered with something that is not a sitemap: a site
+            # serving its HTML at every path has no sitemap there, which is the
+            # absent case above, not a broken sitemap (finding 7, 2026-11-04).
+            entry["absent"] = True
+            entry["type"] = parsed["type"]
+            entry["error"] = parsed["error"]
+            result["summary"]["probed_absent"] += 1
+            result["sitemaps_checked"].append(entry)
+            continue
         entry["type"] = parsed["type"]
         entry["error"] = parsed["error"]
         if parsed["error"]:
@@ -166,6 +177,8 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
             elif row["lastmod"][:10] > datetime.now(timezone.utc).date().isoformat():
                 result["issues"].append(issue("warning", "Sitemap lastmod is in the future", loc, row["lastmod"]))
 
+            if fetch_urls and len(result["urls"]) >= max_urls:
+                unrequested += 1
             if fetch_urls and len(result["urls"]) < max_urls:
                 page = fetch_url(loc, timeout=timeout, max_bytes=1_000_000)
                 url_entry["checks"]["status"] = page.get("status")
@@ -255,6 +268,11 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
     if dropped_urls:
         reasons.append(f"the sitemap URL budget ({SITEMAP_URLS_BUDGET}) was reached "
                        f"and {dropped_urls} listed URL(s) were not checked")
+    if unrequested:
+        # GO-138 asks with `--max-urls 25`; a clean count over the first 25 of 41
+        # said nothing of the other 16 (finding 7, 2026-11-04).
+        reasons.append(f"{unrequested} of {len(result['urls'])} sitemap URL(s) were "
+                       f"past --max-urls {max_urls} and not requested")
     if off_host_sitemaps:
         reasons.append("sitemaps on another host are not requested: "
                        + ", ".join(off_host_sitemaps))
@@ -267,7 +285,7 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
     result["summary"]["sitemaps"] = len(result["sitemaps_checked"])
     result["summary"]["loaded"] = sum(
         1 for e in result["sitemaps_checked"]
-        if carries_content(e.get("status")))
+        if carries_content(e.get("status")) and not e.get("absent"))
     result["summary"]["urls"] = len(result["urls"])
     # No sitemap anywhere *is* a finding, and downgrading the probe misses must not
     # swallow it. This is the one case where absence is the site's problem: nothing

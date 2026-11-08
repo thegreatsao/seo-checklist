@@ -42,7 +42,7 @@ import xml.etree.ElementTree as ET
 import zlib
 from pathlib import Path
 from typing import Any, Callable, Iterable
-from urllib.parse import urljoin, urlparse, urlunparse
+from urllib.parse import quote, urljoin, urlparse, urlunparse
 
 try:
     import requests
@@ -252,6 +252,87 @@ def normalize_url(url: str, base: str | None = None, default_scheme: str = "http
         parsed = parsed._replace(fragment="", path=path)
         return urlunparse(parsed)
     return url
+
+
+def comparable_url(url: str) -> str:
+    """One spelling of a URL, for asking whether two name the same resource.
+
+    A page may write its own address raw (`/café`) while requests reports the encoded
+    form it sent (`/caf%C3%A9`); a self-canonical compared as text read as one pointing
+    elsewhere (finding 8, 2026-11-04). Non-ASCII is percent-encoded as UTF-8, escapes
+    are upper-cased, and the scheme and host lower-cased; nothing is decoded.
+    """
+    parsed = urlparse(normalize_url(url))
+
+    def encoded(part: str) -> str:
+        return re.sub(r"%[0-9a-f]{2}", lambda found: found.group().upper(),
+                      quote(part, safe="/%:@!$&'()*+,;=~-._?"))
+
+    return urlunparse(parsed._replace(
+        scheme=parsed.scheme.lower(), netloc=parsed.netloc.lower(),
+        path=encoded(parsed.path), params=encoded(parsed.params),
+        query=encoded(parsed.query)))
+
+
+def google_robots_rules(value: str | None, scoped: bool = False) -> set[str]:
+    """The robots rules in a meta `content` or an `X-Robots-Tag` value that Googlebot obeys.
+
+    With `scoped`, a header rule may name its crawler (`otherbot: noindex, nofollow`):
+    the name holds for the rules after it until the next name, and only `googlebot`'s
+    and unnamed rules are Google's ("Rules specified without a user agent are valid for
+    all crawlers", Search Central, robots meta tag). Names and values are
+    case-insensitive. A header repeated is joined with commas before it gets here, so
+    an unnamed rule after a named one reads as that crawler's: the reading errs towards
+    the named crawler.
+    """
+    rules, agent = set(), None
+    for part in (value or "").split(","):
+        part = part.strip().lower()
+        named = re.match(r"([a-z][a-z0-9_.-]*)\s*:\s*(.*)$", part) if scoped else None
+        # A rule whose value follows a colon (`max-snippet: 20`) names no crawler.
+        if named and named.group(1) not in ("max-snippet", "max-image-preview",
+                                            "max-video-preview", "unavailable_after"):
+            agent, part = named.group(1), named.group(2)
+        if agent in (None, "googlebot"):
+            rules.update(part.split())
+    return rules
+
+
+def google_noindex(meta_robots: str | None, meta_googlebot: str | None,
+                   x_robots_tag: str | None) -> list[str]:
+    """Where a response tells Google not to index it: `noindex`, or `none` (`noindex,
+    nofollow`), in `<meta name="robots">`, `<meta name="googlebot">` or the header."""
+    return [source for source, value, scoped in (
+        ("meta robots", meta_robots, False),
+        ("meta googlebot", meta_googlebot, False),
+        ("x-robots-tag", x_robots_tag, True))
+        if {"noindex", "none"} & google_robots_rules(value, scoped)]
+
+
+_LINK_TARGET = re.compile(r"<([^>]*)>([^<]*)")
+_LINK_REL = re.compile(r'\brel\s*=\s*"?([^";,]*)', re.I)
+
+
+def declared_canonicals(html: dict | None, headers: dict | None,
+                        base: str) -> list[str]:
+    """Every distinct canonical a response declares: the `Link` header's, then the HTML's.
+
+    Google reads `Link: <url>; rel="canonical"` for any document, HTML included
+    (Search Central, "Consolidate duplicate URLs"), and when one page names more than
+    one canonical "all rel=canonical links will be ignored" (Search Central blog,
+    2013-04). So the caller needs all of them, not the first; two spellings of one URL
+    (`comparable_url`) are one.
+    """
+    found = []
+    for target in _LINK_TARGET.finditer((headers or {}).get("link") or ""):
+        rel = _LINK_REL.search(target.group(2))
+        if rel and "canonical" in rel.group(1).lower().split() and target.group(1).strip():
+            found.append(normalize_url(target.group(1).strip(), base))
+    found += [normalize_url(url, base) for url in (html or {}).get("canonicals") or ()]
+    distinct: dict[str, str] = {}
+    for url in found:
+        distinct.setdefault(comparable_url(url), url)
+    return list(distinct.values())
 
 
 def is_responsive_fill_image(img) -> bool:
@@ -1033,10 +1114,16 @@ def parse_html(html: str, base_url: str = "") -> dict:
         if key:
             meta[key] = tag.get("content", "")
 
-    canonical_tag = soup.find("link", rel=lambda value: value and "canonical" in value)
-    canonical = canonical_tag.get("href") if canonical_tag else None
+    # `rel` values are case-insensitive: `rel="Canonical"` read as no canonical at all.
+    canonical_tags = [tag for tag in soup.find_all("link")
+                      if "canonical" in [str(value).lower() for value in
+                                         (tag.get("rel") or [])]]
+    canonical = canonical_tags[0].get("href") if canonical_tags else None
     if canonical and base_url:
         canonical = normalize_url(canonical, base_url)
+    canonicals = [normalize_url(href, base_url) if base_url else href
+                  for href in (str(tag.get("href") or "").strip()
+                               for tag in canonical_tags) if href]
 
     links = []
     for tag in soup.find_all("a", href=True):
@@ -1108,8 +1195,11 @@ def parse_html(html: str, base_url: str = "") -> dict:
         "title": title,
         "meta_description": meta.get("description"),
         "meta_robots": meta.get("robots"),
+        "meta_googlebot": meta.get("googlebot"),
         "viewport": meta.get("viewport"),
         "canonical": canonical,
+        # Every `<link rel=canonical>` href, in order: `canonical` is the first of them.
+        "canonicals": canonicals,
         "lang": (soup.html.get("lang") if soup.html else None),
         "headings": {f"h{i}": [h.get_text(" ", strip=True) for h in soup.find_all(f"h{i}") if h.get_text(strip=True)] for i in range(1, 7)},
         "links": links,

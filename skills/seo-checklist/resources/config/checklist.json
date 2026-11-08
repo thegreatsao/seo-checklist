@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "abf465b3f75d",
+  "registry_version": "bbc0b87fd8f2",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -318,7 +318,8 @@
             "self_canonical": "pass",
             "canonicalized": "pass",
             "cross_host": "fail",
-            "missing": "fail"
+            "missing": "fail",
+            "conflicting": "fail"
           }
         }
       },
@@ -367,12 +368,12 @@
         "requires": "fetch",
         "assert": {
           "path": "rows",
-          "field": "verdict",
+          "field": "signal",
           "value_map": {
-            "self_canonical": "pass",
-            "missing": "pass",
-            "canonicalized": "pass",
-            "cross_host": "fail"
+            "consistent": "pass",
+            "cross_host": "fail",
+            "conflicting": "fail",
+            "noindex_canonicalized": "fail"
           }
         }
       },

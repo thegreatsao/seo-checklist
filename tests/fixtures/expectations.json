@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "registry_version": "abf465b3f75d",
+  "registry_version": "bbc0b87fd8f2",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -629,13 +629,13 @@
       "CI-009": {
         "expect": "PASS",
         "title": "Serve Content at a Single Canonical URL",
-        "basis": "05c0e33b94d9",
+        "basis": "e2cf32a938d1",
         "why": "every page in the tree carries a self-referencing canonical at its own served URL"
       },
       "CI-011": {
         "expect": "PASS",
         "title": "Avoid Canonical/Indexing Mixed Signals",
-        "basis": "c8237442fbc9",
+        "basis": "5a9984a414df",
         "why": "the entry page is self-canonical, carries no robots meta and is listed in its own sitemap - the three signals agree"
       },
       "TE-176": {
@@ -1333,13 +1333,13 @@
       "CI-009": {
         "expect": "FAIL",
         "title": "Serve Content at a Single Canonical URL",
-        "basis": "05c0e33b94d9",
+        "basis": "e2cf32a938d1",
         "why": "the entry page's canonical points at https://not-this-site.example.net/elsewhere, a domain the fixture does not own or serve"
       },
       "CI-011": {
         "expect": "FAIL",
         "title": "Avoid Canonical/Indexing Mixed Signals",
-        "basis": "c8237442fbc9",
+        "basis": "5a9984a414df",
         "why": "the entry page says noindex and points its canonical at another domain: two directives about indexing that contradict each other"
       },
       "TE-176": {

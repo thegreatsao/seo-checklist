@@ -200,12 +200,13 @@
             "self_canonical": "pass",
             "canonicalized": "pass",
             "cross_host": "fail",
-            "missing": "fail"
+            "missing": "fail",
+            "conflicting": "fail"
           }
         }
       },
       "verdict": "answers",
-      "reading": "`rows` maps canonical_checker's verdict: self-canonical or canonicalised passes, cross-host or missing fails.",
+      "reading": "`rows` maps canonical_checker's verdict: self-canonical or canonicalised passes; cross-host, missing, or conflicting (two canonicals that disagree, which Google ignores) fails.",
       "shapes": {}
     },
     "CI-010": {
@@ -241,19 +242,19 @@
         "requires": "fetch",
         "assert": {
           "path": "rows",
-          "field": "verdict",
+          "field": "signal",
           "value_map": {
-            "self_canonical": "pass",
-            "missing": "pass",
-            "canonicalized": "pass",
-            "cross_host": "fail"
+            "consistent": "pass",
+            "cross_host": "fail",
+            "conflicting": "fail",
+            "noindex_canonicalized": "fail"
           }
         }
       },
       "verdict": "answers",
-      "reading": "`rows` fails a cross-host canonical, the mixed signal a page can send about which URL to index; a missing canonical is CI-009's.",
+      "reading": "`rows` maps canonical_checker's `signal`, read off the canonical and the noindex together: a canonical on another host, two that disagree, or noindex beside a canonical naming another URL fails; a missing canonical is CI-009's.",
       "shapes": {
-        "conjunction": "Canonical/Indexing names the conflict between the two, which is what a cross-host canonical is.",
+        "conjunction": "Canonical/Indexing names the conflict between the two: noindex beside a canonical elsewhere, and a canonical that contradicts itself (another host, or two that disagree).",
         "external": "The page's own signals are the subject, not Google's index."
       }
     },

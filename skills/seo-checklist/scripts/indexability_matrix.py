@@ -16,9 +16,12 @@ from seo_common import (read_as_url,
     SITEMAP_BYTES_BUDGET,
     SITEMAP_URLS_BUDGET,
     carries_content,
+    comparable_url,
+    declared_canonicals,
     discover_sitemap_urls,
     fetch_robots,
     fetch_url,
+    google_noindex,
     html_parser,
     parse_html,
     parse_sitemap_xml,
@@ -194,11 +197,15 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
         refused = fetched.get("error_kind") == "blocked"
         if not refused and fetched_status_class not in ("ok", "other_success"):
             blockers.append(f"HTTP {fetched.get('status')}")
-        if html.get("meta_robots") and "noindex" in html["meta_robots"].lower():
-            blockers.append("meta robots noindex")
-        if xrobots and "noindex" in xrobots.lower():
-            blockers.append("x-robots-tag noindex")
-        if html.get("canonical") and normalize_url(html["canonical"]) != normalize_url(fetched.get("url") or url):
+        # Google's rules only: `<meta name="googlebot">` counts, a header rule named
+        # for another crawler does not (finding 8, 2026-11-04).
+        blockers += [f"{source} noindex" for source in google_noindex(
+            html.get("meta_robots"), html.get("meta_googlebot"), xrobots)]
+        # From the `Link` header as well as the HTML. Two that disagree are all
+        # ignored by Google, so they point nowhere: CI-009 and CI-011 fail them.
+        canonicals = declared_canonicals(html, headers, fetched.get("url") or url)
+        if (len(canonicals) == 1 and comparable_url(canonicals[0])
+                != comparable_url(fetched.get("url") or url)):
             blockers.append("canonicalized to different URL")
         rows.append({
             "url": url,
@@ -210,7 +217,8 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
             "meta_robots": html.get("meta_robots"),
             "x_robots_tag": xrobots,
             "snippet_controls": snippets,
-            "canonical": html.get("canonical"),
+            "canonical": canonicals[0] if canonicals else None,
+            "canonicals": canonicals,
             "in_sitemap": None if sitemap_urls is None else url in sitemap_urls,
             "redirects": fetched.get("redirect_chain", []),
             # Indexable only if nothing blocks it and robots.txt was read: a blocker

@@ -10,8 +10,9 @@ import json
 from collections import defaultdict
 
 import site_crawl
-from seo_common import (read_as_url, carries_content, fetch_url, issue, normalize_url,
-                        parse_html, read_urls, refused_kind, same_host)
+from seo_common import (read_as_url, carries_content, comparable_url,
+                        declared_canonicals, fetch_url, google_noindex, issue,
+                        normalize_url, parse_html, read_urls, refused_kind, same_host)
 
 
 # basis: convention — the same hundred target requests as gsc_links_csv.MAX_TARGETS.
@@ -26,18 +27,31 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
         fetched = fetch_url(url, timeout=timeout, max_bytes=1_500_000)
         row = {"url": normalize_url(url), "status": fetched.get("status"), "final_url": fetched.get("url"), "canonical": None, "verdict": "unknown", "issues": [],
                "error_kind": fetched.get("error_kind")}
-        if fetched.get("text"):
-            html = parse_html(fetched["text"], fetched.get("url") or url)
-            row["canonical"] = html.get("canonical")
-        if not row["canonical"]:
+        html = (parse_html(fetched["text"], fetched.get("url") or url)
+                if fetched.get("text") else {})
+        # The `Link` header's and every `<link rel=canonical>`'s (finding 8).
+        canonicals = declared_canonicals(html, fetched.get("headers"),
+                                         fetched.get("url") or url)
+        noindex = google_noindex(html.get("meta_robots"), html.get("meta_googlebot"),
+                                 (fetched.get("headers") or {}).get("x-robots-tag"))
+        if not canonicals:
             row["verdict"] = "missing"
             row["issues"].append("missing canonical")
             issues.append(issue("warning", "Missing canonical", row["url"]))
+        elif len(canonicals) > 1:
+            # Google ignores them all ("When more than one is specified, all
+            # rel=canonical links will be ignored", Search Central blog, 2013-04):
+            # the page declares no canonical it can use.
+            row["verdict"] = "conflicting"
+            row["canonicals"] = canonicals
+            row["issues"].append("conflicting canonicals")
+            issues.append(issue("warning", "Conflicting canonicals", row["url"],
+                                ", ".join(canonicals)))
         else:
-            canonical = normalize_url(row["canonical"], fetched.get("url") or url)
+            canonical = canonicals[0]
             row["canonical"] = canonical
             canonical_to_pages[canonical].append(row["url"])
-            if canonical == normalize_url(fetched.get("url") or url):
+            if comparable_url(canonical) == comparable_url(fetched.get("url") or url):
                 row["verdict"] = "self_canonical"
             elif not same_host(row["url"], canonical):
                 row["verdict"] = "cross_host"
@@ -56,6 +70,15 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
                     if target_html.get("canonical") and normalize_url(target_html["canonical"]) != canonical:
                         row["issues"].append("canonical chain detected")
                         issues.append(issue("warning", "Canonical target points elsewhere", row["url"], target_html["canonical"]))
+        # CI-011's question: do the page's indexing signals agree? noindex beside a
+        # canonical naming another URL asks Google both to drop the page and to fold
+        # it into that one (finding 9); a canonical on another host or two that
+        # disagree are mixed already.
+        row["signal"] = ("conflicting" if row["verdict"] == "conflicting"
+                         else "noindex_canonicalized"
+                         if noindex and row["verdict"] in ("canonicalized", "cross_host")
+                         else "cross_host" if row["verdict"] == "cross_host"
+                         else "consistent")
         rows.append(row)
     duplicates = {canonical: pages for canonical, pages in canonical_to_pages.items() if len(pages) > 1}
     return {

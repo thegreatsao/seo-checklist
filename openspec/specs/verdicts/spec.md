@@ -738,7 +738,10 @@ sitemap was an orphan whenever its linker went unread, and the count grew with w
 skipped. AR-162 read the same `orphan_pages` issue, and a site-wide average of internal links
 taken over whichever pages the cap let in. `link_profile.py` now withholds the orphan count and
 raises neither issue over a truncated crawl, saying why; a dead end — a page read with no
-outbound link — is a defect found and still counts. Found re-reading every crawl-fed item
+outbound link — is a defect found and still counts. An inbound link is one from another
+page, credited to the page it lands on (P2, 2026-11-04 audit, finding 16): a self-link is
+none, so a page linked only from itself is an orphan, and a link to `/old` that redirects to
+`/new` reaches `/new`. Found re-reading every crawl-fed item
 before the crawl caps' basis changed (F09); no census derives this shape, because it lives in
 what a script counts, not in the rule.
 
@@ -968,7 +971,10 @@ fields as of 0.93.0, and the repair moved live verdicts in three of them:
   it asked about one status code and passed a sitemap of URLs returning 500 or 503. It
   now reads `invalid_url_count` — status at or above 400, a redirect chain, or meta
   noindex — over the URLs actually read, and is absent when the run fetched nothing, so
-  an audit that never looked answers `NO_DATA` instead of `PASS`.
+  an audit that never looked answers `NO_DATA` instead of `PASS`. A URL listed past
+  `--max-urls` (25 for GO-138) is one not read either: since P2 of the 2026-11-04 audit
+  fixes the output is then `truncated` and says how many went unrequested, so a zero over
+  the first 25 of 41 withholds the PASS, and a bad URL among the 25 still fails.
 * **MB-095** counted messages matching `(?i)large|oversize|weight`, none of which the
   script emits without `--fetch-images`, which the registry did not pass. Every live run
   of this item passed on a page whose image weights were never measured. It reads

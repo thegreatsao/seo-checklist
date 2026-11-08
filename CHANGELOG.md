@@ -10,6 +10,20 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## Unreleased — audit fixes of 2026-11-04 (plan `docs/sprint-20261108-audit-fixes-plan.md`), not yet released
+
+Registry version: `bbc0b87fd8f2` (was `abf465b3f75d`): CI-009 maps `conflicting` to fail, and CI-011 reads the new
+`signal` field instead of `verdict`. The release session writes this entry out; it is here so the registry change has one.
+
+* **Batch P1:** robots wildcard matcher linear, robots.txt read to its cap, an unread robots.txt (5xx, 429, no answer)
+  is undecided rather than "no rules", sitemaps told gzip by their bytes and decoded by their own declaration.
+* **Batch P2:** guessed sitemap names that answer HTML are absent, not invalid (GO-136); URLs past `--max-urls` make
+  the sitemap check `truncated` (GO-138). CI-001, CI-009 and CI-011 compare a canonical by its encoded form, read the
+  `Link` header and `rel` in any case, treat two canonicals that disagree as none (Google ignores them all), and take
+  `noindex` from `<meta name="googlebot">` and from header rules for Googlebot only (`none` included). CI-011 fails
+  noindex beside a canonical naming another URL. CI-008 and AR-162 count no self-link as inbound and credit a link
+  through a redirect to the page it lands on.
+
 ## 0.177.0 — every script-backed assertion but one is claimed either way: 142 seen to fail in the recorded census, 2 proved unable, 1 left (SE-118)
 
 Registry version: `abf465b3f75d`, unchanged. **No verdict of a real audit moves**: nothing an audit fetches, decides

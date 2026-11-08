@@ -57,8 +57,18 @@ def graph_from_inventory(inventory: dict) -> tuple:
         "all_internal_targets": Counter(),
         "all_external_targets": Counter(),
         "anchor_texts": defaultdict(list),
+        # What orphans are judged by: a link from another page, credited to the page
+        # it lands on. A self-link counted as inbound, and a link to `/old` that 301s
+        # to `/new` left `/new` an orphan (finding 16, 2026-11-04).
+        "linked_from_elsewhere": set(),
     }
     pages = inventory.get("pages") or {}
+
+    def lands_on(key: str) -> set:
+        row = pages.get(key) or {}
+        final = row.get("final_url")
+        return {key, site_crawl.page_key(final)} if final else {key}
+
     for key, row in sorted(pages.items()):
         if not row.get("html"):
             continue
@@ -71,6 +81,8 @@ def graph_from_inventory(inventory: dict) -> tuple:
         }
         for link in internal:
             graph["all_internal_targets"][link["target"]] += 1
+            graph["linked_from_elsewhere"].update(
+                lands_on(link["target"]) - lands_on(key))
             if link.get("anchor"):
                 graph["anchor_texts"][link["target"]].append(link["anchor"])
         for link in external:
@@ -109,7 +121,7 @@ def analyze_link_profile(graph: dict, crawled: set, base_domain: str,
     for url in sorted(crawled):
         if url in refused or url in entry:
             continue
-        if internal_targets.get(url, 0) == 0:
+        if url not in graph["linked_from_elsewhere"]:
             orphan_pages.append(url)
 
     # Top linked pages (highest inbound internal links)
