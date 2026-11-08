@@ -37,6 +37,22 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `skills/seo-checklist/tools/` and `scripts/verify-feature.sh` — graded 2026-11-08, audit-fix batch P3
+
+Read for the grade: `calibrate_css_minification.py` (`_reads_minified`, `_misreads`, `_fewest_jointly`,
+`check_report`), `calibrate_font_weight.py` (`_empty_band`, `check_report`), `calibrate_paragraph_words.py`,
+`calibrate_profile_detection.py`, `calibrate_serp_length.py` and `calibrate_gsc_sample_floors.py` (`check_report`),
+`calibration_common.thin_corpus`, `corpus_fetch.py`, `audit_score_sensitivity.py`, `scripts/verify-feature.sh`, and in
+`scripts/checklist_runner.py` `stored_run`, `same_audit`, `previous_run`, `run_series`.
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `ci_local` 27/27 on `e3daacc` (2026-11-08, 607 s); 30 tests in `tests/test_audit_fixes_p3.py`, every fix red on the commit before it; Codex's third pass left one point, an owner decision (`MIN_SCORE`) |
+| Agent understandable | B | each check prints what holds its constant (band, misreads, measured capacity, precision rule) or that it is judgement; `_reads_minified` mirrors `looks_minified` and is held to it by a test, a second copy of one rule |
+| Test stability | B | pure functions over copies of the committed reports; one runner subprocess against a served fixture; the verify-feature tests need `bash` and `jq` on PATH |
+| Architecture boundaries | A | `make check-arch` 3/3 |
+| Code conventions | A | ruff clean; no new upper-case module constant (`tests/derived-sets.json` unchanged) |
+
 ## `skills/seo-checklist/scripts/` — graded 2026-11-08, audit-fix batch P2 (canonical, noindex, sitemap names, orphans)
 
 Read for the grade: `seo_common.py` (`comparable_url`, `google_robots_rules`, `google_noindex`, `_link_canonicals`,
