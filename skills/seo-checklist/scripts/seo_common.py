@@ -261,8 +261,9 @@ def comparable_url(url: str) -> str:
     A page may write its own address raw (`/café`) while requests reports the encoded
     form it sent (`/caf%C3%A9`); a self-canonical compared as text read as one pointing
     elsewhere (finding 8, 2026-11-04). Non-ASCII is percent-encoded as UTF-8, escapes
-    are upper-cased (RFC 3986 §6.2.2.1), the scheme and host lower-cased, the host in
-    its IDNA form, and the scheme's default port dropped; nothing is decoded.
+    are upper-cased (RFC 3986 §6.2.2.1), the scheme and host lower-cased, a non-ASCII
+    host in the IDNA form requests sends, and the scheme's default port dropped;
+    credentials stay. Nothing is decoded.
     """
     parsed = urlparse(normalize_url(url))
 
@@ -271,17 +272,21 @@ def comparable_url(url: str) -> str:
                       quote(part, safe="/%:@!$&'()*+,;=~-._?"))
 
     scheme = parsed.scheme.lower()
-    netloc = parsed.netloc.lower()
+    netloc = parsed.netloc      # as written if it cannot be read: nothing is assumed
     host = parsed.hostname or ""
     try:
-        host = host.encode("idna").decode("ascii")
+        if not host.isascii():
+            import idna     # what requests encodes a host with (IDNA 2008, UTS 46)
+            host = idna.encode(host, uts46=True).decode("ascii")
         port = parsed.port
     except (UnicodeError, ValueError):
-        port = None     # left as written: lower-cased, which is all that is safe
+        pass
     else:
-        netloc = (f"[{host}]" if ":" in host else host) + (
-            f":{port}" if port and port != {"http": 80, "https": 443}.get(scheme)
-            else "")
+        userinfo = parsed.netloc.rpartition("@")[0]     # credentials keep their case
+        netloc = ((userinfo + "@" if "@" in parsed.netloc else "")
+                  + (f"[{host}]" if ":" in host else host)
+                  + (f":{port}" if port is not None
+                     and port != {"http": 80, "https": 443}.get(scheme) else ""))
     return urlunparse(parsed._replace(
         scheme=scheme, netloc=netloc, path=encoded(parsed.path),
         params=encoded(parsed.params), query=encoded(parsed.query)))
@@ -339,8 +344,10 @@ def _link_canonicals(header: str) -> list[str]:
 
     One pass that never steps back (a regex retried at every `<` took 7 s over 60,000 of
     them): a target is `<...>`, then parameters split at `;` outside quotes until a `,`
-    outside quotes ends the link-value (RFC 8288 §3). Only a parameter named exactly
-    `rel` counts, so `title="rel=canonical"` and `x-rel=canonical` do not.
+    outside quotes ends the link-value (RFC 8288 §3). A parameter's name is read as
+    written, so only one named exactly `rel` counts (`title="rel=canonical"`,
+    `x-rel=`, `r"el"=` do not), and only its first occurrence (§3.3). A link with an
+    `anchor` is about another resource (§3.2) and is left out. `<>` is this page.
     """
     found, i, n = [], 0, len(header)
     while True:
@@ -354,7 +361,6 @@ def _link_canonicals(header: str) -> list[str]:
             ch = header[i]
             i += 1
             if escaped:
-                current.append(ch)
                 escaped = False
             elif quoted and ch == "\\":
                 escaped = True
@@ -365,15 +371,21 @@ def _link_canonicals(header: str) -> list[str]:
                 current = []
                 if ch == ",":
                     break
-            else:
-                current.append(ch)
+                continue
+            current.append(ch)
         params.append("".join(current))
+        named: dict[str, str] = {}
         for param in params:
             name, _, value = param.partition("=")
-            if (name.strip().lower() == "rel" and target
-                    and "canonical" in value.lower().split()):
-                found.append(target)
-                break
+            name, value = name.strip().lower(), value.strip()
+            if not name or name in named:
+                continue
+            if value.startswith('"'):
+                value = re.sub(r'\\(.)', r"\1", value[1:-1] if value.endswith('"')
+                               and len(value) > 1 else value[1:])
+            named[name] = value
+        if "anchor" not in named and "canonical" in named.get("rel", "").lower().split():
+            found.append(target)
 
 
 def declared_canonicals(html: dict | None, headers: dict | None,
@@ -1191,7 +1203,10 @@ def parse_html(html: str, base_url: str = "") -> dict:
                                          (tag.get("rel") or [])]]
     canonical = canonical_tags[0].get("href") if canonical_tags else None
     if canonical and base_url:
-        canonical = normalize_url(canonical, base_url)
+        try:
+            canonical = normalize_url(canonical, base_url)
+        except ValueError:      # `https://[`: no page anybody could fetch
+            canonical = None
     # Raw: `declared_canonicals` resolves them and leaves out what no parser accepts,
     # so a broken second tag cannot fail a page whose first one reads.
     canonicals = [href for href in (str(tag.get("href") or "").strip()

@@ -437,5 +437,48 @@ class CodexReviewOne(unittest.TestCase):
         self.assertEqual(found, [])
 
 
+
+class CodexReviewTwo(unittest.TestCase):
+    """Codex's second review, of 42290f4 (session 01a1ba51-6c98-7d63-b4b8-6d5fb104d280)."""
+
+    def link(self, header: str) -> list:
+        return seo_common.declared_canonicals({}, {"link": header}, SITE + "page")
+
+    def test_a_broken_first_canonical_does_not_raise(self):
+        html = seo_common.parse_html('<link rel="canonical" href="https://[">', SITE)
+        self.assertIsNone(html["canonical"])
+
+    def test_idna_is_idna_2008_as_requests_sends_it(self):
+        same = seo_common.comparable_url
+        self.assertNotEqual(same("https://faß.example/p"), same("https://fass.example/p"))
+        self.assertEqual(same("https://faß.example/p"),
+                         same("https://xn--fa-hia.example/p"))
+
+    def test_userinfo_is_part_of_the_comparison(self):
+        same = seo_common.comparable_url
+        self.assertNotEqual(same("https://alice:one@site.example/p"),
+                            same("https://bob:two@site.example/p"))
+
+    def test_port_zero_is_not_the_default(self):
+        same = seo_common.comparable_url
+        self.assertNotEqual(same("https://site.example:0/p"), same("https://site.example/p"))
+
+    def test_only_the_first_rel_counts(self):
+        self.assertEqual(self.link("</other>; rel=next; rel=canonical"), [])
+
+    def test_a_quoted_parameter_name_is_not_rel(self):
+        self.assertEqual(self.link('</other>; r"el"=canonical'), [])
+
+    def test_an_anchored_link_is_about_another_page(self):
+        self.assertEqual(self.link('</other>; rel=canonical; anchor="/different"'), [])
+
+    def test_an_empty_target_is_this_page(self):
+        self.assertEqual(self.link("<>; rel=canonical"), [SITE + "page"])
+
+    def test_a_quoted_rel_with_several_values_and_an_escape(self):
+        self.assertEqual(self.link('</a>; title="x\\"y, z"; rel="alternate canonical"'),
+                         [SITE + "a"])
+
+
 if __name__ == "__main__":
     unittest.main()
