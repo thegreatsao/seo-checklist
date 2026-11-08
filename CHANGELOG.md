@@ -10,6 +10,13 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
+## Unreleased
+
+Registry version: `bbc0b87fd8f2`, unchanged.
+
+* `calibrate_profile_detection --check` fails when `detect_profile.MIN_SCORE` in force is not the value its rule
+  selects (the owner's ruling of 2026-11-08; until now a standing override passed). Both are 5, so nothing moves.
+
 ## 0.178.0 — the second repo audit's twenty findings fixed: robots and sitemaps read as Google reads them, canonicals compared as sent, history compares like runs, calibrations refuse empty corpora
 
 Registry version: `bbc0b87fd8f2` (was `abf465b3f75d`): CI-009 maps `conflicting` to fail, and CI-011 reads the new

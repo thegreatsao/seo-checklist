@@ -254,6 +254,28 @@ class AnEmptyCorpusWritesNothing(Scratch):
         with mock.patch.object(profiles, "REPORT", report), quiet():
             self.assertEqual(profiles.check(), 1)
 
+    def test_profile_detection_check_fails_a_constant_off_the_rules_pick(self):
+        # The owner ruled on 2026-11-08 that MIN_SCORE in force must be the rule's pick:
+        # a constant and report that agree with each other but not with the rule fail.
+        with open(profiles.REPORT, encoding="utf-8") as fh:
+            data = json.load(fh)
+        off = data["selected_min_score"] - 1
+        data["in_force_min_score"] = off
+        report = os.path.join(self.dir, "profile-detection.json")
+        with open(report, "w", encoding="utf-8") as fh:
+            json.dump(data, fh)
+        out = io.StringIO()
+        with mock.patch.object(profiles, "REPORT", report), \
+                mock.patch.object(profiles, "literal_constants",
+                                  return_value={"MIN_SCORE": off}), \
+                mock.patch("sys.stdout", out):
+            self.assertEqual(profiles.check(), 1)
+        self.assertIn("in force", out.getvalue())
+
+    def test_profile_detection_check_passes_the_committed_report(self):
+        with quiet():
+            self.assertEqual(profiles.check(), 0)
+
 
 # -- 12: a constant compared with itself ----------------------------------------------
 

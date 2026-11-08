@@ -27,7 +27,8 @@ fewest harmful narrowings. The exclusions are taken from the runner's `profile_e
 at measuring time and stored. `--check` reads only the committed report and the literal
 constants; it does not fetch and does not import the detector. It fails when the signal
 tables have changed since the scores were taken, since the stored scores then describe a
-different detector.
+different detector, and when MIN_SCORE in force is not the value the rule selects (the
+owner's ruling of 2026-11-08: no standing override).
 """
 from __future__ import annotations
 
@@ -216,9 +217,9 @@ def measure() -> dict:
         "sites": rows,
         "unread": unread,
         **derived(rows, profile_exclusions()),
-        # What the tree runs with, which is a decision recorded beside the rule's pick
-        # rather than assumed to be it (F11: adopting the pick moved `--profile auto`
-        # verdicts, and the owner decided it; 5 since 0.174.0).
+        # What the tree runs with, recorded beside the rule's pick rather than assumed to
+        # be it (F11: adopting the pick moved `--profile auto` verdicts, and the owner
+        # decided it; 5 since 0.174.0). `--check` fails when the two differ (2026-11-08).
         "in_force_min_score": literal_constants(
             DETECTOR, {"MIN_SCORE"}, "could not read MIN_SCORE: {missing}")["MIN_SCORE"],
     }
@@ -243,6 +244,9 @@ def check() -> int:
     if constant != report["in_force_min_score"]:
         problems.append(f"detect_profile.MIN_SCORE is {constant}, the report records "
                         f"{report['in_force_min_score']} in force")
+    if constant != chosen:
+        problems.append(f"detect_profile.MIN_SCORE {constant} in force is not the "
+                        f"{chosen} the rule selects; adopt it or measure again")
     thin = thin_corpus(len(report["sites"]), len(report.get("unread", [])), "sites")
     if thin:
         problems.append(thin)
