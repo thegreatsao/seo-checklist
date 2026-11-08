@@ -264,13 +264,21 @@ class AnEmptyCorpusWritesNothing(Scratch):
         report = os.path.join(self.dir, "profile-detection.json")
         with open(report, "w", encoding="utf-8") as fh:
             json.dump(data, fh)
+        real = profiles.literal_constants
+
+        def constants(path, names, *rest):
+            found = real(path, names, *rest)
+            return {**found, "MIN_SCORE": off} if names == {"MIN_SCORE"} else found
+
         out = io.StringIO()
         with mock.patch.object(profiles, "REPORT", report), \
-                mock.patch.object(profiles, "literal_constants",
-                                  return_value={"MIN_SCORE": off}), \
+                mock.patch.object(profiles, "literal_constants", side_effect=constants), \
                 mock.patch("sys.stdout", out):
             self.assertEqual(profiles.check(), 1)
-        self.assertIn("in force", out.getvalue())
+        # The only problem is the divergence: signature, sweep and pick still agree.
+        self.assertEqual(out.getvalue().strip().splitlines(),
+                         [f"detect_profile.MIN_SCORE {off} in force is not the "
+                          f"{off + 1} the rule selects; adopt it or measure again"])
 
     def test_profile_detection_check_passes_the_committed_report(self):
         with quiet():

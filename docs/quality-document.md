@@ -47,7 +47,7 @@ Read for the grade: `calibrate_css_minification.py` (`_reads_minified`, `_misrea
 
 | Dimension | Grade | Basis |
 |---|---|---|
-| Verification passing | A | `ci_local` 27/27 on `e3daacc` (2026-11-08, 607 s); 30 tests in `tests/test_audit_fixes_p3.py`, every fix red on the commit before it; Codex's third pass left one point, an owner decision (`MIN_SCORE`) |
+| Verification passing | A | `ci_local` 27/27 on `e3daacc` (2026-11-08, 607 s); 30 tests in `tests/test_audit_fixes_p3.py`, every fix red on the commit before it; Codex's third pass left one point, the `MIN_SCORE` divergence, closed after 0.178.0 by the owner's ruling (`--check` fails it, red-first) |
 | Agent understandable | B | each check prints what holds its constant (band, misreads, measured capacity, precision rule) or that it is judgement; `_reads_minified` mirrors `looks_minified` and is held to it by a test, a second copy of one rule |
 | Test stability | B | pure functions over copies of the committed reports; one runner subprocess against a served fixture; the verify-feature tests need `bash` and `jq` on PATH |
 | Architecture boundaries | A | `make check-arch` 3/3 |
