@@ -22,6 +22,13 @@ own. The working directory is a copy of the plugin's `scripts/` folder: read the
 imports there when its source alone does not show what a value means. Use nothing else: no other files, no search,
 no network, and do not run anything.
 
+What an assertion does to the value at its path is `evaluate()` in `checklist_runner.py`, in the working directory:
+read it for any operator whose effect is not plain. An absent path is no verdict, never a pass, unless the rule sets
+`missing_is`. `none_severity` reads each issue's `severity` through `normal_severity()`, which translates a script's
+own words by `SEVERITY_ALIAS` — `error` → `high`, `warning` → `medium`, `warn` → `medium`, `info` → `low`,
+`notice` → `low` — so an issue at `error` fails a `none_severity: ["critical", "high"]` rule, and a word that is
+none of these nor `critical`, `high`, `medium`, `low` is no verdict.
+
 Give each item one verdict:
 
 - `answers` — the asserted path decides the title's question: on a site where the check applies, PASS means the site

@@ -6,12 +6,14 @@ reading can fall out of step. See the tool's docstring for what it does not do.
 """
 from __future__ import annotations
 
+import ast
 import contextlib
 import copy
 import io
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -246,6 +248,16 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
         with edited_scripts(self.items["TE-167"]["check"]["script"]):
             self.assertTrue(named(self.found(), "TE-167", "changed under its second reading"))
 
+    def test_a_changed_crawl_makes_an_inventory_reader_stale(self):
+        """F03-4: the crawl inventory's producer is a script, and the digest covers it."""
+        entry = self.readings["items"]["MS-022"]
+        entry["second_reading"] = {
+            "reader": "codex gpt-6.1-sol high", "session": "s-2",
+            "read": R.digest(self.items["MS-022"], entry), "verdict": entry["verdict"]}
+        self.assertFalse(named(self.found(), "MS-022", "changed under its second reading"))
+        with edited_scripts("site_crawl.py"):
+            self.assertTrue(named(self.found(), "MS-022", "changed under its second reading"))
+
     def test_a_changed_reading_makes_the_record_stale(self):
         self.entry["reading"] += " Amended."
         self.assertTrue(named(self.found(), "TE-167", "changed under its second reading"))
@@ -416,6 +428,56 @@ class WhatTheSecondReaderIsShown(unittest.TestCase):
         for script in sorted(readers):
             with self.subTest(script):
                 self.assertEqual(R.PRODUCERS.get(script), "## Measuring the rendered page")
+
+    def test_every_script_reading_the_crawl_inventory_names_its_producer(self):
+        """F03-4: sixteen items in eleven scripts read the inventory `site_crawl.py`
+        writes, and until then were judged without it."""
+        readers = {item["check"]["script"] for item in self.items.values()
+                   if "{inventory_json}" in json.dumps(item["check"].get("args"))}
+        self.assertIn("duplicate_content.py", readers)
+        for script in sorted(readers):
+            with self.subTest(script):
+                self.assertEqual(R.PRODUCERS.get(script), "site_crawl.py")
+
+    def test_an_inventory_reader_is_shown_the_crawl_whole_and_once(self):
+        text = self.blind("MS-022", "CN-039")
+        with open(os.path.join(R.SCRIPTS, "site_crawl.py"), encoding="utf-8") as f:
+            crawl = f.read().rstrip("\n")
+        self.assertEqual(text.count(crawl), 1)
+        head, after = text.split("### Input of duplicate_content.py", 1)
+        self.assertIn("`site_crawl.py`", after.split("\n", 1)[0])
+        self.assertEqual(after.split("\n", 1)[1].strip(), f"```python\n{crawl}\n```")
+        self.assertIn("### Script duplicate_content.py", head)
+
+    def test_a_producer_script_that_is_missing_is_an_error(self):
+        with mock.patch.dict(R.PRODUCERS, {"duplicate_content.py": "no_such_crawl.py"}):
+            with self.assertRaises(ValueError):
+                R.producers({"duplicate_content.py": ""})
+
+    def test_the_trace_artifact_is_read_without_a_producer(self):
+        """F03-4, scope 3: `cwv_metrics.py`'s input is typed by the agent from Chrome's
+        trace insights. No code here computes it, and the script's own docstring names
+        the trace and carries the shape, which is all SKILL.md's section adds."""
+        self.assertNotIn("cwv_metrics.py", R.PRODUCERS)
+        with open(os.path.join(R.SCRIPTS, "cwv_metrics.py"), encoding="utf-8") as f:
+            doc = ast.get_docstring(ast.parse(f.read()))
+        for words in ("chrome-devtools MCP", "trace", '"lcp_ms"', '"cls"', '"tbt_ms"'):
+            self.assertIn(words, doc)
+        self.assertNotIn("### Input of", self.blind("SP-214"))
+
+    def test_the_brief_says_how_a_severity_rule_reads_a_scripts_words(self):
+        """F03-3: AR-146 and CN-048 were disputed for `none_severity: [critical, high]`
+        never matching an issue at `error`, which the evaluator reads as `high`."""
+        with open(R.BRIEF, encoding="utf-8") as f:
+            blind = f.read().split("## Open pass", 1)[0]
+        for words in ("`evaluate()`", "`normal_severity()`", "`checklist_runner.py`",
+                      "`SEVERITY_ALIAS`"):
+            self.assertIn(words, blind)
+        with open(os.path.join(R.SCRIPTS, "checklist_runner.py"), encoding="utf-8") as f:
+            alias = next(ast.literal_eval(node.value) for node in ast.parse(f.read()).body
+                         if isinstance(node, ast.Assign)
+                         and getattr(node.targets[0], "id", "") == "SEVERITY_ALIAS")
+        self.assertEqual(dict(re.findall(r"`(\w+)` → `(\w+)`", blind)), alias)
 
     def test_the_producer_is_the_block_and_nothing_else(self):
         """Codex's review of the batch: printing all of SKILL.md in its place passed."""

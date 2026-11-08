@@ -59,12 +59,20 @@ SCRIPTS = HERE.parent / "scripts"
 BRIEF = HERE / "second-reading-brief.md"
 SKILL = HERE.parent / "SKILL.md"
 
-# Scripts that only read JSON another program wrote, and the SKILL.md section whose code
-# block is that program: the second reader is shown it, or it judges numbers whose
-# computation it cannot see (F03-2: three rendered_audit.py items read without it).
+# Scripts that only read JSON another program wrote, and that program: a SKILL.md section
+# whose code block it is, or a script in scripts/, shown whole. The second reader is shown
+# it, or it judges numbers whose computation it cannot see (F03-2: three rendered_audit.py
+# items read without it; F03-4: the crawl inventory's readers). `cwv_metrics.py` has none:
+# its input is typed from Chrome's trace insights, which no code here computes.
 PRODUCERS = {"rendered_audit.py": "## Measuring the rendered page",
              "html_validator.py": "## Measuring the rendered page",
-             "javascript_render_audit.py": "## Measuring the rendered page"}
+             "javascript_render_audit.py": "## Measuring the rendered page",
+             **dict.fromkeys(("anchor_text_audit.py", "broken_links.py",
+                              "canonical_checker.py", "duplicate_content.py",
+                              "image_weight_audit.py", "indexability_matrix.py",
+                              "internal_links.py", "link_profile.py", "local_seo_checker.py",
+                              "server_log_audit.py", "topical_cluster_mapper.py"),
+                             "site_crawl.py")}
 
 VERDICTS = ("answers", "measures", "owed")
 SECOND_READING = ("reader", "session", "read", "verdict", "dispute")
@@ -180,12 +188,19 @@ def sources(items) -> dict[str, str]:
 
 
 def producers(scripts) -> dict[str, str]:
-    """The fenced code block that writes each of these scripts' input, where that is not
-    the script; a named section or block that is missing is an error, not an omission."""
+    """The code that writes each of these scripts' input, where that is not the script: a
+    producer script whole, or a SKILL.md section's fenced block. A producer that is
+    missing, or a named section or block that is, is an error, not an omission."""
     out = {}
     for script in scripts:
         heading = PRODUCERS.get(script)
         if heading is None:
+            continue
+        if heading.endswith(".py"):
+            if not (SCRIPTS / heading).is_file():
+                raise ValueError(f"{script}: its producer {heading} is not in {SCRIPTS.name}/")
+            out[script] = "```python\n" + (SCRIPTS / heading).read_text(
+                encoding="utf-8").rstrip("\n") + "\n```"
             continue
         parts = SKILL.read_text(encoding="utf-8").split(f"\n{heading}\n", 1)
         block = re.search(r"^```\w*\n(.*?)^```$", parts[1].split("\n## ", 1)[0],
@@ -210,8 +225,11 @@ def blind_input(items: list[tuple[str, dict]], scripts: dict[str, str],
     for script in dict.fromkeys(item["check"]["script"] for _, item in items):
         out += [f"### Script {script}", "```python", scripts[script].rstrip("\n"), "```", ""]
         if script in made_by:
-            out += [f"### Input of {script}: written by this code, `{SKILL.name}` "
-                    f"{PRODUCERS[script].lstrip('# ')}", made_by[script], ""]
+            where = PRODUCERS[script]
+            where = (f"`{where}`" if where.endswith(".py")
+                     else f"`{SKILL.name}` {where.lstrip('# ')}")
+            out += [f"### Input of {script}: written by this code, {where}",
+                    made_by[script], ""]
     return "\n".join(out)
 
 
