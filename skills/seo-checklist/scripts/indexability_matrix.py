@@ -22,9 +22,11 @@ from seo_common import (read_as_url,
     html_parser,
     parse_html,
     parse_sitemap_xml,
+    sitemap_document,
     read_urls,
     refused_kind,
     robots_allowed,
+    robots_unread,
     normalize_url,
     same_host,
     status_class,
@@ -115,11 +117,10 @@ def urls_from_sitemaps(site: str, timeout: int, unread: list[str] | None = None,
     urls = set()
     read_bytes = 0
     if robots is not None:
-        status = (robots.get("fetch") or {}).get("status")
-        if status is None or status >= 500 or status == 429:
+        robots_why = robots_unread(robots)
+        if robots_why:
             why.append("robots.txt gave no answer, so the sitemaps it declares are "
-                       "unknown: " + str((robots.get("fetch") or {}).get("error")
-                                         or f"HTTP {status}"))
+                       "unknown: " + robots_why)
         locations = discover_sitemap_urls(site, timeout=timeout, robots=robots)
     else:
         locations = discover_sitemap_urls(site, timeout=timeout)
@@ -136,7 +137,7 @@ def urls_from_sitemaps(site: str, timeout: int, unread: list[str] | None = None,
             why.append(f"the sitemap byte budget ({SITEMAP_BYTES_BUDGET} bytes) was "
                        f"spent before {sm}")
             return None
-        fetched = fetch_url(sm, timeout=timeout, max_bytes=8_000_000)
+        fetched = fetch_url(sm, timeout=timeout, max_bytes=8_000_000, keep_body=True)
         read_bytes += fetched.get("bytes") or 0     # the body, not its characters
         status = fetched.get("status")
         if not carries_content(status):
@@ -144,7 +145,7 @@ def urls_from_sitemaps(site: str, timeout: int, unread: list[str] | None = None,
                 why.append(f"{sm} gave no sitemap to read: "
                            f"{fetched.get('error') or f'HTTP {status}'}")
             continue
-        parsed = parse_sitemap_xml(fetched.get("text") or "", sm)
+        parsed = parse_sitemap_xml(sitemap_document(fetched), sm)
         if parsed["type"] == "sitemapindex":
             why.append(f"{sm} is an index; its {len(parsed['sitemaps'])} sitemap(s) "
                        f"are not read")
@@ -159,8 +160,10 @@ def urls_from_sitemaps(site: str, timeout: int, unread: list[str] | None = None,
 def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dict:
     base = site or (urls[0] if urls else "")
     robots = fetch_robots(base, timeout=timeout) if base else {"parsed": None}
-    # Unread, not empty: a robots.txt this audit's guard refused allows nothing and
-    # forbids nothing we know of, and `robots_allowed` would read it as allowing all.
+    # Unread, not empty: a robots.txt this audit's guard refused, or one that answered
+    # 5xx or 429 or nothing, allows nothing and forbids nothing we know of, and
+    # `robots_allowed` would read it as allowing all (CI-001, CI-005).
+    robots_why = robots_unread(robots) if base else ""
     robots_refused = (robots.get("fetch") or {}).get("error_kind") == "blocked"
     unread: list[str] = []
     sitemap_urls = urls_from_sitemaps(base, timeout, unread, robots) if base else set()
@@ -168,9 +171,10 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
     for url in urls:
         url = normalize_url(url)
         allowed, robots_rule = robots_allowed(robots.get("parsed"), url, "Googlebot")
-        if robots_refused:
+        if robots_why:
             allowed = None
-            robots_rule = f"robots.txt not requested: {robots['fetch'].get('error')}"
+            robots_rule = (f"robots.txt not requested: {robots_why}" if robots_refused
+                           else f"robots.txt not read: {robots_why}")
         fetched = fetch_url(url, timeout=timeout, max_bytes=1_500_000)
         fetched_status_class = status_class(fetched.get("status"))
         headers = fetched.get("headers", {})

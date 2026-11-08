@@ -38,6 +38,7 @@ import re
 import socket
 import sys
 import xml.etree.ElementTree as ET
+import zlib
 from pathlib import Path
 from typing import Any, Callable, Iterable
 from urllib.parse import urljoin, urlparse, urlunparse
@@ -383,8 +384,12 @@ def fetch_url(
     max_bytes: int = 2_000_000,
     extra_headers: dict | None = None,
     respect_robots: bool = False,
+    keep_body: bool = False,
 ) -> dict:
     """Fetch a URL through the shared safe, paced HTTP path.
+
+    `keep_body=True` adds `body`, the response's bytes, for a reader that must not
+    take requests' guess at their text (a sitemap: gzip and its own XML declaration).
 
     Pass `respect_robots=True` for a URL found by crawling, never for the one the
     operator asked about — see `lib.safe_http.safe_request` for why the asymmetry
@@ -438,6 +443,8 @@ def fetch_url(
         if method.upper() != "HEAD":
             result["bytes"] = len(response.content)
             result["text"] = response.text
+            if keep_body:
+                result["body"] = response.content
     except RobotsDisallowed as exc:
         # Flagged, not merely errored. Callers that turn "not fetched" into a site
         # defect have to be able to tell our restraint from the site's problem.
@@ -1177,6 +1184,19 @@ def fetch_robots(site_url: str, timeout: int = 15) -> dict:
     return {"url": robots_url, "fetch": fetched, "parsed": parsed}
 
 
+def robots_unread(robots: dict) -> str:
+    """Why a `fetch_robots` answer holds rules nobody read, or "" when it was read.
+
+    A 5xx, a 429 or no answer at all (a guard refusal included) says nothing about the
+    rules, so they are unknown rather than absent; a 4xx is an answer, and means none.
+    """
+    fetched = robots.get("fetch") or {}
+    status = fetched.get("status")
+    if status is None or status >= 500 or status == 429:
+        return fetched.get("error") or (f"HTTP {status}" if status else "no answer")
+    return ""
+
+
 # Conventional filenames worth trying when nothing declares a sitemap. They are
 # guesses, and a guess that misses says nothing about the site — see
 # `discover_sitemap_urls`.
@@ -1239,19 +1259,60 @@ SITEMAP_BYTES_BUDGET = 20_000_000
 SITEMAP_URLS_BUDGET = 50_000
 
 
-def parse_sitemap_xml(xml_text: str, sitemap_url: str = "") -> dict:
-    text = xml_text or ""
-    if text[:2] == "\x1f\x8b":
-        with gzip.GzipFile(fileobj=io.BytesIO(text.encode("latin1"))) as packed:
-            raw = packed.read(SITEMAP_MAX_UNCOMPRESSED + 1)
-        if len(raw) > SITEMAP_MAX_UNCOMPRESSED:
-            return {"type": "invalid", "urls": [], "sitemaps": [],
-                    "error": f"gzipped sitemap is over {SITEMAP_MAX_UNCOMPRESSED} "
-                             "bytes uncompressed, the protocol's limit"}
-        text = raw.decode("utf-8", errors="replace")
+# The encoding an XML declaration names, read off the document's first bytes.
+_XML_DECLARED_ENCODING = re.compile(
+    rb"<\?xml[^>]*?\bencoding\s*=\s*[\"']([A-Za-z][A-Za-z0-9._-]*)[\"']")
+# Every way a hostile or broken sitemap fails to parse: malformed XML, an encoding
+# expat cannot read or nobody knows, bytes the encoding denies, bad or cut gzip.
+_SITEMAP_UNREADABLE = (ET.ParseError, ValueError, LookupError, OSError, EOFError,
+                      zlib.error)
+
+
+def _sitemap_root(document: bytes | str) -> ET.Element:
+    if isinstance(document, str):
+        if document[:2] != "\x1f\x8b":
+            return ET.fromstring(document)
+        document = document.encode("latin1")    # gzip held as text, byte for byte
+    if document[:2] == b"\x1f\x8b":   # gzip by its magic number, whatever the type said
+        with gzip.GzipFile(fileobj=io.BytesIO(document)) as packed:
+            document = packed.read(SITEMAP_MAX_UNCOMPRESSED + 1)
+        if len(document) > SITEMAP_MAX_UNCOMPRESSED:
+            raise ValueError(f"gzipped sitemap is over {SITEMAP_MAX_UNCOMPRESSED} "
+                             "bytes uncompressed, the protocol's limit")
     try:
-        root = ET.fromstring(text.encode("utf-8"))
-    except ET.ParseError as exc:
+        return ET.fromstring(document)
+    except (ValueError, LookupError):
+        # expat reads UTF-8, UTF-16 and single-byte encodings only; a declared
+        # multi-byte one (Shift_JIS, EUC-KR) is decoded by Python's codec instead.
+        declared = _XML_DECLARED_ENCODING.match(document)
+        if declared is None:
+            raise
+        return ET.fromstring(document.decode(declared.group(1).decode("ascii")))
+
+
+def sitemap_document(fetched: dict) -> bytes | str:
+    """What `parse_sitemap_xml` reads of a `fetch_url(..., keep_body=True)` result.
+
+    The bytes when they are gzip, told by the magic number whatever the Content-Type
+    said (`application/gzip` was decoded as text and read invalid); otherwise the text,
+    already decoded by HTTP-10's order: the server's charset, then the document's own.
+    """
+    body = fetched.get("body") or b""
+    return body if body[:2] == b"\x1f\x8b" else (fetched.get("text") or "")
+
+
+def parse_sitemap_xml(document: bytes | str, sitemap_url: str = "") -> dict:
+    """A sitemap's URLs, or `type: invalid` and why.
+
+    `document` is text, read as it stands (its XML declaration is not consulted again,
+    so it cannot contradict the decoding), or bytes: gzip is expanded, and the XML
+    declaration names the encoding. A document that cannot be read is invalid and never
+    raises: one exception here took every site-wide item to NO_DATA (finding 6,
+    2026-11-04).
+    """
+    try:
+        root = _sitemap_root(document or b"")
+    except _SITEMAP_UNREADABLE as exc:
         return {"type": "invalid", "urls": [], "sitemaps": [], "error": str(exc)}
 
     def local(tag: str) -> str:

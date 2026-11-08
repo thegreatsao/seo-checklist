@@ -516,20 +516,31 @@ def _fetch_robots(origin: str) -> str:
                         timeout=10,
                         allow_redirects=False,
                         verify=True,
+                        stream=True,
                         **request_auth,
                     )
                     break
                 except requests.exceptions.ConnectionError:
                     adapter.close()
-        # Every validated address refused the connection. Same answer as an absent
-        # robots.txt, for the reason in the docstring: an origin whose rules cannot be
-        # fetched is an origin with no rules, and this is an audit its own operator asked
-        # for rather than an unattended crawl.
-        if response is None:
-            return ""
-        if not carries_content(response.status_code):
-            return ""
-        return response.content[:ROBOTS_MAX_BYTES].decode("utf-8", "replace")
+            # Every validated address refused the connection. Same answer as an absent
+            # robots.txt, for the reason in the docstring: an origin whose rules cannot be
+            # fetched is an origin with no rules, and this is an audit its own operator asked
+            # for rather than an unattended crawl.
+            if response is None:
+                return ""
+            # Streamed and read no further than the cap: `.content` decompressed the whole
+            # body first, and 400 KB of gzip held 956 MB (finding 4, 2026-11-04).
+            body = bytearray()
+            try:
+                if not carries_content(response.status_code):
+                    return ""
+                for chunk in response.iter_content(65_536):
+                    body += chunk
+                    if len(body) >= ROBOTS_MAX_BYTES:
+                        break
+            finally:
+                response.close()
+            return bytes(body[:ROBOTS_MAX_BYTES]).decode("utf-8", "replace")
     except Exception:  # noqa: BLE001
         return ""
 

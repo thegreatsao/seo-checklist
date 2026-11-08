@@ -58,6 +58,7 @@ from seo_common import (
     normalize_url,
     parse_html,
     parse_sitemap_xml,
+    sitemap_document,
     picture_sources,
     print_json_or_text,
     same_host,
@@ -291,7 +292,7 @@ def load_sitemap_urls(site_url: str, sitemap_urls: list[str] | None = None,
             off_host_sitemaps.append(sitemap_url)
             continue
         seen_sitemaps.add(sitemap_url)
-        fetched = fetch(sitemap_url, timeout=timeout, max_bytes=8_000_000)
+        fetched = fetch(sitemap_url, timeout=timeout, max_bytes=8_000_000, keep_body=True)
         # The body's bytes, not its characters, and an error page's too (HTTP-10).
         read_bytes += fetched.get("bytes") or 0
         if not carries_content(fetched.get("status")) or not fetched.get("text"):
@@ -299,7 +300,7 @@ def load_sitemap_urls(site_url: str, sitemap_urls: list[str] | None = None,
                            "error": fetched.get("error"),
                            "error_kind": fetched.get("error_kind")})
             continue
-        parsed = parse_sitemap_xml(fetched["text"], sitemap_url)
+        parsed = parse_sitemap_xml(sitemap_document(fetched), sitemap_url)
         if parsed.get("error"):
             errors.append({"url": sitemap_url, "error": parsed["error"]})
             continue

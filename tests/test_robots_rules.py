@@ -1,7 +1,10 @@
 """RFC 9309 robots.txt matching shared by audits and polite HTTP fetching."""
 
 import os
+import random
+import re
 import sys
+import time
 import unittest
 
 
@@ -11,6 +14,9 @@ sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import harness  # noqa: E402
+from harness import allow_loopback, served  # noqa: E402
+from registry_verdict import verdict  # noqa: E402
+from checklist_runner import FAIL, NO_DATA, PASS, unread_reason  # noqa: E402
 import robots_checker  # noqa: E402
 import seo_common  # noqa: E402
 from lib import robots_rules, safe_http  # noqa: E402
@@ -199,6 +205,86 @@ class OneMatcher(unittest.TestCase):
                 with self.subTest(file=os.path.relpath(path, SCRIPTS)):
                     self.assertNotIn("urllib.robotparser", text, path)
                     self.assertNotIn("RobotFileParser", text, path)
+
+
+class WildcardMatchingIsLinear(unittest.TestCase):
+    """Finding 2 of the 2026-11-04 audit: `_matches` compiled a rule to a regular expression,
+    and `Disallow: /*a*a*a*a*a*a*a*b` against a path of sixty `a` backtracked for seconds
+    (eight stars, sixteen), holding a crawl of a hostile site to its timeout. The site
+    writes the rule, so the matcher must answer in time linear in what it is given."""
+
+    @staticmethod
+    def regex_reading(pattern, target):
+        """The matcher until 0.177.0, kept as the definition of the answers."""
+        anchored = pattern.endswith("$")
+        body = pattern[:-1] if anchored else pattern
+        expression = re.escape(body).replace(r"\*", ".*") + ("$" if anchored else "")
+        return re.match(expression, target) is not None
+
+    def test_a_hostile_wildcard_rule_is_answered_at_once(self):
+        parsed = robots_rules.parse("User-agent: *\nDisallow: /" + "*a" * 7 + "*b\n")
+        start = time.perf_counter()
+        answer = robots_rules.allowed(parsed, "https://example.com/" + "a" * 60, "Googlebot")
+        elapsed = time.perf_counter() - start
+        self.assertEqual(answer, (True, "no matching rule"))
+        self.assertLess(elapsed, 1.0, f"{elapsed:.2f} s for one rule")
+
+    def test_it_gives_the_regex_reading_on_every_short_case(self):
+        rng = random.Random(20261108)
+        for _ in range(20_000):
+            pattern = "".join(rng.choice("ab*/$") for _ in range(rng.randint(1, 7)))
+            target = "/" + "".join(rng.choice("ab/$*") for _ in range(rng.randint(0, 8)))
+            with self.subTest(pattern=pattern, target=target):
+                self.assertEqual(robots_rules._matches(pattern, target),
+                                 self.regex_reading(pattern, target))
+
+
+class AnUnreadRobotsTxtDecidesNothing(unittest.TestCase):
+    """Finding 5 of the 2026-11-04 audit: a robots.txt that answered 5xx or 429, or did not
+    answer, was read as one with no rules, so CI-001 and CI-005 passed and GEO-003 failed
+    over a file nobody read. It is unread, as a robots.txt the guard refused already was
+    (HTTP-13); a 404 is still an answer, and still means no rules."""
+
+    PAGE = ("<!doctype html><html lang=\"en\"><head><title>Page</title></head>"
+            "<body><p>Text.</p></body></html>")
+
+    @staticmethod
+    def slow():
+        time.sleep(2.5)
+        return "User-agent: *\nDisallow:\n"
+
+    UNREAD = {"503": (503, {"Content-Type": "text/plain"}, "busy"),
+              "500": (500, {"Content-Type": "text/plain"}, "broken"),
+              "429": (429, {"Content-Type": "text/plain"}, "slow down"),
+              "no answer": (200, {"Content-Type": "text/plain"}, slow)}
+
+    def run_both(self, robots):
+        import ai_crawler_policy_matrix
+        import indexability_matrix
+        routes = {"/": self.PAGE}
+        if robots is not None:
+            routes["/robots.txt"] = robots
+        with allow_loopback(), harness.own_rate_limit_dir(), served(routes) as site:
+            return (indexability_matrix.evaluate([site.url], timeout=1),
+                    ai_crawler_policy_matrix.matrix(site.url, timeout=1))
+
+    def test_an_unanswered_robots_txt_leaves_ci_001_ci_005_and_geo_003_undecided(self):
+        for label, robots in self.UNREAD.items():
+            with self.subTest(robots=label):
+                index, ai = self.run_both(robots)
+                row = index["rows"][0]
+                self.assertNotIn("robots_allowed", row, row["robots_rule"])
+                self.assertIn("robots.txt", row["robots_rule"])
+                self.assertEqual(verdict("CI-001", index), NO_DATA)
+                self.assertEqual(verdict("CI-005", index), NO_DATA)
+                self.assertTrue(unread_reason(ai), "GEO-003 graded an unread robots.txt")
+
+    def test_an_absent_robots_txt_is_still_an_answer_with_no_rules(self):
+        index, ai = self.run_both(None)
+        self.assertEqual(verdict("CI-001", index), PASS)
+        self.assertEqual(verdict("CI-005", index), PASS)
+        self.assertEqual(unread_reason(ai), "")
+        self.assertEqual(verdict("GEO-003", ai), FAIL)
 
 
 class RobotsCheckerParser(unittest.TestCase):

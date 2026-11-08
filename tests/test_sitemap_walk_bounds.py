@@ -296,6 +296,115 @@ class TheProtocolLimitIsItsOwnNumber(unittest.TestCase):
                              f"{sum(expanded):,} bytes expanded")
 
 
+class ASitemapIsReadFromItsBytes(unittest.TestCase):
+    """Finding 6 of the 2026-11-04 audit. The walkers handed `parse_sitemap_xml` the body
+    as requests decoded it, so a `.xml.gz` served as `application/gzip` was decoded as
+    text and read invalid; a sitemap in Shift_JIS or EUC-KR, an unknown encoding, or bad
+    or truncated gzip raised past `ET.ParseError` and took every site-wide item to
+    NO_DATA; and a declared ISO-8859-1 sitemap was read as UTF-8, its URLs mojibake.
+    Gzip is now told by the bytes, the XML declaration names the encoding, and a document
+    that cannot be read is `invalid`, never an exception."""
+
+    LOC = "https://site.example/\u65e5\u672c"
+
+    def document(self, encoding, loc=None):
+        return (f'<?xml version="1.0" encoding="{encoding}"?>'
+                f'<urlset xmlns="{NS}"><url><loc>{loc or self.LOC}</loc></url>'
+                f'</urlset>').encode(encoding)
+
+    def locs(self, document):
+        parsed = seo_common.parse_sitemap_xml(document, SITE + "sitemap.xml")
+        self.assertEqual(parsed["type"], "urlset", parsed.get("error"))
+        return [row["loc"] for row in parsed["urls"]]
+
+    def test_a_declared_encoding_is_the_one_read(self):
+        expected = [seo_common.normalize_url(self.LOC)]
+        for encoding in ("Shift_JIS", "EUC-JP", "UTF-8", "UTF-16"):
+            with self.subTest(encoding=encoding):
+                self.assertEqual(self.locs(self.document(encoding)), expected)
+        latin = "https://site.example/caf\u00e9"
+        for encoding in ("ISO-8859-1", "windows-1252"):
+            with self.subTest(encoding=encoding):
+                self.assertEqual(self.locs(self.document(encoding, latin)),
+                                 [seo_common.normalize_url(latin)])
+        korean = "https://site.example/\ud55c\uad6d"
+        self.assertEqual(self.locs(self.document("EUC-KR", korean)),
+                         [seo_common.normalize_url(korean)])
+
+    def test_gzip_is_told_by_its_bytes_and_keeps_the_declared_encoding(self):
+        self.assertEqual(self.locs(gzip.compress(self.document("Shift_JIS"))),
+                         [seo_common.normalize_url(self.LOC)])
+
+    def test_what_cannot_be_read_is_invalid_and_never_raises(self):
+        whole = gzip.compress(self.document("UTF-8"))
+        unreadable = {
+            "unknown encoding": (b'<?xml version="1.0" encoding="x-no-such"?>'
+                                 b"<urlset/>"),
+            "bad gzip": b"\x1f\x8b" + b"not deflate at all",
+            "truncated gzip": whole[:len(whole) // 2],
+            "gzip of nothing": whole[:10],
+            "bytes the declaration denies": self.document("UTF-8") + b"\xff\xfe",
+            "gzip as text": "\x1f\x8b\u4e00",
+        }
+        for label, document in unreadable.items():
+            with self.subTest(document=label):
+                parsed = seo_common.parse_sitemap_xml(document, SITE + "sitemap.xml")
+                self.assertEqual(parsed["type"], "invalid")
+                self.assertTrue(parsed["error"])
+
+    def test_every_walker_reads_gzip_served_as_application_gzip(self):
+        import indexability_matrix as ix
+        from harness import allow_loopback, served
+
+        with allow_loopback(), harness.own_rate_limit_dir(), served({}) as site:
+            loc = site.base + "/page"
+            body = gzip.compress(self.document("UTF-8", loc))
+            for path, kind in (("/sitemap.xml.gz", "application/gzip"),
+                               ("/s.gz", "application/x-gzip"),
+                               ("/s.bin", "application/octet-stream")):
+                site.routes[path] = (200, {"Content-Type": kind}, body)
+            for path in ("/sitemap.xml.gz", "/s.gz", "/s.bin"):
+                url = site.base + path
+                with self.subTest(walker="sitemap_checker", path=path):
+                    out = sitemap_checker.check_sitemaps(site.url, [url], timeout=5)
+                    self.assertEqual(out["sitemaps_checked"][0]["type"], "urlset",
+                                     out["sitemaps_checked"][0].get("error"))
+                with self.subTest(walker="site_crawl", path=path):
+                    out = site_crawl.load_sitemap_urls(site.url, sitemap_urls=[url],
+                                                       timeout=5)
+                    self.assertEqual(out["urls"], [loc], out["errors"])
+            cafe, japan = site.base + "/caf\u00e9", site.base + "/\u65e5\u672c"
+            texts = {  # path: (Content-Type, body, the URL it lists)
+                "/latin.xml": ("application/xml",
+                               self.document("ISO-8859-1", cafe), cafe),
+                "/sjis.xml": ("text/xml", self.document("Shift_JIS", japan), japan),
+                # HTTP-10: the server's charset wins over the document's declaration.
+                "/header.xml": ("application/xml; charset=utf-8",
+                                self.document("ISO-8859-1", cafe).replace(
+                                    "caf\u00e9".encode("latin1"), "caf\u00e9".encode()),
+                                cafe),
+            }
+            for path, (kind, body, listed) in texts.items():
+                site.routes[path] = (200, {"Content-Type": kind}, body)
+                url = site.base + path
+                with self.subTest(walker="sitemap_checker", path=path):
+                    out = sitemap_checker.check_sitemaps(site.url, [url], timeout=5)
+                    self.assertEqual(out["sitemaps_checked"][0]["type"], "urlset",
+                                     out["sitemaps_checked"][0].get("error"))
+                with self.subTest(walker="site_crawl", path=path):
+                    out = site_crawl.load_sitemap_urls(site.url, sitemap_urls=[url],
+                                                       timeout=5)
+                    self.assertEqual(out["urls"], [seo_common.normalize_url(listed)],
+                                     out["errors"])
+            with self.subTest(walker="indexability_matrix"):
+                site.routes["/robots.txt"] = (
+                    200, {"Content-Type": "text/plain"},
+                    f"User-agent: *\nDisallow:\nSitemap: {site.base}/sitemap.xml.gz\n")
+                unread = []
+                urls = ix.urls_from_sitemaps(site.url, 5, unread)
+                self.assertIn(loc, urls or set(), unread)
+
+
 class OffHostSitemaps(unittest.TestCase):
 
     def test_the_crawl_requests_no_sitemap_off_the_audited_host(self):

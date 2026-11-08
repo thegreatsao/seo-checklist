@@ -25,6 +25,7 @@ from seo_common import (read_as_url,
     origin,
     parse_html,
     parse_sitemap_xml,
+    sitemap_document,
     print_json_or_text,
     same_host,
 )
@@ -99,7 +100,7 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
             off_host_sitemaps.append(sm_url)
             continue
         seen_sitemaps.add(sm_url)
-        fetched = fetch_url(sm_url, timeout=timeout, max_bytes=8_000_000)
+        fetched = fetch_url(sm_url, timeout=timeout, max_bytes=8_000_000, keep_body=True)
         read_bytes += fetched.get("bytes") or 0     # the body, not its characters
         entry = {
             "url": sm_url,
@@ -126,7 +127,7 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
                 result["issues"].append(issue("error", f"Sitemap returned HTTP {fetched.get('status')}", sm_url, fetched.get("error")))
             result["sitemaps_checked"].append(entry)
             continue
-        parsed = parse_sitemap_xml(fetched.get("text") or "", sm_url)
+        parsed = parse_sitemap_xml(sitemap_document(fetched), sm_url)
         entry["type"] = parsed["type"]
         entry["error"] = parsed["error"]
         if parsed["error"]:

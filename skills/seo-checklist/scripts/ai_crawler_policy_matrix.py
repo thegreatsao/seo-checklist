@@ -11,7 +11,7 @@ from typing import NamedTuple
 
 from lib import robots_rules
 from seo_common import (carries_content, fetch_robots, fetch_url, normalize_url,
-                        origin, robots_allowed)
+                        origin, robots_allowed, robots_unread)
 
 
 # OpenAI splits its fetching across four tokens and blocking one does not block the
@@ -117,14 +117,16 @@ def matrix(site: str, paths: list[str] | None = None, timeout: int = 15) -> dict
         policy_grade = "silent"
 
     # `fetch_error` so the runner can tell "this site allows GPTBot" from "nobody
-    # answered". Without it a refused connection produced a full policy matrix built
-    # entirely out of absent robots.txt rules, and GEO-003 graded it.
+    # answered". Without it a refused connection, or a robots.txt answering 5xx or 429,
+    # produced a full policy matrix built entirely out of absent rules, and GEO-003
+    # graded it.
+    robots_why = robots_unread(robots)
     return {"site": base, "robots_url": robots["url"],
             "robots_status": robots["fetch"].get("status"),
             "llms_txt_url": base + "/llms.txt", "llms_txt_status": llms.get("status"),
-            "fetch_error": robots["fetch"].get("error") or llms.get("error"),
-            "fetch_error_kind": (robots["fetch"].get("error_kind")
-                                 if robots["fetch"].get("error")
+            "fetch_error": (f"robots.txt not read: {robots_why}" if robots_why
+                            else llms.get("error")),
+            "fetch_error_kind": (robots["fetch"].get("error_kind") if robots_why
                                  else llms.get("error_kind")),
             "named_scopes": named_scopes, "policy_grade": policy_grade,
             "rows": rows}

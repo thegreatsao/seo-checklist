@@ -467,6 +467,19 @@ go through `robots_allows`; probed 23 September 2026 by running them on 3.10 aga
 `test_scripts_do_not_import_the_version_dependent_parser` fails if any script imports that
 parser again.
 
+**Fail-open is the fetcher's policy, not a reading, from the audit-fix batch P1 (2026-11-08).**
+`indexability_matrix` and `ai_crawler_policy_matrix` read a `robots.txt` that answered 5xx or
+429, or gave no answer, as one with no rules: CI-001 and CI-005 passed and GEO-003 failed over
+a file nobody read. They now read it as unread (`seo_common.robots_unread`), as a guard-refused
+one has been since 0.173.0 (HTTP-13): the matrix drops `robots_allowed` and names the cause in
+`robots_rule`, and the AI matrix sets `fetch_error`. A 4xx is still an answer, with no rules.
+`test_robots_rules.AnUnreadRobotsTxtDecidesNothing` serves 503, 500, 429 and a robots.txt that
+does not answer within the timeout, and a 404 as the control. The same batch made the matcher
+linear: a rule compiled to a regular expression backtracked exponentially in its stars
+(`/*a*a*a*a*a*a*a*b` against sixty `a`, 5 s; eight stars, 16 s), and the site writes the rule.
+`WildcardMatchingIsLinear` bounds that rule to a second and holds the two-pointer matcher to
+the regular expression's answers on 20,000 short cases.
+
 #### Scenario: a URL the audit found for itself
 - **WHEN** a sitemap, a link or a crawl yields a URL a robots rule disallows
 - **THEN** it is not fetched
@@ -499,6 +512,12 @@ parser again.
 - **WHEN** `robots.txt` is absent, blank, unparseable, or the fetch for it raises
 - **THEN** the URL is allowed and the audit continues, because refusing to look at a site
   whose operator asked for the audit is the worse answer
+
+#### Scenario: a robots.txt that did not answer is not graded
+- **WHEN** `robots.txt` answers 5xx or 429, or gives no answer
+- **THEN** the fetcher still allows the URL, as above
+- **AND** CI-001 and CI-005 are undecided and GEO-003's output carries `fetch_error`, rather
+  than an item grading rules nobody read; a 4xx stays an answer with no rules
 
 ### Requirement: HTTP-6 — the crawl identifies itself by a token that can be blocked
 
@@ -836,6 +855,23 @@ turned the checker's FAIL on such a file into a withheld verdict. A `.xml.gz` bo
 stop is stated the way a cap is: what was cut is named, and the checker's result is
 `truncated`, which withholds a clean verdict over it (`openspec/specs/verdicts/` VRD-14).
 
+**`robots.txt` and sitemaps by their bytes, from the audit-fix batch P1 (2026-11-08).** The
+politeness fetch read the whole decompressed body and then kept its first
+`ROBOTS_MAX_BYTES`: 400 KB of gzip held 956 MB. It streams now and stops at the cap;
+`test_safe_http.TheRobotsFetchStopsAtItsCap` serves 64 MB behind 70 KB of `Content-Encoding:
+gzip` through urllib3's own decoding and holds the peak under 16 MB (138 MB before). The three
+walkers handed `parse_sitemap_xml` the body as decoded text, so gzip was looked for in text: a
+`.xml.gz` served as `application/gzip` read invalid. The text was then re-encoded as UTF-8 under
+its own declaration, so a declared ISO-8859-1 sitemap came out as mojibake and a Shift_JIS one
+raised `ValueError`, as did an unknown encoding and bad or cut gzip, past the `ParseError`
+handler: every site-wide item went NO_DATA. Now gzip is told by the body's bytes
+(`fetch_url(..., keep_body=True)`, `seo_common.sitemap_document`) and its expansion is parsed
+under its own declaration; any other sitemap is parsed as the text `fetch_url` decoded, by the
+order above, without its declaration being read a second time; and a document that cannot be
+read is `invalid`, never an exception. `tests/test_sitemap_walk_bounds.py`
+`ASitemapIsReadFromItsBytes` serves gzip under three types to the three walkers, declared
+ISO-8859-1 and Shift_JIS, and a charset header that wins over the declaration.
+
 #### Scenario: a body over the ceiling
 - **WHEN** a response grows past the caller's limit while it is being read
 - **THEN** the read stops and raises, and no shortened body is returned, decoded or stored
@@ -882,6 +918,12 @@ stop is stated the way a cap is: what was cut is named, and the checker's result
 #### Scenario: a compressed sitemap that expands past the protocol limit
 - **WHEN** a gzipped sitemap decompresses past 50 MB
 - **THEN** expansion stops there and the file is returned invalid, saying why
+
+#### Scenario: a sitemap that cannot be read
+- **WHEN** a sitemap is gzip served under any Content-Type, names an encoding expat cannot
+  read or nobody knows, or is bad or truncated gzip
+- **THEN** gzip is read from the bytes and expanded, a declared encoding Python knows is
+  decoded, and what is left unreadable is returned invalid, saying why, never raised
 
 ### Requirement: HTTP-11 — TLS verification is never relaxed
 

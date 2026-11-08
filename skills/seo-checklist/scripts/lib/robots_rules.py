@@ -109,12 +109,29 @@ def _normalise(value: str) -> str:
 
 
 def _matches(pattern: str, target: str) -> bool:
+    """Whether `pattern` (`*` any run, a final `$` the end) matches from the start of
+    `target`. Two pointers, back to the last `*` on a miss: at most len(pattern) ×
+    len(target) steps. The regular expression this replaced backtracked exponentially
+    in the number of stars, and the site being audited writes the rule."""
     anchored = pattern.endswith("$")
     body = pattern[:-1] if anchored else pattern
-    expression = re.escape(body).replace(r"\*", ".*")
-    if anchored:
-        expression += "$"
-    return re.match(expression, target) is not None
+    if not anchored:
+        body += "*"     # a prefix match is a whole match with any tail
+    p = t = 0
+    star, resume = -1, 0
+    while t < len(target):
+        if p < len(body) and body[p] == "*":
+            star, resume = p, t
+            p += 1
+        elif p < len(body) and body[p] == target[t]:
+            p += 1
+            t += 1
+        elif star >= 0:
+            resume += 1
+            p, t = star + 1, resume
+        else:
+            return False
+    return all(character == "*" for character in body[p:])
 
 
 def allowed(parsed: dict | None, url: str, agent: str) -> tuple[bool, str]:

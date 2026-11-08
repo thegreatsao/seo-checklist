@@ -496,6 +496,53 @@ class TheRobotsFetchGoesThroughTheGuardToo(unittest.TestCase):
 
 
 @public_policy
+class TheRobotsFetchStopsAtItsCap(unittest.TestCase):
+    """Finding 4 of the 2026-11-04 audit: `_fetch_robots` read the whole decompressed body
+    and then kept its first `ROBOTS_MAX_BYTES`, so a 400 KB gzipped robots.txt held 956 MB
+    and a 1 GB one 2.4 GB. It streams now and stops reading at the cap. Measured as
+    memory, through urllib3's own decoding of a `Content-Encoding: gzip` body: 64 MB
+    behind about 70 KB on the wire."""
+
+    setUp = TheRobotsFetchGoesThroughTheGuardToo.setUp
+    tearDown = TheRobotsFetchGoesThroughTheGuardToo.tearDown
+
+    @staticmethod
+    def bomb(megabytes):
+        import zlib
+        packer = zlib.compressobj(9, zlib.DEFLATED, 31)
+        line = b"Disallow: /" + b"x" * 1012 + b"\n"
+        parts = [packer.compress(b"User-agent: *\n")]
+        parts += [packer.compress(line * 1024) for _ in range(megabytes)]
+        return b"".join(parts) + packer.flush()
+
+    def test_a_gzip_bomb_is_read_no_further_than_the_cap(self):
+        import io
+        import tracemalloc
+        from urllib3.response import HTTPResponse
+        wire = self.bomb(64)
+
+        def send(adapter, request, **kwargs):
+            raw = HTTPResponse(body=io.BytesIO(wire), status=200, preload_content=False,
+                               headers={"Content-Encoding": "gzip",
+                                        "Content-Type": "text/plain"},
+                               decode_content=True)
+            return sh.requests.adapters.HTTPAdapter.build_response(adapter, request, raw)
+
+        tracemalloc.start()
+        try:
+            with mock.patch.object(sh.socket, "getaddrinfo",
+                                   side_effect=lambda *a, **k: answer(PUBLIC_A, 80)), \
+                    mock.patch.object(sh._PinnedAdapter, "send", new=send):
+                text = sh._fetch_robots("http://bomb.example")
+            peak = tracemalloc.get_traced_memory()[1]
+        finally:
+            tracemalloc.stop()
+        self.assertTrue(text.startswith("User-agent: *\nDisallow: /x"))
+        self.assertEqual(len(text.encode("utf-8")), sh.ROBOTS_MAX_BYTES)
+        self.assertLess(peak, 16_000_000, f"peak {peak:,} bytes")
+
+
+@public_policy
 class TheAgentIdentifiesItselfOnTheWire(unittest.TestCase):
     """`openspec/specs/http/` HTTP-6. Politeness that cannot be declined is not politeness:
     a site owner's only lever is a `robots.txt` rule, and it works only if the token this
