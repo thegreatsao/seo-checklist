@@ -84,12 +84,12 @@ Read for the grade: `lib/robots_rules.py` (`_matches`), `lib/safe_http.py` (`_fe
 
 The rest of `scripts/` is not graded.
 
-## `skills/seo-checklist/tools/` — graded 2026-10-24, F03 batch 3 (`audit_item_readings.py` and `second-reading-brief.md` only)
+## `skills/seo-checklist/tools/` — graded 2026-11-08, F03 batch 4 (`audit_item_readings.py` and `second-reading-brief.md` only)
 
 | Dimension | Grade | Basis |
 |---|---|---|
-| Verification passing | A | `tests.test_item_readings` 54/54; `--check` exit 0 with 29 second readings current; 11 of 11 batch-3 mutations red |
-| Agent understandable | B | the docstring and brief say what the reader is shown, including the rendered-page producer, and what the digest leaves out (helpers); the brief does not yet show the crawl inventory's producer or how an assertion operator is evaluated (`docs/sprint-20261024-F03-4-brief.md`) |
+| Verification passing | A | `tests.test_item_readings` 60/60; `--check` exit 0 with 71 second readings current; 5 of 5 batch-4 mutations red, and the review fix red first |
+| Agent understandable | A | the docstring and brief say what the reader is shown — the rendered-page snippet, `site_crawl.py` for the crawl inventory's eleven readers, the evaluator and its severity alias — and what the digest leaves out (helpers, the brief); `cwv_metrics.py`'s missing producer is stated with its reason |
 | Test stability | A | pure functions over deep copies of the shipped files; temp copies of `scripts/` and `SKILL.md` for the digest tests; one subprocess per CLI test |
 | Architecture boundaries | A | `make check-arch` 3/3 |
 | Code conventions | A | ruff clean; no command writes the readings file |
