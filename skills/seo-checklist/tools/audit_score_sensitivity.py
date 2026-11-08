@@ -146,6 +146,12 @@ def report(paths: list[str]) -> int:
         if not items:
             print(f"{os.path.basename(path)}: nothing decided; skipped")
             continue
+        if not weighed(items):
+            # Decided twins whose scoring item is out of scope: the runner has no
+            # headline for this run either.
+            print(f"{os.path.basename(path)}: only scores_with twins decided, no "
+                  f"headline; skipped")
+            continue
         runs.append((os.path.basename(path), data, items))
     if not runs:
         print("no run had a decided item — nothing to be sensitive about")

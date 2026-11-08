@@ -95,7 +95,8 @@
       "classifier_misreads": {
         "at_value": 13,
         "fewest": 13,
-        "fewest_from_to": [
+        "fewest_alone": 13,
+        "fewest_alone_from_to": [
           47.085714,
           233.636364
         ]
@@ -236,8 +237,9 @@
       },
       "classifier_misreads": {
         "at_value": 13,
-        "fewest": 11,
-        "fewest_from_to": [
+        "fewest": 13,
+        "fewest_alone": 11,
+        "fewest_alone_from_to": [
           0.149812,
           1.955556
         ]
@@ -371,7 +373,8 @@
       "classifier_misreads": {
         "at_value": 13,
         "fewest": 13,
-        "fewest_from_to": [
+        "fewest_alone": 13,
+        "fewest_alone_from_to": [
           3,
           395
         ]

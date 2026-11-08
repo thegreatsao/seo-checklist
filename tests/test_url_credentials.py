@@ -557,10 +557,18 @@ class OneSiteOneHistory(unittest.TestCase):
         self.assertIn(f"***@{folder}", RUN["first"].stderr)
 
     def test_the_bare_run_is_compared_with_the_one_under_the_credential(self):
+        """The bare run is `--only speed` and the first a full run, so the first is not
+        its baseline (HST-2, audit fix P3). The history is still one: a full run of the
+        bare host is compared with the run made under the credential."""
         first, second = payload("results.json"), payload("bare.json")
-        self.assertIsNotNone(second["compared_with"],
-                             "the same site, audited a minute later, had no previous run")
-        self.assertEqual(second["compared_with"]["started_at"], first["started_at"])
+        self.assertIsNone(second["compared_with"], "a full run was the baseline of an "
+                                                   "--only run")
+        runner.use_history_dir(os.path.join(RUN["work"], ".seo-runs"))
+        self.addCleanup(runner.use_history_dir, "")
+        found = runner.previous_run(RUN["site"].host, "", like=dict(second, only=None))
+        self.assertIsNotNone(found, "the same site, audited a minute later, had no "
+                                    "previous run")
+        self.assertEqual(found["started_at"], first["started_at"])
 
 
 class RunsAlreadyFiledUnderANameCarryingUserinfo(unittest.TestCase):

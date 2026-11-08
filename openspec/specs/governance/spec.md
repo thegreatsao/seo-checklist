@@ -635,7 +635,7 @@ selects, and fails when the signal tables change under its stored scores.
 - **THEN** the check still compares that value with what the stored rows say, re-derived
   offline — `LARGE_FONT_BYTES` with the empty band between ordinary web fonts and full
   faces, `MINIFIED_BYTES_PER_LINE` and `MINIFIED_MAX_INDENTED` with the fewest labelled
-  files the classifier can misread — and never with a recommendation copied from the
+  files any pair of the two can have the classifier misread — and never with a recommendation copied from the
   constant (finding 12 of the 2026-11-04 audit)
 - **AND** a constant the corpus does not choose (`MINIFIED_COMMENT_SHARE`,
   `WASTED_BYTES_WARN`, `SMALL_FILE_BYTES`) is printed as set by judgement, held only to
@@ -643,7 +643,7 @@ selects, and fails when the signal tables change under its stored scores.
 
 #### Scenario: a corpus that did not answer
 - **WHEN** the profile-detection or the paragraph-words measurement reads nothing, or
-  less than half of its corpus
+  less than half of its corpus (a page with no paragraph counts as unread)
 - **THEN** it leaves the committed report as it was and exits non-zero, and `--check`
   fails a committed report in that state (finding 11)
 

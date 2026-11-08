@@ -29,12 +29,25 @@ def _cache_path(package: str, version: str, cache_dir: str) -> str:
     return os.path.join(cache_dir, f"{safe}-{version}.tgz")
 
 
+def _tarball_problem(data: bytes) -> str | None:
+    try:
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tf:
+            tf.getmembers()
+    except (tarfile.TarError, OSError, EOFError) as exc:
+        return str(exc) or type(exc).__name__
+    return None
+
+
 def _fetch(package: str, version: str, cache_dir: str,
            max_response_bytes: int) -> bytes:
     path = _cache_path(package, version, cache_dir)
     if os.path.exists(path):
         with open(path, "rb") as fh:
-            return fh.read()
+            cached = fh.read()
+        if _tarball_problem(cached) is None:
+            return cached
+        # Written before the cache was checked (finding 19): fetched again.
+        os.remove(path)
 
     scripts = os.path.join(os.path.dirname(HERE), "scripts")
     sys.path.insert(0, scripts)
@@ -51,11 +64,9 @@ def _fetch(package: str, version: str, cache_dir: str,
     # written here would stand in for the tarball until somebody deleted it.
     if response.status_code != 200:
         raise RuntimeError(f"{package}@{version}: HTTP {response.status_code}, not cached")
-    try:
-        with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tf:
-            tf.getmembers()
-    except (tarfile.TarError, OSError, EOFError) as exc:
-        raise RuntimeError(f"{package}@{version}: not a gzip tarball ({exc}), not cached") from exc
+    problem = _tarball_problem(data)
+    if problem:
+        raise RuntimeError(f"{package}@{version}: not a gzip tarball ({problem}), not cached")
     os.makedirs(cache_dir, exist_ok=True)
     partial = path + ".part"
     with open(partial, "wb") as fh:

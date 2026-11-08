@@ -152,6 +152,13 @@ def measure(checkout: str) -> dict:
             "quarter_short_false_selects": sensitivity(pages)}
 
 
+def _thin(report: dict) -> str | None:
+    """A page the extractor found no paragraph on is as unread as a page not there."""
+    read = sum(1 for page in report["pages"] if page)
+    return thin_corpus(read, len(report.get("skipped", [])) + len(report["pages"]) - read,
+                       "pages with a paragraph")
+
+
 def check() -> int:
     with open(REPORT, encoding="utf-8") as fh:
         report = json.load(fh)
@@ -166,7 +173,7 @@ def check() -> int:
         problems.append(f"the rule selects {chosen}, the report says {report['selected_cutoff']}")
     constant = literal_constants(CHECKER, {"MIN_PARAGRAPH_WORDS"},
                                  "could not read MIN_PARAGRAPH_WORDS: {missing}")
-    thin = thin_corpus(len(report["pages"]), len(report.get("skipped", [])), "pages")
+    thin = _thin(report)
     if thin:
         problems.append(thin)
     if constant["MIN_PARAGRAPH_WORDS"] != chosen:
@@ -190,7 +197,7 @@ def main() -> int:
     if not a.checkout:
         ap.error("give the benchmark checkout, or --check")
     report = measure(a.checkout)
-    thin = thin_corpus(len(report["pages"]), len(report["skipped"]), "pages")
+    thin = _thin(report)
     if thin:
         print(f"{thin}; {REPORT} left as it was", file=sys.stderr)
         return 1

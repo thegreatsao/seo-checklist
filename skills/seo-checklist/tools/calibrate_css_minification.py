@@ -25,6 +25,7 @@ from __future__ import annotations
 import python_floor  # noqa: F401
 
 import argparse
+import bisect
 import gzip
 import json
 import os
@@ -257,7 +258,13 @@ def _measure_package(spec: dict) -> tuple[dict, list[dict], list[dict]]:
 
 
 def _reads_minified(row: dict, limits: dict) -> bool:
-    """`css_minify_check.looks_minified` over a stored row's three signals."""
+    """`css_minify_check.looks_minified` over a stored row's three signals.
+
+    A blank stylesheet is the one CSS whose bytes per line is 0, and `looks_minified`
+    calls it minified before reading any signal.
+    """
+    if row["bytes_per_line"] == 0:
+        return True
     return (row["bytes_per_line"] > limits["MINIFIED_BYTES_PER_LINE"]
             and row["comment_share"] < limits["MINIFIED_COMMENT_SHARE"]
             and row["indented_lines_first_400"] < limits["MINIFIED_MAX_INDENTED"])
@@ -276,10 +283,36 @@ def _misreads(files: list[dict], name: str, signal: str, limits: dict) -> dict:
     values = sorted({row[signal] for row in files})
     counts = {value: misread({**limits, name: value})
               for value in (values[0] - 1, *values, values[-1] + 1)}
-    fewest = min(counts.values())
-    best = [value for value, count in counts.items() if count == fewest]
-    return {"at_value": misread(limits), "fewest": fewest,
-            "fewest_from_to": [best[0], best[-1]]}
+    alone = min(counts.values())
+    best = [value for value, count in counts.items() if count == alone]
+    return {"at_value": misread(limits), "fewest": _fewest_jointly(files, limits),
+            "fewest_alone": alone, "fewest_alone_from_to": [best[0], best[-1]]}
+
+
+def _fewest_jointly(files: list[dict], limits: dict) -> int:
+    """The fewest misreads any pair of MINIFIED_BYTES_PER_LINE and MINIFIED_MAX_INDENTED
+    gives, MINIFIED_COMMENT_SHARE held: two constants each held at the other's broken
+    value cannot vouch for each other."""
+    blank = [row for row in files if row["bytes_per_line"] == 0]
+    rest = [row for row in files if row["bytes_per_line"] != 0]
+    blank_misreads = sum(row["label"] != "minified" for row in blank)
+    minified_total = sum(row["label"] == "minified" for row in rest)
+    lines = sorted({row["bytes_per_line"] for row in rest}) or [0]
+    indents = sorted({row["indented_lines_first_400"] for row in rest}) or [0]
+    fewest = None
+    for indent in (indents[0] - 1, *indents, indents[-1] + 1):
+        eligible = [row for row in rest
+                    if row["comment_share"] < limits["MINIFIED_COMMENT_SHARE"]
+                    and row["indented_lines_first_400"] < indent]
+        hit = sorted(row["bytes_per_line"] for row in eligible
+                     if row["label"] == "minified")
+        false = sorted(row["bytes_per_line"] for row in eligible
+                       if row["label"] != "minified")
+        for line in (lines[0] - 1, *lines, lines[-1] + 1):
+            misreads = (minified_total - (len(hit) - bisect.bisect_right(hit, line))
+                        + len(false) - bisect.bisect_right(false, line))
+            fewest = misreads if fewest is None else min(fewest, misreads)
+    return blank_misreads + fewest
 
 
 def _constant_evidence(files: list[dict], pairs: list[dict],
@@ -581,16 +614,18 @@ def check_report(constants_to_check: dict) -> int:
             verdict = "set by judgement, not chosen by the corpus"
             if misreads:
                 verdict += (f" (misreads {misreads['at_value']} labelled files; the fewest "
-                            f"any value gives is {misreads['fewest']})")
+                            f"the two measured thresholds give is {misreads['fewest']}, "
+                            f"and this one alone {misreads['fewest_alone']})")
         elif "recommended_value" in evidence:
             agrees = value == evidence["recommended_value"]
             verdict = (f"corpus={evidence['recommended_value']}; "
                        f"agree={'yes' if agrees else 'no'}")
         elif misreads:
             agrees = misreads["at_value"] == misreads["fewest"]
-            low, high = misreads["fewest_from_to"]
+            low, high = misreads["fewest_alone_from_to"]
             verdict = (f"misreads {misreads['at_value']} labelled files, the fewest any "
-                       f"value gives is {misreads['fewest']} ({low} to {high}); "
+                       f"pair of the two measured thresholds gives is {misreads['fewest']} "
+                       f"(this one alone: {low} to {high}); "
                        f"agree={'yes' if agrees else 'no'}")
         else:
             print(f"calibration report gives no basis for {name}", file=sys.stderr)

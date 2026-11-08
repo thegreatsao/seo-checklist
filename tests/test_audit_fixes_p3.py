@@ -127,6 +127,49 @@ class HistoryComparesLikeRuns(Scratch):
                          [40])
 
 
+class HistoryComparesLikeRunsThroughTheRunner(unittest.TestCase):
+    """Codex review 1: the helpers can filter and `main` still not ask them to. One run
+    of the runner over stored runs of another page and another selection."""
+
+    def test_the_baseline_and_the_trend_are_this_page_and_selection(self):
+        from urllib.parse import urlparse
+        page = ("<!doctype html><html><head><title>A page for an audit</title></head>"
+                "<body><h1>A page for an audit</h1><p>" + "Useful body copy. " * 80
+                + "</p></body></html>")
+        launch = ("import os, runpy, sys; os.chdir(sys.argv.pop(1)); "
+                  "runpy.run_path(sys.argv.pop(1), run_name='__main__')")
+        with tempfile.TemporaryDirectory(prefix="seo-p3-history-") as work, \
+                harness.served({"/": page, "/robots.txt": (404, "")}) as site:
+            folder = os.path.join(work, ".seo-runs",
+                                  checklist_runner.history_folder(urlparse(site.url).netloc))
+            os.makedirs(folder)
+            same = ["crawling_indexing"]
+            for name, started, url, only in (
+                    ("a.json", "2020-01-01T00:00:00+00:00", site.url, same),
+                    ("b.json", "2021-01-01T00:00:00+00:00", site.url + "other", same),
+                    ("c.json", "2022-01-01T00:00:00+00:00", site.url, None)):
+                stored = run(started, mode="page", url=url, only=only)
+                stored["domain"] = urlparse(site.url).netloc
+                with open(os.path.join(folder, name), "w", encoding="utf-8") as fh:
+                    json.dump(stored, fh)
+            out = os.path.join(work, "out.json")
+            proc = harness.spawn(
+                [sys.executable, "-c", launch, work,
+                 os.path.join(ROOT, "skills", "seo-checklist", "scripts",
+                              "checklist_runner.py"),
+                 site.url, "--mode", "page", "--only", "crawling_indexing",
+                 "--allow-private", "--max-rps", "0", "--no-history", "--no-prompt",
+                 "--quiet", "--timeout", "60", "--json", out],
+                env=harness.offline_env(), timeout=300)
+            self.assertEqual(proc.returncode, 0, proc.stderr[-2000:])
+            with open(out, encoding="utf-8") as fh:
+                payload = json.load(fh)
+        self.assertEqual(payload["url"], site.url)
+        self.assertEqual(payload["compared_with"]["started_at"], "2020-01-01T00:00:00+00:00")
+        self.assertEqual([row["started_at"] for row in payload["history"][:-1]],
+                         ["2020-01-01T00:00:00+00:00"], "the last point is this run")
+
+
 # -- 11: a calibration from an empty corpus -----------------------------------------
 
 class AnEmptyCorpusWritesNothing(Scratch):
@@ -157,6 +200,24 @@ class AnEmptyCorpusWritesNothing(Scratch):
         data["sweep"] = paragraphs.score([])
         data["selected_cutoff"] = paragraphs.select(data["sweep"])
         data["quarter_short_false_selects"] = paragraphs.sensitivity([])
+        with open(report, "w", encoding="utf-8") as fh:
+            json.dump(data, fh)
+        with mock.patch.object(paragraphs, "REPORT", report), quiet(), \
+                mock.patch.object(paragraphs, "literal_constants",
+                                  return_value={"MIN_PARAGRAPH_WORDS":
+                                                data["selected_cutoff"]}):
+            self.assertEqual(paragraphs.check(), 1)
+
+    def test_paragraph_words_check_fails_pages_without_paragraphs(self):
+        """Codex review 1: every page there and none with a paragraph is no corpus."""
+        report = os.path.join(self.dir, "paragraph-words.json")
+        with open(paragraphs.REPORT, encoding="utf-8") as fh:
+            data = json.load(fh)
+        data["pages"] = [[] for _ in data["pages"]]
+        data["skipped"] = []
+        data["sweep"] = paragraphs.score(data["pages"])
+        data["selected_cutoff"] = paragraphs.select(data["sweep"])
+        data["quarter_short_false_selects"] = paragraphs.sensitivity(data["pages"])
         with open(report, "w", encoding="utf-8") as fh:
             json.dump(data, fh)
         with mock.patch.object(paragraphs, "REPORT", report), quiet(), \
@@ -221,12 +282,12 @@ class ACalibratedConstantIsHeldToTheCorpus(Scratch):
     def test_a_font_threshold_inside_the_empty_band_passes(self):
         self.assertEqual(self.font_check(200_000), 0)
 
-    def css_check(self, name, value):
+    def css_check(self, name, value, **more):
         """The report a re-measure under `name = value` writes: the classifier's answers
         and every constant's evidence taken under the live values."""
         with open(css.REPORT, encoding="utf-8") as fh:
             data = json.load(fh)
-        live = dict(css._offline_constants(), **{name: value})
+        live = dict(css._offline_constants(), **{name: value}, **more)
         for row in data["files"]:
             row["classifier_minified"] = (
                 row["bytes_per_line"] > live["MINIFIED_BYTES_PER_LINE"]
@@ -249,6 +310,25 @@ class ACalibratedConstantIsHeldToTheCorpus(Scratch):
                             ("MINIFIED_MAX_INDENTED", 2)):
             with self.subTest(name=name, value=value):
                 self.assertEqual(self.css_check(name, value)[0], 1)
+
+    def test_two_thresholds_broken_together_fail(self):
+        """Codex review 1: each threshold held at the other's broken value read as the
+        best that value allows, so both vouched for each other."""
+        self.assertEqual(self.css_check("MINIFIED_BYTES_PER_LINE", 1_000_000_000,
+                                        MINIFIED_MAX_INDENTED=0)[0], 1)
+
+    def test_the_offline_rule_is_the_classifier_s(self):
+        """Codex review 1: `looks_minified` calls a blank stylesheet minified."""
+        import css_minify_check
+        live = css._offline_constants()
+        for text in ("", " \n\t", "a{b:c}", "a {\n  b: c;\n}\n" * 30,
+                     "/* x */" * 400 + "a{b:c}", "a{b:c}" * 200):
+            with self.subTest(text=text[:20]):
+                ratio, comments, indented = css_minify_check.minification_signals(text)
+                row = {"bytes_per_line": ratio, "comment_share": comments,
+                       "indented_lines_first_400": indented}
+                self.assertEqual(css._reads_minified(row, live),
+                                 css_minify_check.looks_minified(text)[0])
 
     def test_a_report_edited_by_hand_fails(self):
         """GOV-10's other direction: the stored evidence follows from the stored rows."""
@@ -306,6 +386,17 @@ class SensitivityLeavesTwinsOut(unittest.TestCase):
         self.assertEqual(sens.fix_order(items, SEVERITY_WEIGHT, EFFORT_COST),
                          [i["id"] for i in plan_order(self.rows())])
 
+    def test_a_run_whose_only_decided_rows_are_twins_is_skipped(self):
+        """Codex review 1: no weighed row means no headline, not a crash."""
+        twin = self.rows()[2]
+        with tempfile.TemporaryDirectory() as folder:
+            path = os.path.join(folder, "twins.json")
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump({"items": [twin]}, fh)
+            with quiet() as out:
+                self.assertEqual(sens.report([path]), 1)
+        self.assertIn("only scores_with twins", out.getvalue())
+
     def test_pass_rates_count_what_the_weights_act_on(self):
         rates = sens.pass_rates(sens.scored_items({"items": self.rows()}))
         self.assertEqual(rates["low"], (1, 0.0))
@@ -323,9 +414,10 @@ class VerifyFeatureWritesOnlyWhatPassed(Scratch):
         return path
 
     def run_script(self, path, env=None):
-        return subprocess.run(["bash", self.SCRIPT, "F99", path], cwd=self.dir,
+        return subprocess.run([shutil.which("bash"), self.SCRIPT, "F99", path],
                               capture_output=True, text=True, encoding="utf-8",
-                              close_fds=False, env=env or dict(os.environ))
+                              close_fds=False,
+                              env=dict(env or os.environ, PYTHONIOENCODING="utf-8"))
 
     def state(self, path):
         with open(path, encoding="utf-8") as fh:
@@ -413,6 +505,13 @@ class CorpusFetchCachesOnlyATarball(Scratch):
                 with self.assertRaises(RuntimeError):
                     self.fetch(answer)
                 self.assertEqual(self.cached(), [])
+
+    def test_an_error_page_cached_before_the_fix_is_fetched_again(self):
+        """Codex review 1: a cache an earlier version poisoned stayed poisoned."""
+        with open(os.path.join(self.dir, "pkg-1.0.0.tgz"), "wb") as fh:
+            fh.write(b"<html>Not found</html>")
+        _manifest, files = self.fetch(Answer(200, tarball()))
+        self.assertEqual(files, {"package/a.css": b"a{}"})
 
     def test_a_tarball_is_cached_and_read_back(self):
         manifest, files = self.fetch(Answer(200, tarball()))
