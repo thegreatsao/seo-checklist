@@ -200,7 +200,8 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
         # Google's rules only: `<meta name="googlebot">` counts, a header rule named
         # for another crawler does not (finding 8, 2026-11-04).
         blockers += [f"{source} noindex" for source in google_noindex(
-            html.get("meta_robots"), html.get("meta_googlebot"), xrobots)]
+            html.get("meta_robots"), html.get("meta_googlebot"),
+            fetched.get("x_robots_tags") or xrobots)]
         # From the `Link` header as well as the HTML. Two that disagree are all
         # ignored by Google, so they point nowhere: CI-009 and CI-011 fail them.
         canonicals = declared_canonicals(html, headers, fetched.get("url") or url)

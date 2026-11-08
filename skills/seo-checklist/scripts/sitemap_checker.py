@@ -89,6 +89,7 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
     refused_sitemaps = []
     read_bytes, dropped_urls = 0, 0
     unrequested = 0     # listed and kept, but past `max_urls`, so never requested
+    absent_issues: dict = {}    # guessed name -> (its entry, the issue it was spared)
 
     # Recorded before the walk so the loop below can end either way without the
     # caller having to reconstruct which way it ended.
@@ -119,13 +120,16 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
                 refused_sitemaps.append(sm_url)
                 result["sitemaps_checked"].append(entry)
                 continue
+            missing = issue("error", f"Sitemap returned HTTP {fetched.get('status')}",
+                            sm_url, fetched.get("error"))
             if sm_url in probed:
                 # Not there, and nothing said it would be. Recorded so the run is
                 # inspectable, but it is not an issue and must not read as one.
                 entry["absent"] = True
                 result["summary"]["probed_absent"] += 1
+                absent_issues[sm_url] = (entry, missing)
             else:
-                result["issues"].append(issue("error", f"Sitemap returned HTTP {fetched.get('status')}", sm_url, fetched.get("error")))
+                result["issues"].append(missing)
             result["sitemaps_checked"].append(entry)
             continue
         parsed = parse_sitemap_xml(sitemap_document(fetched), sm_url)
@@ -137,6 +141,8 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
             entry["type"] = parsed["type"]
             entry["error"] = parsed["error"]
             result["summary"]["probed_absent"] += 1
+            absent_issues[sm_url] = (entry, issue(
+                "error", f"Invalid sitemap XML: {parsed['error']}", sm_url))
             result["sitemaps_checked"].append(entry)
             continue
         entry["type"] = parsed["type"]
@@ -150,6 +156,19 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
         if parsed["type"] == "sitemapindex":
             result["summary"]["indexes"] += 1
             queue.extend(item["loc"] for item in parsed["sitemaps"])
+            # An index names its children, so a child at a guessed name is declared:
+            # one still queued is read as declared, and one already read as absent
+            # gets back the error it would have had (Codex, P2 review 1).
+            for item in parsed["sitemaps"]:
+                child = normalize_url(item["loc"], site_url)
+                probed.discard(child)
+                if child in absent_issues:
+                    child_entry, child_issue = absent_issues.pop(child)
+                    del child_entry["absent"]
+                    if child_entry.get("type"):     # it answered, and did not parse
+                        child_entry["error_kind"] = "other"
+                    result["summary"]["probed_absent"] -= 1
+                    result["issues"].append(child_issue)
         if parsed["type"] == "urlset" and len(parsed["urls"]) > MAX_URLS_PER_SITEMAP:
             result["issues"].append(issue("error", "Sitemap exceeds 50,000 URL limit", sm_url, str(len(parsed["urls"]))))
 

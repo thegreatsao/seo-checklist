@@ -1031,7 +1031,7 @@ CACHE_MAX_BODY = 8 * 1024 * 1024
 CACHEABLE_METHODS = ("GET", "HEAD")
 # In the key, so a change to what an entry contains cannot be read by code
 # expecting the old shape. A mismatch is a miss, not an error.
-CACHE_ENTRY_VERSION = 1
+CACHE_ENTRY_VERSION = 2   # 2: `header_lists`, each `X-Robots-Tag` apart (P2, 2026-11-08)
 _CACHE_POLL = 0.05
 
 
@@ -1171,6 +1171,24 @@ def _hop_from(entry: dict):
     return hop
 
 
+def header_values(response, name: str) -> list[str]:
+    """Each value a header was sent with, apart.
+
+    `requests` joins a repeated header with ", ", which loses where one ended: for
+    `X-Robots-Tag` a crawler named in the first then reads as owning the second's rules.
+    A live response still has them apart in urllib3's headers; a cached one keeps
+    `header_lists` (`_entry_from_response`); anything else gives the joined value.
+    """
+    stored = getattr(response, "header_lists", None)
+    if isinstance(stored, dict) and name.lower() in stored:
+        return [str(value) for value in stored[name.lower()]]
+    raw = getattr(getattr(response, "raw", None), "headers", None)
+    if hasattr(raw, "getlist"):
+        return [str(value) for value in raw.getlist(name)]
+    value = (getattr(response, "headers", None) or {}).get(name)
+    return [value] if value else []
+
+
 def _response_from_entry(meta: dict):
     """A `requests.Response` a caller cannot tell from the one that was fetched.
 
@@ -1185,6 +1203,7 @@ def _response_from_entry(meta: dict):
     response.reason = meta.get("reason") or ""
     response.url = meta.get("url", "")
     response.headers = CaseInsensitiveDict(meta.get("headers", {}))
+    response.header_lists = meta.get("header_lists") or {}
     response.encoding = meta.get("encoding")
     response.elapsed = timedelta(seconds=float(meta.get("elapsed") or 0.0))
     response._content = meta.get("body", b"")
@@ -1208,6 +1227,7 @@ def _entry_from_response(response, asked: dict) -> dict:
         "reason": response.reason or "",
         "url": response.url,
         "headers": dict(response.headers),
+        "header_lists": {"x-robots-tag": header_values(response, "x-robots-tag")},
         "encoding": response.encoding,
         "elapsed": response.elapsed.total_seconds() if response.elapsed else 0.0,
         "chain": [{"status": h.status_code, "url": h.url, "headers": dict(h.headers)}

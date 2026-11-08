@@ -326,5 +326,116 @@ class OrphansBothWays(unittest.TestCase):
         self.assertIn(SITE + "new", found)
 
 
+
+class CodexReviewOne(unittest.TestCase):
+    """Codex's first review of 803c287 (session 01a1ba45-954e-7a72-ae4b-ba6bbbb0bdba)."""
+
+    def test_the_link_header_parse_is_linear(self):
+        import time
+        started = time.perf_counter()
+        seo_common.declared_canonicals({}, {"link": "<" * 100_000}, SITE)
+        self.assertLess(time.perf_counter() - started, 1.0)
+
+    def test_an_unparseable_canonical_is_skipped_not_raised(self):
+        self.assertEqual(seo_common.declared_canonicals(
+            {}, {"link": '<https://[>; rel=canonical'}, SITE), [])
+        html = seo_common.parse_html(
+            '<link rel="canonical" href="https://site.example/a">'
+            '<link rel="canonical" href="https://[">', SITE)
+        self.assertEqual(html["canonical"], "https://site.example/a")
+
+    def test_separate_headers_keep_their_own_crawler_scope(self):
+        self.assertEqual(seo_common.google_noindex(
+            None, None, ["otherbot: nofollow", "noindex"]), ["x-robots-tag"])
+
+    def test_a_cached_response_keeps_separate_headers_apart(self):
+        from lib import safe_http
+        from urllib3 import HTTPHeaderDict
+        import requests
+        live = requests.Response()
+        live.status_code, live.url, live._content = 200, SITE, b""
+        live.headers = requests.structures.CaseInsensitiveDict(
+            {"X-Robots-Tag": "otherbot: nofollow, noindex"})
+        raw = HTTPHeaderDict()
+        raw.add("X-Robots-Tag", "otherbot: nofollow")
+        raw.add("X-Robots-Tag", "noindex")
+        live.raw = type("Raw", (), {"headers": raw})()
+        self.assertEqual(safe_http.header_values(live, "x-robots-tag"),
+                         ["otherbot: nofollow", "noindex"])
+        entry = safe_http._entry_from_response(live, {})
+        restored = safe_http._response_from_entry(entry)
+        self.assertEqual(safe_http.header_values(restored, "x-robots-tag"),
+                         ["otherbot: nofollow", "noindex"])
+
+    def test_the_matrix_reads_separate_headers(self):
+        saved = (indexability_matrix.fetch_url, indexability_matrix.fetch_robots,
+                 indexability_matrix.urls_from_sitemaps)
+        try:
+            indexability_matrix.urls_from_sitemaps = lambda *a, **k: set()
+            indexability_matrix.fetch_robots = lambda *a, **k: {
+                "url": SITE + "robots.txt", "fetch": {"status": 404}, "parsed": None}
+
+            def fetch(u, **kw):
+                out = answer(u, 200, page(), final=PAGE,
+                             headers={"X-Robots-Tag": "otherbot: nofollow, noindex"})
+                out["x_robots_tags"] = ["otherbot: nofollow", "noindex"]
+                return out
+            indexability_matrix.fetch_url = fetch
+            row = indexability_matrix.evaluate([PAGE], SITE)["rows"][0]
+        finally:
+            (indexability_matrix.fetch_url, indexability_matrix.fetch_robots,
+             indexability_matrix.urls_from_sitemaps) = saved
+        self.assertEqual(row["verdict"], "not_indexable")
+
+    def test_an_argument_of_none_is_not_the_none_rule(self):
+        for value in ("max-image-preview: none", "max-image-preview:none"):
+            self.assertEqual(seo_common.google_noindex(value, None, value), [], value)
+
+    def test_rel_inside_another_parameter_is_no_canonical(self):
+        for header in ('</other>; title="rel=canonical"; rel=next',
+                       '</other>; x-rel=canonical',
+                       '</other>; title="a;rel=canonical"'):
+            self.assertEqual(seo_common.declared_canonicals(
+                {}, {"link": header}, SITE), [], header)
+        self.assertEqual(seo_common.declared_canonicals(
+            {}, {"link": '</a>; rel=next, </b>; rel="canonical"'}, SITE),
+            [SITE + "b"])
+
+    def test_escape_case_and_authority_spellings_are_one_url(self):
+        same = seo_common.comparable_url
+        self.assertEqual(same("https://site.example/%cF%80"),
+                         same("https://site.example/%CF%80"))
+        self.assertEqual(same("https://bücher.example/p"),
+                         same("https://xn--bcher-kva.example/p"))
+        self.assertEqual(same("https://site.example:443/p"),
+                         same("https://site.example/p"))
+        self.assertNotEqual(same("https://site.example:8443/p"),
+                            same("https://site.example/p"))
+
+    def test_an_index_declares_a_child_with_a_guessed_name(self):
+        index = (f'<sitemapindex xmlns="{NS}"><sitemap><loc>{SITE}sitemap_index.xml'
+                 '</loc></sitemap></sitemapindex>')
+        out = Sitemaps({SITE + "sitemap.xml": (200, index, XML)},
+                       fallback=HTML_PAGE).run()
+        self.assertTrue(any(i["message"].startswith("Invalid sitemap XML")
+                            for i in out["issues"]), out["issues"])
+        self.assertEqual(verdict("GO-136", out), FAIL)
+
+    def test_an_index_declares_a_guessed_name_already_read_as_absent(self):
+        index = (f'<sitemapindex xmlns="{NS}"><sitemap><loc>{SITE}sitemap.xml'
+                 '</loc></sitemap></sitemapindex>')
+        out = Sitemaps({SITE + "sitemap_index.xml": (200, index, XML)},
+                       fallback=HTML_PAGE).run()
+        self.assertTrue(any(i["message"].startswith("Invalid sitemap XML")
+                            and i.get("url") == SITE + "sitemap.xml"
+                            for i in out["issues"]), out["issues"])
+        self.assertEqual(out["summary"]["probed_absent"], 1)
+
+    def test_a_redirected_entry_reaches_where_it_lands(self):
+        found = orphans({SITE: ([SITE + "home"], SITE + "home/"),
+                         SITE + "home": ([SITE + "home"], None)})
+        self.assertEqual(found, [])
+
+
 if __name__ == "__main__":
     unittest.main()

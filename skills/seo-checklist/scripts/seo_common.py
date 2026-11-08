@@ -56,14 +56,15 @@ except ImportError:  # pragma: no cover - exercised by users without deps
 
 try:
     from lib.safe_http import (HostResolutionError,
-                               RobotsDisallowed, SafeHTTPError, safe_get,
-                               safe_request)
+                               RobotsDisallowed, SafeHTTPError, header_values,
+                               safe_get, safe_request)
     from lib.typed_credential import (credentials_beside_argv, read_as_file, read_as_url,
                                       scheme_added)
     from lib import robots_rules
 except ImportError:
     from scripts.lib.safe_http import (HostResolutionError, RobotsDisallowed,
-                                       SafeHTTPError, safe_get, safe_request)
+                                       SafeHTTPError, header_values, safe_get,
+                                       safe_request)
     from scripts.lib.typed_credential import (credentials_beside_argv, read_as_file,
                                               read_as_url, scheme_added)
     from scripts.lib import robots_rules
@@ -260,18 +261,30 @@ def comparable_url(url: str) -> str:
     A page may write its own address raw (`/café`) while requests reports the encoded
     form it sent (`/caf%C3%A9`); a self-canonical compared as text read as one pointing
     elsewhere (finding 8, 2026-11-04). Non-ASCII is percent-encoded as UTF-8, escapes
-    are upper-cased, and the scheme and host lower-cased; nothing is decoded.
+    are upper-cased (RFC 3986 §6.2.2.1), the scheme and host lower-cased, the host in
+    its IDNA form, and the scheme's default port dropped; nothing is decoded.
     """
     parsed = urlparse(normalize_url(url))
 
     def encoded(part: str) -> str:
-        return re.sub(r"%[0-9a-f]{2}", lambda found: found.group().upper(),
+        return re.sub(r"%[0-9A-Fa-f]{2}", lambda found: found.group().upper(),
                       quote(part, safe="/%:@!$&'()*+,;=~-._?"))
 
+    scheme = parsed.scheme.lower()
+    netloc = parsed.netloc.lower()
+    host = parsed.hostname or ""
+    try:
+        host = host.encode("idna").decode("ascii")
+        port = parsed.port
+    except (UnicodeError, ValueError):
+        port = None     # left as written: lower-cased, which is all that is safe
+    else:
+        netloc = (f"[{host}]" if ":" in host else host) + (
+            f":{port}" if port and port != {"http": 80, "https": 443}.get(scheme)
+            else "")
     return urlunparse(parsed._replace(
-        scheme=parsed.scheme.lower(), netloc=parsed.netloc.lower(),
-        path=encoded(parsed.path), params=encoded(parsed.params),
-        query=encoded(parsed.query)))
+        scheme=scheme, netloc=netloc, path=encoded(parsed.path),
+        params=encoded(parsed.params), query=encoded(parsed.query)))
 
 
 def google_robots_rules(value: str | None, scoped: bool = False) -> set[str]:
@@ -280,37 +293,87 @@ def google_robots_rules(value: str | None, scoped: bool = False) -> set[str]:
     With `scoped`, a header rule may name its crawler (`otherbot: noindex, nofollow`):
     the name holds for the rules after it until the next name, and only `googlebot`'s
     and unnamed rules are Google's ("Rules specified without a user agent are valid for
-    all crawlers", Search Central, robots meta tag). Names and values are
-    case-insensitive. A header repeated is joined with commas before it gets here, so
-    an unnamed rule after a named one reads as that crawler's: the reading errs towards
-    the named crawler.
+    all crawlers", Search Central, robots meta tag). Pass one header's value: a repeated
+    header joined with commas no longer says where one ended (`fetch_url` keeps them
+    apart in `x_robots_tags`). A rule with an argument (`max-image-preview: none`) is
+    its name only, so its argument is never read as a rule. Case-insensitive.
     """
     rules, agent = set(), None
     for part in (value or "").split(","):
         part = part.strip().lower()
-        named = re.match(r"([a-z][a-z0-9_.-]*)\s*:\s*(.*)$", part) if scoped else None
-        # A rule whose value follows a colon (`max-snippet: 20`) names no crawler.
-        if named and named.group(1) not in ("max-snippet", "max-image-preview",
-                                            "max-video-preview", "unavailable_after"):
+        named = re.match(r"([a-z][a-z0-9_.-]*)\s*:\s*(.*)$", part)
+        with_argument = ("max-snippet", "max-image-preview", "max-video-preview",
+                         "unavailable_after")
+        if scoped and named and named.group(1) not in with_argument:
             agent, part = named.group(1), named.group(2)
-        if agent in (None, "googlebot"):
+            named = re.match(r"([a-z][a-z0-9_.-]*)\s*:\s*(.*)$", part)
+        if agent not in (None, "googlebot"):
+            continue
+        if named and named.group(1) in with_argument:
+            rules.add(named.group(1))
+        else:
             rules.update(part.split())
     return rules
 
 
 def google_noindex(meta_robots: str | None, meta_googlebot: str | None,
-                   x_robots_tag: str | None) -> list[str]:
+                   x_robots_tag: str | list[str] | None) -> list[str]:
     """Where a response tells Google not to index it: `noindex`, or `none` (`noindex,
-    nofollow`), in `<meta name="robots">`, `<meta name="googlebot">` or the header."""
-    return [source for source, value, scoped in (
-        ("meta robots", meta_robots, False),
-        ("meta googlebot", meta_googlebot, False),
-        ("x-robots-tag", x_robots_tag, True))
-        if {"noindex", "none"} & google_robots_rules(value, scoped)]
+    nofollow`), in `<meta name="robots">`, `<meta name="googlebot">` or the header.
+
+    `x_robots_tag` is the header's value, or better each value it was sent with
+    (`fetch_url`'s `x_robots_tags`): a crawler named in one does not own the next.
+    """
+    headers = x_robots_tag if isinstance(x_robots_tag, list) else [x_robots_tag]
+    found = [source for source, value in (("meta robots", meta_robots),
+                                          ("meta googlebot", meta_googlebot))
+             if {"noindex", "none"} & google_robots_rules(value)]
+    if any({"noindex", "none"} & google_robots_rules(value, scoped=True)
+           for value in headers):
+        found.append("x-robots-tag")
+    return found
 
 
-_LINK_TARGET = re.compile(r"<([^>]*)>([^<]*)")
-_LINK_REL = re.compile(r'\brel\s*=\s*"?([^";,]*)', re.I)
+def _link_canonicals(header: str) -> list[str]:
+    """The targets of a `Link` header's link-values whose `rel` names `canonical`.
+
+    One pass that never steps back (a regex retried at every `<` took 7 s over 60,000 of
+    them): a target is `<...>`, then parameters split at `;` outside quotes until a `,`
+    outside quotes ends the link-value (RFC 8288 §3). Only a parameter named exactly
+    `rel` counts, so `title="rel=canonical"` and `x-rel=canonical` do not.
+    """
+    found, i, n = [], 0, len(header)
+    while True:
+        start = header.find("<", i)
+        end = header.find(">", start + 1) if start >= 0 else -1
+        if end < 0:
+            return found
+        target = header[start + 1:end].strip()
+        params, current, quoted, escaped, i = [], [], False, False, end + 1
+        while i < n:
+            ch = header[i]
+            i += 1
+            if escaped:
+                current.append(ch)
+                escaped = False
+            elif quoted and ch == "\\":
+                escaped = True
+            elif ch == '"':
+                quoted = not quoted
+            elif not quoted and ch in ";,":
+                params.append("".join(current))
+                current = []
+                if ch == ",":
+                    break
+            else:
+                current.append(ch)
+        params.append("".join(current))
+        for param in params:
+            name, _, value = param.partition("=")
+            if (name.strip().lower() == "rel" and target
+                    and "canonical" in value.lower().split()):
+                found.append(target)
+                break
 
 
 def declared_canonicals(html: dict | None, headers: dict | None,
@@ -321,14 +384,18 @@ def declared_canonicals(html: dict | None, headers: dict | None,
     (Search Central, "Consolidate duplicate URLs"), and when one page names more than
     one canonical "all rel=canonical links will be ignored" (Search Central blog,
     2013-04). So the caller needs all of them, not the first; two spellings of one URL
-    (`comparable_url`) are one.
+    (`comparable_url`) are one. A target no URL parser accepts (`https://[`) names no
+    page anybody could fetch and is left out rather than raised.
     """
     found = []
-    for target in _LINK_TARGET.finditer((headers or {}).get("link") or ""):
-        rel = _LINK_REL.search(target.group(2))
-        if rel and "canonical" in rel.group(1).lower().split() and target.group(1).strip():
-            found.append(normalize_url(target.group(1).strip(), base))
-    found += [normalize_url(url, base) for url in (html or {}).get("canonicals") or ()]
+    for url in (_link_canonicals((headers or {}).get("link") or "")
+                + list((html or {}).get("canonicals") or ())):
+        try:
+            url = normalize_url(url, base)
+            comparable_url(url)
+        except ValueError:
+            continue
+        found.append(url)
     distinct: dict[str, str] = {}
     for url in found:
         distinct.setdefault(comparable_url(url), url)
@@ -520,6 +587,10 @@ def fetch_url(
         result["url"] = response.url
         result["status"] = response.status_code
         result["headers"] = {str(k).lower(): v for k, v in response.headers.items()}
+        # Each one apart: `headers` joins a repeated header with ", ", and then a
+        # crawler named in the first reads as owning the second (`google_noindex`).
+        if "x-robots-tag" in result["headers"]:
+            result["x_robots_tags"] = header_values(response, "x-robots-tag")
         result["redirect_chain"] = [r.url for r in response.history]
 
         if method.upper() != "HEAD":
@@ -1121,9 +1192,10 @@ def parse_html(html: str, base_url: str = "") -> dict:
     canonical = canonical_tags[0].get("href") if canonical_tags else None
     if canonical and base_url:
         canonical = normalize_url(canonical, base_url)
-    canonicals = [normalize_url(href, base_url) if base_url else href
-                  for href in (str(tag.get("href") or "").strip()
-                               for tag in canonical_tags) if href]
+    # Raw: `declared_canonicals` resolves them and leaves out what no parser accepts,
+    # so a broken second tag cannot fail a page whose first one reads.
+    canonicals = [href for href in (str(tag.get("href") or "").strip()
+                                    for tag in canonical_tags) if href]
 
     links = []
     for tag in soup.find_all("a", href=True):
@@ -1198,7 +1270,8 @@ def parse_html(html: str, base_url: str = "") -> dict:
         "meta_googlebot": meta.get("googlebot"),
         "viewport": meta.get("viewport"),
         "canonical": canonical,
-        # Every `<link rel=canonical>` href, in order: `canonical` is the first of them.
+        # Every `<link rel=canonical>` href as written, in order; `canonical` is the
+        # first, resolved.
         "canonicals": canonicals,
         "lang": (soup.html.get("lang") if soup.html else None),
         "headings": {f"h{i}": [h.get_text(" ", strip=True) for h in soup.find_all(f"h{i}") if h.get_text(strip=True)] for i in range(1, 7)},

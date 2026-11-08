@@ -33,7 +33,8 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
         canonicals = declared_canonicals(html, fetched.get("headers"),
                                          fetched.get("url") or url)
         noindex = google_noindex(html.get("meta_robots"), html.get("meta_googlebot"),
-                                 (fetched.get("headers") or {}).get("x-robots-tag"))
+                                 fetched.get("x_robots_tags")
+                                 or (fetched.get("headers") or {}).get("x-robots-tag"))
         if not canonicals:
             row["verdict"] = "missing"
             row["issues"].append("missing canonical")

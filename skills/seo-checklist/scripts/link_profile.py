@@ -88,6 +88,11 @@ def graph_from_inventory(inventory: dict) -> tuple:
         for link in external:
             graph["all_external_targets"][link["target"]] += 1
 
+    # The entry is where a visitor starts, linked or not, and so is the page it
+    # redirects to: `/` landing on `/home/` leaves `/home` linked only from itself.
+    if inventory.get("entry"):
+        graph["linked_from_elsewhere"].update(
+            lands_on(site_crawl.page_key(inventory["entry"])))
     crawled = set(pages)
     base_domain = urlparse(inventory.get("site") or "").netloc
     robots_refused = set(site_crawl.robots_refused(inventory))
