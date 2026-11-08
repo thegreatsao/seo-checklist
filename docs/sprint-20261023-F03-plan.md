@@ -152,6 +152,24 @@ second reading. Batch 2 starts only once Q1–Q4 are answered.
      then F03 `blocked` on F15, F15 done and verified, then F03 batch 6 re-reads the changed items (each repair
      re-stales its second reading) and resolves what is left.
 
+- **Batches 4 and 5's disputes ruled, 2026-11-08.** 91 disputes (batch 4: 30, `docs/sprint-20261108-F03-4.md`; batch 5:
+  61, `docs/sprint-20261108-F03-5.md`). The orchestrating session wrote a recommendation for each, with its reason, on a
+  ruling sheet; every ruling and its reason is in `docs/sprint-20261108-F03-rulings.md`); the owner
+  accepted every one ("Принимаю все"), no item changed. In the vocabulary of batch 3's rulings:
+  1. **Fix, 65: defects repaired in code by F15.** Batch 4: SE-114, SE-120, CI-016, MD-186, CN-054, MD-184, CN-057, CN-068, MB-105, TE-169, TE-177, MS-023, BL-084, CI-010, IN-122, AR-151, CI-006. Batch 5: MB-096, MD-185, MD-187, MD-189, GEO-008, MS-022, MS-026, MS-029, CN-039, CN-041, CI-009, CI-011, TE-176, CI-008, AR-162, AR-150, CI-013, CI-019, TE-181, GO-131, GO-132, CN-056, MD-190, MS-032, GO-143, GO-144, GEO-004, GO-136, GO-138, GO-145, GEO-005, TE-172, LO-198, LO-200, AR-153, MB-100, MB-104, TE-180, TE-174, SP-109, TECH-002, GEO-007, BL-081, MS-033, KW-076, GEO-006, AR-149, AR-163.
+  2. **Measures, 23: the code stays, a `measures` sentence states what the rule decides** (or an
+     existing sentence is corrected): SE-116, TE-171, TE-179, TE-175, GO-139, KW-070, KW-071, BL-083, BL-086, BL-087, AR-155, CI-012, MB-097, MB-098, CI-014, MB-102, GEO-001, GEO-002, SP-110, CI-018, GO-134, GO-137, AR-154. Where a reason names a further code defect (BL-086's missing
+     sheet giving FAIL, AR-154's home page read as a category page, MS-032's untabled types), that part is F15 too.
+  3. **Keep, 2: not defects; the first reading is resolved in batch 6 with the reason:** TE-168 (a
+     redirect on someone else's site is not the site's broken link), GEO-003 (one training and one answer token make a
+     policy explicit; a `*`-only robots.txt is silent on AI bots).
+  4. **Retire, 1: TE-178's script assertion is dropped** (`neighbors.suspicious` is never emitted, so it
+     is always NO_DATA); the item stays agent-judged until a real neighbour source exists.
+  5. **The asides** both batches list (not disputes of a reading) go to F15's queue with the defects above, ordered by
+     the item's priority; F15 decides per aside whether it is a repair or a queue entry.
+  6. **Order, as ruled for batch 3:** F03 `blocked` on F15; F15 repairs batches 3–5's defects and sentences and reaches
+     `passing`; batch 6 (`docs/sprint-20261108-F03-6-brief.md`) re-reads what F15 changed and resolves the rest.
+
 - **The second reader is Codex** (`gpt-6.1-sol`, reasoning effort high), and so is the review of each batch's code
   (the owner, 2026-10-23, F03 planning session: "Чеки кодексу отдавай"). This replaces the F05 practice of a fresh
   Claude reviewer for this feature.
