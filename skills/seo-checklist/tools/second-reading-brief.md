@@ -27,7 +27,7 @@ read it for any operator whose effect is not plain. An absent path is no verdict
 `missing_is`. `none_severity` reads each issue's `severity` through `normal_severity()`, which translates a script's
 own words by `SEVERITY_ALIAS` — `error` → `high`, `warning` → `medium`, `warn` → `medium`, `info` → `low`,
 `notice` → `low` — so an issue at `error` fails a `none_severity: ["critical", "high"]` rule, and a word that is
-none of these nor `critical`, `high`, `medium`, `low` is no verdict.
+none of these nor `critical`, `high`, `medium`, `low` is no verdict unless another issue already fails the rule.
 
 Give each item one verdict:
 

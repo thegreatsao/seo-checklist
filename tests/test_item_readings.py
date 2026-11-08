@@ -479,6 +479,9 @@ class WhatTheSecondReaderIsShown(unittest.TestCase):
                          if isinstance(node, ast.Assign)
                          and getattr(node.targets[0], "id", "") == "SEVERITY_ALIAS")
         self.assertEqual(dict(re.findall(r"`(\w+)` → `(\w+)`", blind)), alias)
+        # Codex's review of the batch: `evaluate()` fails on a known hit before it
+        # looks for an unknown word, so "no verdict" holds only when nothing fails.
+        self.assertIn("no verdict unless another issue already fails the rule", blind)
 
     def test_the_producer_is_the_block_and_nothing_else(self):
         """Codex's review of the batch: printing all of SKILL.md in its place passed."""
