@@ -477,8 +477,10 @@ one has been since 0.173.0 (HTTP-13): the matrix drops `robots_allowed` and name
 does not answer within the timeout, and a 404 as the control. The same batch made the matcher
 linear: a rule compiled to a regular expression backtracked exponentially in its stars
 (`/*a*a*a*a*a*a*a*b` against sixty `a`, 5 s; eight stars, 16 s), and the site writes the rule.
-`WildcardMatchingIsLinear` bounds that rule to a second and holds the two-pointer matcher to
-the regular expression's answers on 20,000 short cases.
+It now finds the literal runs between stars left to right, each once; a two-pointer match, the
+first repair, was still quadratic (`/*` and 8,000 `a` then `b` against 16,000 `a`, 3.3 s, found
+by Codex's review). `WildcardMatchingIsLinear` bounds both rules to a second and holds the
+matcher to the regular expression's answers on 20,000 short cases.
 
 #### Scenario: a URL the audit found for itself
 - **WHEN** a sitemap, a link or a crawl yields a URL a robots rule disallows
@@ -857,20 +859,25 @@ stop is stated the way a cap is: what was cut is named, and the checker's result
 
 **`robots.txt` and sitemaps by their bytes, from the audit-fix batch P1 (2026-11-08).** The
 politeness fetch read the whole decompressed body and then kept its first
-`ROBOTS_MAX_BYTES`: 400 KB of gzip held 956 MB. It streams now and stops at the cap;
-`test_safe_http.TheRobotsFetchStopsAtItsCap` serves 64 MB behind 70 KB of `Content-Encoding:
-gzip` through urllib3's own decoding and holds the peak under 16 MB (138 MB before). The three
+`ROBOTS_MAX_BYTES`: 400 KB of gzip held 956 MB. It streams now and stops at the cap, sent
+through the pinned adapter rather than a session, which reads a redirect's whole body to prepare
+the next hop; and `requirements.txt` asks for urllib3 2.6.0 or later, the first to bound what one
+streamed read decompresses. `test_safe_http.TheRobotsFetchStopsAtItsCap` serves 64 MB behind
+70 KB of `Content-Encoding: gzip` through urllib3's own decoding, as a 200 and as a 302, and
+holds the peak under 16 MB (138 MB and 135 MB before); no test holds the urllib3 floor. The three
 walkers handed `parse_sitemap_xml` the body as decoded text, so gzip was looked for in text: a
 `.xml.gz` served as `application/gzip` read invalid. The text was then re-encoded as UTF-8 under
 its own declaration, so a declared ISO-8859-1 sitemap came out as mojibake and a Shift_JIS one
 raised `ValueError`, as did an unknown encoding and bad or cut gzip, past the `ParseError`
 handler: every site-wide item went NO_DATA. Now gzip is told by the body's bytes
-(`fetch_url(..., keep_body=True)`, `seo_common.sitemap_document`) and its expansion is parsed
-under its own declaration; any other sitemap is parsed as the text `fetch_url` decoded, by the
-order above, without its declaration being read a second time; and a document that cannot be
-read is `invalid`, never an exception. `tests/test_sitemap_walk_bounds.py`
+(`fetch_url(..., keep_body=True)`, `seo_common.sitemap_document`) and its expansion is decoded
+by the fetch layer's order with no header to go first, a BOM and then the XML declaration; any
+other sitemap is parsed as the text `fetch_url` decoded, by the order above, without its
+declaration being read a second time; and a document that cannot be read, a `<loc>` that is no
+URL included, is `invalid`, never an exception. `tests/test_sitemap_walk_bounds.py`
 `ASitemapIsReadFromItsBytes` serves gzip under three types to the three walkers, declared
-ISO-8859-1 and Shift_JIS, and a charset header that wins over the declaration.
+ISO-8859-1 and Shift_JIS, and a charset header that wins over the declaration, and parses a
+gzipped BOM that a contradicting declaration must not overrule.
 
 #### Scenario: a body over the ceiling
 - **WHEN** a response grows past the caller's limit while it is being read

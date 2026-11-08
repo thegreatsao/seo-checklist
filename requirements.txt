@@ -1,6 +1,8 @@
 beautifulsoup4>=4.12
 lxml>=5.0
 requests>=2.31
+# 2.6.0 bounds what one streamed read decompresses: the robots.txt cap rests on it.
+urllib3>=2.6.0
 
 # Optional script families:
 # google-auth>=2.29

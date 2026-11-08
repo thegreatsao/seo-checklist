@@ -500,25 +500,27 @@ def _fetch_robots(origin: str) -> str:
             request_auth = {}
             if credential is not None and requester.auth is None:
                 request_auth["auth"] = credential
+            # Sent through the adapter, not `requester.get` (nor safe_get, which would
+            # recurse into this): a session reads a redirect's whole body to prepare the
+            # next hop even with `allow_redirects=False` and `stream=True`, so a 302
+            # carrying a gzip bomb was expanded before the cap below could stop it.
+            prepared = requester.prepare_request(
+                requests.Request("GET", url, headers=headers, **request_auth))
+            settings = requester.merge_environment_settings(url, {}, True, True, None)
             for address in pinned_addresses:
                 adapter = _PinnedAdapter(url, address)
                 requester.mount(f"{urlparse(url).scheme}://", adapter)
                 try:
-                    # `allow_redirects=False`, and a redirect is read below as "no
-                    # rules". Following one would mean validating the Location's address
+                    # No redirect is followed, and one is read below as "no rules".
+                    # Following one would mean validating the Location's address
                     # before each hop, which is what `safe_request` does for a page; here
                     # the hop is not worth the machinery, because the answer either way is
                     # a policy this audit fails open on. Not following it is what stops a
                     # public robots.txt from bouncing this request to 169.254.169.254.
-                    response = requester.get(  # not safe_get: that would recurse into this
-                        url,
-                        headers=headers,
-                        timeout=10,
-                        allow_redirects=False,
-                        verify=True,
-                        stream=True,
-                        **request_auth,
-                    )
+                    response = adapter.send(prepared, stream=True, timeout=10,
+                                            verify=settings["verify"],
+                                            cert=settings["cert"],
+                                            proxies=settings["proxies"])
                     break
                 except requests.exceptions.ConnectionError:
                     adapter.close()

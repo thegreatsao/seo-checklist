@@ -335,6 +335,27 @@ class ASitemapIsReadFromItsBytes(unittest.TestCase):
         self.assertEqual(self.locs(gzip.compress(self.document("Shift_JIS"))),
                          [seo_common.normalize_url(self.LOC)])
 
+    def test_a_bom_decides_over_the_declaration_inside_gzip(self):
+        """The review of the first fix: expat let `encoding="iso-8859-1"` overrule a
+        UTF-8 BOM in a gzipped sitemap, while the same file served plain reads as UTF-8."""
+        cafe = "https://site.example/caf\u00e9"
+        document = ("\ufeff" + self.document("UTF-8", cafe).decode().replace(
+            'encoding="UTF-8"', 'encoding="iso-8859-1"')).encode("utf-8")
+        self.assertEqual(self.locs(gzip.compress(document)),
+                         [seo_common.normalize_url(cafe)])
+
+    def test_a_loc_that_is_no_url_makes_the_sitemap_invalid_not_an_exception(self):
+        """The review of the first fix: `normalize_url` raised past the handler."""
+        broken = "https://[broken/"
+        for root, child in (("urlset", "url"), ("sitemapindex", "sitemap")):
+            document = (f'<{root} xmlns="{NS}"><{child}><loc>{broken}</loc></{child}>'
+                        f"</{root}>")
+            for label, form in (("text", document),
+                                ("gzip", gzip.compress(document.encode()))):
+                with self.subTest(root=root, form=label):
+                    parsed = seo_common.parse_sitemap_xml(form, SITE + "sitemap.xml")
+                    self.assertEqual(parsed["type"], "invalid")
+
     def test_what_cannot_be_read_is_invalid_and_never_raises(self):
         whole = gzip.compress(self.document("UTF-8"))
         unreadable = {

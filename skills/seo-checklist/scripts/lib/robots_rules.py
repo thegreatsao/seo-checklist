@@ -110,28 +110,27 @@ def _normalise(value: str) -> str:
 
 def _matches(pattern: str, target: str) -> bool:
     """Whether `pattern` (`*` any run, a final `$` the end) matches from the start of
-    `target`. Two pointers, back to the last `*` on a miss: at most len(pattern) ×
-    len(target) steps. The regular expression this replaced backtracked exponentially
-    in the number of stars, and the site being audited writes the rule."""
+    `target`. The literal runs between stars are found left to right, each at its
+    first place after the last: no step is retried, so the work is a few `str.find`
+    calls. A regular expression backtracked exponentially in the stars, and a
+    two-pointer match was still len(pattern) × len(target) on a long literal; the site
+    being audited writes the rule."""
     anchored = pattern.endswith("$")
-    body = pattern[:-1] if anchored else pattern
-    if not anchored:
-        body += "*"     # a prefix match is a whole match with any tail
-    p = t = 0
-    star, resume = -1, 0
-    while t < len(target):
-        if p < len(body) and body[p] == "*":
-            star, resume = p, t
-            p += 1
-        elif p < len(body) and body[p] == target[t]:
-            p += 1
-            t += 1
-        elif star >= 0:
-            resume += 1
-            p, t = star + 1, resume
-        else:
+    parts = (pattern[:-1] if anchored else pattern).split("*")
+    if not target.startswith(parts[0]):
+        return False
+    if len(parts) == 1:
+        return target == parts[0] if anchored else True
+    position = len(parts[0])
+    for part in parts[1:-1]:
+        found = target.find(part, position)
+        if found < 0:
             return False
-    return all(character == "*" for character in body[p:])
+        position = found + len(part)
+    if anchored:
+        return (len(target) - len(parts[-1]) >= position
+                and target.endswith(parts[-1]))
+    return target.find(parts[-1], position) >= 0
 
 
 def allowed(parsed: dict | None, url: str, agent: str) -> tuple[bool, str]:

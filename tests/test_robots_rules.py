@@ -229,6 +229,16 @@ class WildcardMatchingIsLinear(unittest.TestCase):
         self.assertEqual(answer, (True, "no matching rule"))
         self.assertLess(elapsed, 1.0, f"{elapsed:.2f} s for one rule")
 
+    def test_a_long_literal_after_a_star_is_answered_at_once(self):
+        """The review of the first fix: a two-pointer match retried the literal after
+        each star from every position, 3.3 s for this rule."""
+        pattern, target = "/*" + "a" * 8000 + "b", "/" + "a" * 16000
+        start = time.perf_counter()
+        self.assertFalse(robots_rules._matches(pattern, target))
+        self.assertTrue(robots_rules._matches(pattern + "*", target + "b"))
+        elapsed = time.perf_counter() - start
+        self.assertLess(elapsed, 1.0, f"{elapsed:.2f} s for two matches")
+
     def test_it_gives_the_regex_reading_on_every_short_case(self):
         rng = random.Random(20261108)
         for _ in range(20_000):

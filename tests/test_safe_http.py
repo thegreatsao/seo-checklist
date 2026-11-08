@@ -541,6 +541,33 @@ class TheRobotsFetchStopsAtItsCap(unittest.TestCase):
         self.assertEqual(len(text.encode("utf-8")), sh.ROBOTS_MAX_BYTES)
         self.assertLess(peak, 16_000_000, f"peak {peak:,} bytes")
 
+    def test_a_redirect_carrying_a_gzip_bomb_is_not_read(self):
+        """The review of the first fix: a session reads a redirect's body to prepare
+        the next hop, `allow_redirects=False` and `stream=True` or not."""
+        import io
+        import tracemalloc
+        from urllib3.response import HTTPResponse
+        wire = self.bomb(64)
+
+        def send(adapter, request, **kwargs):
+            raw = HTTPResponse(body=io.BytesIO(wire), status=302, preload_content=False,
+                               headers={"Content-Encoding": "gzip",
+                                        "Location": "/elsewhere"},
+                               decode_content=True)
+            return sh.requests.adapters.HTTPAdapter.build_response(adapter, request, raw)
+
+        tracemalloc.start()
+        try:
+            with mock.patch.object(sh.socket, "getaddrinfo",
+                                   side_effect=lambda *a, **k: answer(PUBLIC_A, 80)), \
+                    mock.patch.object(sh._PinnedAdapter, "send", new=send):
+                text = sh._fetch_robots("http://bomb.example")
+            peak = tracemalloc.get_traced_memory()[1]
+        finally:
+            tracemalloc.stop()
+        self.assertEqual(text, "")
+        self.assertLess(peak, 16_000_000, f"peak {peak:,} bytes")
+
 
 @public_policy
 class TheAgentIdentifiesItselfOnTheWire(unittest.TestCase):

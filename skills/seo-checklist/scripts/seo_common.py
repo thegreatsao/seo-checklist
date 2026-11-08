@@ -57,12 +57,14 @@ try:
     from lib.safe_http import (HostResolutionError,
                                RobotsDisallowed, SafeHTTPError, safe_get,
                                safe_request)
+    from lib.safe_http import ENCODING_SNIFF_BYTES, _declared_encoding
     from lib.typed_credential import (credentials_beside_argv, read_as_file, read_as_url,
                                       scheme_added)
     from lib import robots_rules
 except ImportError:
     from scripts.lib.safe_http import (HostResolutionError, RobotsDisallowed,
                                        SafeHTTPError, safe_get, safe_request)
+    from scripts.lib.safe_http import ENCODING_SNIFF_BYTES, _declared_encoding
     from scripts.lib.typed_credential import (credentials_beside_argv, read_as_file,
                                               read_as_url, scheme_added)
     from scripts.lib import robots_rules
@@ -1259,9 +1261,6 @@ SITEMAP_BYTES_BUDGET = 20_000_000
 SITEMAP_URLS_BUDGET = 50_000
 
 
-# The encoding an XML declaration names, read off the document's first bytes.
-_XML_DECLARED_ENCODING = re.compile(
-    rb"<\?xml[^>]*?\bencoding\s*=\s*[\"']([A-Za-z][A-Za-z0-9._-]*)[\"']")
 # Every way a hostile or broken sitemap fails to parse: malformed XML, an encoding
 # expat cannot read or nobody knows, bytes the encoding denies, bad or cut gzip.
 _SITEMAP_UNREADABLE = (ET.ParseError, ValueError, LookupError, OSError, EOFError,
@@ -1279,15 +1278,11 @@ def _sitemap_root(document: bytes | str) -> ET.Element:
         if len(document) > SITEMAP_MAX_UNCOMPRESSED:
             raise ValueError(f"gzipped sitemap is over {SITEMAP_MAX_UNCOMPRESSED} "
                              "bytes uncompressed, the protocol's limit")
-    try:
-        return ET.fromstring(document)
-    except (ValueError, LookupError):
-        # expat reads UTF-8, UTF-16 and single-byte encodings only; a declared
-        # multi-byte one (Shift_JIS, EUC-KR) is decoded by Python's codec instead.
-        declared = _XML_DECLARED_ENCODING.match(document)
-        if declared is None:
-            raise
-        return ET.fromstring(document.decode(declared.group(1).decode("ascii")))
+    # The order the fetch layer reads a body by, with no header to go first: a BOM, then
+    # the XML declaration. Decoded here, not by expat, which reads no multi-byte
+    # encoding (Shift_JIS, EUC-KR) and lets a declaration overrule a BOM.
+    declared = _declared_encoding(document[:ENCODING_SNIFF_BYTES])
+    return ET.fromstring(document.decode(declared) if declared else document)
 
 
 def sitemap_document(fetched: dict) -> bytes | str:
@@ -1311,10 +1306,12 @@ def parse_sitemap_xml(document: bytes | str, sitemap_url: str = "") -> dict:
     2026-11-04).
     """
     try:
-        root = _sitemap_root(document or b"")
-    except _SITEMAP_UNREADABLE as exc:
+        return _sitemap_entries(_sitemap_root(document or b""), sitemap_url)
+    except _SITEMAP_UNREADABLE as exc:     # a `<loc>` normalize_url refuses too
         return {"type": "invalid", "urls": [], "sitemaps": [], "error": str(exc)}
 
+
+def _sitemap_entries(root: ET.Element, sitemap_url: str) -> dict:
     def local(tag: str) -> str:
         return tag.split("}", 1)[-1]
 
