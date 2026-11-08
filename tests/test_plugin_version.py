@@ -183,7 +183,10 @@ class PluginRunRecord(unittest.TestCase):
             folder.mkdir(parents=True)
             baseline = results(domain=domain, url=site.url,
                                started_at="2020-01-01T00:00:00+00:00",
-                               plugin_version="archived-plugin")
+                               plugin_version="archived-plugin",
+                               # The same selection as the runs below: a run of
+                               # another `--only` is not their baseline (HST-2).
+                               only=["crawling_indexing"])
             stored = folder / "baseline.json"
             stored.write_text(json.dumps(baseline), encoding="utf-8")
             cls.payloads = []

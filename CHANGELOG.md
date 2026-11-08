@@ -25,6 +25,15 @@ Registry version: `bbc0b87fd8f2` (was `abf465b3f75d`): CI-009 maps `conflicting`
   parsed per RFC 8288; a URL is compared as requests sends it). CI-011 fails
   noindex beside a canonical naming another URL. CI-008 and AR-162 count no self-link as inbound and credit a link
   through a redirect to the page it lands on.
+* **Batch P3:** the diff baseline and the trend are runs of the same `--only` selection and, in page mode, of the same
+  page; a stored run that is not UTF-8, is not an object, or has items, scores or scoring tables of the wrong shape is
+  skipped instead of ending the run. `calibrate_profile_detection` and `calibrate_paragraph_words` refuse to write a
+  report from a corpus less than half read, and `--check` fails one. `calibrate_font_weight --check` holds
+  `LARGE_FONT_BYTES` to the empty band in its stored files, `calibrate_css_minification --check` holds
+  `MINIFIED_BYTES_PER_LINE` and `MINIFIED_MAX_INDENTED` to the fewest labelled files the classifier can misread and
+  prints the other three retained constants as set by judgement; no report copies a constant as its recommendation.
+  `audit_score_sensitivity` leaves `scores_with` twins out as the runner does. `corpus_fetch` caches only a 200 gzip
+  tarball. `scripts/verify-feature.sh` fails a blank command and stops when the state could not be written.
 
 ## 0.177.0 — every script-backed assertion but one is claimed either way: 142 seen to fail in the recorded census, 2 proved unable, 1 left (SE-118)
 

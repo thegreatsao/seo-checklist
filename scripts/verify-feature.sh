@@ -100,10 +100,17 @@ run_layer() {
   echo -e "  ${BOLD}Command:${RESET} $cmd"
   echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 
-  set +e
-  eval "$cmd"
-  local exit_code=$?
-  set -e
+  # `eval ""` exits 0, so a blank command would pass a layer that checks nothing.
+  local exit_code
+  if [[ -z "${cmd//[[:space:]]/}" ]]; then
+    echo -e "  ${RED}No command:${RESET} a blank command verifies nothing."
+    exit_code=1
+  else
+    set +e
+    eval "$cmd"
+    exit_code=$?
+    set -e
+  fi
 
   echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 
@@ -152,10 +159,15 @@ else
   echo -e "  ${BOLD}Command:${RESET} $verification"
   echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 
-  set +e
-  eval "$verification"
-  exit_code=$?
-  set -e
+  if [[ -z "${verification//[[:space:]]/}" ]]; then
+    echo -e "  ${RED}No command:${RESET} a blank command verifies nothing."
+    exit_code=1
+  else
+    set +e
+    eval "$verification"
+    exit_code=$?
+    set -e
+  fi
 
   echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 
@@ -174,9 +186,16 @@ if [[ "$all_passed" == "true" ]]; then
   evidence="commit $commit, verified $verified_on"
 
   tmp="$(mktemp)"
-  jq --arg id "$FEATURE_ID" --arg ev "$evidence" \
-    'map(if .id == $id then .state = "passing" | .evidence = $ev else . end)' \
-    "$FL" > "$tmp" && mv "$tmp" "$FL"
+  # Checked, not assumed: under `set -e` a failing jq before `&&` does not stop the
+  # script, and the lines below would report a state that was never written.
+  if ! jq --arg id "$FEATURE_ID" --arg ev "$evidence" \
+      'map(if .id == $id then .state = "passing" | .evidence = $ev else . end)' \
+      "$FL" > "$tmp" || ! mv "$tmp" "$FL" \
+      || [[ "$(jq -r --arg id "$FEATURE_ID" '.[] | select(.id == $id) | .state' "$FL")" != "passing" ]]; then
+    rm -f "$tmp"
+    echo -e "${RED}${BOLD}LAYERS PASSED, STATE NOT WRITTEN${RESET} — $FL still says: $state"
+    exit 1
+  fi
 
   echo -e "${GREEN}${BOLD}ALL LAYERS PASSED${RESET} — feature is now passing"
   echo -e "  State updated:  active → ${GREEN}passing${RESET}"

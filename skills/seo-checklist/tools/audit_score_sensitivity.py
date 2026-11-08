@@ -46,7 +46,7 @@ SCRIPTS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
                        "scripts")
 sys.path.insert(0, SCRIPTS)
 
-from checklist_report import EFFORT_COST  # noqa: E402
+from checklist_report import EFFORT_COST, twins_folded  # noqa: E402
 from checklist_runner import (FAIL, PASS, SEVERITIES, SEVERITY_WEIGHT,  # noqa: E402
                               VERDICTS as DECIDED, WARN)
 
@@ -99,8 +99,14 @@ def scored_items(data: dict) -> list[dict]:
     return [i for i in data.get("items", []) if i.get("status") in DECIDED]
 
 
+def weighed(items: list[dict]) -> list[dict]:
+    """The rows a weight acts on: a `scores_with` twin carries none in the runner's score."""
+    return [i for i in items if not i.get("scores_with")]
+
+
 def headline(items: list[dict], weights: dict[str, int]) -> float | None:
     """The SEO Score, recomputed. Same arithmetic as `checklist_runner.score`."""
+    items = weighed(items)
     earned = sum(weights.get(i["severity"], 1) *
                  (1.0 if i["status"] == PASS else 0.5 if i["status"] == WARN else 0.0)
                  for i in items)
@@ -113,7 +119,7 @@ def pass_rates(items: list[dict]) -> dict[str, tuple[int, float | None]]:
     is only the symptom."""
     out = {}
     for sev in SEVERITIES:
-        rows = [i for i in items if i["severity"] == sev]
+        rows = [i for i in weighed(items) if i["severity"] == sev]
         credit = sum(1.0 if i["status"] == PASS else 0.5 if i["status"] == WARN else 0.0
                      for i in rows)
         out[sev] = (len(rows), round(100 * credit / len(rows), 1) if rows else None)
@@ -123,7 +129,7 @@ def pass_rates(items: list[dict]) -> dict[str, tuple[int, float | None]]:
 def fix_order(items: list[dict], weights: dict[str, int],
               efforts: dict[str, int]) -> list[str]:
     """The fix list, ordered the way the report orders it."""
-    actionable = [i for i in items if i["status"] in (FAIL, WARN)]
+    actionable = [i for i in twins_folded(items) if i["status"] in (FAIL, WARN)]
     return [i["id"] for i in sorted(
         actionable,
         key=lambda i: (-(weights.get(i["severity"], 1)

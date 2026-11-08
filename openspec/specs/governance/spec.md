@@ -630,6 +630,23 @@ selects, and fails when the signal tables change under its stored scores.
 - **THEN** the check fails — both directions, because a report that quietly follows the
   code justifies nothing
 
+#### Scenario: a report that copies the constant
+- **WHEN** a re-measure writes the report under whatever value the tree holds
+- **THEN** the check still compares that value with what the stored rows say, re-derived
+  offline — `LARGE_FONT_BYTES` with the empty band between ordinary web fonts and full
+  faces, `MINIFIED_BYTES_PER_LINE` and `MINIFIED_MAX_INDENTED` with the fewest labelled
+  files the classifier can misread — and never with a recommendation copied from the
+  constant (finding 12 of the 2026-11-04 audit)
+- **AND** a constant the corpus does not choose (`MINIFIED_COMMENT_SHARE`,
+  `WASTED_BYTES_WARN`, `SMALL_FILE_BYTES`) is printed as set by judgement, held only to
+  the value the report was measured under, and never reported as agreeing with the corpus
+
+#### Scenario: a corpus that did not answer
+- **WHEN** the profile-detection or the paragraph-words measurement reads nothing, or
+  less than half of its corpus
+- **THEN** it leaves the committed report as it was and exits non-zero, and `--check`
+  fails a committed report in that state (finding 11)
+
 #### Scenario: a check that exists and gates nothing
 - **WHEN** a calibration check is written and not wired into the matrix
 - **THEN** it passes forever without being run, which is the state all four were in

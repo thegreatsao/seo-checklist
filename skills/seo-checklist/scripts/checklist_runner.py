@@ -2349,7 +2349,53 @@ def stored_run_matches_domain(payload: dict, domain: str) -> bool:
                 and stored_domain.rsplit("@", 1)[-1] != domain)
 
 
-def previous_run(domain: str, exclude: str) -> dict | None:
+def stored_run(path: str, domain: str, like: dict | None = None) -> dict | None:
+    """One stored run of this site, or None when it is unreadable, not a run, or not
+    the same audit as `like`.
+
+    Unreadable is wider than unparseable: a file that is not UTF-8 raises
+    `UnicodeDecodeError`, and a file holding `[]` or items that are not objects
+    parses and then breaks whoever reads it. Each of those used to end the run
+    before its `--json` was written, and on every later run of the site (HST-7).
+    """
+    try:
+        with open(path, encoding="utf-8") as f:
+            payload = json.load(f)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    items = payload.get("items", [])
+    if not isinstance(items, list) or not all(
+            isinstance(i, dict) and isinstance(i.get("id"), str)
+            and isinstance(i.get("status"), str) for i in items):
+        return None
+    if not all(isinstance(payload.get(key) or {}, dict)
+               for key in ("scores", "scoring_tables")):
+        return None
+    if not stored_run_matches_domain(payload, domain):
+        return None
+    if like is not None and not same_audit(payload, like):
+        return None
+    return payload
+
+
+def same_audit(past: dict, current: dict) -> bool:
+    """Whether a stored run audited what this one audits (HST-2).
+
+    A `--only` run answers a few items and marks the rest N/A, and a `--mode page`
+    run of another page is another page: as a baseline either one turned the N/A of
+    every unasked item, or another page's verdicts, into status changes, and as a
+    trend point into streaks. Mode, profile and registry differences are compared
+    and named instead, because they are the same audit taken another way.
+    """
+    if (past.get("only") or None) != (current.get("only") or None):
+        return False
+    return not (past.get("mode") == current.get("mode") == "page"
+                and past.get("url") != current.get("url"))
+
+
+def previous_run(domain: str, exclude: str, like: dict | None = None) -> dict | None:
     """The most recent earlier run for this domain.
 
     Ordered by the timestamp *inside* each file rather than by its name. The name
@@ -2362,12 +2408,8 @@ def previous_run(domain: str, exclude: str) -> dict | None:
     """
     best, best_key = None, EPOCH
     for path in stored_runs(domain, exclude):
-        try:
-            with open(path, encoding="utf-8") as f:
-                payload = json.load(f)
-        except (OSError, json.JSONDecodeError):
-            continue
-        if not stored_run_matches_domain(payload, domain):
+        payload = stored_run(path, domain, like)
+        if payload is None:
             continue
         key = run_time(payload, os.path.basename(path))
         if key >= best_key:
@@ -2397,7 +2439,8 @@ def stored_runs(domain: str, exclude: str) -> list[str]:
 HISTORY_RUNS = 12
 
 
-def run_series(domain: str, exclude: str, limit: int = HISTORY_RUNS) -> list[dict]:
+def run_series(domain: str, exclude: str, limit: int = HISTORY_RUNS,
+               like: dict | None = None) -> list[dict]:
     """The arc of this domain's audits, oldest first, one compact record each.
 
     `previous_run` answers "what changed since last time", and that is a different
@@ -2417,12 +2460,8 @@ def run_series(domain: str, exclude: str, limit: int = HISTORY_RUNS) -> list[dic
     """
     rows = []
     for path in stored_runs(domain, exclude):
-        try:
-            with open(path, encoding="utf-8") as fh:
-                payload = json.load(fh)
-        except (OSError, json.JSONDecodeError):
-            continue
-        if not stored_run_matches_domain(payload, domain):
+        payload = stored_run(path, domain, like)
+        if payload is None:
             continue
         scores = payload.get("scores") or {}
         rows.append((run_time(payload, os.path.basename(path)), {
@@ -4323,7 +4362,7 @@ def main() -> int:
     # measured again to answer it. `--diff` now decides whether it is *printed* here,
     # which is what it was always for.
     diff_note = ""
-    prev = previous_run(domain, hist)
+    prev = previous_run(domain, hist, like=payload)
     if prev:
         payload["diff"], diff_note = diff_runs(prev, payload)
         payload["diff_note"] = diff_note
@@ -4353,7 +4392,7 @@ def main() -> int:
     # The per-run status maps are dropped before writing: they are what `open_since`
     # is computed from, and carrying them into the artifact would multiply a file
     # people email by the length of the history.
-    series = run_series(domain, hist, limit=a.history_limit)
+    series = run_series(domain, hist, limit=a.history_limit, like=payload)
     payload["open_since"] = open_since(series, payload["items"])
     # This run is the last point on its own arc. Excluded from `run_series` because
     # `open_since` counts the streak *before* today and adds the current verdict

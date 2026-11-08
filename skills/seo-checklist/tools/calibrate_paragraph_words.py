@@ -37,7 +37,7 @@ import re
 import sys
 from datetime import datetime, timezone
 
-from calibration_common import literal_constants
+from calibration_common import literal_constants, thin_corpus
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
@@ -166,6 +166,9 @@ def check() -> int:
         problems.append(f"the rule selects {chosen}, the report says {report['selected_cutoff']}")
     constant = literal_constants(CHECKER, {"MIN_PARAGRAPH_WORDS"},
                                  "could not read MIN_PARAGRAPH_WORDS: {missing}")
+    thin = thin_corpus(len(report["pages"]), len(report.get("skipped", [])), "pages")
+    if thin:
+        problems.append(thin)
     if constant["MIN_PARAGRAPH_WORDS"] != chosen:
         problems.append(f"MIN_PARAGRAPH_WORDS is {constant['MIN_PARAGRAPH_WORDS']}, the "
                         f"measurement selects {chosen}")
@@ -187,6 +190,10 @@ def main() -> int:
     if not a.checkout:
         ap.error("give the benchmark checkout, or --check")
     report = measure(a.checkout)
+    thin = thin_corpus(len(report["pages"]), len(report["skipped"]), "pages")
+    if thin:
+        print(f"{thin}; {REPORT} left as it was", file=sys.stderr)
+        return 1
     with open(REPORT, "w", encoding="utf-8") as fh:
         json.dump(report, fh, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         fh.write("\n")

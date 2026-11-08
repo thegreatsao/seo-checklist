@@ -41,7 +41,7 @@ import os
 import sys
 from datetime import datetime, timezone
 
-from calibration_common import literal_constants
+from calibration_common import literal_constants, thin_corpus
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
@@ -243,6 +243,9 @@ def check() -> int:
     if constant != report["in_force_min_score"]:
         problems.append(f"detect_profile.MIN_SCORE is {constant}, the report records "
                         f"{report['in_force_min_score']} in force")
+    thin = thin_corpus(len(report["sites"]), len(report.get("unread", [])), "sites")
+    if thin:
+        problems.append(thin)
     for line in problems:
         print(line)
     if not problems:
@@ -274,6 +277,10 @@ def main() -> int:
             report.pop(stale, None)
     else:
         report = measure()
+    thin = thin_corpus(len(report["sites"]), len(report["unread"]), "sites")
+    if thin:
+        print(f"{thin}; {REPORT} left as it was", file=sys.stderr)
+        return 1
     with open(REPORT, "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2, ensure_ascii=False, sort_keys=True)
         fh.write("\n")

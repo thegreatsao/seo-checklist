@@ -92,6 +92,14 @@
       "value": 0.189
     },
     "MINIFIED_BYTES_PER_LINE": {
+      "classifier_misreads": {
+        "at_value": 13,
+        "fewest": 13,
+        "fewest_from_to": [
+          47.085714,
+          233.636364
+        ]
+      },
       "corpus_says": "retained; 165/174 minified and two source-labelled one-line files cross it",
       "estimators": {
         "package_level": {
@@ -214,7 +222,6 @@
         "p50": 32.880443,
         "p90": 20549.8
       },
-      "recommended_value": 180,
       "value": 180
     },
     "MINIFIED_COMMENT_SHARE": {
@@ -226,6 +233,14 @@
           "purecss-3.0.0/build/base-min.css"
         ],
         "source": 0
+      },
+      "classifier_misreads": {
+        "at_value": 13,
+        "fewest": 11,
+        "fewest_from_to": [
+          0.149812,
+          1.955556
+        ]
       },
       "corpus_says": "retained; report the conjunct's observed effect, not discrimination it lacks",
       "estimators": {
@@ -349,10 +364,18 @@
         "p50": 0.003627,
         "p90": 0.203878
       },
-      "recommended_value": 0.08,
+      "set_by": "judgement",
       "value": 0.08
     },
     "MINIFIED_MAX_INDENTED": {
+      "classifier_misreads": {
+        "at_value": 13,
+        "fewest": 13,
+        "fewest_from_to": [
+          3,
+          395
+        ]
+      },
       "corpus_says": "retained as an arbitrary point in the observed safe band",
       "estimators": {
         "package_level": {
@@ -475,7 +498,6 @@
         "p50": 12.0,
         "p90": 273.0
       },
-      "recommended_value": 20,
       "value": 20
     },
     "SMALL_FILE_BYTES": {
@@ -601,7 +623,7 @@
         "p50": 69768.0,
         "p90": 92143.0
       },
-      "recommended_value": 2048,
+      "set_by": "judgement",
       "value": 2048
     },
     "WASTED_BYTES_WARN": {
@@ -801,7 +823,7 @@
         "p50": 1086.561,
         "p90": 17418.5802
       },
-      "recommended_value": 20000,
+      "set_by": "judgement",
       "value": 20000
     }
   },

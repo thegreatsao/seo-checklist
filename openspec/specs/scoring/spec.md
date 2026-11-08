@@ -685,6 +685,11 @@ therefore do not measure the current audit arithmetic, whose true table sensitiv
 unmeasured. The tests stay green because they use synthetic rows carrying no
 `scores_with`.
 
+**Fixed 2026-11-08** (audit fix P3, finding 17): the tool leaves twins out of the headline
+and the per-severity pass rates, as `score` does, and folds them out of its fix list with
+`checklist_report.twins_folded`, as the report does. `tests/test_audit_fixes_p3.py` holds
+it with a twin in the rows.
+
 #### A.3 — scope narrowing removes or reclassifies rows today
 
 **The `--only` half is fixed at 0.95.2**; the measurement is kept because the number is

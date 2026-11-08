@@ -82,6 +82,22 @@ def _select(rows: list[dict], **conditions: object) -> list[dict]:
             if all(row.get(key) == value for key, value in conditions.items())]
 
 
+def _empty_band(files: list[dict]) -> tuple[int, int]:
+    """The largest ordinary subsetted web font and the smallest full TTF face.
+
+    A threshold the corpus supports leaves every ordinary file at or under it and puts
+    every full face over it: `low <= LARGE_FONT_BYTES < high`. Read from the files, never
+    from the constant, so a re-measure cannot bless whatever value the tree holds.
+    """
+    ordinary = [row for row in files
+                if row["arm"] == "A" and row["subset"] != "japanese"]
+    full = [row for row in files if row["arm"] == "B" and row["format"] == "ttf"]
+    if not ordinary or not full:
+        raise ValueError("the corpus has no ordinary web fonts or no full TTF faces")
+    return (max(row["byte_size"] for row in ordinary),
+            min(row["byte_size"] for row in full))
+
+
 def _measure_package(spec: dict) -> tuple[dict, list[dict]]:
     extensions = (".woff2", ".woff") if spec["arm"] == "A" else (".ttf",)
     fetched, raw_files = fetch_package(
@@ -129,9 +145,7 @@ def build_report() -> dict:
                    and row["format"] == "woff2"]
     inter_ttf = _select(
         files, package="@expo-google-fonts/inter", arm="B", format="ttf")
-    ordinary = [row for row in arm_a if row["subset"] != "japanese"]
-    empty_band = (max(row["byte_size"] for row in ordinary),
-                  min(row["byte_size"] for row in arm_b))
+    empty_band = _empty_band(files)
     cjk_woff2_over = [row for row in cjk
                       if row["format"] == "woff2"
                       and row["byte_size"] > threshold]
@@ -170,7 +184,7 @@ def build_report() -> dict:
         "constant": {
             "name": "LARGE_FONT_BYTES",
             "value": threshold,
-            "recommended_value": threshold,
+            "empty_band": list(empty_band),
             "corpus_says": (
                 f"retained in the {empty_band[0]:,}-{empty_band[1]:,} byte empty "
                 "observed band between ordinary subsetted web fonts and full TTF "
@@ -226,10 +240,24 @@ def check_report() -> int:
         print("calibration report was produced from a different corpus manifest",
               file=sys.stderr)
         return 1
-    expected = report.get("constant", {}).get("recommended_value")
+    try:
+        low, high = _empty_band(report.get("files", []))
+    except (ValueError, KeyError, TypeError) as exc:
+        print(f"calibration report has no usable files: {exc}", file=sys.stderr)
+        return 1
+    if report.get("constant", {}).get("empty_band") != [low, high]:
+        print(f"the report's empty_band is not the {low}-{high} its files give",
+              file=sys.stderr)
+        return 1
     actual = _offline_constant()
-    agrees = actual == expected
-    print(f"LARGE_FONT_BYTES: constant={actual}; corpus={expected}; "
+    measured_under = report.get("constant", {}).get("value")
+    if actual != measured_under:
+        print(f"LARGE_FONT_BYTES is {actual}, the report was measured under "
+              f"{measured_under}; measure again", file=sys.stderr)
+        return 1
+    agrees = low <= actual < high
+    print(f"LARGE_FONT_BYTES: constant={actual}; corpus band {low:,}-{high:,} "
+          f"(ordinary at or under it, full faces over it); "
           f"agree={'yes' if agrees else 'no'} — "
           f"{report.get('constant', {}).get('corpus_says', '')}")
     return int(not agrees)

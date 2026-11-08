@@ -150,8 +150,11 @@
   ],
   "constant": {
     "corpus_says": "retained in the 66,856-309,828 byte empty observed band between ordinary subsetted web fonts and full TTF faces; it does not detect non-WOFF2 faces, which have a separate extension check",
+    "empty_band": [
+      66856,
+      309828
+    ],
     "name": "LARGE_FONT_BYTES",
-    "recommended_value": 100000,
     "value": 100000
   },
   "counts": {

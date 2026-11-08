@@ -29,3 +29,17 @@ def percentile(values: list[float], fraction: float) -> float:
     high = min(low + 1, len(ordered) - 1)
     weight = position - low
     return ordered[low] * (1 - weight) + ordered[high] * weight
+
+
+def thin_corpus(read: int, unread: int, unit: str) -> str | None:
+    """Why a corpus is too thin to calibrate from, or None when it is not.
+
+    An offline machine or a checkout without its pages reads nothing, and a sweep over
+    nothing still selects a value. Less than half the corpus answering is a measurement
+    of whatever answered, not of the corpus the report names.
+    """
+    if read == 0:
+        return f"no {unit} read; the corpus was not measured"
+    if read < unread:
+        return f"{read} {unit} read and {unread} not; less than half the corpus answered"
+    return None

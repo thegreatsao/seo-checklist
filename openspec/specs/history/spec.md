@@ -179,6 +179,14 @@ repository only; where it is not so, the run records `unknown` and says so on th
 - **WHEN** the profile or the mode differs between the two runs
 - **THEN** the comparison says so
 
+#### Scenario: another selection, or another page
+- **WHEN** a stored run was made with another `--only` selection, or in `--mode page` of
+  another page than this `--mode page` run
+- **THEN** it is neither the baseline nor a point of the trend: the baseline and the
+  trend are the runs of the same selection and, in page mode, of the same page
+- **AND** where there is none, the run reports no comparison rather than one against
+  another audit (finding 10 of the 2026-11-04 audit; `tests/test_audit_fixes_p3.py`)
+
 #### Scenario: the checks changed and the checklist did not
 - **WHEN** the previous run was made by one plugin version and this run by another
 - **THEN** the comparison carries a note naming both versions
@@ -446,6 +454,11 @@ on a naming convention.
 #### Scenario: a stored run is truncated or unparseable
 - **WHEN** a file in the site's history cannot be parsed
 - **THEN** it is skipped
+
+#### Scenario: a stored file parses and is not a run
+- **WHEN** a file in the site's history is not UTF-8, or parses to something other than an
+  object, or its `items`, `scores` or `scoring_tables` are not the shapes a run writes
+- **THEN** it is skipped like an unparseable one, before anything reads it
 - **AND** the audit completes and still reports whatever comparison the readable runs
   support
 

@@ -47,9 +47,20 @@ def _fetch(package: str, version: str, cache_dir: str,
         max_response_bytes=max_response_bytes,
     )
     data = response.content
+    # The cache is read before the network on every later run, so an error page
+    # written here would stand in for the tarball until somebody deleted it.
+    if response.status_code != 200:
+        raise RuntimeError(f"{package}@{version}: HTTP {response.status_code}, not cached")
+    try:
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tf:
+            tf.getmembers()
+    except (tarfile.TarError, OSError, EOFError) as exc:
+        raise RuntimeError(f"{package}@{version}: not a gzip tarball ({exc}), not cached") from exc
     os.makedirs(cache_dir, exist_ok=True)
-    with open(path, "wb") as fh:
+    partial = path + ".part"
+    with open(partial, "wb") as fh:
         fh.write(data)
+    os.replace(partial, path)
     return data
 
 
