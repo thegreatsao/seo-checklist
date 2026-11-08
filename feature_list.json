@@ -392,7 +392,7 @@
   },
   {
     "id": "F15",
-    "behavior": "CI-004 reads every robots meta tag on the page, matches `noindex` in any letter case, and treats `none` as noindex; MS-028 fails a meta description that is empty after whitespace is stripped",
+    "behavior": "Every item F03's second reading confirmed defective is repaired: CI-004 reads every robots meta tag, matches `noindex` in any case and treats `none` as noindex; MS-028 fails a whitespace-only description; MS-031 reads every keywords meta; the others (MS-030, CN-036, CN-035, TE-166, AR-158, SP-107, and the ten `measures` cases) are repaired or carry a `measures` sentence stating what the rule decides",
     "dependencies": [
       "F01"
     ],
@@ -416,6 +416,6 @@
     ],
     "state": "not_started",
     "evidence": "",
-    "notes": "Found by F03 batch 2's calibration (Codex's blind reading of the controls, confirmed in parse_html.py:247-250); the owner's ruling 2026-10-24: repaired as its own feature. A changed rule re-stales the items' readings (REG-6). Added 2026-10-24 from the repo audit (snapshot 5f80d43): CI-004's `none_matching: noindex` is case-sensitive (checklist_runner.py evaluate compiles it as written), so `content=\"NOINDEX, FOLLOW\"` passes while indexability_matrix.py lowercases and calls the page not indexable."
+    "notes": "Found by F03 batch 2's calibration (Codex's blind reading of the controls, confirmed in parse_html.py:247-250); the owner's ruling 2026-10-24: repaired as its own feature. A changed rule re-stales the items' readings (REG-6). Added 2026-10-24 from the repo audit (snapshot 5f80d43): CI-004's `none_matching: noindex` is case-sensitive (checklist_runner.py evaluate compiles it as written), so `content=\"NOINDEX, FOLLOW\"` passes while indexability_matrix.py lowercases and calls the page not indexable. Widened 2026-11-08 by the owner's rulings on F03 batch 3 (docs/sprint-20261023-F03-plan.md, 'Batch 3's disputes ruled'): all confirmed defects and `measures` sentences F03 finds land here; runs after F03 batches 4-5, with F03 blocked meanwhile; also MS-020's 60 vs the measured 65, and a test that SP-108/SP-113 do not pass with LCP or CLS absent."
   }
 ]

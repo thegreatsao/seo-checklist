@@ -126,6 +126,32 @@ second reading. Batch 2 starts only once Q1–Q4 are answered.
   with the rewritten brief; (3) CI-004 and MS-028, confirmed defective by that calibration, are repaired as their own
   feature (F15), not inside F03.
 
+- **Batch 3's disputes ruled, 2026-11-08.** The owner, item by item on HANDOFF's list: "1 да по подтвержденным. по
+  остальным - думай / 2 как лучше? / 3 делай как лучше / 4 перечитай" (1: yes for the confirmed ones, the rest
+  decide yourself; 2: which is better?; 3: do what is best; 4: re-read). What was delegated was decided by the
+  batch-4 planning session, with its reason, and stands until the owner overrides it:
+  1. **The nine confirmed are defects** (owner): CI-004, MS-028, MS-031, MS-030, CN-036, CN-035, TE-166, AR-158,
+     SP-107.
+  2. **Of the twelve with the fact confirmed (delegated):** ten are defects of the `answers` verdict — the rule
+     decides a narrower question than the title, and no `measures` sentence says so — repaired by a `measures`
+     sentence stating what the rule decides: CN-034, CN-051, MB-094, MB-108, MB-103, AR-146, CN-048, CN-066,
+     IN-123, MS-020 (MS-020 also asserts `len_lte: 60` while `article_seo.TITLE_MAX_CHARS`, measured, is 65 — the
+     repair reconciles them). **Two are not defects:** SP-108 and SP-113 pass over the Core Web Vitals CrUX
+     publishes, which is how Google's own assessment treats a URL without INP (`pagespeed.field_cwv_verdict`'s
+     docstring says so); they keep `answers` and are resolved for the first reading in batch 6 with that reason.
+     The edge — a pass with LCP or CLS absent — goes to F15 as a test.
+  3. **MS-031 goes into F15 (delegated):** it is CI-004's pattern in the same loop (`parse_html.py` keeps the last
+     meta of a name), so one change — every value of a name kept — repairs both, under one set of tests.
+  4. **The `rendered_audit.py` items take `measures` (delegated):** MB-103, CN-035, CN-036, CN-034, CN-051, MB-094,
+     MB-108. The snippet measures proxies — a box size, a colour equality, a nearest background colour — and a
+     sentence naming them is honest at once and costs no browser work; a better snippet can replace a sentence
+     later. For CN-035 and CN-036 the sentence is the repair of a confirmed defect.
+  5. **AR-146 and CN-048 are re-read in batch 4** (owner), after the brief states how an assertion is evaluated.
+  6. **Where the repairs land (delegated):** every one of them is F15, widened from two items to all confirmed
+     defects and `measures` sentences F03 finds. Order: F03 batches 4–5 (more disputes may come; repair once),
+     then F03 `blocked` on F15, F15 done and verified, then F03 batch 6 re-reads the changed items (each repair
+     re-stales its second reading) and resolves what is left.
+
 - **The second reader is Codex** (`gpt-6.1-sol`, reasoning effort high), and so is the review of each batch's code
   (the owner, 2026-10-23, F03 planning session: "Чеки кодексу отдавай"). This replaces the F05 practice of a fresh
   Claude reviewer for this feature.

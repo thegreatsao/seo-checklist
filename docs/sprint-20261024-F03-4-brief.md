@@ -23,8 +23,8 @@ The owner's rule holds: batch 4 starts in a fresh session, and only on the owner
    at `error` (AR-146, CN-048) and was wrong: `checklist_runner.py:792` (`SEVERITY_ALIAS`) maps `error` to `high`,
    `warning` to `medium`. The brief must say how each assertion operator in the registry is evaluated, or point the
    reader at the evaluator in `checklist_runner.py` (it is in the scratch copy). A test that the brief names the
-   alias. Then decide with the owner whether AR-146 and CN-048 are re-read (their records are current; the wrong
-   claim is in the blind reasons, not in the open-pass disputes).
+   alias. Then **re-read AR-146 and CN-048** (the owner, 2026-11-08), blind then open in a fresh Codex session, and
+   replace their records.
 3. **`cwv_metrics.py` (3 items).** Its `{cwv_json}` is written by the agent from trace insights by hand
    (`SKILL.md` "Core Web Vitals from a local trace"): no code to show. Decide whether that section's steps are its
    producer (shown as text), or the items are read without one and the gap stated in the contract.
@@ -59,10 +59,9 @@ By script, largest group first among those not blocked by 1–3: `domain_safety_
 8. Clock out: `nice -n 15 make check` (`ci_local` and `check-arch` green; `make vcr` red by design while F03 is
    `active`), the plan row, `docs/quality-document.md`, `HANDOFF.md`, the batch-5 brief.
 
-## Open for the owner (not this batch's to decide)
+## Ruled by the owner, 2026-11-08 (plan, "Batch 3's disputes ruled")
 
-- The 21 disputes of batch 3 (`docs/sprint-20261024-F03-3.md`, "Disputes for the owner") — resolved in batch 6 by
-  Q2's rule.
-- `answers` → `measures` with a statement, or keep, for the `rendered_audit.py` items: MB-103, CN-035, CN-036 (from
-  batch 2), now also CN-034, CN-051, MB-094, MB-108.
-- MS-031 joins CI-004 and MS-028 as a confirmed defect (last keywords meta wins) — into F15, or its own fix.
+- Batch 3's 21 disputes: nineteen are defects, repaired in F15 after batches 4–5 (F03 `blocked` meanwhile); SP-108
+  and SP-113 are not, and keep `answers`. Batch 4 changes no item for them.
+- MS-031 into F15; the `rendered_audit.py` items take `measures` sentences there.
+- A dispute batch 4 finds is listed for the owner as before, with the same three marks, and is not repaired here.
