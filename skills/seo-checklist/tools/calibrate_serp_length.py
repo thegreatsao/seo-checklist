@@ -415,10 +415,18 @@ def check_report() -> int:
     report_constants = report.get("constants", {})
     failed = False
     for name in CONSTANT_NAMES:
-        expected = report_constants.get(name, {}).get("value")
+        row = report_constants.get(name, {})
+        expected = row.get("value")
         actual = constants[name]
         agrees = actual == expected
-        print(f"{name}: constant={actual}; report={expected}; "
+        # A measured constant is held to what the fonts gave, which a re-measure does
+        # not copy from the constant; a convention is only held to its record.
+        if row.get("basis") == "measured":
+            agrees = agrees and actual == row.get("recommended_value")
+            said = f"measured={row.get('recommended_value')}"
+        else:
+            said = "set by convention, not by the measurement"
+        print(f"{name}: constant={actual}; report={expected}; {said}; "
               f"agree={'yes' if agrees else 'no'}")
         failed |= not agrees
     return int(failed)

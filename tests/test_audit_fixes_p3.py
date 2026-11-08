@@ -330,6 +330,40 @@ class ACalibratedConstantIsHeldToTheCorpus(Scratch):
                 self.assertEqual(css._reads_minified(row, live),
                                  css_minify_check.looks_minified(text)[0])
 
+    def test_a_serp_length_constant_that_follows_into_its_report_fails(self):
+        """Codex review 2: the check compared TITLE_MAX_CHARS with its own copy."""
+        import calibrate_serp_length as serp
+        with open(serp.REPORT, encoding="utf-8") as fh:
+            data = json.load(fh)
+        data["constants"]["TITLE_MAX_CHARS"]["value"] = 1_000_000
+        report = os.path.join(self.dir, "serp-length.json")
+        with open(report, "w", encoding="utf-8") as fh:
+            json.dump(data, fh)
+        live = dict(serp._offline_constants(), TITLE_MAX_CHARS=1_000_000)
+        with mock.patch.object(serp, "REPORT", report), \
+                mock.patch.object(serp, "_offline_constants", return_value=live), \
+                quiet(), mock.patch("sys.stderr", new_callable=io.StringIO):
+            self.assertEqual(serp.check_report(), 1)
+
+    def test_a_gsc_floor_below_its_precision_rule_fails(self):
+        """Codex review 2: a report rebuilt under a floor of 1 reproduced and passed."""
+        import calibrate_gsc_sample_floors as gsc
+        real = gsc._constants()
+        broken = {script: dict(names) for script, names in real.items()}
+        for names in broken.values():
+            if "LOW_CTR_MIN_IMPRESSIONS" in names:
+                names["LOW_CTR_MIN_IMPRESSIONS"] = 1
+        report = os.path.join(self.dir, "gsc-sample-floors.json")
+        with mock.patch.object(gsc, "_constants", return_value=broken):
+            with open(report, "w", encoding="utf-8") as fh:
+                json.dump(gsc.build_report(), fh)
+            with open(report, encoding="utf-8") as fh:
+                rebuilt = json.load(fh)
+            with mock.patch.object(gsc, "REPORT", report), \
+                    mock.patch.object(gsc, "build_report", return_value=rebuilt), \
+                    quiet(), mock.patch("sys.stderr", new_callable=io.StringIO):
+                self.assertEqual(gsc.check_report(), 1)
+
     def test_a_report_edited_by_hand_fails(self):
         """GOV-10's other direction: the stored evidence follows from the stored rows."""
         with open(css.REPORT, encoding="utf-8") as fh:

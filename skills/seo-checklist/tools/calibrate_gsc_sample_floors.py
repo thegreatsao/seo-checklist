@@ -205,7 +205,10 @@ def check_report() -> int:
     current_pairs = {row["floor_constant"]: row for row in current["pairs"]}
     for name, actual in current_pairs.items():
         expected = report_pairs.get(name, {})
-        agrees = expected == actual
+        # A report rebuilt under a floor too small for its threshold reproduces
+        # exactly; what it must also say is that the floor meets the rule.
+        agrees = expected == actual and actual["satisfies_precision_rule"]
+        failed |= not actual["satisfies_precision_rule"]
         print(f"{name}: constant={actual['floor_impressions']}; "
               f"report={expected.get('floor_impressions')}; "
               f"required={actual['required_minimum_impressions']}; "
