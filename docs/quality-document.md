@@ -37,6 +37,22 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `skills/seo-checklist/scripts/` — graded 2026-11-08, audit-fix batch P1 (robots.txt and sitemap reading only)
+
+Read for the grade: `lib/robots_rules.py` (`_matches`), `lib/safe_http.py` (`_fetch_robots`), `seo_common.py`
+(`robots_unread`, `fetch_url`'s `keep_body`, `sitemap_document`, `parse_sitemap_xml`), `indexability_matrix.py`,
+`ai_crawler_policy_matrix.py`, and the sitemap reads of `sitemap_checker.py` and `site_crawl.py`.
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `ci_local` 27/27 on `9c82e20` (2026-11-08, 629 s); every fix red on the commit before it; Codex's third pass "ship" |
+| Agent understandable | B | each fix says why in its comment and in HTTP-5/HTTP-10; `fetch_url`'s `keep_body` is one more option a reader must know sitemaps need |
+| Test stability | B | two tests bound time (1 s for a hostile rule) and two bound memory (16 MB peak); generous margins, but timing and tracemalloc depend on the machine and urllib3 |
+| Architecture boundaries | A | `make check-arch` 3/3 |
+| Code conventions | A | ruff clean; no new module constant left unread (`tests/derived-sets.json` unchanged) |
+
+The rest of `scripts/` is not graded.
+
 ## `skills/seo-checklist/tools/` — graded 2026-10-24, F03 batch 3 (`audit_item_readings.py` and `second-reading-brief.md` only)
 
 | Dimension | Grade | Basis |
