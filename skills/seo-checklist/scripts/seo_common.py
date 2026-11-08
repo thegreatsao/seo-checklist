@@ -277,7 +277,11 @@ def comparable_url(url: str) -> str:
     try:
         if not host.isascii():
             import idna     # what requests encodes a host with (IDNA 2008, UTS 46)
-            host = idna.encode(host, uts46=True).decode("ascii")
+            # Label by label, as requests falls back to (urllib3): one ASCII label
+            # IDNA refuses (`cdn_assets`) must not leave the Unicode ones unencoded.
+            host = ".".join(label if label.isascii()
+                            else idna.encode(label, uts46=True).decode("ascii")
+                            for label in host.split("."))
         port = parsed.port
     except (UnicodeError, ValueError):
         pass

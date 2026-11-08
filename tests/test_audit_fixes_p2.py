@@ -480,5 +480,16 @@ class CodexReviewTwo(unittest.TestCase):
                          [SITE + "a"])
 
 
+
+class CodexReviewThree(unittest.TestCase):
+    """Codex's third review, of 4e4e3a3 (session 01a1ba5d-68f3-7c51-b769-444e1dda6a14)."""
+
+    def test_a_host_mixing_ascii_and_unicode_labels_is_encoded_per_label(self):
+        # requests sends https://cdn_assets.xn--bcher-kva.example/p for the first.
+        same = seo_common.comparable_url
+        self.assertEqual(same("https://cdn_assets.bücher.example/p"),
+                         same("https://cdn_assets.xn--bcher-kva.example/p"))
+
+
 if __name__ == "__main__":
     unittest.main()
