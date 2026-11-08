@@ -258,41 +258,33 @@ def normalize_url(url: str, base: str | None = None, default_scheme: str = "http
 def comparable_url(url: str) -> str:
     """One spelling of a URL, for asking whether two name the same resource.
 
-    A page may write its own address raw (`/café`) while requests reports the encoded
-    form it sent (`/caf%C3%A9`); a self-canonical compared as text read as one pointing
-    elsewhere (finding 8, 2026-11-04). Non-ASCII is percent-encoded as UTF-8, escapes
-    are upper-cased (RFC 3986 §6.2.2.1), the scheme and host lower-cased, a non-ASCII
-    host in the IDNA form requests sends, and the scheme's default port dropped;
-    credentials stay. Nothing is decoded.
+    A page may write its own address raw (`/café`, `bücher.example`) while requests
+    reports the encoded form it sent (`/caf%C3%A9`, `xn--bcher-kva.example`); compared
+    as text, a self-canonical read as one pointing elsewhere (finding 8, 2026-11-04).
+    So the spelling is the one requests sends (`PreparedRequest.prepare_url`: IDNA 2008
+    by label, host escapes, percent-encoding, case), escapes upper-cased (RFC 3986
+    §6.2.2.1) and the scheme's default port dropped. An explicit `:0`, which requests
+    would drop, and a URL requests refuses are compared as written.
     """
-    parsed = urlparse(normalize_url(url))
+    written = normalize_url(url)
+    spelled = written
+    try:
+        if requests is not None and urlparse(written).port != 0:
+            spelled = requests.Request("GET", written).prepare().url
+    except (requests.exceptions.RequestException, ValueError, UnicodeError):
+        spelled = written
+    parsed = urlparse(spelled)
+    netloc = parsed.netloc
+    default = {"http": ":80", "https": ":443"}.get(parsed.scheme.lower())
+    if default and netloc.endswith(default):
+        netloc = netloc[:-len(default)]
 
     def encoded(part: str) -> str:
         return re.sub(r"%[0-9A-Fa-f]{2}", lambda found: found.group().upper(),
                       quote(part, safe="/%:@!$&'()*+,;=~-._?"))
 
-    scheme = parsed.scheme.lower()
-    netloc = parsed.netloc      # as written if it cannot be read: nothing is assumed
-    host = parsed.hostname or ""
-    try:
-        if not host.isascii():
-            import idna     # what requests encodes a host with (IDNA 2008, UTS 46)
-            # Label by label, as requests falls back to (urllib3): one ASCII label
-            # IDNA refuses (`cdn_assets`) must not leave the Unicode ones unencoded.
-            host = ".".join(label if label.isascii()
-                            else idna.encode(label, uts46=True).decode("ascii")
-                            for label in host.split("."))
-        port = parsed.port
-    except (UnicodeError, ValueError):
-        pass
-    else:
-        userinfo = parsed.netloc.rpartition("@")[0]     # credentials keep their case
-        netloc = ((userinfo + "@" if "@" in parsed.netloc else "")
-                  + (f"[{host}]" if ":" in host else host)
-                  + (f":{port}" if port is not None
-                     and port != {"http": 80, "https": 443}.get(scheme) else ""))
     return urlunparse(parsed._replace(
-        scheme=scheme, netloc=netloc, path=encoded(parsed.path),
+        scheme=parsed.scheme.lower(), netloc=netloc, path=encoded(parsed.path),
         params=encoded(parsed.params), query=encoded(parsed.query)))
 
 

@@ -491,5 +491,40 @@ class CodexReviewThree(unittest.TestCase):
                          same("https://cdn_assets.xn--bcher-kva.example/p"))
 
 
+
+class CodexReviewFour(unittest.TestCase):
+    """Codex's fourth review, of 885e2ae (session 01a1ba61-2d66-7c02-9291-41b10715b2d6)."""
+
+    def test_a_percent_escaped_host_is_the_host_requests_sends(self):
+        # requests sends https://xn--bcher-kva.example/p for the first.
+        same = seo_common.comparable_url
+        self.assertEqual(same("https://%62ücher.example/p"),
+                         same("https://xn--bcher-kva.example/p"))
+
+    def test_through_both_callers(self):
+        head = '<link rel="canonical" href="https://%62ücher.example/p">'
+        final = "https://xn--bcher-kva.example/p"
+        saved = canonical_checker.fetch_url
+        canonical_checker.fetch_url = lambda u, **kw: answer(u, 200, page(head), final=final)
+        try:
+            out = canonical_checker.check_canonicals([final])
+        finally:
+            canonical_checker.fetch_url = saved
+        self.assertEqual(out["rows"][0]["verdict"], "self_canonical")
+        saved = (indexability_matrix.fetch_url, indexability_matrix.fetch_robots,
+                 indexability_matrix.urls_from_sitemaps)
+        try:
+            indexability_matrix.urls_from_sitemaps = lambda *a, **k: set()
+            indexability_matrix.fetch_robots = lambda *a, **k: {
+                "url": final, "fetch": {"status": 404}, "parsed": None}
+            indexability_matrix.fetch_url = lambda u, **kw: answer(
+                u, 200, page(head), final=final)
+            row = indexability_matrix.evaluate([final], final)["rows"][0]
+        finally:
+            (indexability_matrix.fetch_url, indexability_matrix.fetch_robots,
+             indexability_matrix.urls_from_sitemaps) = saved
+        self.assertEqual(row["verdict"], "indexable", row["blockers"])
+
+
 if __name__ == "__main__":
     unittest.main()
