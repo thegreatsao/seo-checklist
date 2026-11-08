@@ -310,8 +310,9 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
     def test_the_shipped_file_is_counted(self):
         counts = R.second_readings(REGISTRY, READINGS)
         # F03-3: parse_html.py, rendered_audit.py and pagespeed.py, 29 items; F03-4:
-        # eleven more scripts, 42 items, and AR-146 and CN-048 re-read.
-        self.assertEqual(counts, {"current": 71, "agree": 20, "disputed": 51})
+        # eleven more scripts, 42 items, and AR-146 and CN-048 re-read; F03-5: the last
+        # 74 items in 43 scripts.
+        self.assertEqual(counts, {"current": 145, "agree": 33, "disputed": 112})
 
 
 class TheDigestCommand(unittest.TestCase):
@@ -336,8 +337,8 @@ class TheDigestCommand(unittest.TestCase):
     def test_the_summary_counts_second_readings(self):
         done = self.run_tool()
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertIn(f"second readings: 71 of {len(READINGS['items'])} current — 20 agree, "
-                      "51 disputed", done.stdout)
+        self.assertIn(f"second readings: 145 of {len(READINGS['items'])} current — 33 agree, "
+                      "112 disputed", done.stdout)
 
 
 class WhatTheSecondReaderIsShown(unittest.TestCase):

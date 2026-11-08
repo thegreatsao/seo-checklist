@@ -33,6 +33,12 @@
       "reading": "The title asks whether the URL is indexed, which only Google knows; `rows` carries indexability_matrix's verdict, which lists what would stop indexing — robots.txt, status, noindex in meta or header, a canonical elsewhere. CI-002 asks Google. On an entry the audit could not read, `entry_answer` lets the entry's own request decide it: a 4xx or 5xx answer fails it, anything else is NO_DATA.",
       "shapes": {
         "external": "Indexing is Search Console's to report; this rule reads the page's own blockers, and `measures` says so."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7ad2-90fa-db6bf5f0a457",
+        "read": "a070a4572a3ae265",
+        "verdict": "measures"
       }
     },
     "CI-002": {
@@ -104,6 +110,12 @@
       "reading": "`rows.0.status_class` classifies the audited URL's final status as Google's HTTP-status page reads it: 200 passes, another success warns, no content, a redirect that ends there, 4xx and 5xx fail. It is the audited page only; `measures` names CI-015 and GO-138 for the rest of the site. On an entry the audit could not read, `entry_answer` lets the entry's own request decide it: a 4xx or 5xx answer fails it, anything else is NO_DATA.",
       "shapes": {
         "conjunction": "The parenthetical is the status name, not a second subject."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7ad2-90fa-db6bf5f0a457",
+        "read": "344de84f950c6a6d",
+        "verdict": "measures"
       }
     },
     "CI-004": {
@@ -149,7 +161,13 @@
       },
       "verdict": "answers",
       "reading": "`rows.0.robots_allowed` is the RFC 9309 answer for Googlebot on the entry URL, from lib/robots_rules.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7ad2-90fa-db6bf5f0a457",
+        "read": "08e22c0fb46b6b6f",
+        "verdict": "answers"
+      }
     },
     "CI-006": {
       "title": "Declare Sitemap Location in robots.txt",
@@ -196,6 +214,13 @@
       "reading": "`orphan_pages.count` is sitemap URLs the crawl found no internal link to, robots refusals excluded.",
       "shapes": {
         "conjunction": "Links/Navigation names one subject: an inbound internal link, navigation included."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc03-c454-70a1-bedc-cf9068f58b6e",
+        "read": "ee0528714270f1fe",
+        "verdict": "owed",
+        "dispute": "The reading incorrectly limits `orphan_pages.count` to sitemap URLs: `graph_from_inventory()` sets `crawled = set(pages)`, and `analyze_link_profile()` checks that entire set, with exclusions. I disagree with `answers` because `graph_from_inventory()` unconditionally credits the entry and its redirect destination, while `analyze_link_profile()` also exempts the entry, allowing PASS when the audited URL has no inbound internal link."
       }
     },
     "CI-009": {
@@ -220,7 +245,14 @@
       },
       "verdict": "answers",
       "reading": "`rows` maps canonical_checker's verdict: self-canonical or canonicalised passes; cross-host, missing, or conflicting (two canonicals that disagree, which Google ignores) fails.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7691-b31a-fd9d06808320",
+        "read": "7a17267d6742dbed",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict confuses a canonical declaration with serving content at a single canonical URL. `check_canonicals()` accepts `self_canonical` and same-host `canonicalized` without comparing content across URLs, and these arguments leave `check_targets=False`, allowing even a broken canonical target to pass."
+      }
     },
     "CI-010": {
       "title": "Align Google-Selected and Declared Canonical",
@@ -276,6 +308,13 @@
       "shapes": {
         "conjunction": "Canonical/Indexing names the conflict between the two: noindex beside a canonical elsewhere, and a canonical that contradicts itself (another host, or two that disagree).",
         "external": "The page's own signals are the subject, not Google's index."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7691-b31a-fd9d06808320",
+        "read": "60599e0b9b591f7a",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict and conjunction answer treat a cross-host canonical as inherently contradictory, although naming another host does not itself establish conflicting signals. `check_canonicals()` assigns `cross_host` solely from `same_host()`, while a same-host canonical can receive `consistent` without checking whether its target declares noindex. The external answer correctly distinguishes declared signals from Google's index, but does not resolve these gaps."
       }
     },
     "CI-012": {
@@ -322,6 +361,13 @@
       "reading": "`blocked_urls` lists same-origin CSS, JS and image URLs the page references that robots.txt blocks for Googlebot.",
       "shapes": {
         "conjunction": "CSS/JS/Images is one class of resource, all three read."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc03-db90-7b20-bef6-771281edbc05",
+        "read": "321170becbc4658f",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: `discover_asset_paths()` reads explicit HTML references but neither identifies critical resources nor discovers CSS imports or CSS image references. Consequently, `blocked_urls` can fail over a noncritical resource or remain empty while a critical resource referenced through CSS is blocked; the conjunction answer does not resolve that gap."
       }
     },
     "CI-014": {
@@ -353,6 +399,13 @@
       "shapes": {
         "conjunction": "Codes, chains and loops are each an issue type the rule reads.",
         "qualifier": "*Correct* is read as permanent codes: a temporary code warns, since Google treats it as a weak signal."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc04-25c6-7980-ab1e-ddf267b138da",
+        "read": "e3f65c5f8b719613",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict and qualifier answer mistake permanent codes for correct codes: `check_redirects()` flags every 302/303/307 without determining whether the move is temporary, and accepts 301/308 without determining whether it is permanent. The reading also overstates “any chain”: the structured `redirect_chain` warning requires `total_hops > 1` and no detected loop."
       }
     },
     "CI-015": {
@@ -378,7 +431,13 @@
       },
       "verdict": "answers",
       "reading": "`summary.server_errors` counts crawled pages answering 500–599, the entry page among them; the site-wide 5xx the title names, over what the crawl reached. On an entry the audit could not read, `entry_answer` lets the entry's own request decide it: a 5xx answer fails it, anything else is NO_DATA.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7ad2-90fa-db6bf5f0a457",
+        "read": "5732c4929caba5b5",
+        "verdict": "answers"
+      }
     },
     "CI-016": {
       "title": "Provide Meaningful Image Alt Text",
@@ -427,6 +486,12 @@
       "reading": "`summary.errors` is the W3C validator's error count for the served HTML.",
       "shapes": {
         "conjunction": "W3C names the validator, not a second subject."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc04-530a-7523-a0e3-c0018f246856",
+        "read": "6a343bde581c332a",
+        "verdict": "answers"
       }
     },
     "CI-018": {
@@ -461,6 +526,13 @@
       "reading": "`issues` carries server_log_audit's findings over the supplied log: crawl waste, non-indexable hits, bot share.",
       "shapes": {
         "conjunction": "Analysing the log is the means; crawl-budget findings are what the rule grades."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-0718-7fb3-9edd-413f1d97a041",
+        "read": "cefe52b4f2ff65eb",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict and conjunction answer overstate selected crawl diagnostics as deciding crawl-budget management: `_findings()` applies thresholds and inventory comparisons without establishing that budget is managed. The reading's “bot share” is also unsupported as an asserted finding; `_rates()` reports request totals, while `issues` contains the specific conditions emitted by `_findings()`."
       }
     },
     "CI-019": {
@@ -485,6 +557,13 @@
       "reading": "`indexable_urls` lists which of /search, /cart, /checkout, /login exist and are indexable when fetched (0.20 repair).",
       "shapes": {
         "conjunction": "The parenthetical lists the paths the rule requests."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc03-db90-7b20-bef6-771281edbc05",
+        "read": "dd9a168dbca2413e",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: `test_paths()` skips probes for paths blocked for every agent, allowing PASS without establishing the noindex directive requested by the title. The reading also overstates `indexable_urls`: failed probes are omitted into `unprobed_urls`, and `probe_url()` establishes only response status and detected noindex, not indexability generally. The conjunction answer correctly identifies the requested paths but does not address these gaps."
       }
     },
     "MS-020": {
@@ -561,6 +640,13 @@
       "reading": "`summary.duplicate_title_groups` counts titles shared by indexable, self-canonical pages (0.112.0).",
       "shapes": {
         "conjunction": "Canonical is handled by exclusion; pagination is not recorded by the crawl, which the script says."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-76a2-8a08-784af6475f69",
+        "read": "a535a94b2b706336",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: `_snippet_grouping_pages()` excludes pages declaring another canonical without checking whether that canonical is correct, and it does not recognize pagination. The conjunction answer acknowledges that pagination is unmeasured rather than showing how the rule answers that part of the title; `site_crawl.page_key()` also collapses query-based pagination."
       }
     },
     "MS-023": {
@@ -612,7 +698,14 @@
       },
       "verdict": "answers",
       "reading": "`summary.missing_title_pages` counts crawled HTML pages answering 200 whose title is absent or blank, noindex pages included; every page the crawl reached.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-76a2-8a08-784af6475f69",
+        "read": "b9fab13403bd4feb",
+        "verdict": "owed",
+        "dispute": "The claim “every page the crawl reached” is false: `pages_from_inventory()` discards rows without `text_hash`, which `_read_page()` leaves unset when body text after chrome removal is empty, including successfully read HTML pages without titles. `carries_content()` also accepts content-bearing 2xx responses beyond 200. I therefore disagree with `answers`: `missing_title_pages` can omit a missing title on a page the crawl read."
+      }
     },
     "MS-028": {
       "title": "Fill Missing Meta Descriptions (High-Value Pages First)",
@@ -659,7 +752,14 @@
       },
       "verdict": "answers",
       "reading": "`summary.duplicate_description_groups` counts descriptions shared by indexable, self-canonical pages.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-76a2-8a08-784af6475f69",
+        "read": "3231b7ada04bf6f9",
+        "verdict": "owed",
+        "dispute": "The reading omits the body-content prerequisite: `pages_from_inventory()` excludes rows without `text_hash`, so `duplicate_descriptions()` never compares descriptions on successfully read HTML pages whose stripped body text is empty. I disagree with `answers` because duplicate descriptions on those pages can remain undetected, with no measures sentence disclosing the restriction."
+      }
     },
     "MS-030": {
       "title": "Keep Meta Descriptions ~150–160 Characters (Clear & Relevant)",
@@ -746,6 +846,13 @@
       "shapes": {
         "conjunction": "Implemented is the applicability gate; validated is the assertion.",
         "qualifier": "*Where relevant* is `applies_when schema_nodes > 0`."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc04-9faf-76b0-8883-bbdd82c51c4e",
+        "read": "f8de3d8886b685a4",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict overstates validation: `has_value()` checks presence and nonemptiness, so `summary.errors == 0` does not establish valid structured data. The reading also omits malformed JSON-LD blocks, which `validate_schema_required_props()` counts as errors. The shape answers conflate existing typed nodes (`schema_nodes > 0`) with relevance; that gate cannot establish whether relevant structured data has been implemented."
       }
     },
     "MS-033": {
@@ -765,6 +872,13 @@
       "reading": "`score` is the share of Open Graph and Twitter Card checks the page passes; 80 is four in five.",
       "shapes": {
         "conjunction": "Both tag families feed the score."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-2775-7760-a2b1-01625af3e510",
+        "read": "0e7053fe0107b1fa",
+        "verdict": "owed",
+        "dispute": "In `check_social_meta()`, `score` counts nonempty tag values, including optional tags; invalid values generate issues without losing points, so these are not checks the page necessarily passes. Although both families contribute, that does not establish the conjunction: eleven of thirteen tags pass the threshold even when `twitter:card` or a required Open Graph tag is missing, contradicting `answers`."
       }
     },
     "CN-034": {
@@ -863,6 +977,12 @@
       "reading": "`score` is freshness_checker's recency of this page's dates and statistics; the site-level balance the title asks about is not measured.",
       "shapes": {
         "conjunction": "Evergreen and fresh across a site is out of reach for a one-page script; `measures` says so."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc04-a2e0-7d11-8983-f0680c73dc21",
+        "read": "5cf3e80d297c581c",
+        "verdict": "measures"
       }
     },
     "CN-039": {
@@ -888,6 +1008,13 @@
       "reading": "`summary.thin_pages` counts crawled indexable pages under the word threshold.",
       "shapes": {
         "conjunction": "Low-value and thin are one subject, measured by length."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-76a2-8a08-784af6475f69",
+        "read": "e6d332e7cbf02e2a",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: `detect_duplicates()` tests only whether retained, non-noindex pages fall below a word-count threshold, not whether their content has low value. The conjunction answer merely asserts that length measures both concepts; no computation establishes that relationship, and `pages_from_inventory()` even excludes pages with no remaining body text."
       }
     },
     "CN-040": {
@@ -932,7 +1059,14 @@
       },
       "verdict": "answers",
       "reading": "`summary.exact_duplicate_groups` counts crawled pages serving the same body text.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-76a2-8a08-784af6475f69",
+        "read": "fc03ee9cf51e3d73",
+        "verdict": "owed",
+        "dispute": "The reading incorrectly describes a page count: `summary.exact_duplicate_groups` is `len(exact_dupes)`, counting group records formed from normalized, chrome-stripped text hashes, including informational records involving noindex pages. I disagree with `answers` because separately computed near-duplicates never affect the assertion, while canonical handling does not remove exact groups from it."
+      }
     },
     "CN-044": {
       "title": "Provide a Clear, Easy-to-Find Contact Page",
@@ -1070,6 +1204,13 @@
       "reading": "`date_signals.shown` requires a publication and an update date from declared sources; publication alone warns (0.112.0).",
       "shapes": {
         "conjunction": "Both halves are read."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc04-a2e0-7d11-8983-f0680c73dc21",
+        "read": "a1a34727da4ebda0",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict mistakes date detection for visible display: `check_freshness()` sets `date_signals.shown` from parseable source values, including metadata and JSON-LD, without checking visibility. “Declared sources” also overstates the semantics: `_time_dates()` accepts untyped `<time>` values, and two distinct dates suffice to infer an update. “Both halves are read” therefore does not establish that publication and updated dates are both shown as such."
       }
     },
     "CN-057": {
@@ -1260,7 +1401,14 @@
       },
       "verdict": "answers",
       "reading": "`keyword_usage.in_body` is whether the supplied primary keyword occurs in the body copy.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-2775-7760-a2b1-01625af3e510",
+        "read": "3856938f3a3b735c",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict and reading equate the extracted corpus with body copy, but `main()` builds `full_text` only from H1–H3 headings and paragraphs collected by `extract_content()`. Keyword occurrences solely in lists, tables, or ordinary div text are excluded, so body-copy inclusion can still produce FAIL."
+      }
     },
     "BL-081": {
       "title": "Keep Anchor Text Natural and Varied",
@@ -1289,6 +1437,13 @@
       "reading": "`summary.overused_exact_match_targets` counts internal link targets whose anchors are dominated by one exact-match phrase.",
       "shapes": {
         "conjunction": "Natural and varied are one property, read as anchor diversity per target."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-2775-7760-a2b1-01625af3e510",
+        "read": "804ee29bc603728f",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict and conjunction answer overstate the rule: `audit_anchor_text()` asserts only targets with at least five identical normalized editorial anchors constituting at least 80% of their nonempty editorial anchors, after excluding inferred navigation. It separately computes low diversity, empty anchors, and generic anchors without asserting them, so the rule does not establish either naturalness or general variety."
       }
     },
     "BL-083": {
@@ -1518,7 +1673,14 @@
       },
       "verdict": "answers",
       "reading": "`large_without_srcset_count` counts images wider than 1280px, read from their own bytes, sent without srcset (0.108.0).",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7341-87c7-a53acd2e17a8",
+        "read": "de5c69ee378ed3c8",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict overstates what `audit()` establishes: `large_without_srcset_count` checks only fallback images wider than 1280px, and `responsive` means merely that an img or picture source has a nonempty srcset. It does not establish usable responsive choices, and smaller images never enter the asserted count."
+      }
     },
     "MB-097": {
       "title": "Optimize Image Formats & Compression",
@@ -1543,6 +1705,13 @@
       "shapes": {
         "conjunction": "Formats and compression are each a half of the count.",
         "qualifier": "*Optimize* is read as those two halves."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7341-87c7-a53acd2e17a8",
+        "read": "3a17d1d19ba11e14",
+        "verdict": "owed",
+        "dispute": "The count description is substantially accurate, but the `answers` verdict and qualifier answer equate optimization with two proxies. In `audit()`, an image can pass while poorly compressed below 250,000 bytes, and legacy formats are counted only when `row[\"large\"]` is true; neither half establishes the corresponding optimization claim."
       }
     },
     "MB-098": {
@@ -1564,7 +1733,14 @@
       },
       "verdict": "measures",
       "reading": "`srcset_without_sizes_count` counts images whose srcset has no sizes; an oversized image with no srcset is MB-096's.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7341-87c7-a53acd2e17a8",
+        "read": "9e25db461844c054",
+        "verdict": "owed",
+        "dispute": "The reading omits `_needs_sizes()`, which restricts `srcset_without_sizes_count` to width-descriptor srcsets lacking sizes; density-descriptor srcsets without sizes pass. Consequently, the measures sentence's claim about every srcset is inaccurate, so the `measures` verdict is unsupported."
+      }
     },
     "MB-100": {
       "title": "Fix Mobile UX Issues (see UX)",
@@ -1587,6 +1763,13 @@
       "reading": "`issues` carries mobile_render_checker's mobile usability findings.",
       "shapes": {
         "conjunction": "*(see UX)* points at the UX items; it is not a subject."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-9d65-7b32-be58-3402b970bc00",
+        "read": "aff5ecab8fa0c25b",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict and description as “mobile usability findings” overstate `_static_checks()`, which checks a viewport substring and raw HTML patterns for widths and positioning without rendering. Desktop-only width declarations can fail while actual mobile interaction problems pass, so these findings do not decide whether mobile UX issues are fixed."
       }
     },
     "MB-102": {
@@ -1621,6 +1804,13 @@
       "reading": "`issues` carries video_schema_checker's mobile-relevant video findings, applicable only where videos exist.",
       "shapes": {
         "qualifier": "*Optimize* is read as the script's issue set."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc04-aa32-7a90-ad60-da76c11524a1",
+        "read": "ef80154bf1f782fe",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict and “mobile-relevant video findings” description are unsupported: `check_video_schema()` checks VideoObject metadata properties and formats, with no mobile playback, layout, or performance checks. Its `videos` count comes from `find_schema_nodes(documents, \"VideoObject\")`, so applicability means declared schema nodes exist, not that videos exist. Reading “Optimize” as whatever issues the script emits does not address whether those checks establish mobile optimization."
       }
     },
     "MB-103": {
@@ -1676,7 +1866,14 @@
       },
       "verdict": "measures",
       "reading": "`favicon.grade` grades the declared icon as Google's favicon page does: declared, crawlable by Googlebot-Image with the home page open to Googlebot, an image, square and at least 8 px fails otherwise; larger than 48 px in a listed format passes. Whether it represents the brand is what `measures` says is not read.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-9d65-7b32-be58-3402b970bc00",
+        "read": "dc94b10de355ab67",
+        "verdict": "owed",
+        "dispute": "The `measures` verdict and claim that the icon is “crawlable by Googlebot-Image” overlook that `check()` applies the page origin’s robots.txt to the icon URL even when that URL has another origin. `robots_rules.allowed()` matches the supplied URL’s path against those supplied rules, so unrelated page-origin restrictions can fail an externally hosted icon; the measures sentence does not disclose this gap."
+      }
     },
     "MB-105": {
       "title": "Ensure Content, Meta & Directives Match Between Served and Rendered HTML",
@@ -1797,7 +1994,14 @@
       },
       "verdict": "measures",
       "reading": "`blocking_third_party_count` counts render-blocking third-party scripts, one common trap among several.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc07-2ea3-7341-8163-4428cd0a94ad",
+        "read": "8a2ba57f9c4cf883",
+        "verdict": "owed",
+        "dispute": "The `measures` verdict overstates the count's correspondence to rendering blockers: `_is_third_party()` excludes protocol-relative script URLs, and `audit()` classifies any external non-module script without `async` or `defer` as blocking, including non-executable script types. The measures sentence does not disclose these gaps, so my verdict remains `owed`."
+      }
     },
     "SP-110": {
       "title": "Run a Comprehensive Speed Audit",
@@ -1825,7 +2029,14 @@
       },
       "verdict": "measures",
       "reading": "`issues` carries render-blocking resources and critical request chains read from the HTML; the other speed checks are separate items.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc07-2ea3-7341-8163-4428cd0a94ad",
+        "read": "7bfc35ab4f35df07",
+        "verdict": "owed",
+        "dispute": "The reading describes everything collected rather than what decides the assertion: `audit()` assigns stylesheets only `info`, while parser-blocking external scripts receive the failing `error` or `warning` severities. With `fetch_css=False`, CSS import chains are also unread; the measures sentence therefore overstates the verdict's scope, and my verdict remains `owed`."
+      }
     },
     "SP-111": {
       "title": "Check Core Web Vitals (Desktop) in Search Console",
@@ -2048,6 +2259,12 @@
       "shapes": {
         "conjunction": "The parenthetical names the protocol.",
         "qualifier": "*Valid* is the handshake's own verdict."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-feec-7221-9e9b-47786212b979",
+        "read": "8d0d073b3467bb96",
+        "verdict": "answers"
       }
     },
     "SE-119": {
@@ -2263,6 +2480,13 @@
       "shapes": {
         "conjunction": "Install and configure are both read as a configured ID.",
         "existential": "One configured property is an installed GA4."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc04-f040-7951-ac5e-17f6561c6ac1",
+        "read": "49381f45d25cc612",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict and both shape answers equate a matching ID with installation and configuration. In `check()`, `measurement_ids` includes `RE_GTAG_SRC` loader matches even without a configuration call, and neither regex establishes execution or correct configuration."
       }
     },
     "GO-132": {
@@ -2280,7 +2504,14 @@
       },
       "verdict": "answers",
       "reading": "`duplicates` lists GA4 IDs configured more than once.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc04-f040-7951-ac5e-17f6561c6ac1",
+        "read": "ba5e9f73e06f72a1",
+        "verdict": "owed",
+        "dispute": "The reading incompletely describes `duplicates`: `check()` also appends repeated loader IDs and GTM container IDs appearing more than twice, rather than only GA4 IDs configured repeatedly. The `answers` verdict overstates these HTML counts, which cannot detect duplicate GA4 tags configured inside GTM or injected at runtime."
+      }
     },
     "GO-134": {
       "title": "Resolve Search Console Issues",
@@ -2310,7 +2541,14 @@
       },
       "verdict": "answers",
       "reading": "`issues` carries errors and warnings Search Console reports against submitted sitemaps (0.23).",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-0718-7fb3-9edd-413f1d97a041",
+        "read": "1a7d9abbebac4311",
+        "verdict": "owed",
+        "dispute": "The computation described is accurate, but the `answers` verdict is too broad: `detect_issues()` reads only submitted sitemap errors and warnings. Their absence does not establish that Search Console issues generally are resolved."
+      }
     },
     "GO-135": {
       "title": "Use URL Inspection & Rendered HTML",
@@ -2372,6 +2610,13 @@
       "reading": "`issues` carries sitemap_checker's hygiene findings, robots conflicts included since 0.110.0.",
       "shapes": {
         "qualifier": "*Clean* is no finding at medium or above."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc05-4a30-7d81-be24-1fa36957ea48",
+        "read": "688803ce79712ea8",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: `_sitemap_entries()` silently skips `<url>` entries missing `<loc>` and accepts an unrecognized root containing a `<url>` child as a `urlset`, allowing malformed sitemap structures to pass. The qualifier answer defines “Clean” as absence of emitted findings without establishing that those findings cover sitemap cleanliness."
       }
     },
     "GO-137": {
@@ -2399,6 +2644,13 @@
       "reading": "`summary.unreconciled` counts sitemap URLs Google has not indexed plus indexed pages no sitemap lists (0.106.0).",
       "shapes": {
         "conjunction": "Indexed pages and sitemaps are the two sets compared."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-0718-7fb3-9edd-413f1d97a041",
+        "read": "77fb33df6eb5911a",
+        "verdict": "owed",
+        "dispute": "The reading overstates the second set as “indexed pages”: `_search_analytics_pages()` retrieves pages returned by Search Analytics for a historical period, not every currently indexed page. `analyze()` also inspects only a bounded prefix of sitemap URLs, and `page_key()` merges query variants. The conjunction answer names the intended sets without addressing these differences, so it does not justify `answers`."
       }
     },
     "GO-138": {
@@ -2419,7 +2671,14 @@
       },
       "verdict": "answers",
       "reading": "`invalid_url_count` counts listed URLs answering 400 or more, redirecting, noindex, or disallowed for Googlebot (0.110.0).",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc05-4a30-7d81-be24-1fa36957ea48",
+        "read": "17b391c5029e862d",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`, and the reading overstates “noindex”: `invalid_urls` checks only `\"noindex\" in meta_robots.lower()`, ignoring `X-Robots-Tag`, `meta_googlebot`, and the `none` directive. Consequently, a listed URL excluded from indexing through those directives can contribute zero to `invalid_url_count` and permit PASS."
+      }
     },
     "GO-139": {
       "title": "Monitor & Improve Brand SERPs",
@@ -2475,6 +2734,13 @@
       "reading": "`incomplete_nodes_by_type.WebSite` counts WebSite nodes missing a property Google reads for the site name.",
       "shapes": {
         "qualifier": "*Complete* is every property Google documents for the site name."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc04-9faf-76b0-8883-bbdd82c51c4e",
+        "read": "dcdfae48484891b4",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict and reading misidentify the count: `validate_schema_required_props()` marks a WebSite node incomplete for any missing required or recommended property across all its declared types, plus placeholders, including defects unrelated to site names. The qualifier answer is also inaccurate: the WebSite table checks `name` and `url`, omits the documented optional `alternateName`, and `has_value()` does not validate those properties' values."
       }
     },
     "GO-144": {
@@ -2494,6 +2760,13 @@
       "reading": "`score` is answer_block_scanner's measure of question-and-answer blocks a snippet can lift.",
       "shapes": {
         "qualifier": "*Optimize* is read as answer-block readiness."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc05-4bf8-79c0-967e-086f0a56fa8c",
+        "read": "8aff5e4fa4f5c751",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: `scan_answer_blocks()` adds points for definitions, lists, and tables independently of question-and-answer blocks, so three qualifying tables alone pass with 36. The qualifier answer substitutes “answer-block readiness” for “Optimize” without establishing that the structural counts assess readiness or whether a snippet can lift the content."
       }
     },
     "GO-145": {
@@ -2515,6 +2788,13 @@
         "conjunction": "Neither surface is observed; `measures` names both.",
         "external": "AI Overview presence needs a source this audit does not have; `measures` says so.",
         "qualifier": "*Optimize* is read as citation readiness, and `measures` says that is all."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc05-5501-7041-a18a-ec3bd295bff6",
+        "read": "48fb756970acefe2",
+        "verdict": "owed",
+        "dispute": "The `measures` verdict treats `score` as establishing citation readiness, but `check_citation_readiness()` awards 15 points for an author signal and 10 for a canonical, meeting `gte: 25` without any citations. The sentence and qualifier answer therefore overstate what the rule decides; correctly acknowledging that neither search surface is observed does not cover this additional gap."
       }
     },
     "AR-146": {
@@ -2596,7 +2876,14 @@
       },
       "verdict": "answers",
       "reading": "`summary.internal_redirects` counts internal links that answer with a redirect in the crawl.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-985f-74f3-9553-af8a67348208",
+        "read": "e1796f96e5d8035a",
+        "verdict": "owed",
+        "dispute": "`answers` overlooks that `summary.internal_redirects` counts fetched redirecting targets with `linked_from`, rather than checking every linked URL spelling. `site_crawl.page_key()` merges query and trailing-slash variants, and `crawl()` fetches only one spelling per key, allowing a redirecting variant linked from a read page to escape the count."
+      }
     },
     "AR-150": {
       "title": "Remove Redirect Chains and Loops",
@@ -2615,6 +2902,13 @@
       "reading": "`total_hops` at most one on the entry URL's redirect walk.",
       "shapes": {
         "conjunction": "A loop is a chain with no end; both exceed one hop."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc04-25c6-7980-ab1e-ddf267b138da",
+        "read": "cda2f307fd422ba7",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict and conjunction answer are contradicted by `total_hops = max(0, len(result[\"chain\"]) - 1)`: loop detection breaks before appending another entry, so a self-loop produces zero and a two-URL loop produces one. Both pass the assertion despite being loops; the rule tests the recorded count, not the unbounded length of a looping walk."
       }
     },
     "AR-151": {
@@ -2686,6 +2980,13 @@
       "shapes": {
         "conjunction": "*(Silos)* is another name for the hubs.",
         "qualifier": "*Clear* is read as the cluster score."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-9d65-7b32-be58-3402b970bc00",
+        "read": "19f6456eff37fc06",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict contradicts the reading’s own admission that the rule does not decide whether the site is designed in silos. `map_clusters()` scores missing reciprocal links around a selected hub, and `score >= 70` permits seven missing links. Saying “Clear is read as the cluster score” does not explain how that computation establishes clarity."
       }
     },
     "AR-154": {
@@ -2720,6 +3021,13 @@
       "reading": "`issues` carries collection_page_checker's category-page findings, applicable only where product links are detected.",
       "shapes": {
         "qualifier": "*Optimize* is read as the script's issue set."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-985f-74f3-9553-af8a67348208",
+        "read": "c8618876d7fdeebe",
+        "verdict": "owed",
+        "dispute": "The qualifier answer defines “Optimize” as the issue set without showing that those issues establish optimization. `check_collection_page()` can satisfy the assertion through word quantity and H1/meta-description presence without checking their relevance or quality; its product-link and pagination findings are only `info`. Thus the reading describes the findings and applicability correctly, but its `answers` verdict is unsupported."
       }
     },
     "AR-155": {
@@ -2802,6 +3110,13 @@
       "reading": "`issues` carries link_profile's internal-link findings over the crawl, orphans included.",
       "shapes": {
         "conjunction": "Strengthening links and removing orphans are both issue types in the set."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc03-c454-70a1-bedc-cf9068f58b6e",
+        "read": "96f9096bb018d36b",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`, and the conjunction answer treats an issue type as proof that “strengthening” is decided. `analyze_link_profile()` tests zero outgoing links and an average below three alongside orphans; `graph_from_inventory()` computes outgoing counts with `len(internal)`, including repeated and self-directed links. Those counts can satisfy the rule without establishing strong or relevant internal linking."
       }
     },
     "AR-163": {
@@ -2838,6 +3153,13 @@
       "reading": "`issues` carries faceted_nav_audit's findings on facet URLs that are neither canonicalised nor noindexed, applicable only where facets exist.",
       "shapes": {
         "conjunction": "*(E-commerce)* scopes the item; the applicability gate is facet presence."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-985f-74f3-9553-af8a67348208",
+        "read": "6435b92568d015e9",
+        "verdict": "owed",
+        "dispute": "The reading omits `audit()`’s medium-severity `path_explosions` finding, which affects the assertion regardless of canonical/noindex controls. It also overstates “canonicalised”: any parsed canonical suppresses `facet_missing_canonical`, including a self-canonical retaining the facet parameters. The conjunction answer equates facet presence with the E-commerce scope, although `faceted_count` checks parameter names without establishing that the page is an e-commerce page."
       }
     },
     "TE-166": {
@@ -2919,6 +3241,13 @@
       "reading": "`summary.broken_or_redirected` counts internal links that fail or redirect and external links that fail, site-wide over the crawl (0.107.0).",
       "shapes": {
         "conjunction": "Broken and redirected are both counted — an external redirect is not a defect; broken alone is the warn band."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-feec-7221-9e9b-47786212b979",
+        "read": "bf70d6e725c0c689",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict and conjunction answer exclude external redirects without support from the title. `links_from_inventory()` records `external_redirected` but omits it from `summary.broken_or_redirected`, so “broken and redirected are both counted” is incomplete; calling external redirects harmless does not close that gap."
       }
     },
     "TE-169": {
@@ -2975,6 +3304,12 @@
       "reading": "`issues` carries caching, compression and Vary findings on the page response; URL rewrite rules are not read.",
       "shapes": {
         "conjunction": "Headers are read; rewrites are what `measures` says are not."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-feec-7221-9e9b-47786212b979",
+        "read": "7f0b64cf66b54101",
+        "verdict": "measures"
       }
     },
     "TE-171": {
@@ -3022,7 +3357,14 @@
       },
       "verdict": "answers",
       "reading": "`summary.errors` counts rich-results guard errors in the page's structured data, applicable where nodes exist.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc05-7d45-7900-bec5-450459e7c244",
+        "read": "d8711547bbcf92ba",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict overstates the check: `guard_rich_results()` counts JSON-LD parse failures, deprecated types, and missing properties from `missing_rich_result_props()`, whose table covers only four types. Zero errors does not establish correct structured-data implementation generally; `has_value()` accepts nonempty values without validating their meaning or correctness."
+      }
     },
     "TE-174": {
       "title": "Minify & Optimize CSS",
@@ -3046,6 +3388,13 @@
       "shapes": {
         "conjunction": "Minify is read; the rest of optimize is what `measures` says is not.",
         "qualifier": "*Optimize* beyond minification is not read; `measures` says so."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-feec-7221-9e9b-47786212b979",
+        "read": "2a2b9b58944fe9fb",
+        "verdict": "owed",
+        "dispute": "The `measures` verdict and reading overstate coverage: `check()` automatically marks files below `SMALL_FILE_BYTES` minified, examines only external stylesheet links, and can omit failed fetches from `unminified_count` without marking truncation. Larger fetched files are classified by `looks_minified()`'s structural heuristic, rather than a definitive minification test. The shape answers address the optimization gap but do not make the measures sentence's claim about “every stylesheet the page loads” accurate."
       }
     },
     "TE-175": {
@@ -3106,7 +3455,14 @@
       },
       "verdict": "answers",
       "reading": "`issues` carries canonical_checker's findings over every crawled HTML page: a missing or cross-host canonical, a canonical whose target does not answer 200, and a target that canonicalises elsewhere.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7691-b31a-fd9d06808320",
+        "read": "a0e2aaeb769d082b",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict overlooks that `site_crawl._read_page()` retains only `parse_html()`’s first HTML canonical, so `check_inventory()` can pass conflicting declarations through its early `self_canonical` branch. The reading also inaccurately says targets must answer 200: the actual test is `carries_content(target_status)`, which accepts other content-bearing 2xx statuses. HTTP `Link` canonicals are absent from the inventory evidence this rule reads."
+      }
     },
     "TE-177": {
       "title": "Provide a Title Element in the Served HTML",
@@ -3209,6 +3565,13 @@
       "reading": "`wcag_a_failures` counts the level-A failures the HTML shows — images without alt, form fields without an accessible name, no page language (0.117.0; it read a score in which two such failures passed and a non-WCAG H1 count cost the same). Contrast is CN-036's and keyboard use is not tested, and `measures` says so.",
       "shapes": {
         "conjunction": "*(WCAG)* names the standard; its level-A criteria that static HTML shows are what is read."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-9d65-7b32-be58-3402b970bc00",
+        "read": "2b27a6d4a8cb2c7b",
+        "verdict": "owed",
+        "dispute": "The `measures` verdict and claim to count fields “without an accessible name” exceed what `checker()` computes: a truthy `aria-labelledby` or an existing label suffices without resolving references or checking label text. The loop also skips all `image`, `button`, `submit`, and `reset` inputs without examining their actual names. Consequently, the conjunction answer’s claim to read the HTML-visible level-A criteria is too broad, and the measures sentence does not accurately cover these omissions."
       }
     },
     "TE-181": {
@@ -3230,6 +3593,13 @@
       "reading": "`summary.errors` is the W3C validator's error count for the rendered DOM from the supplied artifact.",
       "shapes": {
         "conjunction": "W3C names the validator."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc04-530a-7523-a0e3-c0018f246856",
+        "read": "9d6eb2939faf9485",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: the artifact producer captures `document.documentElement.outerHTML`, which omits the document’s doctype, and `validate()` submits that incomplete serialization to Nu. Although `summary.errors` counts Nu’s errors for the supplied artifact, a missing-doctype error can be introduced by this capture rather than exist in the rendered document."
       }
     },
     "MD-184": {
@@ -3292,6 +3662,13 @@
       "reading": "`issues` carries image_weight_audit's image findings, applicable where the page has images.",
       "shapes": {
         "qualifier": "*Optimize* is read as the script's issue set."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7341-87c7-a53acd2e17a8",
+        "read": "3067547c696d55a6",
+        "verdict": "owed",
+        "dispute": "The reading describes the issue list but overlooks which severities decide the assertion: `audit()` assigns missing srcset, missing required sizes, and legacy raster formats `info`, which the rule permits. The qualifier answer therefore does not justify `answers`: even the script's own image findings can remain present on PASS."
       }
     },
     "MD-186": {
@@ -3341,7 +3718,14 @@
       },
       "verdict": "answers",
       "reading": "`broken_image_count` counts image URLs in the crawl that fail to load.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7341-87c7-a53acd2e17a8",
+        "read": "9460bd4b94f7804b",
+        "verdict": "owed",
+        "dispute": "“Fail to load” overstates `_classify_image()`, which accepts ordinary 2xx/3xx responses unless they carry a text media type and does not validate image content. An empty 204 or corrupt bytes served as `image/png` can pass, so `broken_image_count == 0` does not establish that the crawled image references load successfully."
+      }
     },
     "MD-189": {
       "title": "Use Modern Formats & Responsive Images",
@@ -3365,6 +3749,13 @@
       "reading": "`large_without_srcset_count` reads the responsive half; the formats half is MB-097's field, and the registry records why the conjunction was rejected (0.108.0).",
       "shapes": {
         "conjunction": "Half by recorded ruling: joining the halves would weigh one defect twice."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7341-87c7-a53acd2e17a8",
+        "read": "2ac5f9fc0db9f4b7",
+        "verdict": "owed",
+        "dispute": "The reading acknowledges that the assertion checks only the responsive half, contradicting its `answers` verdict for a title requiring modern formats and responsive images. In `audit()`, `large_without_srcset_count` never consults `modern_format`; pointing to MB-097 or invoking double counting does not answer this item's conjunction."
       }
     },
     "MD-190": {
@@ -3397,7 +3788,14 @@
       },
       "verdict": "answers",
       "reading": "`issues` carries video_schema_checker's VideoObject findings, applicable only where videos exist.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc04-aa32-7a90-ad60-da76c11524a1",
+        "read": "2f30bf263dc41f2b",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict overstates what `check_video_schema()` establishes: its property-presence and format checks do not verify actual video accessibility, metadata accuracy, or broader video SEO essentials. The description of VideoObject findings is accurate, but “applicable only where videos exist” confuses the count of declared VideoObject nodes with actual videos."
+      }
     },
     "LO-198": {
       "title": "Implement Local Business Structured Data",
@@ -3418,6 +3816,13 @@
       "reading": "`local_business_nodes` counts LocalBusiness nodes across the crawl.",
       "shapes": {
         "existential": "Implementing the data is one node carrying it."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc05-ceb6-72b1-88cf-ee4d77995b3a",
+        "read": "2c12aac72853a2a4",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: `site_crawl._read_page()` obtains schema nodes from `parse_html()`, which extracts only JSON-LD, so LocalBusiness implemented through Microdata or RDFa can fail. The existential answer explains why one node suffices for presence, but does not cover this format limitation in the unrestricted title."
       }
     },
     "LO-200": {
@@ -3437,6 +3842,13 @@
       "reading": "`nap_complete` requires name, address and telephone in the LocalBusiness data.",
       "shapes": {
         "qualifier": "*Complete* is all three."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc05-ceb6-72b1-88cf-ee4d77995b3a",
+        "read": "345de5811c8e1fa4",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: `check_local_seo()` computes `nap_complete` using only `node.get(prop)` truthiness for name, address and telephone. The qualifier answer equates complete NAP with three truthy properties, although an address containing only `{\"@type\": \"PostalAddress\"}` and whitespace name and telephone values passes without publishing complete NAP."
       }
     },
     "GEO-001": {
@@ -3456,6 +3868,13 @@
       "reading": "`well_formed` is true when /llms.txt answers 200 with a `# ` title as its first line and is not an HTML page — the one element the format requires (0.115.0; it read `exists`, which any 200 satisfied). A 404 is false; any other status leaves it unset.",
       "shapes": {
         "conjunction": "Present and well-formed are both read: a 404 fails, and so does a 200 that is not an llms.txt file."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc05-e69a-7921-974b-24b87dbc87f6",
+        "read": "10aa173c2f75c5de",
+        "verdict": "answers",
+        "dispute": "The verdict stands, but the status description is inaccurate: `check_llms_txt()` parses every response accepted by `carries_content()`, which includes all 2xx statuses except 204, not just 200. Those responses can therefore set `well_formed` to true or false rather than leaving it unset."
       }
     },
     "GEO-002": {
@@ -3475,6 +3894,13 @@
       "reading": "`quality.score` is llms_txt_checker's structure and content score, at least 60.",
       "shapes": {
         "qualifier": "*Quality* is the score."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc05-e69a-7921-974b-24b87dbc87f6",
+        "read": "5695459bbab683f5",
+        "verdict": "owed",
+        "dispute": "I retain `owed`: `_score_quality()` awards points for structural presence, counts and character lengths without assessing whether the information is accurate or useful. The qualifier answer, “Quality is the score,” does not explain how those computations establish quality; a title, one-character description and one syntactically matched link already score the passing 60."
       }
     },
     "GEO-003": {
@@ -3504,7 +3930,14 @@
       },
       "verdict": "answers",
       "reading": "`policy_grade` says which scopes robots.txt names in a group of their own — training and answer feeding, among tokens that honour robots.txt; a policy left to `*` names nothing.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-985f-74f3-9553-af8a67348208",
+        "read": "434359f9a78dba27",
+        "verdict": "owed",
+        "dispute": "The reading accurately describes scope naming, but that narrower computation does not support `answers`. `matrix()` passes when just one training token and one answer-feeding token are named, while `robots_rules.group_for()` reports wildcard matches as `\"*\"`, so an explicit wildcard policy fails and policies leaving other crawlers implicit can pass."
+      }
     },
     "GEO-004": {
       "title": "Answer blocks present for AEO",
@@ -3521,7 +3954,14 @@
       },
       "verdict": "answers",
       "reading": "`score` is answer_block_scanner's answer-block readiness, GO-144's twin.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc05-4bf8-79c0-967e-086f0a56fa8c",
+        "read": "1a203e689b81e462",
+        "verdict": "owed",
+        "dispute": "I disagree with `answers`: `score` does not establish answer-block presence or readiness, because `scan_answer_blocks()` lets four qualifying lists pass with 40 even when `direct_answers` and `definitions` are empty. Conversely, one qualifying direct answer alone scores 20 and fails, so the threshold does not decide the title’s presence question."
+      }
     },
     "GEO-005": {
       "title": "Content is citation-ready for AI search",
@@ -3538,7 +3978,14 @@
       },
       "verdict": "answers",
       "reading": "`score` is citation_readiness for the page.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc05-5501-7041-a18a-ec3bd295bff6",
+        "read": "139c794d8a8c627b",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict equates a weighted signal score with content citation readiness. In `check_citation_readiness()`, author and canonical presence alone supply the required 25 points, while `claim_coverage` compares aggregate citation counts with regex-matched claims without checking whether any source supports a claim."
+      }
     },
     "GEO-006": {
       "title": "Entity is resolvable (Wikidata / KG)",
@@ -3557,6 +4004,13 @@
       "reading": "`summary.sameas_missing_critical` counts critical entities with no sameAs to a knowledge base.",
       "shapes": {
         "conjunction": "Wikidata and the Knowledge Graph are the targets sameAs may name."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-2775-7760-a2b1-01625af3e510",
+        "read": "1bfe3e617468e90f",
+        "verdict": "owed",
+        "dispute": "`analyze_sameas()` counts missing platform names, not critical entities: its missing set includes Wikipedia, Wikidata, LinkedIn, and Twitter/X across pooled schema links. `run_entity_check()` copies that count into the asserted path without incorporating its Wikidata or Google Knowledge Graph lookup results, contradicting `answers`. The conjunction response also misidentifies the computation: Google Knowledge Graph is not a platform in `SAMEAS_PLATFORMS`, and mentioning possible link targets does not establish entity resolution."
       }
     },
     "GEO-007": {
@@ -3576,7 +4030,14 @@
       },
       "verdict": "answers",
       "reading": "`key_valid` is whether the supplied IndexNow key file is served and matches.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc06-0718-7fb3-9edd-413f1d97a041",
+        "read": "2c8af6a12de16f10",
+        "verdict": "owed",
+        "dispute": "“Served and matches” overstates `check_key_file()`, which accepts any content-bearing response containing the key as a substring rather than requiring matching key-file contents. The `answers` verdict also overreaches: `key_valid` checks only that response, while submission through `ping_indexnow()` is optional and absent from the supplied arguments."
+      }
     },
     "GEO-008": {
       "title": "Snippet directives leave the page usable in AI answers and result snippets",
@@ -3607,6 +4068,13 @@
       "reading": "`rows.0.snippet_controls.snippet_availability` is full, limited or suppressed from meta and header snippet directives.",
       "shapes": {
         "conjunction": "AI answers and result snippets obey the same directives."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc02-c8ed-7ad2-90fa-db6bf5f0a457",
+        "read": "c2abd12637ab95df",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict confuses unrestricted availability with usability: `snippet_controls()` returns `limited` for a positive `max-snippet` or a partial `data-nosnippet` exclusion, which the assertion fails although usable content can remain. It also searches X-Robots-Tag without filtering crawler scopes, so another crawler's restriction can fail the item. The conjunction answer does not resolve either mismatch between the asserted classification and usability in both named contexts."
       }
     },
     "TECH-001": {
@@ -3630,6 +4098,12 @@
       "reading": "`summary.retired_types` counts the JSON-LD nodes whose type Google no longer shows a rich result for, HowTo and FAQPage among them, or shows only for some sites.",
       "shapes": {
         "conjunction": "The parenthetical names the types."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc05-7d45-7900-bec5-450459e7c244",
+        "read": "d4b661e4b9166289",
+        "verdict": "answers"
       }
     },
     "TECH-002": {
@@ -3658,7 +4132,14 @@
       },
       "verdict": "answers",
       "reading": "`issues` carries font_audit's render-blocking font findings.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc07-2ea3-7341-8163-4428cd0a94ad",
+        "read": "df7d865e7a0397e7",
+        "verdict": "owed",
+        "dispute": "The `answers` verdict is contradicted by `_record_font_faces()`: explicit `font-display: block` receives only `info`, allowing PASS despite delayed text rendering. Meanwhile, `audit()` emits failing warnings for missing preload `crossorigin` and stylesheet fetch failures, which do not establish rendering blockage; my verdict remains `owed`."
+      }
     },
     "TECH-003": {
       "title": "LCP subparts within budget",
@@ -3675,7 +4156,13 @@
       },
       "verdict": "measures",
       "reading": "`subparts.ttfb_ms` is time to first byte, the first of four LCP subparts; the rest need a browser trace.",
-      "shapes": {}
+      "shapes": {},
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc07-2ea3-7341-8163-4428cd0a94ad",
+        "read": "6f6a51e50f1f3e8a",
+        "verdict": "measures"
+      }
     },
     "SP-214": {
       "title": "LCP within budget in a local trace (lab)",
@@ -3694,6 +4181,12 @@
       "reading": "`lcp_ms` from the supplied local trace, at most 2500.",
       "shapes": {
         "conjunction": "*(lab)* names the source."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc03-a954-7db2-bc43-bb7318a0d744",
+        "read": "858d5660ad63ae81",
+        "verdict": "answers"
       }
     },
     "SP-215": {
@@ -3713,6 +4206,12 @@
       "reading": "`cls` from the supplied local trace, at most 0.1.",
       "shapes": {
         "conjunction": "*(lab)* names the source."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc03-a954-7db2-bc43-bb7318a0d744",
+        "read": "9ad83609dd20c844",
+        "verdict": "answers"
       }
     },
     "SP-216": {
@@ -3732,6 +4231,12 @@
       "reading": "`tbt_ms` from the supplied local trace, at most 200, standing in for INP as the title says.",
       "shapes": {
         "conjunction": "The parenthetical states the proxy."
+      },
+      "second_reading": {
+        "reader": "codex gpt-6.1-sol high",
+        "session": "01a1bc03-a954-7db2-bc43-bb7318a0d744",
+        "read": "ad8213ee7241bb48",
+        "verdict": "answers"
       }
     },
     "MB-107": {
