@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.177.0 — see [CHANGELOG.md](CHANGELOG.md). Of the 145 script-backed assertions, `audit_reachability.py` now claims all but one either way: 2 proved unable to fail, as before, and 142 seen to fail in the recorded verdict census, which its CI job re-derives from runs (was 143 claimed neither way). The one left, SE-118, is the entry gate's. Seven new corpus trees make that possible, six of them serving recorded answers of PageSpeed Insights, the Nu HTML validator, Safe Browsing and Search Console on loopback, which the scripts ask only in a loopback-only test process. No verdict of a real audit moves.
+Version 0.178.0 — see [CHANGELOG.md](CHANGELOG.md). The second repo audit's twenty findings are fixed: an unread robots.txt is undecided rather than "no rules", sitemaps are told gzip by their bytes and decoded by their own declaration, canonicals are compared as a client sends them and read from the `Link` header too, two canonicals that disagree fail, run history compares only like runs, and the calibration gates refuse an empty corpus and stop comparing a constant with itself. Some verdicts of a real audit move, each toward what the site actually serves; the recorded census moves no row.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0

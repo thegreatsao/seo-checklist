@@ -10,10 +10,17 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
-## Unreleased — audit fixes of 2026-11-04 (plan `docs/sprint-20261108-audit-fixes-plan.md`), not yet released
+## 0.178.0 — the second repo audit's twenty findings fixed: robots and sitemaps read as Google reads them, canonicals compared as sent, history compares like runs, calibrations refuse empty corpora
 
 Registry version: `bbc0b87fd8f2` (was `abf465b3f75d`): CI-009 maps `conflicting` to fail, and CI-011 reads the new
-`signal` field instead of `verdict`. The release session writes this entry out; it is here so the registry change has one.
+`signal` field instead of `verdict`. **Verdicts of a real audit can move**, each toward what the site serves: a
+robots.txt that answers 5xx, 429 or nothing is undecided (NO_DATA) rather than "no rules" (CI-001, CI-005, GEO-003);
+a guessed sitemap name answering HTML no longer fails GO-136; GO-138 withholds its PASS past `--max-urls`; CI-001,
+CI-009 and CI-011 see `Link`-header and mixed-case canonicals, `googlebot` meta and Googlebot-scoped `X-Robots-Tag`,
+and fail two canonicals that disagree (CI-009, CI-011) or noindex beside a canonical elsewhere (CI-011); CI-008 and
+AR-162 count orphans without self-links and through redirects. The recorded census moves no row. Four batches, each
+red-first and reviewed by Codex (plan and evidence: `docs/sprint-20261108-audit-fixes-plan.md`); the web service's
+own fixes (batch W) live outside this repository.
 
 * **Batch P1:** robots wildcard matcher linear, robots.txt read to its cap, an unread robots.txt (5xx, 429, no answer)
   is undecided rather than "no rules", sitemaps told gzip by their bytes and decoded by their own declaration.
