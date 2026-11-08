@@ -344,6 +344,17 @@ class ASitemapIsReadFromItsBytes(unittest.TestCase):
         self.assertEqual(self.locs(gzip.compress(document)),
                          [seo_common.normalize_url(cafe)])
 
+    def test_only_a_bom_or_the_leading_declaration_names_the_encoding(self):
+        """Codex's re-review: the HTML sniffer took a `<meta charset>` element inside
+        the XML for the encoding, and missed a declaration past its 2,048 bytes."""
+        cafe, japan = "https://site.example/caf\u00e9", "https://site.example/\u65e5\u672c"
+        meta = (f'<urlset xmlns="{NS}"><meta charset="iso-8859-1"/><url><loc>{cafe}'
+                f"</loc></url></urlset>").encode("utf-8")
+        self.assertEqual(self.locs(gzip.compress(meta)), [seo_common.normalize_url(cafe)])
+        late = self.document("Shift_JIS", japan).replace(b'<?xml version="1.0"',
+                                                         b'<?xml version="1.0"' + b" " * 2100)
+        self.assertEqual(self.locs(gzip.compress(late)), [seo_common.normalize_url(japan)])
+
     def test_a_loc_that_is_no_url_makes_the_sitemap_invalid_not_an_exception(self):
         """The review of the first fix: `normalize_url` raised past the handler."""
         broken = "https://[broken/"

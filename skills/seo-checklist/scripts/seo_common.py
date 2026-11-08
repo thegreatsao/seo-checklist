@@ -30,6 +30,7 @@ a different module root, so both spellings are necessary there.
 
 from __future__ import annotations
 
+import codecs
 import gzip
 import io
 import json
@@ -57,14 +58,12 @@ try:
     from lib.safe_http import (HostResolutionError,
                                RobotsDisallowed, SafeHTTPError, safe_get,
                                safe_request)
-    from lib.safe_http import ENCODING_SNIFF_BYTES, _declared_encoding
     from lib.typed_credential import (credentials_beside_argv, read_as_file, read_as_url,
                                       scheme_added)
     from lib import robots_rules
 except ImportError:
     from scripts.lib.safe_http import (HostResolutionError, RobotsDisallowed,
                                        SafeHTTPError, safe_get, safe_request)
-    from scripts.lib.safe_http import ENCODING_SNIFF_BYTES, _declared_encoding
     from scripts.lib.typed_credential import (credentials_beside_argv, read_as_file,
                                               read_as_url, scheme_added)
     from scripts.lib import robots_rules
@@ -1261,12 +1260,6 @@ SITEMAP_BYTES_BUDGET = 20_000_000
 SITEMAP_URLS_BUDGET = 50_000
 
 
-# Every way a hostile or broken sitemap fails to parse: malformed XML, an encoding
-# expat cannot read or nobody knows, bytes the encoding denies, bad or cut gzip.
-_SITEMAP_UNREADABLE = (ET.ParseError, ValueError, LookupError, OSError, EOFError,
-                      zlib.error)
-
-
 def _sitemap_root(document: bytes | str) -> ET.Element:
     if isinstance(document, str):
         if document[:2] != "\x1f\x8b":
@@ -1278,11 +1271,33 @@ def _sitemap_root(document: bytes | str) -> ET.Element:
         if len(document) > SITEMAP_MAX_UNCOMPRESSED:
             raise ValueError(f"gzipped sitemap is over {SITEMAP_MAX_UNCOMPRESSED} "
                              "bytes uncompressed, the protocol's limit")
-    # The order the fetch layer reads a body by, with no header to go first: a BOM, then
-    # the XML declaration. Decoded here, not by expat, which reads no multi-byte
-    # encoding (Shift_JIS, EUC-KR) and lets a declaration overrule a BOM.
-    declared = _declared_encoding(document[:ENCODING_SNIFF_BYTES])
+    # With no header to go first, a BOM and then the leading XML declaration name the
+    # encoding (an HTML `<meta charset>` inside XML is only an element). Decoded here,
+    # not by expat, which reads no multi-byte encoding (Shift_JIS, EUC-KR) and lets a
+    # declaration overrule a BOM.
+    declared = _xml_encoding(document)
     return ET.fromstring(document.decode(declared) if declared else document)
+
+
+_XML_DECLARATION = re.compile(
+    rb"""<\?xml\s[^>]*?\bencoding\s*=\s*["']([A-Za-z][A-Za-z0-9._-]*)["']""")
+
+
+def _xml_encoding(document: bytes) -> str | None:
+    """The encoding a BOM or the leading XML declaration names, if Python knows it."""
+    for bom, name in ((codecs.BOM_UTF8, "utf-8-sig"), (codecs.BOM_UTF16_LE, "utf-16"),
+                      (codecs.BOM_UTF16_BE, "utf-16")):
+        if document.startswith(bom):
+            return name
+    found = _XML_DECLARATION.match(document)
+    if found is None:
+        return None
+    name = found.group(1).decode("ascii")
+    try:
+        codecs.lookup(name)
+    except LookupError:
+        return None     # expat is left to refuse it, and the sitemap reads invalid
+    return name
 
 
 def sitemap_document(fetched: dict) -> bytes | str:
@@ -1307,7 +1322,11 @@ def parse_sitemap_xml(document: bytes | str, sitemap_url: str = "") -> dict:
     """
     try:
         return _sitemap_entries(_sitemap_root(document or b""), sitemap_url)
-    except _SITEMAP_UNREADABLE as exc:     # a `<loc>` normalize_url refuses too
+    # Every way a hostile or broken sitemap fails: malformed XML, an encoding expat
+    # cannot read or nobody knows, bytes the encoding denies, bad or cut gzip, and a
+    # `<loc>` normalize_url refuses.
+    except (ET.ParseError, ValueError, LookupError, OSError, EOFError,
+            zlib.error) as exc:
         return {"type": "invalid", "urls": [], "sitemaps": [], "error": str(exc)}
 
 

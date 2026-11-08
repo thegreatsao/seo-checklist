@@ -871,13 +871,15 @@ its own declaration, so a declared ISO-8859-1 sitemap came out as mojibake and a
 raised `ValueError`, as did an unknown encoding and bad or cut gzip, past the `ParseError`
 handler: every site-wide item went NO_DATA. Now gzip is told by the body's bytes
 (`fetch_url(..., keep_body=True)`, `seo_common.sitemap_document`) and its expansion is decoded
-by the fetch layer's order with no header to go first, a BOM and then the XML declaration; any
+by what an XML document has with no header to go first, a BOM and then its leading XML
+declaration however long (a `<meta charset>` inside it is only an element); any
 other sitemap is parsed as the text `fetch_url` decoded, by the order above, without its
 declaration being read a second time; and a document that cannot be read, a `<loc>` that is no
 URL included, is `invalid`, never an exception. `tests/test_sitemap_walk_bounds.py`
 `ASitemapIsReadFromItsBytes` serves gzip under three types to the three walkers, declared
 ISO-8859-1 and Shift_JIS, and a charset header that wins over the declaration, and parses a
-gzipped BOM that a contradicting declaration must not overrule.
+gzipped BOM that a contradicting declaration must not overrule, a `<meta charset>` element and
+a declaration longer than the HTML sniff window.
 
 #### Scenario: a body over the ceiling
 - **WHEN** a response grows past the caller's limit while it is being read
