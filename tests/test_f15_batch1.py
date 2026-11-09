@@ -82,6 +82,17 @@ class PaginationHosts(unittest.TestCase):
         out = parsed('<link rel="next" href="https://EXAMPLE.COM/page">')
         self.assertEqual(verdict("AR-146", out), FAIL)
 
+    def test_unicode_and_punycode_are_one_host(self):
+        out = parse_html.parse_html(page('<link rel="next" href="https://bücher.example/next">'),
+                                    "https://xn--bcher-kva.example/page")
+        self.assertEqual(out["pagination"]["issues"], [])
+
+    def test_an_ipv6_self_link_spelled_otherwise_is_a_self_link(self):
+        out = parse_html.parse_html(
+            page('<link rel="next" href="https://[2001:db8:0:0:0:0:0:a]/page">'),
+            "https://[2001:db8::a]/page")
+        self.assertEqual([i["type"] for i in out["pagination"]["issues"]], ["pagination_next_self"])
+
     def test_another_host_still_fails(self):
         out = parsed('<link rel="next" href="https://example.org/page2">')
         self.assertEqual(verdict("AR-146", out), FAIL)
@@ -181,6 +192,22 @@ class BreadcrumbTrails(unittest.TestCase):
         body = ('<ol itemscope itemtype="https://schema.org/BreadcrumbList">'
                 '<li itemprop="itemListElement"></li><a href="/">Home</a></ol>')
         self.assertEqual(parsed(body=body)["breadcrumbs"], {"schema": False, "ui": False})
+
+    def test_a_microdata_entry_given_by_attributes_is_an_entry(self):
+        """Codex's third review: `<meta itemprop=name content>` and `<link itemprop=item>`."""
+        body = ('<ol itemscope itemtype="https://schema.org/BreadcrumbList">'
+                '<li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">'
+                '<meta itemprop="name" content="Home"><link itemprop="item" href="https://example.com/">'
+                '<meta itemprop="position" content="1"></li></ol>')
+        self.assertTrue(parsed(body=body)["breadcrumbs"]["schema"])
+        position_only = body.replace('<meta itemprop="name" content="Home">', "").replace(
+            '<link itemprop="item" href="https://example.com/">', "")
+        self.assertFalse(parsed(body=position_only)["breadcrumbs"]["schema"])
+
+    def test_a_name_that_is_a_node_is_no_label(self):
+        head = ('<script type="application/ld+json">{"@type": "BreadcrumbList", '
+                '"itemListElement": [{"name": {"@id": "https://example.com/"}}]}</script>')
+        self.assertFalse(parsed(head, self.NAV)["breadcrumbs"]["schema"])
 
     def test_json_ld_with_entries_beside_a_named_nav_passes(self):
         head = ('<script type="application/ld+json">'
@@ -282,6 +309,11 @@ class RenderParity(unittest.TestCase):
     def test_an_ipv6_host_spelled_twice_is_one_host(self):
         html = page(body='<a href="https://[2001:db8:0:0:0:0:0:a]/next">Next</a>')
         out = self.audit(html, html, url="https://[2001:db8::a]/page")
+        self.assertEqual(out["raw"]["internal_link_count"], 1)
+
+    def test_a_unicode_host_link_is_internal_to_its_punycode_page(self):
+        html = page(body='<a href="https://bücher.example/next">Next</a>')
+        out = self.audit(html, html, url="https://xn--bcher-kva.example/page")
         self.assertEqual(out["raw"]["internal_link_count"], 1)
 
     def test_an_earlier_googlebot_tag_the_render_changes_is_a_diff(self):

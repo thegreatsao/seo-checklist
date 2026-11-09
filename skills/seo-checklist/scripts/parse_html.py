@@ -86,11 +86,23 @@ def _is_breadcrumb_type(value: Any) -> bool:
     return False
 
 
-def _is_list_element_property(value: Any) -> bool:
-    """Whether a Microdata `itemprop` or RDFa `property` names `itemListElement`, bare,
+def _names_property(tag, name: str) -> bool:
+    """Whether a tag's Microdata `itemprop` or RDFa `property` names `name`, bare,
     prefixed (`schema:itemListElement`) or as an IRI."""
-    return any(re.search(r"(?:^|[:/#])itemListElement$", token)
+    return any(re.search(rf"(?:^|[:/#]){name}$", token)
+               for value in (tag.get("itemprop"), tag.get("property"))
                for token in str(value or "").split())
+
+
+def _is_trail_entry(tag) -> bool:
+    """An `itemListElement` that names its page or its label: an `item` or `name`
+    property with text, a `content` or an `href` (Codex's reviews of F15 batch 1)."""
+    if not _names_property(tag, "itemListElement"):
+        return False
+    return any((_names_property(part, "name") or _names_property(part, "item"))
+               and (part.get_text(strip=True) or str(part.get("content") or "").strip()
+                    or str(part.get("href") or "").strip())
+               for part in [tag, *tag.find_all(True)])
 
 
 def _breadcrumb_markup(soup) -> list:
@@ -104,10 +116,7 @@ def _breadcrumb_markup(soup) -> list:
         if ((element.has_attr("itemscope")
                 and _is_breadcrumb_type(element.get("itemtype")))
                 or _is_breadcrumb_type(element.get("typeof"))):
-            # An entry is one with something in it: a label or a link.
-            if element.find(lambda tag: (_is_list_element_property(tag.get("itemprop"))
-                                         or _is_list_element_property(tag.get("property")))
-                            and (tag.get_text(strip=True) or tag.find("a", href=True))):
+            if element.find(_is_trail_entry):
                 carriers.append(element)
     return carriers
 
@@ -116,13 +125,14 @@ def _has_trail_entry(entries: Any) -> bool:
     """Whether a JSON-LD `itemListElement` holds one entry a trail can show: an object
     naming its page (`item`) or its label (`name`). `[null]`, `[{}]` and a string are
     no trail (Codex's review of F15 batch 1)."""
-    def named(value):
-        if isinstance(value, dict):     # `item` as a node: its `@id` or `url`
+    def named(value, node=False):
+        if node and isinstance(value, dict):     # `item` as a node: its `@id` or `url`
             value = value.get("@id") or value.get("url") or value.get("name")
         return isinstance(value, str) and bool(value.strip())
 
     entries = entries if isinstance(entries, list) else [entries]
-    return any(isinstance(entry, dict) and (named(entry.get("item")) or named(entry.get("name")))
+    return any(isinstance(entry, dict)
+               and (named(entry.get("item"), node=True) or named(entry.get("name")))
                for entry in entries)
 
 
@@ -184,6 +194,14 @@ def _structure_issues(soup) -> list[dict[str, Any]]:
     # needs a reliable "this looks like navigation" test, which nothing here has,
     # so the check says less rather than guessing.
     return issues
+
+
+def _same_page(a: str, b: str) -> bool:
+    """Two URLs naming one page: one host (`url_host`) and one path and query as
+    requests sends them, a trailing slash aside."""
+    first, second = urlparse(comparable_url(a)), urlparse(comparable_url(b))
+    return (url_host(a) == url_host(b) and first.query == second.query
+            and first.path.rstrip("/") == second.path.rstrip("/"))
 
 
 def parse_html(
@@ -357,7 +375,7 @@ def parse_html(
             result["pagination"]["issues"].append({
                 "severity": "error", "type": f"pagination_{rel_name}_offsite",
                 "message": f"rel={rel_name} points at another host: {href}"})
-        if base_url and comparable_url(href).rstrip("/") == comparable_url(base_url).rstrip("/"):
+        if base_url and _same_page(href, base_url):
             result["pagination"]["issues"].append({
                 "severity": "error", "type": f"pagination_{rel_name}_self",
                 "message": f"rel={rel_name} points at this page"})

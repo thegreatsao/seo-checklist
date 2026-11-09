@@ -527,10 +527,11 @@ def origin(url: str) -> str:
 
 def url_host(url: str) -> str | None:
     """A URL's host, for asking whether two URLs are on one host: lower-cased, an IP
-    literal in its one canonical spelling (`2001:db8:0:0:0:0:0:a` is `2001:db8::a`), and
-    no port or userinfo. `None` when the URL has none or cannot be parsed (F15 batch 1)."""
+    literal in its one canonical spelling (`2001:db8:0:0:0:0:0:a` is `2001:db8::a`), a
+    Unicode name in the punycode requests sends (`comparable_url`), and no port or
+    userinfo. `None` when the URL has none or cannot be parsed (F15 batch 1)."""
     try:
-        host = urlparse(url).hostname
+        host = urlparse(comparable_url(url)).hostname
     except ValueError:
         return None
     try:
