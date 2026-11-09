@@ -899,6 +899,20 @@ class ReviewRound7(unittest.TestCase):
         self.assertEqual(verdict("MS-022", out), FAIL)
 
 
+class ReviewRound8(unittest.TestCase):
+    def test_linked_images_do_not_make_a_small_menu_low_diversity(self):
+        nav = (SITE, SITE + "cakes", SITE + "visit")
+        names = {SITE: "Home", SITE + "cakes": "Our cakes", SITE + "visit": "Visit us"}
+        rows = [row(url, links=nav, anchors=names) for url in nav]
+        inv = inventory(rows)
+        for i in range(3):
+            image = SITE + f"cake-{i}.jpg"
+            inv["pages"][site_crawl.page_key(image)] = dict(
+                row(image), html=False, content_type="image/jpeg", links=[], title=None)
+        out = anchor_text_audit.audit_anchor_text(SITE, inventory=inv)
+        self.assertEqual(verdict("BL-081", out), PASS)
+
+
 # ---------------------------------------------------------------------------
 # The sentences
 # ---------------------------------------------------------------------------

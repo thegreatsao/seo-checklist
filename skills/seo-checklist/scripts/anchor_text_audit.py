@@ -66,6 +66,9 @@ def anchors_from_inventory(inventory: dict) -> dict:
             "final_url": row.get("final_url"),
             "error": row.get("error"),
             "depth": row.get("depth"),
+            # Only an HTML page carries a menu: a linked image or PDF answering 200 is
+            # no page for "most pages" to count (review round 8).
+            "html": bool(row.get("html")),
             # Carried because `navigation_links` groups by it. This projection is why
             # the language fix did not work the first time: the field was recorded by
             # the crawl, read by the classifier, and dropped in between — so every page
@@ -163,7 +166,7 @@ def navigation_links(links: list[dict], pages: dict) -> set:
     asked about at all.
     """
     html_pages = [key for key, row in pages.items()
-                  if carries_content(row.get("status"))]
+                  if carries_content(row.get("status")) and row.get("html")]
     if len(html_pages) < MIN_PAGES_FOR_SITEWIDE:
         return set()
     sources: dict[tuple, set] = defaultdict(set)
@@ -291,7 +294,7 @@ def audit_anchor_text(start_url: str, inventory: dict | None = None, depth: int 
     # (review round 2), and `navigation_links` declines to say which links are chrome.
     poor_targets = {link["target"] for link in empty + generic}
     readable = sum(1 for row in crawl["pages"].values()
-                   if carries_content(row.get("status")))
+                   if carries_content(row.get("status")) and row.get("html"))
     unnatural = poor_targets | {row["target"] for row in overused_exact} | (
         {row["target"] for row in low_diversity}
         if readable >= MIN_PAGES_FOR_SITEWIDE else set())
