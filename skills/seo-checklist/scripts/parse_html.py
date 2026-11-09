@@ -131,12 +131,14 @@ def _breadcrumb_markup(soup) -> list:
                 and _is_breadcrumb_type(element.get("itemtype")))
                 or _is_breadcrumb_type(element.get("typeof"))):
             parts = _item_parts(element, soup)
-            if any(_is_trail_entry(part, soup) for part in parts):
-                carriers += parts
+            entries = [part for part in parts if _is_trail_entry(part, soup)]
+            if entries:
+                # An entry's own `itemref` brings its link in too.
+                carriers += parts + [p for entry in entries for p in _item_parts(entry, soup)]
     return carriers
 
 
-def _has_trail_entry(entries: Any) -> bool:
+def _has_trail_entry(entries: Any, nodes: dict | None = None) -> bool:
     """Whether a JSON-LD `itemListElement` holds one entry a trail can show: an object
     naming its page (`item`) or its label (`name`). `[null]`, `[{}]` and a string are
     no trail (Codex's review of F15 batch 1)."""
@@ -146,6 +148,10 @@ def _has_trail_entry(entries: Any) -> bool:
         return isinstance(value, str) and bool(value.strip())
 
     entries = entries if isinstance(entries, list) else [entries]
+    # An entry written as a reference to a node elsewhere on the page is that node.
+    entries = [(nodes or {}).get(entry.get("@id"), entry)
+               if isinstance(entry, dict) and isinstance(entry.get("@id"), str) else entry
+               for entry in entries]
     return any(isinstance(entry, dict)
                and (named(entry.get("item"), node=True) or named(entry.get("name")))
                for entry in entries)
@@ -170,7 +176,7 @@ def _has_breadcrumb_ui(soup, carriers: list) -> bool:
     markers is intentionally undetectable here: static HTML cannot distinguish it
     reliably from ordinary navigation.
     """
-    if any(part.name == "a" and part.get("href") for part in carriers):
+    if any(part.name == "a" and part.has_attr("href") for part in carriers):
         return True
     if any(re.search(r"breadcrumb", _nav_accessible_name(nav, soup), re.I)
            for nav in soup.find_all("nav")):
@@ -502,11 +508,13 @@ def parse_html(
             })
 
     # A BreadcrumbList with no `itemListElement` is no trail (F15, AR-158).
+    nodes = {item["raw"]["@id"]: item["raw"] for item in result["schema"]
+             if isinstance(item.get("raw"), dict) and isinstance(item["raw"].get("@id"), str)}
     result["breadcrumbs"]["schema"] = (
         result["breadcrumbs"]["schema"]
         or any(_is_breadcrumb_type(item.get("@types"))
                and isinstance(item.get("raw"), dict)
-               and _has_trail_entry(item["raw"].get("itemListElement"))
+               and _has_trail_entry(item["raw"].get("itemListElement"), nodes)
                for item in result["schema"] if isinstance(item, dict))
     )
 

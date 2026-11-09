@@ -14,13 +14,13 @@ from seo_common import load_html, parse_html, url_host
 
 def _directives(value: str | None) -> str | None:
     """A robots meta value in one spelling: rules lower-cased, spaces collapsed, in
-    order, so `NOINDEX, FOLLOW` and `follow,noindex` compare equal and an argument
-    (`max-snippet:20`) is kept."""
+    order and once each, so `NOINDEX, FOLLOW` and `follow,noindex` compare equal and an
+    argument (`max-snippet:20`) is kept."""
     if value is None:
         return None
-    return ", ".join(sorted(rule for rule in (
+    return ", ".join(sorted({rule for rule in (
         " ".join(part.lower().split()).replace(" :", ":").replace(": ", ":")
-        for part in value.split(",")) if rule))
+        for part in value.split(",")) if rule}))
 
 
 def summarize(html: str, url: str) -> dict:

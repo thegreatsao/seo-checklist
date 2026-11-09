@@ -241,6 +241,25 @@ class BreadcrumbTrails(unittest.TestCase):
                '<link id="target" itemprop="item" href="https://example.com/">')
         self.assertTrue(parsed(body=own)["breadcrumbs"]["schema"])
 
+    def test_sixth_review_trails(self):
+        """Codex's sixth review: a ListItem's referenced link is UI; a JSON-LD entry by
+        `@id`; an empty href is still a link."""
+        ref = ('<ol itemscope itemtype="https://schema.org/BreadcrumbList">'
+               '<li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem" '
+               'itemref="home"></li></ol><a id="home" itemprop="item" href="/">Home</a>')
+        self.assertEqual(parsed(body=ref)["breadcrumbs"], {"schema": True, "ui": True})
+        graph = ('<script type="application/ld+json">{"@context": "https://schema.org", "@graph": ['
+                 '{"@type": "BreadcrumbList", "itemListElement": [{"@id": "#home"}]},'
+                 '{"@id": "#home", "@type": "ListItem", "position": 1, "name": "Home", '
+                 '"item": "https://example.com/"}]}</script>')
+        self.assertTrue(parsed(graph, self.NAV)["breadcrumbs"]["schema"])
+        dangling = graph.replace('"@id": "#home", "@type"', '"@id": "#other", "@type"')
+        self.assertFalse(parsed(dangling, self.NAV)["breadcrumbs"]["schema"])
+        empty = ('<ol itemscope itemtype="https://schema.org/BreadcrumbList">'
+                 '<li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">'
+                 '<a itemprop="item" href=""><span itemprop="name">Home</span></a></li></ol>')
+        self.assertEqual(parsed(body=empty)["breadcrumbs"], {"schema": True, "ui": True})
+
     def test_a_name_that_is_a_node_is_no_label(self):
         head = ('<script type="application/ld+json">{"@type": "BreadcrumbList", '
                 '"itemListElement": [{"name": {"@id": "https://example.com/"}}]}</script>')
@@ -370,6 +389,12 @@ class RenderParity(unittest.TestCase):
         argued = page('<title>T</title><meta name="robots" content="max-snippet:20">')
         changed = page('<title>T</title><meta name="robots" content="max-snippet:50">')
         self.assertEqual(verdict("MB-105", self.audit(argued, changed)), FAIL)
+
+    def test_a_repeated_rule_is_no_diff(self):
+        raw = page('<title>T</title><meta name="robots" content="index,follow">')
+        rendered = page('<title>T</title><meta name="robots" content="index,follow">'
+                        '<meta name="robots" content="follow">')
+        self.assertEqual(verdict("MB-105", self.audit(raw, rendered)), PASS)
 
     def test_an_earlier_robots_tag_the_render_changes_is_a_diff(self):
         """Codex's review of 90134c7: the shared parser kept the last robots tag."""
