@@ -196,10 +196,9 @@ def _classify_image(url: str, result: dict, timeout: int,
             return "broken"
         cache = sizes if sizes is not None else {}
         if url not in cache:
-            # A 206 to `Range: bytes=0-0` is one byte long; only a 200's length is
-            # the file's.
+            # A 206 to `Range: bytes=0-0` is one byte long, not the file's length.
             length = ((response.get("headers") or {}).get("content-length") or ""
-                      if status == 200 else "")
+                      if status != 206 else "")
             cache[url] = _intrinsic_size(url, timeout,
                                          int(length) if length.isdigit() else None)
         return "fine" if cache[url][0] else "unchecked"

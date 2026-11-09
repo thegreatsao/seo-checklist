@@ -273,8 +273,8 @@ all four would report a Core Web Vitals pass earned on a synthetic run.
 
 The first clause — that the report says a number came from a synthetic run — is enforced
 since 0.94.7, and closing it took a repair rather than a test. `metrics.*.rating` carries CrUX
-where field data exists and Lighthouse's lab audits where it does not, and SP-107 and SE-119
-decide from it. Their titles do not name field data, so the second clause is satisfied; but
+where field data exists and Lighthouse's lab audits where it does not, and SP-107 (through
+`above_fold.rating`, copied from FCP's and LCP's, since F15) and SE-119 decide from it. Their titles do not name field data, so the second clause is satisfied; but
 nothing in the report says those two verdicts came from a synthetic run, which is what the
 first clause asks for. `openspec/specs/registry/` records the neighbouring confusion:
 SP-112's title names Core Web Vitals *in Search Console* and its rule reads the PageSpeed

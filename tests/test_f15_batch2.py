@@ -557,6 +557,18 @@ class EveryImageSourceIsAnImage(unittest.TestCase):
                         'data-srcset="/real.jpg 800w" alt="A loaf">')
         self.assertEqual(out["summary"]["lazy_lcp_candidates"], 1)
 
+    def test_a_noscript_twin_is_a_native_fallback(self):
+        """Review round 6: lazysizes' noscript pattern serves the same image to a
+        crawler in plain markup."""
+        for lazy in ('<img src="data:image/gif;base64,R0lGOD" data-src="/a.jpg" alt="A cat">',
+                     '<img data-srcset="/a.jpg 800w" alt="A cat">'):
+            with self.subTest(lazy=lazy):
+                out = inventory(lazy + '<noscript><img src="/a.jpg" alt="A cat"></noscript>')
+                self.assertEqual(out["summary"]["lazy_lcp_candidates"], 0)
+        out = inventory('<img data-src="/a.jpg" alt="A cat">'
+                        '<noscript><img src="/b.jpg" alt="A dog"></noscript>')
+        self.assertEqual(out["summary"]["lazy_lcp_candidates"], 1)
+
     def test_an_unparseable_srcset_is_skipped_not_a_crash(self):
         out = inventory('<img srcset="http://[::1 1x" alt="A loaf">')
         self.assertEqual(out["skipped_no_src"], 1)

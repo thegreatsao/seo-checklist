@@ -1011,7 +1011,8 @@ one — the script refuses the file instead.
   data-srcset-only ones, were skipped as having no `src`)
 `summary.lazy_lcp_candidates` — int — CN-054's compatibility path: JS-deferred images
   with `data-src`/`data-srcset` but no native `src`, `srcset`, or `<picture>` source;
-  a `data:` placeholder `src` or `srcset` beside them is no native source (F15).
+  a `data:` placeholder `src` or `srcset` beside them is no native source, and a
+  `<noscript>` `<img>` with the deferred URL is one (F15).
   Native `loading=lazy` remains discoverable and does not increment this count.
   **Absent on a page with no images.**
 

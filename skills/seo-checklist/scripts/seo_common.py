@@ -527,6 +527,14 @@ def _in_furniture(img) -> bool:
 MEANINGFUL_IMAGE_MIN_PX = 200
 
 
+def _resolved(url, base_url: str) -> str:
+    """`url` against `base_url`, or as written when it cannot be resolved."""
+    try:
+        return normalize_url(url, base_url) if base_url else url
+    except ValueError:
+        return url
+
+
 def _real(native, deferred) -> str:
     """`native` unless it is a `data:` placeholder beside a deferred source
     (lazysizes' 1x1 GIF in `src` or `srcset`): no fallback (F15 review, CN-054)."""
@@ -1330,6 +1338,11 @@ def parse_html(html: str, base_url: str = "") -> dict:
         })
 
     images = []
+    # A `<noscript>` twin serves a deferred image to a crawler in plain markup
+    # (lazysizes' noscript pattern): its URL is a native source (F15 review, CN-054).
+    noscript_srcs = {_resolved(tag.get("src"), base_url)
+                     for box in soup.find_all("noscript") for tag in box.find_all("img")
+                     if tag.get("src")}
     for img in soup.find_all("img"):
         native_src = img.get("src") or ""
         deferred_src = img.get("data-src") or ""
@@ -1357,7 +1370,10 @@ def parse_html(html: str, base_url: str = "") -> dict:
             "native_source": bool(_real(native_src, deferred_src or img.get("data-srcset"))
                                   or _real(img.get("srcset"), deferred_src
                                            or img.get("data-srcset"))
-                                  or any(source.get("srcset") for source in sources)),
+                                  or any(source.get("srcset") for source in sources)
+                                  or any(_resolved(url, base_url) in noscript_srcs
+                                         for url in [deferred_src, *srcset_urls(
+                                             img.get("data-srcset") or "")] if url)),
             "deferred_source": bool(deferred_src or img.get("data-srcset")),
             "carries_meaning": image_carries_meaning(img),
             # What the browser may pick *instead* of `src`. Reading only the `img`
