@@ -101,6 +101,20 @@ def _needs_sizes(srcset: str | None) -> bool:
 DEFAULT_MAX_IMAGES = 200
 
 
+def _responsive(img: dict, sources: list[dict]) -> bool:
+    """Whether the browser is offered a smaller file for a smaller screen (MB-096).
+
+    Width descriptors (`800w`) on the `<img>` or a `<source>`, or a `<source>` chosen
+    by `media`. A density srcset (`1x, 2x`) or a `<source>` that differs only by
+    format sends a phone the same wide file (F15): `srcset="a.png 1x"` and a webp
+    `<source>` over a 3000 px png both passed before. `_needs_sizes` is the test for
+    width descriptors — the same fact makes a srcset responsive and requires `sizes`.
+    """
+    return (_needs_sizes(img.get("srcset"))
+            or any(_needs_sizes(s.get("srcset")) or (s.get("media") and s.get("srcset"))
+                   for s in sources))
+
+
 def _extension(src: str) -> str:
     return os.path.splitext(urlparse(src).path)[1].lower().lstrip(".")
 
@@ -133,14 +147,41 @@ def _local_size(src: str, html_source: str) -> int | None:
     return None
 
 
-def _classify_image(url: str, result: dict, timeout: int) -> tuple[str, dict | None]:
-    """Return broken/fine/unchecked, confirming ambiguous HEAD responses once."""
-    def is_text_response(response: dict) -> bool:
+# Types that say nothing about what the body is. Object stores serve images as
+# `application/octet-stream`, and a missing header is no evidence either way, so for
+# these the file's first bytes decide (MD-187).
+UNTYPED = ("", "application/octet-stream")
+
+
+def _classify_image(url: str, result: dict, timeout: int,
+                    sizes: dict | None = None) -> tuple[str, dict | None]:
+    """Return broken/fine/unchecked, confirming ambiguous HEAD responses once.
+
+    A 2xx is an image only when it says so (F15, MD-187): a 204 or 205 has no body,
+    and a declared type outside `image/*` — JSON, a PDF, an HTML page — is not an
+    image whatever its status. An `UNTYPED` answer is read: an image header in its
+    first bytes is fine, anything else unchecked, since a format `image_header` does
+    not know (AVIF) is no proof of breakage. `sizes` caches that read for `audit`,
+    which asks for the same bytes for the width.
+    """
+    def success_state(response: dict) -> str | None:
         status = response.get("status")
+        if not (isinstance(status, int) and status // 100 == 2):
+            return None
+        if status in (204, 205):
+            return "broken"
         content_type = (response.get("headers") or {}).get("content-type", "")
         media_type = content_type.split(";", 1)[0].strip().lower()
-        return (isinstance(status, int) and status // 100 == 2
-                and media_type.startswith("text/"))
+        if media_type.startswith("image/"):
+            return "fine"
+        if media_type not in UNTYPED:
+            return "broken"
+        cache = sizes if sizes is not None else {}
+        if url not in cache:
+            length = (response.get("headers") or {}).get("content-length") or ""
+            cache[url] = _intrinsic_size(url, timeout,
+                                         int(length) if length.isdigit() else None)
+        return "fine" if cache[url][0] else "unchecked"
 
     error_kind = result.get("error_kind")
     if error_kind in DEAD_FETCH_ERROR_KINDS:
@@ -159,16 +200,18 @@ def _classify_image(url: str, result: dict, timeout: int) -> tuple[str, dict | N
         confirmed_status = confirmation.get("status")
         if confirmed_kind in DEAD_FETCH_ERROR_KINDS:
             return "broken", confirmation
-        if is_text_response(confirmation):
-            return "broken", confirmation
-        if isinstance(confirmed_status, int) and confirmed_status // 100 in (2, 3):
+        state = success_state(confirmation)
+        if state:
+            return state, confirmation
+        if isinstance(confirmed_status, int) and confirmed_status // 100 == 3:
             return "fine", confirmation
         if confirmed_status in (401, 403, 404, 405, 410):
             return "broken", confirmation
         return "unchecked", confirmation
-    if is_text_response(result):
-        return "broken", None
-    if isinstance(status, int) and status // 100 in (2, 3):
+    state = success_state(result)
+    if state:
+        return state, None
+    if isinstance(status, int) and status // 100 == 3:
         return "fine", None
     return "unchecked", None
 
@@ -235,9 +278,10 @@ def _is_large(row: dict, header: tuple | None) -> bool | None:
     return width > LARGE_IMAGE_WIDTH_PX if width else None
 
 
-def _check_image(url: str, timeout: int) -> tuple[str, dict, dict | None]:
+def _check_image(url: str, timeout: int,
+                 sizes: dict | None = None) -> tuple[str, dict, dict | None]:
     head = fetch_url(url, method="HEAD", timeout=timeout)
-    state, confirmation = _classify_image(url, head, timeout)
+    state, confirmation = _classify_image(url, head, timeout, sizes)
     return state, head, confirmation
 
 
@@ -301,10 +345,10 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
         }
         # What the browser can actually end up with, which is what both items are
         # about. The `img` is the fallback in a `<picture>`, not the answer.
-        row["responsive"] = row["srcset"] or row["picture_srcset"]
+        row["responsive"] = _responsive(img, sources)
         row["modern_format"] = ext in MODERN_FORMATS or bool(modern_sources)
         if fetch_images and src.startswith(("http://", "https://")):
-            state, head, confirmation = _check_image(src, timeout)
+            state, head, confirmation = _check_image(src, timeout, sizes=sizes)
             checks.append((row, state, head, confirmation))
             row["status"] = head.get("status")
             headers = head.get("headers", {})
@@ -333,9 +377,13 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
             issues.append({"severity": "error", "message": "Likely LCP image is lazy-loaded", "url": src})
         if likely_lcp and row["fetchpriority"] != "high":
             issues.append({"severity": "info", "message": "Likely LCP image lacks fetchpriority=high", "url": src})
-        if ext in RASTER_FORMATS and not modern_sources:
+        # A large image with no modern format fails MB-097, so it is a `warning` here
+        # too (F15, MD-185): as `info` the same image passed this item and failed that.
+        if row["large"] and not row["modern_format"]:
+            issues.append({"severity": "warning", "message": "Large image in a legacy format", "url": src, "evidence": ext})
+        elif ext in RASTER_FORMATS and not modern_sources:
             issues.append({"severity": "info", "message": "Consider AVIF/WebP for raster image", "url": src, "evidence": ext})
-        if not row["responsive"]:
+        if not (row["srcset"] or row["picture_srcset"]):
             issues.append({"severity": "info", "message": "Image has no srcset", "url": src})
         if row["sizes_required_and_absent"]:
             issues.append({"severity": "info", "message": "Responsive image has srcset but no sizes", "url": src})
@@ -404,6 +452,9 @@ def audit(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
         large = [row for row in images if row["large"]]
         out["large_without_srcset_count"] = sum(
             1 for row in large if not row["responsive"])
+        # MD-189: both halves of its title, per large image (F15).
+        out["large_legacy_or_unresponsive_count"] = sum(
+            1 for row in large if not (row["responsive"] and row["modern_format"]))
         out["legacy_or_heavy_count"] = sum(
             1 for row in images
             if (row["large"] and not row["modern_format"])

@@ -447,8 +447,10 @@ name. A column called `url` would be read as "fix this page".
   dispute: 74 code defects, 33 sentences, 1 assertion to retire, 2 not defects. Until F15
   is `passing` a verdict on an item still listed may be narrower than its title says —
   e.g. `MS-026` and `CN-039` drop the very pages they are about. Batch 1 (2026-11-09)
-  repaired the 14 items `parse_html.py` and `javascript_render_audit.py` carry; the open
-  list, with each ruling, is `docs/sprint-20261109-F15.md`.
+  repaired the 14 items `parse_html.py` and `javascript_render_audit.py` carry, batch 2
+  (2026-11-09) the 18 that `rendered_audit.py` and its snippet, `pagespeed.py`,
+  `image_inventory.py` and `image_weight_audit.py` carry; the open list, 78 items with
+  each ruling, is `docs/sprint-20261109-F15.md`.
   <!-- ki: f03-ruled-defects-open -->
 
 - **The four shapes this entry singled out are judged, and twenty constants are still

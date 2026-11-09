@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "registry_version": "84e41c84ecaa",
+  "registry_version": "bbe48707a8f7",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -25,7 +25,7 @@
     ]
   },
   "fixture_digest": {
-    "good": "c1a19ceed02e",
+    "good": "0d2056e58750",
     "broken": "41915277914c",
     "good_tls": "b84ad265e245",
     "broken_tls": "be8038ea85ee"
@@ -291,6 +291,15 @@
       "to": "b84ad265e245",
       "decided": "new-material",
       "why": "robots.txt now names GPTBot, ClaudeBot, OAI-SearchBot and Claude-SearchBot in their own group while giving them the same access as the wildcard group, so GEO-003 exercises an explicit policy without moving a declared verdict."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good",
+      "item": null,
+      "from": "c1a19ceed02e",
+      "to": "0d2056e58750",
+      "decided": "new-material",
+      "why": "The hand-written rendered.json now carries text_nodes_contrast_unmeasured: 0. Since F15 (CN-036) a zero below the contrast floor is withheld unless the file says no text sat over a background image or gradient, and a file from the snippet before that count has no such key; without it CN-036 would read NO_DATA on the half of the pair that has to be able to pass. No declared verdict moves."
     }
   ],
   "batches": [],
@@ -857,8 +866,8 @@
       "MD-189": {
         "expect": "PASS",
         "title": "Use Modern Formats & Responsive Images",
-        "basis": "b33da2bae2c6",
-        "why": "no image on the page is wider than 1280 px, so none needs a srcset"
+        "basis": "3cdaf99d5f4f",
+        "why": "no image on the page is wider than 1280 px, so neither half of the title is asked of one"
       },
       "TE-169": {
         "expect": "PASS",
@@ -1561,8 +1570,8 @@
       "MD-189": {
         "expect": "FAIL",
         "title": "Use Modern Formats & Responsive Images",
-        "basis": "b33da2bae2c6",
-        "why": "/assets/huge.png is 1400 px wide and served with no srcset; MD-189 counts what MB-096 counts and scores with it"
+        "basis": "3cdaf99d5f4f",
+        "why": "/assets/huge.png is 1400 px wide, served as a png with no srcset; since F15 MD-189 asserts both halves and fails on either"
       },
       "TE-169": {
         "expect": "FAIL",

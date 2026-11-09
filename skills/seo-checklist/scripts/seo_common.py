@@ -497,6 +497,36 @@ def _declared_area(img: dict) -> int | None:
     return width * height if width > 0 and height > 0 else None
 
 
+# Landmarks whose images are page furniture rather than content (CI-016, MD-186).
+_FURNITURE = ("header", "footer", "nav", "aside")
+
+
+def image_carries_meaning(img) -> bool:
+    """Whether an `<img>` element carries meaning a reader needs, so `alt=""` hides it.
+
+    The two cases the owner ruled (F15, CI-016 and MD-186): the image is the only
+    content of a link — `alt=""` there leaves the link with no name at all — or it is
+    a large image in the page's content (`LCP_MIN_AREA` declared pixels or more,
+    outside header, footer, nav and aside). An image marked decorative on purpose
+    (`role=presentation`/`none`, `aria-hidden=true`) carries none, and one whose size
+    the markup does not declare is not judged large. Whether an alt *describes* its
+    image is not read anywhere.
+    """
+    role = (img.get("role") or "").strip().lower()
+    if role in ("presentation", "none") or \
+            (img.get("aria-hidden") or "").strip().lower() == "true":
+        return False
+    link = img.find_parent("a")
+    if link is not None and link.get("href") is not None:
+        named = any((link.get(attr) or "").strip()
+                    for attr in ("aria-label", "aria-labelledby", "title"))
+        other_alt = any((other.get("alt") or "").strip() for other in link.find_all("img"))
+        return not (named or other_alt or link.get_text(strip=True))
+    area = _declared_area(img)
+    return (area is not None and area >= LCP_MIN_AREA
+            and img.find_parent(_FURNITURE) is None)
+
+
 def likely_lcp_candidate(img: dict, index: int) -> bool:
     """Whether this image could be the Largest Contentful Paint.
 
@@ -1283,6 +1313,7 @@ def parse_html(html: str, base_url: str = "") -> dict:
             "native_source": bool(native_src or img.get("srcset")
                                   or any(source.get("srcset") for source in sources)),
             "deferred_source": bool(deferred_src or img.get("data-srcset")),
+            "carries_meaning": image_carries_meaning(img),
             # What the browser may pick *instead* of `src`. Reading only the `img`
             # made a site doing this right look like a site doing nothing: the
             # recommended way to serve webp is a `<picture>` whose `<source>`

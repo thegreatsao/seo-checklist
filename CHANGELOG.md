@@ -12,7 +12,27 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `84e41c84ecaa` (was `bbc0b87fd8f2`): F15 batch 1 — CI-004's pattern reads `noindex` in any case and
+Registry version: `bbe48707a8f7` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1).
+
+F15 batch 2 (`84e41c84ecaa` → `bbe48707a8f7`) — `rendered_audit.py` and the snippet in `SKILL.md`, `pagespeed.py`,
+`image_inventory.py`, `image_weight_audit.py`. SP-107 asserts `above_fold.rating` and MD-189
+`large_legacy_or_unresponsive_count`; MD-189 left MB-096's `scores_with` group, so the image-format theme weighs 9
+points instead of 6 and **scores of a real audit can move**; fourteen new `measures` sentences (CN-034, CN-035,
+CN-036, CN-051, MB-094, MB-103, MB-108, CI-016, MD-186, CN-054, MB-096, MB-097, MD-189, SP-107) and MB-098's corrected
+(a density srcset needs no `sizes`). **Verdicts of a real audit can move**: CN-036 composites background colours
+and alpha, and withholds its pass (NO_DATA) when text sat over a background image or gradient, or when the rendered
+file comes from the snippet before `text_nodes_contrast_unmeasured` — **re-take the render**; CN-035 reads every link
+in running text and fails one under 3:1 against that text with no underline or weight (WCAG G183), not only exact
+colour equality in `p/li/td/article`; SP-107 fails a slow LCP beside a fast FCP (both paints from one source, as
+before) and no longer passes on one good paint; SP-108/SP-113 no longer pass with LCP or CLS absent; CI-016/MD-186 fail an empty
+alt on a link's only content or a large in-content image; MD-184 and CN-054 count `srcset`-, `<picture>`- and
+`data-srcset`-only images; MB-096 and MD-189 want width descriptors or a `media` source, so a density srcset or a
+format-only `<source>` over a wide image fails; MD-189 fails a wide image with no WebP/AVIF offer; MD-185 warns on a
+large legacy-format image (was `info`); MD-187 counts a 204 or a 2xx declaring a non-image type as broken and reads
+an untyped or octet-stream answer's first bytes. The recorded census moves no row, declared before the run. 44
+second readings are stale until F03 batch 6.
+
+F15 batch 1 (`bbc0b87fd8f2` → `84e41c84ecaa`) — CI-004's pattern reads `noindex` in any case and
 `none`; MS-020 asserts `article_seo.TITLE_MAX_CHARS`, 65, the measured title budget, instead of 60; seven new
 `measures` sentences (AR-146, CN-048, CN-066, IN-123, MS-020, MS-028, TE-166) and MS-030's corrected (100 is a
 convention, 144 is measured); MB-105's fix names the directives it now compares. **Verdicts of a real audit can move**,

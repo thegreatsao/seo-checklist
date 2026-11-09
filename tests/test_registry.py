@@ -2456,7 +2456,7 @@ class MeasuresQualifications(unittest.TestCase):
         "TE-170": "Caching, compression and Vary headers on the page's response. URL rewrite rules are not read.",
         "TECH-003": "Time to first byte, the first of the four LCP subparts. The other three need a browser trace.",
         "MB-093": "That the page declares a viewport. Whether the layout fits a phone is MB-107, which renders it.",
-        "MB-098": "That every image with a srcset also carries sizes. A large image sent without srcset is MB-096.",
+        "MB-098": "That every image with a width-descriptor (w) srcset also carries sizes; a density (1x, 2x) srcset needs none. A large image sent without srcset is MB-096.",
         "MB-104": "Google's size, shape, format and crawl requirements for the icon the page declares. Whether it represents the brand, or keeps a stable URL, is not read.",
         "AR-152": "That robots.txt declares at least one user-agent group. Whether its rules are the right ones is a judgement the audit does not make.",
         "CN-040": "That the page links to a privacy policy. Whether the policy is current is not read.",
@@ -2491,6 +2491,22 @@ class MeasuresQualifications(unittest.TestCase):
         "CN-066": "That the page has at least two non-empty H2 headings. Whether they organise the content is not read.",
         "IN-123": "That the html element carries a non-empty lang attribute. Whether the code is valid and matches the page's text is not read.",
         "MS-020": "That the title is at most 65 characters, what the 600 px desktop title shows of ordinary text by this tool's calibration. Rendered width is not measured, so capitals can be cut sooner.",
+        # F15 batch 2: the rendered-page proxies named, and the sentences the fix
+        # rulings asked for beside their repairs.
+        "CN-034": "Visible elements with over three characters of their own text whose computed font size is under 12px. Shorter text and text directly in <body> are not read; 12px is a floor, not a readability judgement.",
+        "CN-035": "Links inside running text told apart by colour alone: not underlined, not bolder, and under 3:1 against the surrounding text. Hover and focus styles and links with no text around them are not read.",
+        "CN-036": "Visible text over three characters against its composited background colours, below WCAG AA (4.5:1, 3:1 large). Text over a background image or gradient is not measured and withholds a pass.",
+        "CN-051": "Visible fixed or sticky elements covering at least a quarter of the viewport when the page was rendered. Whether they hide content, when they appear or how they are dismissed is not read.",
+        "MB-094": "The same count from a phone-width render: fixed or sticky elements covering at least a quarter of the viewport. Whether they hide content, when they appear or how they are dismissed is not read.",
+        "MB-108": "Visible headings, paragraphs, links, buttons and list items whose content overflows their own box at phone width. A scrollable box counts, and clipping by an ancestor is not read.",
+        "MB-103": "Visible links, buttons, form fields and role=button elements whose box is under 48px on either side at phone width. Spacing between targets, overlap and occlusion are not read.",
+        "CI-016": "Images with no alt, a placeholder alt (a filename, a camera stub, under three characters), or an empty alt on a link's only content or a large in-content image. Whether an alt describes its image is not read.",
+        "MD-186": "Images with no alt, a placeholder alt (a filename, a camera stub, under three characters), or an empty alt on a link's only content or a large in-content image. Whether an alt describes its image is not read.",
+        "CN-054": "Images whose only source is a JavaScript-deferred one (data-src or data-srcset) with no native src, srcset or <picture> source. Other lazy-loaded content and loading=lazy itself are not read.",
+        "MB-096": "Images wider than 1280px whose markup offers no width-described (w) srcset and no media-chosen <source>; a density srcset or a format-only source is not responsive. The widths offered are not read.",
+        "MB-097": "Per image: none over 250 KB, and a WebP or AVIF offer for any image wider than 1280px. Compression under 250 KB and the format of smaller images are not judged.",
+        "MD-189": "Images wider than 1280px lacking either half: a width-described (w) srcset or media-chosen <source>, and a WebP or AVIF offer. Smaller images and the widths offered are not read.",
+        "SP-107": "The worse of the first and the largest contentful paint (LCP counts only what the first screen shows), both from CrUX, or both from Lighthouse for a page CrUX lacks. Resource priorities are not read.",
     }
 
     module = staticmethod(EveryRulelessItemSaysWhenItApplies.module)
@@ -3026,7 +3042,7 @@ class APatternNeverReadsAnAddress(unittest.TestCase):
 
 
 class OneCheckCarriesWeightOnce(unittest.TestCase):
-    """`scores_with`: nine twins across the seven duplicate groups it exists for.
+    """`scores_with`: eight twins across the six duplicate groups it exists for.
 
     Two source checklists are merged into this registry and both of them ask some
     questions. Each group runs one script with one set of arguments and one assertion
@@ -3064,14 +3080,13 @@ class OneCheckCarriesWeightOnce(unittest.TestCase):
             self.assertEqual(by_id[item_id].get("scores_with"), "SE-114")
             self.assertEqual(self.shape(by_id[item_id]), self.shape(by_id["SE-114"]))
 
-    def test_md_189_uses_responsive_measurement_and_defers_to_mb_096(self):
+    def test_md_189_asserts_both_halves_and_scores_on_its_own(self):
         by_id = {item["id"]: item for item in ITEMS}
-        # 0.108.0: per image, the same count as MB-096, still deferring to it.
+        # F15 (the owner's ruling of 2026-11-08): both halves of the title, per large
+        # image, so it is no longer MB-096's check and no longer its scoring twin.
         self.assertEqual(by_id["MD-189"]["check"]["assert"],
-                         {"path": "large_without_srcset_count", "eq": 0})
-        self.assertEqual(by_id["MD-189"]["check"]["assert"],
-                         by_id["MB-096"]["check"]["assert"])
-        self.assertEqual(by_id["MD-189"].get("scores_with"), "MB-096")
+                         {"path": "large_legacy_or_unresponsive_count", "eq": 0})
+        self.assertIsNone(by_id["MD-189"].get("scores_with"))
 
     def test_mb_097_carries_the_modern_format_measurement(self):
         by_id = {item["id"]: item for item in ITEMS}
@@ -3081,7 +3096,8 @@ class OneCheckCarriesWeightOnce(unittest.TestCase):
                          {"path": "legacy_or_heavy_count", "eq": 0})
         self.assertIsNone(by_id["MB-097"].get("scores_with"))
 
-    def test_image_format_and_responsive_theme_keeps_six_weight_points(self):
+    def test_image_format_and_responsive_theme_weighs_nine_points(self):
+        """Six until F15: MD-189 asserting both halves is a check of its own."""
         from checklist_runner import SEVERITY_WEIGHT
 
         ids = {"MB-096", "MB-097", "MD-189"}
@@ -3089,7 +3105,7 @@ class OneCheckCarriesWeightOnce(unittest.TestCase):
         self.assertEqual({item["id"] for item in items}, ids)
         weight = sum(SEVERITY_WEIGHT[item["severity"]] for item in items
                      if not item.get("scores_with"))
-        self.assertEqual(weight, 6)
+        self.assertEqual(weight, 9)
 
     def test_served_html_and_rendered_dom_are_distinct_checks(self):
         by_id = {item["id"]: item for item in ITEMS}

@@ -923,16 +923,22 @@ site having served no such field.
 `measured[]` / `missing[]` — arrays of str
 `text_nodes_below_12px` — int — CN-034
 `text_nodes_below_contrast` — int — CN-036; elements carrying their own text whose
-  computed colour against the nearest non-transparent ancestor background falls under
-  the WCAG AA floor — 3:1 for large text (24px, or 18.66px bold), 4.5:1 otherwise.
+  computed colour, composited over the element's and its ancestors' background colours
+  down to the nearest opaque one, falls under the WCAG AA floor — 3:1 for large text
+  (24px, or 18.66px bold), 4.5:1 otherwise.
   Until 0.101.0 CN-036 read `checks.inline_contrast_candidates` from
   `a11y_seo_checker.py`, a count of elements whose *inline* style named a colour and
   a background: a page at 1.16:1 set in a stylesheet scored 0 and passed, one at 21:1
-  written inline scored 1 and failed. Text over a background image or gradient is
-  scored against the colour behind it and a foreground alpha is not composited, so
-  this undercounts rather than inventing failures
-`links_indistinct` — int — CN-035 (neither underlined, nor bolder, nor a different
-  colour from the parent)
+  written inline scored 1 and failed. **Withheld** when it is 0 and
+  `text_nodes_contrast_unmeasured` is not 0 or is absent (F15), so CN-036 reads NO_DATA
+  there; a count above 0 always stands
+`text_nodes_contrast_unmeasured` — int — text over a background image or gradient,
+  which has no colour to compare with (F15; until then it was scored against the
+  colour behind the image). A file from the snippet before F15 has no such key
+`links_indistinct` — int — CN-035: links in running text (the parent carries text of
+  its own) that are not underlined, not bolder, and under 3:1 against that text (WCAG
+  G183). Until F15 only `p a, li a, td a, article a` were read, and any colour
+  difference at all made a link distinct
 `overlays_covering_content` — int — CN-051 (fixed/sticky elements covering ≥25% of
   the viewport)
 `tap_targets_below_48px` — int — MB-103, **mobile renders only**
@@ -982,12 +988,18 @@ one — the script refuses the file instead.
   asset stub (`IMG_0042`, `untitled`, `banner`), fewer than three characters, or
   not one letter anywhere. `alt=""` is never counted here — an empty alt is the
   correct markup for a decorative image and is `empty_alt`.
-`alt_not_meaningful` — int — **absent on a page with no images**. `missing_alt + placeholder_alt`,
-  and what CI-016 and MD-186 assert since 0.105.0. Both halves fail the question
+`empty_alt_meaningful` — int — **absent on a page with no images**. Images with an
+  empty (or whitespace) alt that carry meaning: a link's only content, or a large
+  in-content image (`seo_common.image_carries_meaning`, F15)
+`alt_not_meaningful` — int — **absent on a page with no images**. `missing_alt +
+  placeholder_alt + empty_alt_meaningful` (the last since F15), and what CI-016 and
+  MD-186 assert since 0.105.0. Both halves fail the question
   those items are titled for, and a rule gets one operator over one path, so the
   sum is the leaf rather than two asserts. It can only be greater than or equal
   to `missing_alt`.
-`summary.images` — int
+`summary.images` — int — images with any source: `src`, `data-src`, `srcset`, a
+  `<picture>` source or `data-srcset` (F15: srcset- and picture-only images, and
+  data-srcset-only ones, were skipped as having no `src`)
 `summary.lazy_lcp_candidates` — int — CN-054's compatibility path: JS-deferred images
   with `data-src`/`data-srcset` but no native `src`, `srcset`, or `<picture>` source.
   Native `loading=lazy` remains discoverable and does not increment this count.
@@ -1003,7 +1015,9 @@ fact about the page rather than a claim about its images. Same rule, same reason
 `issues[]` — array
   - item keys: severity, message, url
 `images[]` — array
-  - item keys: src, alt, has_alt, width, height, is_responsive_fill, loading, srcset, sizes, format, likely_lcp_candidate
+  - item keys: src, alt, has_alt, empty_alt, placeholder_alt, empty_alt_meaningful,
+    width, height, is_responsive_fill, loading, srcset, sizes, format,
+    likely_lcp_candidate, native_source, deferred_source, discoverable
     `likely_lcp_candidate` comes from `seo_common.likely_lcp_candidate`: first in
     document order, or `fetchpriority=high`, or `loading=eager` — and never an image
     whose *declared* size is under 100×100, because an icon is not the largest paint.
@@ -1034,8 +1048,8 @@ Without one it audits one page's image markup and optional fetched bytes.
   — modern format in a `<source>`, png fallback in the `<img>` — counted as no modern
   format at all and failed the item it exists to satisfy.
 `responsive_count` — int — absent when the page has no images; otherwise, images
-  with a `srcset`, on the `img` or on a `<source>`
-  beside it. Read by nothing since 0.108.0, when MB-096 and MD-189 moved to the
+  offering width-described (`w`) candidates on the `img` or a `<source>`, or a
+  `<source>` chosen by `media` (F15: any `srcset`, a density or format-only one too). Read by nothing since 0.108.0, when MB-096 and MD-189 moved to the
   per-image count below; kept as evidence. The count was wrong in the same direction.
 `modern_format_on_img_count` — int — the narrow count: `img` src only
 `srcset_on_img_count` — int — the narrow count: `img` attribute only
@@ -1050,8 +1064,12 @@ Without one it audits one page's image markup and optional fetched bytes.
   item is NO_DATA. Emitting 0 instead would report a light page from zero readings
 `large_without_srcset_count` — int — emitted only with `--fetch-images` on a page with
   images: images wider than `LARGE_IMAGE_WIDTH_PX` (1280), read from each image's own
-  header, offering no `srcset`. MB-096 and MD-189 assert `eq: 0` (MD-189 scores with
-  MB-096). An image whose width was not learned is in no count and sets `truncated`
+  header, that are not `responsive` (above). MB-096 asserts `eq: 0`. An image whose
+  width was not learned is in no count and sets `truncated`
+`large_legacy_or_unresponsive_count` — int — same conditions: images wider than 1280
+  px that are not `responsive` or have no WebP/AVIF offer. MD-189 asserts `eq: 0`, both
+  halves of its title (F15; until then it read `large_without_srcset_count` and scored
+  with MB-096)
 `legacy_or_heavy_count` — int — same conditions: images wider than 1280 px with no
   WebP/AVIF offer, or any image over `LARGE_IMAGE_BYTES`. MB-097 asserts `eq: 0` — its
   title's format half and compression half
@@ -1059,6 +1077,13 @@ Without one it audits one page's image markup and optional fetched bytes.
   could not be learned (not an image format this reads, or a JPEG whose frame header
   lies past `IMAGE_HEADER_BYTES`)
 `picture_count` — int — images wrapped in a `<picture>` carrying a `<source>`
+
+A fetched image is broken (MD-187) when it answers dead, 404/410, a 204/205, or a 2xx
+declaring a type outside `image/*`; an untyped or `application/octet-stream` 2xx is
+read for an image header and is unchecked when none is found (F15: any non-text 2xx
+was fine). A large image with no modern format is a `warning` in `issues[]` (F15:
+`info`), as an image over `LARGE_IMAGE_BYTES` is, so MD-185 does not pass an image
+MB-097 fails.
 `truncated` — bool — an image on this page answered nothing, or (with
   `--fetch-images`) an image's width or byte size went unlearned, so the counts above
   are over the images that did. `broken_image_count` is withheld outright when nothing
@@ -1441,7 +1466,14 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
   when CrUX has no sample. `unknown` means nothing failed but a band was not
   recognised — no `value_map` maps it, so the item reads `NO_DATA` rather than claiming
   a pass over a metric nobody here can grade)
-`field_cwv.measured[]` — array  (which of LCP, INP, CLS the verdict is over)
+`field_cwv.measured[]` — array  (which of LCP, INP, CLS the verdict is over; a `pass`
+  needs LCP and CLS among them, F15)
+`above_fold.rating` — str  (good | needs-improvement | poor) — SP-107: the worse of
+  `above_fold.FCP` and `above_fold.LCP`, each `{rating, source}` copied from `metrics`,
+  so both from CrUX or, for a page CrUX has no sample of, both from Lighthouse — never
+  one of each, since the report names lab numbers only on a page with no field data
+  (INP-5). Absent when neither paint is known, and when one is good and the other
+  unknown — a pass needs both (F15: SP-107 read FCP alone)
 `field_cwv.failing[]` — array
 `field_cwv.unknown[]` — array  (present only when a rating fell outside
   good | needs-improvement | poor)

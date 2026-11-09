@@ -456,8 +456,8 @@
           "gt": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`alt_not_meaningful` counts images with no alt or a placeholder alt; empty alt, the correct markup for decoration, passes (0.105.0).",
+      "verdict": "measures",
+      "reading": "`alt_not_meaningful` counts images with no alt, a placeholder alt, or an empty alt where the image carries meaning: a link's only content or a large in-content image (F15: an empty alt never counted). Whether an alt describes its image is not read, and `measures` says so.",
       "shapes": {
         "qualifier": "*Meaningful* is the placeholder signal: filenames, `image1`, `untitled` and the like do not count as descriptions."
       },
@@ -894,8 +894,8 @@
           "eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`text_nodes_below_12px` counts rendered text nodes under 12px.",
+      "verdict": "measures",
+      "reading": "`text_nodes_below_12px` counts visible elements with over three characters of their own text under 12px; shorter text and text directly in `<body>` are not read, and `measures` says so.",
       "shapes": {
         "qualifier": "*Readable* is operationalised as the 12px floor."
       },
@@ -920,8 +920,8 @@
           "eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`links_indistinct` counts rendered links neither underlined, nor bolder, nor a different colour from the text around them.",
+      "verdict": "measures",
+      "reading": "`links_indistinct` counts links in running text with no underline, no bolder weight and under 3:1 against the surrounding text (F15: only `p/li/td/article a` and exact colour equality were read); hover and focus are not read, and `measures` says so.",
       "shapes": {
         "conjunction": "Clear and distinct are one property: a link must look like a link.",
         "qualifier": "Read as visual distinctness from body text."
@@ -947,8 +947,8 @@
           "eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`text_nodes_below_contrast` counts rendered text below the WCAG contrast ratio, computed from styles (0.101.0).",
+      "verdict": "measures",
+      "reading": "`text_nodes_below_contrast` counts text below WCAG AA against its composited background colours; text over a background image or gradient is counted as unmeasured and withholds the zero (F15: it was scored against the colour behind the image), and `measures` says so.",
       "shapes": {
         "qualifier": "*Sufficient* is WCAG AA's ratio."
       },
@@ -1139,8 +1139,8 @@
           "eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`overlays_covering_content` counts rendered overlays that cover content at load.",
+      "verdict": "measures",
+      "reading": "`overlays_covering_content` counts visible fixed or sticky elements covering at least a quarter of the viewport; whether they hide content or are intrusive is not read, and `measures` says so.",
       "shapes": {
         "conjunction": "*Especially on mobile* is MB-094's own item; this one reads the rendered page."
       },
@@ -1169,8 +1169,8 @@
           "gt": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`summary.lazy_lcp_candidates` counts lazy-loaded images that are likely LCP candidates.",
+      "verdict": "measures",
+      "reading": "`summary.lazy_lcp_candidates` counts images whose only source is JavaScript-deferred (data-src, data-srcset) with no native src, srcset or picture source (F15: data-srcset-only images were skipped); other lazy content is not read, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -1605,8 +1605,8 @@
           "eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`mobile_overlays_covering_content` counts overlays covering content in the phone-width render.",
+      "verdict": "measures",
+      "reading": "`mobile_overlays_covering_content` is CN-051's count from a phone-width render; whether the elements hide content or are intrusive is not read, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -1671,8 +1671,8 @@
           "gt": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`large_without_srcset_count` counts images wider than 1280px, read from their own bytes, sent without srcset (0.108.0).",
+      "verdict": "measures",
+      "reading": "`large_without_srcset_count` counts images wider than 1280px, read from their own bytes, with no width-described srcset and no media-chosen `<source>` (F15: a density srcset or a format-only source counted as responsive); the widths offered are not read, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -1700,8 +1700,8 @@
           "gt": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`legacy_or_heavy_count` counts large images with no WebP/AVIF offer plus any image over 250 KB (0.108.0).",
+      "verdict": "measures",
+      "reading": "`legacy_or_heavy_count` counts large images with no WebP/AVIF offer plus any image over 250 KB (0.108.0); compression under 250 KB and the format of smaller images are not judged, and `measures` says so.",
       "shapes": {
         "conjunction": "Formats and compression are each a half of the count.",
         "qualifier": "*Optimize* is read as those two halves."
@@ -1732,7 +1732,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`srcset_without_sizes_count` counts images whose srcset has no sizes; an oversized image with no srcset is MB-096's.",
+      "reading": "`srcset_without_sizes_count` counts images whose width-described srcset has no sizes; a density (1x, 2x) srcset needs none, and an oversized image with no srcset is MB-096's.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -1826,8 +1826,8 @@
           "eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`tap_targets_below_48px` counts rendered tap targets under 48px.",
+      "verdict": "measures",
+      "reading": "`tap_targets_below_48px` counts visible links, buttons, form fields and role=button elements under 48px either way at phone width; spacing, overlap and occlusion are not read, and `measures` says so.",
       "shapes": {
         "external": "*Click* is the user's click, not search clicks; nothing external is asked."
       },
@@ -1914,7 +1914,7 @@
         ],
         "requires": "api",
         "assert": {
-          "path": "metrics.FCP.rating",
+          "path": "above_fold.rating",
           "value_map": {
             "good": "pass",
             "needs-improvement": "fail",
@@ -1922,7 +1922,7 @@
           }
         },
         "warn": {
-          "path": "metrics.FCP.rating",
+          "path": "above_fold.rating",
           "value_map": {
             "good": "pass",
             "needs-improvement": "pass",
@@ -1930,8 +1930,8 @@
           }
         }
       },
-      "verdict": "answers",
-      "reading": "`metrics.FCP.rating` is First Contentful Paint's rating, field data when CrUX has it and lab otherwise, with the source recorded.",
+      "verdict": "measures",
+      "reading": "`above_fold.rating` is the worse of FCP and LCP, both from CrUX or, for a page CrUX has no sample of, both from Lighthouse; a pass needs both (F15: FCP alone was read). Resource priority is not read, and `measures` says so.",
       "shapes": {
         "conjunction": "Above-the-fold priority is what FCP times.",
         "qualifier": "*Fast* is the FCP band."
@@ -1963,7 +1963,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`field_cwv.verdict` passes only when every graded Core Web Vital is good in CrUX field data, and is absent when there is none.",
+      "reading": "`field_cwv.verdict` passes only when every graded Core Web Vital is good in CrUX field data and LCP and CLS are among them (F15: one good metric passed), and is absent when there is none.",
       "shapes": {
         "conjunction": "The parenthetical names the data source the rule requires."
       },
@@ -2117,7 +2117,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`field_cwv.verdict` on mobile field data: every graded Core Web Vital within Google's good thresholds.",
+      "reading": "`field_cwv.verdict` on mobile field data: every graded Core Web Vital within Google's good thresholds, LCP and CLS required (F15), INP when CrUX has it.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -3617,7 +3617,7 @@
         "entry_only": "Whether the audited page references an image is a question about that page. A privacy or contact page with no picture is not a defect, and under the sample's worst-page rule it failed the exemplary fixture (0.49.0); so the entry page decides, and sampled pages do not."
       },
       "verdict": "answers",
-      "reading": "`summary.images` is the number of images the entry page references by src, at least one (title narrowed 0.85.0). Since F06 it reads the descriptive count, written on every page read, rather than `count`, which is withheld on a page with none, and `check.entry_only` keeps sampled pages from deciding it: the URL the operator asked about is the page the title means.",
+      "reading": "`summary.images` is the number of images the entry page references by any source: src, data-src, srcset, a `<picture>` source or data-srcset (F15: srcset- and picture-only images were skipped). Since F06 it reads the descriptive count, written on every page read, rather than `count`, and `check.entry_only` keeps sampled pages from deciding it: the URL the operator asked about is the page the title means.",
       "shapes": {
         "existential": "The title itself says at least one."
       },
@@ -3659,7 +3659,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`issues` carries image_weight_audit's image findings, applicable where the page has images.",
+      "reading": "`issues` carries image_weight_audit's image findings, applicable where the page has images; a large image with no WebP/AVIF offer is a warning (F15: info), as an over-250 KB one is, so no image MB-097 fails passes here.",
       "shapes": {
         "qualifier": "*Optimize* is read as the script's issue set."
       },
@@ -3688,8 +3688,8 @@
           "gt": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`alt_not_meaningful` counts images with no alt or a placeholder alt (0.105.0).",
+      "verdict": "measures",
+      "reading": "`alt_not_meaningful`, CI-016's count: no alt, a placeholder alt, or an empty alt on a link's only content or a large in-content image (F15). Whether an alt describes its image is not read, and `measures` says so.",
       "shapes": {
         "qualifier": "*Meaningful* is the placeholder signal."
       },
@@ -3717,7 +3717,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`broken_image_count` counts image URLs in the crawl that fail to load.",
+      "reading": "`broken_image_count` counts crawled image URLs that answer dead, 404/410, a 204/205, or a 2xx declaring a type outside `image/*`; an untyped or octet-stream answer is read for an image header (F15: any non-text 2xx was fine).",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -3737,7 +3737,7 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "large_without_srcset_count",
+          "path": "large_legacy_or_unresponsive_count",
           "eq": 0
         },
         "applies_when": {
@@ -3745,10 +3745,10 @@
           "gt": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`large_without_srcset_count` reads the responsive half; the formats half is MB-097's field, and the registry records why the conjunction was rejected (0.108.0).",
+      "verdict": "measures",
+      "reading": "`large_legacy_or_unresponsive_count` counts images wider than 1280px lacking a width-described srcset or media source, or a WebP/AVIF offer (F15: the owner ruled both halves asserted; only the responsive one was), and `measures` says so.",
       "shapes": {
-        "conjunction": "Half by recorded ruling: joining the halves would weigh one defect twice."
+        "conjunction": "Both halves are asserted per image, by the owner's ruling of 2026-11-08."
       },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -4275,8 +4275,8 @@
           "eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`text_nodes_clipped` counts text cut off at phone width in the rendered artifact.",
+      "verdict": "measures",
+      "reading": "`text_nodes_clipped` counts visible h1-h3, p, a, button and li whose scroll size exceeds their client size at phone width; a scrollable box counts and an ancestor's clip is not read, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",

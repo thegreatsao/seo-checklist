@@ -110,8 +110,9 @@ nothing to either half of the score or to a category score.
 
 **Why:** otherwise one defect pulls the headline twice, and where the twins disagree on
 severity the weight of a single defect depends on which item a reader happens to look
-at. Both conditions exist in the registry today: 9 twins across 7 primaries, of which
-MB-102/MD-190 and SP-112/SP-108 disagree on severity.
+at. Both conditions exist in the registry today: 8 twins across 6 primaries (9 across 7
+until F15 batch 2, when MD-189 began asserting both halves of its title and left MB-096's
+group), of which MB-102/MD-190 and SP-112/SP-108 disagree on severity.
 **Reader:** enforced. The headline half is read by
 `tests/test_runner.py::Scoring::test_a_twin_reports_its_status_and_does_not_score_twice`,
 and `tools/audit_item_semantics.py` in CI refuses any two items sharing script,
@@ -744,8 +745,8 @@ produce the same membership or deterministic tie-break.
 
 #### A.7 — the code's own count of twins is wrong
 
-**Closed.** The comment reads "Seven duplicate groups in this registry carry nine
-`scores_with` twins" and `tests/test_protocol_counts.py` reads the number out of it, so
+**Closed.** The comment reads "Six duplicate groups in this registry carry eight
+`scores_with` twins" (seven and nine until F15 batch 2) and `tests/test_protocol_counts.py` reads the number out of it, so
 the claim and the tree move together. Left as measured, because the class it names is the
 point.
 

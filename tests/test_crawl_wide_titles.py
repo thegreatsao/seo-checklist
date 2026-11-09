@@ -261,12 +261,12 @@ class ASoftNotFoundImageIsBroken(Inventories):
                 self.assertEqual(state, "broken")
                 fetch.assert_not_called()
 
-    def test_a_2xx_carrying_anything_else_is_fine(self):
-        """Only text is evidence. Object stores serve images as
-        `application/octet-stream`, and a missing header says nothing."""
+    def test_a_2xx_carrying_an_image_type_is_fine(self):
+        """F15, MD-187: a 2xx is an image when it says so. Object stores'
+        `application/octet-stream` and a missing header are read for an image header
+        instead (`test_f15_batch2.AnImageIsAnImageType`)."""
         for headers in ({"content-type": "image/png"},
-                        {"content-type": "image/svg+xml"},
-                        {"content-type": "application/octet-stream"}, {}):
+                        {"content-type": "image/svg+xml"}):
             with self.subTest(headers=headers):
                 state, _fetch = self.classify({"status": 200, "headers": headers})
                 self.assertEqual(state, "fine")

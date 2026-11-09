@@ -266,15 +266,27 @@ Resize to a phone viewport first (375×812), load the page, then run one
     });
     return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
   };
+  const over = (top, under) =>
+    [0, 1, 2].map(i => top[i] * top[3] + under[i] * (1 - top[3])).concat(1);
+  const ratio = (x, y) => {
+    const a = lum(x), b = lum(y);
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  };
+  // The colour behind an element: its backgrounds composited down to the nearest
+  // opaque one (white if none). Null when a background image or gradient lies on
+  // the way, which no single colour stands for.
   const bgOf = el => {
+    const layers = [];
     for (let n = el; n; n = n.parentElement) {
-      const c = rgb(getComputedStyle(n).backgroundColor);
-      if (c && c[3] !== 0) return c;
+      const s = getComputedStyle(n);
+      if (s.backgroundImage && s.backgroundImage !== 'none') return null;
+      const c = rgb(s.backgroundColor);
+      if (c && c[3] > 0) { layers.push(c); if (c[3] >= 1) break; }
     }
-    return [255, 255, 255, 1];
+    return layers.reverse().reduce((under, c) => over(c, under), [255, 255, 255, 1]);
   };
 
-  let lowContrast = 0;
+  let lowContrast = 0, unmeasured = 0;
   for (const el of document.querySelectorAll('body *')) {
     if (!visible(el)) continue;
     const ownText = [...el.childNodes].some(
@@ -283,19 +295,27 @@ Resize to a phone viewport first (375×812), load the page, then run one
     const s = getComputedStyle(el);
     const fg = rgb(s.color);
     if (!fg) continue;
-    const a = lum(fg), b = lum(bgOf(el));
-    const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    const bg = bgOf(el);
+    if (!bg) { unmeasured++; continue; }
     const size = px(s.fontSize), bold = parseInt(s.fontWeight) >= 700;
-    if (ratio < (size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5)) lowContrast++;
+    if (ratio(over(fg, bg), bg) < (size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5))
+      lowContrast++;
   }
 
+  // A link inside running text, told apart by colour alone: no underline, not
+  // bolder, and under 3:1 against the text around it (WCAG technique G183).
   let indistinct = 0;
-  for (const a of document.querySelectorAll('p a, li a, td a, article a')) {
-    if (!visible(a) || !a.parentElement) continue;
-    const s = getComputedStyle(a), parent = getComputedStyle(a.parentElement);
+  for (const a of document.querySelectorAll('a[href]')) {
+    const p = a.parentElement;
+    if (!p || !visible(a) || !a.textContent.trim()) continue;
+    if (![...p.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue;
+    const s = getComputedStyle(a), parent = getComputedStyle(p);
     const underlined = (s.textDecorationLine || '').includes('underline');
     const bolder = parseInt(s.fontWeight) - parseInt(parent.fontWeight) >= 200;
-    if (!underlined && !bolder && s.color === parent.color) indistinct++;
+    const fg = rgb(s.color), text = rgb(parent.color);
+    if (underlined || bolder || !fg || !text) continue;
+    const bg = bgOf(p) || [255, 255, 255, 1];
+    if (ratio(over(fg, bg), over(text, bg)) < 3) indistinct++;
   }
 
   let overlays = 0;
@@ -328,7 +348,7 @@ Resize to a phone viewport first (375×812), load the page, then run one
 
   return {url: location.href, viewport: {width: vw, height: vh},
           text_nodes_below_12px: small, text_nodes_below_contrast: lowContrast,
-          links_indistinct: indistinct,
+          text_nodes_contrast_unmeasured: unmeasured, links_indistinct: indistinct,
           overlays_covering_content: overlays, tap_targets_below_48px: taps,
           horizontal_overflow_px: overflow, text_nodes_clipped: clipped,
           html: document.documentElement.outerHTML};
@@ -351,6 +371,11 @@ targets, mobile interstitials, horizontal overflow and clipped text — are
 **dropped**, and those items report `NO_DATA`. A desktop window that fits its own
 content answers nothing about a phone, and passing one through would be a verdict
 about a viewport nobody looked at.
+
+`text_nodes_contrast_unmeasured` counts text over a background image or gradient,
+which has no single colour to measure against. CN-036 passes only when it and
+`text_nodes_below_contrast` are both 0, so a page with such text, or a file taken
+with an older copy of this snippet that lacks the key, reports `NO_DATA` for it.
 
 `horizontal_overflow_px` is asserted `lte: 1` rather than `eq: 0`: `scrollWidth` and
 `innerWidth` are both integers, and one pixel of rounding is not a page that scrolls

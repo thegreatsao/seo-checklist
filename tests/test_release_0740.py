@@ -88,9 +88,13 @@ class CrawlImageReferences(unittest.TestCase):
 
 
 class BrokenImageRule(unittest.TestCase):
+    # An image answer says it is one (F15, MD-187: a 2xx needs an `image/*` type).
+    IMAGE = {"content-type": "image/png"}
+
     def classify(self, status=None, error_kind=None, confirmation=None):
         result = {"status": status, "error_kind": error_kind}
-        confirmation = confirmation or {"status": 200, "error_kind": None}
+        confirmation = confirmation or {"status": 200, "error_kind": None,
+                                        "headers": self.IMAGE}
         with mock.patch.object(image_weight_audit, "fetch_url",
                                return_value=confirmation) as fetch:
             state, returned = image_weight_audit._classify_image(
@@ -135,7 +139,8 @@ class BrokenImageRule(unittest.TestCase):
 
     def test_ranged_get_makes_a_working_403_fine(self):
         fine, _confirmation, _fetch = self.classify(
-            status=403, confirmation={"status": 206, "error_kind": None})
+            status=403, confirmation={"status": 206, "error_kind": None,
+                                      "headers": self.IMAGE})
         self.assertEqual(fine, "fine")
 
     def test_ranged_get_makes_a_twice_refused_403_broken(self):
@@ -157,7 +162,8 @@ class SiteWideBrokenImages(unittest.TestCase):
 
     @staticmethod
     def response(status=200, error_kind=None):
-        return {"status": status, "error_kind": error_kind, "headers": {}}
+        return {"status": status, "error_kind": error_kind,
+                "headers": {"content-type": "image/png"}}
 
     def run_with(self, path: str, side_effect, **kwargs):
         with mock.patch.object(image_weight_audit, "fetch_url",
@@ -279,7 +285,8 @@ class PageModeCompatibility(unittest.TestCase):
             ("410", [{"status": 410, "error_kind": None, "headers": {}}], 1, 0),
             ("403 served", [
                 {"status": 403, "error_kind": None, "headers": {}},
-                {"status": 206, "error_kind": None, "headers": {}},
+                {"status": 206, "error_kind": None,
+                 "headers": {"content-type": "image/png"}},
             ], 0, 0),
             ("403 refused", [
                 {"status": 403, "error_kind": None, "headers": {}},

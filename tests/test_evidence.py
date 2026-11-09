@@ -1544,10 +1544,14 @@ class ImageWeightAudit(unittest.TestCase):
                          "MB-097 fails a site doing exactly what it asks for")
         self.assertEqual(out["images"][0]["modern_format"], True)
 
-    def test_a_source_srcset_counts_as_responsive(self):
+    def test_a_format_only_source_is_not_responsive(self):
+        """F15, MB-096: sources that differ by format and density offer a phone no
+        narrower file. Width descriptors or a `media` source are what does."""
         out = self.audit(self.PICTURE)
-        self.assertEqual(out["responsive_count"], 1)
-        self.assertEqual(out["images"][0]["responsive"], True)
+        self.assertEqual(out["responsive_count"], 0)
+        self.assertEqual(out["images"][0]["picture_srcset"], True)
+        widths = self.PICTURE.replace("/i/logo.webp 1x", "/i/logo.webp 64w")
+        self.assertEqual(self.audit(widths)["responsive_count"], 1)
 
     def test_the_fallback_is_still_reported_as_a_png(self):
         """Both facts, kept apart. The browser gets webp and the `img` is a png,

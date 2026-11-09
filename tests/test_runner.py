@@ -4411,7 +4411,8 @@ class RenderedPageMeasurements(unittest.TestCase):
 
     MOBILE = {"url": "https://e.com/", "viewport": {"width": 375, "height": 812},
               "text_nodes_below_12px": 0, "text_nodes_below_contrast": 0,
-              "links_indistinct": 2,
+              # F15: a zero below the contrast floor stands only beside this count.
+              "text_nodes_contrast_unmeasured": 0, "links_indistinct": 2,
               "overlays_covering_content": 0, "tap_targets_below_48px": 3,
               "horizontal_overflow_px": 0, "text_nodes_clipped": 0}
 

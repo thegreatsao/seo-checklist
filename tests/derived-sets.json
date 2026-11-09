@@ -1,8 +1,8 @@
 {
   "measured": "upper-case names bound to a list, tuple, set or dict literal, bare or handed to a constructor, at module level or in a function, in scripts/, scripts/lib/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 197,
-  "read": 154,
+  "total": 200,
+  "read": 157,
   "unread": 43,
   "unread_closed": 0,
   "modules": {
@@ -311,7 +311,7 @@
         },
         {
           "name": "MEASURES",
-          "entries": 38
+          "entries": 52
         },
         {
           "name": "RENDERED",
@@ -327,7 +327,7 @@
         },
         {
           "name": "SAME_CHECK",
-          "entries": 7
+          "entries": 6
         },
         {
           "name": "GUARD_TOKENS",
@@ -773,7 +773,12 @@
       "unread": []
     },
     "image_weight_audit": {
-      "read": [],
+      "read": [
+        {
+          "name": "UNTYPED",
+          "entries": 2
+        }
+      ],
       "unread": [
         {
           "name": "MODERN_FORMATS",
@@ -849,6 +854,10 @@
         {
           "name": "CORE_WEB_VITALS",
           "entries": 3
+        },
+        {
+          "name": "FIELD_PASS_NEEDS",
+          "entries": 2
         }
       ],
       "unread": []
@@ -876,7 +885,7 @@
       "read": [
         {
           "name": "GENERAL_METRICS",
-          "entries": 4
+          "entries": 5
         },
         {
           "name": "MOBILE_METRICS",
@@ -1015,6 +1024,10 @@
         {
           "name": "STATUS_CLASSES",
           "entries": 8
+        },
+        {
+          "name": "_FURNITURE",
+          "entries": 4
         },
         {
           "name": "CONTRIBUTION_KEYS",

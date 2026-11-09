@@ -5205,7 +5205,10 @@ class AnAltThatExistsAndDescribesNothing(unittest.TestCase):
                          'alt="" is what CI-016\'s own fix text asks for on a '
                          "decorative image; counting it would make the repair a worse "
                          "defect than the one it replaces")
-        self.assertEqual(result["alt_not_meaningful"], 0)
+        # F15 (CI-016, MD-186): the empty alt is counted only where the image carries
+        # meaning — these are 800x600 images in the page's content, so all three are.
+        self.assertEqual(result["empty_alt_meaningful"], 3)
+        self.assertEqual(result["alt_not_meaningful"], 3)
 
     def test_the_new_leaf_can_only_exceed_the_old_one(self):
         """So nothing that failed before passes now — the property that makes this a
@@ -5218,7 +5221,8 @@ class AnAltThatExistsAndDescribesNothing(unittest.TestCase):
                 self.assertGreaterEqual(result["alt_not_meaningful"],
                                         result["missing_alt"])
                 self.assertEqual(result["alt_not_meaningful"],
-                                 result["missing_alt"] + result["placeholder_alt"])
+                                 result["missing_alt"] + result["placeholder_alt"]
+                                 + result["empty_alt_meaningful"])
 
     def test_an_alt_repeating_its_own_filename_is_a_placeholder(self):
         """A comparison rather than a shape, so it is asserted apart from the patterns:
@@ -5441,7 +5445,8 @@ class ImagesJudgedOneByOne(unittest.TestCase):
     def test_one_wide_image_without_srcset_fails_whatever_else_is_responsive(self):
         """The case the old rule passed: one responsive image on the page was enough."""
         out = self.audit(self.SMALLS
-                         + '<img src="/small2.png" srcset="/small2.png 1x" alt="r">'
+                         + '<img src="/small2.png" srcset="/small2.png 64w" '
+                           'sizes="64px" alt="r">'
                          + '<img src="/wide.png" alt="a wide banner">')
         self.assertGreaterEqual(out["responsive_count"], 1)
         self.assertEqual(out["large_without_srcset_count"], 1)
@@ -5449,16 +5454,25 @@ class ImagesJudgedOneByOne(unittest.TestCase):
         self.assertEqual(graded_verdict("MD-189", out), FAIL)
 
     def test_the_wide_image_with_a_srcset_and_a_webp_source_passes_all_three(self):
-        out = self.audit('<picture><source type="image/webp" srcset="/wide.webp 1x">'
-                         '<img src="/wide.png" srcset="/wide.png 1x" alt="w"></picture>')
+        out = self.audit('<picture><source type="image/webp" srcset="/wide.webp 2000w" '
+                         'sizes="100vw"><img src="/wide.png" srcset="/wide.png 2000w" '
+                         'sizes="100vw" alt="w"></picture>')
         self.assertEqual(out["images"][0]["intrinsic_width"], 2000)
         self.assertEqual(self.verdicts(out),
                          {"MB-096": PASS, "MB-097": PASS, "MD-189": PASS})
 
-    def test_a_wide_png_with_a_srcset_but_no_modern_offer_fails_only_the_format(self):
+    def test_a_wide_png_with_a_srcset_but_no_modern_offer_fails_the_format_items(self):
+        """MD-189 asserts both halves of its title since F15."""
+        out = self.audit('<img src="/wide.png" srcset="/wide.png 2000w" sizes="100vw" '
+                         'alt="w">')
+        self.assertEqual(self.verdicts(out),
+                         {"MB-096": PASS, "MB-097": FAIL, "MD-189": FAIL})
+
+    def test_a_density_srcset_is_not_responsive(self):
+        """F15, MB-096: `1x` sends a phone the same wide file."""
         out = self.audit('<img src="/wide.png" srcset="/wide.png 1x" alt="w">')
         self.assertEqual(self.verdicts(out),
-                         {"MB-096": PASS, "MB-097": FAIL, "MD-189": PASS})
+                         {"MB-096": FAIL, "MB-097": FAIL, "MD-189": FAIL})
 
     def test_small_images_accuse_nothing(self):
         out = self.audit(self.SMALLS)

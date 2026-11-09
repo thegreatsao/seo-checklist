@@ -60,12 +60,17 @@ symptom.
 **Where `text_nodes_below_contrast` stops, and it is a boundary rather than a
 gap.** It counts elements carrying their own text whose computed foreground and
 effective background fall below the WCAG AA floor — 3:1 for large text (24px, or
-18.66px when bold), 4.5:1 otherwise. The effective background is the nearest
-ancestor with a non-transparent `background-color`, defaulting to white, so text
-over a background *image* or a gradient is scored against whatever colour sits
-behind it, and a foreground with partial alpha is not composited. Both are
-undercounts rather than invented failures, which is the direction this tree is
-allowed to be wrong in.
+18.66px when bold), 4.5:1 otherwise. The effective background is the element's and
+its ancestors' background colours composited down to the nearest opaque one (white
+when there is none), and a foreground with partial alpha is composited over it.
+
+Text over a background *image* or a gradient has no colour to compare with, so the
+snippet counts it in `text_nodes_contrast_unmeasured` instead (F15, CN-036: it used
+to be scored against whatever colour sat behind the image, and dark text on a dark
+photograph passed). A zero below the floor is a pass only when that count is zero
+too: `read()` withholds `text_nodes_below_contrast` otherwise — and when the count
+is absent, which is what a file from the snippet before it looks like — so the item
+reads NO_DATA. A count above zero stands either way.
 
 This metric is why CN-036 moved off `a11y_seo_checker.py` at 0.101.0. That script
 counted elements whose inline style named a colour and a background at all — the
@@ -96,7 +101,8 @@ MOBILE_MAX_WIDTH = 480
 
 # Metrics that describe the page at any viewport.
 GENERAL_METRICS = ("text_nodes_below_12px", "text_nodes_below_contrast",
-                   "links_indistinct", "overlays_covering_content")
+                   "text_nodes_contrast_unmeasured", "links_indistinct",
+                   "overlays_covering_content")
 # Metrics that mean nothing unless the render was a phone. `horizontal_overflow_px`
 # and `text_nodes_clipped` are here rather than in the general set for the same reason
 # tap targets are: both are answers about how the layout behaved at the width it was
@@ -161,6 +167,18 @@ def read(path: str) -> dict:
     if not out["measured"]:
         raise ValueError(
             f"{path} carries none of {', '.join(GENERAL_METRICS + MOBILE_METRICS)}")
+    # CN-036: no text below the floor says nothing about text whose background was an
+    # image. The clean count is withheld unless the file says none went unmeasured.
+    if (out.get("text_nodes_below_contrast") == 0
+            and out.get("text_nodes_contrast_unmeasured") != 0):
+        del out["text_nodes_below_contrast"]
+        out["measured"].remove("text_nodes_below_contrast")
+        unmeasured = out.get("text_nodes_contrast_unmeasured")
+        out["missing"].append(
+            "text_nodes_below_contrast (withheld: "
+            + (f"{unmeasured} text element(s) over a background image or gradient "
+               "were not measured)" if unmeasured else
+               "the file does not say how much text went unmeasured)"))
     return out
 
 

@@ -1484,7 +1484,7 @@ def synthetic_metrics(results: dict) -> list:
     `pagespeed.py` reports field data when CrUX has a sample for the page and falls back to
     Lighthouse's lab audits when it does not, and both land in `metrics.*.rating`. Two items
     decide from that field without their titles saying anything about field data — SP-107
-    reads FCP, SE-119 reads CLS — so their verdicts can be earned on one synthetic load in a
+    reads FCP and LCP, SE-119 reads CLS — so their verdicts can be earned on one synthetic load in a
     datacentre while the report says nothing about it.
 
     `openspec/specs/inputs/` INP-5 asks for exactly this: where a number was produced by a
@@ -1861,8 +1861,8 @@ def score(graded: list[dict], entry_error: str = "") -> dict:
     scored = [g for g in graded if g["status"] in VERDICTS]
     applicable = [g for g in graded if g["status"] != NA]
 
-    # Weight is carried per *check*, not per item. Seven duplicate groups in this
-    # registry carry nine `scores_with` twins: one script, one set of arguments and one
+    # Weight is carried per *check*, not per item. Six duplicate groups in this
+    # registry carry eight `scores_with` twins: one script, one set of arguments and one
     # assertion under multiple source numbers. "Provide Meaningful Image Alt Text" and
     # "Provide Meaningful Alt Text" are one question asked twice, and until 0.22 both
     # halves scored. That did two things: it doubled

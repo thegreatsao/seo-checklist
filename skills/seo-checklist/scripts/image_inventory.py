@@ -12,7 +12,7 @@ import re
 from urllib.parse import urlparse
 
 from seo_common import (fetch_url, likely_lcp_candidate, load_html,
-                        parse_html)
+                        parse_html, srcset_urls)
 
 # `openspec/specs/registry/` REG-6, A.3 and A.9. CI-016 and MD-186 are titled
 # *Provide Meaningful Alt Text* and asserted `missing_alt == 0`, which is a different
@@ -26,9 +26,11 @@ from seo_common import (fetch_url, likely_lcp_candidate, load_html,
 # operator to stop reading the report. Each rule below is a form that cannot describe
 # an image whatever the image is.
 #
-# `alt=""` is NOT here and must never be: an empty alt is the *correct* markup for a
-# decorative image, which is what CI-016's own `fix` text asks for. It is counted
-# separately as `empty_alt` and is not a defect.
+# `alt=""` is NOT here: an empty alt is the *correct* markup for a decorative image,
+# which is what CI-016's own `fix` text asks for, and it is counted as `empty_alt`.
+# It is a defect only on an image that carries meaning — a link's only content, or a
+# large image in the content (`seo_common.image_carries_meaning`, F15) — and those
+# are counted in `empty_alt_meaningful`, not by these patterns.
 PLACEHOLDER_ALT_PATTERNS = (
     # A filename, with or without its extension: "photo-3.jpg", "hero_02.png".
     r"^[\w %()\-]+\.(?:jpe?g|png|gif|webp|avif|svg|bmp|tiff?|ico)$",
@@ -80,6 +82,17 @@ def alt_is_placeholder(alt, src: str = "") -> bool:
     return False
 
 
+def _first_candidate(srcset: str, base_url: str) -> str:
+    """The first URL a `srcset` offers, or "" when it offers none a URL parser
+    accepts — no browser can load that one either, so the image counts as skipped."""
+    try:
+        first = next(iter(srcset_urls(srcset, base_url)), "")
+        urlparse(first)
+        return first
+    except ValueError:
+        return ""
+
+
 def inventory(source: str, fetch_images: bool = False, timeout: int = 15) -> dict:
     html, url, fetched = load_html(source, timeout=timeout)
     parsed = parse_html(html, url)
@@ -87,8 +100,14 @@ def inventory(source: str, fetch_images: bool = False, timeout: int = 15) -> dic
     issues = []
     skipped_no_src = 0
     for idx, img in enumerate(parsed["images"]):
-        src = (img.get("src") or "").strip()
-        if not src:
+        # An image a browser loads from `srcset` or a `<picture>` source alone is an
+        # image (F15, MD-184), and one with only a `data-srcset` is the image CN-054
+        # is about: neither is skipped. Only an `<img>` with no source of any kind is.
+        src = ((img.get("src") or "").strip()
+               or _first_candidate(img.get("srcset") or "", url or "")
+               or next((u for s in img.get("picture_sources") or []
+                        for u in s.get("urls") or []), ""))
+        if not (src or img.get("deferred_source")):
             skipped_no_src += 1
             continue
         ext = os.path.splitext(urlparse(src).path)[1].lower().lstrip(".")
@@ -99,6 +118,8 @@ def inventory(source: str, fetch_images: bool = False, timeout: int = 15) -> dic
             "has_alt": alt is not None,
             "empty_alt": alt == "",
             "placeholder_alt": alt_is_placeholder(alt, src),
+            "empty_alt_meaningful": (isinstance(alt, str) and not alt.strip()
+                                     and bool(img.get("carries_meaning"))),
             "width": img.get("width"),
             "height": img.get("height"),
             "is_responsive_fill": bool(img.get("is_responsive_fill")),
@@ -132,6 +153,7 @@ def inventory(source: str, fetch_images: bool = False, timeout: int = 15) -> dic
     missing_alt = sum(1 for r in rows if not r["has_alt"])
     empty_alt = sum(1 for r in rows if r["empty_alt"])
     placeholder_alt = sum(1 for r in rows if r["placeholder_alt"])
+    empty_alt_meaningful = sum(1 for r in rows if r["empty_alt_meaningful"])
     out = {"url": url or source,
            "empty_alt": empty_alt, "skipped_no_src": skipped_no_src,
            "summary": {"images": len(rows),
@@ -160,7 +182,8 @@ def inventory(source: str, fetch_images: bool = False, timeout: int = 15) -> dic
         # `IMG_0042` both fail *Provide Meaningful Alt Text*, and the two used to be
         # one number and one blind spot. This can only be greater than or equal to
         # `missing_alt`, so nothing that failed before passes now.
-        out["alt_not_meaningful"] = missing_alt + placeholder_alt
+        out["empty_alt_meaningful"] = empty_alt_meaningful
+        out["alt_not_meaningful"] = missing_alt + placeholder_alt + empty_alt_meaningful
         out["summary"]["lazy_lcp_candidates"] = undiscoverable_lazy
     return out
 

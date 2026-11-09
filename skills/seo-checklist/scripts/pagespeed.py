@@ -129,6 +129,9 @@ CRUX_RATING = {"fast": "good", "average": "needs-improvement", "slow": "poor"}
 # Which metrics decide the field-data verdict: the three Core Web Vitals and
 # nothing else. FCP and TTFB are diagnostics, not thresholds Google grades on.
 CORE_WEB_VITALS = ("LCP", "INP", "CLS")
+# The two a field pass cannot do without. Google's assessment passes a URL CrUX has
+# no INP for on LCP and CLS, never on one of them.
+FIELD_PASS_NEEDS = ("LCP", "CLS")
 
 
 # The three bands CrUX and Lighthouse both grade in, after CRUX_RATING has normalised
@@ -155,6 +158,9 @@ def field_cwv_verdict(metrics: dict) -> dict | None:
     Pass is over the metrics that *were* graded, and `measured` says which. CrUX
     publishes no INP for a URL with few interactions, and refusing to answer at all
     there would throw away a verdict about LCP and CLS that Google itself reports.
+    LCP and CLS are not optional the same way (`FIELD_PASS_NEEDS`): a pass with
+    either absent was a pass over one metric, and is `unknown` now (F15, SP-108 and
+    SP-113). A failure stands whatever is absent.
 
     The two halves are deliberately not symmetric. **A failure among the graded metrics
     is safe to report** — one bad metric fails the assessment whatever the unrecognised
@@ -173,7 +179,7 @@ def field_cwv_verdict(metrics: dict) -> dict | None:
     failing = sorted(k for k, m in graded.items() if m.get("rating") != "good")
     if failing:
         verdict = "fail"
-    elif unknown or not graded:
+    elif unknown or not set(FIELD_PASS_NEEDS) <= set(graded):
         verdict = "unknown"
     else:
         verdict = "pass"
@@ -181,6 +187,32 @@ def field_cwv_verdict(metrics: dict) -> dict | None:
     if unknown:
         out["unknown"] = unknown
     return out
+
+
+def _above_fold(metrics: dict) -> dict | None:
+    """SP-107's answer: the worse of the first and the largest contentful paint.
+
+    *Load content fast (prioritise above the fold)* is about what the first screen
+    shows. FCP times its first content and LCP its largest element, which Chrome
+    picks from what is inside the viewport; FCP alone passed a page whose hero
+    arrived seconds after its first word (F15). Both come from `metrics`, so from
+    CrUX when CrUX has the page and from Lighthouse when it has nothing — never one
+    of each, because `synthetic_metrics` names lab numbers only on a page with no
+    field data (`openspec/specs/inputs/` INP-5).
+
+    A slow paint fails on its own. A pass needs both, so one good paint and one
+    unknown leave `rating` out and the item reads NO_DATA.
+    """
+    paints = {label: {"rating": metrics[label].get("rating"),
+                      "source": metrics[label].get("source")}
+              for label in ("FCP", "LCP") if isinstance(metrics.get(label), dict)}
+    if not paints:
+        return None
+    known = [p["rating"] for p in paints.values() if p["rating"] in KNOWN_RATINGS]
+    worst = max(known, key=KNOWN_RATINGS.index, default=None)
+    if worst and (worst != "good" or len(known) == 2):
+        paints["rating"] = worst
+    return paints
 
 
 def parse_pagespeed_response(data: dict[str, Any], url: str, strategy: str = "mobile") -> dict:
@@ -271,7 +303,7 @@ def parse_pagespeed_response(data: dict[str, Any], url: str, strategy: str = "mo
                     "rating": rating,
                     # Where this number came from, beside the number, because two items
                     # decide from `rating` without their titles saying anything about
-                    # field data — SP-107 reads FCP and SE-119 reads CLS. A lab rating
+                    # field data — SP-107 reads FCP and LCP, SE-119 reads CLS. A lab rating
                     # answers "what did one synthetic load do", a field rating answers
                     # "what do real visitors get", and a client acts differently on each.
                     # The field branch above records `crux_category` for the same reason;
@@ -279,6 +311,10 @@ def parse_pagespeed_response(data: dict[str, Any], url: str, strategy: str = "mo
                     # every surface. `openspec/specs/inputs/` INP-5.
                     "source": "lab",
                 }
+
+    above_fold = _above_fold(result["metrics"])
+    if above_fold:
+        result["above_fold"] = above_fold
 
     # Extract opportunities
     for audit_id, audit in audits.items():

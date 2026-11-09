@@ -132,14 +132,15 @@ def NOTHING_SERIOUS(path="issues"):
 # a perfect Lighthouse LCP was rated `good`, the rule wanted `fast`, and two
 # critical items reported FAIL on a fast page. The script speaks one vocabulary
 # now; these map it, so a band nobody enumerated is NO_DATA instead of a verdict.
+# A metric's label, or a whole path to a rating (SP-107's `above_fold.rating`).
 def RATING(metric):
-    return {"path": f"metrics.{metric}.rating",
+    return {"path": metric if "." in metric else f"metrics.{metric}.rating",
             "value_map": {"good": "pass", "needs-improvement": "fail",
                           "poor": "fail"}}
 
 
 def RATING_WARN(metric):
-    return {"path": f"metrics.{metric}.rating",
+    return {"path": metric if "." in metric else f"metrics.{metric}.rating",
             "value_map": {"good": "pass", "needs-improvement": "pass",
                           "poor": "fail"}}
 
@@ -635,7 +636,21 @@ MEASURES = {
     "TECH-003": "Time to first byte, the first of the four LCP subparts. The other three need a browser trace.",
     "MB-093": "That the page declares a viewport. Whether the layout fits a phone is MB-107, which renders it.",
     "MB-104": "Google's size, shape, format and crawl requirements for the icon the page declares. Whether it represents the brand, or keeps a stable URL, is not read.",
-    "MB-098": "That every image with a srcset also carries sizes. A large image sent without srcset is MB-096.",
+    "MB-098": "That every image with a width-descriptor (w) srcset also carries sizes; a density (1x, 2x) srcset needs none. A large image sent without srcset is MB-096.",
+    "CN-034": "Visible elements with over three characters of their own text whose computed font size is under 12px. Shorter text and text directly in <body> are not read; 12px is a floor, not a readability judgement.",
+    "CN-035": "Links inside running text told apart by colour alone: not underlined, not bolder, and under 3:1 against the surrounding text. Hover and focus styles and links with no text around them are not read.",
+    "CN-036": "Visible text over three characters against its composited background colours, below WCAG AA (4.5:1, 3:1 large). Text over a background image or gradient is not measured and withholds a pass.",
+    "CN-051": "Visible fixed or sticky elements covering at least a quarter of the viewport when the page was rendered. Whether they hide content, when they appear or how they are dismissed is not read.",
+    "MB-094": "The same count from a phone-width render: fixed or sticky elements covering at least a quarter of the viewport. Whether they hide content, when they appear or how they are dismissed is not read.",
+    "MB-108": "Visible headings, paragraphs, links, buttons and list items whose content overflows their own box at phone width. A scrollable box counts, and clipping by an ancestor is not read.",
+    "MB-103": "Visible links, buttons, form fields and role=button elements whose box is under 48px on either side at phone width. Spacing between targets, overlap and occlusion are not read.",
+    "CI-016": "Images with no alt, a placeholder alt (a filename, a camera stub, under three characters), or an empty alt on a link's only content or a large in-content image. Whether an alt describes its image is not read.",
+    "MD-186": "Images with no alt, a placeholder alt (a filename, a camera stub, under three characters), or an empty alt on a link's only content or a large in-content image. Whether an alt describes its image is not read.",
+    "CN-054": "Images whose only source is a JavaScript-deferred one (data-src or data-srcset) with no native src, srcset or <picture> source. Other lazy-loaded content and loading=lazy itself are not read.",
+    "MB-097": "Per image: none over 250 KB, and a WebP or AVIF offer for any image wider than 1280px. Compression under 250 KB and the format of smaller images are not judged.",
+    "SP-107": "The worse of the first and the largest contentful paint (LCP counts only what the first screen shows), both from CrUX, or both from Lighthouse for a page CrUX lacks. Resource priorities are not read.",
+    "MB-096": "Images wider than 1280px whose markup offers no width-described (w) srcset and no media-chosen <source>; a density srcset or a format-only source is not responsive. The widths offered are not read.",
+    "MD-189": "Images wider than 1280px lacking either half: a width-described (w) srcset or media-chosen <source>, and a WebP or AVIF offer. Smaller images and the widths offered are not read.",
     "AR-152": "That robots.txt declares at least one user-agent group. Whether its rules are the right ones is a judgement the audit does not make.",
     "CN-040": "That the page links to a privacy policy. Whether the policy is current is not read.",
     "SP-109": "Third-party scripts that block rendering. The other common speed traps are separate items.",
@@ -1254,9 +1269,11 @@ item(105, "high", S, "javascript_render_audit.py", JSRENDER,
 item(106, "medium", M, fix="Test on real devices before and after release")
 
 # --- 7. Speed ---------------------------------------------------------------
+# F15: FCP alone is not the first screen. `above_fold` is the worse of FCP and LCP,
+# both from CrUX or, for a page CrUX lacks, both from Lighthouse (`pagespeed._above_fold`).
 item(107, "high", S, "pagespeed.py", ["{url}", "--strategy", "mobile"],
-     RATING("FCP"),
-     "Speed up above-the-fold rendering", warn=RATING_WARN("FCP"))
+     RATING("above_fold.rating"),
+     "Speed up above-the-fold rendering", warn=RATING_WARN("above_fold.rating"))
 # The old rule asserted that field data *exists*, which is a different question
 # from the one in the title and answers it wrongly: CrUX publishes nothing for a
 # low-traffic URL, so every small site failed a critical item for being small.
@@ -1668,9 +1685,8 @@ item(180, "medium", S, "a11y_seo_checker.py", PAGE,
      "Meet WCAG accessibility basics")
 # CI-017 validates the bytes Nu fetches from the server; TE-181 validates the DOM a
 # browser builds after scripts run. Those are two documents that can independently be
-# valid or invalid, so the pair now carries 6 weight points rather than 3. Unlike the
-# rejected MD-189 conjunction, this does not charge one fact twice: it measures two
-# different facts.
+# valid or invalid, so the pair now carries 6 weight points rather than 3. It does not
+# charge one fact twice: it measures two different facts.
 #
 # The DOM comes from the same rendered-page artifact `rendered_audit.py` reads, not
 # from a browser launched mid-audit. A browser inside the run fetches the page and its
@@ -1720,15 +1736,14 @@ item(187, "high", S, "image_weight_audit.py",
      {"path": "broken_image_count", "eq": 0},
      "Fix broken images")
 item(188, "low", L, fix="Use original contextual images, limit stock photography")
-# MD-189 names two halves which MB-096 and MB-097 measure separately. It takes
-# the responsive half and defers to MB-096 so that one fact is charged once. A
-# conjunction was rejected: it would raise this theme from 6 to 9 weight points
-# and make one missing-modern-format defect fail both MD-189 and MB-097.
-# 0.108.0 moved it with MB-096 to the per-image count, and the reason above still
-# holds: the modern-format half is MB-097's, and charging it here twice is what was
-# rejected.
+# MD-189 names two halves which MB-096 and MB-097 measure separately. Until F15 it
+# took the responsive half only, so that one fact was charged once; the owner ruled
+# on 2026-11-08 that the title names both and both are asserted: a large image with
+# no width-described srcset or no WebP/AVIF offer fails it. One defect now fails
+# MD-189 beside MB-096 or MB-097, which is the cost that ruling accepted, and MD-189
+# left `SAME_CHECK`: it no longer runs MB-096's check, so the theme weighs 9 points.
 item(189, "medium", S, "image_weight_audit.py", ["{url}", "--fetch-images"],
-     {"path": "large_without_srcset_count", "eq": 0},
+     {"path": "large_legacy_or_unresponsive_count", "eq": 0},
      "Modern formats and responsive images")
 item(190, "medium", S, "video_schema_checker.py", PAGE,
      ISSUES_ANY(),
@@ -2034,7 +2049,6 @@ SAME_CHECK = {
     "CI-016": "MD-186",   # "Provide Meaningful Image Alt Text" / "...Alt Text"
     "GO-144": "GEO-004",  # featured snippets / answer blocks for AEO
     "GO-145": "GEO-005",  # AI Overviews / citation-ready content
-    "MB-096": "MD-189",   # both medium; MB-096's title exactly names this assertion
     "MD-190": "MB-102",   # video SEO (medium) over "Optimize Video for Mobile" (low)
     # One Safe Browsing response, expressed three ways in the source checklists.
     # All three read the same threats list. The critical pair ties on severity, so
