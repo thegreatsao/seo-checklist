@@ -937,8 +937,8 @@ site having served no such field.
   outside `rgb()` (`oklch()`, `color()`, `lab()`); an `<img>` behind the text is not
   detected (F15; until then it was scored against the
   colour behind the image). A file from the snippet before F15 has no such key
-`links_indistinct` — int — CN-035: links in running text (the parent carries text of
-  its own) that are not underlined, not bolder, have no background of their own, and
+`links_indistinct` — int — CN-035: links in running text (the nearest block around
+  the link holds text outside its links) that are not underlined, not bolder, have no background of their own, and
   are in the text's colour or under 3:1 against it (WCAG G183). **Withheld** at 0 when
   `links_contrast_unmeasured` is not 0 or is absent (F15).
 `links_contrast_unmeasured` — int — links whose colour or whose text's colour is outside
@@ -995,10 +995,10 @@ one — the script refuses the file instead.
   correct markup for a decorative image and is `empty_alt`.
 `empty_alt_meaningful` — int — **absent on a page with no images**. Images with an
   empty (or whitespace) alt that carry meaning: a link's only content however it is
-  marked (unless the link is `aria-hidden`), or an image declared at least
+  marked, or an image declared at least
   `MEANINGFUL_IMAGE_MIN_PX` (200) on each side outside nav, aside, a page-level header
   or footer (one inside article, aside, main, nav or section is content), and their
-  ARIA roles
+  ARIA roles; nothing inside a `hidden` or `aria-hidden` link or wrapper counts
   (`seo_common.image_carries_meaning`, F15)
 `alt_not_meaningful` — int — **absent on a page with no images**. `missing_alt +
   placeholder_alt + empty_alt_meaningful` (the last since F15), and what CI-016 and

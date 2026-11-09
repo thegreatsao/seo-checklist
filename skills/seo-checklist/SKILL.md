@@ -308,11 +308,19 @@ Resize to a phone viewport first (375×812), load the page, then run one
   // A link inside running text, told apart by colour alone: no underline, not
   // bolder, no background of its own, and the text's own colour or under 3:1
   // against it (WCAG technique G183). A colour rgb() cannot read is unmeasured.
+  // Running text: the nearest block around the link holds text outside its links,
+  // whether that text sits beside the link or in spans and bold leads around it.
+  const outside = n => [...n.childNodes].map(c => c.nodeType === 3 ? c.textContent :
+    c.nodeType === 1 && c.tagName !== 'A' ? outside(c) : '').join('');
   let indistinct = 0, linksUnmeasured = 0;
   for (const a of document.querySelectorAll('a[href]')) {
     const p = a.parentElement;
     if (!p || !visible(a) || !a.textContent.trim()) continue;
-    if (![...p.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue;
+    let block = p;
+    while (block.parentElement &&
+           ['inline', 'contents'].includes(getComputedStyle(block).display))
+      block = block.parentElement;
+    if (!outside(block).trim()) continue;
     const s = getComputedStyle(a), parent = getComputedStyle(p);
     const underlined = (s.textDecorationLine || '').includes('underline');
     const bolder = parseInt(s.fontWeight) - parseInt(parent.fontWeight) >= 200;
@@ -381,6 +389,9 @@ targets, mobile interstitials, horizontal overflow and clipped text — are
 **dropped**, and those items report `NO_DATA`. A desktop window that fits its own
 content answers nothing about a phone, and passing one through would be a verdict
 about a viewport nobody looked at.
+
+A link is in running text when the nearest block around it holds text outside its
+links, so a row of links in a nav or a list is not judged.
 
 `links_contrast_unmeasured` is the same for CN-035: a link whose colour, or its
 text's, is outside `rgb()` and differs from it. CN-035 passes only when it and

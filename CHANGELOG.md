@@ -26,7 +26,7 @@ file comes from the snippet before `text_nodes_contrast_unmeasured` — **re-tak
 in running text and fails one in the text's colour or under 3:1 against it with no underline, weight or background
 (WCAG G183), not only exact colour equality in `p/li/td/article`, and withholds its pass when a link's colour is
 outside `rgb()` or the file predates `links_contrast_unmeasured`; SP-107 fails a slow LCP beside a fast FCP (both paints from one source, as
-before) and no longer passes on one good paint; SP-108/SP-113 no longer pass with LCP or CLS absent; CI-016/MD-186 fail an empty
+before) and no longer passes on one good paint; SP-108/SP-113 (and SP-111/SP-112, which read the same verdict) no longer pass with LCP or CLS absent; CI-016/MD-186 fail an empty
 alt on a link's only content (however the image is marked) or an in-content image declared 200 px or more on each
 side; MD-184 and CN-054 count `srcset`-, `<picture>`- and `data-srcset`-only images, and CN-054 a `data:`
 placeholder beside `data-src` as no fallback; MB-096 and MD-189 want width descriptors or a `<source>` whose `media` tests a width, so a density srcset or a

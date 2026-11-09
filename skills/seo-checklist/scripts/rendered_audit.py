@@ -25,6 +25,7 @@ not measured:
       "text_nodes_below_contrast": 4,
       "text_nodes_contrast_unmeasured": 0,
       "links_indistinct": 2,
+      "links_contrast_unmeasured": 0,
       "overlays_covering_content": 0,
       "tap_targets_below_48px": 3,
       "horizontal_overflow_px": 0,

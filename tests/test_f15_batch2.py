@@ -54,9 +54,11 @@ const INITIAL = {display: 'block', visibility: 'visible', opacity: '1',
   position: 'static', backgroundColor: 'rgba(0, 0, 0, 0)', backgroundImage: 'none',
   textDecorationLine: 'none'};
 const INHERITED = {color: 'rgb(0, 0, 0)', fontSize: '16px', fontWeight: '400'};
+const INLINE = ['a', 'span', 'strong', 'em', 'b', 'i'];
 const all = [];
 function build(node, parent) {
-  const style = Object.assign({}, INITIAL, node.style || {});
+  const style = Object.assign({}, INITIAL,
+    INLINE.includes(node.tag) ? {display: 'inline'} : {}, node.style || {});
   for (const k of Object.keys(INHERITED))
     if (!(node.style || {})[k]) style[k] = parent ? parent._style[k] : INHERITED[k];
   const el = {nodeType: 1, tagName: node.tag.toUpperCase(), parentElement: parent,
@@ -260,6 +262,25 @@ class RenderedSnippet(unittest.TestCase):
             with self.subTest(style=style):
                 out = self.measure(self.link("rgb(51, 51, 51)", parent="p", **style))
                 self.assertEqual(out["links_indistinct"], 0)
+
+    def test_running_text_is_the_blocks_not_the_parents(self):
+        """Review round 7: text in sibling spans, a bold lead, or a link wrapped in
+        an inline element — all running text, all skipped by a parent-only test."""
+        grey = {"color": "rgb(51, 51, 51)"}
+        link = {"tag": "a", "attrs": {"href": "/x"}, "style": grey, "kids": ["the guide"]}
+        for kids in ([{"tag": "span", "kids": ["Read "]}, link,
+                      {"tag": "span", "kids": [" before you start."]}],
+                     [{"tag": "strong", "kids": ["Note:"]}, " ", link],
+                     ["Read ", {"tag": "span", "kids": [link]}, " first."]):
+            with self.subTest(kids=kids):
+                out = self.measure([{"tag": "p", "style": grey, "kids": kids}])
+                self.assertEqual(out["links_indistinct"], 1)
+
+    def test_a_row_of_links_is_not_running_text(self):
+        out = self.measure([{"tag": "nav", "kids": [
+            {"tag": "a", "attrs": {"href": "/a"}, "kids": ["Home"]},
+            {"tag": "a", "attrs": {"href": "/b"}, "kids": ["About"]}]}])
+        self.assertEqual(out["links_indistinct"], 0)
 
     def test_a_link_with_no_text_around_it_is_not_in_running_text(self):
         out = self.measure([{"tag": "li", "kids": [
