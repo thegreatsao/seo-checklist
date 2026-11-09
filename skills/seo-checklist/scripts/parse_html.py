@@ -142,9 +142,11 @@ def _node_id(base_url: str, ident: str) -> str:
     """A JSON-LD `@id` resolved against the page, or as written when it is no URL any
     parser accepts (`https://[YOUR_DOMAIN]/`, an unexpanded template)."""
     try:
-        return urljoin(base_url, ident)
+        joined = urlparse(urljoin(base_url.strip(), ident.strip()))
     except ValueError:
         return ident
+    # Scheme and host are case-insensitive; the fragment these ids name is kept.
+    return joined._replace(scheme=joined.scheme.lower(), netloc=joined.netloc.lower()).geturl()
 
 
 def _has_trail_entry(entries: Any, nodes: dict | None = None, base_url: str = "") -> bool:

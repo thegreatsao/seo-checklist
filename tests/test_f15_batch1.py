@@ -302,6 +302,12 @@ class BreadcrumbTrails(unittest.TestCase):
                  '{"@id":"#home","@type":"ListItem","position":1,"name":"Home"}]}</script>')
         out = parse_html.parse_html(page(based, self.NAV), "https://example.com/shop/widget")
         self.assertTrue(out["breadcrumbs"]["schema"])
+        for base in ('<base href="https://EXAMPLE.COM/page">', '<base href="/page ">'):
+            with self.subTest(base=base):
+                spelled = based.replace('<base href="/">', base).replace(
+                    "https://example.com/#home", "https://example.com/page#home")
+                out = parse_html.parse_html(page(spelled, self.NAV), "https://example.com/page")
+                self.assertTrue(out["breadcrumbs"]["schema"])
         typed = ('<script type="application/ld+json">[{"@id":"#crumb","@type":"BreadcrumbList"},'
                  '{"@id":"#crumb","@type":"ItemList","itemListElement":[{"@type":"ListItem",'
                  '"position":1,"name":"Home"}]}]</script>')
