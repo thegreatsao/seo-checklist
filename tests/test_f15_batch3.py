@@ -755,7 +755,7 @@ class ReviewRound4(unittest.TestCase):
         self.assertEqual(verdict("BL-081", out), PASS)
 
     def test_a_title_with_its_brand_is_the_anchor_s_title(self):
-        for sep in anchor_text_audit.TITLE_SEPARATORS:
+        for sep in ("|", "-", "–", "—", ":", "·"):
             with self.subTest(sep=sep):
                 self.assertTrue(anchor_text_audit.names_its_title(
                     "Rye bread", f"Rye bread {sep} Bakery"))
@@ -838,6 +838,37 @@ class ReviewRound5(unittest.TestCase):
                                      "/a/": (503, {"Retry-After": "0"}, "busy")})
         self.assertEqual(verdict("CI-009", out), NO_DATA)
         self.assertEqual(out["issues"], [])
+
+
+class ReviewRound6(unittest.TestCase):
+    def test_any_spaced_separator_ends_the_title(self):
+        for sep in ("»", "•", "~", "/", "*", "«", ">", "|"):
+            with self.subTest(sep=sep):
+                self.assertTrue(anchor_text_audit.names_its_title("Rye bread",
+                                                                  f"Rye bread {sep} Bakery"))
+        self.assertFalse(anchor_text_audit.names_its_title("seo", "SEO-friendly URLs"))
+
+    def test_a_mostly_unreadable_site_with_one_latin_cluster_is_withheld(self):
+        rows = [row(SITE + f"r{i}", title=f"Товар номер {i}", links=(SITE,))
+                for i in range(20)]
+        rows += [row(SITE + "a", title="iPhone 15 чехол", links=(SITE + "b",)),
+                 row(SITE + "b", title="iPhone 14 чехол", links=(SITE + "a",))]
+        out = topical_cluster_mapper.map_inventory(inventory(rows))
+        self.assertEqual(verdict("AR-153", out), NO_DATA)
+
+    def test_a_redirect_to_a_row_without_content_is_kept(self):
+        new = row(SITE + "new", status=503, title=None)
+        old = row(SITE + "old", title="New", final_url=SITE + "new")
+        inv = inventory([row(SITE), old])
+        inv["pages"][site_crawl.page_key(SITE + "new")] = new
+        self.assertEqual(site_crawl.read_twice(inv["pages"]), set())
+
+    def test_te_176_withholds_a_busy_target(self):
+        target = row(SITE + "b", status=503, title=None)
+        inv = inventory([row(SITE + "a", canonical=SITE + "b"), target])
+        out = canonical_checker.check_inventory(SITE, written(inv))
+        self.assertEqual(out["issues"], [])
+        self.assertTrue(out["truncated"])
 
 
 # ---------------------------------------------------------------------------

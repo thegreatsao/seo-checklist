@@ -95,21 +95,30 @@ def anchors_from_inventory(inventory: dict) -> dict:
     return {"pages": pages, "links": links, "fetch_errors": fetch_errors}
 
 
-TITLE_SEPARATORS = ("|", "-", "–", "—", ":", "·")
-
-
 def names_its_title(anchor: str, title: str) -> bool:
-    """Whether an anchor is the target's own title, a brand part (`Post | Brand`) aside."""
+    """Whether an anchor is the target's own title, a brand or subtitle part aside:
+    `Name | Brand`, `Name » Brand`, `Brand – Name`, `Name: a subtitle`. A separator is
+    any mark that is not a letter or digit, set off by a space, or a colon (F15 reviews;
+    `SEO-friendly` does not end at `SEO`)."""
     anchor = " ".join(anchor.lower().split())
     title = " ".join((title or "").lower().split())
     if not anchor or not title:
         return False
     if anchor == title:
         return True
-    # `Name | Brand`, `Name: a subtitle`, `Brand – Name`: the anchor, then a separator.
-    after = title[len(anchor):].lstrip()[:1] if title.startswith(anchor) else ""
-    before = title[:-len(anchor)].rstrip()[-1:] if title.endswith(anchor) else ""
-    return bool(after and after in TITLE_SEPARATORS or before and before in TITLE_SEPARATORS)
+    if title.startswith(anchor):
+        return _separates(title[len(anchor):])
+    if title.endswith(anchor):
+        return _separates(title[:-len(anchor)][::-1])
+    return False
+
+
+def _separates(rest: str) -> bool:
+    """Whether `rest`, read from the anchor's edge outwards, opens with a separator."""
+    stripped = rest.lstrip()
+    if not stripped or stripped[0].isalnum():
+        return False
+    return stripped[0] == ":" or len(stripped) < len(rest)
 
 
 def _pair(link: dict) -> tuple:

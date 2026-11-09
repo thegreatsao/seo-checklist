@@ -206,7 +206,11 @@ def read_twice(pages: dict) -> set:
         if not row.get("html") or not carries_content(row.get("status")):
             continue
         landed = page_key(row.get("final_url") or row.get("url") or key)
-        if landed != key and (landed in pages or landed in landings):
+        # The landing counts only if it was read: a `/new` row that answered 503 leaves
+        # `/old`'s copy the page's only reading (review round 6).
+        read = pages.get(landed) or {}
+        if landed != key and ((read.get("html") and carries_content(read.get("status")))
+                              or landed in landings):
             twice.add(key)
             continue
         landings.add(landed)

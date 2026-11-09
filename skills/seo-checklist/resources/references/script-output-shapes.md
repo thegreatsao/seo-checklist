@@ -313,8 +313,8 @@ that could not be checked when there are any.
     status, final_url, consolidated — under `--variants`)
   - `verdict`: self_canonical, canonicalized, cross_host, missing, conflicting, unknown;
     with `--check-targets` also target_unavailable (the target is not 200) and
-    target_unchecked (nothing answered, or a 429/5xx); with `--variants`
-    variant_unchecked (a variant answered 429/5xx) and variant_unconsolidated (a
+    target_unchecked (nothing answered, or a 429/503); with `--variants`
+    variant_unchecked (a variant answered 429/503) and variant_unconsolidated (a
     variant serves the same page — its text, or its title when neither has text — without redirecting to,
     declaring or noindexing it; one declaring another canonical is another page) (F15)
   - `signal` (CI-011): consistent, conflicting, noindex_canonicalized,

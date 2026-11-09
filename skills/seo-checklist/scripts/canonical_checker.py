@@ -47,9 +47,9 @@ def url_variants(url: str) -> list[str]:
 
 
 def _busy(fetched: dict) -> bool:
-    """A 429 or a 5xx: the server declined to say what the URL is, this time."""
-    status = fetched.get("status") or 0
-    return status == 429 or status >= 500
+    """A 429 or a 503: the server said it is too busy to answer, this time. Another 5xx
+    is an answer, and a canonical naming it is broken (TE-176 since 0.128.0)."""
+    return fetched.get("status") in (429, 503)
 
 
 def _page_print(html: dict) -> tuple:
@@ -145,7 +145,7 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
                 target_html = (parse_html(target["text"], target.get("url") or canonical)
                                if target.get("text") else {})
                 if target.get("status") is None or _busy(target):
-                    # Nothing answered, or a server too busy to (429, 5xx): neither
+                    # Nothing answered, or a server too busy to (429, 503): neither
                     # broken nor indexable is known (review round 5).
                     target_unanswered = True
                     if row["verdict"] == "canonicalized":
@@ -306,7 +306,8 @@ def check_inventory(site_url: str, inventory_path: str,
 
         target_status = target.get("status")
         row["canonical_status"] = target_status
-        if target_status is None or target.get("error_kind") == "robots":
+        if (target_status is None or target.get("error_kind") == "robots"
+                or _busy(target)):
             unchecked_targets.add(target_key)
             rows.append(row)
             continue

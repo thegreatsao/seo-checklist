@@ -33,9 +33,10 @@ def _topic_from_text(text: str) -> str:
 #  most frequent title word, and before this a brand leading every title made the whole
 #  site one cluster, so a shop whose product pages do not all link to one another failed
 #  AR-153 for a silo it never meant to build. Half is the line between a word most pages
-#  share and a word a group of them shares; nothing external sets it, and on a site about
-#  one subject it also sets that subject aside, which leaves the item passing — the side
-#  this crude a reading should err on.
+#  share and a word a group of them shares; nothing external sets it. On a site about one
+#  subject it also sets that subject aside: until F15 that left the item passing, and since
+#  one-page clusters stopped counting as hubs (F15 batch 3) it leaves the pages without a
+#  hub unless a subtopic groups two of them, so a one-subject site fails.
 SITE_WIDE_SHARE = 0.5
 
 
@@ -118,13 +119,15 @@ def map_inventory(inventory: dict) -> dict:
     readable = sum(1 for r in rows if r["topic"] != "uncategorized")
     # Nor when the pages it cannot read outnumber those it can (review round 5: two
     # Latin product names on a Cyrillic site scored the other twenty pages 0).
-    if (not result.get("hub_count") and len(rows) > 1
-            and (readable < 2 or readable < len(rows) - readable)
-            and "score" in result):
+    # Either way: a hub found among the few readable titles says no more about the rest
+    # than its absence would (review round 6).
+    if (len(rows) > 1 and "score" in result
+            and ((not result.get("hub_count") and readable < 2)
+                 or readable < len(rows) - readable)):
         del result["score"]
-        result["score_withheld"] = ("fewer than two page titles carry a topic word this "
-                                    "reading can read, so no hub cannot be told from no "
-                                    "reading")
+        result["score_withheld"] = ("too few page titles carry a topic word this reading "
+                                    "can read (Latin letters), so whether the site has "
+                                    "topic hubs cannot be told")
     result["fetch_error"] = inventory.get("fetch_error") or (
         None if rows else "the crawl read no page")
     result["fetch_error_kind"] = inventory.get("fetch_error_kind")
