@@ -33,6 +33,8 @@ SKILL_DIR = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(SKILL_DIR, "scripts"))
 from checklist_runner import EFFORT_COST, passes_by_absence  # noqa: E402
 from seo_common import STATUS_CLASSES, walk_json  # noqa: E402
+# MS-020's budget is the measured constant, not a number restated here (F15).
+from article_seo import TITLE_MAX_CHARS  # noqa: E402
 
 # The same AST reading `tools/audit_reachability.py` makes of a checker's source, for
 # a different question: not "can this rule ever fail" but "does this rule's key reach
@@ -622,7 +624,7 @@ MEASURES = {
     "TE-167": "One request made during this audit, and whether it was answered below 500. Uptime over time needs a monitoring service.",
     "IN-121": "That the hreflang set carries exactly one x-default. Region codes, country domains and Search Console settings are not read.",
     "IN-128": "That the page lists itself in its own hreflang set. Which version a visitor is actually served is not tested.",
-    "MS-030": "That the description runs 100 to 144 characters, what the desktop snippet shows of ordinary text by this tool's calibration; the title's 150–160 is cut. Whether it is clear and relevant is not read.",
+    "MS-030": "That the description runs 100 to 144 characters: 144 is what the desktop snippet shows of ordinary text by this tool's calibration, 100 an editorial convention; the title's 150–160 is cut. Clarity and relevance are not read.",
     "GO-139": "Whether the site ranks first, with any of its pages, for its most-searched branded query in Search Console. The rest of the brand's results page — knowledge panel, reviews, other sites — is not read.",
     "SE-117": "That the audited page and up to three same-site pages it links to answer their http:// address with a permanent redirect to HTTPS. Other pages are not requested.",
     "TE-175": "That the page is served over HTTPS and loads nothing over plain HTTP that a browser blocks or upgrades: scripts, stylesheets, frames, objects, images and media. URLs inside CSS and other page errors are not read.",
@@ -647,6 +649,15 @@ MEASURES = {
     "GO-145": "How citation-ready this page's content is. Whether it appears in AI Overviews or zero-click results is not observable here.",
     "TE-174": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
     "CN-044": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
+    # F15 batch 1: the owner's `measures` rulings on F03 batch 3, and the sentence
+    # half of two fixes (MS-028, TE-166).
+    "MS-028": "That the page carries a meta description that is not empty or whitespace. Which pages are high-value, and whether they were filled first, is not read.",
+    "TE-166": "That the page declares an icon: a link whose rel names icon or apple-touch-icon. Whether the file loads and meets Google's requirements is MB-104, which fetches it.",
+    "AR-146": "That a paginated page's rel=prev and rel=next stay on this host and do not point at the page itself. The order of the series and its visible controls are not read.",
+    "CN-048": "That headings never skip a level and the page marks its content with a main landmark. Other semantic markup is not read.",
+    "CN-066": "That the page has at least two non-empty H2 headings. Whether they organise the content is not read.",
+    "IN-123": "That the html element carries a non-empty lang attribute. Whether the code is valid and matches the page's text is not read.",
+    "MS-020": f"That the title is at most {TITLE_MAX_CHARS} characters, what the 600 px desktop title shows of ordinary text by this tool's calibration. Rendered width is not measured, so capitals can be cut sooner.",
     "TE-180": "The WCAG level-A failures the HTML shows: images without alt, form fields without an accessible name, no page language. Contrast is CN-036; keyboard use is not tested.",
 }
 
@@ -710,8 +721,11 @@ item(3, "critical", S, "indexability_matrix.py", PAGE,
            "value_map": {"ok": "pass", "other_success": "pass",
                          "no_content": "fail", "redirect": "fail",
                          "client_error": "fail", "server_error": "fail"}})
+# Every robots meta is read (parse_html.py joins them), `noindex` in any case, and
+# `none` — noindex, nofollow — as a rule of its own, never as the argument of
+# `max-image-preview: none` (F15; F03 batch 2's calibration and the 2026-10-24 audit).
 item(4, "critical", S, "parse_html.py", HTMLARG,
-     {"path": "meta_robots", "none_matching": "noindex"},
+     {"path": "meta_robots", "none_matching": r"(?i)\bnoindex\b|(?:^|,)\s*none\s*(?:,|$)"},
      "Indexable pages should be set to index, follow")
 item(5, "critical", S, "indexability_matrix.py", PAGE,
      {"path": "rows.0.robots_allowed", "truthy": True},
@@ -845,8 +859,8 @@ item(19, "high", S, "robots_path_tester.py",
 
 # --- 2. Meta & Structured Data ---------------------------------------------
 item(20, "high", S, "parse_html.py", HTMLARG,
-     {"path": "title", "len_lte": 60},
-     "Shorten the title so it is not truncated in the SERP (~60 characters)")
+     {"path": "title", "len_lte": TITLE_MAX_CHARS},
+     f"Shorten the title so it is not truncated in the SERP (~{TITLE_MAX_CHARS} characters)")
 item(21, "medium", S, "parse_html.py", HTMLARG,
      {"path": "title", "len_gte": 30},
      "Titles under 30 characters are usually too vague to match intent")
@@ -1236,7 +1250,7 @@ item(104, "low", S, "favicon_check.py", PAGE,
          "recommended": "pass", "required_only": "pass", "fails": "fail"}})
 item(105, "high", S, "javascript_render_audit.py", JSRENDER,
      {"path": "diffs", "len_eq": 0},
-     "Put the title, description, canonical, H1s, internal links, schema and body text in the served HTML, not only in what JavaScript builds")
+     "Put the title, description, meta robots and meta googlebot directives, canonical, H1s, internal links, schema and body text in the served HTML, not only in what JavaScript builds")
 item(106, "medium", M, fix="Test on real devices before and after release")
 
 # --- 7. Speed ---------------------------------------------------------------

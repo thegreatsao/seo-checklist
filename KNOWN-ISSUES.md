@@ -10,8 +10,8 @@ open this file. Section 6 therefore carries a marker per entry, and
 `tests/known-issues.json` records against each marker what the entry claims and — where
 the claim can be re-run — a probe that re-runs it.
 `python tests/known_issues.py --check` executes every probe and
-fails when the tree stops answering what its entry says it answers. 34 of the 51
-entries carry a probe; the other 17 carry a written reason for having
+fails when the tree stops answering what its entry says it answers. 34 of the 52
+entries carry a probe; the other 18 carry a written reason for having
 none, and that count is printed, because a ledger where everything is exempt is a
 ledger that has stopped working.
 
@@ -440,6 +440,16 @@ verdict without carrying its address, and a site-level check has no single page 
 name. A column called `url` would be read as "fix this page".
 
 ## 6. Smaller, but they will bite
+
+- **F03's second reading found 110 rules that decide less than their title, or a
+  `measures` sentence that misstates the code, and F15 is repairing them.** Codex read
+  every rule-carrying item a second time (F03 batches 3–5) and the owner ruled each
+  dispute: 74 code defects, 33 sentences, 1 assertion to retire, 2 not defects. Until F15
+  is `passing` a verdict on an item still listed may be narrower than its title says —
+  e.g. `MS-026` and `CN-039` drop the very pages they are about. Batch 1 (2026-11-09)
+  repaired the 14 items `parse_html.py` and `javascript_render_audit.py` carry; the open
+  list, with each ruling, is `docs/sprint-20261109-F15.md`.
+  <!-- ki: f03-ruled-defects-open -->
 
 - **The four shapes this entry singled out are judged, and twenty constants are still
   outside the inventory.** 0.71.0 listed twenty-five module-level numeric constants with

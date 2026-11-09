@@ -130,11 +130,11 @@
         "requires": "offline",
         "assert": {
           "path": "meta_robots",
-          "none_matching": "noindex"
+          "none_matching": "(?i)\\bnoindex\\b|(?:^|,)\\s*none\\s*(?:,|$)"
         }
       },
       "verdict": "answers",
-      "reading": "`meta_robots` is the page's robots meta content, reported as `None` when the page has no such tag; the rule passes when no directive says noindex, a page without the tag included, and is undecided when the script's output has no `meta_robots` key at all.",
+      "reading": "`meta_robots` is every robots meta's content, joined (`None` when the page has none); the rule fails `noindex` in any case and `none` standing as a rule of its own, never `max-image-preview: none`'s argument, and passes a page without the tag (F15: the last tag alone was read, and case and `none` were not).",
       "shapes": {
         "external": "The word is *Indexing*, but the title's subject is the meta tag, which the page itself carries; no search engine data is needed."
       },
@@ -578,11 +578,11 @@
         "requires": "offline",
         "assert": {
           "path": "title",
-          "len_lte": 60
+          "len_lte": 65
         }
       },
-      "verdict": "answers",
-      "reading": "`title` length at most 60 characters, the character proxy for SERP truncation.",
+      "verdict": "measures",
+      "reading": "`title` is the document's title (the first outside SVG, whitespace collapsed), at most `article_seo.TITLE_MAX_CHARS`, 65, what the calibration fits into the 600 px desktop title for ordinary text; rendered width is not measured, and `measures` says so (F15: the registry wrote 60).",
       "shapes": {
         "conjunction": "The parenthetical is the reason for the limit."
       },
@@ -722,8 +722,8 @@
           "truthy": true
         }
       },
-      "verdict": "answers",
-      "reading": "`meta_description` present and non-empty.",
+      "verdict": "measures",
+      "reading": "`meta_description` present and not empty or whitespace (F15: whitespace was truthy). *High-Value Pages First* is an order of work no single page shows, and `measures` says so.",
       "shapes": {
         "conjunction": "*High-value pages first* is an order of work, not a second subject."
       },
@@ -810,7 +810,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`meta_keywords` is the tag's content, `None` when the page has no such tag; the rule passes on `None` or an empty value and is undecided when the output has no `meta_keywords` key at all.",
+      "reading": "`meta_keywords` is every keywords tag's non-empty content, joined, `None` when the page has no such tag; the rule passes on `None` or an empty value (F15: each tag overwrote the last) and is undecided when the output has no `meta_keywords` key at all.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -1113,7 +1113,7 @@
           ]
         }
       },
-      "verdict": "answers",
+      "verdict": "measures",
       "reading": "`issues` carries heading-level skips and a missing <main>; nav and footer absence are deliberately not faults.",
       "shapes": {
         "conjunction": "Both halves are read: the heading hierarchy and the one landmark every page needs."
@@ -1284,7 +1284,7 @@
           "len_gte": 2
         }
       },
-      "verdict": "answers",
+      "verdict": "measures",
       "reading": "`h2` holds at least two subheadings.",
       "shapes": {},
       "second_reading": {
@@ -1891,7 +1891,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`diffs` lists differences in content, meta and directives between the served and the rendered HTML.",
+      "reading": "`diffs` lists differences between the served and the rendered HTML in title, description, the robots and googlebot directives (F15), canonical, and counts of H1s, internal links, schema blocks and words.",
       "shapes": {
         "conjunction": "Content, meta and directives are each compared."
       },
@@ -2401,7 +2401,7 @@
           "truthy": true
         }
       },
-      "verdict": "answers",
+      "verdict": "measures",
       "reading": "`lang` is the html lang attribute, required present.",
       "shapes": {},
       "second_reading": {
@@ -2819,7 +2819,7 @@
           "truthy": true
         }
       },
-      "verdict": "answers",
+      "verdict": "measures",
       "reading": "`pagination.issues` carries rel=prev/next pointing off-host or at the page itself, applicable only to a paginated page.",
       "shapes": {},
       "second_reading": {
@@ -3075,7 +3075,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`breadcrumbs` requires both a BreadcrumbList schema and a detectable breadcrumb UI.",
+      "reading": "`breadcrumbs` requires both a BreadcrumbList schema with a trail entry and a detectable breadcrumb UI; a Microdata/RDFa trail counts as UI only with a link in it (F15: an empty list or carrier counted).",
       "shapes": {
         "conjunction": "Both halves are read, as a two-key object."
       },
@@ -3177,8 +3177,8 @@
           "truthy": true
         }
       },
-      "verdict": "answers",
-      "reading": "`favicon` is the first declared icon link.",
+      "verdict": "measures",
+      "reading": "`favicon` is the first link whose rel names `icon` or `apple-touch-icon` (F15: `shortcut` alone counted). Whether the file loads is MB-104's, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",

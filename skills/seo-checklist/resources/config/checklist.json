@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "bbc0b87fd8f2",
+  "registry_version": "841a2a4da32d",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -212,7 +212,7 @@
         "requires": "offline",
         "assert": {
           "path": "meta_robots",
-          "none_matching": "noindex"
+          "none_matching": "(?i)\\bnoindex\\b|(?:^|,)\\s*none\\s*(?:,|$)"
         }
       },
       "effort": "low",
@@ -620,11 +620,12 @@
         "requires": "offline",
         "assert": {
           "path": "title",
-          "len_lte": 60
+          "len_lte": 65
         }
       },
+      "measures": "That the title is at most 65 characters, what the 600 px desktop title shows of ordinary text by this tool's calibration. Rendered width is not measured, so capitals can be cut sooner.",
       "effort": "low",
-      "fix": "Shorten the title so it is not truncated in the SERP (~60 characters)"
+      "fix": "Shorten the title so it is not truncated in the SERP (~65 characters)"
     },
     {
       "id": "MS-021",
@@ -783,6 +784,7 @@
           "truthy": true
         }
       },
+      "measures": "That the page carries a meta description that is not empty or whitespace. Which pages are high-value, and whether they were filled first, is not read.",
       "effort": "low",
       "fix": "Fill in meta descriptions, high-value pages first"
     },
@@ -835,7 +837,7 @@
           }
         }
       },
-      "measures": "That the description runs 100 to 144 characters, what the desktop snippet shows of ordinary text by this tool's calibration; the title's 150–160 is cut. Whether it is clear and relevant is not read.",
+      "measures": "That the description runs 100 to 144 characters: 144 is what the desktop snippet shows of ordinary text by this tool's calibration, 100 an editorial convention; the title's 150–160 is cut. Clarity and relevance are not read.",
       "effort": "low",
       "fix": "Keep meta descriptions to 100-144 characters, what the desktop snippet shows"
     },
@@ -1199,6 +1201,7 @@
           ]
         }
       },
+      "measures": "That headings never skip a level and the page marks its content with a main landmark. Other semantic markup is not read.",
       "effort": "high",
       "fix": "Use hierarchical headings and semantic HTML"
     },
@@ -1499,6 +1502,7 @@
           "len_gte": 2
         }
       },
+      "measures": "That the page has at least two non-empty H2 headings. Whether they organise the content is not read.",
       "effort": "high",
       "fix": "Structure the copy with H2 subheadings"
     },
@@ -2268,7 +2272,7 @@
         }
       },
       "effort": "medium",
-      "fix": "Put the title, description, canonical, H1s, internal links, schema and body text in the served HTML, not only in what JavaScript builds"
+      "fix": "Put the title, description, meta robots and meta googlebot directives, canonical, H1s, internal links, schema and body text in the served HTML, not only in what JavaScript builds"
     },
     {
       "id": "MB-106",
@@ -2745,6 +2749,7 @@
           "truthy": true
         }
       },
+      "measures": "That the html element carries a non-empty lang attribute. Whether the code is valid and matches the page's text is not read.",
       "effort": "high",
       "fix": "Declare the page language in html lang"
     },
@@ -3226,6 +3231,7 @@
           "truthy": true
         }
       },
+      "measures": "That a paginated page's rel=prev and rel=next stay on this host and do not point at the page itself. The order of the series and its visible controls are not read.",
       "effort": "high",
       "fix": "Fix rel=next/prev: same host, and never pointing at the page itself"
     },
@@ -3644,6 +3650,7 @@
           "truthy": true
         }
       },
+      "measures": "That the page declares an icon: a link whose rel names icon or apple-touch-icon. Whether the file loads and meets Google's requirements is MB-104, which fetches it.",
       "effort": "low",
       "fix": "Add a favicon"
     },

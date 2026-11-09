@@ -328,10 +328,12 @@ unnoticed, not that it was right. Since F03's first batch a reading can carry a
 `second_reading` — the reader, the session that is its trace, its own verdict, an
 optional dispute, and a digest of what it judged (title, rule, `measures`, the script's
 source and the code that writes its input, and the first reading's verdict, reading and
-shape answers), taken when the blind input is printed: a malformed record, or one whose
-digest is no longer current — an edited script included — fails like a changed rule, and the audit prints how many are current,
-agree and dispute. A missing one fails nothing yet, and a dispute is counted, not failed,
-until the plan's last batch. The second reader is Codex (`docs/sprint-20261023-F03-plan.md`),
+shape answers), taken when the blind input is printed: a malformed record fails like a
+changed rule, and the audit prints how many are current, agree, dispute and are stale — a
+record whose digest is no longer current, an edited script included, named in the
+summary. A missing one, a dispute and a stale one fail nothing yet, until the plan's last
+batch: the owner's ruled order has F15 repair the items F03 read, reaching `passing`,
+before batch 6 re-reads what it changed (`docs/sprint-20261109-F15.md`). The second reader is Codex (`docs/sprint-20261023-F03-plan.md`),
 given the fixed brief `tools/second-reading-brief.md`: blind first — the title, rule,
 `measures` sentence and script source, and for a script that only reads JSON another
 program wrote, that program (`SKILL.md`'s rendered-page snippet for `rendered_audit.py`,

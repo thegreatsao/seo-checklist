@@ -1194,6 +1194,8 @@ below are examples rather than a schema.
 `url` — str
 `raw.title` — str
 `raw.meta_description` — str
+`raw.meta_robots` — NoneType or str — read by MB-105's comparison, from F15
+`raw.meta_googlebot` — NoneType or str — the same, for `<meta name="googlebot">`
 `raw.canonical` — str
 `raw.h1_count` — int
 `raw.internal_link_count` — int
@@ -1463,8 +1465,10 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
 `meta_description_band` — str — `short` (under `article_seo.META_MIN_CHARS`, 100),
   `fits` (up to `META_MAX_CHARS`, 144, the calibrated desktop snippet), `long`; absent
   with `meta_description_chars`. MS-030 reads it
-`meta_robots` — str
-`meta_keywords` — NoneType
+`meta_robots` — str — every `<meta name="robots">` content, joined with `, ` (F15: only the
+  last was kept); `None` when the page has none. CI-004 reads it
+`meta_keywords` — NoneType — every keywords tag's non-empty content, joined (F15). MS-031
+  reads it
 `x_robots_tag` — NoneType
 `canonical` — str
 `lang` — str
@@ -1496,7 +1500,8 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
 `schema[]` — array
   - item keys: @type, @types, @id, @context, status, note, has_context, has_type, from_graph, raw
 `breadcrumbs` — object — read by AR-158
-  - `schema` / `ui` — bool — parseable markup and an explicit UI marker
+  - `schema` / `ui` — bool — parseable markup with a trail entry (F15), and an explicit UI
+    marker; a Microdata/RDFa trail is UI only with a link in it
 `issues[]` — array — heading-level skips and missing main/nav/footer landmarks
   - item keys: severity, message, url, evidence
 `open_graph.og:locale` — str

@@ -5177,7 +5177,7 @@
         "redirect-chain": "PASS",
         "site-defects": "PASS",
         "slow-field": "PASS",
-        "unindexed": "FAIL",
+        "unindexed": "PASS",
         "url-shapes": "PASS",
         "went-down": "PASS"
       },
@@ -6846,7 +6846,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "bbc0b87fd8f2",
+  "registry_version": "841a2a4da32d",
   "sites": [
     "fixture:good",
     "fixture:broken",

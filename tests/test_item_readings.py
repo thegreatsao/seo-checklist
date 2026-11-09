@@ -112,7 +112,9 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         # for the brand and URL-stability halves it cannot read (answers -> measures).
         # 0.130.0: CI-003 reads the status class and carries a statement naming the
         # items that read the rest of the site (answers -> measures).
-        self.assertEqual(counts, {"answers": 114, "measures": 31, "owed": 0})
+        # F15 batch 1: seven of F03's `measures` rulings and fixes with a sentence —
+        # AR-146, CN-048, CN-066, IN-123, MS-020, MS-028, TE-166 (answers -> measures).
+        self.assertEqual(counts, {"answers": 107, "measures": 38, "owed": 0})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
         """Line endings are normalised first: a Windows checkout writes CRLF, and how
@@ -202,7 +204,7 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
     def test_a_current_record_is_no_problem_and_is_counted(self):
         self.assertEqual(self.found(), [])
         self.assertEqual(R.second_readings(self.registry, self.readings),
-                         {"current": 1, "agree": 1, "disputed": 0})
+                         {"current": 1, "agree": 1, "disputed": 0, "stale": 0})
 
     def test_the_digest_ignores_key_order_and_the_record_itself(self):
         """Nested order too (Codex's review of 22c5f62: reordering only the entry's own
@@ -246,7 +248,7 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
 
     def test_a_changed_script_makes_the_record_stale(self):
         with edited_scripts(self.items["TE-167"]["check"]["script"]):
-            self.assertTrue(named(self.found(), "TE-167", "changed under its second reading"))
+            self.assertTrue("TE-167" in R.stale_second_readings(self.registry, self.readings))
 
     def test_a_changed_crawl_makes_an_inventory_reader_stale(self):
         """F03-4: the crawl inventory's producer is a script, and the digest covers it."""
@@ -254,18 +256,18 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
         entry["second_reading"] = {
             "reader": "codex gpt-6.1-sol high", "session": "s-2",
             "read": R.digest(self.items["MS-022"], entry), "verdict": entry["verdict"]}
-        self.assertFalse(named(self.found(), "MS-022", "changed under its second reading"))
+        self.assertFalse("MS-022" in R.stale_second_readings(self.registry, self.readings))
         with edited_scripts("site_crawl.py"):
-            self.assertTrue(named(self.found(), "MS-022", "changed under its second reading"))
+            self.assertTrue("MS-022" in R.stale_second_readings(self.registry, self.readings))
 
     def test_a_changed_reading_makes_the_record_stale(self):
         self.entry["reading"] += " Amended."
-        self.assertTrue(named(self.found(), "TE-167", "changed under its second reading"))
+        self.assertTrue("TE-167" in R.stale_second_readings(self.registry, self.readings))
         self.assertEqual(R.second_readings(self.registry, self.readings)["current"], 0)
 
     def test_a_changed_measures_sentence_makes_the_record_stale(self):
         self.items["TE-167"]["measures"] += " Amended."
-        self.assertTrue(named(self.found(), "TE-167", "changed under its second reading"))
+        self.assertTrue("TE-167" in R.stale_second_readings(self.registry, self.readings))
 
     def test_each_malformed_record_is_named(self):
         cases = (
@@ -300,7 +302,18 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
                 readings["items"]["TE-167"]["second_reading"].update(change)
                 self.assertEqual(R.problems(self.registry, readings), [])
                 self.assertEqual(R.second_readings(self.registry, readings),
-                                 {"current": 1, "agree": 0, "disputed": 1})
+                                 {"current": 1, "agree": 0, "disputed": 1, "stale": 0})
+
+    def test_a_stale_record_is_counted_and_not_a_problem(self):
+        """F15 (2026-11-09): the owner's ruled order has F15 change the items F03 read and
+        reach `passing` before batch 6 re-reads them, so a stale record is counted, not
+        failed, until batch 6 turns `--check` strict (its brief, step 4). A malformed
+        record still fails."""
+        self.entry["reading"] += " Amended."
+        self.assertEqual(self.found(), [])
+        self.assertEqual(R.second_readings(self.registry, self.readings),
+                         {"current": 0, "agree": 0, "disputed": 0, "stale": 1})
+        self.assertEqual(R.stale_second_readings(self.registry, self.readings), ["TE-167"])
 
     def test_the_record_defines_the_five_keys_the_plan_names(self):
         """A sixth key is a decision about what a second reading says, not a drift."""
@@ -311,8 +324,10 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
         counts = R.second_readings(REGISTRY, READINGS)
         # F03-3: parse_html.py, rendered_audit.py and pagespeed.py, 29 items; F03-4:
         # eleven more scripts, 42 items, and AR-146 and CN-048 re-read; F03-5: the last
-        # 74 items in 43 scripts.
-        self.assertEqual(counts, {"current": 145, "agree": 33, "disputed": 112})
+        # 74 items in 43 scripts. F15 batch 1 (2026-11-09) changed parse_html.py and
+        # javascript_render_audit.py and their rules: their 17 items are stale until
+        # F03 batch 6 re-reads them.
+        self.assertEqual(counts, {"current": 128, "agree": 30, "disputed": 98, "stale": 17})
 
 
 class TheDigestCommand(unittest.TestCase):
@@ -337,8 +352,8 @@ class TheDigestCommand(unittest.TestCase):
     def test_the_summary_counts_second_readings(self):
         done = self.run_tool()
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertIn(f"second readings: 145 of {len(READINGS['items'])} current — 33 agree, "
-                      "112 disputed", done.stdout)
+        self.assertIn(f"second readings: 128 of {len(READINGS['items'])} current — 30 agree, "
+                      "98 disputed; 17 stale", done.stdout)
 
 
 class WhatTheSecondReaderIsShown(unittest.TestCase):
@@ -363,8 +378,9 @@ class WhatTheSecondReaderIsShown(unittest.TestCase):
             self.assertIn(f.read().rstrip("\n"), text)
 
     def test_it_says_when_there_is_no_measures_sentence(self):
-        self.assertNotIn("measures", self.items["CN-066"])
-        self.assertIn("Measures: (none", self.blind("CN-066"))
+        # MS-021, since F15 gave CN-066 a sentence.
+        self.assertNotIn("measures", self.items["MS-021"])
+        self.assertIn("Measures: (none", self.blind("MS-021"))
 
     def test_each_script_once(self):
         text = self.blind("CN-065", "CN-066", "CN-036")
@@ -576,8 +592,7 @@ class TheReadOnlyCommands(unittest.TestCase):
                                    "read": captured, "verdict": entry["verdict"]}
         self.assertEqual(R.problems(registry, readings), [])
         entry["reading"] += " Amended after the run."
-        self.assertTrue(named(R.problems(registry, readings), "CN-065",
-                              "changed under its second reading"))
+        self.assertTrue("CN-065" in R.stale_second_readings(registry, readings))
 
     def test_open_prints_each_first_reading(self):
         done = self.run_tool("--open", "CN-065")

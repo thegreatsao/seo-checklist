@@ -1,5 +1,11 @@
 {
   "entries": {
+    "f03-ruled-defects-open": {
+      "claim": "F03's second reading left 110 ruled items for F15; batch 1 repaired 14 and 96 remain, listed with their rulings in docs/sprint-20261109-F15.md.",
+      "probe": null,
+      "state": "open",
+      "why": "The open list is the contract's Status table and audit_item_readings.py's stale count, both read every build; a probe here would restate the table, and the entry closes when make verify-feature F=F15 writes passing."
+    },
     "a-census-copied-a-title-no-item-has": {
       "claim": "tests/census.json shipped GO-143's first-attempt title under registry_version b0abf2819da0, which a registry carrying that title does not hash to, so the content and the stamp came from different registries and the stamp was the only field the suite read. Both recorded ledgers now have every field they copy from the registry re-read on each run, in a reading that is itself witnessed field by field.",
       "measured": {
@@ -987,7 +993,7 @@
       "state": "open"
     }
   },
-  "entry_count": 51,
+  "entry_count": 52,
   "probed_entry_count": 34,
-  "unprobed_entry_count": 17
+  "unprobed_entry_count": 18
 }

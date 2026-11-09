@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "registry_version": "bbc0b87fd8f2",
+  "registry_version": "841a2a4da32d",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -419,13 +419,13 @@
       "CI-004": {
         "expect": "PASS",
         "title": "Allow Indexing via Meta Robots",
-        "basis": "271b448ea10f",
+        "basis": "952e72788b16",
         "why": "none of the crawlable pages carries a meta robots noindex directive"
       },
       "MS-020": {
         "expect": "PASS",
         "title": "Keep Page Titles Concise (Avoid SERP Truncation)",
-        "basis": "68fc81de9221",
+        "basis": "2b2b84cd9382",
         "why": "every supplied page title is concise enough to avoid SERP truncation"
       },
       "MS-021": {
@@ -1123,13 +1123,13 @@
       "CI-004": {
         "expect": "FAIL",
         "title": "Allow Indexing via Meta Robots",
-        "basis": "271b448ea10f",
+        "basis": "952e72788b16",
         "why": "the entry page explicitly blocks indexing with meta robots noindex"
       },
       "MS-020": {
         "expect": "PASS",
         "title": "Keep Page Titles Concise (Avoid SERP Truncation)",
-        "basis": "68fc81de9221",
+        "basis": "2b2b84cd9382",
         "why": "every title that exists is at most 42 characters and cannot be truncated for excessive length; the missing entry-page title belongs to 'Ensure Every Page Has a Title'"
       },
       "MS-021": {

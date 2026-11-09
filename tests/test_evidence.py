@@ -360,7 +360,8 @@ class ParseHtml(unittest.TestCase):
     def test_ar_158_requires_parseable_schema_and_a_visible_ui_marker(self):
         schema = ('<script type="application/ld+json">'
                   '{"@context":"https://schema.org",'
-                  '"@type":"BreadcrumbList","itemListElement":[]}'
+                  '"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem",'
+                  '"position":1,"name":"Home","item":"https://example.com/"}]}'
                   '</script>')
         schema_only = self.parse(PAGE.replace("</head>", schema + "</head>"))
         self.assertEqual(schema_only["breadcrumbs"], {"schema": True, "ui": False})
@@ -387,10 +388,14 @@ class ParseHtml(unittest.TestCase):
                 self.assertFalse(out["breadcrumbs"]["schema"])
 
     def test_ar_158_accepts_microdata_and_rdfa_as_ui_and_schema(self):
+        # A trail entry and a link in it, since F15: an empty carrier is no trail
+        # (tests/test_f15_batch1.py).
         markers = (
             ('<ol itemscope itemtype="https://schema.org/BreadcrumbList">'
-             '<li>Home</li></ol>'),
-            '<ol typeof="schema:BreadcrumbList"><li>Home</li></ol>',
+             '<li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">'
+             '<a itemprop="item" href="/"><span itemprop="name">Home</span></a></li></ol>'),
+            ('<ol typeof="schema:BreadcrumbList"><li property="itemListElement" '
+             'typeof="ListItem"><a property="item" href="/">Home</a></li></ol>'),
         )
         for marker in markers:
             with self.subTest(marker=marker):

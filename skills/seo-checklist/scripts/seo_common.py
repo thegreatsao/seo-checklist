@@ -788,16 +788,33 @@ def _rel_contains(value: Any, token: str) -> bool:
 
 
 def favicon_href(soup, base_url: str | None = None) -> str | None:
-    """Resolve the first icon declaration recognised by every favicon check."""
+    """Resolve the first icon declaration recognised by every favicon check.
+
+    `rel="shortcut"` alone names no icon (F15, TE-166): `shortcut icon` is read through
+    its `icon` token, as Google's favicon page lists it.
+    """
     for icon in soup.find_all("link"):
         href = icon.get("href")
         rel = icon.get("rel")
         if href and (
             _rel_contains(rel, "icon")
-            or _rel_contains(rel, "shortcut")
             or _rel_contains(rel, "apple-touch-icon")
         ):
             return urljoin(base_url, href) if base_url else href
+    return None
+
+
+def document_title(soup) -> str | None:
+    """The document's `<title>` as a browser reads it: the first one outside SVG and
+    MathML, whose `<title>` is an element's tooltip, with whitespace collapsed.
+
+    `soup.find("title")` took an inline icon's `<title>` for the page's (F15, TE-177;
+    the 2026-10-24 repo audit's MS-026 finding). `""` for an empty title element,
+    `None` when the document has none.
+    """
+    for tag in soup.find_all("title"):
+        if tag.find_parent(["svg", "math"]) is None:
+            return " ".join(tag.get_text(" ").split())
     return None
 
 
@@ -1183,10 +1200,7 @@ def parse_html(html: str, base_url: str = "") -> dict:
     # direction this boundary is allowed to be wrong in.
     foreign_itemref = foreign_itemref_ids(soup)
 
-    def text_or_none(tag):
-        return tag.get_text(" ", strip=True) if tag else None
-
-    title = text_or_none(soup.find("title"))
+    title = document_title(soup)
     meta = {}
     for tag in soup.find_all("meta"):
         key = (tag.get("name") or tag.get("property") or tag.get("http-equiv") or "").strip().lower()

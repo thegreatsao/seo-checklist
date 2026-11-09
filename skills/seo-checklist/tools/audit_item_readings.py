@@ -23,8 +23,9 @@ check and `measures` sentence, the script's source and the code that writes its 
 when that is not the script (`PRODUCERS`), and the first reading's verdict, reading and
 shape answers. `--blind` writes that digest to stderr as it prints the input, so `read`
 is what the reader was shown, not what stands when the answer is entered. A malformed
-record, or one whose digest is no longer current, fails like a changed rule.
-A missing record and a dispute are counted, not failed, until the plan's last batch.
+record fails like a changed rule. A missing record, a dispute, and a record whose digest
+is no longer current (stale) are counted, not failed, until the plan's last batch: F15
+repairs the items F03 read before batch 6 re-reads them, so a repair stales its record.
 
 What it does not do: judge meaning. A person decides whether a reading is true; this
 guarantees only that nothing changes under a reading unnoticed. It also cannot see a
@@ -110,12 +111,14 @@ from scope_line import print_scope  # noqa: E402
 ESTABLISHES = (
     "every rule-carrying item has a reading whose copy of its title and rule is "
     "current, which names the path the rule asserts and answers every shape that fires "
-    "on the item; every recorded second reading is of the reading as it now stands"
+    "on the item; every recorded second reading is well formed, and is counted current "
+    "only while it is of the reading as it now stands"
 )
 DOES_NOT_ESTABLISH = (
     "that any reading is true, which a person decides, that a script's field still "
     "means what it meant when the reading was written, that every item has a second "
-    "reading, that the helper modules a script imports are unchanged since its second "
+    "reading, that every second reading is current (a stale one is counted until F03 batch "
+    "6 turns --check strict), that the helper modules a script imports are unchanged since its second "
     "reading, or that a second reader was independent of the first, which only the "
     "session it names can show"
 )
@@ -258,20 +261,28 @@ def _second_reading_problems(item_id: str, item: dict, entry: dict) -> list[str]
     if record.get("verdict") not in VERDICTS:
         out.append(f"{item_id}: second-reading verdict {record.get('verdict')!r} is not "
                    f"one of {', '.join(VERDICTS)}")
-    if isinstance(record.get("read"), str) and record["read"].strip() \
-            and record["read"] != digest(item, entry):
-        out.append(f"{item_id}: the reading changed under its second reading, which "
-                   "must be read again")
     return out
 
 
-def second_readings(registry: dict, readings: dict) -> dict[str, int]:
-    """Current second readings, and how many of them agree with the first."""
+def stale_second_readings(registry: dict, readings: dict) -> list[str]:
+    """Well-formed second readings of something that has changed since: the reading, the
+    item, or the code the reader was shown. Counted, not failed (F15, the ruled order)."""
     items = rule_items(registry)
-    counts = {"current": 0, "agree": 0, "disputed": 0}
+    return sorted(item_id for item_id, entry in (readings.get("items") or {}).items()
+                  if item_id in items and isinstance(entry.get("second_reading"), dict)
+                  and not _second_reading_problems(item_id, items[item_id], entry)
+                  and entry["second_reading"]["read"] != digest(items[item_id], entry))
+
+
+def second_readings(registry: dict, readings: dict) -> dict[str, int]:
+    """Current second readings, how many of them agree with the first, and how many
+    well-formed ones are stale."""
+    items = rule_items(registry)
+    stale = set(stale_second_readings(registry, readings))
+    counts = {"current": 0, "agree": 0, "disputed": 0, "stale": len(stale)}
     for item_id, entry in (readings.get("items") or {}).items():
         record = entry.get("second_reading")
-        if (item_id not in items or not isinstance(record, dict)
+        if (item_id not in items or not isinstance(record, dict) or item_id in stale
                 or _second_reading_problems(item_id, items[item_id], entry)):
             continue
         counts["current"] += 1
@@ -381,7 +392,11 @@ def main() -> int:
     print("shapes: " + ", ".join(f"{shapes[s]} {s}" for s in SHAPES))
     second = second_readings(registry, readings)
     print(f"second readings: {second['current']} of {len(entries)} current — "
-          f"{second['agree']} agree, {second['disputed']} disputed")
+          f"{second['agree']} agree, {second['disputed']} disputed; "
+          f"{second['stale']} stale")
+    stale = stale_second_readings(registry, readings)
+    if stale:
+        print("stale (re-read in F03 batch 6): " + ", ".join(stale))
     print_scope(ESTABLISHES, DOES_NOT_ESTABLISH)
     return 0
 

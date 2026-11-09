@@ -36,7 +36,7 @@ except ImportError:
     from scripts.lib.safe_http import safe_get
     from scripts.lib.schema_types import DEPRECATED_TYPES, RESTRICTED_TYPES
 
-from seo_common import (read_as_url, favicon_href, html_parser,
+from seo_common import (read_as_url, document_title, favicon_href, html_parser,
                         is_responsive_fill_image as _is_responsive_fill_image, issue)
 
 
@@ -85,15 +85,21 @@ def _is_breadcrumb_type(value: Any) -> bool:
     return False
 
 
-def _breadcrumb_markup(soup) -> bool:
-    """Find a valid-enough Microdata or RDFa BreadcrumbList carrier."""
+def _breadcrumb_markup(soup) -> list:
+    """The Microdata or RDFa BreadcrumbList carriers that hold a trail entry.
+
+    A carrier with no `itemListElement` is a type with no trail (F15, AR-158): it is
+    neither markup Google can show nor a breadcrumb anybody sees.
+    """
+    carriers = []
     for element in soup.find_all(True):
-        if (element.has_attr("itemscope")
-                and _is_breadcrumb_type(element.get("itemtype"))):
-            return True
-        if _is_breadcrumb_type(element.get("typeof")):
-            return True
-    return False
+        if ((element.has_attr("itemscope")
+                and _is_breadcrumb_type(element.get("itemtype")))
+                or _is_breadcrumb_type(element.get("typeof"))):
+            if element.find(lambda tag: "itemListElement" in str(
+                    tag.get("itemprop") or tag.get("property") or "").split()):
+                carriers.append(element)
+    return carriers
 
 
 def _nav_accessible_name(nav, soup) -> str:
@@ -105,16 +111,17 @@ def _nav_accessible_name(nav, soup) -> str:
     return " ".join(names)
 
 
-def _has_breadcrumb_ui(soup, structured_trail: bool) -> bool:
+def _has_breadcrumb_ui(soup, carriers: list) -> bool:
     """Find explicit, machine-detectable markers for a visible breadcrumb trail.
 
     Accepted markers are a nav landmark whose accessible name says breadcrumb,
-    any element whose class or id says breadcrumb, and Microdata/RDFa carrying a
-    BreadcrumbList type. A hand-rolled row of plain links with none of those
+    any element whose class or id says breadcrumb, and a Microdata/RDFa
+    BreadcrumbList carrier with a trail entry and a link in it — markup on the
+    elements a visitor sees. A hand-rolled row of plain links with none of those
     markers is intentionally undetectable here: static HTML cannot distinguish it
     reliably from ordinary navigation.
     """
-    if structured_trail:
+    if any(carrier.find("a", href=True) for carrier in carriers):
         return True
     if any(re.search(r"breadcrumb", _nav_accessible_name(nav, soup), re.I)
            for nav in soup.find_all("nav")):
@@ -219,7 +226,7 @@ def parse_html(
         },
         "schema": [],
         "breadcrumbs": {
-            "schema": structured_breadcrumb,
+            "schema": bool(structured_breadcrumb),
             "ui": _has_breadcrumb_ui(soup, structured_breadcrumb),
         },
         "issues": _structure_issues(soup),
@@ -233,23 +240,24 @@ def parse_html(
     if html_tag:
         result["lang"] = html_tag.get("lang")
 
-    # Title
-    title_tag = soup.find("title")
-    if title_tag:
-        result["title"] = title_tag.get_text(strip=True)
+    result["title"] = document_title(soup)
 
-    # Meta tags
+    # Meta tags. Every robots and keywords tag is kept (F15, CI-004 and MS-031): when
+    # each overwrote the last, `noindex` followed by `index` read as indexable and a
+    # populated keywords tag followed by an empty one read as none.
+    robots, keywords = [], []
     for meta in soup.find_all("meta"):
         name = meta.get("name", "").lower()
         property_attr = meta.get("property", "").lower()
         content = meta.get("content", "")
 
         if name == "description":
-            result["meta_description"] = content
+            # Whitespace is no description (F15, MS-028).
+            result["meta_description"] = content.strip()
         elif name == "robots":
-            result["meta_robots"] = content
+            robots.append(content)
         elif name == "keywords":
-            result["meta_keywords"] = content
+            keywords.append(content.strip())
         elif name == "viewport":
             result["viewport"] = content
 
@@ -267,6 +275,11 @@ def parse_html(
         # Twitter Card
         if name.startswith("twitter:"):
             result["twitter_card"][name] = content
+
+    if robots:
+        result["meta_robots"] = ", ".join(robots)
+    if keywords:
+        result["meta_keywords"] = ", ".join(value for value in keywords if value)
 
     text = " ".join((result["meta_description"] or "").split())
     if text:
@@ -425,9 +438,12 @@ def parse_html(
                 "raw": item,
             })
 
+    # A BreadcrumbList with no `itemListElement` is no trail (F15, AR-158).
     result["breadcrumbs"]["schema"] = (
         result["breadcrumbs"]["schema"]
         or any(_is_breadcrumb_type(item.get("@types"))
+               and isinstance(item.get("raw"), dict)
+               and item["raw"].get("itemListElement")
                for item in result["schema"] if isinstance(item, dict))
     )
 

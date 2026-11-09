@@ -12,7 +12,19 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `bbc0b87fd8f2`, unchanged.
+Registry version: `841a2a4da32d` (was `bbc0b87fd8f2`): F15 batch 1 — CI-004's pattern reads `noindex` in any case and
+`none`; MS-020 asserts `article_seo.TITLE_MAX_CHARS`, 65, the measured title budget, instead of 60; seven new
+`measures` sentences (AR-146, CN-048, CN-066, IN-123, MS-020, MS-028, TE-166) and MS-030's corrected (100 is a
+convention, 144 is measured); MB-105's fix names the directives it now compares. **Verdicts of a real audit can move**,
+each toward what the page serves: CI-004 fails a page whose earlier robots meta, or a capitalised `NOINDEX`, or `none`,
+says noindex; MS-028 fails a whitespace-only description; MS-031 fails a populated keywords tag that an empty one
+follows; TE-166 no longer counts `rel="shortcut"` alone as an icon; AR-158 wants a trail entry in the BreadcrumbList, and
+a link in a Microdata/RDFa trail before calling it UI; TE-177 (and the title every crawl and MS-020/MS-021 read) is the
+document's `<title>`, never an inline SVG's, whitespace collapsed; TE-169 counts a link internal by host, so
+`example.com.au` is no longer internal to `example.com`; MB-105 compares the robots and googlebot directives; MS-020
+passes a 61–65-character title. The recorded census moves one row: MS-020 on `unindexed` (a 61-character title),
+FAIL → PASS, declared before the run. F03's 17 second readings of the changed items are stale until F03 batch 6
+re-reads them; `audit_item_readings.py` now counts a stale one rather than failing it (the owner's ruled order).
 
 * `calibrate_profile_detection --check` fails when `detect_profile.MIN_SCORE` in force is not the value its rule
   selects (the owner's ruling of 2026-11-08; until now a standing override passed). Both are 5, so nothing moves.

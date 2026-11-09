@@ -2478,17 +2478,24 @@ class MeasuresQualifications(unittest.TestCase):
         # 0.118.0: SE-117 asks the http:// address, of the page and a sample of its links.
         "SE-117": "That the audited page and up to three same-site pages it links to answer their http:// address with a permanent redirect to HTTPS. Other pages are not requested.",
         # 0.120.0: MS-030 reads the calibrated length band.
-        "MS-030": "That the description runs 100 to 144 characters, what the desktop snippet shows of ordinary text by this tool's calibration; the title's 150–160 is cut. Whether it is clear and relevant is not read.",
+        "MS-030": "That the description runs 100 to 144 characters: 144 is what the desktop snippet shows of ordinary text by this tool's calibration, 100 an editorial convention; the title's 150–160 is cut. Clarity and relevance are not read.",
         # 0.121.0: TE-175 reads what a browser blocks or upgrades on the page.
         "TE-175": "That the page is served over HTTPS and loads nothing over plain HTTP that a browser blocks or upgrades: scripts, stylesheets, frames, objects, images and media. URLs inside CSS and other page errors are not read.",
         # 0.122.0: GO-139 ranks the brand's own query; the rest of its results page is
         # not read.
         "GO-139": "Whether the site ranks first, with any of its pages, for its most-searched branded query in Search Console. The rest of the brand's results page — knowledge panel, reviews, other sites — is not read.",
+        "MS-028": "That the page carries a meta description that is not empty or whitespace. Which pages are high-value, and whether they were filled first, is not read.",
+        "TE-166": "That the page declares an icon: a link whose rel names icon or apple-touch-icon. Whether the file loads and meets Google's requirements is MB-104, which fetches it.",
+        "AR-146": "That a paginated page's rel=prev and rel=next stay on this host and do not point at the page itself. The order of the series and its visible controls are not read.",
+        "CN-048": "That headings never skip a level and the page marks its content with a main landmark. Other semantic markup is not read.",
+        "CN-066": "That the page has at least two non-empty H2 headings. Whether they organise the content is not read.",
+        "IN-123": "That the html element carries a non-empty lang attribute. Whether the code is valid and matches the page's text is not read.",
+        "MS-020": "That the title is at most 65 characters, what the 600 px desktop title shows of ordinary text by this tool's calibration. Rendered width is not measured, so capitals can be cut sooner.",
     }
 
     module = staticmethod(EveryRulelessItemSaysWhenItApplies.module)
 
-    def test_the_registry_carries_exactly_the_thirty_one_qualifications_verbatim(self):
+    def test_the_registry_carries_exactly_the_qualifications_verbatim(self):
         build_checklist = self.module()
         self.assertEqual(build_checklist.MEASURES, self.EXPECTED)
         shipped = {item["id"]: item["measures"] for item in ITEMS

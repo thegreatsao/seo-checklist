@@ -9,7 +9,7 @@ import argparse
 import json
 
 from html_validator import rendered_document
-from seo_common import load_html, parse_html
+from seo_common import load_html, parse_html, same_host
 
 
 def summarize(html: str, url: str) -> dict:
@@ -17,11 +17,17 @@ def summarize(html: str, url: str) -> dict:
     return {
         "title": parsed["title"],
         "meta_description": parsed["meta_description"],
+        # The directives MB-105's title names (F15): a noindex added or removed by
+        # JavaScript is the difference that matters most.
+        "meta_robots": parsed["meta_robots"],
+        "meta_googlebot": parsed["meta_googlebot"],
         "canonical": parsed["canonical"],
         "h1_count": len(parsed["headings"]["h1"]),
+        # Internal is on the page's host (F15, TE-169): a prefix test of the origin
+        # counted `https://example.com.au/` as internal to `https://example.com`.
         "internal_link_count": len([link for link in parsed["links"]
-              if url and link["href"].startswith(url.split("/", 3)[0] + "//"
-                                                 + url.split("/")[2])]) if url.startswith("http") else len(parsed["links"]),
+                                    if same_host(link["href"], url, include_www_variant=False)])
+        if url.startswith("http") else len(parsed["links"]),
         # Compare everything the served and rendered documents declare.
         "schema_count": len(parsed["schema"]),
         "word_count": parsed["word_count"],
