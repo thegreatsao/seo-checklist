@@ -12,9 +12,9 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `ba45591f81d3` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1).
+Registry version: `1733ee735260` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1).
 
-F15 batch 2 (`84e41c84ecaa` → `ba45591f81d3`) — `rendered_audit.py` and the snippet in `SKILL.md`, `pagespeed.py`,
+F15 batch 2 (`84e41c84ecaa` → `1733ee735260`) — `rendered_audit.py` and the snippet in `SKILL.md`, `pagespeed.py`,
 `image_inventory.py`, `image_weight_audit.py`. SP-107 asserts `above_fold.rating` and MD-189
 `large_legacy_or_unresponsive_count`; MD-189 left MB-096's `scores_with` group, so the image-format theme weighs 9
 points instead of 6 and **scores of a real audit can move**; fourteen new `measures` sentences (CN-034, CN-035,

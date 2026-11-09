@@ -527,6 +527,13 @@ def _in_furniture(img) -> bool:
 MEANINGFUL_IMAGE_MIN_PX = 200
 
 
+def _real(native, deferred) -> str:
+    """`native` unless it is a `data:` placeholder beside a deferred source
+    (lazysizes' 1x1 GIF in `src` or `srcset`): no fallback (F15 review, CN-054)."""
+    native = native or ""
+    return "" if deferred and native.strip().lower().startswith("data:") else native
+
+
 def image_carries_meaning(img) -> bool:
     """Whether an `<img>` element carries meaning a reader needs, so `alt=""` hides it.
 
@@ -534,23 +541,25 @@ def image_carries_meaning(img) -> bool:
     content of a link — `alt=""` there leaves the link with no name at all — or it is
     a large image in the page's content (`MEANINGFUL_IMAGE_MIN_PX` declared on each
     side, outside nav, aside, a page-level header or footer, and their ARIA roles).
-    The link case holds however the image is marked — the link has no name either way
-    — unless the link itself is `aria-hidden`, out of the accessibility tree. A large image
+    The link case holds however the image is marked — the link has no name either way.
+    Nothing inside a `hidden` or `aria-hidden=true` element (the link or a wrapper) is
+    in the accessibility tree, and carries none. A large image
     marked decorative on purpose (`role=presentation`/`none`, `aria-hidden=true`)
     carries none, and one whose size the markup does not declare is not judged large.
     Whether an alt *describes* its image is not read anywhere.
     """
+    if any(tag.has_attr("hidden") or (tag.get("aria-hidden") or "").strip().lower() == "true"
+           for tag in img.parents if getattr(tag, "has_attr", None)):
+        return False
     link = img.find_parent("a")
     if link is not None and link.get("href") is not None:
-        if (link.get("aria-hidden") or "").strip().lower() == "true":
-            return False
         named = any((link.get(attr) or "").strip()
                     for attr in ("aria-label", "aria-labelledby", "title"))
         inner_label = link.find(lambda tag: (tag.get("aria-label") or "").strip())
         other_alt = any((other.get("alt") or "").strip() for other in link.find_all("img"))
         return not (named or inner_label or other_alt or link.get_text(strip=True))
     role = (img.get("role") or "").strip().lower()
-    if role in ("presentation", "none") or \
+    if role in ("presentation", "none") or img.has_attr("hidden") or \
             (img.get("aria-hidden") or "").strip().lower() == "true":
         return False
     try:
@@ -1345,11 +1354,9 @@ def parse_html(html: str, base_url: str = "") -> dict:
             # deferred instruction to JS, not an image source a crawler can follow.
             # A `data:` placeholder beside a deferred source (lazysizes' 1x1 GIF) is
             # no fallback (F15 review, CN-054).
-            "native_source": bool((native_src if not (
-                                       (deferred_src or img.get("data-srcset"))
-                                       and native_src.strip().lower().startswith("data:"))
-                                   else "")
-                                  or img.get("srcset")
+            "native_source": bool(_real(native_src, deferred_src or img.get("data-srcset"))
+                                  or _real(img.get("srcset"), deferred_src
+                                           or img.get("data-srcset"))
                                   or any(source.get("srcset") for source in sources)),
             "deferred_source": bool(deferred_src or img.get("data-srcset")),
             "carries_meaning": image_carries_meaning(img),

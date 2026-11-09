@@ -298,7 +298,8 @@ Resize to a phone viewport first (375×812), load the page, then run one
     if (!ownText) continue;
     const s = getComputedStyle(el);
     const fg = rgb(s.color), bg = bgOf(el);
-    if (!fg || !bg) { unmeasured++; continue; }
+    // A transparent fill is outlined or text-fill-coloured text: not this colour.
+    if (!fg || !bg || fg[3] === 0) { unmeasured++; continue; }
     const size = px(s.fontSize), bold = parseInt(s.fontWeight) >= 700;
     if (ratio(over(fg, bg), bg) < (size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5))
       lowContrast++;

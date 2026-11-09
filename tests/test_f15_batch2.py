@@ -222,6 +222,13 @@ class RenderedSnippet(unittest.TestCase):
                 out = self.measure(self.link("rgb(51, 51, 51)", **style))
                 self.assertEqual(out["links_indistinct"], 0)
 
+    def test_a_transparent_fill_is_unmeasured_not_a_failure(self):
+        """Review round 5: outlined text (`color: transparent` with a stroke) was 1:1."""
+        out = self.measure([{"tag": "h2", "style": {"color": "rgba(0, 0, 0, 0)"},
+                             "kids": ["Outlined heading"]}])
+        self.assertEqual(out["text_nodes_below_contrast"], 0)
+        self.assertEqual(out["text_nodes_contrast_unmeasured"], 1)
+
     def test_ordinary_dark_text_on_white_passes(self):
         out = self.measure([{"tag": "p", "kids": ["Plain words"]}])
         self.assertEqual(out["text_nodes_below_contrast"], 0)
@@ -475,6 +482,15 @@ class EmptyAltWhereTheImageCarriesMeaning(unittest.TestCase):
                                 'width="1200" height="600" alt=""></header></div>')
                 self.assert_both(out, FAIL)
 
+    def test_an_image_under_a_hidden_ancestor_carries_nothing(self):
+        """Review round 5: a hero background in an aria-hidden wrapper, or `hidden`."""
+        for body in ('<main><div aria-hidden="true"><img src="/bg.jpg" alt="" width="1920" '
+                     'height="1080"></div><p>Hello</p></main>',
+                     '<main><img src="/bg.jpg" alt="" width="1920" height="1080" hidden></main>',
+                     '<div aria-hidden="true"><a href="/"><img src="/l.png" alt=""></a></div>'):
+            with self.subTest(body=body):
+                self.assert_both(inventory(body + OK_IMAGE), PASS)
+
     def test_a_link_hidden_from_assistive_technology_needs_no_name(self):
         """Review round 2: WordPress's post thumbnail beside a titled link."""
         out = inventory('<article><a href="/post" aria-hidden="true" tabindex="-1">'
@@ -535,6 +551,11 @@ class EveryImageSourceIsAnImage(unittest.TestCase):
         self.assertEqual(verdict("CN-054", out), FAIL)
         out = inventory('<img src="data:image/png;base64,AAAA" alt="An inline mark">')
         self.assertEqual(out["summary"]["lazy_lcp_candidates"], 0)
+
+    def test_a_data_uri_srcset_placeholder_is_no_native_source(self):
+        out = inventory(OK_IMAGE + '<img srcset="data:image/gif;base64,R0lGODlhAQABAAAAACw=" '
+                        'data-srcset="/real.jpg 800w" alt="A loaf">')
+        self.assertEqual(out["summary"]["lazy_lcp_candidates"], 1)
 
     def test_an_unparseable_srcset_is_skipped_not_a_crash(self):
         out = inventory('<img srcset="http://[::1 1x" alt="A loaf">')
@@ -600,7 +621,8 @@ class ResponsiveMeansWidths(unittest.TestCase):
     def test_a_desktop_or_print_source_is_not_what_a_phone_gets(self):
         """Review round 4: a phone matches no `min-width` or `print` source, so it
         loads the next candidate — the 3000 px fallback here."""
-        for media in ("(min-width: 1024px)", "print"):
+        for media in ("(min-width: 1024px)", "print", "(width >= 1024px)",
+                      "(1024px <= width)"):
             with self.subTest(media=media):
                 out = weigh(f'<picture><source media="{media}" srcset="{ABS}/a.webp">'
                             f'<img src="{ABS}/a.webp" alt="w"></picture>')
@@ -726,6 +748,8 @@ class MeasuresSentences(unittest.TestCase):
         "MD-186": "describes",
         "CN-054": "data-srcset",
         "MB-097": "250 KB",
+        "MB-096": "a phone",
+        "MD-189": "a phone",
         "MB-098": "density",
         "SP-107": "LCP",
     }

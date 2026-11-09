@@ -1011,7 +1011,7 @@ one — the script refuses the file instead.
   data-srcset-only ones, were skipped as having no `src`)
 `summary.lazy_lcp_candidates` — int — CN-054's compatibility path: JS-deferred images
   with `data-src`/`data-srcset` but no native `src`, `srcset`, or `<picture>` source;
-  a `data:` placeholder `src` beside them is no native source (F15).
+  a `data:` placeholder `src` or `srcset` beside them is no native source (F15).
   Native `loading=lazy` remains discoverable and does not increment this count.
   **Absent on a page with no images.**
 
@@ -1059,7 +1059,8 @@ Without one it audits one page's image markup and optional fetched bytes.
   format at all and failed the item it exists to satisfy.
 `responsive_count` — int — absent when the page has no images; otherwise, images
   whose candidate set a phone ends up with — the first `<source>` that can match at
-  any width (a `min-width` or `print` source is skipped: a phone matches neither),
+  any width (a `min-width`, `width >=` or `print` source is skipped: a phone matches
+  none),
   else the `img` — offers width descriptors (`w`), or with a `max-width` `<source>`
   before it (F15: any `srcset`, a density or format-only
   one too, and an `img` srcset behind a format-only `<source>`). Read by nothing since 0.108.0, when MB-096 and MD-189 moved to the

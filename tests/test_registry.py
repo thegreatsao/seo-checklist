@@ -2507,9 +2507,9 @@ class MeasuresQualifications(unittest.TestCase):
         "CI-016": "Images with no alt, a placeholder alt (a filename, a camera stub, under three characters), or an empty alt on a link's only content or a large in-content image. Whether an alt describes its image is not read.",
         "MD-186": "Images with no alt, a placeholder alt (a filename, a camera stub, under three characters), or an empty alt on a link's only content or a large in-content image. Whether an alt describes its image is not read.",
         "CN-054": "Images whose only source is a JavaScript-deferred one (data-src or data-srcset) with no native src, srcset or <picture> source. Other lazy-loaded content and loading=lazy itself are not read.",
-        "MB-096": "Images wider than 1280px whose markup offers no width-described (w) srcset and no media-chosen <source>; a density srcset or a format-only source is not responsive. The widths offered are not read.",
+        "MB-096": "Images wider than 1280px where what a phone gets (the first <source> it matches, else the <img>) offers no w descriptors and no max-width <source> precedes it. The widths offered are not read.",
         "MB-097": "Per image: none over 250 KB, and a WebP or AVIF offer for any image wider than 1280px. Compression under 250 KB and the format of smaller images are not judged.",
-        "MD-189": "Images wider than 1280px lacking either half: a width-described (w) srcset or media-chosen <source>, and a WebP or AVIF offer. Smaller images and the widths offered are not read.",
+        "MD-189": "Images wider than 1280px lacking either half: w descriptors in what a phone gets (or a max-width <source> before it), and a WebP or AVIF offer. Smaller images and the widths offered are not read.",
         "SP-107": "The worse of the first and the largest contentful paint (LCP counts only what the first screen shows), both from CrUX, or both from Lighthouse for a page CrUX lacks. Resource priorities are not read.",
     }
 

@@ -101,6 +101,11 @@ def _needs_sizes(srcset: str | None) -> bool:
 DEFAULT_MAX_IMAGES = 200
 
 
+# A lower bound on width, in either syntax: `(min-width: 1024px)`, `(width >= 1024px)`,
+# `(1024px <= width)`. A phone matches none of the usual ones.
+_DESKTOP_WIDTH = re.compile(r"min-(?:device-)?width|width\s*>|<=?\s*width")
+
+
 def _responsive(img: dict, sources: list[dict]) -> bool:
     """Whether the browser is offered a smaller file for a smaller screen (MB-096).
 
@@ -119,7 +124,7 @@ def _responsive(img: dict, sources: list[dict]) -> bool:
     for source in sources:
         media = (source.get("media") or "").lower()
         if not source.get("srcset") or "print" in media and "screen" not in media \
-                or "min-width" in media or "min-device-width" in media:
+                or _DESKTOP_WIDTH.search(media):
             continue
         if "width" in media:
             return True

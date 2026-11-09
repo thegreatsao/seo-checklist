@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "ba45591f81d3",
+  "registry_version": "1733ee735260",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -2055,7 +2055,7 @@
           "gt": 0
         }
       },
-      "measures": "Images wider than 1280px whose markup offers no width-described (w) srcset and no media-chosen <source>; a density srcset or a format-only source is not responsive. The widths offered are not read.",
+      "measures": "Images wider than 1280px where what a phone gets (the first <source> it matches, else the <img>) offers no w descriptors and no max-width <source> precedes it. The widths offered are not read.",
       "effort": "medium",
       "fix": "Use srcset/sizes for responsive images"
     },
@@ -4226,7 +4226,7 @@
           "gt": 0
         }
       },
-      "measures": "Images wider than 1280px lacking either half: a width-described (w) srcset or media-chosen <source>, and a WebP or AVIF offer. Smaller images and the widths offered are not read.",
+      "measures": "Images wider than 1280px lacking either half: w descriptors in what a phone gets (or a max-width <source> before it), and a WebP or AVIF offer. Smaller images and the widths offered are not read.",
       "effort": "medium",
       "fix": "Modern formats and responsive images"
     },
