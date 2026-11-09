@@ -76,6 +76,25 @@ that drift.
 
 ---
 
+### [2026-11-09] A stale second reading is counted, not failed, until F03 batch 6
+
+**Decision:** `tools/audit_item_readings.py` counts a well-formed second reading whose digest no longer matches as
+`stale` (named in the summary) instead of failing `--check`. A malformed record still fails.
+
+**Why:** the owner's ruled order for F03 (the F03 plan, "Batch 3's disputes ruled", item 6) has F15 repair the items F03
+read and reach `passing` before batch 6 re-reads them; every repair re-stales a reading, so under the old rule F15 could
+never pass `make test`. Batch 6's brief (step 4) already plans `--check` turning strict on stale readings.
+
+**Alternatives rejected:**
+- Delete each stale `second_reading` as F15 changes its item: loses Codex's recorded dispute, which batch 6 resolves.
+- Re-read each changed item with Codex inside every F15 batch: batch 6's work done seven times.
+
+**Consequences:**
+- Between F15 batch 1 and batch 6 `--check` is weaker; the summary line carries the stale count and ids.
+- Batch 6 must make a stale reading fail again, red first (its brief, step 4).
+
+---
+
 <!-- TEMPLATE ENTRY — copy this block for each new decision
 
 ### [YYYY-MM-DD] [Decision title]

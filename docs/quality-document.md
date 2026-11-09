@@ -37,6 +37,21 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `skills/seo-checklist/scripts/` and `tools/audit_item_readings.py` — graded 2026-11-09, F15 batch 1
+
+Read for the grade: `parse_html.py` (meta loop, `_breadcrumb_markup`, `_item_parts`, `_is_trail_entry`,
+`_has_trail_entry`, `_node_id`, `_same_page`, pagination), `javascript_render_audit.py` (`_directives`, `summarize`),
+`seo_common.py` (`document_title`, `url_host`, `favicon_href`, `parse_html`'s meta join), `tools/audit_item_readings.py`
+(`stale_second_readings`, `second_readings`), `tools/build_checklist.py` (CI-004, MS-020, `MEASURES`).
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `ci_local` 27/27 on `1cc00e5` (2026-11-09, Tests 574 s); 54 tests in `tests/test_f15_batch1.py`, each round red on the commit before it; Codex's eleventh round "ship" |
+| Agent understandable | B | each helper names the item and the review that shaped it; AR-158's entry rules (Microdata, RDFa, JSON-LD `@id`, `itemref`) are now a small reader of three syntaxes in one script, which a reader has to hold together |
+| Test stability | A | pure functions over HTML strings; the render tests write one temporary artifact |
+| Architecture boundaries | A | `make check-arch` 3/3 |
+| Code conventions | A | ruff clean; `tests/derived-sets.json` moved only by `MEASURES` (31 → 38) |
+
 ## `skills/seo-checklist/tools/` and `scripts/verify-feature.sh` — graded 2026-11-08, audit-fix batch P3
 
 Read for the grade: `calibrate_css_minification.py` (`_reads_minified`, `_misreads`, `_fewest_jointly`,
