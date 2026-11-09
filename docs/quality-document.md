@@ -37,6 +37,21 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `skills/seo-checklist/scripts/` (images, rendered page, PageSpeed) — graded 2026-11-09, F15 batch 2
+
+Read for the grade: the rendered-page snippet in `SKILL.md` (`rgb`, `bgOf`, the contrast and link loops),
+`rendered_audit.py` (`read`, `WITHHELD_BESIDE`), `pagespeed.py` (`_above_fold`, `field_cwv_verdict`),
+`image_inventory.py` (`inventory`, `_first_candidate`), `image_weight_audit.py` (`_responsive`, `_classify_image`,
+`audit`), `seo_common.py` (`image_carries_meaning`, `_in_furniture`, `_real`, the noscript twins).
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `make check` on the batch's last commit (see the contract's batch 2 results); 73 tests in `tests/test_f15_batch2.py`, each review round red on the commit before it; Claude review round 9 "ship" (Codex was out of credits) |
+| Agent understandable | B | each rule names its item and the review round that shaped it; the snippet's link loop and `_responsive`'s source order are small but dense, and the heuristics they settle on (running text, what a phone matches) are listed as limits in the contract rather than in one place in the code |
+| Test stability | A | pure functions and a Node stand-in DOM; skipped where `node` is absent (CI has it) |
+| Architecture boundaries | A | `make check-arch` 3/3 |
+| Code conventions | A | ruff clean; derived sets and the threshold ledger moved only by declared constants (`MEANINGFUL_IMAGE_MIN_PX`, `UNTYPED`, `FIELD_PASS_NEEDS`, `WITHHELD_BESIDE`, the landmark tuples) |
+
 ## `skills/seo-checklist/scripts/` and `tools/audit_item_readings.py` — graded 2026-11-09, F15 batch 1
 
 Read for the grade: `parse_html.py` (meta loop, `_breadcrumb_markup`, `_item_parts`, `_is_trail_entry`,
