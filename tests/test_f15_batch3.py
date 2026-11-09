@@ -871,6 +871,34 @@ class ReviewRound6(unittest.TestCase):
         self.assertTrue(out["truncated"])
 
 
+class ReviewRound7(unittest.TestCase):
+    def test_a_post_linked_through_its_old_slug_is_still_named_by_its_title(self):
+        posts = [f"post-{i}" for i in range(11)]
+        rows = []
+        for listing in ("", "blog", "archive"):
+            rows.append(row(SITE + listing, links=tuple(SITE + "old-" + p for p in posts),
+                            anchors={SITE + "old-" + p: f"Post number {p}" for p in posts}))
+        inv = inventory(rows + [row(SITE + p, title=f"Post number {p} | Acme") for p in posts])
+        for p in posts:
+            landing = inv["pages"][site_crawl.page_key(SITE + p)]
+            inv["pages"][site_crawl.page_key(SITE + "old-" + p)] = dict(
+                landing, url=SITE + "old-" + p, redirected=True,
+                redirect_chain=[SITE + "old-" + p])
+        out = anchor_text_audit.audit_anchor_text(SITE, inventory=inv)
+        self.assertEqual(out["summary"]["low_diversity_targets"], 0)
+        self.assertEqual(verdict("BL-081", out), PASS)
+
+    def test_a_canonical_that_redirects_back_names_the_page(self):
+        inv = inventory([row(SITE + "x", title="Shared title", canonical=SITE + "old-x"),
+                         row(SITE + "y", title="Shared title")])
+        landing = inv["pages"][site_crawl.page_key(SITE + "x")]
+        inv["pages"][site_crawl.page_key(SITE + "old-x")] = dict(
+            landing, url=SITE + "old-x", redirected=True, redirect_chain=[SITE + "old-x"])
+        out = duplicates(inv)
+        self.assertEqual(out["summary"]["title_group_exclusions"]["canonicalized"], 0)
+        self.assertEqual(verdict("MS-022", out), FAIL)
+
+
 # ---------------------------------------------------------------------------
 # The sentences
 # ---------------------------------------------------------------------------

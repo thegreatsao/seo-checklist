@@ -92,7 +92,11 @@ def anchors_from_inventory(inventory: dict) -> dict:
                 "nofollow": bool(link.get("nofollow")),
                 "alt_named": bool(link.get("alt_named")),
             })
-    return {"pages": pages, "links": links, "fetch_errors": fetch_errors}
+    # Every key's title, a redirect read twice included: its title is its landing's,
+    # and a link through an old slug names the page it lands on (review round 7).
+    titles = {key: row.get("title") for key, row in (inventory.get("pages") or {}).items()}
+    return {"pages": pages, "links": links, "fetch_errors": fetch_errors,
+            "titles": titles}
 
 
 def names_its_title(anchor: str, title: str) -> bool:
@@ -273,7 +277,7 @@ def audit_anchor_text(start_url: str, inventory: dict | None = None, depth: int 
         # A page named by its own title from many pages is not low diversity: the
         # ratio is read over the other anchors (review round 4: a blog listing each
         # post by its title failed BL-081).
-        title = (crawl["pages"].get(target) or {}).get("title") or ""
+        title = crawl["titles"].get(target) or ""
         varied = [a for a in normalized if not names_its_title(a, title)]
         if len(varied) >= DIVERSITY_MIN_LINKS and \
                 len(set(varied)) / len(varied) < DIVERSITY_FLOOR:

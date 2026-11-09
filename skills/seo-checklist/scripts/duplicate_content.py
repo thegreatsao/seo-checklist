@@ -69,6 +69,12 @@ def pages_from_inventory(inventory: dict) -> dict:
     """
     rows = inventory.get("pages") or {}
     twice = site_crawl.read_twice(rows)
+    # The URLs a page was also read at through a redirect: a canonical naming one of
+    # them names the page (review round 7: `/x` canonical to `/old-x`, which 301s back).
+    aliases: dict[str, list] = {}
+    for key in twice:
+        landing = site_crawl.page_key(rows[key].get("final_url") or key)
+        aliases.setdefault(landing, []).append(rows[key].get("url") or key)
     pages = {}
     for key, row in sorted(rows.items()):
         if not row.get("html") or not carries_content(row.get("status")):
@@ -76,6 +82,7 @@ def pages_from_inventory(inventory: dict) -> dict:
         if key in twice:
             continue
         pages[key] = {
+            "aliases": sorted(aliases.get(key, [])),
             "url": row.get("url") or key,
             "final_url": row.get("final_url") or row.get("url") or key,
             "word_count": row.get("content_words", 0),
@@ -181,7 +188,8 @@ def _snippet_grouping_pages(pages: dict) -> tuple[dict, dict]:
     # the crawled https page).
     read_at = {}
     for key, page in pages.items():
-        for where in (page.get("url") or key, page.get("final_url") or key):
+        for where in (page.get("url") or key, page.get("final_url") or key,
+                      *page.get("aliases", ())):
             read_at.setdefault(site_crawl.as_named(where), key)
     for key, page in pages.items():
         if page.get("noindex"):
@@ -198,7 +206,8 @@ def _snippet_grouping_pages(pages: dict) -> tuple[dict, dict]:
             continue
         if canonical and not page.get("canonical_broken") and not any(
                 site_crawl.same_page(_hostless(named), _hostless(where))
-                for where in (page.get("url") or key, page.get("final_url") or key, key)):
+                for where in (page.get("url") or key, page.get("final_url") or key, key,
+                              *page.get("aliases", ()))):
             exclusions["canonicalized"] += 1
             continue
         included[key] = page
