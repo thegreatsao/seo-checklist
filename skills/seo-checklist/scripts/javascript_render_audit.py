@@ -23,8 +23,12 @@ def _directives(value: str | None) -> str | None:
              for part in value.split(",")}
     if "none" in rules:                     # `none` is `noindex, nofollow`
         rules |= {"noindex", "nofollow"}
-    # `all`, `index` and `follow` are the default an absent tag already means.
-    rules -= {"", "none", "all", "index", "follow"}
+    if "max-snippet:0" in rules:            # Google: equivalent to `nosnippet`
+        rules.add("nosnippet")
+    # `all`, `index`, `follow` and the "no limit" `-1` previews are the default an absent
+    # tag already means.
+    rules -= {"", "none", "all", "index", "follow", "max-snippet:0", "max-snippet:-1",
+              "max-video-preview:-1"}
     return ", ".join(sorted(rules)) or None
 
 

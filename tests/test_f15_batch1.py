@@ -279,6 +279,21 @@ class BreadcrumbTrails(unittest.TestCase):
             with self.subTest(name):
                 self.assertTrue(parsed(head, self.NAV)["breadcrumbs"]["schema"])
 
+    def test_eighth_review_trails(self):
+        """Codex's eighth review: a malformed @id elsewhere must not crash the parser;
+        one BreadcrumbList split over two definitions is one node."""
+        bad = ('<script type="application/ld+json">{"@type":"Organization",'
+               '"@id":"https://[YOUR_DOMAIN]/#organization"}</script>')
+        self.assertFalse(parsed(bad, self.NAV)["breadcrumbs"]["schema"])
+        bad_entry = ('<script type="application/ld+json">{"@type":"BreadcrumbList",'
+                     '"itemListElement":[{"@id":"https://[x/#a","name":"Home"}]}</script>')
+        self.assertTrue(parsed(bad_entry, self.NAV)["breadcrumbs"]["schema"])
+        split = ('<script type="application/ld+json">{"@context":"https://schema.org","@graph":['
+                 '{"@id":"#crumb","@type":"BreadcrumbList"},{"@id":"#crumb","itemListElement":['
+                 '{"@type":"ListItem","position":1,"name":"Home","item":"https://example.com/"}]}]}'
+                 '</script>')
+        self.assertTrue(parsed(split, self.NAV)["breadcrumbs"]["schema"])
+
     def test_a_name_that_is_a_node_is_no_label(self):
         head = ('<script type="application/ld+json">{"@type": "BreadcrumbList", '
                 '"itemListElement": [{"name": {"@id": "https://example.com/"}}]}</script>')
@@ -421,7 +436,10 @@ class RenderParity(unittest.TestCase):
         for raw_meta, rendered_meta in (
                 ('<meta name="robots" content="none">', '<meta name="robots" content="noindex, nofollow">'),
                 ("", '<meta name="robots" content="all">'),
-                ("", '<meta name="robots" content="index, follow">')):
+                ("", '<meta name="robots" content="index, follow">'),
+                # Codex's eighth review: Google's documented equivalents.
+                ('<meta name="robots" content="max-snippet:0">', '<meta name="robots" content="nosnippet">'),
+                ("", '<meta name="robots" content="max-snippet:-1">')):
             with self.subTest(rendered=rendered_meta):
                 out = self.audit(page("<title>T</title>" + raw_meta),
                                  page("<title>T</title>" + rendered_meta))

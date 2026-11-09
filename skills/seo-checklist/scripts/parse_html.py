@@ -138,6 +138,15 @@ def _breadcrumb_markup(soup) -> list:
     return carriers
 
 
+def _node_id(base_url: str, ident: str) -> str:
+    """A JSON-LD `@id` resolved against the page, or as written when it is no URL any
+    parser accepts (`https://[YOUR_DOMAIN]/`, an unexpanded template)."""
+    try:
+        return urljoin(base_url, ident)
+    except ValueError:
+        return ident
+
+
 def _has_trail_entry(entries: Any, nodes: dict | None = None, base_url: str = "") -> bool:
     """Whether a JSON-LD `itemListElement` holds one entry a trail can show: an object
     naming its page (`item`) or its label (`name`). `[null]`, `[{}]` and a string are
@@ -150,7 +159,7 @@ def _has_trail_entry(entries: Any, nodes: dict | None = None, base_url: str = ""
     entries = entries if isinstance(entries, list) else [entries]
     # An entry with an `@id` is that node, every definition of it on the page merged
     # (`nodes`, keyed by the id resolved against the page), its own properties first.
-    entries = [{**(nodes or {}).get(urljoin(base_url, entry["@id"]), {}), **entry}
+    entries = [{**(nodes or {}).get(_node_id(base_url, entry["@id"]), {}), **entry}
                if isinstance(entry, dict) and isinstance(entry.get("@id"), str) else entry
                for entry in entries]
     return any(isinstance(entry, dict)
@@ -516,12 +525,13 @@ def parse_html(
     nodes: dict[str, dict] = {}
     for node in found:
         if isinstance(node.get("@id"), str):
-            nodes.setdefault(urljoin(base_url or "", node["@id"]), {}).update(node)
+            nodes.setdefault(_node_id(base_url or "", node["@id"]), {}).update(node)
+    # The merged nodes too: one BreadcrumbList may be split over two definitions.
     result["breadcrumbs"]["schema"] = (
         result["breadcrumbs"]["schema"]
         or any(_is_breadcrumb_type(node.get("@type"))
                and _has_trail_entry(node.get("itemListElement"), nodes, base_url or "")
-               for node in found)
+               for node in [*found, *nodes.values()])
     )
 
     # Word count (visible text only)
