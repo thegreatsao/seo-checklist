@@ -12,6 +12,17 @@ from html_validator import rendered_document
 from seo_common import load_html, parse_html, url_host
 
 
+def _directives(value: str | None) -> str | None:
+    """A robots meta value in one spelling: rules lower-cased, spaces collapsed, in
+    order, so `NOINDEX, FOLLOW` and `follow,noindex` compare equal and an argument
+    (`max-snippet:20`) is kept."""
+    if value is None:
+        return None
+    return ", ".join(sorted(rule for rule in (
+        " ".join(part.lower().split()).replace(" :", ":").replace(": ", ":")
+        for part in value.split(",")) if rule))
+
+
 def summarize(html: str, url: str) -> dict:
     parsed = parse_html(html, url)
     return {
@@ -19,8 +30,9 @@ def summarize(html: str, url: str) -> dict:
         "meta_description": parsed["meta_description"],
         # The directives MB-105's title names (F15): a noindex added or removed by
         # JavaScript is the difference that matters most.
-        "meta_robots": parsed["meta_robots"],
-        "meta_googlebot": parsed["meta_googlebot"],
+        # Compared as rules (Codex's fifth review): case, spacing and order are no change.
+        "meta_robots": _directives(parsed["meta_robots"]),
+        "meta_googlebot": _directives(parsed["meta_googlebot"]),
         "canonical": parsed["canonical"],
         "h1_count": len(parsed["headings"]["h1"]),
         # Internal is on the page's host (F15, TE-169): a prefix test of the origin

@@ -94,7 +94,18 @@ def _names_property(tag, name: str) -> bool:
                for token in str(value or "").split())
 
 
-def _is_trail_entry(tag) -> bool:
+def _item_parts(tag, soup) -> list:
+    """An item's element, its descendants, and the elements its Microdata `itemref`
+    brings in with theirs."""
+    parts = [tag, *tag.find_all(True)]
+    for ident in str(tag.get("itemref") or "").split():
+        found = soup.find(id=ident)
+        if found is not None:
+            parts += [found, *found.find_all(True)]
+    return parts
+
+
+def _is_trail_entry(tag, soup) -> bool:
     """An `itemListElement` that names its page or its label: an `item` or `name`
     property with a value: its text, or a `content`, `href` or `value` attribute
     (Codex's reviews of F15 batch 1)."""
@@ -104,11 +115,12 @@ def _is_trail_entry(tag) -> bool:
                and (part.get_text(strip=True)
                     or any(str(part.get(attr) or "").strip()
                            for attr in ("content", "href", "value")))
-               for part in [tag, *tag.find_all(True)])
+               for part in _item_parts(tag, soup))
 
 
 def _breadcrumb_markup(soup) -> list:
-    """The Microdata or RDFa BreadcrumbList carriers that hold a trail entry.
+    """The elements of every Microdata or RDFa BreadcrumbList that holds a trail entry:
+    the carrier, its descendants and what its `itemref` brings in.
 
     A carrier with no `itemListElement` is a type with no trail (F15, AR-158): it is
     neither markup Google can show nor a breadcrumb anybody sees.
@@ -118,13 +130,9 @@ def _breadcrumb_markup(soup) -> list:
         if ((element.has_attr("itemscope")
                 and _is_breadcrumb_type(element.get("itemtype")))
                 or _is_breadcrumb_type(element.get("typeof"))):
-            # Microdata's `itemref` brings elements elsewhere into the item.
-            referenced = [soup.find(id=ident)
-                          for ident in str(element.get("itemref") or "").split()]
-            if element.find(_is_trail_entry) or any(
-                    part is not None and (_is_trail_entry(part) or part.find(_is_trail_entry))
-                    for part in referenced):
-                carriers.append(element)
+            parts = _item_parts(element, soup)
+            if any(_is_trail_entry(part, soup) for part in parts):
+                carriers += parts
     return carriers
 
 
@@ -162,7 +170,7 @@ def _has_breadcrumb_ui(soup, carriers: list) -> bool:
     markers is intentionally undetectable here: static HTML cannot distinguish it
     reliably from ordinary navigation.
     """
-    if any(carrier.find("a", href=True) for carrier in carriers):
+    if any(part.name == "a" and part.get("href") for part in carriers):
         return True
     if any(re.search(r"breadcrumb", _nav_accessible_name(nav, soup), re.I)
            for nav in soup.find_all("nav")):

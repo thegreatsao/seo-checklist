@@ -1194,7 +1194,8 @@ below are examples rather than a schema.
 `url` — str
 `raw.title` — str
 `raw.meta_description` — str
-`raw.meta_robots` — NoneType or str — read by MB-105's comparison, from F15
+`raw.meta_robots` — NoneType or str — every robots tag's rules, lower-cased and sorted so
+  a respelling is no diff; read by MB-105's comparison, from F15
 `raw.meta_googlebot` — NoneType or str — the same, for `<meta name="googlebot">`
 `raw.canonical` — str
 `raw.h1_count` — int
