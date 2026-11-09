@@ -938,8 +938,11 @@ site having served no such field.
   detected (F15; until then it was scored against the
   colour behind the image). A file from the snippet before F15 has no such key
 `links_indistinct` — int — CN-035: links in running text (the parent carries text of
-  its own) that are not underlined, not bolder, and under 3:1 against that text (WCAG
-  G183); a colour outside `rgb()` is not judged. Until F15 only `p a, li a, td a,
+  its own) that are not underlined, not bolder, have no background of their own, and
+  are in the text's colour or under 3:1 against it (WCAG G183). **Withheld** at 0 when
+  `links_contrast_unmeasured` is not 0 or is absent (F15).
+`links_contrast_unmeasured` — int — links whose colour or whose text's colour is outside
+  `rgb()` and differs from the other, so no ratio is read. Until F15 only `p a, li a, td a,
   article a` were read, and any colour difference at all made a link distinct
 `overlays_covering_content` — int — CN-051 (fixed/sticky elements covering ≥25% of
   the viewport)
@@ -1055,9 +1058,10 @@ Without one it audits one page's image markup and optional fetched bytes.
   — modern format in a `<source>`, png fallback in the `<img>` — counted as no modern
   format at all and failed the item it exists to satisfy.
 `responsive_count` — int — absent when the page has no images; otherwise, images
-  offering width-described (`w`) candidates on the `img` or a `<source>`, or a
-  `<source>` whose `media` tests a width (F15: any `srcset`, a density or format-only
-  one too). Read by nothing since 0.108.0, when MB-096 and MD-189 moved to the
+  whose candidate set a phone ends up with — the first `<source>` that can match at
+  any width, else the `img` — offers width descriptors (`w`), or with a `<source>`
+  before it whose `media` tests a width (F15: any `srcset`, a density or format-only
+  one too, and an `img` srcset behind a format-only `<source>`). Read by nothing since 0.108.0, when MB-096 and MD-189 moved to the
   per-image count below; kept as evidence. The count was wrong in the same direction.
 `modern_format_on_img_count` — int — the narrow count: `img` src only
 `srcset_on_img_count` — int — the narrow count: `img` attribute only

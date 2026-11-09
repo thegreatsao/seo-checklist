@@ -638,7 +638,7 @@ MEASURES = {
     "MB-104": "Google's size, shape, format and crawl requirements for the icon the page declares. Whether it represents the brand, or keeps a stable URL, is not read.",
     "MB-098": "That every image with a width-descriptor (w) srcset also carries sizes; a density (1x, 2x) srcset needs none. A large image sent without srcset is MB-096.",
     "CN-034": "Visible elements with over three characters of their own text whose computed font size is under 12px. Shorter text and text directly in <body> are not read; 12px is a floor, not a readability judgement.",
-    "CN-035": "Links inside running text told apart by colour alone: not underlined, not bolder, and under 3:1 against the surrounding text. Hover and focus styles, non-rgb() colours and links with no text around them are not read.",
+    "CN-035": "Links in running text told apart by colour alone: no underline, weight or background of their own, and their text's colour or under 3:1 against it. Colours outside rgb() withhold a pass; hover and focus are not read.",
     "CN-036": "Visible text over three characters against its composited background colours, below WCAG AA (4.5:1, 3:1 large). A CSS background image, a gradient or a non-rgb() colour withholds a pass; an <img> behind text is not detected.",
     "CN-051": "Visible fixed or sticky elements covering at least a quarter of the viewport when the page was rendered. Whether they hide content, when they appear or how they are dismissed is not read.",
     "MB-094": "The same count from a phone-width render: fixed or sticky elements covering at least a quarter of the viewport. Whether they hide content, when they appear or how they are dismissed is not read.",

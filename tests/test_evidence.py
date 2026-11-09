@@ -1550,8 +1550,13 @@ class ImageWeightAudit(unittest.TestCase):
         out = self.audit(self.PICTURE)
         self.assertEqual(out["responsive_count"], 0)
         self.assertEqual(out["images"][0]["picture_srcset"], True)
-        widths = self.PICTURE.replace("/i/logo.webp 1x", "/i/logo.webp 64w")
+        # The first source a phone can match decides (F15 review round 3), so the
+        # avif source needs widths too.
+        widths = (self.PICTURE.replace("/i/logo.webp 1x", "/i/logo.webp 64w")
+                  .replace('srcset="/i/logo.avif"', 'srcset="/i/logo.avif 64w"'))
         self.assertEqual(self.audit(widths)["responsive_count"], 1)
+        webp_only = self.PICTURE.replace("/i/logo.webp 1x", "/i/logo.webp 64w")
+        self.assertEqual(self.audit(webp_only)["responsive_count"], 0)
 
     def test_the_fallback_is_still_reported_as_a_png(self):
         """Both facts, kept apart. The browser gets webp and the `img` is a png,

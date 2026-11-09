@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "registry_version": "f0d4c895a883",
+  "registry_version": "ba45591f81d3",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -25,7 +25,7 @@
     ]
   },
   "fixture_digest": {
-    "good": "0d2056e58750",
+    "good": "d087888660b6",
     "broken": "41915277914c",
     "good_tls": "b84ad265e245",
     "broken_tls": "be8038ea85ee"
@@ -300,6 +300,15 @@
       "to": "0d2056e58750",
       "decided": "new-material",
       "why": "The hand-written rendered.json now carries text_nodes_contrast_unmeasured: 0. Since F15 (CN-036) a zero below the contrast floor is withheld unless the file says no text sat over a background image or gradient, and a file from the snippet before that count has no such key; without it CN-036 would read NO_DATA on the half of the pair that has to be able to pass. No declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good",
+      "item": null,
+      "from": "0d2056e58750",
+      "to": "d087888660b6",
+      "decided": "new-material",
+      "why": "The hand-written rendered.json also carries links_contrast_unmeasured: 0. Since F15 batch 2's review (CN-035) a zero indistinct-link count is withheld unless the file says no link was in a colour outside rgb(), and a file without the key is withheld too; without it CN-035 would read NO_DATA on the half of the pair that has to be able to pass. No declared verdict moves."
     }
   ],
   "batches": [],

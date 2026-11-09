@@ -504,6 +504,7 @@ _FURNITURE_ROLES = ("banner", "navigation", "contentinfo", "complementary")
 # A header or footer inside one of these is the section's own, not a landmark
 # (HTML-AAM): an article's header holds its featured image.
 _SECTIONING = ("article", "aside", "main", "nav", "section")
+_SECTIONING_ROLES = ("main", "article", "region", "navigation", "complementary")
 
 
 def _in_furniture(img) -> bool:
@@ -514,7 +515,9 @@ def _in_furniture(img) -> bool:
             return True
         if tag.name in ("nav", "aside"):
             return True
-        if tag.name in ("header", "footer") and tag.find_parent(_SECTIONING) is None:
+        if (tag.name in ("header", "footer") and tag.find_parent(_SECTIONING) is None
+                and tag.find_parent(lambda t: (t.get("role") or "").strip().lower()
+                                    in _SECTIONING_ROLES) is None):
             return True
     return False
 # basis: convention — 200 declared pixels on each side. Below it an image in the

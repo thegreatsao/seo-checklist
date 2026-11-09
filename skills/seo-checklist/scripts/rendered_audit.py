@@ -105,7 +105,11 @@ MOBILE_MAX_WIDTH = 480
 # Metrics that describe the page at any viewport.
 GENERAL_METRICS = ("text_nodes_below_12px", "text_nodes_below_contrast",
                    "text_nodes_contrast_unmeasured", "links_indistinct",
-                   "overlays_covering_content")
+                   "links_contrast_unmeasured", "overlays_covering_content")
+# A zero that is a pass only beside a zero count of what went unmeasured (F15, CN-036
+# and CN-035); an absent count is a file from the snippet before it, and withholds too.
+WITHHELD_BESIDE = {"text_nodes_below_contrast": "text_nodes_contrast_unmeasured",
+                   "links_indistinct": "links_contrast_unmeasured"}
 # Metrics that mean nothing unless the render was a phone. `horizontal_overflow_px`
 # and `text_nodes_clipped` are here rather than in the general set for the same reason
 # tap targets are: both are answers about how the layout behaved at the width it was
@@ -170,18 +174,21 @@ def read(path: str) -> dict:
     if not out["measured"]:
         raise ValueError(
             f"{path} carries none of {', '.join(GENERAL_METRICS + MOBILE_METRICS)}")
-    # CN-036: no text below the floor says nothing about text whose background was an
-    # image. The clean count is withheld unless the file says none went unmeasured.
-    if (out.get("text_nodes_below_contrast") == 0
-            and out.get("text_nodes_contrast_unmeasured") != 0):
-        del out["text_nodes_below_contrast"]
-        out["measured"].remove("text_nodes_below_contrast")
-        unmeasured = out.get("text_nodes_contrast_unmeasured")
+    # No text below the floor says nothing about text whose background was an image,
+    # and no indistinct link nothing about links in a colour the snippet cannot read.
+    # A clean count is withheld unless the file says none went unmeasured.
+    for key, unmeasured_key in WITHHELD_BESIDE.items():
+        if out.get(key) != 0 or out.get(unmeasured_key) == 0:
+            continue
+        del out[key]
+        out["measured"].remove(key)
+        unmeasured = out.get(unmeasured_key)
         out["missing"].append(
-            "text_nodes_below_contrast (withheld: "
-            + (f"{unmeasured} text element(s) over a background image or gradient, "
-               "or in a colour outside rgb(), were not measured)" if unmeasured else
-               "the file does not say how much text went unmeasured)"))
+            f"{key} (withheld: "
+            + (f"{unmeasured} not measured: a background image or gradient, or a "
+               "colour outside rgb())" if unmeasured else
+               f"the file has no {unmeasured_key}, so it cannot say none went "
+               "unmeasured)"))
     return out
 
 

@@ -12,9 +12,9 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `f0d4c895a883` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1).
+Registry version: `ba45591f81d3` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1).
 
-F15 batch 2 (`84e41c84ecaa` → `f0d4c895a883`) — `rendered_audit.py` and the snippet in `SKILL.md`, `pagespeed.py`,
+F15 batch 2 (`84e41c84ecaa` → `ba45591f81d3`) — `rendered_audit.py` and the snippet in `SKILL.md`, `pagespeed.py`,
 `image_inventory.py`, `image_weight_audit.py`. SP-107 asserts `above_fold.rating` and MD-189
 `large_legacy_or_unresponsive_count`; MD-189 left MB-096's `scores_with` group, so the image-format theme weighs 9
 points instead of 6 and **scores of a real audit can move**; fourteen new `measures` sentences (CN-034, CN-035,
@@ -23,8 +23,9 @@ CN-036, CN-051, MB-094, MB-103, MB-108, CI-016, MD-186, CN-054, MB-096, MB-097, 
 and alpha, and withholds its pass (NO_DATA) when text sat over a CSS background image or gradient or in a colour outside
 `rgb()` (`oklch()`, `color()`), or when the rendered
 file comes from the snippet before `text_nodes_contrast_unmeasured` — **re-take the render**; CN-035 reads every link
-in running text and fails one under 3:1 against that text with no underline or weight (WCAG G183), not only exact
-colour equality in `p/li/td/article`; SP-107 fails a slow LCP beside a fast FCP (both paints from one source, as
+in running text and fails one in the text's colour or under 3:1 against it with no underline, weight or background
+(WCAG G183), not only exact colour equality in `p/li/td/article`, and withholds its pass when a link's colour is
+outside `rgb()` or the file predates `links_contrast_unmeasured`; SP-107 fails a slow LCP beside a fast FCP (both paints from one source, as
 before) and no longer passes on one good paint; SP-108/SP-113 no longer pass with LCP or CLS absent; CI-016/MD-186 fail an empty
 alt on a link's only content (however the image is marked) or an in-content image declared 200 px or more on each
 side; MD-184 and CN-054 count `srcset`-, `<picture>`- and `data-srcset`-only images, and CN-054 a `data:`

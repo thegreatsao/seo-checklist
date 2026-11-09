@@ -201,6 +201,26 @@ class RenderedSnippet(unittest.TestCase):
                                                 "style": {"color": "oklch(0.546 0.245 262.881)"},
                                                 "kids": ["the guide"]}, " first."]}])
         self.assertEqual(out["links_indistinct"], 0)
+        self.assertEqual(out["links_contrast_unmeasured"], 1)
+        self.assertEqual(verdict("CN-035", self.read(out)), NO_DATA)
+
+    def test_a_link_in_its_texts_own_colour_is_indistinct_whatever_the_space(self):
+        """Review round 3: Tailwind's preflight gives links `color: inherit` and no
+        underline; in oklch the zero was a pass."""
+        colour = "oklch(0.21 0.034 264.665)"
+        out = self.measure([{"tag": "p", "style": {"color": colour}, "kids": [
+            "Read ", {"tag": "a", "attrs": {"href": "/x"}, "style": {"color": colour},
+                      "kids": ["the guide"]}, " first."]}])
+        self.assertEqual(out["links_indistinct"], 1)
+        self.assertEqual(verdict("CN-035", self.read(out)), FAIL)
+
+    def test_a_link_with_its_own_background_is_distinct(self):
+        """Review round 3: a button-styled link is told apart by its background."""
+        for style in ({"backgroundColor": "rgb(255, 212, 0)"},
+                      {"backgroundImage": "linear-gradient(red, blue)"}):
+            with self.subTest(style=style):
+                out = self.measure(self.link("rgb(51, 51, 51)", **style))
+                self.assertEqual(out["links_indistinct"], 0)
 
     def test_ordinary_dark_text_on_white_passes(self):
         out = self.measure([{"tag": "p", "kids": ["Plain words"]}])
@@ -263,6 +283,17 @@ class RenderedFiles(unittest.TestCase):
     def test_a_zero_from_the_old_snippet_is_no_data(self):
         out = self.read(text_nodes_below_contrast=0, links_indistinct=0)
         self.assertEqual(verdict("CN-036", out), NO_DATA)
+        self.assertEqual(verdict("CN-035", out), NO_DATA)
+
+    def test_each_withheld_zero_names_its_unmeasured_count(self):
+        self.assertEqual(rendered_audit.WITHHELD_BESIDE, {
+            "text_nodes_below_contrast": "text_nodes_contrast_unmeasured",
+            "links_indistinct": "links_contrast_unmeasured"})
+        out = self.read(links_indistinct=0, links_contrast_unmeasured=2)
+        self.assertEqual(verdict("CN-035", out), NO_DATA)
+        out = self.read(links_indistinct=1, links_contrast_unmeasured=2)
+        self.assertEqual(verdict("CN-035", out), FAIL)
+        out = self.read(links_indistinct=0, links_contrast_unmeasured=0)
         self.assertEqual(verdict("CN-035", out), PASS)
 
     def test_a_failure_stands_whatever_went_unmeasured(self):
@@ -431,6 +462,14 @@ class EmptyAltWhereTheImageCarriesMeaning(unittest.TestCase):
                                 f'height="600" alt=""></header></{section}>')
                 self.assert_both(out, FAIL)
 
+    def test_a_header_inside_an_aria_section_is_content(self):
+        for role in ("main", "article", "region"):
+            self.assertIn(role, seo_common._SECTIONING_ROLES)
+            with self.subTest(role=role):
+                out = inventory(f'<div role="{role}"><header><img src="/h.jpg" '
+                                'width="1200" height="600" alt=""></header></div>')
+                self.assert_both(out, FAIL)
+
     def test_a_link_hidden_from_assistive_technology_needs_no_name(self):
         """Review round 2: WordPress's post thumbnail beside a titled link."""
         out = inventory('<article><a href="/post" aria-hidden="true" tabindex="-1">'
@@ -556,6 +595,19 @@ class ResponsiveMeansWidths(unittest.TestCase):
     def test_tab_separated_width_descriptors_are_read(self):
         self.assertTrue(image_weight_audit._responsive(
             {"srcset": "a.jpg\t800w, b.jpg\t1600w"}, []))
+
+    def test_a_format_only_source_wins_over_the_imgs_widths(self):
+        """Review round 3: the first source a phone can match is what it gets; the
+        img's width candidates are never used behind a format-only source."""
+        out = weigh(f'<picture><source type="image/webp" srcset="{ABS}/h.webp">'
+                    f'<img src="{ABS}/h.jpg" srcset="{ABS}/h-800.jpg 800w, {ABS}/h.jpg 3000w" '
+                    'sizes="100vw" alt="w"></picture>')
+        self.assertEqual(verdict("MB-096", out), FAIL)
+        self.assertEqual(verdict("MD-189", out), FAIL)
+        out = weigh(f'<picture><source media="(max-width: 600px)" srcset="{ABS}/s.webp">'
+                    f'<source type="image/webp" srcset="{ABS}/h.webp"><img src="{ABS}/h.jpg" '
+                    'alt="w"></picture>')
+        self.assertEqual(verdict("MB-096", out), PASS)
 
     def test_md_189_asserts_both_halves(self):
         responsive_png = (f'<img src="{ABS}/a.png" srcset="{ABS}/s.png 800w, '

@@ -104,17 +104,24 @@ DEFAULT_MAX_IMAGES = 200
 def _responsive(img: dict, sources: list[dict]) -> bool:
     """Whether the browser is offered a smaller file for a smaller screen (MB-096).
 
-    Width descriptors (`800w`) on the `<img>` or a `<source>`, or a `<source>` whose
-    `media` query tests a width. A density srcset (`1x, 2x`), a `<source>` that
+    Width descriptors (`800w`) on the candidate set a phone ends up with, or a
+    `<source>` before it whose `media` query tests a width. A density srcset (`1x, 2x`), a `<source>` that
     differs only by format, or one chosen by colour scheme or `print` sends a phone
     the same wide file (F15): `srcset="a.png 1x"` and a webp `<source>` over a
     3000 px png both passed before. `_needs_sizes` is the test for
     width descriptors — the same fact makes a srcset responsive and requires `sizes`.
     """
-    return (_needs_sizes(img.get("srcset"))
-            or any(_needs_sizes(s.get("srcset"))
-                   or (s.get("srcset") and "width" in (s.get("media") or "").lower())
-                   for s in sources))
+    # The browser takes the first `<source>` that matches. One whose `media` tests a
+    # width offers a phone another file; the first that can match at any width (no
+    # `media`, or one about colour scheme or print) is what a phone gets, and the
+    # `<img>`'s own candidates are used only when no source can match.
+    for source in sources:
+        if not source.get("srcset"):
+            continue
+        if "width" in (source.get("media") or "").lower():
+            return True
+        return _needs_sizes(source.get("srcset"))
+    return _needs_sizes(img.get("srcset"))
 
 
 def _extension(src: str) -> str:

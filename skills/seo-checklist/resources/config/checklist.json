@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "f0d4c895a883",
+  "registry_version": "ba45591f81d3",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -960,7 +960,7 @@
           "eq": 0
         }
       },
-      "measures": "Links inside running text told apart by colour alone: not underlined, not bolder, and under 3:1 against the surrounding text. Hover and focus styles, non-rgb() colours and links with no text around them are not read.",
+      "measures": "Links in running text told apart by colour alone: no underline, weight or background of their own, and their text's colour or under 3:1 against it. Colours outside rgb() withhold a pass; hover and focus are not read.",
       "effort": "high",
       "fix": "Links must be visually distinct from body text"
     },

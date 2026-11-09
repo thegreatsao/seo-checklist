@@ -1,8 +1,8 @@
 {
   "measured": "upper-case names bound to a list, tuple, set or dict literal, bare or handed to a constructor, at module level or in a function, in scripts/, scripts/lib/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 202,
-  "read": 159,
+  "total": 204,
+  "read": 161,
   "unread": 43,
   "unread_closed": 0,
   "modules": {
@@ -885,7 +885,11 @@
       "read": [
         {
           "name": "GENERAL_METRICS",
-          "entries": 5
+          "entries": 6
+        },
+        {
+          "name": "WITHHELD_BESIDE",
+          "entries": 2
         },
         {
           "name": "MOBILE_METRICS",
@@ -1035,6 +1039,10 @@
         },
         {
           "name": "_SECTIONING",
+          "entries": 5
+        },
+        {
+          "name": "_SECTIONING_ROLES",
           "entries": 5
         },
         {

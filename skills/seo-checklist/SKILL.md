@@ -305,8 +305,9 @@ Resize to a phone viewport first (375×812), load the page, then run one
   }
 
   // A link inside running text, told apart by colour alone: no underline, not
-  // bolder, and under 3:1 against the text around it (WCAG technique G183).
-  let indistinct = 0;
+  // bolder, no background of its own, and the text's own colour or under 3:1
+  // against it (WCAG technique G183). A colour rgb() cannot read is unmeasured.
+  let indistinct = 0, linksUnmeasured = 0;
   for (const a of document.querySelectorAll('a[href]')) {
     const p = a.parentElement;
     if (!p || !visible(a) || !a.textContent.trim()) continue;
@@ -314,8 +315,13 @@ Resize to a phone viewport first (375×812), load the page, then run one
     const s = getComputedStyle(a), parent = getComputedStyle(p);
     const underlined = (s.textDecorationLine || '').includes('underline');
     const bolder = parseInt(s.fontWeight) - parseInt(parent.fontWeight) >= 200;
+    const fill = rgb(s.backgroundColor);
+    const filled = (fill ? fill[3] > 0 : s.backgroundColor !== 'transparent') ||
+                   (s.backgroundImage && s.backgroundImage !== 'none');
+    if (underlined || bolder || filled) continue;
+    if (s.color === parent.color) { indistinct++; continue; }
     const fg = rgb(s.color), text = rgb(parent.color);
-    if (underlined || bolder || !fg || !text) continue;
+    if (!fg || !text) { linksUnmeasured++; continue; }
     const bg = bgOf(p) || [255, 255, 255, 1];
     if (ratio(over(fg, bg), over(text, bg)) < 3) indistinct++;
   }
@@ -351,6 +357,7 @@ Resize to a phone viewport first (375×812), load the page, then run one
   return {url: location.href, viewport: {width: vw, height: vh},
           text_nodes_below_12px: small, text_nodes_below_contrast: lowContrast,
           text_nodes_contrast_unmeasured: unmeasured, links_indistinct: indistinct,
+          links_contrast_unmeasured: linksUnmeasured,
           overlays_covering_content: overlays, tap_targets_below_48px: taps,
           horizontal_overflow_px: overflow, text_nodes_clipped: clipped,
           html: document.documentElement.outerHTML};
@@ -373,6 +380,10 @@ targets, mobile interstitials, horizontal overflow and clipped text — are
 **dropped**, and those items report `NO_DATA`. A desktop window that fits its own
 content answers nothing about a phone, and passing one through would be a verdict
 about a viewport nobody looked at.
+
+`links_contrast_unmeasured` is the same for CN-035: a link whose colour, or its
+text's, is outside `rgb()` and differs from it. CN-035 passes only when it and
+`links_indistinct` are both 0, and a file without the key reports `NO_DATA`.
 
 `text_nodes_contrast_unmeasured` counts text over a background image or gradient,
 which has no single colour to measure against, and text whose colour or background

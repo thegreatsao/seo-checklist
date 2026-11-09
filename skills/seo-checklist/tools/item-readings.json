@@ -921,7 +921,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`links_indistinct` counts links in running text with no underline, no bolder weight and under 3:1 against the surrounding text (F15: only `p/li/td/article a` and exact colour equality were read); hover and focus are not read, and `measures` says so.",
+      "reading": "`links_indistinct` counts links in running text with no underline, weight or background of their own, in the text's colour or under 3:1 against it (F15: only `p/li/td/article a` and exact colour equality were read); a colour outside rgb() is counted unmeasured and withholds the zero, and `measures` says so.",
       "shapes": {
         "conjunction": "Clear and distinct are one property: a link must look like a link.",
         "qualifier": "Read as visual distinctness from body text."
@@ -1672,7 +1672,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`large_without_srcset_count` counts images wider than 1280px, read from their own bytes, with no width-described srcset and no `<source>` whose media tests a width (F15: a density srcset or a format-only source counted as responsive); the widths offered are not read, and `measures` says so.",
+      "reading": "`large_without_srcset_count` counts images wider than 1280px, read from their own bytes, whose candidate set a phone ends up with has no width descriptors and no `<source>` before it tests a width (F15: a density srcset or a format-only source counted as responsive); the widths offered are not read, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
