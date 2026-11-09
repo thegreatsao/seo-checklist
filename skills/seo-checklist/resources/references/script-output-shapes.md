@@ -159,8 +159,9 @@ Reads `--inventory` (see `site_crawl.py`); crawls one for itself without it.
   because overuse is a share that reading more pages can lower
 `summary.low_diversity_targets` — int
 `summary.unnatural_anchor_targets` — int — read by BL-081 (F15): distinct targets with
-  exact-match overuse, low diversity (over a crawl of four pages or more), or an empty
-  or generic anchor; when `truncated`,
+  exact-match overuse, low diversity (over a crawl of four pages or more; a pager's
+  links left out), or an empty or generic anchor; a redirect row read again is not
+  read (`site_crawl.read_twice`); when `truncated`,
   only the empty or generic ones, a floor, and absent if there are none. An image
   link's anchor is its alt (`site_crawl.py`)
 `top_anchor_texts[]` — array

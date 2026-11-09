@@ -55,7 +55,11 @@ GENERIC_ANCHORS = {
 def anchors_from_inventory(inventory: dict) -> dict:
     """Every internal link the crawl saw, as (source, target, anchor, rel)."""
     pages, links, fetch_errors = {}, [], []
+    # A redirect read again repeats its landing's links (F15 review round 3).
+    twice = site_crawl.read_twice(inventory.get("pages") or {})
     for key, row in sorted((inventory.get("pages") or {}).items()):
+        if key in twice:
+            continue
         pages[key] = {
             "url": key,
             "status": row.get("status"),
@@ -194,9 +198,17 @@ def audit_anchor_text(start_url: str, inventory: dict | None = None, depth: int 
     # Repetition *within* a page is anchor stuffing; repetition *across* pages is a
     # navigation bar. The two look identical in a link count and they are not the same
     # finding, so the repetition checks run over editorial links only.
+    # A pager's links are not anchor text anybody chose: a page number ("3") or a
+    # numbered page (`?page=3`, its own key since F15) is left out of overuse and
+    # diversity, or every numbered page of a long pager reads as over-optimised
+    # (F15 review round 3).
     editorial_by_target: dict[str, list[str]] = defaultdict(list)
     for link in editorial:
-        editorial_by_target[link["target"]].append((link.get("anchor") or "").strip())
+        anchor = (link.get("anchor") or "").strip()
+        if anchor.isdigit() or site_crawl.page_key(
+                link["target"], numbered=False) != link["target"]:
+            continue
+        editorial_by_target[link["target"]].append(anchor)
 
     target_rows = []
     overused_exact = []

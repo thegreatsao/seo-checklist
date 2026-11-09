@@ -68,16 +68,13 @@ def pages_from_inventory(inventory: dict) -> dict:
     once however many redirects land there.
     """
     rows = inventory.get("pages") or {}
+    twice = site_crawl.read_twice(rows)
     pages = {}
-    landings = set()
     for key, row in sorted(rows.items()):
         if not row.get("html") or not carries_content(row.get("status")):
             continue
-        landed = site_crawl.page_key(row.get("final_url") or row.get("url") or key)
-        # Two redirects landing on one unread page are that page once (review round 2).
-        if landed != key and (landed in rows or landed in landings):
+        if key in twice:
             continue
-        landings.add(landed)
         pages[key] = {
             "url": row.get("url") or key,
             "final_url": row.get("final_url") or row.get("url") or key,
@@ -92,7 +89,8 @@ def pages_from_inventory(inventory: dict) -> dict:
             # The crawl read the canonical's page and it was no content (a 404, a 5xx):
             # a canonical Google cannot follow, so the page is not consolidated.
             "canonical_broken": bool(row.get("canonical")) and _broken(
-                rows.get(site_crawl.page_key(row["canonical"], row.get("final_url") or key))),
+                rows.get(site_crawl.page_key(row["canonical"], row.get("final_url") or key)),
+                row["canonical"]),
             # Carried for MS-022 and MS-029. Both fields have been in the crawl
             # inventory all along; the old rules borrowed the duplicate-body count
             # instead of measuring duplicate titles and descriptions themselves.
@@ -145,9 +143,13 @@ def duplicate_descriptions(pages: dict) -> list:
             for text, urls in sorted(groups.items()) if len(urls) > 1]
 
 
-def _broken(row: dict | None) -> bool:
-    return bool(row) and row.get("status") is not None and not carries_content(
-        row.get("status"))
+def _broken(row: dict | None, named: str) -> bool:
+    """The crawl read the canonical's own URL and it answered no content. A row under
+    the same page key read at another query (`?id=1` for `?id=2`) says nothing."""
+    return (bool(row) and row.get("status") is not None
+            and not carries_content(row.get("status"))
+            and any(site_crawl.same_page(named, row.get(field) or "")
+                    for field in ("url", "final_url")))
 
 
 def _hostless(url: str) -> str:

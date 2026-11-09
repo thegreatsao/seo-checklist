@@ -35,11 +35,12 @@ canonical alone; TE-176 reads a `Link` header canonical and fails two that disag
 linked (a page linking only to itself is a dead end), threshold still 3; AR-149 counts a redirecting spelling links
 use, not a sitemap's, and withholds its pass when a spelling went unfetched; AR-153 scores 0 when every cluster is one
 page; BL-081 counts targets with low diversity or an empty or generic anchor. AR-153 withholds its score when fewer than two titles carry a topic word it reads (Cyrillic, empty). A redirect is
-its landing page read once (MS-022, MS-029, CN-041 no longer count `/old` → `/new` or two redirects to one page twice);
+its landing page read once (`site_crawl.read_twice`: MS-022, MS-029, CN-041, AR-153 and BL-081 no longer count `/old` →
+`/new` or two redirects to one page twice);
 a canonical to the page on another scheme or `www` host is the page, and one to a crawled page answering 404 or 5xx
 consolidates nothing. GO-137 compares Search Console pages and sitemap URLs with the page number folded, as before.
 BL-081 counts low diversity only over a crawl of four pages or more (below it a menu cannot be told from editorial
-links). A site paginated by `?page=N` now reaches its listing pages, so its crawl is cut at the depth cap more often
+links), and leaves a pager's links (a page-number anchor, a `?page=N` target) out of overuse and diversity. A site paginated by `?page=N` now reaches its listing pages, so its crawl is cut at the depth cap more often
 and site-wide passes are withheld more often. The good fixture's second blog post is retitled and links two more pages so the good half of the pair can pass AR-153 and AR-162. The recorded census moves six rows, declared before the run: AR-153 PASS → FAIL on failing-shapes, indexed, unindexed, page-defects, url-shapes and page-sound (no topic cluster of two pages). 67 second readings are stale until F03 batch 6.
 
 F15 batch 2 (`84e41c84ecaa` → `1733ee735260`) — `rendered_audit.py` and the snippet in `SKILL.md`, `pagespeed.py`,

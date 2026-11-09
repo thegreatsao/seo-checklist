@@ -88,7 +88,11 @@ def map_inventory(inventory: dict) -> dict:
     at its caps does not decide the item: the page it left out can be a topic's hub, so
     the score is withheld (as BL-081's count since 0.171.0).
     """
-    pages = site_crawl.html_pages(inventory)
+    # A redirect read again is its landing page, not a second page of its topic
+    # (F15 review round 3: it made a one-page topic a two-page cluster with a hub).
+    twice = site_crawl.read_twice(inventory.get("pages") or {})
+    pages = {key: row for key, row in site_crawl.html_pages(inventory).items()
+             if key not in twice}
     titles = {key: (row.get("title") or "") for key, row in pages.items()}
     shared = Counter(word for title in titles.values()
                      for word in set(re.findall(r"[a-z][a-z0-9'-]{2,}", title.lower())))

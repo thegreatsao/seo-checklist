@@ -193,6 +193,26 @@ def spelling_of(url: str, base: str = "") -> str:
     return _reduced(url, base, fold_slash=False)
 
 
+def read_twice(pages: dict) -> set:
+    """Keys of rows that are another row's page read again, so a reader counts it once.
+
+    A row that redirected lands on a page: when the crawl read that page under its own
+    key, or an earlier redirect already landed there, the row is the same document a
+    second time — not a page with a title, links or a topic of its own (F15 reviews:
+    MS-022, MS-029, CN-041, AR-153 and BL-081 each counted `/old` -> `/new` twice).
+    """
+    twice, landings = set(), set()
+    for key, row in sorted(pages.items()):
+        if not row.get("html") or not carries_content(row.get("status")):
+            continue
+        landed = page_key(row.get("final_url") or row.get("url") or key)
+        if landed != key and (landed in pages or landed in landings):
+            twice.add(key)
+            continue
+        landings.add(landed)
+    return twice
+
+
 def same_page(a: str, b: str) -> bool:
     """Whether two URLs name one page as a canonical does: the same URL, its query
     included, a trailing slash aside. A page key drops the query, so `?id=2` read as
@@ -696,9 +716,12 @@ def _linked_spellings(pages: dict, fetch, timeout: int, budget: int) -> dict:
             "final_url": fetched.get("url") or spelled,
             "redirect_chain": fetched.get("redirect_chain") or [],
             "error_kind": fetched.get("error_kind"),
-            # A refusal or a silence is a spelling nobody read, not a redirect absent.
+            # A refusal, a silence or a server too busy to say (429, 5xx) is a spelling
+            # nobody read, not a redirect absent (F15 review round 3).
             "unchecked": bool(fetched.get("robots_blocked") or gave_no_answer(fetched)
-                              or fetched.get("error_kind") == "blocked"),
+                              or fetched.get("error_kind") == "blocked"
+                              or fetched.get("status") == 429
+                              or (fetched.get("status") or 0) >= 500),
         }
     return spellings
 

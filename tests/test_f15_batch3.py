@@ -668,6 +668,66 @@ class ReviewRound2(unittest.TestCase):
         self.assertEqual(verdict("CI-009", out), PASS)
 
 
+class ReviewRound3(unittest.TestCase):
+    def redirect_of(self, inv, landing_url, old_url):
+        landing = inv["pages"][site_crawl.page_key(landing_url)]
+        inv["pages"][site_crawl.page_key(old_url)] = dict(
+            landing, url=old_url, redirected=True, redirect_chain=[old_url])
+
+    def test_a_redirect_row_does_not_make_an_ar_153_hub(self):
+        titles = ["Plumbing repairs", "Garden design", "Tax returns", "Wedding cakes"]
+        rows = [row(SITE + f"p{i}", title=t,
+                    links=tuple(SITE + f"p{j}" for j in range(4) if j != i))
+                for i, t in enumerate(titles)]
+        inv = inventory(rows)
+        self.redirect_of(inv, SITE + "p0", SITE + "old-plumbing")
+        out = topical_cluster_mapper.map_inventory(inv)
+        self.assertEqual(verdict("AR-153", out), FAIL)
+
+    def test_a_redirect_row_does_not_double_anchors(self):
+        target = SITE + "target"
+        guide = row(SITE + "guide", links=(target, target, target),
+                    anchors={target: "Pricing"})
+        guide["links"][2]["anchor"] = "Our prices"
+        rows = [guide, row(target)] + [row(SITE + f"f{i}") for i in range(6)]
+        inv = inventory(rows)
+        self.redirect_of(inv, SITE + "guide", SITE + "old-guide")
+        out = anchor_text_audit.audit_anchor_text(SITE, inventory=inv)
+        self.assertEqual(out["summary"]["low_diversity_targets"], 0)
+        self.assertEqual(verdict("BL-081", out), PASS)
+
+    def test_pager_numbers_are_not_unnatural_anchors(self):
+        pages = [SITE + "shop"] + [SITE + f"shop?page={n}" for n in range(2, 13)]
+        rows = []
+        for url in pages:
+            r = row(url, links=tuple(pages))
+            for link, target in zip(r["links"], pages, strict=True):
+                link["anchor"] = target.rsplit("=", 1)[-1] if "=" in target else "1"
+            rows.append(r)
+        rows += [row(SITE + f"f{i}") for i in range(30)]
+        out = anchor_text_audit.audit_anchor_text(SITE, inventory=inventory(rows))
+        self.assertEqual(verdict("BL-081", out), PASS)
+
+    def test_a_canonical_target_is_broken_only_at_its_own_url(self):
+        text = words(300, "same")
+        gone = row(SITE + "p?id=1", status=404)
+        inv = inventory([row(SITE + "a", text=text),
+                         row(SITE + "b", text=text, canonical=SITE + "p?id=2")])
+        inv["pages"][site_crawl.page_key(SITE + "p")] = gone
+        out = duplicates(inv)
+        self.assertEqual(out["summary"]["title_group_exclusions"]["canonicalized"], 1)
+
+    def test_a_spelling_answering_503_is_unchecked(self):
+        inv, url = crawled({
+            "/": '<html><body><a href="/about">About</a> <a href="/x">X</a></body></html>',
+            "/x": '<html><body><a href="/about/">About us</a></body></html>',
+            "/about": "<html><body>About</body></html>",
+            "/about/": (503, {}, "busy"),
+        }, use_sitemap=False)
+        self.assertTrue(inv["spellings"][url + "about/"]["unchecked"])
+        self.assertEqual(internal_links.analyze(inv, url)["truncated"], True)
+
+
 # ---------------------------------------------------------------------------
 # The sentences
 # ---------------------------------------------------------------------------
