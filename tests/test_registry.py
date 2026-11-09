@@ -736,15 +736,18 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 0.176.0 (F04 batch 4b) removes one `convention`: `THIN_CONTENT_THRESHOLDS`,
         # whose four non-default entries needed a page-type detector that does not
         # exist; the default it was read for is `THIN_CONTENT_WORDS`.
+        # F15 batch 2 adds one `convention`: `MEANINGFUL_IMAGE_MIN_PX` in `seo_common.py`,
+        # the declared side from which an in-content image with an empty alt is counted
+        # by CI-016 and MD-186.
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 14,
-            "convention": 96,
+            "convention": 97,
             "inherited": 0,
             "presentation": 47,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 130)
-        self.assertEqual(len(named), 177)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 131)
+        self.assertEqual(len(named), 178)
         # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
         # `lib/safe_http.py`, how long and how often a held lock is asked for on
         # Windows. Listed and not counted, beside `ROBOTS_FETCH_WAIT` and `_CACHE_POLL`,
@@ -785,8 +788,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 195 -> 196: `SAMPLE_FALLBACK_SITEMAPS` in the runner at 0.174.0 (F11).
         # 196 -> 197: `SITE_WIDE_SHARE` in `topical_cluster_mapper.py` at 0.175.0 (F06).
         # 197 -> 196: `THIN_CONTENT_THRESHOLDS` deleted at 0.176.0 (F04 batch 4b).
+        # 196 -> 197: `MEANINGFUL_IMAGE_MIN_PX` in `seo_common.py` (F15 batch 2).
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 196)
+                             for path in at._script_paths()), 197)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -2494,11 +2498,11 @@ class MeasuresQualifications(unittest.TestCase):
         # F15 batch 2: the rendered-page proxies named, and the sentences the fix
         # rulings asked for beside their repairs.
         "CN-034": "Visible elements with over three characters of their own text whose computed font size is under 12px. Shorter text and text directly in <body> are not read; 12px is a floor, not a readability judgement.",
-        "CN-035": "Links inside running text told apart by colour alone: not underlined, not bolder, and under 3:1 against the surrounding text. Hover and focus styles and links with no text around them are not read.",
-        "CN-036": "Visible text over three characters against its composited background colours, below WCAG AA (4.5:1, 3:1 large). Text over a background image or gradient is not measured and withholds a pass.",
+        "CN-035": "Links inside running text told apart by colour alone: not underlined, not bolder, and under 3:1 against the surrounding text. Hover and focus styles, non-rgb() colours and links with no text around them are not read.",
+        "CN-036": "Visible text over three characters against its composited background colours, below WCAG AA (4.5:1, 3:1 large). A CSS background image, a gradient or a non-rgb() colour withholds a pass; an <img> behind text is not detected.",
         "CN-051": "Visible fixed or sticky elements covering at least a quarter of the viewport when the page was rendered. Whether they hide content, when they appear or how they are dismissed is not read.",
         "MB-094": "The same count from a phone-width render: fixed or sticky elements covering at least a quarter of the viewport. Whether they hide content, when they appear or how they are dismissed is not read.",
-        "MB-108": "Visible headings, paragraphs, links, buttons and list items whose content overflows their own box at phone width. A scrollable box counts, and clipping by an ancestor is not read.",
+        "MB-108": "Visible h1–h3 headings, paragraphs, links, buttons and list items whose content overflows their own box at phone width. A scrollable box counts, and clipping by an ancestor is not read.",
         "MB-103": "Visible links, buttons, form fields and role=button elements whose box is under 48px on either side at phone width. Spacing between targets, overlap and occlusion are not read.",
         "CI-016": "Images with no alt, a placeholder alt (a filename, a camera stub, under three characters), or an empty alt on a link's only content or a large in-content image. Whether an alt describes its image is not read.",
         "MD-186": "Images with no alt, a placeholder alt (a filename, a camera stub, under three characters), or an empty alt on a link's only content or a large in-content image. Whether an alt describes its image is not read.",

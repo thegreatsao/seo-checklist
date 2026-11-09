@@ -497,8 +497,15 @@ def _declared_area(img: dict) -> int | None:
     return width * height if width > 0 and height > 0 else None
 
 
-# Landmarks whose images are page furniture rather than content (CI-016, MD-186).
+# Landmarks whose images are page furniture rather than content (CI-016, MD-186),
+# as elements and as ARIA roles.
 _FURNITURE = ("header", "footer", "nav", "aside")
+_FURNITURE_ROLES = ("banner", "navigation", "contentinfo", "complementary")
+# basis: convention — 200 declared pixels on each side. Below it an image in the
+#  content is an avatar, an icon or a rule beside the text that names it, where an
+#  empty alt is the right markup; a thin divider has one long side and is not large
+#  either. Nothing external sets it (F15 review: 100x100 of area flagged both)
+MEANINGFUL_IMAGE_MIN_PX = 200
 
 
 def image_carries_meaning(img) -> bool:
@@ -506,25 +513,32 @@ def image_carries_meaning(img) -> bool:
 
     The two cases the owner ruled (F15, CI-016 and MD-186): the image is the only
     content of a link — `alt=""` there leaves the link with no name at all — or it is
-    a large image in the page's content (`LCP_MIN_AREA` declared pixels or more,
-    outside header, footer, nav and aside). An image marked decorative on purpose
-    (`role=presentation`/`none`, `aria-hidden=true`) carries none, and one whose size
-    the markup does not declare is not judged large. Whether an alt *describes* its
-    image is not read anywhere.
+    a large image in the page's content (`MEANINGFUL_IMAGE_MIN_PX` declared on each
+    side, outside header, footer, nav and aside and their ARIA roles). The link case
+    holds however the image is marked: the link has no name either way. A large image
+    marked decorative on purpose (`role=presentation`/`none`, `aria-hidden=true`)
+    carries none, and one whose size the markup does not declare is not judged large.
+    Whether an alt *describes* its image is not read anywhere.
     """
-    role = (img.get("role") or "").strip().lower()
-    if role in ("presentation", "none") or \
-            (img.get("aria-hidden") or "").strip().lower() == "true":
-        return False
     link = img.find_parent("a")
     if link is not None and link.get("href") is not None:
         named = any((link.get(attr) or "").strip()
                     for attr in ("aria-label", "aria-labelledby", "title"))
+        inner_label = link.find(lambda tag: (tag.get("aria-label") or "").strip())
         other_alt = any((other.get("alt") or "").strip() for other in link.find_all("img"))
-        return not (named or other_alt or link.get_text(strip=True))
-    area = _declared_area(img)
-    return (area is not None and area >= LCP_MIN_AREA
-            and img.find_parent(_FURNITURE) is None)
+        return not (named or inner_label or other_alt or link.get_text(strip=True))
+    role = (img.get("role") or "").strip().lower()
+    if role in ("presentation", "none") or \
+            (img.get("aria-hidden") or "").strip().lower() == "true":
+        return False
+    try:
+        width, height = int(str(img.get("width"))), int(str(img.get("height")))
+    except (TypeError, ValueError):
+        return False
+    return (min(width, height) >= MEANINGFUL_IMAGE_MIN_PX
+            and img.find_parent(_FURNITURE) is None
+            and img.find_parent(lambda tag: (tag.get("role") or "").strip().lower()
+                                in _FURNITURE_ROLES) is None)
 
 
 def likely_lcp_candidate(img: dict, index: int) -> bool:
@@ -1310,7 +1324,13 @@ def parse_html(html: str, base_url: str = "") -> dict:
             # Native `src`/`srcset` and picture sources are discoverable without
             # running page JavaScript. A `data-src`/`data-srcset`-only image is a
             # deferred instruction to JS, not an image source a crawler can follow.
-            "native_source": bool(native_src or img.get("srcset")
+            # A `data:` placeholder beside a deferred source (lazysizes' 1x1 GIF) is
+            # no fallback (F15 review, CN-054).
+            "native_source": bool((native_src if not (
+                                       (deferred_src or img.get("data-srcset"))
+                                       and native_src.strip().lower().startswith("data:"))
+                                   else "")
+                                  or img.get("srcset")
                                   or any(source.get("srcset") for source in sources)),
             "deferred_source": bool(deferred_src or img.get("data-srcset")),
             "carries_meaning": image_carries_meaning(img),

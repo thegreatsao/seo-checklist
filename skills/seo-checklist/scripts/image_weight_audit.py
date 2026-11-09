@@ -104,14 +104,16 @@ DEFAULT_MAX_IMAGES = 200
 def _responsive(img: dict, sources: list[dict]) -> bool:
     """Whether the browser is offered a smaller file for a smaller screen (MB-096).
 
-    Width descriptors (`800w`) on the `<img>` or a `<source>`, or a `<source>` chosen
-    by `media`. A density srcset (`1x, 2x`) or a `<source>` that differs only by
-    format sends a phone the same wide file (F15): `srcset="a.png 1x"` and a webp
-    `<source>` over a 3000 px png both passed before. `_needs_sizes` is the test for
+    Width descriptors (`800w`) on the `<img>` or a `<source>`, or a `<source>` whose
+    `media` query tests a width. A density srcset (`1x, 2x`), a `<source>` that
+    differs only by format, or one chosen by colour scheme or `print` sends a phone
+    the same wide file (F15): `srcset="a.png 1x"` and a webp `<source>` over a
+    3000 px png both passed before. `_needs_sizes` is the test for
     width descriptors — the same fact makes a srcset responsive and requires `sizes`.
     """
     return (_needs_sizes(img.get("srcset"))
-            or any(_needs_sizes(s.get("srcset")) or (s.get("media") and s.get("srcset"))
+            or any(_needs_sizes(s.get("srcset"))
+                   or (s.get("srcset") and "width" in (s.get("media") or "").lower())
                    for s in sources))
 
 
@@ -148,9 +150,10 @@ def _local_size(src: str, html_source: str) -> int | None:
 
 
 # Types that say nothing about what the body is. Object stores serve images as
-# `application/octet-stream`, and a missing header is no evidence either way, so for
+# `application/octet-stream`, S3 as `binary/octet-stream` when the upload named no
+# type, and a missing header is no evidence either way, so for
 # these the file's first bytes decide (MD-187).
-UNTYPED = ("", "application/octet-stream")
+UNTYPED = ("", "application/octet-stream", "binary/octet-stream")
 
 
 def _classify_image(url: str, result: dict, timeout: int,

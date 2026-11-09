@@ -932,13 +932,15 @@ site having served no such field.
   written inline scored 1 and failed. **Withheld** when it is 0 and
   `text_nodes_contrast_unmeasured` is not 0 or is absent (F15), so CN-036 reads NO_DATA
   there; a count above 0 always stands
-`text_nodes_contrast_unmeasured` — int — text over a background image or gradient,
-  which has no colour to compare with (F15; until then it was scored against the
+`text_nodes_contrast_unmeasured` — int — text over a CSS background image or
+  gradient, which has no colour to compare with, or whose colour or background is
+  outside `rgb()` (`oklch()`, `color()`, `lab()`); an `<img>` behind the text is not
+  detected (F15; until then it was scored against the
   colour behind the image). A file from the snippet before F15 has no such key
 `links_indistinct` — int — CN-035: links in running text (the parent carries text of
   its own) that are not underlined, not bolder, and under 3:1 against that text (WCAG
-  G183). Until F15 only `p a, li a, td a, article a` were read, and any colour
-  difference at all made a link distinct
+  G183); a colour outside `rgb()` is not judged. Until F15 only `p a, li a, td a,
+  article a` were read, and any colour difference at all made a link distinct
 `overlays_covering_content` — int — CN-051 (fixed/sticky elements covering ≥25% of
   the viewport)
 `tap_targets_below_48px` — int — MB-103, **mobile renders only**
@@ -989,8 +991,10 @@ one — the script refuses the file instead.
   not one letter anywhere. `alt=""` is never counted here — an empty alt is the
   correct markup for a decorative image and is `empty_alt`.
 `empty_alt_meaningful` — int — **absent on a page with no images**. Images with an
-  empty (or whitespace) alt that carry meaning: a link's only content, or a large
-  in-content image (`seo_common.image_carries_meaning`, F15)
+  empty (or whitespace) alt that carry meaning: a link's only content however it is
+  marked, or an image declared at least `MEANINGFUL_IMAGE_MIN_PX` (200) on each side
+  outside header, footer, nav, aside and their ARIA roles
+  (`seo_common.image_carries_meaning`, F15)
 `alt_not_meaningful` — int — **absent on a page with no images**. `missing_alt +
   placeholder_alt + empty_alt_meaningful` (the last since F15), and what CI-016 and
   MD-186 assert since 0.105.0. Both halves fail the question
@@ -1001,7 +1005,8 @@ one — the script refuses the file instead.
   `<picture>` source or `data-srcset` (F15: srcset- and picture-only images, and
   data-srcset-only ones, were skipped as having no `src`)
 `summary.lazy_lcp_candidates` — int — CN-054's compatibility path: JS-deferred images
-  with `data-src`/`data-srcset` but no native `src`, `srcset`, or `<picture>` source.
+  with `data-src`/`data-srcset` but no native `src`, `srcset`, or `<picture>` source;
+  a `data:` placeholder `src` beside them is no native source (F15).
   Native `loading=lazy` remains discoverable and does not increment this count.
   **Absent on a page with no images.**
 
@@ -1049,7 +1054,8 @@ Without one it audits one page's image markup and optional fetched bytes.
   format at all and failed the item it exists to satisfy.
 `responsive_count` — int — absent when the page has no images; otherwise, images
   offering width-described (`w`) candidates on the `img` or a `<source>`, or a
-  `<source>` chosen by `media` (F15: any `srcset`, a density or format-only one too). Read by nothing since 0.108.0, when MB-096 and MD-189 moved to the
+  `<source>` whose `media` tests a width (F15: any `srcset`, a density or format-only
+  one too). Read by nothing since 0.108.0, when MB-096 and MD-189 moved to the
   per-image count below; kept as evidence. The count was wrong in the same direction.
 `modern_format_on_img_count` — int — the narrow count: `img` src only
 `srcset_on_img_count` — int — the narrow count: `img` attribute only
@@ -1079,8 +1085,8 @@ Without one it audits one page's image markup and optional fetched bytes.
 `picture_count` — int — images wrapped in a `<picture>` carrying a `<source>`
 
 A fetched image is broken (MD-187) when it answers dead, 404/410, a 204/205, or a 2xx
-declaring a type outside `image/*`; an untyped or `application/octet-stream` 2xx is
-read for an image header and is unchecked when none is found (F15: any non-text 2xx
+declaring a type outside `image/*`; an untyped, `application/octet-stream` or
+`binary/octet-stream` 2xx is read for an image header and is unchecked when none is found (F15: any non-text 2xx
 was fine). A large image with no modern format is a `warning` in `issues[]` (F15:
 `info`), as an image over `LARGE_IMAGE_BYTES` is, so MD-185 does not pass an image
 MB-097 fails.

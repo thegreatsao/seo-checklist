@@ -23,6 +23,7 @@ not measured:
       "source": "chrome-devtools MCP evaluate_script, 2026-08-03",
       "text_nodes_below_12px": 0,
       "text_nodes_below_contrast": 4,
+      "text_nodes_contrast_unmeasured": 0,
       "links_indistinct": 2,
       "overlays_covering_content": 0,
       "tap_targets_below_48px": 3,
@@ -64,8 +65,10 @@ effective background fall below the WCAG AA floor — 3:1 for large text (24px, 
 its ancestors' background colours composited down to the nearest opaque one (white
 when there is none), and a foreground with partial alpha is composited over it.
 
-Text over a background *image* or a gradient has no colour to compare with, so the
-snippet counts it in `text_nodes_contrast_unmeasured` instead (F15, CN-036: it used
+Text over a background *image* or a gradient has no colour to compare with, and a
+colour Chrome keeps outside `rgb()` (`oklch()`, `color()`, `lab()`) is not one the
+snippet reads, so both are counted in `text_nodes_contrast_unmeasured` instead. An
+`<img>` or pseudo-element placed behind the text is not detected at all (F15, CN-036: it used
 to be scored against whatever colour sat behind the image, and dark text on a dark
 photograph passed). A zero below the floor is a pass only when that count is zero
 too: `read()` withholds `text_nodes_below_contrast` otherwise — and when the count

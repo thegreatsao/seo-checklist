@@ -252,7 +252,10 @@ Resize to a phone viewport first (375×812), load the page, then run one
     if (ownText && px(getComputedStyle(el).fontSize) < 12) small++;
   }
 
+  // Legacy rgb()/rgba() only: Chrome keeps oklch(), color() and lab() as written,
+  // and their numbers are not RGB. Anything else is null, which is unmeasured.
   const rgb = v => {
+    if (!/^rgba?\(/.test(v || '')) return null;
     const m = (v || '').match(/[\d.]+/g);
     if (!m) return null;
     const c = m.slice(0, 3).map(Number);
@@ -274,14 +277,15 @@ Resize to a phone viewport first (375×812), load the page, then run one
   };
   // The colour behind an element: its backgrounds composited down to the nearest
   // opaque one (white if none). Null when a background image or gradient lies on
-  // the way, which no single colour stands for.
+  // the way, which no single colour stands for, or a colour rgb() cannot read.
   const bgOf = el => {
     const layers = [];
     for (let n = el; n; n = n.parentElement) {
       const s = getComputedStyle(n);
       if (s.backgroundImage && s.backgroundImage !== 'none') return null;
       const c = rgb(s.backgroundColor);
-      if (c && c[3] > 0) { layers.push(c); if (c[3] >= 1) break; }
+      if (!c) return null;
+      if (c[3] > 0) { layers.push(c); if (c[3] >= 1) break; }
     }
     return layers.reverse().reduce((under, c) => over(c, under), [255, 255, 255, 1]);
   };
@@ -293,10 +297,8 @@ Resize to a phone viewport first (375×812), load the page, then run one
       n => n.nodeType === 3 && n.textContent.trim().length > 3);
     if (!ownText) continue;
     const s = getComputedStyle(el);
-    const fg = rgb(s.color);
-    if (!fg) continue;
-    const bg = bgOf(el);
-    if (!bg) { unmeasured++; continue; }
+    const fg = rgb(s.color), bg = bgOf(el);
+    if (!fg || !bg) { unmeasured++; continue; }
     const size = px(s.fontSize), bold = parseInt(s.fontWeight) >= 700;
     if (ratio(over(fg, bg), bg) < (size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5))
       lowContrast++;

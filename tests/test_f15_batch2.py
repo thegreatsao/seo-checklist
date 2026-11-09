@@ -183,6 +183,25 @@ class RenderedSnippet(unittest.TestCase):
             "kids": ["Pale words"]}])
         self.assertEqual(out["text_nodes_below_contrast"], 1)
 
+    def test_a_colour_outside_rgb_is_unmeasured_not_misread(self):
+        """Review round 1: Chrome keeps oklch(), color() and lab() in computed style,
+        and their first three numbers are not RGB. Tailwind's gray-300 on white
+        passed CN-036, and a gray-900 text with a blue-600 link failed CN-035."""
+        for colour in ("oklch(0.872 0.01 258.338)", "color(srgb 0.85 0.85 0.85)"):
+            with self.subTest(colour=colour):
+                out = self.measure([{"tag": "p", "style": {"color": colour},
+                                     "kids": ["Faint gray words"]}])
+                self.assertEqual(out["text_nodes_contrast_unmeasured"], 1)
+                self.assertEqual(verdict("CN-036", self.read(out)), NO_DATA)
+        out = self.measure([{"tag": "p", "kids": ["Words on a tinted card"],
+                             "style": {"backgroundColor": "oklch(0.2 0.03 264)"}}])
+        self.assertEqual(out["text_nodes_contrast_unmeasured"], 1)
+        out = self.measure([{"tag": "p", "style": {"color": "oklch(0.21 0.034 264.665)"},
+                             "kids": ["Read ", {"tag": "a", "attrs": {"href": "/x"},
+                                                "style": {"color": "oklch(0.546 0.245 262.881)"},
+                                                "kids": ["the guide"]}, " first."]}])
+        self.assertEqual(out["links_indistinct"], 0)
+
     def test_ordinary_dark_text_on_white_passes(self):
         out = self.measure([{"tag": "p", "kids": ["Plain words"]}])
         self.assertEqual(out["text_nodes_below_contrast"], 0)
@@ -356,6 +375,19 @@ class EmptyAltWhereTheImageCarriesMeaning(unittest.TestCase):
     def test_an_empty_alt_on_a_links_only_content_fails(self):
         self.assert_both(inventory('<a href="/"><img src="/logo.png" alt=""></a>'), FAIL)
 
+    def test_a_links_only_image_fails_however_it_is_marked(self):
+        """Review round 1: `role=presentation` or `aria-hidden` on the link's only
+        image leaves the link with no name all the same."""
+        for marks in ('role="presentation"', 'role="none"', 'aria-hidden="true"'):
+            with self.subTest(marks=marks):
+                self.assert_both(inventory(
+                    f'<a href="/"><img src="/logo.png" alt="" {marks}></a>'), FAIL)
+
+    def test_a_link_named_by_an_inner_label_passes(self):
+        self.assert_both(inventory(
+            '<a href="/"><svg aria-label="Home"></svg><img src="/l.png" alt=""></a>'),
+            PASS)
+
     def test_a_link_named_otherwise_passes(self):
         for link in ('<a href="/" aria-label="Home"><img src="/l.png" alt=""></a>',
                      '<a href="/">Home <img src="/l.png" alt=""></a>',
@@ -367,6 +399,25 @@ class EmptyAltWhereTheImageCarriesMeaning(unittest.TestCase):
         out = inventory('<main><img src="/hero.jpg" alt="" width="800" height="500"></main>')
         self.assertEqual(out["alt_not_meaningful"], 1)
         self.assert_both(out, FAIL)
+
+    def test_a_thin_rule_or_a_small_picture_is_not_large(self):
+        """Review round 1: 100x100 of area flagged a 1200x12 divider and an avatar
+        beside its name."""
+        for img in ('<img src="/rule.png" alt="" width="1200" height="12">',
+                    '<img src="/avatar.jpg" alt="" width="100" height="100">'):
+            with self.subTest(img=img):
+                self.assert_both(inventory(f"<main><p>Text</p>{img}</main>" + OK_IMAGE),
+                                 PASS)
+        side = seo_common.MEANINGFUL_IMAGE_MIN_PX
+        self.assert_both(inventory(f'<main><img src="/x.jpg" alt="" width="{side}" '
+                                   f'height="{side}"></main>'), FAIL)
+
+    def test_an_aria_landmark_is_furniture_too(self):
+        for role in seo_common._FURNITURE_ROLES:
+            with self.subTest(role=role):
+                out = inventory(f'<div role="{role}"><img src="/x.jpg" alt="" '
+                                f'width="800" height="500"></div>' + OK_IMAGE)
+                self.assert_both(out, PASS)
 
     def test_every_furniture_landmark_holds_decoration(self):
         self.assertEqual(set(seo_common._FURNITURE), {"header", "footer", "nav", "aside"})
@@ -405,6 +456,15 @@ class EveryImageSourceIsAnImage(unittest.TestCase):
         out = inventory(OK_IMAGE + '<img data-srcset="/a.jpg 1x" alt="A loaf">')
         self.assertEqual(out["summary"]["lazy_lcp_candidates"], 1)
         self.assertEqual(verdict("CN-054", out), FAIL)
+
+    def test_a_data_uri_placeholder_is_no_native_source(self):
+        """Review round 1: lazysizes' 1x1 GIF beside `data-src` is no fallback."""
+        out = inventory(OK_IMAGE + '<img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" '
+                        'data-src="/real.jpg" class="lazyload" alt="A loaf">')
+        self.assertEqual(out["summary"]["lazy_lcp_candidates"], 1)
+        self.assertEqual(verdict("CN-054", out), FAIL)
+        out = inventory('<img src="data:image/png;base64,AAAA" alt="An inline mark">')
+        self.assertEqual(out["summary"]["lazy_lcp_candidates"], 0)
 
     def test_an_unparseable_srcset_is_skipped_not_a_crash(self):
         out = inventory('<img srcset="http://[::1 1x" alt="A loaf">')
@@ -454,6 +514,18 @@ class ResponsiveMeansWidths(unittest.TestCase):
                      f'srcset="{ABS}/s.webp"><img src="{ABS}/a.webp" alt="w"></picture>'):
             with self.subTest(body=body):
                 self.assertEqual(verdict("MB-096", weigh(body)), PASS)
+
+    def test_a_media_source_that_is_not_about_width_is_not_responsive(self):
+        """Review round 1: a dark-mode or `all` source sends a phone the same file."""
+        for media in ("(prefers-color-scheme: dark)", "all", "print"):
+            with self.subTest(media=media):
+                out = weigh(f'<picture><source media="{media}" srcset="{ABS}/d.webp">'
+                            f'<img src="{ABS}/a.webp" alt="w"></picture>')
+                self.assertEqual(verdict("MB-096", out), FAIL)
+                self.assertEqual(verdict("MD-189", out), FAIL)
+        out = weigh(f'<picture><source media="(min-width: 800px)" srcset="{ABS}/a.webp">'
+                    f'<img src="{ABS}/s.webp" alt="w"></picture>')
+        self.assertEqual(verdict("MB-096", out), PASS)
 
     def test_md_189_asserts_both_halves(self):
         responsive_png = (f'<img src="{ABS}/a.png" srcset="{ABS}/s.png 800w, '
@@ -514,8 +586,12 @@ class AnImageIsAnImageType(unittest.TestCase):
         sniff.assert_not_called()
 
     def test_a_silent_type_is_read(self):
-        self.assertEqual(image_weight_audit.UNTYPED, ("", "application/octet-stream"))
-        for headers in ({"content-type": "application/octet-stream"}, {}):
+        self.assertEqual(image_weight_audit.UNTYPED,
+                         ("", "application/octet-stream", "binary/octet-stream"))
+        # Review round 1: S3's default for an upload with no type is
+        # `binary/octet-stream`, and browsers render it.
+        for headers in ({"content-type": "application/octet-stream"}, {},
+                        {"content-type": "binary/octet-stream"}):
             with self.subTest(headers=headers):
                 state, _ = self.classify({"status": 200, "headers": headers},
                                          sniffed=("png", 10, 10))
@@ -534,7 +610,7 @@ class MeasuresSentences(unittest.TestCase):
         "MB-108": "ancestor",
         "MB-103": "48px",
         "CN-035": "3:1",
-        "CN-036": "background image",
+        "CN-036": "<img> behind",
         "CI-016": "describes",
         "MD-186": "describes",
         "CN-054": "data-srcset",
