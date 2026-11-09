@@ -190,7 +190,7 @@ def spelling_of(url: str, base: str = "") -> str:
     `/about` and `/about/` are one page and two URLs, and a server may answer one with
     a redirect to the other; AR-149 asks about each spelling a link uses.
     """
-    return _reduced(url, base, fold_slash=False)
+    return _reduced(url, base, fold_slash=False, fold_first=False)
 
 
 def read_twice(pages: dict) -> set:
@@ -213,15 +213,18 @@ def read_twice(pages: dict) -> set:
     return twice
 
 
+def as_named(url: str) -> str:
+    """A URL as a canonical names a page: requests' spelling, its query included, a
+    trailing slash aside (`same_page`)."""
+    parsed = urlparse(comparable_url(url))
+    return urlunparse(parsed._replace(path=parsed.path.rstrip("/") or "/", fragment=""))
+
+
 def same_page(a: str, b: str) -> bool:
     """Whether two URLs name one page as a canonical does: the same URL, its query
     included, a trailing slash aside. A page key drops the query, so `?id=2` read as
     `?id=1`'s self (F15); the slash stays folded, as the crawl folds it."""
-    def bare(url: str) -> str:
-        parsed = urlparse(comparable_url(url))
-        return urlunparse(parsed._replace(path=parsed.path.rstrip("/") or "/",
-                                          fragment=""))
-    return bare(a) == bare(b)
+    return as_named(a) == as_named(b)
 
 
 def _page_number(value: str) -> int | None:
@@ -235,7 +238,8 @@ def _page_number(value: str) -> int | None:
         return None
 
 
-def _reduced(url: str, base: str, fold_slash: bool, numbered: bool = True) -> str:
+def _reduced(url: str, base: str, fold_slash: bool, numbered: bool = True,
+             fold_first: bool = True) -> str:
     parsed = urlparse(comparable_url(normalize_url(url, base) if base
                                      else normalize_url(url)))
     path = parsed.path or "/"
@@ -247,7 +251,8 @@ def _reduced(url: str, base: str, fold_slash: bool, numbered: bool = True) -> st
                    in parse_qsl(parsed.query, keep_blank_values=True)
                    if numbered and name.lower() in PAGE_NUMBER_PARAMS
                    and (read := _page_number(value)) is not None), "")
-    number = "" if number.endswith("=1") or number.endswith("=0") else number
+    if fold_first and (number.endswith("=1") or number.endswith("=0")):
+        number = ""     # a spelling keeps it: `?page=1` may redirect (review round 4)
     return f"{parsed.scheme}://{parsed.netloc}{path}" + (f"?{number}" if number else "")
 
 
@@ -407,7 +412,9 @@ def load_sitemap_urls(site_url: str, sitemap_urls: list[str] | None = None,
         if key in seen:
             continue
         seen.add(key)
-        if same_host(site_url, key):
+        # The URL as listed: a key is punycode, and an IDN site named in Unicode is
+        # still its own host (review round 4).
+        if same_host(site_url, discovered):
             deduped.append(key)
             fetch_targets[key] = discovered
         else:
@@ -563,6 +570,10 @@ def _read_page(fetched: dict, key: str, discovered_url: str, site_url: str,
             "_fetch_url": normalize_url(href, row["final_url"]),
             # Its text, else what names it: an image link's alt (`parse_html`).
             "anchor": (link.get("name") or link.get("text") or "").strip(),
+            # Named by an image's alt or `aria-label`, not by text: a card's image link
+            # beside its title link is one choice of words, not two (BL-081, F15).
+            "alt_named": not (link.get("text") or "").strip()
+                         and bool((link.get("name") or "").strip()),
             "rel": rel,
             "nofollow": "nofollow" in rel,
             "internal": internal,

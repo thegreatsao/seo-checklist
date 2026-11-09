@@ -73,6 +73,9 @@ def anchors_from_inventory(inventory: dict) -> dict:
             # projection that silently narrows what a reader can ask is the same class
             # of bug as the one being fixed.
             "lang": row.get("lang"),
+            # A target's title: an anchor that is the page's own title is how a page
+            # is named, not a lack of variety (BL-081 low diversity, F15 review).
+            "title": row.get("title"),
         }
         if row.get("error") or not carries_content(row.get("status")) or not row.get("html"):
             fetch_errors.append({"url": key, "status": row.get("status"),
@@ -87,8 +90,24 @@ def anchors_from_inventory(inventory: dict) -> dict:
                 "anchor": link.get("anchor") or "",
                 "rel": link.get("rel") or [],
                 "nofollow": bool(link.get("nofollow")),
+                "alt_named": bool(link.get("alt_named")),
             })
     return {"pages": pages, "links": links, "fetch_errors": fetch_errors}
+
+
+TITLE_SEPARATORS = ("|", "-", "–", "—", ":", "·")
+
+
+def names_its_title(anchor: str, title: str) -> bool:
+    """Whether an anchor is the target's own title, a brand part (`Post | Brand`) aside."""
+    anchor = " ".join(anchor.lower().split())
+    title = " ".join((title or "").lower().split())
+    if not anchor or not title:
+        return False
+    if anchor == title:
+        return True
+    return any(title.startswith(f"{anchor} {sep}") or title.endswith(f"{sep} {anchor}")
+               for sep in TITLE_SEPARATORS)
 
 
 def _pair(link: dict) -> tuple:
@@ -208,6 +227,10 @@ def audit_anchor_text(start_url: str, inventory: dict | None = None, depth: int 
         if anchor.isdigit() or site_crawl.page_key(
                 link["target"], numbered=False) != link["target"]:
             continue
+        # An image's alt beside the card's title link is one choice of words; before
+        # F15 it was an empty anchor these counts never read (review round 4).
+        if link.get("alt_named"):
+            continue
         editorial_by_target[link["target"]].append(anchor)
 
     target_rows = []
@@ -236,8 +259,13 @@ def audit_anchor_text(start_url: str, inventory: dict | None = None, depth: int 
         if top_count >= EXACT_MATCH_MIN_LINKS and \
                 top_count / max(1, len(normalized)) >= EXACT_MATCH_SHARE:
             overused_exact.append(row)
-        if len(editorial_anchors) >= DIVERSITY_MIN_LINKS and \
-                diversity_ratio < DIVERSITY_FLOOR:
+        # A page named by its own title from many pages is not low diversity: the
+        # ratio is read over the other anchors (review round 4: a blog listing each
+        # post by its title failed BL-081).
+        title = (crawl["pages"].get(target) or {}).get("title") or ""
+        varied = [a for a in normalized if not names_its_title(a, title)]
+        if len(varied) >= DIVERSITY_MIN_LINKS and \
+                len(set(varied)) / len(varied) < DIVERSITY_FLOOR:
             low_diversity.append(row)
 
     # BL-081's count (the owner's ruling for F15): the targets whose anchors are not

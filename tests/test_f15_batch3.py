@@ -728,6 +728,74 @@ class ReviewRound3(unittest.TestCase):
         self.assertEqual(internal_links.analyze(inv, url)["truncated"], True)
 
 
+class ReviewRound4(unittest.TestCase):
+    def test_a_blog_linking_each_post_by_its_title_passes_bl_081(self):
+        """Posts listed as cards (image + title link) on home and /blog, and by title on
+        a category page and from the previous post: the natural anchor, not a pattern."""
+        posts = [SITE + f"post-{i}" for i in range(12)]
+        titles = {url: f"Post number {i} about baking" for i, url in enumerate(posts)}
+        rows = []
+        for listing in (SITE, SITE + "blog", SITE + "cat"):
+            r = row(listing, links=())
+            for url in posts:
+                if listing != SITE + "cat":
+                    r["links"].append({"target": url, "internal": True, "rel": [],
+                                       "nofollow": False, "anchor": titles[url],
+                                       "alt_named": True})
+                r["links"].append({"target": url, "internal": True, "rel": [],
+                                   "nofollow": False, "anchor": titles[url]})
+            rows.append(r)
+        for i, url in enumerate(posts):
+            after = posts[(i + 1) % len(posts)]
+            rows.append(row(url, title=f"{titles[url]} | Bakery", links=(after,),
+                            anchors={after: titles[after]}))
+        out = anchor_text_audit.audit_anchor_text(SITE, inventory=inventory(rows))
+        self.assertEqual(out["summary"]["overused_exact_match_targets"], 0)
+        self.assertEqual(out["summary"]["low_diversity_targets"], 0)
+        self.assertEqual(verdict("BL-081", out), PASS)
+
+    def test_a_title_with_its_brand_is_the_anchor_s_title(self):
+        for sep in anchor_text_audit.TITLE_SEPARATORS:
+            with self.subTest(sep=sep):
+                self.assertTrue(anchor_text_audit.names_its_title(
+                    "Rye bread", f"Rye bread {sep} Bakery"))
+                self.assertTrue(anchor_text_audit.names_its_title(
+                    "Rye bread", f"Bakery {sep} Rye bread"))
+        self.assertFalse(anchor_text_audit.names_its_title("Rye", "Rye bread | Bakery"))
+
+    def test_the_crawl_marks_an_anchor_named_by_alt(self):
+        inv, url = crawled({
+            "/": '<html><body><a href="/a"><img src="/l.png" alt="Acme"></a>'
+                 '<a href="/a">Acme</a></body></html>',
+            "/a": "<html><body>A</body></html>"}, use_sitemap=False)
+        self.assertEqual([link.get("alt_named", False) for link in inv["pages"][url]["links"]],
+                         [True, False])
+
+    def test_an_http_copy_canonical_to_the_crawled_https_page_is_canonicalised(self):
+        text = words(300, "same")
+        out = duplicates(inventory([
+            row(SITE + "a", text=text, canonical=SITE + "a"),
+            row("http://example.test/a", text=text, canonical=SITE + "a")]))
+        self.assertEqual(verdict("CN-041", out), PASS)
+
+    def test_an_idn_site_keeps_its_sitemap_urls(self):
+        site = "https://bücher.example/"
+        body = ('<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/'
+                f'sitemap/0.9"><url><loc>{site}a</loc></url></urlset>')
+
+        def fetch(url, **kw):
+            return {"status": 200, "url": url, "text": body, "body": body.encode(),
+                    "bytes": len(body), "headers": {"content-type": "application/xml"}}
+        out = site_crawl.load_sitemap_urls(site, sitemap_urls=[site + "sitemap.xml"],
+                                           fetch=fetch)
+        self.assertEqual(out["off_host"], [])
+        self.assertEqual(out["urls"], [site_crawl.page_key(site + "a")])
+
+    def test_a_linked_page_one_spelling_is_fetched(self):
+        self.assertNotEqual(site_crawl.spelling_of("https://x.test/blog?page=1"),
+                            site_crawl.spelling_of("https://x.test/blog"))
+
+
 # ---------------------------------------------------------------------------
 # The sentences
 # ---------------------------------------------------------------------------

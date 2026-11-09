@@ -160,7 +160,8 @@ Reads `--inventory` (see `site_crawl.py`); crawls one for itself without it.
 `summary.low_diversity_targets` — int
 `summary.unnatural_anchor_targets` — int — read by BL-081 (F15): distinct targets with
   exact-match overuse, low diversity (over a crawl of four pages or more; a pager's
-  links left out), or an empty or generic anchor; a redirect row read again is not
+  links and alt-named links left out, and an anchor that is the target's own title not
+  counted against variety), or an empty or generic anchor; a redirect row read again is not
   read (`site_crawl.read_twice`); when `truncated`,
   only the empty or generic ones, a floor, and absent if there are none. An image
   link's anchor is its alt (`site_crawl.py`)
@@ -1892,8 +1893,9 @@ output contracts derive from it, so a change here moves them at once.
   - `content_words`, `text_hash`, `signature[]` (MinHash, 100 values)
   - `internal_out`, `unique_internal_out`, `external_out`
   - `schema_nodes[]` — one object per parseable JSON-LD node; item key: `types[]`
-  - `links[]` — item keys: target, anchor, rel, nofollow, internal; `anchor` is the
-    link's text, else its `aria-label` or its images' alt (F15, BL-081)
+  - `links[]` — item keys: target, anchor, rel, nofollow, internal, alt_named; `anchor`
+    is the link's text, else its `aria-label` or its images' alt (`alt_named` true then;
+    F15, BL-081)
   - `images[]` — array
 `reachable[]` — array of page keys
 `unchecked_internal_targets[]` — array

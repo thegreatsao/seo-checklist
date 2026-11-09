@@ -176,6 +176,13 @@ def _snippet_grouping_pages(pages: dict) -> tuple[dict, dict]:
     """
     included = {}
     exclusions = {"noindex": 0, "canonicalized": 0}
+    # Where each crawled page was read: a canonical naming another row's own URL
+    # canonicalises, whatever its scheme or host (review round 4: an http copy naming
+    # the crawled https page).
+    read_at = {}
+    for key, page in pages.items():
+        for where in (page.get("url") or key, page.get("final_url") or key):
+            read_at.setdefault(site_crawl.as_named(where), key)
     for key, page in pages.items():
         if page.get("noindex"):
             exclusions["noindex"] += 1
@@ -186,6 +193,9 @@ def _snippet_grouping_pages(pages: dict) -> tuple[dict, dict]:
         # another scheme or `www.` host it is still this page (a leftover http
         # canonical). A canonical to a crawled page that is not readable content
         # (`canonical_broken`) consolidates into nothing (review round 2).
+        if canonical and read_at.get(site_crawl.as_named(named), key) != key:
+            exclusions["canonicalized"] += 1
+            continue
         if canonical and not page.get("canonical_broken") and not any(
                 site_crawl.same_page(_hostless(named), _hostless(where))
                 for where in (page.get("url") or key, page.get("final_url") or key, key)):

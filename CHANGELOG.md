@@ -40,7 +40,9 @@ its landing page read once (`site_crawl.read_twice`: MS-022, MS-029, CN-041, AR-
 a canonical to the page on another scheme or `www` host is the page, and one to a crawled page answering 404 or 5xx
 consolidates nothing. GO-137 compares Search Console pages and sitemap URLs with the page number folded, as before.
 BL-081 counts low diversity only over a crawl of four pages or more (below it a menu cannot be told from editorial
-links), and leaves a pager's links (a page-number anchor, a `?page=N` target) out of overuse and diversity. A site paginated by `?page=N` now reaches its listing pages, so its crawl is cut at the depth cap more often
+links), leaves a pager's links (a page-number anchor, a `?page=N` target) and an image's alt beside its card's title
+link out of overuse and diversity, and does not count an anchor that is the target's own title against variety (a blog
+linking each post by its title passes). A site paginated by `?page=N` now reaches its listing pages, so its crawl is cut at the depth cap more often
 and site-wide passes are withheld more often. The good fixture's second blog post is retitled and links two more pages so the good half of the pair can pass AR-153 and AR-162. The recorded census moves six rows, declared before the run: AR-153 PASS → FAIL on failing-shapes, indexed, unindexed, page-defects, url-shapes and page-sound (no topic cluster of two pages). 67 second readings are stale until F03 batch 6.
 
 F15 batch 2 (`84e41c84ecaa` → `1733ee735260`) — `rendered_audit.py` and the snippet in `SKILL.md`, `pagespeed.py`,

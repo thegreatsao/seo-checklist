@@ -3011,7 +3011,7 @@ class EeatSignals(unittest.TestCase):
             projected["links"],
             [{"source": "https://example.test/page",
               "target": "https://example.test/bread", "anchor": "Best bread",
-              "rel": [], "nofollow": False}],
+              "rel": [], "nofollow": False, "alt_named": False}],
         )
 
     def test_a_microdata_comment_byline_is_not_the_pages_author(self):
