@@ -106,8 +106,10 @@ def names_its_title(anchor: str, title: str) -> bool:
         return False
     if anchor == title:
         return True
-    return any(title.startswith(f"{anchor} {sep}") or title.endswith(f"{sep} {anchor}")
-               for sep in TITLE_SEPARATORS)
+    # `Name | Brand`, `Name: a subtitle`, `Brand – Name`: the anchor, then a separator.
+    after = title[len(anchor):].lstrip()[:1] if title.startswith(anchor) else ""
+    before = title[:-len(anchor)].rstrip()[-1:] if title.endswith(anchor) else ""
+    return bool(after and after in TITLE_SEPARATORS or before and before in TITLE_SEPARATORS)
 
 
 def _pair(link: dict) -> tuple:

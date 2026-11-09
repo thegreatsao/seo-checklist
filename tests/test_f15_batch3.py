@@ -796,6 +796,50 @@ class ReviewRound4(unittest.TestCase):
                             site_crawl.spelling_of("https://x.test/blog"))
 
 
+class ReviewRound5(unittest.TestCase):
+    def test_a_name_colon_subtitle_title_is_the_anchor_s_title(self):
+        self.assertTrue(anchor_text_audit.names_its_title(
+            "Rye starter", "Rye starter: a step-by-step guide (2026) | Bakery"))
+
+    def test_a_mostly_unreadable_site_is_withheld_not_failed(self):
+        titles = (["Хлеб ржаной", "Булочки", "Печенье", "Контакты", "Доставка", "Главная"]
+                  + ["Миксер KitchenAid", "Духовка Bosch"])
+        rows = [row(SITE + f"p{i}", title=t, links=(SITE,)) for i, t in enumerate(titles)]
+        out = topical_cluster_mapper.map_inventory(inventory(rows))
+        self.assertEqual(verdict("AR-153", out), NO_DATA)
+
+    def test_an_idn_site_given_in_punycode_keeps_a_unicode_sitemap(self):
+        site = "https://xn--bcher-kva.example/"
+        body = ('<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/'
+                'sitemap/0.9"><url><loc>https://bücher.example/a</loc></url></urlset>')
+
+        def fetch(url, **kw):
+            return {"status": 200, "url": url, "text": body, "body": body.encode(),
+                    "bytes": len(body), "headers": {"content-type": "application/xml"}}
+        out = site_crawl.load_sitemap_urls(site, sitemap_urls=[site + "sitemap.xml"],
+                                           fetch=fetch)
+        self.assertEqual(out["off_host"], [])
+        self.assertEqual(len(out["urls"]), 1)
+
+    def test_a_canonical_in_the_body_or_an_svg_is_not_declared(self):
+        inv, url = crawled({"/": '<html><head><link rel="canonical" href="/"></head><body>'
+                                 '<svg><link rel="canonical" href="/x"/></svg>'
+                                 '<link rel="canonical" href="/y">Home</body></html>'},
+                           use_sitemap=False)
+        self.assertEqual(inv["pages"][url]["canonicals"], [url])
+
+    def test_a_busy_canonical_target_is_unchecked_not_unavailable(self):
+        out = served_rule("CI-009", {"/a": page_html(canonical="/b"),
+                                     "/b": (503, {"Retry-After": "0"}, "busy")})
+        self.assertEqual(verdict("CI-009", out), NO_DATA)
+
+    def test_a_busy_variant_is_unchecked(self):
+        out = served_rule("CI-009", {"/a": page_html(canonical="/a"),
+                                     "/a/": (503, {"Retry-After": "0"}, "busy")})
+        self.assertEqual(verdict("CI-009", out), NO_DATA)
+        self.assertEqual(out["issues"], [])
+
+
 # ---------------------------------------------------------------------------
 # The sentences
 # ---------------------------------------------------------------------------

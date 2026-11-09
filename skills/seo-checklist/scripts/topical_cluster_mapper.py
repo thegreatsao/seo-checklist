@@ -116,7 +116,10 @@ def map_inventory(inventory: dict) -> dict:
     # pattern reads a topic word in (Cyrillic, empty, only site-wide words), every
     # page is its own cluster by construction, so the score is withheld, not 0.
     readable = sum(1 for r in rows if r["topic"] != "uncategorized")
-    if (not result.get("hub_count") and len(rows) > 1 and readable < 2
+    # Nor when the pages it cannot read outnumber those it can (review round 5: two
+    # Latin product names on a Cyrillic site scored the other twenty pages 0).
+    if (not result.get("hub_count") and len(rows) > 1
+            and (readable < 2 or readable < len(rows) - readable)
             and "score" in result):
         del result["score"]
         result["score_withheld"] = ("fewer than two page titles carry a topic word this "

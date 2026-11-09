@@ -770,7 +770,8 @@ item(8, "high", S, "link_profile.py", CRAWLARG,
 # requested. A canonical to a page not answering 200 fails (`target_unavailable`), and
 # so does a variant — other scheme, www/bare host, trailing-slash twin — serving the
 # page without redirecting to, declaring or noindexing it (`variant_unconsolidated`).
-# `target_unchecked` (the target never answered) is unmapped: NO_DATA.
+# `target_unchecked` (the target never answered, or answered 429/5xx) and
+# `variant_unchecked` (a variant answered 429/5xx) are unmapped: NO_DATA.
 CANONICAL_ARGS = ["{url}", "--check-targets", "--variants"]
 item(9, "critical", S, "canonical_checker.py", CANONICAL_ARGS,
      {"path": "rows", "field": "verdict",

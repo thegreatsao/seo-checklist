@@ -414,7 +414,7 @@ def load_sitemap_urls(site_url: str, sitemap_urls: list[str] | None = None,
         seen.add(key)
         # The URL as listed: a key is punycode, and an IDN site named in Unicode is
         # still its own host (review round 4).
-        if same_host(site_url, discovered):
+        if same_host(comparable_url(site_url), comparable_url(discovered)):
             deduped.append(key)
             fetch_targets[key] = discovered
         else:

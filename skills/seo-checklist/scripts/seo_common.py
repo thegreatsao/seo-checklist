@@ -1310,9 +1310,12 @@ def parse_html(html: str, base_url: str = "") -> dict:
             meta[key] = tag.get("content", "")
 
     # `rel` values are case-insensitive: `rel="Canonical"` read as no canonical at all.
+    # Google reads rel=canonical in the <head> only; one in <body> or inside an inline
+    # SVG is not a declaration (F15 batch 3 review, as batch 1 did for <svg><title>).
     canonical_tags = [tag for tag in soup.find_all("link")
                       if "canonical" in [str(value).lower() for value in
-                                         (tag.get("rel") or [])]]
+                                         (tag.get("rel") or [])]
+                      and not tag.find_parent(["body", "svg"])]
     canonical = canonical_tags[0].get("href") if canonical_tags else None
     if canonical and base_url:
         try:

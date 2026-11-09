@@ -46,6 +46,12 @@ def url_variants(url: str) -> list[str]:
     return [urlunparse(variant) for variant in out]
 
 
+def _busy(fetched: dict) -> bool:
+    """A 429 or a 5xx: the server declined to say what the URL is, this time."""
+    status = fetched.get("status") or 0
+    return status == 429 or status >= 500
+
+
 def _page_print(html: dict) -> tuple:
     """(title, text hash) of a parsed page: what tells one page from another."""
     title = " ".join(str(html.get("title") or "").split()).lower()
@@ -138,8 +144,9 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
                 row["canonical_status"] = target.get("status")
                 target_html = (parse_html(target["text"], target.get("url") or canonical)
                                if target.get("text") else {})
-                if target.get("status") is None:
-                    # Nothing answered: neither broken nor indexable is known.
+                if target.get("status") is None or _busy(target):
+                    # Nothing answered, or a server too busy to (429, 5xx): neither
+                    # broken nor indexable is known (review round 5).
                     target_unanswered = True
                     if row["verdict"] == "canonicalized":
                         row["verdict"] = "target_unchecked"
@@ -170,16 +177,20 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
                     if comparable_url(variant) in accepted:
                         continue
                     answer = fetch_url(variant, timeout=timeout, max_bytes=1_000_000)
-                    ok = _consolidated(answer, accepted, page_print)
+                    ok = None if _busy(answer) else _consolidated(answer, accepted,
+                                                                  page_print)
                     row["variants"].append({"url": variant, "status": answer.get("status"),
                                             "final_url": answer.get("url"),
                                             "consolidated": ok})
-                    if not ok:
+                    if ok is False:
                         row["issues"].append(f"variant {variant} serves the page")
                         issues.append(issue("error", "URL variant serves the page "
                                             "without consolidating", row["url"], variant))
-                if not all(v["consolidated"] for v in row["variants"]):
+                if any(v["consolidated"] is False for v in row["variants"]):
                     row["verdict"] = "variant_unconsolidated"
+                elif any(v["consolidated"] is None for v in row["variants"]):
+                    # A variant too busy to answer is unread, not consolidated.
+                    row["verdict"] = "variant_unchecked"
         # CI-011's question: do the page's indexing signals agree? noindex beside a
         # canonical naming another URL asks Google both to drop the page and to fold
         # it into that one (finding 9); a canonical naming a noindex page folds it
