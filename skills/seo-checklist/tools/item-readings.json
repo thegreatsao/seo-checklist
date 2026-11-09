@@ -1672,7 +1672,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`large_without_srcset_count` counts images wider than 1280px, read from their own bytes, whose candidate set a phone ends up with has no width descriptors and no `<source>` before it tests a width (F15: a density srcset or a format-only source counted as responsive); the widths offered are not read, and `measures` says so.",
+      "reading": "`large_without_srcset_count` counts images wider than 1280px, read from their own bytes, whose candidate set a phone ends up with has no width descriptors and no `max-width` `<source>` comes before it (F15: a density srcset or a format-only source counted as responsive); the widths offered are not read, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",

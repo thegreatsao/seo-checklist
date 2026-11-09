@@ -170,11 +170,10 @@ REVIEWED: dict[str, str] = {
               "a responsive layout and nowhere near sufficient — a fixed-width page "
               "with the tag passes. The full check needs rendering at two widths.",
     "MB-098": "OK. The pattern counts size and dimension issues, which is the title.",
-    "MD-189": "OK, the responsive half (0.108.0). Large images without a srcset, "
-              "counted per image — the same measurement as MB-096, which MD-189 "
-              "scores with. The modern-format half is MB-097's per-image count, and "
-              "asserting it here too was rejected in the registry: it raises the "
-              "theme from 6 to 9 weight points and fails two items for one defect.",
+    "MD-189": "OK, both halves (F15, the owner's ruling of 2026-11-08). Large images "
+              "lacking width descriptors or a WebP/AVIF offer, counted per image in "
+              "large_legacy_or_unresponsive_count; MD-189 no longer scores with "
+              "MB-096, and the theme weighs 9 points, the cost the ruling accepted.",
     "MB-105": "SUPERSEDED (0.72). The ruling this replaces read `diffs` is the "
               "parity between raw and rendered, which is the item — true about "
               "the script and silent about the title, which said Match Desktop. "
@@ -182,8 +181,8 @@ REVIEWED: dict[str, str] = {
               "mismatch stand, and it stood for as long as the ruling did. The item "
               "is now titled for what it compares and needs no excuse. Kept rather "
               "than deleted, on TE-177's precedent and for TE-177's reason.",
-    "SP-107": "OK. FCP is when above-the-fold content appears; the title says so in "
-              "English and the assertion says so in an acronym.",
+    "SP-107": "OK (F15). The worse of FCP and LCP: the first content and the "
+              "largest element in the first screen, both field or both lab.",
     "SE-116": "OK. An empty safe_browsing.threats list is no hacked content or "
               "malware, as graded by the service that grades it.",
     "IN-128": "OK. hreflang self-reference is the mechanism by which the correct "

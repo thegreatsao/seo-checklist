@@ -111,14 +111,17 @@ def _responsive(img: dict, sources: list[dict]) -> bool:
     3000 px png both passed before. `_needs_sizes` is the test for
     width descriptors — the same fact makes a srcset responsive and requires `sizes`.
     """
-    # The browser takes the first `<source>` that matches. One whose `media` tests a
-    # width offers a phone another file; the first that can match at any width (no
-    # `media`, or one about colour scheme or print) is what a phone gets, and the
-    # `<img>`'s own candidates are used only when no source can match.
+    # The browser takes the first `<source>` that matches. A phone matches no
+    # `min-width` (desktop) or `print` source and goes on to the next; a `max-width`
+    # source offers it another file; the first source that matches whatever the width
+    # (no `media`, or one about colour scheme) is what it gets, and the `<img>`'s own
+    # candidates are used only when no source matches.
     for source in sources:
-        if not source.get("srcset"):
+        media = (source.get("media") or "").lower()
+        if not source.get("srcset") or "print" in media and "screen" not in media \
+                or "min-width" in media or "min-device-width" in media:
             continue
-        if "width" in (source.get("media") or "").lower():
+        if "width" in media:
             return True
         return _needs_sizes(source.get("srcset"))
     return _needs_sizes(img.get("srcset"))

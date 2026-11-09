@@ -285,6 +285,11 @@ class RenderedFiles(unittest.TestCase):
         self.assertEqual(verdict("CN-036", out), NO_DATA)
         self.assertEqual(verdict("CN-035", out), NO_DATA)
 
+    def test_a_withheld_link_count_gives_the_link_reason(self):
+        out = self.read(links_indistinct=0, links_contrast_unmeasured=2)
+        reason = next(m for m in out["missing"] if m.startswith("links_indistinct"))
+        self.assertNotIn("background image", reason)
+
     def test_each_withheld_zero_names_its_unmeasured_count(self):
         self.assertEqual(rendered_audit.WITHHELD_BESIDE, {
             "text_nodes_below_contrast": "text_nodes_contrast_unmeasured",
@@ -588,9 +593,22 @@ class ResponsiveMeansWidths(unittest.TestCase):
                             f'<img src="{ABS}/a.webp" alt="w"></picture>')
                 self.assertEqual(verdict("MB-096", out), FAIL)
                 self.assertEqual(verdict("MD-189", out), FAIL)
-        out = weigh(f'<picture><source media="(min-width: 800px)" srcset="{ABS}/a.webp">'
-                    f'<img src="{ABS}/s.webp" alt="w"></picture>')
+        out = weigh(f'<picture><source media="(max-width: 600px)" srcset="{ABS}/s.webp">'
+                    f'<img src="{ABS}/a.webp" alt="w"></picture>')
         self.assertEqual(verdict("MB-096", out), PASS)
+
+    def test_a_desktop_or_print_source_is_not_what_a_phone_gets(self):
+        """Review round 4: a phone matches no `min-width` or `print` source, so it
+        loads the next candidate — the 3000 px fallback here."""
+        for media in ("(min-width: 1024px)", "print"):
+            with self.subTest(media=media):
+                out = weigh(f'<picture><source media="{media}" srcset="{ABS}/a.webp">'
+                            f'<img src="{ABS}/a.webp" alt="w"></picture>')
+                self.assertEqual(verdict("MB-096", out), FAIL)
+                out = weigh(f'<picture><source media="{media}" srcset="{ABS}/p.webp">'
+                            f'<img src="{ABS}/a.webp" srcset="{ABS}/s.webp 800w, '
+                            f'{ABS}/a.webp 3000w" sizes="100vw" alt="w"></picture>')
+                self.assertEqual(verdict("MB-096", out), PASS)
 
     def test_tab_separated_width_descriptors_are_read(self):
         self.assertTrue(image_weight_audit._responsive(

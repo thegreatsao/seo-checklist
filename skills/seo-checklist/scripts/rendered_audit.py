@@ -185,8 +185,10 @@ def read(path: str) -> dict:
         unmeasured = out.get(unmeasured_key)
         out["missing"].append(
             f"{key} (withheld: "
-            + (f"{unmeasured} not measured: a background image or gradient, or a "
-               "colour outside rgb())" if unmeasured else
+            + (f"{unmeasured} not measured: "
+               + ("a background image or gradient, or a colour outside rgb())"
+                  if key == "text_nodes_below_contrast" else
+                  "a link or text colour outside rgb())") if unmeasured else
                f"the file has no {unmeasured_key}, so it cannot say none went "
                "unmeasured)"))
     return out
