@@ -89,6 +89,8 @@ never pass `make test`. Batch 6's brief (step 4) already plans `--check` turning
 - Delete each stale `second_reading` as F15 changes its item: loses Codex's recorded dispute, which batch 6 resolves.
 - Re-read each changed item with Codex inside every F15 batch: batch 6's work done seven times.
 
+**Accepted by the owner, 2026-11-09** ("Keep it").
+
 **Consequences:**
 - Between F15 batch 1 and batch 6 `--check` is weaker; the summary line carries the stale count and ids.
 - Batch 6 must make a stale reading fail again, red first (its brief, step 4).
