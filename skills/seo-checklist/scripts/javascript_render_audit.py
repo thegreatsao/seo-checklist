@@ -9,9 +9,7 @@ import argparse
 import json
 
 from html_validator import rendered_document
-from urllib.parse import urlparse
-
-from seo_common import load_html, parse_html
+from seo_common import load_html, parse_html, url_host
 
 
 def summarize(html: str, url: str) -> dict:
@@ -29,7 +27,7 @@ def summarize(html: str, url: str) -> dict:
         # counted `https://example.com.au/` as internal to `https://example.com`. The
         # host alone, so a port or userinfo does not make a link external.
         "internal_link_count": len([link for link in parsed["links"]
-                                    if urlparse(link["href"]).hostname == urlparse(url).hostname])
+                                    if url_host(link["href"]) == url_host(url)])
         if url.startswith("http") else len(parsed["links"]),
         # Compare everything the served and rendered documents declare.
         "schema_count": len(parsed["schema"]),

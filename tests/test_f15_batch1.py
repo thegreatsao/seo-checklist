@@ -72,6 +72,16 @@ class PaginationHosts(unittest.TestCase):
         self.assertEqual(out["pagination"]["issues"], [])
         self.assertEqual(verdict("AR-146", out), PASS)
 
+    def test_a_port_or_userinfo_is_still_this_host(self):
+        for href in ("https://example.com:443/page2", "https://reader@example.com/page2"):
+            with self.subTest(href=href):
+                out = parsed(f'<link rel="next" href="{href}">')
+                self.assertEqual(verdict("AR-146", out), PASS)
+
+    def test_a_self_link_in_capitals_is_a_self_link(self):
+        out = parsed('<link rel="next" href="https://EXAMPLE.COM/page">')
+        self.assertEqual(verdict("AR-146", out), FAIL)
+
     def test_another_host_still_fails(self):
         out = parsed('<link rel="next" href="https://example.org/page2">')
         self.assertEqual(verdict("AR-146", out), FAIL)
@@ -161,6 +171,17 @@ class BreadcrumbTrails(unittest.TestCase):
                         f'"itemListElement": {entries}}}</script>')
                 self.assertFalse(parsed(head, self.NAV)["breadcrumbs"]["schema"])
 
+    def test_entries_that_name_nothing_are_no_trail(self):
+        """Codex's second review: `{"item": 42}`, a blank name, an empty Microdata entry."""
+        for entries in ('[{"item": 42}]', '[{"name": "   "}]'):
+            with self.subTest(entries=entries):
+                head = ('<script type="application/ld+json">{"@type": "BreadcrumbList", '
+                        f'"itemListElement": {entries}}}</script>')
+                self.assertFalse(parsed(head, self.NAV)["breadcrumbs"]["schema"])
+        body = ('<ol itemscope itemtype="https://schema.org/BreadcrumbList">'
+                '<li itemprop="itemListElement"></li><a href="/">Home</a></ol>')
+        self.assertEqual(parsed(body=body)["breadcrumbs"], {"schema": False, "ui": False})
+
     def test_json_ld_with_entries_beside_a_named_nav_passes(self):
         head = ('<script type="application/ld+json">'
                 '{"@context": "https://schema.org", "@type": "BreadcrumbList", '
@@ -195,6 +216,12 @@ class TheDocumentTitle(unittest.TestCase):
         self.assertEqual(self.render_raw(html)["raw"]["title"], "The page")
         implied = "<!doctype html><title>Implied head</title><p>Text</p>"
         self.assertEqual(self.render_raw(implied)["raw"]["title"], "Implied head")
+
+    def test_a_template_title_is_not_the_title(self):
+        """Codex's second review: template contents are another document."""
+        html = "<html><head><template><title>Card</title></template><title>Page</title></head></html>"
+        self.assertEqual(self.render_raw(html)["raw"]["title"], "Page")
+        self.assertEqual(parse_html.parse_html(html, URL)["title"], "Page")
 
     def test_a_mathml_title_is_not_the_title(self):
         html = page(body="<math><title>Tooltip</title></math><main><h1>A</h1></main>")
@@ -251,6 +278,20 @@ class RenderParity(unittest.TestCase):
                          '<a href="https://example.com:443/y">Y</a>'
                          '<a href="https://reader@example.com/z">Z</a>')
         self.assertEqual(self.audit(html, html)["raw"]["internal_link_count"], 4)
+
+    def test_an_ipv6_host_spelled_twice_is_one_host(self):
+        html = page(body='<a href="https://[2001:db8:0:0:0:0:0:a]/next">Next</a>')
+        out = self.audit(html, html, url="https://[2001:db8::a]/page")
+        self.assertEqual(out["raw"]["internal_link_count"], 1)
+
+    def test_an_earlier_googlebot_tag_the_render_changes_is_a_diff(self):
+        for first in ("", '<meta name="googlebot" content="">'):
+            with self.subTest(first=first):
+                raw = page(first + '<meta name="googlebot" content="noindex">'
+                           '<meta name="googlebot" content="follow">')
+                rendered = page(first + '<meta name="googlebot" content="index">'
+                                '<meta name="googlebot" content="follow">')
+                self.assertEqual(verdict("MB-105", self.audit(raw, rendered)), FAIL)
 
     def test_an_earlier_robots_tag_the_render_changes_is_a_diff(self):
         """Codex's review of 90134c7: the shared parser kept the last robots tag."""

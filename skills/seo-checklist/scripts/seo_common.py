@@ -33,6 +33,7 @@ from __future__ import annotations
 import codecs
 import gzip
 import io
+import ipaddress
 import json
 import os
 import re
@@ -524,6 +525,20 @@ def origin(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
+def url_host(url: str) -> str | None:
+    """A URL's host, for asking whether two URLs are on one host: lower-cased, an IP
+    literal in its one canonical spelling (`2001:db8:0:0:0:0:0:a` is `2001:db8::a`), and
+    no port or userinfo. `None` when the URL has none or cannot be parsed (F15 batch 1)."""
+    try:
+        host = urlparse(url).hostname
+    except ValueError:
+        return None
+    try:
+        return str(ipaddress.ip_address(host)) if host else host
+    except ValueError:
+        return host
+
+
 def same_host(a: str, b: str, include_www_variant: bool = True) -> bool:
     host_a = urlparse(normalize_url(a)).netloc.lower()
     host_b = urlparse(normalize_url(b)).netloc.lower()
@@ -806,14 +821,16 @@ def favicon_href(soup, base_url: str | None = None) -> str | None:
 
 def document_title(soup) -> str | None:
     """The document's `<title>` as a browser reads it: the first one outside SVG and
-    MathML, whose `<title>` is an element's tooltip, with whitespace collapsed.
+    MathML, whose `<title>` is an element's tooltip, and outside a `<template>`, with
+    whitespace collapsed.
 
     `soup.find("title")` took an inline icon's `<title>` for the page's (F15, TE-177;
     the 2026-10-24 repo audit's MS-026 finding). `""` for an empty title element,
     `None` when the document has none.
     """
     for tag in soup.find_all("title"):
-        if tag.find_parent(["svg", "math"]) is None:
+        # A `<template>`'s contents are another document, never this one's title.
+        if tag.find_parent(["svg", "math", "template"]) is None:
             return " ".join(tag.get_text(" ").split())
     return None
 

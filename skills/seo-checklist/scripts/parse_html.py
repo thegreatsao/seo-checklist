@@ -36,8 +36,9 @@ except ImportError:
     from scripts.lib.safe_http import safe_get
     from scripts.lib.schema_types import DEPRECATED_TYPES, RESTRICTED_TYPES
 
-from seo_common import (read_as_url, document_title, favicon_href, html_parser,
-                        is_responsive_fill_image as _is_responsive_fill_image, issue)
+from seo_common import (read_as_url, comparable_url, document_title, favicon_href,
+                        html_parser, is_responsive_fill_image as _is_responsive_fill_image,
+                        issue, url_host)
 
 
 # The band MS-030 reads, in order of length.
@@ -103,8 +104,10 @@ def _breadcrumb_markup(soup) -> list:
         if ((element.has_attr("itemscope")
                 and _is_breadcrumb_type(element.get("itemtype")))
                 or _is_breadcrumb_type(element.get("typeof"))):
-            if element.find(lambda tag: _is_list_element_property(
-                    tag.get("itemprop")) or _is_list_element_property(tag.get("property"))):
+            # An entry is one with something in it: a label or a link.
+            if element.find(lambda tag: (_is_list_element_property(tag.get("itemprop"))
+                                         or _is_list_element_property(tag.get("property")))
+                            and (tag.get_text(strip=True) or tag.find("a", href=True))):
                 carriers.append(element)
     return carriers
 
@@ -113,8 +116,13 @@ def _has_trail_entry(entries: Any) -> bool:
     """Whether a JSON-LD `itemListElement` holds one entry a trail can show: an object
     naming its page (`item`) or its label (`name`). `[null]`, `[{}]` and a string are
     no trail (Codex's review of F15 batch 1)."""
+    def named(value):
+        if isinstance(value, dict):     # `item` as a node: its `@id` or `url`
+            value = value.get("@id") or value.get("url") or value.get("name")
+        return isinstance(value, str) and bool(value.strip())
+
     entries = entries if isinstance(entries, list) else [entries]
-    return any(isinstance(entry, dict) and (entry.get("item") or entry.get("name"))
+    return any(isinstance(entry, dict) and (named(entry.get("item")) or named(entry.get("name")))
                for entry in entries)
 
 
@@ -343,14 +351,13 @@ def parse_html(
         href = result["pagination"].get(rel_name)
         if not href:
             continue
-        # Hosts compare case-insensitively (F15 batch 1, Codex's review: AR-146 failed
-        # `https://EXAMPLE.COM/page2` on its own host).
-        if base_url and urlparse(href).netloc and (
-                urlparse(href).netloc.lower() != urlparse(base_url).netloc.lower()):
+        # Hosts compare as hosts (F15 batch 1, Codex's reviews: AR-146 failed
+        # `https://EXAMPLE.COM/page2`, `:443` and `reader@` on the page's own host).
+        if base_url and urlparse(href).netloc and url_host(href) != url_host(base_url):
             result["pagination"]["issues"].append({
                 "severity": "error", "type": f"pagination_{rel_name}_offsite",
                 "message": f"rel={rel_name} points at another host: {href}"})
-        if base_url and href.rstrip("/") == base_url.rstrip("/"):
+        if base_url and comparable_url(href).rstrip("/") == comparable_url(base_url).rstrip("/"):
             result["pagination"]["issues"].append({
                 "severity": "error", "type": f"pagination_{rel_name}_self",
                 "message": f"rel={rel_name} points at this page"})

@@ -20,11 +20,12 @@ each toward what the page serves: CI-004 fails a page whose earlier robots meta,
 says noindex; MS-028 fails a whitespace-only description; MS-031 fails a populated keywords tag that an empty one
 follows; TE-166 no longer counts `rel="shortcut"` alone as an icon; AR-158 wants a trail entry (an object naming its
 page or label) in the BreadcrumbList, reads RDFa's prefixed properties, and counts a Microdata/RDFa trail alone as UI
-only with a link in it (a breadcrumb-named nav, class or id still counts); AR-146 compares hosts in any case; TE-177 (and the title every crawl and MS-020/MS-021 read) is the
+only with a link in it (a breadcrumb-named nav, class or id still counts); AR-146 compares hosts as hosts (case, port, userinfo) and a self-link as a URL; TE-177 (and the title every crawl and MS-020/MS-021 read) is the
 document's `<title>`, never an inline SVG's, whitespace collapsed; TE-169 counts a link internal by host, so
 `example.com.au` is no longer internal to `example.com` (a port or userinfo no longer makes a link external); MB-105
 compares the robots and googlebot directives, and the shared parser keeps every such tag rather than the last, which
-CI-001, CI-011 and GO-138 read too through `google_noindex`; MS-020
+CI-001 and CI-011 read too through `google_noindex` (GO-138's own reader is batch 4's); TE-177's title is never one inside
+a `<template>`; MS-020
 passes a 61–65-character title. The recorded census moves one row: MS-020 on `unindexed` (a 61-character title),
 FAIL → PASS, declared before the run. F03's 17 second readings of the changed items are stale until F03 batch 6
 re-reads them; `audit_item_readings.py` now counts a stale one rather than failing it (the owner's ruled order).
