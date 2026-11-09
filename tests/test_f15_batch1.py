@@ -93,6 +93,16 @@ class PaginationHosts(unittest.TestCase):
             "https://[2001:db8::a]/page")
         self.assertEqual([i["type"] for i in out["pagination"]["issues"]], ["pagination_next_self"])
 
+    def test_other_pages_on_this_host_are_not_self_links(self):
+        """Codex's fourth review: `;page=2` (params), another port, another scheme."""
+        for page_url, href in (("https://example.com/catalog;page=1", "https://example.com/catalog;page=2"),
+                               ("https://example.com/page", "https://example.com:8443/page"),
+                               ("https://example.com/page", "http://example.com/page")):
+            with self.subTest(href=href):
+                out = parse_html.parse_html(page(f'<link rel="next" href="{href}">'), page_url)
+                self.assertNotIn("pagination_next_self",
+                                 [i["type"] for i in out["pagination"]["issues"]])
+
     def test_another_host_still_fails(self):
         out = parsed('<link rel="next" href="https://example.org/page2">')
         self.assertEqual(verdict("AR-146", out), FAIL)
@@ -203,6 +213,19 @@ class BreadcrumbTrails(unittest.TestCase):
         position_only = body.replace('<meta itemprop="name" content="Home">', "").replace(
             '<link itemprop="item" href="https://example.com/">', "")
         self.assertFalse(parsed(body=position_only)["breadcrumbs"]["schema"])
+
+    def test_a_data_value_name_and_an_itemref_entry_count(self):
+        """Codex's fourth review: Microdata's `<data value>` and `itemref`."""
+        data = ('<ol itemscope itemtype="https://schema.org/BreadcrumbList">'
+                '<li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">'
+                '<data itemprop="name" value="Home"></data><a href="/">Home</a></li></ol>')
+        self.assertEqual(parsed(body=data)["breadcrumbs"], {"schema": True, "ui": True})
+        ref = ('<nav aria-label="Breadcrumb"><div itemscope '
+               'itemtype="https://schema.org/BreadcrumbList" itemref="crumb"></div>'
+               '<ol><li id="crumb" itemprop="itemListElement" itemscope '
+               'itemtype="https://schema.org/ListItem"><a itemprop="item" href="/">'
+               '<span itemprop="name">Home</span></a></li></ol></nav>')
+        self.assertEqual(parsed(body=ref)["breadcrumbs"], {"schema": True, "ui": True})
 
     def test_a_name_that_is_a_node_is_no_label(self):
         head = ('<script type="application/ld+json">{"@type": "BreadcrumbList", '

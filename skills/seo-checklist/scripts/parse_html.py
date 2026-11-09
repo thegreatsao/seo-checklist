@@ -96,12 +96,14 @@ def _names_property(tag, name: str) -> bool:
 
 def _is_trail_entry(tag) -> bool:
     """An `itemListElement` that names its page or its label: an `item` or `name`
-    property with text, a `content` or an `href` (Codex's reviews of F15 batch 1)."""
+    property with a value: its text, or a `content`, `href` or `value` attribute
+    (Codex's reviews of F15 batch 1)."""
     if not _names_property(tag, "itemListElement"):
         return False
     return any((_names_property(part, "name") or _names_property(part, "item"))
-               and (part.get_text(strip=True) or str(part.get("content") or "").strip()
-                    or str(part.get("href") or "").strip())
+               and (part.get_text(strip=True)
+                    or any(str(part.get(attr) or "").strip()
+                           for attr in ("content", "href", "value")))
                for part in [tag, *tag.find_all(True)])
 
 
@@ -116,7 +118,12 @@ def _breadcrumb_markup(soup) -> list:
         if ((element.has_attr("itemscope")
                 and _is_breadcrumb_type(element.get("itemtype")))
                 or _is_breadcrumb_type(element.get("typeof"))):
-            if element.find(_is_trail_entry):
+            # Microdata's `itemref` brings elements elsewhere into the item.
+            referenced = [soup.find(id=ident)
+                          for ident in str(element.get("itemref") or "").split()]
+            if element.find(_is_trail_entry) or any(
+                    part is not None and (_is_trail_entry(part) or part.find(_is_trail_entry))
+                    for part in referenced):
                 carriers.append(element)
     return carriers
 
@@ -197,10 +204,15 @@ def _structure_issues(soup) -> list[dict[str, Any]]:
 
 
 def _same_page(a: str, b: str) -> bool:
-    """Two URLs naming one page: one host (`url_host`) and one path and query as
-    requests sends them, a trailing slash aside."""
+    """Two URLs naming one page: one scheme, host (`url_host`) and port, and one path,
+    params and query as requests sends them, a trailing slash aside."""
     first, second = urlparse(comparable_url(a)), urlparse(comparable_url(b))
-    return (url_host(a) == url_host(b) and first.query == second.query
+    try:
+        ports = first.port == second.port
+    except ValueError:      # a port no parser accepts names no page
+        return False
+    return (ports and url_host(a) == url_host(b) and first.scheme == second.scheme
+            and first.params == second.params and first.query == second.query
             and first.path.rstrip("/") == second.path.rstrip("/"))
 
 
