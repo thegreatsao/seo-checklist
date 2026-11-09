@@ -260,6 +260,25 @@ class BreadcrumbTrails(unittest.TestCase):
                  '<a itemprop="item" href=""><span itemprop="name">Home</span></a></li></ol>')
         self.assertEqual(parsed(body=empty)["breadcrumbs"], {"schema": True, "ui": True})
 
+    def test_seventh_review_trails(self):
+        """Codex's seventh review: an inline entry beside a partial node, an absolute
+        reference to a relative @id, a BreadcrumbList under WebPage.breadcrumb."""
+        def ld(data):
+            return f'<script type="application/ld+json">{data}</script>'
+        merged = ld('{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList",'
+                    '"itemListElement":[{"@id":"#home","@type":"ListItem","position":1,'
+                    '"name":"Home","item":"https://example.com/"}]},'
+                    '{"@id":"#home","@type":"ListItem","position":1}]}')
+        absolute = ld('{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList",'
+                      '"itemListElement":[{"@id":"https://example.com/page#home"}]},'
+                      '{"@id":"#home","@type":"ListItem","position":1,"name":"Home"}]}')
+        nested = ld('{"@context":"https://schema.org","@type":"WebPage","breadcrumb":{'
+                    '"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem",'
+                    '"position":1,"name":"Home","item":"https://example.com/"}]}}')
+        for name, head in (("merged", merged), ("absolute", absolute), ("nested", nested)):
+            with self.subTest(name):
+                self.assertTrue(parsed(head, self.NAV)["breadcrumbs"]["schema"])
+
     def test_a_name_that_is_a_node_is_no_label(self):
         head = ('<script type="application/ld+json">{"@type": "BreadcrumbList", '
                 '"itemListElement": [{"name": {"@id": "https://example.com/"}}]}</script>')
@@ -395,6 +414,18 @@ class RenderParity(unittest.TestCase):
         rendered = page('<title>T</title><meta name="robots" content="index,follow">'
                         '<meta name="robots" content="follow">')
         self.assertEqual(verdict("MB-105", self.audit(raw, rendered)), PASS)
+
+    def test_aliases_and_defaults_are_no_diff(self):
+        """Codex's seventh review: `none` is `noindex, nofollow`; `all`, `index` and
+        `follow` are the default an absent tag means."""
+        for raw_meta, rendered_meta in (
+                ('<meta name="robots" content="none">', '<meta name="robots" content="noindex, nofollow">'),
+                ("", '<meta name="robots" content="all">'),
+                ("", '<meta name="robots" content="index, follow">')):
+            with self.subTest(rendered=rendered_meta):
+                out = self.audit(page("<title>T</title>" + raw_meta),
+                                 page("<title>T</title>" + rendered_meta))
+                self.assertEqual(verdict("MB-105", out), PASS)
 
     def test_an_earlier_robots_tag_the_render_changes_is_a_diff(self):
         """Codex's review of 90134c7: the shared parser kept the last robots tag."""

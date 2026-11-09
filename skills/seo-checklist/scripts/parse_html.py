@@ -38,7 +38,7 @@ except ImportError:
 
 from seo_common import (read_as_url, comparable_url, document_title, favicon_href,
                         html_parser, is_responsive_fill_image as _is_responsive_fill_image,
-                        issue, url_host)
+                        issue, url_host, walk_json)
 
 
 # The band MS-030 reads, in order of length.
@@ -138,7 +138,7 @@ def _breadcrumb_markup(soup) -> list:
     return carriers
 
 
-def _has_trail_entry(entries: Any, nodes: dict | None = None) -> bool:
+def _has_trail_entry(entries: Any, nodes: dict | None = None, base_url: str = "") -> bool:
     """Whether a JSON-LD `itemListElement` holds one entry a trail can show: an object
     naming its page (`item`) or its label (`name`). `[null]`, `[{}]` and a string are
     no trail (Codex's review of F15 batch 1)."""
@@ -148,8 +148,9 @@ def _has_trail_entry(entries: Any, nodes: dict | None = None) -> bool:
         return isinstance(value, str) and bool(value.strip())
 
     entries = entries if isinstance(entries, list) else [entries]
-    # An entry written as a reference to a node elsewhere on the page is that node.
-    entries = [(nodes or {}).get(entry.get("@id"), entry)
+    # An entry with an `@id` is that node, every definition of it on the page merged
+    # (`nodes`, keyed by the id resolved against the page), its own properties first.
+    entries = [{**(nodes or {}).get(urljoin(base_url, entry["@id"]), {}), **entry}
                if isinstance(entry, dict) and isinstance(entry.get("@id"), str) else entry
                for entry in entries]
     return any(isinstance(entry, dict)
@@ -507,15 +508,20 @@ def parse_html(
                 "raw": item,
             })
 
-    # A BreadcrumbList with no `itemListElement` is no trail (F15, AR-158).
-    nodes = {item["raw"]["@id"]: item["raw"] for item in result["schema"]
-             if isinstance(item.get("raw"), dict) and isinstance(item["raw"].get("@id"), str)}
+    # A BreadcrumbList with no `itemListElement` is no trail (F15, AR-158). Every
+    # node is read, nested ones included (`WebPage.breadcrumb`), and an entry given as
+    # an `@id` is resolved against every definition of that node on the page.
+    found = [node for item in result["schema"] if isinstance(item.get("raw"), dict)
+             for node in walk_json(item["raw"])]
+    nodes: dict[str, dict] = {}
+    for node in found:
+        if isinstance(node.get("@id"), str):
+            nodes.setdefault(urljoin(base_url or "", node["@id"]), {}).update(node)
     result["breadcrumbs"]["schema"] = (
         result["breadcrumbs"]["schema"]
-        or any(_is_breadcrumb_type(item.get("@types"))
-               and isinstance(item.get("raw"), dict)
-               and _has_trail_entry(item["raw"].get("itemListElement"), nodes)
-               for item in result["schema"] if isinstance(item, dict))
+        or any(_is_breadcrumb_type(node.get("@type"))
+               and _has_trail_entry(node.get("itemListElement"), nodes, base_url or "")
+               for node in found)
     )
 
     # Word count (visible text only)

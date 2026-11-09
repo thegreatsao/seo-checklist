@@ -14,13 +14,18 @@ from seo_common import load_html, parse_html, url_host
 
 def _directives(value: str | None) -> str | None:
     """A robots meta value in one spelling: rules lower-cased, spaces collapsed, in
-    order and once each, so `NOINDEX, FOLLOW` and `follow,noindex` compare equal and an
-    argument (`max-snippet:20`) is kept."""
+    order and once each, `none` expanded and the defaults dropped, so `NOINDEX, FOLLOW`
+    and `noindex`, or no tag and `all`, compare equal; an argument (`max-snippet:20`) is
+    kept."""
     if value is None:
         return None
-    return ", ".join(sorted({rule for rule in (
-        " ".join(part.lower().split()).replace(" :", ":").replace(": ", ":")
-        for part in value.split(",")) if rule}))
+    rules = {" ".join(part.lower().split()).replace(" :", ":").replace(": ", ":")
+             for part in value.split(",")}
+    if "none" in rules:                     # `none` is `noindex, nofollow`
+        rules |= {"noindex", "nofollow"}
+    # `all`, `index` and `follow` are the default an absent tag already means.
+    rules -= {"", "none", "all", "index", "follow"}
+    return ", ".join(sorted(rules)) or None
 
 
 def summarize(html: str, url: str) -> dict:
