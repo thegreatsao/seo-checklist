@@ -179,8 +179,8 @@ def read(path: str) -> dict:
         unmeasured = out.get("text_nodes_contrast_unmeasured")
         out["missing"].append(
             "text_nodes_below_contrast (withheld: "
-            + (f"{unmeasured} text element(s) over a background image or gradient "
-               "were not measured)" if unmeasured else
+            + (f"{unmeasured} text element(s) over a background image or gradient, "
+               "or in a colour outside rgb(), were not measured)" if unmeasured else
                "the file does not say how much text went unmeasured)"))
     return out
 

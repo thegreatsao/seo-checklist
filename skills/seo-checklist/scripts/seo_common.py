@@ -501,6 +501,22 @@ def _declared_area(img: dict) -> int | None:
 # as elements and as ARIA roles.
 _FURNITURE = ("header", "footer", "nav", "aside")
 _FURNITURE_ROLES = ("banner", "navigation", "contentinfo", "complementary")
+# A header or footer inside one of these is the section's own, not a landmark
+# (HTML-AAM): an article's header holds its featured image.
+_SECTIONING = ("article", "aside", "main", "nav", "section")
+
+
+def _in_furniture(img) -> bool:
+    for tag in img.parents:
+        if not getattr(tag, "name", None) or tag.name == "[document]":
+            continue
+        if (tag.get("role") or "").strip().lower() in _FURNITURE_ROLES:
+            return True
+        if tag.name in ("nav", "aside"):
+            return True
+        if tag.name in ("header", "footer") and tag.find_parent(_SECTIONING) is None:
+            return True
+    return False
 # basis: convention — 200 declared pixels on each side. Below it an image in the
 #  content is an avatar, an icon or a rule beside the text that names it, where an
 #  empty alt is the right markup; a thin divider has one long side and is not large
@@ -514,14 +530,17 @@ def image_carries_meaning(img) -> bool:
     The two cases the owner ruled (F15, CI-016 and MD-186): the image is the only
     content of a link — `alt=""` there leaves the link with no name at all — or it is
     a large image in the page's content (`MEANINGFUL_IMAGE_MIN_PX` declared on each
-    side, outside header, footer, nav and aside and their ARIA roles). The link case
-    holds however the image is marked: the link has no name either way. A large image
+    side, outside nav, aside, a page-level header or footer, and their ARIA roles).
+    The link case holds however the image is marked — the link has no name either way
+    — unless the link itself is `aria-hidden`, out of the accessibility tree. A large image
     marked decorative on purpose (`role=presentation`/`none`, `aria-hidden=true`)
     carries none, and one whose size the markup does not declare is not judged large.
     Whether an alt *describes* its image is not read anywhere.
     """
     link = img.find_parent("a")
     if link is not None and link.get("href") is not None:
+        if (link.get("aria-hidden") or "").strip().lower() == "true":
+            return False
         named = any((link.get(attr) or "").strip()
                     for attr in ("aria-label", "aria-labelledby", "title"))
         inner_label = link.find(lambda tag: (tag.get("aria-label") or "").strip())
@@ -535,10 +554,7 @@ def image_carries_meaning(img) -> bool:
         width, height = int(str(img.get("width"))), int(str(img.get("height")))
     except (TypeError, ValueError):
         return False
-    return (min(width, height) >= MEANINGFUL_IMAGE_MIN_PX
-            and img.find_parent(_FURNITURE) is None
-            and img.find_parent(lambda tag: (tag.get("role") or "").strip().lower()
-                                in _FURNITURE_ROLES) is None)
+    return min(width, height) >= MEANINGFUL_IMAGE_MIN_PX and not _in_furniture(img)
 
 
 def likely_lcp_candidate(img: dict, index: int) -> bool:

@@ -992,8 +992,10 @@ one — the script refuses the file instead.
   correct markup for a decorative image and is `empty_alt`.
 `empty_alt_meaningful` — int — **absent on a page with no images**. Images with an
   empty (or whitespace) alt that carry meaning: a link's only content however it is
-  marked, or an image declared at least `MEANINGFUL_IMAGE_MIN_PX` (200) on each side
-  outside header, footer, nav, aside and their ARIA roles
+  marked (unless the link is `aria-hidden`), or an image declared at least
+  `MEANINGFUL_IMAGE_MIN_PX` (200) on each side outside nav, aside, a page-level header
+  or footer (one inside article, aside, main, nav or section is content), and their
+  ARIA roles
   (`seo_common.image_carries_meaning`, F15)
 `alt_not_meaningful` — int — **absent on a page with no images**. `missing_alt +
   placeholder_alt + empty_alt_meaningful` (the last since F15), and what CI-016 and

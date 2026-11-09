@@ -412,6 +412,32 @@ class EmptyAltWhereTheImageCarriesMeaning(unittest.TestCase):
         self.assert_both(inventory(f'<main><img src="/x.jpg" alt="" width="{side}" '
                                    f'height="{side}"></main>'), FAIL)
 
+    def test_an_articles_own_header_or_footer_is_content(self):
+        """Review round 2: inside article/aside/main/nav/section a header or footer is
+        no landmark (HTML-AAM); the featured image there is content."""
+        for wrapper in ("header", "footer"):
+            with self.subTest(wrapper=wrapper):
+                out = inventory(f'<main><article><{wrapper}><h1>Title</h1><img src="/h.jpg" '
+                                f'width="1200" height="600" alt=""></{wrapper}>'
+                                '<p>Body.</p></article></main>')
+                self.assert_both(out, FAIL)
+
+    def test_a_header_inside_any_content_section_is_content(self):
+        self.assertEqual(set(seo_common._SECTIONING),
+                         {"article", "aside", "main", "nav", "section"})
+        for section in ("article", "main", "section"):
+            with self.subTest(section=section):
+                out = inventory(f'<{section}><header><img src="/h.jpg" width="1200" '
+                                f'height="600" alt=""></header></{section}>')
+                self.assert_both(out, FAIL)
+
+    def test_a_link_hidden_from_assistive_technology_needs_no_name(self):
+        """Review round 2: WordPress's post thumbnail beside a titled link."""
+        out = inventory('<article><a href="/post" aria-hidden="true" tabindex="-1">'
+                        '<img src="/t.jpg" alt=""></a><h2><a href="/post">Post title</a>'
+                        '</h2></article>')
+        self.assert_both(out, PASS)
+
     def test_an_aria_landmark_is_furniture_too(self):
         for role in seo_common._FURNITURE_ROLES:
             with self.subTest(role=role):
@@ -527,6 +553,10 @@ class ResponsiveMeansWidths(unittest.TestCase):
                     f'<img src="{ABS}/s.webp" alt="w"></picture>')
         self.assertEqual(verdict("MB-096", out), PASS)
 
+    def test_tab_separated_width_descriptors_are_read(self):
+        self.assertTrue(image_weight_audit._responsive(
+            {"srcset": "a.jpg\t800w, b.jpg\t1600w"}, []))
+
     def test_md_189_asserts_both_halves(self):
         responsive_png = (f'<img src="{ABS}/a.png" srcset="{ABS}/s.png 800w, '
                           f'{ABS}/a.png 3000w" sizes="100vw" alt="w">')
@@ -584,6 +614,17 @@ class AnImageIsAnImageType(unittest.TestCase):
                                       "headers": {"content-type": "IMAGE/PNG; q=1"}})
         self.assertEqual(state, "fine")
         sniff.assert_not_called()
+
+    def test_a_ranged_confirmation_length_is_not_the_files(self):
+        """Review round 2: `Range: bytes=0-0` answers 206 with length 1, which is not
+        the file's size and must not ask for the whole file as if it were tiny."""
+        confirmation = {"status": 206, "headers": {"content-length": "1",
+                                                   "content-type": "application/octet-stream"}}
+        with mock.patch.object(image_weight_audit, "fetch_url", return_value=confirmation), \
+                mock.patch.object(image_weight_audit, "_intrinsic_size",
+                                  return_value=(("png", 1, 1), None)) as sniff:
+            image_weight_audit._classify_image(self.URL, {"status": 403, "headers": {}}, 3)
+        self.assertIsNone(sniff.call_args.args[2])
 
     def test_a_silent_type_is_read(self):
         self.assertEqual(image_weight_audit.UNTYPED,

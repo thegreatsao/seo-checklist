@@ -86,9 +86,9 @@ def _needs_sizes(srcset: str | None) -> bool:
     """
     if not srcset:
         return False
-    return any(part.strip().endswith("w")
-               and part.strip().rsplit(" ", 1)[-1][:-1].isdigit()
-               for part in srcset.split(",") if " " in part.strip())
+    # Any whitespace separates a URL from its descriptor, a tab included.
+    return any(len(bits) > 1 and bits[-1].endswith("w") and bits[-1][:-1].isdigit()
+               for bits in (part.split() for part in srcset.split(",")))
 
 # A crawl can contain one query-stringed tracking pixel per page. The site-wide
 # audit bounds distinct image requests just as broken_links.py bounds link requests,
@@ -181,7 +181,10 @@ def _classify_image(url: str, result: dict, timeout: int,
             return "broken"
         cache = sizes if sizes is not None else {}
         if url not in cache:
-            length = (response.get("headers") or {}).get("content-length") or ""
+            # A 206 to `Range: bytes=0-0` is one byte long; only a 200's length is
+            # the file's.
+            length = ((response.get("headers") or {}).get("content-length") or ""
+                      if status == 200 else "")
             cache[url] = _intrinsic_size(url, timeout,
                                          int(length) if length.isdigit() else None)
         return "fine" if cache[url][0] else "unchecked"

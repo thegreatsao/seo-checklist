@@ -375,7 +375,8 @@ content answers nothing about a phone, and passing one through would be a verdic
 about a viewport nobody looked at.
 
 `text_nodes_contrast_unmeasured` counts text over a background image or gradient,
-which has no single colour to measure against. CN-036 passes only when it and
+which has no single colour to measure against, and text whose colour or background
+Chrome reports outside `rgb()` (`oklch()`, `color()`), which the snippet does not read. CN-036 passes only when it and
 `text_nodes_below_contrast` are both 0, so a page with such text, or a file taken
 with an older copy of this snippet that lacks the key, reports `NO_DATA` for it.
 
