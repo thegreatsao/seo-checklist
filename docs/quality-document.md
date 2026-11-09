@@ -37,6 +37,22 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `skills/seo-checklist/scripts/` (crawl inventory readers) — graded 2026-11-10, F15 batch 3
+
+Read for the grade: `site_crawl.py` (`page_key`, `_reduced`, `read_twice`, `same_page`, `_linked_spellings`,
+`_finish`), `duplicate_content.py` (`pages_from_inventory`, `_snippet_grouping_pages`, `detect_duplicates`),
+`canonical_checker.py` (`check_canonicals`, `_consolidated`, `check_inventory`), `link_profile.py`,
+`internal_links.py`, `topical_cluster_mapper.py` (`map_inventory`), `anchor_text_audit.py` (`names_its_title`,
+`audit_anchor_text`), `server_log_audit.py` (`_key`), `gsc_sitemap_reconcile.py`.
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `make check` on the batch's last commit (contract, batch 3 results); 82 tests in `tests/test_f15_batch3.py`, each review round red on the commit before it; Claude review round 9 "ship" |
+| Agent understandable | B | each rule names its item and the review round that shaped it; the self-canonical and BL-081 decisions now span several small guards (aliases, `read_at`, title anchors, pager and alt links) whose order matters, and their limits are listed in the contract rather than in one place |
+| Test stability | A | hand-built inventories and loopback crawls; no clock or network outside loopback |
+| Architecture boundaries | A | `make check-arch` 3/3 |
+| Code conventions | A | ruff clean; derived sets and the threshold ledger moved only by declared constants (`PAGE_NUMBER_PARAMS`, `CANONICAL_ARGS`, `NEAR_DUPLICATE_SIMILARITY`, the MinHash pair) |
+
 ## `skills/seo-checklist/scripts/` (images, rendered page, PageSpeed) — graded 2026-11-09, F15 batch 2
 
 Read for the grade: the rendered-page snippet in `SKILL.md` (`rgb`, `bgOf`, the contrast and link loops),
