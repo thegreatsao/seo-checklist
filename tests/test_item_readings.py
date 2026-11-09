@@ -332,8 +332,9 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
         # F03 batch 6 re-reads them. F15 batch 2 changed rendered_audit.py (and its
         # snippet), pagespeed.py, image_inventory.py, image_weight_audit.py and 20 of
         # their readings: 44 stale now. F15 batch 3 changed site_crawl.py and the
-        # crawl inventory readers (and seo_common.py's link names): 66 stale now.
-        self.assertEqual(counts, {"current": 79, "agree": 20, "disputed": 59, "stale": 66})
+        # crawl inventory readers (and seo_common.py's link names), and GO-137's
+        # gsc_sitemap_reconcile.py (its page-number fold): 67 stale now.
+        self.assertEqual(counts, {"current": 78, "agree": 20, "disputed": 58, "stale": 67})
 
 
 class TheDigestCommand(unittest.TestCase):
@@ -358,8 +359,8 @@ class TheDigestCommand(unittest.TestCase):
     def test_the_summary_counts_second_readings(self):
         done = self.run_tool()
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertIn(f"second readings: 79 of {len(READINGS['items'])} current — 20 agree, "
-                      "59 disputed; 66 stale", done.stdout)
+        self.assertIn(f"second readings: 78 of {len(READINGS['items'])} current — 20 agree, "
+                      "58 disputed; 67 stale", done.stdout)
 
 
 class WhatTheSecondReaderIsShown(unittest.TestCase):

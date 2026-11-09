@@ -164,7 +164,7 @@ SHINGLE_WORDS = 5
 PAGE_NUMBER_PARAMS = ("page", "paged", "pg")
 
 
-def page_key(url: str, base: str = "") -> str:
+def page_key(url: str, base: str = "", numbered: bool = True) -> str:
     """One spelling per page.
 
     The root keeps its slash because an empty path is not a path; everything deeper
@@ -178,9 +178,10 @@ def page_key(url: str, base: str = "") -> str:
     `/caf%c3%a9` are one page, not two (the 2026-10-24 audit: false CN-041, MS-022,
     CI-008 and CI-018 findings). The query is dropped except a page number
     (`PAGE_NUMBER_PARAMS`), kept as its first `name=digits` pair, lower-cased and as a
-    number; page 1 (or 0) is the page itself.
+    number; page 1 (or 0) is the page itself. `numbered=False` folds the page number
+    too, for a comparison with a list that never carries one (GO-137's sitemap).
     """
-    return _reduced(url, base, fold_slash=True)
+    return _reduced(url, base, fold_slash=True, numbered=numbered)
 
 
 def spelling_of(url: str, base: str = "") -> str:
@@ -203,7 +204,18 @@ def same_page(a: str, b: str) -> bool:
     return bare(a) == bare(b)
 
 
-def _reduced(url: str, base: str, fold_slash: bool) -> str:
+def _page_number(value: str) -> int | None:
+    """A page number as a number reads it, or None: `²` is a digit to `isdigit` and
+    not to `int`, which also refuses a string of 4300+ digits (review round 2)."""
+    if not (value.isascii() and value.isdigit()):
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
+def _reduced(url: str, base: str, fold_slash: bool, numbered: bool = True) -> str:
     parsed = urlparse(comparable_url(normalize_url(url, base) if base
                                      else normalize_url(url)))
     path = parsed.path or "/"
@@ -211,9 +223,10 @@ def _reduced(url: str, base: str, fold_slash: bool) -> str:
         path = path.rstrip("/") or "/"
     # Page 1 is the page itself (`/blog?page=1` serves `/blog` on most paginators),
     # and `?PAGE=02` is page 2 (review round 1).
-    number = next((f"{name.lower()}={int(value)}" for name, value
+    number = next((f"{name.lower()}={read}" for name, value
                    in parse_qsl(parsed.query, keep_blank_values=True)
-                   if name.lower() in PAGE_NUMBER_PARAMS and value.isdigit()), "")
+                   if numbered and name.lower() in PAGE_NUMBER_PARAMS
+                   and (read := _page_number(value)) is not None), "")
     number = "" if number.endswith("=1") or number.endswith("=0") else number
     return f"{parsed.scheme}://{parsed.netloc}{path}" + (f"?{number}" if number else "")
 

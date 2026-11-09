@@ -231,8 +231,15 @@ def audit_anchor_text(start_url: str, inventory: dict | None = None, depth: int 
     # BL-081's count (the owner's ruling for F15): the targets whose anchors are not
     # natural and varied — exact-match overuse, low diversity, or an empty or generic
     # anchor — each target once. Overuse alone read only the ≥5-at-80 % shape.
+    # Low diversity only where a menu can be told from editorial links: under
+    # `MIN_PAGES_FOR_SITEWIDE` pages a three-item nav is three links of one anchor each
+    # (review round 2), and `navigation_links` declines to say which links are chrome.
     poor_targets = {link["target"] for link in empty + generic}
-    unnatural = poor_targets | {row["target"] for row in overused_exact + low_diversity}
+    readable = sum(1 for row in crawl["pages"].values()
+                   if carries_content(row.get("status")))
+    unnatural = poor_targets | {row["target"] for row in overused_exact} | (
+        {row["target"] for row in low_diversity}
+        if readable >= MIN_PAGES_FOR_SITEWIDE else set())
 
     issues = []
     if empty:

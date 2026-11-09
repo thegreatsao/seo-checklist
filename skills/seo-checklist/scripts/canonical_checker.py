@@ -60,7 +60,9 @@ def _consolidated(fetched: dict, accepted: set, page: tuple) -> bool:
     only canonical, it asks not to be indexed — or it is another page, not this one
     served twice (review round 1: a soft 404 or a catch-all shell at `/a/` is a defect
     of its own, not `/a` at two URLs). Another page is one declaring a canonical
-    elsewhere, or one whose title and text both differ from the page's (`page`)."""
+    elsewhere, or one whose text differs from the page's (`page`); the title decides
+    only between two pages with no text, since a site may title every page alike
+    (review round 2)."""
     if not carries_content(fetched.get("status")) or not fetched.get("text"):
         return True
     where = fetched.get("url") or ""
@@ -77,7 +79,9 @@ def _consolidated(fetched: dict, accepted: set, page: tuple) -> bool:
     if len(declared) == 1 and comparable_url(declared[0]) != comparable_url(where):
         return True     # it names another page as itself
     title, text = _page_print(html)
-    return not ((title and title == page[0]) or (text and text == page[1]))
+    if text or page[1]:
+        return text != page[1]
+    return not (title and title == page[0])
 
 
 def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = False,

@@ -159,7 +159,8 @@ Reads `--inventory` (see `site_crawl.py`); crawls one for itself without it.
   because overuse is a share that reading more pages can lower
 `summary.low_diversity_targets` — int
 `summary.unnatural_anchor_targets` — int — read by BL-081 (F15): distinct targets with
-  exact-match overuse, low diversity, or an empty or generic anchor; when `truncated`,
+  exact-match overuse, low diversity (over a crawl of four pages or more), or an empty
+  or generic anchor; when `truncated`,
   only the empty or generic ones, a floor, and absent if there are none. An image
   link's anchor is its alt (`site_crawl.py`)
 `top_anchor_texts[]` — array
@@ -311,7 +312,7 @@ that could not be checked when there are any.
   - `verdict`: self_canonical, canonicalized, cross_host, missing, conflicting, unknown;
     with `--check-targets` also target_unavailable (the target is not 200) and
     target_unchecked (nothing answered); with `--variants` variant_unconsolidated (a
-    variant serves the same page — its title or its text — without redirecting to,
+    variant serves the same page — its text, or its title when neither has text — without redirecting to,
     declaring or noindexing it; one declaring another canonical is another page) (F15)
   - `signal` (CI-011): consistent, conflicting, noindex_canonicalized,
     canonical_to_noindex, target_unchecked; a cross-host canonical alone is consistent

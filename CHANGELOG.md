@@ -28,13 +28,19 @@ WARN (134 numbers a verdict depends on). **Verdicts of a real audit can move**: 
 with no body text of their own (an untitled image page fails MS-026, a 0-word page is thin); MS-022 judges a paginated
 series and a trailing-slash site's self-canonical pages, and leaves out a page canonicalised elsewhere; CN-041 no
 longer fails a page and its noindex or canonicalised copy, and warns on near-duplicates; CI-009 fails a canonical to a
-page not answering 200 and a variant (other scheme, www or bare host, trailing slash) serving the same page (title or
-text) without redirecting to, declaring or noindexing it; CI-011 fails a canonical to a noindex page and no longer fails a cross-host
+page not answering 200 and a variant (other scheme, www or bare host, trailing slash) serving the same page (its text;
+its title only when neither has text) without redirecting to, declaring or noindexing it; CI-011 fails a canonical to a noindex page and no longer fails a cross-host
 canonical alone; TE-176 reads a `Link` header canonical and fails two that disagree, and no longer reads `?id=2` as
 `?id=1`'s self; CI-008 credits only the home page unlinked, not a deep audited URL; AR-162 counts distinct other pages
 linked (a page linking only to itself is a dead end), threshold still 3; AR-149 counts a redirecting spelling links
 use, not a sitemap's, and withholds its pass when a spelling went unfetched; AR-153 scores 0 when every cluster is one
-page; BL-081 counts targets with low diversity or an empty or generic anchor. AR-153 withholds its score when fewer than two titles carry a topic word it reads (Cyrillic, empty). The good fixture's second blog post is retitled and links two more pages so the good half of the pair can pass AR-153 and AR-162. The recorded census moves six rows, declared before the run: AR-153 PASS → FAIL on failing-shapes, indexed, unindexed, page-defects, url-shapes and page-sound (no topic cluster of two pages). 66 second readings are stale until F03 batch 6.
+page; BL-081 counts targets with low diversity or an empty or generic anchor. AR-153 withholds its score when fewer than two titles carry a topic word it reads (Cyrillic, empty). A redirect is
+its landing page read once (MS-022, MS-029, CN-041 no longer count `/old` → `/new` or two redirects to one page twice);
+a canonical to the page on another scheme or `www` host is the page, and one to a crawled page answering 404 or 5xx
+consolidates nothing. GO-137 compares Search Console pages and sitemap URLs with the page number folded, as before.
+BL-081 counts low diversity only over a crawl of four pages or more (below it a menu cannot be told from editorial
+links). A site paginated by `?page=N` now reaches its listing pages, so its crawl is cut at the depth cap more often
+and site-wide passes are withheld more often. The good fixture's second blog post is retitled and links two more pages so the good half of the pair can pass AR-153 and AR-162. The recorded census moves six rows, declared before the run: AR-153 PASS → FAIL on failing-shapes, indexed, unindexed, page-defects, url-shapes and page-sound (no topic cluster of two pages). 67 second readings are stale until F03 batch 6.
 
 F15 batch 2 (`84e41c84ecaa` → `1733ee735260`) — `rendered_audit.py` and the snippet in `SKILL.md`, `pagespeed.py`,
 `image_inventory.py`, `image_weight_audit.py`. SP-107 asserts `above_fold.rating` and MD-189

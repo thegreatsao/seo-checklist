@@ -154,7 +154,9 @@ def _search_analytics_pages(service, prop: str, site_url: str,
     response = service.searchanalytics().query(siteUrl=prop, body=body).execute()
     rows = response.get("rows", [])
     pages = {
-        page_key(row["keys"][0])
+        # A paginated listing is the page the sitemap lists (F15 keeps `?page=2` a
+        # page of its own in the crawl; a sitemap rarely lists one).
+        page_key(row["keys"][0], numbered=False)
         for row in rows
         if row.get("keys") and same_host(site_url, row["keys"][0])
     }
@@ -236,7 +238,7 @@ def analyze(site_url: str, prop: str, credentials: str, max_urls: int = MAX_URLS
     except Exception as exc:
         return _fail(result, exc, "service")
 
-    sitemap_keys = {page_key(url) for url in urls}
+    sitemap_keys = {page_key(url, numbered=False) for url in urls}
     missing_all = sorted(impression_pages - sitemap_keys)
     result["period"] = {"start": start, "end": end}
     result["indexed_not_in_sitemap"] = missing_all[:50]

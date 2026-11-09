@@ -598,6 +598,76 @@ class ReviewRound1(unittest.TestCase):
                       [v.lower() for v in canonical_checker.url_variants("https://EX.com/a")])
 
 
+class ReviewRound2(unittest.TestCase):
+    def test_an_odd_page_number_does_not_crash_a_key(self):
+        for value in ("%C2%B2", "\u2460", "9" * 5000):
+            with self.subTest(value=value[:8]):
+                self.assertEqual(site_crawl.page_key(f"https://x.test/blog?page={value}"),
+                                 "https://x.test/blog")
+                server_log_audit._log_key(f"/blog?page={value}")
+
+    def test_a_canonical_to_the_page_on_another_scheme_is_still_the_page(self):
+        text = words(300, "same")
+        out = duplicates(inventory([
+            row(SITE + "a", text=text, canonical="http://example.test/a"),
+            row(SITE + "b", text=text, canonical="http://www.example.test/b")]))
+        self.assertEqual(out["summary"]["title_group_exclusions"]["canonicalized"], 0)
+        self.assertEqual(verdict("CN-041", out), FAIL)
+
+    def test_a_canonical_to_a_broken_crawled_page_does_not_hide_the_copy(self):
+        text = words(300, "same")
+        out = duplicates(inventory([
+            row(SITE + "a", text=text), row(SITE + "b", text=text, canonical=SITE + "gone"),
+            row(SITE + "gone", status=404)]))
+        self.assertEqual(verdict("CN-041", out), FAIL)
+
+    def test_two_redirects_to_one_unread_page_are_one_page(self):
+        target = SITE + "company"
+        base = row(target, title="Company", description="Who we are", canonical=target,
+                   text=words(300, "c"))
+        inv = inventory([row(SITE)])
+        for old in ("about-us", "company-info"):
+            inv["pages"][site_crawl.page_key(SITE + old)] = dict(
+                base, url=SITE + old, redirected=True, redirect_chain=[SITE + old])
+        out = duplicates(inv)
+        for item_id in ("MS-022", "MS-029", "CN-041"):
+            with self.subTest(item=item_id):
+                self.assertEqual(verdict(item_id, out), PASS)
+
+    def test_go_137_folds_the_page_number(self):
+        """A paginated listing with impressions is the listed page, as before F15."""
+        import gsc_sitemap_reconcile
+
+        class Service:
+            def searchanalytics(self):
+                return self
+
+            def query(self, **kw):
+                return self
+
+            def execute(self):
+                return {"rows": [{"keys": [SITE + "all?page=2"]},
+                                 {"keys": [SITE + "all"]}]}
+        pages = gsc_sitemap_reconcile._search_analytics_pages(Service(), "sc-domain:x",
+                                                              SITE, 28)[0]
+        self.assertEqual(pages, {SITE + "all"})
+
+    def test_a_three_page_nav_is_not_low_diversity(self):
+        """Under four pages a menu cannot be told from editorial links (navigation_links),
+        so low diversity, newly counted, is not read there."""
+        nav = (SITE, SITE + "about", SITE + "contact")
+        names = {SITE: "Home", SITE + "about": "About", SITE + "contact": "Contact"}
+        rows = [row(url, links=nav, anchors=names) for url in nav]
+        out = anchor_text_audit.audit_anchor_text(SITE, inventory=inventory(rows))
+        self.assertEqual(verdict("BL-081", out), PASS)
+
+    def test_a_soft_404_sharing_the_site_title_is_not_the_page(self):
+        out = served_rule("CI-009", {
+            "/a": page_html(title="Acme", canonical="/a", body=words(60, "page")),
+            "/a/": page_html(title="Acme", body="Sorry, that page was not found.")})
+        self.assertEqual(verdict("CI-009", out), PASS)
+
+
 # ---------------------------------------------------------------------------
 # The sentences
 # ---------------------------------------------------------------------------

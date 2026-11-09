@@ -23,6 +23,7 @@ import itertools
 import json
 import sys
 from collections import defaultdict
+from urllib.parse import urlparse, urlunparse
 
 import site_crawl
 from seo_common import read_as_url, THIN_CONTENT_WORDS, carries_content, normalize_url
@@ -63,16 +64,20 @@ def pages_from_inventory(inventory: dict) -> dict:
 
     A row that redirected to a page the crawl read under its own key is that page read
     twice, not a page competing with it (review round 1: a 301 `/old` beside `/new`
-    failed MS-022, MS-029 and CN-041); one whose landing was not read stands for it.
+    failed MS-022, MS-029 and CN-041); one whose landing was not read stands for it,
+    once however many redirects land there.
     """
     rows = inventory.get("pages") or {}
     pages = {}
+    landings = set()
     for key, row in sorted(rows.items()):
         if not row.get("html") or not carries_content(row.get("status")):
             continue
         landed = site_crawl.page_key(row.get("final_url") or row.get("url") or key)
-        if landed != key and landed in rows:
+        # Two redirects landing on one unread page are that page once (review round 2).
+        if landed != key and (landed in rows or landed in landings):
             continue
+        landings.add(landed)
         pages[key] = {
             "url": row.get("url") or key,
             "final_url": row.get("final_url") or row.get("url") or key,
@@ -84,6 +89,10 @@ def pages_from_inventory(inventory: dict) -> dict:
             # kept out of the index by a header was still asked for 300 more words.
             "noindex": bool(row.get("noindex")),
             "canonical": row.get("canonical"),
+            # The crawl read the canonical's page and it was no content (a 404, a 5xx):
+            # a canonical Google cannot follow, so the page is not consolidated.
+            "canonical_broken": bool(row.get("canonical")) and _broken(
+                rows.get(site_crawl.page_key(row["canonical"], row.get("final_url") or key))),
             # Carried for MS-022 and MS-029. Both fields have been in the crawl
             # inventory all along; the old rules borrowed the duplicate-body count
             # instead of measuring duplicate titles and descriptions themselves.
@@ -136,6 +145,19 @@ def duplicate_descriptions(pages: dict) -> list:
             for text, urls in sorted(groups.items()) if len(urls) > 1]
 
 
+def _broken(row: dict | None) -> bool:
+    return bool(row) and row.get("status") is not None and not carries_content(
+        row.get("status"))
+
+
+def _hostless(url: str) -> str:
+    """The URL with `https` and no `www.`: one page whatever scheme or twin names it."""
+    parsed = urlparse(url)
+    host = parsed.netloc.lower()
+    host = host[4:] if host.startswith("www.") else host
+    return urlunparse(parsed._replace(scheme="https", netloc=host))
+
+
 def _snippet_grouping_pages(pages: dict) -> tuple[dict, dict]:
     """Indexable canonical pages and the reasons other pages cannot compete.
 
@@ -158,9 +180,12 @@ def _snippet_grouping_pages(pages: dict) -> tuple[dict, dict]:
             continue
         canonical = page.get("canonical")
         named = normalize_url(canonical, page.get("final_url") or key) if canonical else ""
-        # The key too: a page first read at `?sort=price` still names itself.
-        if canonical and not any(
-                site_crawl.same_page(named, where)
+        # The key too: a page first read at `?sort=price` still names itself, and on
+        # another scheme or `www.` host it is still this page (a leftover http
+        # canonical). A canonical to a crawled page that is not readable content
+        # (`canonical_broken`) consolidates into nothing (review round 2).
+        if canonical and not page.get("canonical_broken") and not any(
+                site_crawl.same_page(_hostless(named), _hostless(where))
                 for where in (page.get("url") or key, page.get("final_url") or key, key)):
             exclusions["canonicalized"] += 1
             continue
