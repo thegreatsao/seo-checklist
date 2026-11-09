@@ -294,6 +294,19 @@ class BreadcrumbTrails(unittest.TestCase):
                  '</script>')
         self.assertTrue(parsed(split, self.NAV)["breadcrumbs"]["schema"])
 
+    def test_ninth_review_trails(self):
+        """Codex's ninth review: JSON-LD ids resolve against `<base href>`; merged
+        definitions keep every type."""
+        based = ('<base href="/"><script type="application/ld+json">{"@context":"https://schema.org",'
+                 '"@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@id":"https://example.com/#home"}]},'
+                 '{"@id":"#home","@type":"ListItem","position":1,"name":"Home"}]}</script>')
+        out = parse_html.parse_html(page(based, self.NAV), "https://example.com/shop/widget")
+        self.assertTrue(out["breadcrumbs"]["schema"])
+        typed = ('<script type="application/ld+json">[{"@id":"#crumb","@type":"BreadcrumbList"},'
+                 '{"@id":"#crumb","@type":"ItemList","itemListElement":[{"@type":"ListItem",'
+                 '"position":1,"name":"Home"}]}]</script>')
+        self.assertTrue(parsed(typed, self.NAV)["breadcrumbs"]["schema"])
+
     def test_a_name_that_is_a_node_is_no_label(self):
         head = ('<script type="application/ld+json">{"@type": "BreadcrumbList", '
                 '"itemListElement": [{"name": {"@id": "https://example.com/"}}]}</script>')

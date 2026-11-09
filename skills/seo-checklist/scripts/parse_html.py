@@ -522,15 +522,26 @@ def parse_html(
     # an `@id` is resolved against every definition of that node on the page.
     found = [node for item in result["schema"] if isinstance(item.get("raw"), dict)
              for node in walk_json(item["raw"])]
+    # Ids resolve against the document's base, `<base href>` included, as embedded
+    # JSON-LD inherits it; a merged node keeps every type its definitions give.
+    document_base = base_url or ""
+    base_tag = soup.find("base", href=True)
+    if base_tag is not None:
+        document_base = _node_id(document_base, base_tag["href"])
     nodes: dict[str, dict] = {}
     for node in found:
         if isinstance(node.get("@id"), str):
-            nodes.setdefault(_node_id(base_url or "", node["@id"]), {}).update(node)
+            merged = nodes.setdefault(_node_id(document_base, node["@id"]), {})
+            types = [t for value in (merged.get("@type"), node.get("@type")) if value
+                     for t in (value if isinstance(value, list) else [value])]
+            merged.update(node)
+            if types:
+                merged["@type"] = types
     # The merged nodes too: one BreadcrumbList may be split over two definitions.
     result["breadcrumbs"]["schema"] = (
         result["breadcrumbs"]["schema"]
         or any(_is_breadcrumb_type(node.get("@type"))
-               and _has_trail_entry(node.get("itemListElement"), nodes, base_url or "")
+               and _has_trail_entry(node.get("itemListElement"), nodes, document_base)
                for node in [*found, *nodes.values()])
     )
 
