@@ -620,6 +620,11 @@ EFFORT_RANK = {effort: rank for rank, effort in enumerate(sorted(EFFORT_COST, ke
 # Keep the title for traceability, and tell the operator exactly which part the
 # attached rule measures. Items absent from this table need no qualification.
 MEASURES = {
+    "CI-009": "That the page names one canonical that answers 200, and that its other scheme, www or bare host, and trailing-slash variant redirect to it, declare it or do not serve the page. Other duplicate URLs are not requested.",
+    "CI-018": "Crawl waste in a supplied server log: search-bot requests answered with errors, redirects or nothing indexable, disallowed or parameterised paths, sitemap URLs never crawled. Whether crawl budget is managed is not decided.",
+    "MS-022": "Titles shared by indexable crawled pages, a numbered page (?page=2) counted on its own. A noindex page, or one whose canonical names another URL, is left out: it does not compete. Titles Google rewrites are not read.",
+    "CN-041": "Identical body text on indexable crawled pages fails; pages estimated 85% alike (MinHash) warn. A noindex copy, or one canonicalised to another page, is the fix and not a duplicate. Other sites are not compared.",
+    "BL-081": "The anchor text of internal links in the crawl, per target: exact-match overuse, low diversity, empty or generic anchors. Anchors on other sites' links to this one are not read; that needs a backlink export.",
     "CI-001": "Whether anything on the page or server stops Google from indexing it: robots.txt, the status code, noindex, or a canonical pointing elsewhere. Whether Google has indexed it is CI-002, which asks Search Console.",
     "CI-003": "The audited page's own status, after redirects: 200 passes, another success warns because Google still processes it, anything else fails. The rest of the site is CI-015 for server errors and GO-138 for the sitemap's URLs.",
     "TE-167": "One request made during this audit, and whether it was answered below 500. Uptime over time needs a monitoring service.",
@@ -761,11 +766,18 @@ item(8, "high", S, "link_profile.py", CRAWLARG,
 # unmapped — it means the script could not read the page, which is NO_DATA.
 # `conflicting` (two canonicals that disagree, tag or `Link` header) fails with
 # `missing`: Google ignores every one of them, so the page names none it can use.
-item(9, "critical", S, "canonical_checker.py", PAGE,
+# F15 (the owner's ruling on F03's CI-009): the target and the URL's variants are
+# requested. A canonical to a page not answering 200 fails (`target_unavailable`), and
+# so does a variant — other scheme, www/bare host, trailing-slash twin — serving the
+# page without redirecting to, declaring or noindexing it (`variant_unconsolidated`).
+# `target_unchecked` (the target never answered) is unmapped: NO_DATA.
+CANONICAL_ARGS = ["{url}", "--check-targets", "--variants"]
+item(9, "critical", S, "canonical_checker.py", CANONICAL_ARGS,
      {"path": "rows", "field": "verdict",
       "value_map": {"self_canonical": "pass", "canonicalized": "pass",
                     "cross_host": "fail", "missing": "fail",
-                    "conflicting": "fail"}},
+                    "conflicting": "fail", "target_unavailable": "fail",
+                    "variant_unconsolidated": "fail"}},
      "Self-canonical on the primary version, 301 from duplicates")
 # A page can point rel=canonical at itself and still have Google pick another
 # URL. Nothing in the page reveals the disagreement — only URL Inspection does.
@@ -775,17 +787,20 @@ item(10, "high", S, "gsc_url_inspection.py", INSPECTARG,
      {"path": "canonical_match", "truthy": True},
      "Align the declared canonical with the one Google selected, or work out why "
      "Google prefers a different URL")
-item(11, "high", S, "canonical_checker.py", PAGE,
-     # canonical_checker emits one of five verdicts and never the words
-     # "mismatch" or "conflict", so the old pattern passed every page. Mapping
-     # its actual vocabulary also fixes the other half: "unknown" means the
-     # script could not tell, which is NO_DATA, not a pass.
+item(11, "high", S, "canonical_checker.py", CANONICAL_ARGS,
+     # canonical_checker never emits the words "mismatch" or "conflict", so the old
+     # pattern passed every page. Mapping its actual vocabulary also fixes the
+     # other half: a value it emits when it could not tell is NO_DATA, not a pass.
      # Until P2 (finding 9, 2026-11-04) this read `verdict`, which holds the
      # canonical alone: noindex beside a canonical elsewhere read `canonicalized`
-     # and passed the one item about that pair. `signal` reads both.
+     # and passed the one item about that pair. `signal` reads both. F15 (the
+     # owner's ruling on F03's CI-011): the target is fetched and a canonical to a
+     # noindex page fails (`canonical_to_noindex`); a cross-host canonical alone is
+     # legitimate and no longer a signal of its own.
      {"path": "rows", "field": "signal",
-      "value_map": {"consistent": "pass", "cross_host": "fail",
-                    "conflicting": "fail", "noindex_canonicalized": "fail"}},
+      "value_map": {"consistent": "pass", "conflicting": "fail",
+                    "noindex_canonicalized": "fail",
+                    "canonical_to_noindex": "fail"}},
      "Do not combine noindex with a canonical pointing elsewhere")
 item(12, "medium", S, "url_quality.py", PAGE,
      {"path": "rows.0.score", "gte": 70},
@@ -981,9 +996,13 @@ item(39, "high", S, "duplicate_content.py", CRAWLARG,
 item(40, "medium", S, "eeat_signal_checker.py", PAGE,
      {"path": "signals.privacy_links", "len_gte": 1},
      "Publish an up-to-date privacy policy and link to it")
+# F15 (the owner's ruling on F03's CN-041): near-duplicates reach the assertion, and a
+# noindex or canonicalised copy is no duplicate. Exact copies fail; near-duplicates
+# alone (a MinHash estimate, `NEAR_DUPLICATE_SIMILARITY`) warn.
 item(41, "high", S, "duplicate_content.py", CRAWLARG,
-     {"path": "summary.exact_duplicate_groups", "eq": 0},
-     "Eliminate internal duplicates: consolidate or canonicalize")
+     {"path": "summary.duplicate_content_findings", "eq": 0},
+     "Eliminate internal duplicates: consolidate or canonicalize",
+     {"path": "summary.exact_duplicate_groups", "eq": 0})
 item(42, "medium", L, fix="Review external duplicates and syndication, agree on a canonical to the source")
 item(43, "high", L, fix="Remove scraped or lightly-rewritten third-party content")
 item(44, "medium", S, "eeat_signal_checker.py", PAGE,
@@ -1151,10 +1170,12 @@ item(77, "medium", L, fix="Include the primary keyword in the opening paragraph"
 item(78, "high", M, fix="Assess backlink quality and authority (needs an external service or a GSC CSV export)")
 item(79, "high", M, fix="Identify spammy referring domains")
 item(80, "medium", M, fix="Disavow only on clear spam - not as routine hygiene")
+# F15 (the owner's ruling on F03's BL-081): low diversity and empty or generic anchors
+# count too, per target, not exact-match overuse alone.
 item(81, "medium", S, "anchor_text_audit.py", CRAWLARG,
-     {"path": "summary.overused_exact_match_targets", "eq": 0},
+     {"path": "summary.unnatural_anchor_targets", "eq": 0},
      "Diversify anchors, remove exact-match over-optimization",
-     {"path": "summary.overused_exact_match_targets", "lte": 10})
+     {"path": "summary.unnatural_anchor_targets", "lte": 10})
 item(82, "medium", M, fix="Monitor and reclaim lost backlinks")
 # BL-083 used to check dead outbound links on the entry page. Backlinks point in the
 # other direction, so it now verifies this site's targets from the Links export;

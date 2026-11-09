@@ -155,9 +155,13 @@ Reads `--inventory` (see `site_crawl.py`); crawls one for itself without it.
 `summary.nofollow_internal_links` — int
 `summary.navigation_links` — int (pairs carried by most pages: site chrome)
 `summary.editorial_links` — int (the rest, which is what the repetition checks read)
-`summary.overused_exact_match_targets` — int — read by BL-081; absent when `truncated`
-  is true, because overuse is a share that reading more pages can lower
+`summary.overused_exact_match_targets` — int — absent when `truncated` is true,
+  because overuse is a share that reading more pages can lower
 `summary.low_diversity_targets` — int
+`summary.unnatural_anchor_targets` — int — read by BL-081 (F15): distinct targets with
+  exact-match overuse, low diversity, or an empty or generic anchor; when `truncated`,
+  only the empty or generic ones, a floor, and absent if there are none. An image
+  link's anchor is its alt (`site_crawl.py`)
 `top_anchor_texts[]` — array
   - item keys: anchor, count
 `targets[]` — array
@@ -301,7 +305,16 @@ that could not be checked when there are any.
 
 `count` — int
 `rows[]` — array
-  - item keys: url, status, final_url, canonical, verdict, issues
+  - item keys: url, status, final_url, canonical, verdict, signal, issues (`canonicals`
+    on a conflict; `canonical_status` once a target is fetched; `variants[]` — url,
+    status, final_url, consolidated — under `--variants`)
+  - `verdict`: self_canonical, canonicalized, cross_host, missing, conflicting, unknown;
+    with `--check-targets` also target_unavailable (the target is not 200) and
+    target_unchecked (nothing answered); with `--variants` variant_unconsolidated (a
+    variant serves the page without redirecting to, declaring or noindexing it) (F15)
+  - `signal` (CI-011): consistent, conflicting, noindex_canonicalized,
+    canonical_to_noindex, target_unchecked; a cross-host canonical alone is consistent
+    (F15)
 `issues[]` — array
 `fetch_error` — NoneType or str (no URL answered; CI-009 is `critical`)
 
@@ -441,6 +454,11 @@ Reads `--inventory` (see `site_crawl.py`): the word count, the content hash and 
 MinHash signature are computed by the crawl, so this script compares pages rather
 than fetching them.
 
+Every HTML page that answered 200 is read, with body text of its own or none (F15:
+pages without text were dropped, and with them the untitled, shared-description and
+0-word pages MS-026, MS-029 and CN-039 are about); a page with no text has no hash or
+signature and is nobody's duplicate.
+
 `missing_titles[]` is the sorted list of page keys with an empty or whitespace-only
 title, including noindex pages. Unlike title duplication, absence is not competition.
 
@@ -451,10 +469,13 @@ title, including noindex pages. Unlike title duplication, absence is not competi
   count here is over the pages it read
 `fetch_error` — NoneType or str
 `pages_analyzed` — int
-`exact_duplicates[]` — array
+`exact_duplicates[]` — array — `Critical` groups of indexable canonical pages; an
+  `Info` group when a member is noindex or canonicalised (`noindex_urls`,
+  `canonicalized_urls`), not counted (F15)
   - item keys: type, severity, urls, finding, fix
-`near_duplicates[]` — array
-  - item keys: type, severity, similarity, url_a, url_b, word_count_a, word_count_b, noindex_in_pair, finding, fix
+`near_duplicates[]` — array — `Warning` for two indexable canonical pages, `Info`
+  (`handled_in_pair`) when one is noindex or canonicalised
+  - item keys: type, severity, similarity, url_a, url_b, word_count_a, word_count_b, noindex_in_pair, handled_in_pair, finding, fix
 `thin_content[]` — array
   - item keys: type, severity, url, word_count, threshold, finding, fix
 `duplicate_titles[]` — array — groups of pages sharing one title, compared on
@@ -467,12 +488,15 @@ title, including noindex pages. Unlike title duplication, absence is not competi
   description are not counted as duplicates of each other — that is MS-028's finding
   and counting it here would report one defect under two items.
   - item keys: type, severity, description, urls, finding, fix
-`summary.exact_duplicate_groups` — int
+`summary.exact_duplicate_groups` — int — the `Critical` groups; CN-041's warn band
+`summary.duplicate_content_findings` — int — **what CN-041 asserts is zero** (F15):
+  exact groups plus `Warning` near-duplicate pairs; absent when the crawl took no
+  signatures and no exact group decides it
 `summary.duplicate_title_groups` — int — **what MS-022 asserts is zero.** The item
   read `exact_duplicates` until 0.43, which counts duplicate page *content* —
   CN-041's verdict — and did not measure titles at all.
-`summary.near_duplicate_pairs` — int
-`summary.thin_pages` — int
+`summary.near_duplicate_pairs` — int — the `Warning` pairs
+`summary.thin_pages` — int — a page with no words of its own counts
 `summary.duplicate_description_groups` — int — **what MS-029 asserts is zero.** That
   item read `exact_duplicate_groups` until 0.22, which counts duplicate page *content*
   — CN-041's verdict — so a site running one description across forty distinct pages
@@ -480,9 +504,10 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `summary.title_group_exclusions.noindex` — int — pages excluded from title and
   description grouping because they are not indexable
 `summary.title_group_exclusions.canonicalized` — int — pages excluded from title and
-  description grouping because their normalized canonical names a different normalized
-  URL. Pagination remains included because the inventory carries no signal that can
-  distinguish a series from a duplicate.
+  description grouping because their canonical names a URL other than the one the page
+  was read at or landed on (`comparable_url`; a trailing-slash self-canonical is self,
+  F15). A numbered page (`?page=2`) is its own page key, so a series sharing one title
+  is a duplicate-title group (MS-022, F15).
 `summary.avg_word_count` — int
 
 ### eeat_signal_checker.py
@@ -1215,8 +1240,12 @@ below are examples rather than a schema.
   - item keys: url, incoming_links
 `nofollow_links[]` — array
   - item keys: url, anchor_text, nofollow, source
-`internal_redirects[]` — array — AR-149's subject
+`internal_redirects[]` — array — AR-149's subject: each linked spelling that
+  redirects, `linked_from` the pages whose links use that spelling (F15: a linked
+  `/about/` is fetched beside the `/about` the crawl read)
   - item keys: url, to, hops, linked_from
+`truncated_reason` — str — also set when a linked spelling went unfetched
+  (`site_crawl` `summary.unchecked_spellings`), which withholds AR-149's pass
 `summary.pages` — int
 `summary.internal_links` — int
 `summary.internal_redirects` — int — read by AR-149
@@ -1309,13 +1338,15 @@ not distinct targets — link equity divides among links.
 `total_external_links` — int
 `unique_internal_targets` — int
 `unique_external_domains` — int
-`avg_internal_links_per_page` — float
+`avg_internal_links_per_page` — float — distinct other pages linked to, averaged (F15,
+  AR-162; repeated and self links do not count)
 `robots_refused[]` — array (kept out of the orphan arithmetic on purpose)
 `orphan_pages.count` — int — read by CI-008; absent when `truncated` is true, because
-  an orphan is a page no page *read* links to
+  an orphan is a page no page *read* links to. Only the home page is credited unlinked,
+  not a deep entry URL (F15)
 `orphan_pages.urls[]` — array; absent with the count
 `orphan_pages.reason` — str — present instead of the two above when `truncated` is true
-`dead_end_pages.count` — int
+`dead_end_pages.count` — int — pages linking to no other page (self-links do not count)
 `dead_end_pages.urls[]` — array
 `top_linked_pages[]` — array
   - item keys: url, inbound_links
@@ -1843,6 +1874,8 @@ output contracts derive from it, so a change here moves them at once.
   or the body cut off while it was read; each is asked once more and, silent again, makes the crawl
   `truncated` (F04)
 `summary.truncated` — bool
+`summary.unchecked_spellings` — int — linked spellings past the budget or never
+  answered (F15; AR-149 withholds its pass)
 `pages.<key>` — object, one per deduplicated page; the key is the page key and
   `url` is the first discovered spelling that was fetched
   - `url`, `final_url`, `status`, `content_type`, `redirect_chain[]`, `redirected`,
@@ -1850,11 +1883,14 @@ output contracts derive from it, so a change here moves them at once.
     `robots_blocked`, `html`, `depth`, `discovered_by`
     (`entry`/`sitemap`/`link`), `in_sitemap`
   - `title`, `meta_description`, `meta_robots`, `canonical`, `noindex`
-    (meta **and** `X-Robots-Tag`)
+    (meta **and** `X-Robots-Tag`); `canonicals[]` — every canonical declared, the
+    `Link` header's included (`declared_canonicals`); `canonical` is the one usable
+    canonical, `null` when there are none or two that disagree (F15, TE-176)
   - `content_words`, `text_hash`, `signature[]` (MinHash, 100 values)
   - `internal_out`, `unique_internal_out`, `external_out`
   - `schema_nodes[]` — one object per parseable JSON-LD node; item key: `types[]`
-  - `links[]` — item keys: target, anchor, rel, nofollow, internal
+  - `links[]` — item keys: target, anchor, rel, nofollow, internal; `anchor` is the
+    link's text, else its `aria-label` or its images' alt (F15, BL-081)
   - `images[]` — array
 `reachable[]` — array of page keys
 `unchecked_internal_targets[]` — array
@@ -1863,11 +1899,16 @@ output contracts derive from it, so a change here moves them at once.
 `.errors[]` — `unvisited` contains normalised sitemap URLs left unread when the
 sitemap-walk cap is reached; a fetch error item retains `error_kind` beside `error`
 `broken[]` — array — item keys: url, status, error, error_kind, linked_from
-`redirected[]` — array — item keys: url, to, hops, linked_from
+`redirected[]` — array — item keys: url, to, hops, linked_from — one per redirecting
+  spelling, `linked_from` the pages whose links use that spelling (F15, AR-149)
+`spellings.<url>` — object — a linked spelling of a crawled page other than the one
+  fetched for it, fetched once: key, status, final_url, redirect_chain, error_kind,
+  unchecked
 `external_targets.<url>[]` — array — item keys: source, anchor, nofollow
 
-A page key is `scheme://host/path`: query dropped, trailing slash kept only on the
-root. `--out PATH` writes the inventory to a file and prints the summary instead.
+A page key is `scheme://host/path` spelled as requests sends it (`/café` and
+`/caf%C3%A9` are one), the query dropped except a page number (`?page=2`,
+`PAGE_NUMBER_PARAMS`), trailing slash kept only on the root. Inventory version 5 (F15). `--out PATH` writes the inventory to a file and prints the summary instead.
 
 ### sitemap_checker.py
 
@@ -1951,9 +1992,10 @@ root. `--out PATH` writes the inventory to a file and prints the summary instead
 
 `page_count` — int
 `cluster_count` — int
-`score` — int
+`hub_count` — int — clusters of two or more pages (F15)
+`score` — int — 0 when a site of more than one page has no hub (AR-153, F15)
 `clusters.seo.page_count` — int
-`clusters.seo.hub` — str
+`clusters.seo.hub` — str, or null for a one-page cluster (not a hub, F15)
 `clusters.seo.topics[]` — array
 `clusters.seo.internal_edges[]` — array
 `clusters.seo.missing_links[]` — array

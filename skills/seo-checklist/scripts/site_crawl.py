@@ -22,11 +22,12 @@ With `--out` the full inventory goes to the file and `--json` prints the summary
 because the summary is the part a caller wants on stdout when the artifact is
 already on disk.
 
-**What is one page.** A page key is `scheme://host/path` with the query dropped and
-the trailing slash removed from everything but the root. So `/a`, `/a/` and `/a?x=1`
-are one page here. That is what the six scripts already did separately, and it is
-what makes `?page=2` not a duplicate of `?page=3` — the item that cares about query
-variants (`faceted_nav_audit.py`, AR-163) reads URLs, not this inventory.
+**What is one page.** A page key is `scheme://host/path` spelled as requests sends it,
+with the trailing slash removed from everything but the root and the query dropped
+except a page number (`?page=2`, `PAGE_NUMBER_PARAMS`). So `/a`, `/a/`, `/a?x=1` and
+`/caf%C3%A9`/`/café` are one page each, and `/blog?page=2` is its own page, whose
+title MS-022 judges. The item that cares about other query variants
+(`faceted_nav_audit.py`, AR-163) reads URLs, not this inventory.
 
 **What "reachable" means.** A page reached by following a link from another crawled
 page. Fetching a URL out of a sitemap does not make it reachable — `link_profile.py`
@@ -45,7 +46,7 @@ import threading
 from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from urllib.parse import urljoin, urlparse
+from urllib.parse import parse_qsl, urljoin, urlparse, urlunparse
 
 from seo_common import (
     refused_kind,
@@ -53,6 +54,8 @@ from seo_common import (
     SITEMAP_URLS_BUDGET,
     as_list,
     carries_content,
+    comparable_url,
+    declared_canonicals,
     discover_sitemap_urls,
     fetch_url,
     normalize_url,
@@ -91,7 +94,12 @@ _utf8_stdout()
 # link set — silently, which is the failure this counter exists to stop. 3 adds compact
 # `schema_nodes`; an older inventory cannot answer a site-wide schema-presence rule.
 # 4 adds image references; an older inventory cannot answer a site-wide image rule.
-INVENTORY_VERSION = 4
+# 5 (F15 batch 3) changes four meanings: page keys keep a page number and spell the
+# path as sent, `canonical` is the one usable canonical (`canonicals` all of them, the
+# `Link` header's included), an image link's anchor is its alt, and `redirected` is per
+# linked spelling (`spellings`) — a version-4 inventory answers MS-022, TE-176, BL-081
+# and AR-149 the old way.
+INVENTORY_VERSION = 5
 
 # basis: convention — 100 pages, the request budget an audit's crawl runs with (the
 #  runner's `--crawl-max-pages` reads it): at the default 4 requests a second it is
@@ -128,27 +136,32 @@ DEFAULT_DEPTH = 3
 CHROME_TAGS = ("script", "style", "nav", "footer", "header", "aside", "noscript",
                "template")
 
-# basis: presentation — no verdict reads what these decide (F09).
-#  Both arrived in 0.1.0 as default arguments (`num_hashes: int = 100`, `k: int = 5`)
-#  and became constants in 0.9.0, when six crawls
-#  became one. Measured for 0.80.1 rather than left as a name: they feed the MinHash
-#  signature and nothing else, the signature feeds `jaccard_from_minhash`, and that feeds
-#  `near_duplicates` alone. **No registry assertion reads any near-duplicate field** — the
-#  five items over `duplicate_content.py` read the exact hash (CN-041), titles (MS-022,
-#  MS-026), descriptions (MS-029) and a word count (CN-039), and none passes through here.
-#  What they do decide is a claim printed about the site: across 25/100/400 functions and
-#  3/5/9-word shingles the same page pair estimates 0.68 to 0.81 similar — a spread of
-#  0.13 under a 0.85 reporting line. The four asserted fields were measured across the same
-#  nine settings and did not move, which the code also guarantees: none of them is computed
-#  from a signature. Pointing any item at `near_duplicate_pairs` promotes both of these to
-#  thresholds, and this line with them; `tests/test_coverage_caps.py`
-#  `TheMinHashPairDecidesOnlyWhatIsPrinted` fails when one does.
+# basis: convention — 100 hash functions, the 0.1.0 default argument (`num_hashes: int =
+#  100`), a constant since 0.9.0. Since F15 (the owner's ruling on F03's CN-041) the
+#  near-duplicate pairs reach a verdict: `duplicate_content.py` counts a pair of indexable
+#  pages estimated at or over `NEAR_DUPLICATE_SIMILARITY` (0.85) into CN-041's
+#  `summary.duplicate_content_findings`, a WARN. The signature is all this feeds, and
+#  measured for 0.80.1 the same page pair estimates 0.68 to 0.81 similar across 25/100/400
+#  functions and 3/5/9-word shingles — a spread of 0.13 under the line. So the pair decides
+#  how sure an estimate is near the line, never an exact copy (the hash, a FAIL); the
+#  judgement is that a hundred functions, a few milliseconds a page, is precise enough for
+#  a warning. `tests/test_coverage_caps.py` `TheMinHashPairDecidesAWarningOnly` holds
+#  that only CN-041 reads a near-duplicate field.
 MINHASH_FUNCTIONS = 100
-# basis: presentation — the other half of the pair above, and the same argument: `k = 5`
-#  arrived in 0.1.0, nothing here chose it, and the 0.68-to-0.81 spread was measured over
-#  both numbers together. A basis block ends at the constant under it, so this one is
+# basis: convention — the other half of the pair above, and the same argument: `k = 5`
+#  arrived in 0.1.0 and the 0.68-to-0.81 spread was measured over both numbers together;
+#  five-word shingles are the judgement that a shared phrase, not a shared word, is what
+#  makes two pages alike. A basis block ends at the constant under it, so this one is
 #  written out rather than shared; the two must move together or the spread means nothing.
 SHINGLE_WORDS = 5
+
+
+# A page number is a page of its own (MS-022, the owner's ruling for F15): `/blog?page=2`
+# carries its own title and description, and folding it into `/blog` hid exactly the
+# duplicate titles a paginated series shows. Only these names, and only with a number:
+# every other query (tracking, sorting, filters) still folds into the page, because a
+# key per filter would turn a faceted shop into thousands of "pages".
+PAGE_NUMBER_PARAMS = ("page", "paged", "pg")
 
 
 def page_key(url: str, base: str = "") -> str:
@@ -160,12 +173,45 @@ def page_key(url: str, base: str = "") -> str:
     `http://example.com/` into a second URL for the same document, both were
     crawled, and every site with a `href="/"` in its navigation — which is every
     site — was told its home page was `Critical` duplicate content.
+
+    The path is spelled as requests sends it (`comparable_url`), so `/café` and
+    `/caf%c3%a9` are one page, not two (the 2026-10-24 audit: false CN-041, MS-022,
+    CI-008 and CI-018 findings). The query is dropped except a page number
+    (`PAGE_NUMBER_PARAMS`), kept as its first `name=digits` pair.
     """
-    parsed = urlparse(normalize_url(url, base) if base else normalize_url(url))
+    return _reduced(url, base, fold_slash=True)
+
+
+def spelling_of(url: str, base: str = "") -> str:
+    """A URL as a link spells it: the page key's reduction, its trailing slash kept.
+
+    `/about` and `/about/` are one page and two URLs, and a server may answer one with
+    a redirect to the other; AR-149 asks about each spelling a link uses.
+    """
+    return _reduced(url, base, fold_slash=False)
+
+
+def same_page(a: str, b: str) -> bool:
+    """Whether two URLs name one page as a canonical does: the same URL, its query
+    included, a trailing slash aside. A page key drops the query, so `?id=2` read as
+    `?id=1`'s self (F15); the slash stays folded, as the crawl folds it."""
+    def bare(url: str) -> str:
+        parsed = urlparse(comparable_url(url))
+        return urlunparse(parsed._replace(path=parsed.path.rstrip("/") or "/",
+                                          fragment=""))
+    return bare(a) == bare(b)
+
+
+def _reduced(url: str, base: str, fold_slash: bool) -> str:
+    parsed = urlparse(comparable_url(normalize_url(url, base) if base
+                                     else normalize_url(url)))
     path = parsed.path or "/"
-    if path != "/":
+    if path != "/" and fold_slash:
         path = path.rstrip("/") or "/"
-    return f"{parsed.scheme}://{parsed.netloc}{path}"
+    number = next((f"{name}={value}" for name, value
+                   in parse_qsl(parsed.query, keep_blank_values=True)
+                   if name.lower() in PAGE_NUMBER_PARAMS and value.isdigit()), "")
+    return f"{parsed.scheme}://{parsed.netloc}{path}" + (f"?{number}" if number else "")
 
 
 # ---------------------------------------------------------------------------
@@ -381,6 +427,7 @@ def _read_page(fetched: dict, key: str, discovered_url: str, site_url: str,
         "meta_description": None,
         "meta_robots": None,
         "canonical": None,
+        "canonicals": [],
         "noindex": False,
         "content_words": 0,
         "text_hash": None,
@@ -416,7 +463,13 @@ def _read_page(fetched: dict, key: str, discovered_url: str, site_url: str,
     row["title"] = parsed.get("title")
     row["meta_description"] = parsed.get("meta_description")
     row["meta_robots"] = parsed.get("meta_robots")
-    row["canonical"] = parsed.get("canonical")
+    # Every canonical the response declares, the `Link` header's included, as
+    # `declared_canonicals` reads them (TE-176, the owner's ruling for F15): the first
+    # `<link>` alone hid a header canonical and a conflict. `canonical` is the one a
+    # crawler can use — none when two disagree, as Google ignores them all then.
+    row["canonicals"] = declared_canonicals(parsed, fetched.get("headers"),
+                                            row["final_url"])
+    row["canonical"] = row["canonicals"][0] if len(row["canonicals"]) == 1 else None
     row["lang"] = parsed.get("lang")
     row["noindex"] = has_noindex(parsed.get("meta_robots"), fetched.get("headers"))
     # Inventory every @type the document declares, including contributed blocks.
@@ -471,7 +524,8 @@ def _read_page(fetched: dict, key: str, discovered_url: str, site_url: str,
             # queue fetches it, while `target` remains the dedup/orphan key. Removed
             # by `_finish`; the public link contract continues to expose page keys.
             "_fetch_url": normalize_url(href, row["final_url"]),
-            "anchor": (link.get("text") or "").strip(),
+            # Its text, else what names it: an image link's alt (`parse_html`).
+            "anchor": (link.get("name") or link.get("text") or "").strip(),
             "rel": rel,
             "nofollow": "nofollow" in rel,
             "internal": internal,
@@ -585,20 +639,71 @@ def crawl(site_url: str, depth: int = DEFAULT_DEPTH,
                         queue.append((target, link["_fetch_url"], page_depth + 1,
                                       "link"))
 
+    spellings = _linked_spellings(pages, _fetch, timeout, max_pages)
     return _finish(site_url, entry, pages, robots_blocked, sitemap, sitemap_set,
-                   counter["requests"], depth, max_pages, bool(queue), signatures)
+                   counter["requests"], depth, max_pages, bool(queue), signatures,
+                   spellings)
+
+
+def _linked_spellings(pages: dict, fetch, timeout: int, budget: int) -> dict:
+    """Every internal link's own spelling of a page the crawl read under another one.
+
+    The crawl fetches one spelling per page key, so a 301 `/about/` linked beside a
+    200 `/about` was never asked for (AR-149, the owner's ruling for F15). Each such
+    spelling is fetched once, up to `budget` of them (the page budget); past it a
+    spelling is recorded unchecked, which withholds AR-149's pass. A spelling that is
+    where a page landed is not asked again: it answered at the end of a chain.
+    """
+    known = {}
+    for row in pages.values():
+        known[spelling_of(row["url"])] = True
+        if not str(row.get("status") or "").startswith("3"):
+            known[spelling_of(row["final_url"])] = True
+    wanted: dict[str, str] = {}
+    for row in pages.values():
+        for link in row["links"]:
+            if not link["internal"] or link["target"] not in pages:
+                continue
+            spelled = spelling_of(link["_fetch_url"])
+            if spelled not in known:
+                wanted.setdefault(spelled, link["target"])
+    spellings = {}
+    for count, (spelled, key) in enumerate(sorted(wanted.items())):
+        if count >= budget:
+            spellings[spelled] = {"key": key, "status": None, "unchecked": True}
+            continue
+        fetched = fetch(spelled, timeout=timeout, max_bytes=2_000_000,
+                        respect_robots=True)
+        spellings[spelled] = {
+            "key": key, "status": fetched.get("status"),
+            "final_url": fetched.get("url") or spelled,
+            "redirect_chain": fetched.get("redirect_chain") or [],
+            "error_kind": fetched.get("error_kind"),
+            # A refusal or a silence is a spelling nobody read, not a redirect absent.
+            "unchecked": bool(fetched.get("robots_blocked") or gave_no_answer(fetched)
+                              or fetched.get("error_kind") == "blocked"),
+        }
+    return spellings
 
 
 def _finish(site_url: str, entry: str, pages: dict, robots_blocked: dict,
             sitemap: dict, sitemap_set: set, requests: int, depth: int,
-            max_pages: int, more_queued: bool, signatures: bool) -> dict:
+            max_pages: int, more_queued: bool, signatures: bool,
+            spellings: dict | None = None) -> dict:
+    spellings = spellings or {}
     inbound: dict[str, list] = defaultdict(list)
     external_targets: dict[str, list] = defaultdict(list)
+    # Who links each spelling: a redirect is the links' defect only for the spelling
+    # they use (AR-149: a sitemap's `/about/` 301 is not a link's when links say `/about`).
+    by_spelling: dict[str, set] = defaultdict(set)
     for key, row in pages.items():
         for link in row["links"]:
             (inbound if link["internal"] else external_targets)[link["target"]].append(
                 {"source": key, "anchor": link["anchor"],
                  "nofollow": link["nofollow"]})
+            if link["internal"]:
+                by_spelling[spelling_of(link.pop("_fetch_url", None)
+                                        or link["target"])].add(key)
             link.pop("_fetch_url", None)
 
     internal_targets = set(inbound)
@@ -631,8 +736,16 @@ def _finish(site_url: str, entry: str, pages: dict, robots_blocked: dict,
             })
     redirected = [{"url": pages[key]["url"], "to": pages[key]["final_url"],
                    "hops": len(pages[key]["redirect_chain"]),
-                   "linked_from": sorted({s["source"] for s in inbound.get(key, [])})}
+                   "linked_from": sorted(by_spelling.get(spelling_of(pages[key]["url"]),
+                                                         ()))}
                   for key in sorted(pages) if pages[key]["redirected"]]
+    redirected += [{"url": spelled, "to": row["final_url"],
+                    "hops": len(row["redirect_chain"]),
+                    "linked_from": sorted(by_spelling.get(spelled, ()))}
+                   for spelled, row in sorted(spellings.items())
+                   if row.get("redirect_chain")]
+    unchecked_spellings = sorted(spelled for spelled, row in spellings.items()
+                                 if row.get("unchecked"))
 
     html_pages = [row for row in pages.values() if row["html"]]
     return {
@@ -656,6 +769,8 @@ def _finish(site_url: str, entry: str, pages: dict, robots_blocked: dict,
             "pages_html": len(html_pages),
             "pages_broken": len(broken),
             "pages_redirected": len(redirected),
+            # Linked spellings past the budget or never answered (AR-149 withholds).
+            "unchecked_spellings": len(unchecked_spellings),
             "robots_blocked": len(robots_blocked),
             "internal_links": sum(row["internal_out"] for row in pages.values()),
             "external_links": sum(row["external_out"] for row in pages.values()),
@@ -699,6 +814,7 @@ def _finish(site_url: str, entry: str, pages: dict, robots_blocked: dict,
         "sitemap": sitemap,
         "broken": broken,
         "redirected": redirected,
+        "spellings": spellings,
         "external_targets": {url: sources for url, sources
                              in sorted(external_targets.items())},
     }

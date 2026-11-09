@@ -32,6 +32,14 @@ from seo_common import read_as_url, THIN_CONTENT_WORDS, carries_content, normali
 #  `summary.thin_pages` whatever their severity; no item reads `thin_content`, so it
 #  decides what is printed, never a verdict (F11; held by `tests/test_presentation_basis.py`)
 NEARLY_EMPTY_WORDS = 100
+# basis: convention — two indexable pages estimated 85 % alike by MinHash are near
+#  duplicates, present at import as the 0.1.0 default argument. Since F15 (the owner's
+#  ruling on F03's CN-041) near-duplicates reach the assertion: below this a pair is not
+#  counted and CN-041 can pass, at or above it the pair makes CN-041 a WARN (an exact copy
+#  still FAILs). Nothing external sets the line; an estimate this coarse (the 0.13 spread
+#  `site_crawl.MINHASH_FUNCTIONS` measures) should only flag pages most of whose text
+#  is the same, which is where 0.85 sits.
+NEAR_DUPLICATE_SIMILARITY = 0.85
 
 
 # ---------------------------------------------------------------------------
@@ -46,16 +54,22 @@ def pages_from_inventory(inventory: dict) -> dict:
     link collected a `Critical` thin-content finding advising somebody to expand a
     page that does not exist — and it counted against CN-039, the thin-content item.
     A broken link is `internal_links.py`'s finding now, and it is made once.
+
+    Every HTML page with content, its own words or none (F15, the owner's rulings on
+    F03's MS-026, MS-029, CN-039): a page with no body text of its own — an image
+    gallery, a navigation-only page — was dropped here, and with it the untitled page,
+    the shared description and the thinnest page these items are about. Such a page
+    has no `text_hash` and no signature, so it is never anybody's duplicate.
     """
     pages = {}
     for key, row in sorted((inventory.get("pages") or {}).items()):
         if not row.get("html") or not carries_content(row.get("status")):
             continue
-        if not row.get("text_hash"):
-            continue
         pages[key] = {
+            "url": row.get("url") or key,
+            "final_url": row.get("final_url") or row.get("url") or key,
             "word_count": row.get("content_words", 0),
-            "text_hash": row["text_hash"],
+            "text_hash": row.get("text_hash"),
             "signature": row.get("signature") or [],
             # From the crawl, which reads the `X-Robots-Tag` header as well as the
             # meta tag. The header was invisible to this script before, so a page
@@ -118,9 +132,15 @@ def _snippet_grouping_pages(pages: dict) -> tuple[dict, dict]:
     """Indexable canonical pages and the reasons other pages cannot compete.
 
     MS-029 inherits the same boundary because a canonicalized or noindex variant is
-    not indexed separately, so its description cannot compete either. Pagination is
-    deliberately still included: the inventory records neither rel=prev/next nor a
-    page number, so this script cannot distinguish a series from a duplicate.
+    not indexed separately, so its description cannot compete either; CN-041 too
+    since F15 (a noindex or canonicalised copy is how a duplicate is handled). A page
+    number is a page of its own (`site_crawl.page_key`), so a paginated series sharing
+    one title is judged (MS-022, the owner's ruling for F15).
+
+    A canonical is self when it names the URL the page was read at or landed on,
+    query included (`site_crawl.same_page`): `normalize_url` of the slash-stripped page
+    key against the canonical's own spelling read a trailing-slash site's every
+    self-canonical as pointing elsewhere (the 2026-10-24 audit).
     """
     included = {}
     exclusions = {"noindex": 0, "canonicalized": 0}
@@ -129,7 +149,10 @@ def _snippet_grouping_pages(pages: dict) -> tuple[dict, dict]:
             exclusions["noindex"] += 1
             continue
         canonical = page.get("canonical")
-        if canonical and normalize_url(canonical, key) != normalize_url(key):
+        named = normalize_url(canonical, page.get("final_url") or key) if canonical else ""
+        if canonical and not any(
+                site_crawl.same_page(named, page.get(field) or key)
+                for field in ("url", "final_url")):
             exclusions["canonicalized"] += 1
             continue
         included[key] = page
@@ -140,30 +163,40 @@ def _snippet_grouping_pages(pages: dict) -> tuple[dict, dict]:
 # Analysis
 # ---------------------------------------------------------------------------
 
-def detect_duplicates(pages: dict, similarity_threshold: float = 0.85,
+def detect_duplicates(pages: dict,
+                      similarity_threshold: float = NEAR_DUPLICATE_SIMILARITY,
                       fetch_error: str | None = None,
                       thin_words: int | None = None,
-                      truncated: bool = False) -> dict:
+                      truncated: bool = False, signatures: bool = True) -> dict:
     """
     Detect exact and near-duplicate pages.
     Returns report with exact dupes, near-dupes, and thin content.
 
     `pages` comes from `pages_from_inventory`: the hash and the signature were
     computed by the crawl that read the page, so nothing here fetches anything.
+
+    Only indexable canonical pages (`_snippet_grouping_pages`) are duplicates of one
+    another; a group or pair with a noindex or canonicalised member is listed as
+    `Info` and not counted (F15, CN-041: a page and its noindex copy failed while
+    the script said "No action required"). `signatures` is the crawl's: without
+    them near-duplicates were never looked for, and CN-041's count is withheld
+    unless an exact copy already decides it.
     """
+    grouping, _ = _snippet_grouping_pages(pages)
     hash_groups = defaultdict(list)
-    signatures = {}
+    signature_of = {}
 
     for url, data in sorted(pages.items()):
-        hash_groups[data["text_hash"]].append(url)
+        if data.get("text_hash"):
+            hash_groups[data["text_hash"]].append(url)
         if data.get("signature"):
-            signatures[url] = data["signature"]
+            signature_of[url] = data["signature"]
 
     exact_dupes = []
     for _digest, urls in hash_groups.items():
         if len(urls) > 1:
-            indexable_urls = [url for url in urls if not pages[url]["noindex"]]
-            noindex_urls = [url for url in urls if pages[url]["noindex"]]
+            indexable_urls = [url for url in urls if url in grouping]
+            set_aside = [url for url in urls if url not in grouping]
 
             if len(indexable_urls) > 1:
                 exact_dupes.append({
@@ -174,47 +207,52 @@ def detect_duplicates(pages: dict, similarity_threshold: float = 0.85,
                     "fix": "Consolidate into a single canonical page and redirect duplicates with 301.",
                 })
 
-            if noindex_urls:
+            if set_aside:
                 exact_dupes.append({
                     "type": "exact_duplicate",
                     "severity": "Info",
                     "urls": urls,
-                    "noindex_urls": noindex_urls,
-                    "finding": "Identical content includes at least one noindex page.",
-                    "fix": "No action required for duplicate-content risk while noindex is intentional.",
+                    "noindex_urls": [url for url in set_aside if pages[url]["noindex"]],
+                    "canonicalized_urls": [url for url in set_aside
+                                           if not pages[url]["noindex"]],
+                    "finding": "Identical content includes a noindex or canonicalised page.",
+                    "fix": "No action required while the noindex or canonical is intentional.",
                 })
 
     # Step 2: Near-duplicates (MinHash Jaccard)
     near_dupes = []
-    for url_a, url_b in itertools.combinations(signatures, 2):
-        sim = site_crawl.jaccard_from_minhash(signatures[url_a],
-                                              signatures[url_b])
+    for url_a, url_b in itertools.combinations(signature_of, 2):
+        sim = site_crawl.jaccard_from_minhash(signature_of[url_a],
+                                              signature_of[url_b])
         if sim >= similarity_threshold:
             # Skip if already in exact dupes
             if any(url_a in ed["urls"] and url_b in ed["urls"] for ed in exact_dupes):
                 continue
-            noindex_in_pair = (pages[url_a]["noindex"]
-                               or pages[url_b]["noindex"])
+            handled = url_a not in grouping or url_b not in grouping
             near_dupes.append({
                 "type": "near_duplicate",
-                "severity": "Info" if noindex_in_pair else "Warning",
+                "severity": "Info" if handled else "Warning",
                 "similarity": round(sim, 3),
                 "url_a": url_a,
                 "url_b": url_b,
                 "word_count_a": pages[url_a]["word_count"],
                 "word_count_b": pages[url_b]["word_count"],
-                "noindex_in_pair": noindex_in_pair,
+                "noindex_in_pair": pages[url_a]["noindex"] or pages[url_b]["noindex"],
+                "handled_in_pair": handled,
                 "finding": (
-                    f"Pages are {sim:.0%} similar, but at least one page is noindex."
-                    if noindex_in_pair
+                    f"Pages are {sim:.0%} similar, but one is noindex or canonicalised."
+                    if handled
                     else f"Pages are {sim:.0%} similar — likely near-duplicate content."
                 ),
                 "fix": (
-                    "No action required for duplicate-content risk while noindex is intentional."
-                    if noindex_in_pair
+                    "No action required while the noindex or canonical is intentional."
+                    if handled
                     else "Differentiate content significantly, or set one as canonical and noindex the other."
                 ),
             })
+
+    exact_count = sum(1 for group in exact_dupes if group["severity"] == "Critical")
+    near_count = sum(1 for pair in near_dupes if pair["severity"] == "Warning")
 
     # Step 3: Thin content
     thin_pages = []
@@ -264,9 +302,14 @@ def detect_duplicates(pages: dict, similarity_threshold: float = 0.85,
         "duplicate_descriptions": description_groups,
         "missing_titles": missing_titles,
         "summary": {
-            "exact_duplicate_groups": len(exact_dupes),
+            "exact_duplicate_groups": exact_count,
+            # CN-041's count: exact copies and near-duplicate pairs among indexable
+            # pages. Without signatures the pairs were not looked for, so the count is
+            # given only when an exact copy decides it anyway.
+            **({"duplicate_content_findings": exact_count + near_count}
+               if signatures or exact_count else {}),
             "duplicate_title_groups": len(title_groups),
-            "near_duplicate_pairs": len(near_dupes),
+            "near_duplicate_pairs": near_count,
             "thin_pages": len(thin_pages),
             # The number the verdict was reached against. Without it "thin_pages = 14"
             # is unarguable: a reader cannot tell 14 short pages from a threshold set
@@ -296,8 +339,9 @@ def main():
                              "not supplied")
     parser.add_argument("--depth", type=int, default=2, help="Crawl depth (default: 2)")
     parser.add_argument("--max-pages", type=int, default=50, help="Max pages to crawl (default: 50)")
-    parser.add_argument("--threshold", type=float, default=0.85,
-                        help="Jaccard similarity threshold for near-duplicates (default: 0.85)")
+    parser.add_argument("--threshold", type=float, default=NEAR_DUPLICATE_SIMILARITY,
+                        help="Jaccard similarity threshold for near-duplicates "
+                             f"(default: {NEAR_DUPLICATE_SIMILARITY})")
     parser.add_argument("--thin-words", type=int, default=0,
                         help="Word count below which a page counts as thin (default: "
                              f"{THIN_CONTENT_WORDS}). Site profiles pass "
@@ -316,7 +360,8 @@ def main():
     report = detect_duplicates(pages, similarity_threshold=args.threshold,
                                fetch_error=inventory.get("fetch_error"),
                                thin_words=args.thin_words or None,
-                               truncated=bool(inventory.get("summary", {}).get("truncated")))
+                               truncated=bool(inventory.get("summary", {}).get("truncated")),
+                               signatures=inventory.get("signatures", True) is not False)
     report["fetch_error_kind"] = inventory.get("fetch_error_kind")
 
     if args.json:

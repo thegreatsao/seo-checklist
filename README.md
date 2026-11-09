@@ -433,8 +433,8 @@ cannot show the number is right, so `tools/audit_thresholds.py` finds each one a
 depends on and requires a stated basis — an external standard (named, so you can check
 it), something measured, a convention admitted as one, or a number inherited from the
 borrowed code and not yet examined. CI refuses a bare one. The count that matters is
-how many came with code from elsewhere and are still unexamined: after F15 batch 2, none of
-131; 20 are standards, 14 measured, 97 conventions with the judgement written, and 47 more
+how many came with code from elsewhere and are still unexamined: after F15 batch 3, none of
+134; 20 are standards, 14 measured, 100 conventions with the judgement written, and 45 more
 decide only what is printed. That is in [KNOWN-ISSUES.md](KNOWN-ISSUES.md) §2 and [ROADMAP.md](ROADMAP.md).
 
 **The report says what changed since last time, and hands over a task list.** Every run

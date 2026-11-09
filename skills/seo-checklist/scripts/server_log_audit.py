@@ -44,6 +44,7 @@ except ImportError:
 
 import argparse
 import collections
+import functools
 import gzip
 import io
 import json
@@ -469,19 +470,25 @@ def _inventory_facts(path: str) -> dict:
 
 
 def _key(url: str) -> str:
-    """A URL reduced to the path a log line would carry. Query dropped.
+    """A URL reduced to the path a log line would carry, a page number kept.
 
-    Matches `site_crawl.page_key`'s treatment on purpose: the two have to agree
-    about what one page is, or the set arithmetic below compares two vocabularies
-    and reports the difference between them as a finding about the site.
+    `site_crawl.page_key`'s own reduction, on purpose: the two have to agree about
+    what one page is — `/café` and `/caf%C3%A9` one page, `?page=2` its own — or the
+    set arithmetic below compares two vocabularies and reports the difference between
+    them as a finding about the site.
     """
-    parsed = urlsplit(url)
-    path = parsed.path or "/"
-    return path if path == "/" else path.rstrip("/")
+    key = urlsplit(site_crawl.page_key(url, _LOG_ORIGIN))
+    return key.path + (f"?{key.query}" if key.query else "")
 
 
+# Log lines carry paths; a page key needs an origin to hang them on. Never requested.
+_LOG_ORIGIN = "http://log.invalid/"
+
+
+@functools.lru_cache(maxsize=65536)
 def _log_key(path: str) -> str:
-    return _key(urlsplit(path).path or "/")
+    # Cached: a log repeats its paths, and a key is spelled through requests.
+    return _key(path)
 
 
 # ---------------------------------------------------------------------------

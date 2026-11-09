@@ -123,9 +123,19 @@ def analyze(inventory: dict, start_url: str) -> dict:
     #
     # Only linked targets count. A sitemap entry that redirects is a sitemap defect
     # and `sitemap_checker.py` reports it; this is about the links on the pages.
+    #
+    # Each spelling a link uses is its own URL (F15): the crawl fetches a linked
+    # `/about/` beside the `/about` it read, and a redirect counts against the links
+    # that spell it. A spelling it could not ask withholds the pass, not the count.
     for row in inventory.get("redirected") or []:
         if row.get("linked_from"):
             result["internal_redirects"].append(row)
+    unasked = summary.get("unchecked_spellings") or 0
+    if unasked and not result["truncated"]:
+        result["truncated"] = True
+        result["truncated_reason"] = (
+            f"{unasked} linked spelling(s) of a crawled page were not fetched, and one "
+            f"of them can redirect")
 
     no_text = sum(1 for row in pages.values() for link in (row.get("links") or [])
                   if link.get("internal") and not (link.get("anchor") or "").strip())

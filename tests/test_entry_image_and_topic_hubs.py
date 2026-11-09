@@ -130,8 +130,16 @@ class TopicHubsAreReadAcrossTheCrawl(unittest.TestCase):
         branded = {path: f"Shape Street Bakery | {title}"
                    for path, title in self.TITLES.items() if path not in self.RYE}
         branded["/"] = "Shape Street Bakery | Home"
+        import topical_cluster_mapper
+        result = topical_cluster_mapper.map_inventory(
+            {"site": f"{self.ORIGIN}/", "pages": self.pages(branded, {}),
+             "summary": {"truncated": False}})
+        self.assertEqual(result["site_wide_words"], ["bakery", "shape", "street"])
+        self.assertEqual(result["cluster_count"], len(branded))
+        # Every page is a topic of its own, so the site has no hub: since F15 (the
+        # owner's ruling on F03's AR-153) one-page clusters are not hubs, and it fails.
         row = self.graded(self.pages(branded, {}))
-        self.assertEqual(row["status"], PASS, row["evidence"])
+        self.assertEqual(row["status"], FAIL, row["evidence"])
 
     def test_a_page_with_no_topic_word_is_a_topic_of_its_own(self):
         """Found by F06's third review. A title the word pattern reads nothing in — one
@@ -139,7 +147,9 @@ class TopicHubsAreReadAcrossTheCrawl(unittest.TestCase):
         every such page the topic "uncategorized", so a whole Russian-language site was
         one cluster whose hub had to link every page: the same structure scored 80 with
         Latin titles and failed with Cyrillic ones. A page with no readable topic word
-        says nothing about which topic it belongs to, so it is its own cluster."""
+        says nothing about which topic it belongs to, so it is its own cluster — and
+        since F15, when one-page clusters stopped counting as hubs, a site whose titles
+        this reading cannot read is undecided rather than scored 80 or 0."""
         for label, titled in (
                 ("cyrillic", {"/": "Главная", "/rye": "Хлеб ржаной", "/buns": "Булочки",
                               "/cookies": "Печенье", "/contact": "Контакты",
@@ -147,7 +157,7 @@ class TopicHubsAreReadAcrossTheCrawl(unittest.TestCase):
                 ("untitled", {path: "" for path in self.TITLES})):
             with self.subTest(titles=label):
                 row = self.graded(self.pages(titled, {}))
-                self.assertEqual(row["status"], PASS, row["evidence"])
+                self.assertEqual(row["status"], NO_DATA, row["evidence"])
 
     def test_a_crawl_cut_at_its_caps_does_not_decide_it(self):
         """A missing hub link is a share of the pages read; a page the cap left out

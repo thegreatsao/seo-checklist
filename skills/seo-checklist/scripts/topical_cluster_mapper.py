@@ -108,6 +108,16 @@ def map_inventory(inventory: dict) -> dict:
                                for link in row.get("links") or [] if link.get("internal")]})
     result = map_clusters(rows)
     result["site_wide_words"] = sorted(site_wide)
+    # No hub cannot be told from no reading (F15): with fewer than two titles this
+    # pattern reads a topic word in (Cyrillic, empty, only site-wide words), every
+    # page is its own cluster by construction, so the score is withheld, not 0.
+    readable = sum(1 for r in rows if r["topic"] != "uncategorized")
+    if (not result.get("hub_count") and len(rows) > 1 and readable < 2
+            and "score" in result):
+        del result["score"]
+        result["score_withheld"] = ("fewer than two page titles carry a topic word this "
+                                    "reading can read, so no hub cannot be told from no "
+                                    "reading")
     result["fetch_error"] = inventory.get("fetch_error") or (
         None if rows else "the crawl read no page")
     result["fetch_error_kind"] = inventory.get("fetch_error_kind")
@@ -116,7 +126,7 @@ def map_inventory(inventory: dict) -> dict:
         result["truncated_reason"] = (
             "the crawl stopped at its page or depth cap, and a page it left out can be "
             "a topic's hub")
-        del result["score"]
+        result.pop("score", None)
     return result
 
 
@@ -142,7 +152,12 @@ def map_clusters(rows: list[dict]) -> dict:
 
         explicit_hubs = [page for page in pages if page.get("parent") in ("", page["url"]) and re.search(r"(hub|guide|topic|pillar|overview)", page.get("title", ""), re.I)]
         candidate_hub = None
-        if explicit_hubs:
+        # A one-page cluster is a page, not a hub (AR-153, the owner's ruling for
+        # F15): every page with a topic of its own scored as its own silo, so a site
+        # with no topic hub at all scored 80 and passed.
+        if len(pages) < 2:
+            pass
+        elif explicit_hubs:
             candidate_hub = explicit_hubs[0]["url"]
         elif pages:
             candidate_hub = max(pages, key=lambda page: inbound[page["url"]] + outbound_counts[page["url"]])["url"]
@@ -174,9 +189,15 @@ def map_clusters(rows: list[dict]) -> dict:
 
     total_missing = sum(len(cluster["missing_links"]) for cluster in clusters.values())
     total_edges = sum(len(cluster["internal_edges"]) for cluster in clusters.values())
-    score = max(0, 100 - min(60, total_missing * 4) - (20 if total_edges == 0 and len(rows) > 1 else 0))
+    hubs = sum(1 for cluster in clusters.values() if cluster["hub"])
+    if not hubs and len(rows) > 1:
+        issues.append({"severity": "warning",
+                       "message": "No topic hub: every cluster is a single page."})
+    score = (0 if not hubs and len(rows) > 1 else
+             max(0, 100 - min(60, total_missing * 4) - (20 if total_edges == 0 and len(rows) > 1 else 0)))
     # A score of 100 out of zero pages is not a coherent site, it is an empty crawl.
-    return {"page_count": len(rows), "cluster_count": len(clusters), "score": score,
+    return {"page_count": len(rows), "cluster_count": len(clusters), "hub_count": hubs,
+            "score": score,
             "clusters": clusters, "issues": issues,
             # A row exists for a page that could not be read — with an empty title
             # and no links — and one empty row scored 100 out of one "page". Read

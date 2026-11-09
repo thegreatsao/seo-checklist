@@ -262,13 +262,16 @@ class TheCrawlCaps(unittest.TestCase):
 
 
 
-class TheMinHashPairDecidesOnlyWhatIsPrinted(unittest.TestCase):
-    """`site_crawl.py` `MINHASH_FUNCTIONS` and `SHINGLE_WORDS` are `presentation`
-    (F09): they feed the MinHash signature, the signature feeds `near_duplicates` and
-    `summary.near_duplicate_pairs` alone, and no rule reads either. Pointing an item
-    at one makes both thresholds again, and this is what says so."""
+class TheMinHashPairDecidesAWarningOnly(unittest.TestCase):
+    """`site_crawl.py` `MINHASH_FUNCTIONS` and `SHINGLE_WORDS` were `presentation`
+    (F09) while no rule read a near-duplicate field. Since F15 (the owner's ruling on
+    F03's CN-041) CN-041 counts near-duplicate pairs, so both are `convention`; what
+    their basis says is that the estimate decides a WARN and never a FAIL — CN-041's
+    warn band reads the exact-copy count alone. This holds the reader to that one."""
 
-    def test_no_rule_or_declaration_reads_a_near_duplicate_field(self):
+    NEAR_DUPLICATE_FIELDS = ("near_dup", "duplicate_content_findings")
+
+    def test_only_cn_041_reads_a_near_duplicate_field(self):
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         import harness
         readers = []
@@ -276,11 +279,18 @@ class TheMinHashPairDecidesOnlyWhatIsPrinted(unittest.TestCase):
             check = item.get("check") or {}
             for part in ("assert", "warn", "applies_when"):
                 path = str((check.get(part) or {}).get("path") or "")
-                if "near_dup" in path:
+                if any(field in path for field in self.NEAR_DUPLICATE_FIELDS):
                     readers.append(f"{item['id']} {part}: {path}")
-        self.assertEqual(readers, [],
-                         "a verdict now reads the MinHash estimate; give "
-                         "MINHASH_FUNCTIONS and SHINGLE_WORDS a counted basis")
+        self.assertEqual(readers, ["CN-041 assert: summary.duplicate_content_findings"],
+                         "a new verdict reads the MinHash estimate; re-read the basis "
+                         "of MINHASH_FUNCTIONS and SHINGLE_WORDS")
+
+    def test_cn_041s_warn_band_reads_exact_copies_only(self):
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import harness
+        item = {i["id"]: i for i in harness.registry()["items"]}["CN-041"]
+        self.assertEqual(item["check"]["warn"],
+                         {"path": "summary.exact_duplicate_groups", "eq": 0})
 
 
 if __name__ == "__main__":

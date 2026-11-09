@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "1733ee735260",
+  "registry_version": "8040e1b77d04",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -308,7 +308,9 @@
       "check": {
         "script": "canonical_checker.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--check-targets",
+          "--variants"
         ],
         "requires": "fetch",
         "assert": {
@@ -319,10 +321,13 @@
             "canonicalized": "pass",
             "cross_host": "fail",
             "missing": "fail",
-            "conflicting": "fail"
+            "conflicting": "fail",
+            "target_unavailable": "fail",
+            "variant_unconsolidated": "fail"
           }
         }
       },
+      "measures": "That the page names one canonical that answers 200, and that its other scheme, www or bare host, and trailing-slash variant redirect to it, declare it or do not serve the page. Other duplicate URLs are not requested.",
       "effort": "low",
       "fix": "Self-canonical on the primary version, 301 from duplicates"
     },
@@ -363,7 +368,9 @@
       "check": {
         "script": "canonical_checker.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--check-targets",
+          "--variants"
         ],
         "requires": "fetch",
         "assert": {
@@ -371,9 +378,9 @@
           "field": "signal",
           "value_map": {
             "consistent": "pass",
-            "cross_host": "fail",
             "conflicting": "fail",
-            "noindex_canonicalized": "fail"
+            "noindex_canonicalized": "fail",
+            "canonical_to_noindex": "fail"
           }
         }
       },
@@ -573,6 +580,7 @@
           ]
         }
       },
+      "measures": "Crawl waste in a supplied server log: search-bot requests answered with errors, redirects or nothing indexable, disallowed or parameterised paths, sitemap URLs never crawled. Whether crawl budget is managed is not decided.",
       "effort": "low",
       "fix": "Stop the crawl waste the log shows: fix or 410 the URLs in top_wasted, canonicalise or disallow the parameterised ones, and add internal links to sitemap URLs nothing crawled"
     },
@@ -673,6 +681,7 @@
           "eq": 0
         }
       },
+      "measures": "Titles shared by indexable crawled pages, a numbered page (?page=2) counted on its own. A noindex page, or one whose canonical names another URL, is left out: it does not compete. Titles Google rewrites are not read.",
       "effort": "low",
       "fix": "Crawl for duplicate titles, then differentiate or canonicalize them"
     },
@@ -1090,10 +1099,15 @@
         ],
         "requires": "crawl",
         "assert": {
+          "path": "summary.duplicate_content_findings",
+          "eq": 0
+        },
+        "warn": {
           "path": "summary.exact_duplicate_groups",
           "eq": 0
         }
       },
+      "measures": "Identical body text on indexable crawled pages fails; pages estimated 85% alike (MinHash) warn. A noindex copy, or one canonicalised to another page, is the fix and not a duplicate. Other sites are not compared.",
       "effort": "high",
       "fix": "Eliminate internal duplicates: consolidate or canonicalize"
     },
@@ -1748,7 +1762,7 @@
         ],
         "requires": "crawl",
         "assert": {
-          "path": "summary.overused_exact_match_targets",
+          "path": "summary.unnatural_anchor_targets",
           "eq": 0
         },
         "applies_when": {
@@ -1756,10 +1770,11 @@
           "gt": 0
         },
         "warn": {
-          "path": "summary.overused_exact_match_targets",
+          "path": "summary.unnatural_anchor_targets",
           "lte": 10
         }
       },
+      "measures": "The anchor text of internal links in the crawl, per target: exact-match overuse, low diversity, empty or generic anchors. Anchors on other sites' links to this one are not read; that needs a backlink export.",
       "effort": "high",
       "fix": "Diversify anchors, remove exact-match over-optimization"
     },

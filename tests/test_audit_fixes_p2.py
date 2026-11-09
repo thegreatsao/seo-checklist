@@ -297,8 +297,7 @@ def inventory(pages: dict) -> dict:
 
 def orphans(pages: dict) -> list:
     graph, crawled, domain, refused = link_profile.graph_from_inventory(inventory(pages))
-    out = link_profile.analyze_link_profile(graph, crawled, domain, refused,
-                                            entry_url=SITE)
+    out = link_profile.analyze_link_profile(graph, crawled, domain, refused)
     return out["orphan_pages"]["urls"]
 
 

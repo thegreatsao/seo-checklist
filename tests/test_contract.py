@@ -328,6 +328,12 @@ SAME_ON_BOTH = {
 # record. What is left is the item the fixtures *do* exercise, past the band and
 # into FAIL.
 BAND_UNSEEN = {
+    # F15 batch 3 gave CN-041 its band: near-duplicates alone (a MinHash estimate) warn,
+    # an exact copy fails.
+    "CN-041": "the band needs two indexable pages estimated 85% alike and no exact "
+              "copy. The good pages are distinct and pass; the broken tree's exact "
+              "copies fail. test_f15_batch3.DuplicateContent."
+              "test_near_duplicates_reach_the_assertion reaches WARN",
     # 0.129.0 gave both of these a band from the cross-test's findings.
     "MB-104": "the band is Google's requirement met short of its recommendation — "
               "square and at least 8 px, but not larger than 48 px or not in Google's "

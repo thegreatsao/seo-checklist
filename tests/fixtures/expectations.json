@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "registry_version": "1733ee735260",
+  "registry_version": "8040e1b77d04",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -25,9 +25,9 @@
     ]
   },
   "fixture_digest": {
-    "good": "d087888660b6",
+    "good": "6f8e79dcfcea",
     "broken": "41915277914c",
-    "good_tls": "b84ad265e245",
+    "good_tls": "dbc7a9a4fd32",
     "broken_tls": "be8038ea85ee"
   },
   "triage": [
@@ -309,6 +309,24 @@
       "to": "d087888660b6",
       "decided": "new-material",
       "why": "The hand-written rendered.json also carries links_contrast_unmeasured: 0. Since F15 batch 2's review (CN-035) a zero indistinct-link count is withheld unless the file says no link was in a colour outside rgb(), and a file without the key is withheld too; without it CN-035 would read NO_DATA on the half of the pair that has to be able to pass. No declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good",
+      "item": null,
+      "from": "d087888660b6",
+      "to": "6f8e79dcfcea",
+      "decided": "new-material",
+      "why": "blog/second-post.html is retitled 'Bake days and opening hours | Fixture Bakery' and its navigation also links About the bakery and Privacy policy. Since F15 batch 3 (the owner's rulings on F03's AR-153 and AR-162) a one-page cluster is not a topic hub and a page's internal links count as distinct other pages: the good tree had no two pages sharing a topic and averaged 2.6 distinct links, so AR-153 and AR-162 failed on the half of the pair that has to be able to pass (AR-162 on every served tree). The two posts now share a topic and link each other, and the tree averages 3.0. second-post is not a sampled page; no declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good_tls",
+      "item": null,
+      "from": "b84ad265e245",
+      "to": "dbc7a9a4fd32",
+      "decided": "new-material",
+      "why": "blog/second-post.html is retitled 'Bake days and opening hours | Fixture Bakery' and its navigation also links About the bakery and Privacy policy. Since F15 batch 3 (the owner's rulings on F03's AR-153 and AR-162) a one-page cluster is not a topic hub and a page's internal links count as distinct other pages: the good tree had no two pages sharing a topic and averaged 2.6 distinct links, so AR-153 and AR-162 failed on the half of the pair that has to be able to pass (AR-162 on every served tree). The two posts now share a topic and link each other, and the tree averages 3.0. second-post is not a sampled page; no declared verdict moves."
     }
   ],
   "batches": [],
@@ -335,8 +353,8 @@
       "BL-081": {
         "expect": "PASS",
         "title": "Keep Anchor Text Natural and Varied",
-        "basis": "22ce04b1b80b",
-        "why": "internal anchors are descriptive and varied; repeated Home links are ordinary navigation"
+        "basis": "0e43a54970b8",
+        "why": "internal anchors are descriptive and varied: no target's editorial anchors are overused or of low diversity, and none is empty or generic; repeated Home links are ordinary navigation (re-read for F15: BL-081 counts those targets too)"
       },
       "CI-008": {
         "expect": "PASS",
@@ -353,8 +371,8 @@
       "CN-041": {
         "expect": "PASS",
         "title": "Eliminate Internal Duplicate Content",
-        "basis": "35bea24e03ce",
-        "why": "the reachable pages have distinct body content and do not duplicate one another"
+        "basis": "5b22fc56964f",
+        "why": "the reachable pages have distinct body content, and no two are estimated 85% alike (re-read for F15: near-duplicates now count, as a warning)"
       },
       "CN-054": {
         "expect": "PASS",
@@ -647,14 +665,14 @@
       "CI-009": {
         "expect": "PASS",
         "title": "Serve Content at a Single Canonical URL",
-        "basis": "e2cf32a938d1",
-        "why": "every page in the tree carries a self-referencing canonical at its own served URL"
+        "basis": "7b59029407bb",
+        "why": "every page in the tree carries a self-referencing canonical at its own served URL; the entry is the root of an IP origin, so it has no trailing-slash or www twin, and its other scheme is not served (re-read for F15: targets and variants are requested)"
       },
       "CI-011": {
         "expect": "PASS",
         "title": "Avoid Canonical/Indexing Mixed Signals",
-        "basis": "5a9984a414df",
-        "why": "the entry page is self-canonical, carries no robots meta and is listed in its own sitemap - the three signals agree"
+        "basis": "81d4e88a8e4e",
+        "why": "the entry page is self-canonical and carries no robots meta, so no target is fetched and the signals agree (re-read for F15: a canonical to a noindex page now fails, a cross-host canonical alone does not)"
       },
       "TE-176": {
         "expect": "PASS",
@@ -894,7 +912,7 @@
         "expect": "PASS",
         "title": "Design Clear Topic Hubs (Silos)",
         "basis": "e4dc0fa8b3b8",
-        "why": "Five flat pages and a two-post blog clear the silo score's floor, so 'Design Clear Topic Hubs (Silos)' cannot tell a site with hubs from one without. test_contract.py already had AR-153 in SAME_ON_BOTH, but under a reason belonging to its neighbour — 'neither fixture is an ecommerce catalogue' — which was repaired in the commit that corrected this declaration from FAIL. Re-read for F06 (0.175.0), when the item began reading the shared crawl: no topic word is shared by two pages once the site-wide words ('bakery', 'fixture') are set aside, so every cluster is one page and the score is 100; PASS stands"
+        "why": "The two blog posts share a topic (bake: 'How we bake sourdough', 'Bake days and opening hours') and link each other both ways, so they form a topic cluster with a hub and nothing missing, and the score is 100. Re-read for F15 (the owner's ruling on F03's AR-153: a one-page cluster is not a hub): until then five flat pages scored 80 as five one-page 'hubs', so the item could not tell a site with hubs from one without"
       },
       "GEO-004": {
         "expect": "PASS",
@@ -1039,8 +1057,8 @@
       "BL-081": {
         "expect": "WARN",
         "title": "Keep Anchor Text Natural and Varied",
-        "basis": "22ce04b1b80b",
-        "why": "the title says 'Natural and Varied'; five repeated exact-match links create one overused target, which is the rule's warning band"
+        "basis": "0e43a54970b8",
+        "why": "the title says 'Natural and Varied'; five repeated exact-match links create one target whose anchors are overused and of low diversity, which is inside the rule's warning band (re-read for F15: one to ten such targets warn)"
       },
       "CI-008": {
         "expect": "FAIL",
@@ -1057,8 +1075,8 @@
       "CN-041": {
         "expect": "FAIL",
         "title": "Eliminate Internal Duplicate Content",
-        "basis": "35bea24e03ce",
-        "why": "duplicate-a.html and duplicate-b.html expose identical reachable body content without a consolidating canonical"
+        "basis": "5b22fc56964f",
+        "why": "duplicate-a.html and duplicate-b.html expose identical reachable body content, both indexable and neither canonicalised to the other (re-read for F15: an exact copy still fails)"
       },
       "CN-054": {
         "expect": "PASS",
@@ -1351,14 +1369,14 @@
       "CI-009": {
         "expect": "FAIL",
         "title": "Serve Content at a Single Canonical URL",
-        "basis": "e2cf32a938d1",
-        "why": "the entry page's canonical points at https://not-this-site.example.net/elsewhere, a domain the fixture does not own or serve"
+        "basis": "7b59029407bb",
+        "why": "the entry page's canonical points at https://not-this-site.example.net/elsewhere, a domain the fixture does not own or serve (re-read for F15: a cross-host canonical still fails this item)"
       },
       "CI-011": {
         "expect": "FAIL",
         "title": "Avoid Canonical/Indexing Mixed Signals",
-        "basis": "5a9984a414df",
-        "why": "the entry page says noindex and points its canonical at another domain: two directives about indexing that contradict each other"
+        "basis": "81d4e88a8e4e",
+        "why": "the entry page says noindex and points its canonical at another domain: two directives about indexing that contradict each other, whatever the unreachable target says (re-read for F15)"
       },
       "TE-176": {
         "expect": "FAIL",
@@ -1598,7 +1616,7 @@
         "expect": "PASS",
         "title": "Design Clear Topic Hubs (Silos)",
         "basis": "e4dc0fa8b3b8",
-        "why": "Duplicates, a thin page and an orphan score as well on topic structure as a coherent five-page site. Re-read for F06 (0.175.0), over the crawl: the duplicate pair shares its title word, neither links the other, and that costs 8 points plus 20 for no linked cluster anywhere — 72, above the floor of 70; PASS stands"
+        "why": "duplicate-a.html and duplicate-b.html share a title, so they form a two-page cluster with a hub, unlinked to each other (two missing links), and no cluster has an internal edge: 100 - 8 - 20 = 72, over the floor of 70. Re-read for F15: singleton clusters no longer count as hubs, and this one is not a singleton"
       },
       "GEO-004": {
         "expect": "FAIL",

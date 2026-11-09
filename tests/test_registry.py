@@ -739,15 +739,20 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # F15 batch 2 adds one `convention`: `MEANINGFUL_IMAGE_MIN_PX` in `seo_common.py`,
         # the declared side from which an in-content image with an empty alt is counted
         # by CI-016 and MD-186.
+        # F15 batch 3 adds three `convention`s: `NEAR_DUPLICATE_SIMILARITY` in
+        # `duplicate_content.py`, and `MINHASH_FUNCTIONS` and `SHINGLE_WORDS`, which were
+        # `presentation` until CN-041 counted near-duplicate pairs.
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 14,
-            "convention": 97,
+            "convention": 100,
             "inherited": 0,
-            "presentation": 47,
+            "presentation": 45,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 131)
-        self.assertEqual(len(named), 178)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 134)
+        self.assertEqual(len(named), 179)
+        # 178 -> 179 at F15 batch 3: `NEAR_DUPLICATE_SIMILARITY` in `duplicate_content.py`
+        # is named, where 0.85 was a default argument.
         # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
         # `lib/safe_http.py`, how long and how often a held lock is asked for on
         # Windows. Listed and not counted, beside `ROBOTS_FETCH_WAIT` and `_CACHE_POLL`,
@@ -789,8 +794,9 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 196 -> 197: `SITE_WIDE_SHARE` in `topical_cluster_mapper.py` at 0.175.0 (F06).
         # 197 -> 196: `THIN_CONTENT_THRESHOLDS` deleted at 0.176.0 (F04 batch 4b).
         # 196 -> 197: `MEANINGFUL_IMAGE_MIN_PX` in `seo_common.py` (F15 batch 2).
+        # 197 -> 198: `NEAR_DUPLICATE_SIMILARITY` in `duplicate_content.py` (F15 batch 3).
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 197)
+                             for path in at._script_paths()), 198)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -2449,6 +2455,11 @@ class DeliberateTitleOverrides(unittest.TestCase):
 
 class MeasuresQualifications(unittest.TestCase):
     EXPECTED = {
+        "CI-009": "That the page names one canonical that answers 200, and that its other scheme, www or bare host, and trailing-slash variant redirect to it, declare it or do not serve the page. Other duplicate URLs are not requested.",
+        "CI-018": "Crawl waste in a supplied server log: search-bot requests answered with errors, redirects or nothing indexable, disallowed or parameterised paths, sitemap URLs never crawled. Whether crawl budget is managed is not decided.",
+        "MS-022": "Titles shared by indexable crawled pages, a numbered page (?page=2) counted on its own. A noindex page, or one whose canonical names another URL, is left out: it does not compete. Titles Google rewrites are not read.",
+        "CN-041": "Identical body text on indexable crawled pages fails; pages estimated 85% alike (MinHash) warn. A noindex copy, or one canonicalised to another page, is the fix and not a duplicate. Other sites are not compared.",
+        "BL-081": "The anchor text of internal links in the crawl, per target: exact-match overuse, low diversity, empty or generic anchors. Anchors on other sites' links to this one are not read; that needs a backlink export.",
         "CI-001": "Whether anything on the page or server stops Google from indexing it: robots.txt, the status code, noindex, or a canonical pointing elsewhere. Whether Google has indexed it is CI-002, which asks Search Console.",
         "CI-003": "The audited page's own status, after redirects: 200 passes, another success warns because Google still processes it, anything else fails. The rest of the site is CI-015 for server errors and GO-138 for the sitemap's URLs.",
         "TE-167": "One request made during this audit, and whether it was answered below 500. Uptime over time needs a monitoring service.",

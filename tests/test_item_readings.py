@@ -116,7 +116,8 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         # AR-146, CN-048, CN-066, IN-123, MS-020, MS-028, TE-166 (answers -> measures).
         # F15 batch 2: fourteen more — CN-034, CN-035, CN-036, CN-051, MB-094, MB-103,
         # MB-108, CI-016, MD-186, CN-054, MB-096, MB-097, MD-189, SP-107.
-        self.assertEqual(counts, {"answers": 93, "measures": 52, "owed": 0})
+        # F15 batch 3: five more — CI-009, CI-018, MS-022, CN-041, BL-081.
+        self.assertEqual(counts, {"answers": 88, "measures": 57, "owed": 0})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
         """Line endings are normalised first: a Windows checkout writes CRLF, and how
@@ -330,8 +331,9 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
         # javascript_render_audit.py and their rules: their 17 items are stale until
         # F03 batch 6 re-reads them. F15 batch 2 changed rendered_audit.py (and its
         # snippet), pagespeed.py, image_inventory.py, image_weight_audit.py and 20 of
-        # their readings: 44 stale now.
-        self.assertEqual(counts, {"current": 101, "agree": 24, "disputed": 77, "stale": 44})
+        # their readings: 44 stale now. F15 batch 3 changed site_crawl.py and the
+        # crawl inventory readers (and seo_common.py's link names): 66 stale now.
+        self.assertEqual(counts, {"current": 79, "agree": 20, "disputed": 59, "stale": 66})
 
 
 class TheDigestCommand(unittest.TestCase):
@@ -356,8 +358,8 @@ class TheDigestCommand(unittest.TestCase):
     def test_the_summary_counts_second_readings(self):
         done = self.run_tool()
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertIn(f"second readings: 101 of {len(READINGS['items'])} current — 24 agree, "
-                      "77 disputed; 44 stale", done.stdout)
+        self.assertIn(f"second readings: 79 of {len(READINGS['items'])} current — 20 agree, "
+                      "59 disputed; 66 stale", done.stdout)
 
 
 class WhatTheSecondReaderIsShown(unittest.TestCase):

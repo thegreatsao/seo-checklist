@@ -6,8 +6,10 @@ from __future__ import annotations
 from lib import python_floor  # noqa: F401
 
 import argparse
+import ipaddress
 import json
 from collections import defaultdict
+from urllib.parse import urlparse, urlunparse
 
 import site_crawl
 from seo_common import (read_as_url, carries_content, comparable_url,
@@ -19,7 +21,49 @@ from seo_common import (read_as_url, carries_content, comparable_url,
 MAX_TARGET_FETCHES = 100
 
 
-def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = False) -> dict:
+def url_variants(url: str) -> list[str]:
+    """The other spellings a page answers to on most servers: the other scheme, the
+    `www.` host or the bare one, and the path with or without its trailing slash.
+
+    CI-009 asks for one canonical URL, so each variant has to redirect to it, declare
+    it, or not serve the page at all (the owner's ruling for F15). An IP address has no
+    `www.` twin; the root has no slashless one.
+    """
+    parsed = urlparse(normalize_url(url))
+    host = parsed.hostname or ""
+    out = [parsed._replace(scheme="http" if parsed.scheme == "https" else "https")]
+    try:
+        ipaddress.ip_address(host.strip("[]"))
+    except ValueError:
+        if host:
+            twin = host[4:] if host.startswith("www.") else "www." + host
+            out.append(parsed._replace(netloc=parsed.netloc.replace(host, twin, 1)))
+    if parsed.path not in ("", "/"):
+        path = (parsed.path.rstrip("/") if parsed.path.endswith("/")
+                else parsed.path + "/")
+        out.append(parsed._replace(path=path))
+    return [urlunparse(variant) for variant in out]
+
+
+def _consolidated(fetched: dict, accepted: set) -> bool:
+    """Whether a variant's answer leaves one URL serving the page: it was not served
+    (no answer, an error status), it landed on an accepted URL, it declares one as its
+    only canonical, or it asks not to be indexed."""
+    if not carries_content(fetched.get("status")) or not fetched.get("text"):
+        return True
+    if comparable_url(fetched.get("url") or "") in accepted:
+        return True
+    html = parse_html(fetched["text"], fetched.get("url") or "")
+    declared = declared_canonicals(html, fetched.get("headers"), fetched.get("url") or "")
+    if len(declared) == 1 and comparable_url(declared[0]) in accepted:
+        return True
+    return bool(google_noindex(html.get("meta_robots"), html.get("meta_googlebot"),
+                               fetched.get("x_robots_tags")
+                               or (fetched.get("headers") or {}).get("x-robots-tag")))
+
+
+def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = False,
+                     variants: bool = False) -> dict:
     rows = []
     issues = []
     canonical_to_pages = defaultdict(list)
@@ -35,6 +79,9 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
         noindex = google_noindex(html.get("meta_robots"), html.get("meta_googlebot"),
                                  fetched.get("x_robots_tags")
                                  or (fetched.get("headers") or {}).get("x-robots-tag"))
+        target_noindex = False
+        target_unanswered = False
+        elsewhere = False       # a single canonical naming another URL
         if not canonicals:
             row["verdict"] = "missing"
             row["issues"].append("missing canonical")
@@ -60,25 +107,65 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
                 issues.append(issue("warning", "Cross-host canonical", row["url"], canonical))
             else:
                 row["verdict"] = "canonicalized"
-            if check_targets:
+            elsewhere = row["verdict"] != "self_canonical"
+            # The target is requested (CI-009, CI-011: the owner's rulings for F15): a
+            # canonical naming a page that does not answer 200, or one asking not to be
+            # indexed, consolidates into nothing. The page itself needs no second ask.
+            if check_targets and elsewhere:
                 target = fetch_url(canonical, timeout=timeout, max_bytes=1_000_000)
                 row["canonical_status"] = target.get("status")
-                if not carries_content(target.get("status")):
+                target_html = (parse_html(target["text"], target.get("url") or canonical)
+                               if target.get("text") else {})
+                if target.get("status") is None:
+                    # Nothing answered: neither broken nor indexable is known.
+                    target_unanswered = True
+                    if row["verdict"] == "canonicalized":
+                        row["verdict"] = "target_unchecked"
+                    row["issues"].append("canonical target not answered")
+                elif not carries_content(target.get("status")):
+                    if row["verdict"] == "canonicalized":
+                        row["verdict"] = "target_unavailable"
                     row["issues"].append(f"canonical target HTTP {target.get('status')}")
                     issues.append(issue("error", "Canonical target is not 200", row["url"], str(target.get("status"))))
-                if target.get("text"):
-                    target_html = parse_html(target["text"], target.get("url") or canonical)
-                    if target_html.get("canonical") and normalize_url(target_html["canonical"]) != canonical:
-                        row["issues"].append("canonical chain detected")
-                        issues.append(issue("warning", "Canonical target points elsewhere", row["url"], target_html["canonical"]))
+                else:
+                    target_noindex = bool(google_noindex(
+                        target_html.get("meta_robots"), target_html.get("meta_googlebot"),
+                        target.get("x_robots_tags")
+                        or (target.get("headers") or {}).get("x-robots-tag")))
+                    if target_noindex:
+                        row["issues"].append("canonical target is noindex")
+                        issues.append(issue("error", "Canonical target is noindex",
+                                            row["url"], canonical))
+                if target_html.get("canonical") and normalize_url(target_html["canonical"]) != canonical:
+                    row["issues"].append("canonical chain detected")
+                    issues.append(issue("warning", "Canonical target points elsewhere", row["url"], target_html["canonical"]))
+            if variants and row["verdict"] in ("self_canonical", "canonicalized"):
+                accepted = {comparable_url(canonical),
+                            comparable_url(fetched.get("url") or url)}
+                row["variants"] = []
+                for variant in url_variants(fetched.get("url") or url):
+                    if comparable_url(variant) in accepted:
+                        continue
+                    answer = fetch_url(variant, timeout=timeout, max_bytes=1_000_000)
+                    ok = _consolidated(answer, accepted)
+                    row["variants"].append({"url": variant, "status": answer.get("status"),
+                                            "final_url": answer.get("url"),
+                                            "consolidated": ok})
+                    if not ok:
+                        row["issues"].append(f"variant {variant} serves the page")
+                        issues.append(issue("error", "URL variant serves the page "
+                                            "without consolidating", row["url"], variant))
+                if not all(v["consolidated"] for v in row["variants"]):
+                    row["verdict"] = "variant_unconsolidated"
         # CI-011's question: do the page's indexing signals agree? noindex beside a
         # canonical naming another URL asks Google both to drop the page and to fold
-        # it into that one (finding 9); a canonical on another host or two that
-        # disagree are mixed already.
+        # it into that one (finding 9); a canonical naming a noindex page folds it
+        # into a page kept out of the index (F15). A canonical on another host is a
+        # legitimate declaration (syndication) and is no mixed signal on its own.
         row["signal"] = ("conflicting" if row["verdict"] == "conflicting"
-                         else "noindex_canonicalized"
-                         if noindex and row["verdict"] in ("canonicalized", "cross_host")
-                         else "cross_host" if row["verdict"] == "cross_host"
+                         else "noindex_canonicalized" if noindex and elsewhere
+                         else "canonical_to_noindex" if target_noindex
+                         else "target_unchecked" if target_unanswered
                          else "consistent")
         rows.append(row)
     duplicates = {canonical: pages for canonical, pages in canonical_to_pages.items() if len(pages) > 1}
@@ -121,22 +208,35 @@ def check_inventory(site_url: str, inventory_path: str,
             "verdict": "unknown",
             "issues": [],
         }
-        raw_canonical = source.get("canonical")
-        if not raw_canonical:
+        # Every canonical the crawl read, the `Link` header's included (TE-176, the
+        # owner's ruling for F15); two that disagree are none Google can use.
+        declared = source.get("canonicals")
+        if declared is None:
+            declared = [source["canonical"]] if source.get("canonical") else []
+        if not declared:
             row["verdict"] = "missing"
             row["issues"].append("missing canonical")
             issues.append(issue("warning", "Missing canonical", row["url"]))
             rows.append(row)
             continue
+        if len(declared) > 1:
+            row["verdict"] = "conflicting"
+            row["canonicals"] = declared
+            row["issues"].append("conflicting canonicals")
+            issues.append(issue("warning", "Conflicting canonicals", row["url"],
+                                ", ".join(declared)))
+            rows.append(row)
+            continue
 
-        canonical = normalize_url(raw_canonical, page_url)
+        canonical = normalize_url(declared[0], page_url)
         row["canonical"] = canonical
         canonical_to_pages[canonical].append(row["url"])
         # Against where the page landed as well as where it was asked for, as the
         # page path compares with the fetched URL: an entry that redirects to
-        # /home/ and names /home/ is canonical to itself.
-        if site_crawl.page_key(canonical, page_url) in {site_crawl.page_key(page_url),
-                                                       site_crawl.page_key(final_url)}:
+        # /home/ and names /home/ is canonical to itself. With the query, not by page
+        # key: a key drops it, so `?id=1` naming `?id=2` read as self (F15).
+        if (site_crawl.same_page(canonical, page_url)
+                or site_crawl.same_page(canonical, final_url)):
             row["verdict"] = "self_canonical"
             rows.append(row)
             continue
@@ -148,10 +248,14 @@ def check_inventory(site_url: str, inventory_path: str,
         else:
             row["verdict"] = "canonicalized"
 
-        target_key = site_crawl.page_key(canonical, page_url)
+        # The crawl's row answers for the target only when it was read at that URL.
+        target_key = comparable_url(canonical)
         if target_key not in target_cache:
-            if target_key in pages:
-                target_cache[target_key] = pages[target_key]
+            crawled_row = pages.get(site_crawl.page_key(canonical, page_url))
+            if crawled_row and any(
+                    site_crawl.same_page(canonical, crawled_row.get(field) or "")
+                    for field in ("url", "final_url")):
+                target_cache[target_key] = crawled_row
             elif target_fetches < MAX_TARGET_FETCHES:
                 target_cache[target_key] = fetch_url(
                     canonical, timeout=timeout, max_bytes=1_000_000,
@@ -182,7 +286,11 @@ def check_inventory(site_url: str, inventory_path: str,
             target_html = parse_html(target["text"], target.get("url") or canonical)
             target_canonical = target_html.get("canonical")
         if (target_canonical
-                and site_crawl.page_key(target_canonical, canonical) != target_key):
+                and not site_crawl.same_page(normalize_url(target_canonical, canonical),
+                                             canonical)
+                and not site_crawl.same_page(normalize_url(target_canonical, canonical),
+                                             target.get("final_url") or target.get("url")
+                                             or canonical)):
             row["issues"].append("canonical chain detected")
             issues.append(issue("warning", "Canonical target points elsewhere",
                                 row["url"], target_canonical))
@@ -218,6 +326,9 @@ def main() -> None:
     parser.add_argument("urls", nargs="*")
     parser.add_argument("--url-file")
     parser.add_argument("--check-targets", action="store_true")
+    parser.add_argument("--variants", action="store_true",
+                        help="also request the other scheme, the www/bare host and the "
+                             "trailing-slash twin of each URL (CI-009)")
     parser.add_argument("--inventory", default="",
                         help="crawl inventory from site_crawl.py")
     parser.add_argument("--timeout", type=int, default=15)
@@ -229,7 +340,8 @@ def main() -> None:
             parser.error("--inventory requires one positional URL")
         result = check_inventory(args.urls[0], args.inventory, args.timeout)
     else:
-        result = check_canonicals(read_urls(args.urls, args.url_file), args.timeout, args.check_targets)
+        result = check_canonicals(read_urls(args.urls, args.url_file), args.timeout,
+                                  args.check_targets, args.variants)
     print(json.dumps(result, indent=2) if args.json else "\n".join(f"{r['verdict']}\t{r['url']}\t{r.get('canonical') or ''}" for r in result["rows"]))
 
 

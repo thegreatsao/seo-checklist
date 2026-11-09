@@ -2395,14 +2395,19 @@ class DuplicateAndThinContent(unittest.TestCase):
         self.assertEqual(home, [])
 
     def test_two_paths_serving_one_document_are_found(self):
-        """The body is duplicated and CN-041 says so. The title is not a competing
-        duplicate: the document is noindex and canonicalises to another host, which is
-        the handling MS-022's title names. Until 0.112.0 MS-022 failed here too."""
+        """The body is duplicated and the script finds it. Neither copy competes: the
+        document is noindex and canonicalises to another host, which is the handling
+        MS-022's title names (until 0.112.0 MS-022 failed here) and, since F15 (the
+        owner's ruling on F03's CN-041), CN-041's too: the group is reported as `Info`
+        and not counted."""
         bad = out("dupes_bad")
-        self.assertEqual(bad["summary"]["exact_duplicate_groups"], 1)
+        handled = [g for g in bad["exact_duplicates"] if g["severity"] == "Info"]
+        self.assertEqual(len(handled), 1)
+        self.assertGreaterEqual(len(handled[0]["noindex_urls"]), 2)
+        self.assertEqual(bad["summary"]["exact_duplicate_groups"], 0)
         self.assertEqual(bad["summary"]["duplicate_title_groups"], 0)
         self.assertGreaterEqual(bad["summary"]["title_group_exclusions"]["noindex"], 2)
-        self.assertEqual(verdict("CN-041", bad), FAIL)
+        self.assertEqual(verdict("CN-041", bad), PASS)
         self.assertEqual(verdict("MS-022", bad), PASS)
 
     def test_missing_titles_are_not_duplicates_but_case_and_spacing_are(self):
@@ -2420,9 +2425,11 @@ class DuplicateAndThinContent(unittest.TestCase):
 
     def test_ms_022_fails_on_shared_titles_and_not_on_shared_content(self):
         shared_title = {"summary": {"duplicate_title_groups": 1,
-                                    "exact_duplicate_groups": 0}}
+                                    "exact_duplicate_groups": 0,
+                                    "duplicate_content_findings": 0}}
         shared_body = {"summary": {"duplicate_title_groups": 0,
-                                   "exact_duplicate_groups": 1}}
+                                   "exact_duplicate_groups": 1,
+                                   "duplicate_content_findings": 1}}
         self.assertEqual(verdict("MS-022", shared_title), FAIL)
         self.assertEqual(verdict("CN-041", shared_title), PASS)
         self.assertEqual(verdict("MS-022", shared_body), PASS)
@@ -2442,8 +2449,10 @@ class DuplicateAndThinContent(unittest.TestCase):
         items and the orphan arithmetic.
         """
         shared_desc = {"summary": {"exact_duplicate_groups": 0,
+                                   "duplicate_content_findings": 0,
                                    "duplicate_description_groups": 1}}
         shared_body = {"summary": {"exact_duplicate_groups": 1,
+                                   "duplicate_content_findings": 1,
                                    "duplicate_description_groups": 0}}
         self.assertEqual(verdict("MS-029", shared_desc), FAIL)
         self.assertEqual(verdict("CN-041", shared_desc), PASS)
@@ -2851,8 +2860,9 @@ class EeatSignals(unittest.TestCase):
             "",
         )["links"]
         self.assertEqual(links, [
-            {"href": "/own", "text": "Own", "rel": [], "foreign_credit": False},
-            {"href": "/foreign", "text": "Foreign", "rel": [],
+            {"href": "/own", "text": "Own", "name": "Own", "rel": [],
+             "foreign_credit": False},
+            {"href": "/foreign", "text": "Foreign", "name": "Foreign", "rel": [],
              "foreign_credit": True},
         ])
 
@@ -6071,7 +6081,7 @@ class LinkProfile(unittest.TestCase):
                 } for target in targets],
             }
         inventory = {
-            "inventory_version": 4,
+            "inventory_version": __import__("site_crawl").INVENTORY_VERSION,
             "site": f"{origin}/",
             "entry": f"{origin}/",
             "pages": pages,
@@ -6142,10 +6152,12 @@ class LinkProfile(unittest.TestCase):
         self.assertEqual(verdict("AR-162", bad), FAIL)
 
     def test_a_page_with_no_outbound_internal_links_fails_on_the_dead_end(self):
+        # Distinct other pages (F15, AR-162): four each, so the average clears 3.
         profile = self.profile_from_inventory({
-            "/": ["/a", "/b", "/dead", "/a"],
-            "/a": ["/", "/b", "/dead", "/b"],
-            "/b": ["/", "/a", "/dead", "/a"],
+            "/": ["/a", "/b", "/c", "/dead"],
+            "/a": ["/", "/b", "/c", "/dead"],
+            "/b": ["/", "/a", "/c", "/dead"],
+            "/c": ["/", "/a", "/b", "/dead"],
             "/dead": ["https://outside.example/source"],
         })
         self.assertEqual(profile["orphan_pages"]["count"], 0)
@@ -6155,10 +6167,12 @@ class LinkProfile(unittest.TestCase):
         self.assertEqual(verdict("AR-162", profile), FAIL)
 
     def test_no_orphans_no_dead_ends_and_a_healthy_average_passes(self):
+        # Three distinct other pages each (F15, AR-162: a repeat is not a link more).
         profile = self.profile_from_inventory({
-            "/": ["/a", "/b", "/a"],
-            "/a": ["/", "/b", "/"],
-            "/b": ["/", "/a", "/"],
+            "/": ["/a", "/b", "/c"],
+            "/a": ["/", "/b", "/c"],
+            "/b": ["/", "/a", "/c"],
+            "/c": ["/", "/a", "/b"],
         })
         self.assertEqual(profile["orphan_pages"]["count"], 0)
         self.assertEqual(profile["dead_end_pages"]["count"], 0)
@@ -6167,9 +6181,10 @@ class LinkProfile(unittest.TestCase):
 
     def test_an_orphan_still_fails_the_internal_linking_item(self):
         profile = self.profile_from_inventory({
-            "/": ["/a", "/b", "/a"],
-            "/a": ["/", "/b", "/"],
-            "/b": ["/", "/a", "/"],
+            "/": ["/a", "/b", "/c"],
+            "/a": ["/", "/b", "/c"],
+            "/b": ["/", "/a", "/c"],
+            "/c": ["/", "/a", "/b"],
             "/orphan": ["/", "/a", "/b"],
         })
         self.assertEqual(profile["dead_end_pages"]["count"], 0)
@@ -6193,12 +6208,18 @@ class LinkProfile(unittest.TestCase):
         items = {i: ITEMS[i] for i in ("CI-008", "AR-162")}
 
         def graded(max_pages):
-            routes = {"/": page.format("home", '<a href="/a">a</a> <a href="/">h</a>'
-                                               ' <a href="/a">a</a>'),
+            # Three distinct other pages each (F15, AR-162); `/b` still linked from
+            # `/a` alone.
+            routes = {"/": page.format("home", '<a href="/a">a</a> <a href="/c">c</a>'
+                                               ' <a href="/d">d</a>'),
                       "/a": page.format("a", '<a href="/b">b</a> <a href="/">h</a>'
-                                             ' <a href="/b">b</a>'),
+                                             ' <a href="/c">c</a>'),
                       "/b": page.format("b", '<a href="/">h</a> <a href="/a">a</a>'
-                                             ' <a href="/">h</a>'),
+                                             ' <a href="/c">c</a>'),
+                      "/c": page.format("c", '<a href="/">h</a> <a href="/a">a</a>'
+                                             ' <a href="/d">d</a>'),
+                      "/d": page.format("d", '<a href="/">h</a> <a href="/a">a</a>'
+                                             ' <a href="/c">c</a>'),
                       "/sitemap.xml": (200, sitemap.format("".join(
                           f"<url><loc>ORIGIN{p}</loc></url>" for p in ("/", "/b", "/a")))),
                       "/robots.txt": (200, "User-agent: *\nAllow: /\n"
@@ -6208,7 +6229,7 @@ class LinkProfile(unittest.TestCase):
                 inventory = site_crawl.crawl(site.url, workers=1, max_pages=max_pages)
             graph, crawled, domain, refused = link_profile.graph_from_inventory(inventory)
             result = link_profile.analyze_link_profile(
-                graph, crawled, domain, refused, entry_url=inventory["entry"],
+                graph, crawled, domain, refused,
                 truncated=bool(inventory["summary"]["truncated"]))
             return {i: grade([item], {("link_profile.py", ()): [i]},
                              {("link_profile.py", ()): result}, {}, False)[0]
@@ -7044,8 +7065,12 @@ class CrawlKeysAreNotFetchTargets(unittest.TestCase):
             self.assertEqual(self.crawl.page_key(site.url), site.url)
             self.assertEqual(set(result["pages"]), {site.url, key})
             self.assertEqual(result["pages"][key]["url"], site.base + "/about/")
-            self.assertEqual(site.paths().count("/about/"), 1)
-            self.assertNotIn("/about", site.paths())
+            # The other spelling is asked once, as a spelling (F15, AR-149): it
+            # redirects, and the links that use it are the ones that pay.
+            self.assertEqual(site.paths().count("/about"), 1)
+            self.assertEqual(result["redirected"], [{
+                "url": site.base + "/about", "to": site.base + "/about/", "hops": 1,
+                "linked_from": [site.url]}])
 
     def test_crawler_never_fetches_its_dedup_key_for_a_discovered_directory_slash(self):
         """Fail if the crawler regresses to fetching its normalized page key."""

@@ -426,7 +426,8 @@ class ASitemapIsReadFromItsBytes(unittest.TestCase):
                 with self.subTest(walker="site_crawl", path=path):
                     out = site_crawl.load_sitemap_urls(site.url, sitemap_urls=[url],
                                                        timeout=5)
-                    self.assertEqual(out["urls"], [seo_common.normalize_url(listed)],
+                    # As page keys, spelled as sent (F15): `/café` is `/caf%C3%A9`.
+                    self.assertEqual(out["urls"], [site_crawl.page_key(listed)],
                                      out["errors"])
             with self.subTest(walker="indexability_matrix"):
                 site.routes["/robots.txt"] = (

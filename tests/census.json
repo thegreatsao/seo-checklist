@@ -231,22 +231,22 @@
       "answers": {
         "cleared": "PASS",
         "error-entry": "NO_DATA",
-        "failing-shapes": "PASS",
+        "failing-shapes": "FAIL",
         "fast-field": "PASS",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
         "fixture:good_tls": "PASS",
         "flagged": "PASS",
-        "indexed": "PASS",
+        "indexed": "FAIL",
         "no-location": "NO_DATA",
-        "page-defects": "PASS",
-        "page-sound": "PASS",
+        "page-defects": "FAIL",
+        "page-sound": "FAIL",
         "redirect-chain": "PASS",
         "site-defects": "FAIL",
         "slow-field": "PASS",
-        "unindexed": "PASS",
-        "url-shapes": "PASS",
+        "unindexed": "FAIL",
+        "url-shapes": "FAIL",
         "went-down": "NO_DATA"
       },
       "distinct": [
@@ -6846,7 +6846,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "1733ee735260",
+  "registry_version": "8040e1b77d04",
   "sites": [
     "fixture:good",
     "fixture:broken",

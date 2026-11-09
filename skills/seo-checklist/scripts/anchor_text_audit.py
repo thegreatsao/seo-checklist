@@ -228,6 +228,12 @@ def audit_anchor_text(start_url: str, inventory: dict | None = None, depth: int 
                 diversity_ratio < DIVERSITY_FLOOR:
             low_diversity.append(row)
 
+    # BL-081's count (the owner's ruling for F15): the targets whose anchors are not
+    # natural and varied — exact-match overuse, low diversity, or an empty or generic
+    # anchor — each target once. Overuse alone read only the ≥5-at-80 % shape.
+    poor_targets = {link["target"] for link in empty + generic}
+    unnatural = poor_targets | {row["target"] for row in overused_exact + low_diversity}
+
     issues = []
     if empty:
         issues.append({"severity": "error", "type": "empty_anchor", "count": len(empty), "message": "Internal links with empty anchor text"})
@@ -268,6 +274,7 @@ def audit_anchor_text(start_url: str, inventory: dict | None = None, depth: int 
             "editorial_links": len(editorial),
             "overused_exact_match_targets": len(overused_exact),
             "low_diversity_targets": len(low_diversity),
+            "unnatural_anchor_targets": len(unnatural),
         },
         "top_anchor_texts": [{"anchor": text, "count": count} for text, count in text_counter.most_common(25)],
         "targets": target_rows,
@@ -290,7 +297,13 @@ def audit_anchor_text(start_url: str, inventory: dict | None = None, depth: int 
         result["truncated_reason"] = (
             "the crawl stopped at its page or depth cap, and an overused anchor is a "
             "share of the links read, which reading more pages can lower")
+        # An empty or generic anchor on a page read is one whatever else exists, so
+        # those targets stand as a floor; overuse and diversity are withheld.
         del result["summary"]["overused_exact_match_targets"]
+        if poor_targets:
+            result["summary"]["unnatural_anchor_targets"] = len(poor_targets)
+        else:
+            del result["summary"]["unnatural_anchor_targets"]
         result["issues"] = [row for row in issues if row["type"] not in
                             ("exact_match_overuse", "low_anchor_diversity")]
         if not links:

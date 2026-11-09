@@ -228,7 +228,9 @@
       "check": {
         "script": "canonical_checker.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--check-targets",
+          "--variants"
         ],
         "requires": "fetch",
         "assert": {
@@ -239,12 +241,14 @@
             "canonicalized": "pass",
             "cross_host": "fail",
             "missing": "fail",
-            "conflicting": "fail"
+            "conflicting": "fail",
+            "target_unavailable": "fail",
+            "variant_unconsolidated": "fail"
           }
         }
       },
-      "verdict": "answers",
-      "reading": "`rows` maps canonical_checker's verdict: self-canonical or canonicalised passes; cross-host, missing, or conflicting (two canonicals that disagree, which Google ignores) fails.",
+      "verdict": "measures",
+      "reading": "`rows` maps canonical_checker's `verdict` with the target and the URL variants requested: a missing, conflicting or cross-host canonical, a target not answering 200, or a variant serving the page unconsolidated fails (F15). Other duplicate URLs are not requested, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -289,7 +293,9 @@
       "check": {
         "script": "canonical_checker.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--check-targets",
+          "--variants"
         ],
         "requires": "fetch",
         "assert": {
@@ -297,16 +303,16 @@
           "field": "signal",
           "value_map": {
             "consistent": "pass",
-            "cross_host": "fail",
             "conflicting": "fail",
-            "noindex_canonicalized": "fail"
+            "noindex_canonicalized": "fail",
+            "canonical_to_noindex": "fail"
           }
         }
       },
       "verdict": "answers",
-      "reading": "`rows` maps canonical_checker's `signal`, read off the canonical and the noindex together: a canonical on another host, two that disagree, or noindex beside a canonical naming another URL fails; a missing canonical is CI-009's.",
+      "reading": "`rows` maps canonical_checker's `signal`, read off the page's noindex and its canonical's fetched target together: two canonicals that disagree, noindex beside a canonical naming another URL, or a canonical naming a noindex page fails; a cross-host canonical alone is consistent (F15).",
       "shapes": {
-        "conjunction": "Canonical/Indexing names the conflict between the two: noindex beside a canonical elsewhere, and a canonical that contradicts itself (another host, or two that disagree).",
+        "conjunction": "Canonical/Indexing names the conflict between the two: noindex beside a canonical elsewhere, a canonical naming a page kept out of the index, and two canonicals that disagree.",
         "external": "The page's own signals are the subject, not Google's index."
       },
       "second_reading": {
@@ -522,8 +528,8 @@
           ]
         }
       },
-      "verdict": "answers",
-      "reading": "`issues` carries server_log_audit's findings over the supplied log: crawl waste, non-indexable hits, bot share.",
+      "verdict": "measures",
+      "reading": "`issues` holds server_log_audit's findings over a supplied log: waste, server errors and redirects served to search bots, disallowed and parameterised paths crawled, sitemap URLs never crawled. Whether crawl budget is managed is not decided, and `measures` says so.",
       "shapes": {
         "conjunction": "Analysing the log is the means; crawl-budget findings are what the rule grades."
       },
@@ -636,8 +642,8 @@
           "eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`summary.duplicate_title_groups` counts titles shared by indexable, self-canonical pages (0.112.0).",
+      "verdict": "measures",
+      "reading": "`summary.duplicate_title_groups` counts titles shared by indexable crawled pages, a numbered page (`?page=2`) its own page and a noindex or canonicalised page left out (F15). Titles Google rewrites are not read, and `measures` says so.",
       "shapes": {
         "conjunction": "Canonical is handled by exclusion; pagination is not recorded by the crawl, which the script says."
       },
@@ -1053,12 +1059,16 @@
         ],
         "requires": "crawl",
         "assert": {
+          "path": "summary.duplicate_content_findings",
+          "eq": 0
+        },
+        "warn": {
           "path": "summary.exact_duplicate_groups",
           "eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`summary.exact_duplicate_groups` counts crawled pages serving the same body text.",
+      "verdict": "measures",
+      "reading": "`summary.duplicate_content_findings` counts exact-copy groups and MinHash near-duplicate pairs among indexable canonical crawled pages; an exact copy fails, near-duplicates alone warn, a noindex or canonicalised copy is not counted (F15). Other sites are not compared, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -1421,7 +1431,7 @@
         ],
         "requires": "crawl",
         "assert": {
-          "path": "summary.overused_exact_match_targets",
+          "path": "summary.unnatural_anchor_targets",
           "eq": 0
         },
         "applies_when": {
@@ -1429,12 +1439,12 @@
           "gt": 0
         },
         "warn": {
-          "path": "summary.overused_exact_match_targets",
+          "path": "summary.unnatural_anchor_targets",
           "lte": 10
         }
       },
-      "verdict": "answers",
-      "reading": "`summary.overused_exact_match_targets` counts internal link targets whose anchors are dominated by one exact-match phrase.",
+      "verdict": "measures",
+      "reading": "`summary.unnatural_anchor_targets` counts internal-link targets with exact-match overuse, low diversity, or an empty or generic anchor (F15). Anchors of other sites' links are not read, and `measures` says so.",
       "shapes": {
         "conjunction": "Natural and varied are one property, read as anchor diversity per target."
       },

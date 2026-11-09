@@ -36,12 +36,17 @@ import site_crawl
 # Build the graph from the inventory
 # ---------------------------------------------------------------------------
 
-# basis: convention — an average of three internal links per page, present at import
-#  (F11). Below it, over a crawl not cut, AR-162 reads a `High` issue and fails. Google
+# basis: convention — an average of three internal links per page (distinct pages
+#  linked to, the page itself not counted, since F15), present at import (F11). Below it, over a crawl not cut, AR-162 reads a `High` issue and fails. Google
 #  asks that every page be reachable by links and states no count; a crawl corpus would
 #  show what averages sites have, and a navigation bar alone clears three, so this flags
 #  sites whose pages barely link at all — the judgement of where "barely" is
 LOW_AVERAGE_INTERNAL_LINKS = 3
+
+def home_key(url: str) -> str:
+    """The page key of the site's root, from any URL on it."""
+    return site_crawl.page_key("/", url)
+
 
 def graph_from_inventory(inventory: dict) -> tuple:
     """(graph, crawled, base_domain, robots_refused) — no requests.
@@ -76,6 +81,11 @@ def graph_from_inventory(inventory: dict) -> tuple:
         external = [link for link in row.get("links") or [] if not link.get("internal")]
         graph["pages"][key] = {
             "internal_out": len(internal),
+            # AR-162's count (the owner's ruling for F15): pages linked to, each once,
+            # not counting the page itself. A nav repeated in header and footer, or a
+            # page linking to itself, made a page that links nowhere "well linked".
+            "distinct_out": len({link["target"] for link in internal
+                                 if not lands_on(link["target"]) & lands_on(key)}),
             "external_out": len(external),
             "internal_links": [link["target"] for link in internal[:20]],
         }
@@ -88,11 +98,13 @@ def graph_from_inventory(inventory: dict) -> tuple:
         for link in external:
             graph["all_external_targets"][link["target"]] += 1
 
-    # The entry is where a visitor starts, linked or not, and so is the page it
+    # The home page is where a visitor starts, linked or not, and so is the page it
     # redirects to: `/` landing on `/home/` leaves `/home` linked only from itself.
-    if inventory.get("entry"):
-        graph["linked_from_elsewhere"].update(
-            lands_on(site_crawl.page_key(inventory["entry"])))
+    # Only the home page (CI-008, the owner's ruling for F15): a deep entry URL was
+    # credited too, so an audited page nothing links to passed the item about it.
+    if inventory.get("entry") or inventory.get("site"):
+        graph["linked_from_elsewhere"].update(lands_on(home_key(
+            inventory.get("entry") or inventory.get("site"))))
     crawled = set(pages)
     base_domain = urlparse(inventory.get("site") or "").netloc
     robots_refused = set(site_crawl.robots_refused(inventory))
@@ -105,7 +117,7 @@ def graph_from_inventory(inventory: dict) -> tuple:
 
 def analyze_link_profile(graph: dict, crawled: set, base_domain: str,
                          robots_refused: set | None = None,
-                         entry_url: str = "", fetch_error: str | None = None,
+                         fetch_error: str | None = None,
                          truncated: bool = False) -> dict:
     """Produce analysis from the crawled link graph."""
     pages = graph["pages"]
@@ -119,12 +131,12 @@ def analyze_link_profile(graph: dict, crawled: set, base_domain: str,
     # open, and counting it made our own politeness into the site's defect. And the
     # home page has no inbound internal links by nature, which the old code handled
     # by exempting `min(crawled)` — the lexicographically smallest URL, which is the
-    # home page only by luck. On a site where it is not, the home page was reported
-    # as an orphan and some arbitrary other page was excused.
-    entry = {u for u in (entry_url, entry_url.rstrip("/"), entry_url + "/") if u}
+    # home page only by luck; then by exempting the entry URL, which excused a deep
+    # audited page nothing links to (F15). `graph_from_inventory` credits the home
+    # page (`home_key`) and nothing else.
     orphan_pages = []
     for url in sorted(crawled):
-        if url in refused or url in entry:
+        if url in refused:
             continue
         if url not in graph["linked_from_elsewhere"]:
             orphan_pages.append(url)
@@ -132,8 +144,9 @@ def analyze_link_profile(graph: dict, crawled: set, base_domain: str,
     # Top linked pages (highest inbound internal links)
     top_linked = internal_targets.most_common(20)
 
-    # Pages with no outbound internal links (dead ends)
-    dead_ends = [url for url, data in pages.items() if data["internal_out"] == 0]
+    # Pages with no outbound internal link to another page (dead ends)
+    dead_ends = [url for url, data in pages.items()
+                 if data.get("distinct_out", data["internal_out"]) == 0]
 
     # External link distribution
     external_domains = Counter()
@@ -144,7 +157,8 @@ def analyze_link_profile(graph: dict, crawled: set, base_domain: str,
     # Internal link equity (simplified PageRank-like distribution)
     total_pages = len(pages)
     avg_internal_links = (
-        sum(d["internal_out"] for d in pages.values()) / max(total_pages, 1)
+        sum(d.get("distinct_out", d["internal_out"]) for d in pages.values())
+        / max(total_pages, 1)
     )
 
     # An orphan is a page no page *read* links to, and the site average is taken over
@@ -286,7 +300,6 @@ def main():
 
     print("Analyzing link profile...", file=sys.stderr)
     report = analyze_link_profile(graph, crawled, base_domain, robots_refused,
-                                  entry_url=inventory.get("entry") or args.url,
                                   fetch_error=inventory.get("fetch_error"),
                                   truncated=bool(inventory.get("summary", {})
                                                  .get("truncated")))

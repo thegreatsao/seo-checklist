@@ -741,7 +741,9 @@ raises neither issue over a truncated crawl, saying why; a dead end — a page r
 outbound link — is a defect found and still counts. An inbound link is one from another
 page, credited to the page it lands on (P2, 2026-11-04 audit, finding 16): a self-link is
 none, so a page linked only from itself is an orphan, and a link to `/old` that redirects to
-`/new` reaches `/new`. Found re-reading every crawl-fed item
+`/new` reaches `/new`. Only the home page is credited unlinked, not a deep audited entry
+(F15, CI-008), and AR-162's average and dead ends count distinct other pages linked, a
+repeated or self link no more (F15). Found re-reading every crawl-fed item
 before the crawl caps' basis changed (F09); no census derives this shape, because it lives in
 what a script counts, not in the rule.
 
@@ -752,7 +754,10 @@ over a capped crawl can FAIL a site the whole crawl passes — measured by the s
 F09: eleven on 100 of 110 pages, none on all of them. `anchor_text_audit.py` withholds the
 count over a truncated crawl, and withholds `links_analyzed` when no link was read, since
 `links_analyzed gt 0` would otherwise call the item inapplicable off the pages the cap let
-in. A count is a floor only when each member, once found, stays found.
+in. A count is a floor only when each member, once found, stays found. Since F15 (the
+owner's ruling on F03's BL-081) the count is `unnatural_anchor_targets` — overuse, low
+diversity, or an empty or generic anchor — and over a truncated crawl the empty and generic
+targets stay as that floor: each one, once found, stays found.
 
 **Held under `--sample`, from 0.174.0 (F11).** A page-level item reads one page, so no cap
 stands between it and its input — until `--sample` folds several pages into one verdict. With a

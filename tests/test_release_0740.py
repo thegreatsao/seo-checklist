@@ -71,7 +71,8 @@ class CrawlImageReferences(unittest.TestCase):
         fetch.assert_not_called()
         self.assertEqual(result["summary"]["unique_images"], 0)
 
-    def inventory(self, pages: dict, *, version=4, truncated=False) -> str:
+    def inventory(self, pages: dict, *, version=site_crawl.INVENTORY_VERSION,
+                  truncated=False) -> str:
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         path = os.path.join(folder.name, "inventory.json")
@@ -150,7 +151,8 @@ class BrokenImageRule(unittest.TestCase):
 
 
 class SiteWideBrokenImages(unittest.TestCase):
-    def inventory(self, images_by_page: list[list[str]], *, version=4,
+    def inventory(self, images_by_page: list[list[str]], *,
+                  version=site_crawl.INVENTORY_VERSION,
                   truncated=False) -> str:
         pages = {}
         for index, images in enumerate(images_by_page):

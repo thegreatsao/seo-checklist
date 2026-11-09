@@ -1330,9 +1330,17 @@ def parse_html(html: str, base_url: str = "") -> dict:
         if not href or href.startswith(("#", "javascript:", "mailto:", "tel:", "data:")):
             continue
         abs_url = normalize_url(href, base_url) if base_url else href
+        text = tag.get_text(" ", strip=True)[:160]
         links.append({
             "href": abs_url,
-            "text": tag.get_text(" ", strip=True)[:160],
+            "text": text,
+            # What names the link when it has no text of its own: `aria-label`, else
+            # its images' alt — Google reads an image link's alt as its anchor text
+            # (Search Central, image SEO best practices), so a logo is not empty (BL-081).
+            "name": text or " ".join(
+                str(tag.get("aria-label") or "").split()
+                or [" ".join(str(img.get("alt")).split()) for img in tag.find_all("img")
+                    if str(img.get("alt") or "").strip()])[:160],
             "rel": tag.get("rel") or [],
             "foreign_credit": under_foreign_credit(tag, claimed=foreign_itemref),
         })

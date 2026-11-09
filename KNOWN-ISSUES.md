@@ -446,11 +446,12 @@ name. A column called `url` would be read as "fix this page".
   every rule-carrying item a second time (F03 batches 3–5) and the owner ruled each
   dispute: 74 code defects, 33 sentences, 1 assertion to retire, 2 not defects. Until F15
   is `passing` a verdict on an item still listed may be narrower than its title says —
-  e.g. `MS-026` and `CN-039` drop the very pages they are about. Batch 1 (2026-11-09)
+  e.g. `GO-138` reads one noindex source. Batch 1 (2026-11-09)
   repaired the 14 items `parse_html.py` and `javascript_render_audit.py` carry, batch 2
   (2026-11-09) the 18 that `rendered_audit.py` and its snippet, `pagespeed.py`,
-  `image_inventory.py` and `image_weight_audit.py` carry; the open list, 78 items with
-  each ruling, is `docs/sprint-20261109-F15.md`.
+  `image_inventory.py` and `image_weight_audit.py` carry, batch 3 (2026-11-09) the 14
+  the crawl inventory readers carry; the open list, 64 items with each ruling, is
+  `docs/sprint-20261109-F15.md`.
   <!-- ki: f03-ruled-defects-open -->
 
 - **The four shapes this entry singled out are judged, and twenty constants are still
@@ -458,17 +459,16 @@ name. A column called `url` would be read as "fix this page".
   no basis and named four that looked like thresholds rather than budgets. 0.81.0 answers
   those four by measurement rather than by reading their names:
 
-  - **`site_crawl.MINHASH_FUNCTIONS` and `SHINGLE_WORDS` decide a printed claim, not a
-    verdict.** They feed the MinHash signature and nothing else; the signature feeds
-    `jaccard_from_minhash`; that feeds `near_duplicates` alone, and **no registry
-    assertion reads any near-duplicate field** — the four items over
-    `duplicate_content.py` read the exact hash, titles, descriptions and a word count.
-    What they do move is the number an operator is shown: over 25/100/400 functions and
-    3/5/9-word shingles one page pair estimates 0.68 to 0.81 similar, against a 0.85
-    reporting line, while all four asserted fields stay put. Declared `inherited`,
-    because 0.1.0 shipped them as default arguments and nobody here has chosen them
-    since; the declaration names what would promote them, which is any item pointed at
-    `near_duplicate_pairs`;
+  - **`site_crawl.MINHASH_FUNCTIONS` and `SHINGLE_WORDS` decided a printed claim until
+    F15 batch 3, and now decide a warning.** They feed the MinHash signature and nothing
+    else; the signature feeds `jaccard_from_minhash`; that feeds `near_duplicates`, and
+    since F15 (the owner's ruling on CN-041) CN-041 counts near-duplicate pairs into
+    `summary.duplicate_content_findings`, a WARN — its FAIL is the exact hash alone.
+    Over 25/100/400 functions and 3/5/9-word shingles one page pair estimates 0.68 to
+    0.81 similar against the 0.85 line (`duplicate_content.NEAR_DUPLICATE_SIMILARITY`).
+    Declared `inherited` in 0.81.0, `presentation` from F09, `convention` from F15 batch
+    3, with the judgement written; `tests/test_coverage_caps.py` holds CN-041 as the one
+    reader;
   - **`safe_http.DEFAULT_MAX_REDIRECTS` is a fetch budget and stays outside the
     inventory.** The two items about redirect chains do not read it: `redirect_checker.py`
     carries its own `max_redirects=10`, so `AR-150` (`total_hops lte 1`) and `CI-014`
