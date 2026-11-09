@@ -620,7 +620,7 @@ EFFORT_RANK = {effort: rank for rank, effort in enumerate(sorted(EFFORT_COST, ke
 # Keep the title for traceability, and tell the operator exactly which part the
 # attached rule measures. Items absent from this table need no qualification.
 MEASURES = {
-    "CI-009": "That the page names one canonical that answers 200, and that its other scheme, www or bare host, and trailing-slash variant redirect to it, declare it or do not serve the page. Other duplicate URLs are not requested.",
+    "CI-009": "That the page names one canonical that answers 200, and that its other scheme, www or bare host, and trailing-slash variant redirect to it, declare it, are noindex or serve another page. Other duplicate URLs are not requested.",
     "CI-018": "Crawl waste in a supplied server log: search-bot requests answered with errors, redirects or nothing indexable, disallowed or parameterised paths, sitemap URLs never crawled. Whether crawl budget is managed is not decided.",
     "MS-022": "Titles shared by indexable crawled pages, a numbered page (?page=2) counted on its own. A noindex page, or one whose canonical names another URL, is left out: it does not compete. Titles Google rewrites are not read.",
     "CN-041": "Identical body text on indexable crawled pages fails; pages estimated 85% alike (MinHash) warn. A noindex copy, or one canonicalised to another page, is the fix and not a duplicate. Other sites are not compared.",

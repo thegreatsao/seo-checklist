@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "registry_version": "8040e1b77d04",
+  "registry_version": "445b7ca058d2",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -25,9 +25,9 @@
     ]
   },
   "fixture_digest": {
-    "good": "6f8e79dcfcea",
+    "good": "ab7d6b25602b",
     "broken": "41915277914c",
-    "good_tls": "dbc7a9a4fd32",
+    "good_tls": "9e8d076b62d8",
     "broken_tls": "be8038ea85ee"
   },
   "triage": [
@@ -327,6 +327,24 @@
       "to": "dbc7a9a4fd32",
       "decided": "new-material",
       "why": "blog/second-post.html is retitled 'Bake days and opening hours | Fixture Bakery' and its navigation also links About the bakery and Privacy policy. Since F15 batch 3 (the owner's rulings on F03's AR-153 and AR-162) a one-page cluster is not a topic hub and a page's internal links count as distinct other pages: the good tree had no two pages sharing a topic and averaged 2.6 distinct links, so AR-153 and AR-162 failed on the half of the pair that has to be able to pass (AR-162 on every served tree). The two posts now share a topic and link each other, and the tree averages 3.0. second-post is not a sampled page; no declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good",
+      "item": null,
+      "from": "6f8e79dcfcea",
+      "to": "ab7d6b25602b",
+      "decided": "new-material",
+      "why": "blog/first-post.html's navigation also links About ('Who bakes it'). The entry-answer test serves this tree with / answering 404 or 503, and over the four pages left the good tree averaged 2.75 distinct internal links, so AR-162 failed under the entry gate: an accusation the gate hid rather than one it answers. With the link the tree averages 3.2 with its home page and 3.0 without. first-post is not a sampled page; no declared verdict moves."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good_tls",
+      "item": null,
+      "from": "dbc7a9a4fd32",
+      "to": "9e8d076b62d8",
+      "decided": "new-material",
+      "why": "blog/first-post.html's navigation also links About ('Who bakes it'). The entry-answer test serves this tree with / answering 404 or 503, and over the four pages left the good tree averaged 2.75 distinct internal links, so AR-162 failed under the entry gate: an accusation the gate hid rather than one it answers. With the link the tree averages 3.2 with its home page and 3.0 without. first-post is not a sampled page; no declared verdict moves."
     }
   ],
   "batches": [],

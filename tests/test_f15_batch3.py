@@ -544,6 +544,61 @@ class Anchors(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Review round 1
+# ---------------------------------------------------------------------------
+
+class ReviewRound1(unittest.TestCase):
+    def test_a_redirect_and_its_target_are_one_page_not_duplicates(self):
+        """A 301 `/old` -> `/new` row is `/new` read again, not a page competing."""
+        new = row(SITE + "new", title="New", description="New page",
+                  canonical=SITE + "new", text=words(300, "n"))
+        old = dict(new, url=SITE + "old", final_url=SITE + "new", redirected=True,
+                   redirect_chain=[SITE + "old"])
+        inv = inventory([row(SITE), new])
+        inv["pages"][site_crawl.page_key(SITE + "old")] = old
+        out = duplicates(inv)
+        self.assertEqual(verdict("MS-022", out), PASS)
+        self.assertEqual(verdict("MS-029", out), PASS)
+        self.assertEqual(verdict("CN-041", out), PASS)
+
+    def test_a_page_read_at_a_query_spelling_still_names_itself(self):
+        shop = row(SITE + "products?sort=price", title="Shop", canonical=SITE + "products",
+                   text=words(300, "s"))
+        inv = inventory([row(SITE + "shop", title="Shop", text=words(300, "s"))])
+        inv["pages"][site_crawl.page_key(SITE + "products")] = shop
+        out = duplicates(inv)
+        self.assertEqual(out["summary"]["title_group_exclusions"]["canonicalized"], 0)
+        self.assertEqual(verdict("MS-022", out), FAIL)
+
+    def test_page_one_is_the_bare_page(self):
+        self.assertEqual(site_crawl.page_key("https://x.test/blog?page=1"),
+                         "https://x.test/blog")
+        self.assertEqual(site_crawl.page_key("https://x.test/blog?PAGE=02"),
+                         "https://x.test/blog?page=2")
+
+    def test_a_variant_answering_another_page_is_not_this_page(self):
+        """A soft 404 or a catch-all shell at `/a/` is not `/a` served twice."""
+        for label, body in (
+                ("soft-404", "<html><head><title>Page not found</title></head>"
+                             "<body>Nothing here at all, sorry.</body></html>"),
+                ("home-shell", page_html(title="Home", canonical="/",
+                                         body=words(40, "home")))):
+            with self.subTest(variant=label):
+                out = served_rule("CI-009", {"/a": page_html(canonical="/a"),
+                                             "/a/": body})
+                self.assertEqual(verdict("CI-009", out), PASS)
+
+    def test_a_variant_claiming_itself_with_the_page_fails(self):
+        out = served_rule("CI-009", {"/a": page_html(canonical="/a"),
+                                     "/a/": page_html(canonical="/a/")})
+        self.assertEqual(verdict("CI-009", out), FAIL)
+
+    def test_an_upper_case_host_has_its_www_twin(self):
+        self.assertIn("https://www.ex.com/a",
+                      [v.lower() for v in canonical_checker.url_variants("https://EX.com/a")])
+
+
+# ---------------------------------------------------------------------------
 # The sentences
 # ---------------------------------------------------------------------------
 

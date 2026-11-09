@@ -30,6 +30,7 @@ def url_variants(url: str) -> list[str]:
     `www.` twin; the root has no slashless one.
     """
     parsed = urlparse(normalize_url(url))
+    parsed = parsed._replace(netloc=parsed.netloc.lower())
     host = parsed.hostname or ""
     out = [parsed._replace(scheme="http" if parsed.scheme == "https" else "https")]
     try:
@@ -45,21 +46,38 @@ def url_variants(url: str) -> list[str]:
     return [urlunparse(variant) for variant in out]
 
 
-def _consolidated(fetched: dict, accepted: set) -> bool:
+def _page_print(html: dict) -> tuple:
+    """(title, text hash) of a parsed page: what tells one page from another."""
+    title = " ".join(str(html.get("title") or "").split()).lower()
+    soup = html.get("soup")
+    text = site_crawl.content_text(soup) if soup is not None else ""
+    return title, site_crawl.exact_hash(text) if text.strip() else ""
+
+
+def _consolidated(fetched: dict, accepted: set, page: tuple) -> bool:
     """Whether a variant's answer leaves one URL serving the page: it was not served
     (no answer, an error status), it landed on an accepted URL, it declares one as its
-    only canonical, or it asks not to be indexed."""
+    only canonical, it asks not to be indexed — or it is another page, not this one
+    served twice (review round 1: a soft 404 or a catch-all shell at `/a/` is a defect
+    of its own, not `/a` at two URLs). Another page is one declaring a canonical
+    elsewhere, or one whose title and text both differ from the page's (`page`)."""
     if not carries_content(fetched.get("status")) or not fetched.get("text"):
         return True
-    if comparable_url(fetched.get("url") or "") in accepted:
+    where = fetched.get("url") or ""
+    if comparable_url(where) in accepted:
         return True
-    html = parse_html(fetched["text"], fetched.get("url") or "")
-    declared = declared_canonicals(html, fetched.get("headers"), fetched.get("url") or "")
+    html = parse_html(fetched["text"], where)
+    declared = declared_canonicals(html, fetched.get("headers"), where)
     if len(declared) == 1 and comparable_url(declared[0]) in accepted:
         return True
-    return bool(google_noindex(html.get("meta_robots"), html.get("meta_googlebot"),
-                               fetched.get("x_robots_tags")
-                               or (fetched.get("headers") or {}).get("x-robots-tag")))
+    if google_noindex(html.get("meta_robots"), html.get("meta_googlebot"),
+                      fetched.get("x_robots_tags")
+                      or (fetched.get("headers") or {}).get("x-robots-tag")):
+        return True
+    if len(declared) == 1 and comparable_url(declared[0]) != comparable_url(where):
+        return True     # it names another page as itself
+    title, text = _page_print(html)
+    return not ((title and title == page[0]) or (text and text == page[1]))
 
 
 def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = False,
@@ -142,12 +160,13 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
             if variants and row["verdict"] in ("self_canonical", "canonicalized"):
                 accepted = {comparable_url(canonical),
                             comparable_url(fetched.get("url") or url)}
+                page_print = _page_print(html)
                 row["variants"] = []
                 for variant in url_variants(fetched.get("url") or url):
                     if comparable_url(variant) in accepted:
                         continue
                     answer = fetch_url(variant, timeout=timeout, max_bytes=1_000_000)
-                    ok = _consolidated(answer, accepted)
+                    ok = _consolidated(answer, accepted, page_print)
                     row["variants"].append({"url": variant, "status": answer.get("status"),
                                             "final_url": answer.get("url"),
                                             "consolidated": ok})
@@ -235,8 +254,8 @@ def check_inventory(site_url: str, inventory_path: str,
         # page path compares with the fetched URL: an entry that redirects to
         # /home/ and names /home/ is canonical to itself. With the query, not by page
         # key: a key drops it, so `?id=1` naming `?id=2` read as self (F15).
-        if (site_crawl.same_page(canonical, page_url)
-                or site_crawl.same_page(canonical, final_url)):
+        if any(site_crawl.same_page(canonical, where)
+               for where in (page_url, final_url, key)):
             row["verdict"] = "self_canonical"
             rows.append(row)
             continue

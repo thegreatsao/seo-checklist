@@ -177,7 +177,8 @@ def page_key(url: str, base: str = "") -> str:
     The path is spelled as requests sends it (`comparable_url`), so `/café` and
     `/caf%c3%a9` are one page, not two (the 2026-10-24 audit: false CN-041, MS-022,
     CI-008 and CI-018 findings). The query is dropped except a page number
-    (`PAGE_NUMBER_PARAMS`), kept as its first `name=digits` pair.
+    (`PAGE_NUMBER_PARAMS`), kept as its first `name=digits` pair, lower-cased and as a
+    number; page 1 (or 0) is the page itself.
     """
     return _reduced(url, base, fold_slash=True)
 
@@ -208,9 +209,12 @@ def _reduced(url: str, base: str, fold_slash: bool) -> str:
     path = parsed.path or "/"
     if path != "/" and fold_slash:
         path = path.rstrip("/") or "/"
-    number = next((f"{name}={value}" for name, value
+    # Page 1 is the page itself (`/blog?page=1` serves `/blog` on most paginators),
+    # and `?PAGE=02` is page 2 (review round 1).
+    number = next((f"{name.lower()}={int(value)}" for name, value
                    in parse_qsl(parsed.query, keep_blank_values=True)
                    if name.lower() in PAGE_NUMBER_PARAMS and value.isdigit()), "")
+    number = "" if number.endswith("=1") or number.endswith("=0") else number
     return f"{parsed.scheme}://{parsed.netloc}{path}" + (f"?{number}" if number else "")
 
 

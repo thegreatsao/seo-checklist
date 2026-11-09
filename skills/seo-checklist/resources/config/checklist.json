@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "8040e1b77d04",
+  "registry_version": "445b7ca058d2",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -327,7 +327,7 @@
           }
         }
       },
-      "measures": "That the page names one canonical that answers 200, and that its other scheme, www or bare host, and trailing-slash variant redirect to it, declare it or do not serve the page. Other duplicate URLs are not requested.",
+      "measures": "That the page names one canonical that answers 200, and that its other scheme, www or bare host, and trailing-slash variant redirect to it, declare it, are noindex or serve another page. Other duplicate URLs are not requested.",
       "effort": "low",
       "fix": "Self-canonical on the primary version, 301 from duplicates"
     },

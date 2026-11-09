@@ -1,11 +1,5 @@
 {
   "entries": {
-    "f03-ruled-defects-open": {
-      "claim": "F03's second reading left 110 ruled items for F15; batch 1 repaired 14, batch 2 18, and 78 remain, listed with their rulings in docs/sprint-20261109-F15.md.",
-      "probe": null,
-      "state": "open",
-      "why": "The open list is the contract's Status table and audit_item_readings.py's stale count, both read every build; a probe here would restate the table, and the entry closes when make verify-feature F=F15 writes passing."
-    },
     "a-census-copied-a-title-no-item-has": {
       "claim": "tests/census.json shipped GO-143's first-attempt title under registry_version b0abf2819da0, which a registry carrying that title does not hash to, so the content and the stamp came from different registries and the stamp was the only field the suite read. Both recorded ledgers now have every field they copy from the registry re-read on each run, in a reading that is itself witnessed field by field.",
       "measured": {
@@ -379,6 +373,12 @@
       },
       "probe": "entity_checker_reads_the_graph_unbounded",
       "state": "open"
+    },
+    "f03-ruled-defects-open": {
+      "claim": "F03's second reading left 110 ruled items for F15; batch 1 repaired 14, batch 2 18, batch 3 14, and 64 remain, listed with their rulings in docs/sprint-20261109-F15.md.",
+      "probe": null,
+      "state": "open",
+      "why": "The open list is the contract's Status table and audit_item_readings.py's stale count, both read every build; a probe here would restate the table, and the entry closes when make verify-feature F=F15 writes passing."
     },
     "foreign-credit-keys-width": {
       "claim": "The boundary is ten keys wide, and the author of a book the page is only about is still read as the page's own.",
@@ -903,17 +903,17 @@
       "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants (presentation since 0.170.0: no rule reads a near-duplicate field) and the three detect_profile tables as inherited (convention since F11, with the detector measured as a whole), DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and nineteen module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
         "basis": {
-          "convention": 97,
+          "convention": 100,
           "inherited": 0,
           "measured": 14,
-          "presentation": 47,
+          "presentation": 45,
           "standard": 20
         },
-        "counted": 131,
+        "counted": 134,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:38"
         ],
-        "presentation": 47,
+        "presentation": 45,
         "uncounted": [
           "CACHE_ENTRY_VERSION",
           "DEFAULT_MAX_REDIRECTS",

@@ -311,7 +311,8 @@ that could not be checked when there are any.
   - `verdict`: self_canonical, canonicalized, cross_host, missing, conflicting, unknown;
     with `--check-targets` also target_unavailable (the target is not 200) and
     target_unchecked (nothing answered); with `--variants` variant_unconsolidated (a
-    variant serves the page without redirecting to, declaring or noindexing it) (F15)
+    variant serves the same page — its title or its text — without redirecting to,
+    declaring or noindexing it; one declaring another canonical is another page) (F15)
   - `signal` (CI-011): consistent, conflicting, noindex_canonicalized,
     canonical_to_noindex, target_unchecked; a cross-host canonical alone is consistent
     (F15)
@@ -1908,7 +1909,7 @@ sitemap-walk cap is reached; a fetch error item retains `error_kind` beside `err
 
 A page key is `scheme://host/path` spelled as requests sends it (`/café` and
 `/caf%C3%A9` are one), the query dropped except a page number (`?page=2`,
-`PAGE_NUMBER_PARAMS`), trailing slash kept only on the root. Inventory version 5 (F15). `--out PATH` writes the inventory to a file and prints the summary instead.
+`PAGE_NUMBER_PARAMS`; page 1 is the page itself), trailing slash kept only on the root. Inventory version 5 (F15). `--out PATH` writes the inventory to a file and prints the summary instead.
 
 ### sitemap_checker.py
 

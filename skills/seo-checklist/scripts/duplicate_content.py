@@ -60,10 +60,18 @@ def pages_from_inventory(inventory: dict) -> dict:
     gallery, a navigation-only page — was dropped here, and with it the untitled page,
     the shared description and the thinnest page these items are about. Such a page
     has no `text_hash` and no signature, so it is never anybody's duplicate.
+
+    A row that redirected to a page the crawl read under its own key is that page read
+    twice, not a page competing with it (review round 1: a 301 `/old` beside `/new`
+    failed MS-022, MS-029 and CN-041); one whose landing was not read stands for it.
     """
+    rows = inventory.get("pages") or {}
     pages = {}
-    for key, row in sorted((inventory.get("pages") or {}).items()):
+    for key, row in sorted(rows.items()):
         if not row.get("html") or not carries_content(row.get("status")):
+            continue
+        landed = site_crawl.page_key(row.get("final_url") or row.get("url") or key)
+        if landed != key and landed in rows:
             continue
         pages[key] = {
             "url": row.get("url") or key,
@@ -150,9 +158,10 @@ def _snippet_grouping_pages(pages: dict) -> tuple[dict, dict]:
             continue
         canonical = page.get("canonical")
         named = normalize_url(canonical, page.get("final_url") or key) if canonical else ""
+        # The key too: a page first read at `?sort=price` still names itself.
         if canonical and not any(
-                site_crawl.same_page(named, page.get(field) or key)
-                for field in ("url", "final_url")):
+                site_crawl.same_page(named, where)
+                for where in (page.get("url") or key, page.get("final_url") or key, key)):
             exclusions["canonicalized"] += 1
             continue
         included[key] = page

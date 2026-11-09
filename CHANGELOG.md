@@ -12,13 +12,13 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `8040e1b77d04` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+Registry version: `445b7ca058d2` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2).
 
-F15 batch 3 (`1733ee735260` → `8040e1b77d04`) — the crawl inventory readers: `site_crawl.py`, `duplicate_content.py`,
+F15 batch 3 (`1733ee735260` → `445b7ca058d2`) — the crawl inventory readers: `site_crawl.py`, `duplicate_content.py`,
 `canonical_checker.py`, `link_profile.py`, `internal_links.py`, `topical_cluster_mapper.py`, `anchor_text_audit.py`,
 `server_log_audit.py`. **The inventory is version 5**: a page key spells the path as requests sends it (`/café` and
-`/caf%C3%A9` are one page) and keeps a page number (`?page=2` is its own page; other queries still fold), `canonical`
+`/caf%C3%A9` are one page) and keeps a page number (`?page=2` is its own page, `?page=1` the page itself; other queries still fold), `canonical`
 is the one usable canonical and `canonicals` all of them, the `Link` header's included, an image link's anchor is its
 alt, and every linked spelling of a crawled page (`/about/` beside `/about`) is fetched once. CI-009 and CI-011 run
 with `--check-targets --variants`, CN-041 asserts `summary.duplicate_content_findings` (warn band
@@ -28,8 +28,8 @@ WARN (134 numbers a verdict depends on). **Verdicts of a real audit can move**: 
 with no body text of their own (an untitled image page fails MS-026, a 0-word page is thin); MS-022 judges a paginated
 series and a trailing-slash site's self-canonical pages, and leaves out a page canonicalised elsewhere; CN-041 no
 longer fails a page and its noindex or canonicalised copy, and warns on near-duplicates; CI-009 fails a canonical to a
-page not answering 200 and a variant (other scheme, www or bare host, trailing slash) serving the page without
-redirecting to, declaring or noindexing it; CI-011 fails a canonical to a noindex page and no longer fails a cross-host
+page not answering 200 and a variant (other scheme, www or bare host, trailing slash) serving the same page (title or
+text) without redirecting to, declaring or noindexing it; CI-011 fails a canonical to a noindex page and no longer fails a cross-host
 canonical alone; TE-176 reads a `Link` header canonical and fails two that disagree, and no longer reads `?id=2` as
 `?id=1`'s self; CI-008 credits only the home page unlinked, not a deep audited URL; AR-162 counts distinct other pages
 linked (a page linking only to itself is a dead end), threshold still 3; AR-149 counts a redirecting spelling links
