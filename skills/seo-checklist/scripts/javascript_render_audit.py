@@ -9,7 +9,9 @@ import argparse
 import json
 
 from html_validator import rendered_document
-from seo_common import load_html, parse_html, same_host
+from urllib.parse import urlparse
+
+from seo_common import load_html, parse_html
 
 
 def summarize(html: str, url: str) -> dict:
@@ -24,9 +26,10 @@ def summarize(html: str, url: str) -> dict:
         "canonical": parsed["canonical"],
         "h1_count": len(parsed["headings"]["h1"]),
         # Internal is on the page's host (F15, TE-169): a prefix test of the origin
-        # counted `https://example.com.au/` as internal to `https://example.com`.
+        # counted `https://example.com.au/` as internal to `https://example.com`. The
+        # host alone, so a port or userinfo does not make a link external.
         "internal_link_count": len([link for link in parsed["links"]
-                                    if same_host(link["href"], url, include_www_variant=False)])
+                                    if urlparse(link["href"]).hostname == urlparse(url).hostname])
         if url.startswith("http") else len(parsed["links"]),
         # Compare everything the served and rendered documents declare.
         "schema_count": len(parsed["schema"]),

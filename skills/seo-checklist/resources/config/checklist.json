@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "841a2a4da32d",
+  "registry_version": "84e41c84ecaa",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1201,7 +1201,7 @@
           ]
         }
       },
-      "measures": "That headings never skip a level and the page marks its content with a main landmark. Other semantic markup is not read.",
+      "measures": "That headings never skip a level and the page marks its content with a <main> element; role=\"main\" and other semantic markup are not read.",
       "effort": "high",
       "fix": "Use hierarchical headings and semantic HTML"
     },

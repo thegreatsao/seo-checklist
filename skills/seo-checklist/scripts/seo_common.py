@@ -1204,7 +1204,11 @@ def parse_html(html: str, base_url: str = "") -> dict:
     meta = {}
     for tag in soup.find_all("meta"):
         key = (tag.get("name") or tag.get("property") or tag.get("http-equiv") or "").strip().lower()
-        if key:
+        if key in ("robots", "googlebot") and key in meta:
+            # Every directive tag counts (F15 batch 1, Codex's review): kept last-wins,
+            # `noindex` then `follow` read as `follow`. Joined as Google reads a list.
+            meta[key] += ", " + tag.get("content", "")
+        elif key:
             meta[key] = tag.get("content", "")
 
     # `rel` values are case-insensitive: `rel="Canonical"` read as no canonical at all.

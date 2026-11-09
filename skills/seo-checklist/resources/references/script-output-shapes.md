@@ -1501,7 +1501,7 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
   - item keys: @type, @types, @id, @context, status, note, has_context, has_type, from_graph, raw
 `breadcrumbs` — object — read by AR-158
   - `schema` / `ui` — bool — parseable markup with a trail entry (F15), and an explicit UI
-    marker; a Microdata/RDFa trail is UI only with a link in it
+    marker; a Microdata/RDFa trail alone is UI only with a link in it
 `issues[]` — array — heading-level skips and missing main/nav/footer landmarks
   - item keys: severity, message, url, evidence
 `open_graph.og:locale` — str

@@ -65,6 +65,18 @@ class EveryRobotsMetaIsRead(unittest.TestCase):
         self.assertEqual(verdict("CI-004", parsed()), PASS)
 
 
+class PaginationHosts(unittest.TestCase):
+    def test_a_host_in_capitals_is_this_host(self):
+        """AR-146, Codex's review of 90134c7: the netloc was compared as written."""
+        out = parsed('<link rel="next" href="https://EXAMPLE.COM/page2">')
+        self.assertEqual(out["pagination"]["issues"], [])
+        self.assertEqual(verdict("AR-146", out), PASS)
+
+    def test_another_host_still_fails(self):
+        out = parsed('<link rel="next" href="https://example.org/page2">')
+        self.assertEqual(verdict("AR-146", out), FAIL)
+
+
 class DescriptionAndKeywords(unittest.TestCase):
     def test_a_whitespace_only_description_is_no_description(self):
         """MS-028: `content="   "` was truthy and passed."""
@@ -127,6 +139,28 @@ class BreadcrumbTrails(unittest.TestCase):
         out = parsed(body=body)
         self.assertEqual(verdict("AR-158", out), PASS)
 
+    def test_a_prefixed_rdfa_trail_is_both(self):
+        """Codex's review of 90134c7: RDFa names properties by prefix or IRI."""
+        body = ('<ol prefix="schema: https://schema.org/" typeof="schema:BreadcrumbList">'
+                '<li property="schema:itemListElement" typeof="schema:ListItem">'
+                '<a property="schema:item" href="/"><span property="schema:name">Home</span></a>'
+                '<meta property="schema:position" content="1"></li></ol>')
+        self.assertEqual(parsed(body=body)["breadcrumbs"], {"schema": True, "ui": True})
+
+    def test_a_microdata_trail_with_no_link_is_schema_but_not_ui(self):
+        body = ('<ol itemscope itemtype="https://schema.org/BreadcrumbList">'
+                '<li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">'
+                '<span itemprop="name">Home</span></li></ol>')
+        self.assertEqual(parsed(body=body)["breadcrumbs"], {"schema": True, "ui": False})
+
+    def test_json_ld_entries_that_are_not_list_items_are_no_trail(self):
+        """Codex's review of 90134c7: `[null]`, `"garbage"` and `[{}]` passed."""
+        for entries in ('[null]', '"garbage"', '[{}]'):
+            with self.subTest(entries=entries):
+                head = ('<script type="application/ld+json">{"@type": "BreadcrumbList", '
+                        f'"itemListElement": {entries}}}</script>')
+                self.assertFalse(parsed(head, self.NAV)["breadcrumbs"]["schema"])
+
     def test_json_ld_with_entries_beside_a_named_nav_passes(self):
         head = ('<script type="application/ld+json">'
                 '{"@context": "https://schema.org", "@type": "BreadcrumbList", '
@@ -151,10 +185,25 @@ class TheDocumentTitle(unittest.TestCase):
         self.assertIsNone(out["raw"]["title"])
         self.assertEqual(verdict("TE-177", out), FAIL)
 
-    def test_the_head_title_wins_over_an_earlier_svg_one(self):
+    def test_the_first_title_outside_svg_wins_over_an_earlier_svg_one(self):
+        """`document.title`'s rule, not "the one in `<head>`": the head's tags are
+        optional in HTML, so a page that writes `<title>` with no `<head>` is valid and
+        has one (the owner's ruling named the SVG case; Codex's review asked about a
+        body title, which browsers also take)."""
         html = ("<html><body><svg><title>Icon</title></svg>"
                 "<title>The page</title></body></html>")
         self.assertEqual(self.render_raw(html)["raw"]["title"], "The page")
+        implied = "<!doctype html><title>Implied head</title><p>Text</p>"
+        self.assertEqual(self.render_raw(implied)["raw"]["title"], "Implied head")
+
+    def test_a_mathml_title_is_not_the_title(self):
+        html = page(body="<math><title>Tooltip</title></math><main><h1>A</h1></main>")
+        self.assertIsNone(self.render_raw(html)["raw"]["title"])
+        self.assertIsNone(parse_html.parse_html(html, URL)["title"])
+
+    def test_the_shared_parser_collapses_whitespace_too(self):
+        html = page("<title>Fresh   loaves\n daily</title>")
+        self.assertEqual(seo_common.parse_html(html, URL)["title"], "Fresh loaves daily")
 
     def test_parse_html_reads_the_same_title_collapsed(self):
         out = parsed("<title>\n  Fresh   loaves\n  daily </title>", self.SVG_ONLY)
@@ -191,14 +240,23 @@ class RenderParity(unittest.TestCase):
     def test_a_link_to_a_longer_host_is_not_internal(self):
         """TE-169: `https://example.com.au/` starts with `https://example.com`."""
         html = page(body='<a href="https://example.com.au/shop">Shop</a>'
-                         '<a href="https://example.com:8443/x">Other port</a>')
+                         '<a href="https://example.co/x">Shorter host</a>')
         out = self.audit(html, html)
         self.assertEqual(out["raw"]["internal_link_count"], 0)
         self.assertEqual(verdict("TE-169", out), FAIL)
 
     def test_a_link_on_the_page_host_is_internal(self):
-        html = page(body='<a href="/shop">Shop</a><a href="https://EXAMPLE.com/x">X</a>')
-        self.assertEqual(self.audit(html, html)["raw"]["internal_link_count"], 2)
+        html = page(body='<a href="/shop">Shop</a><a href="https://EXAMPLE.com/x">X</a>'
+                         # Codex's review of 90134c7: the host, not the authority.
+                         '<a href="https://example.com:443/y">Y</a>'
+                         '<a href="https://reader@example.com/z">Z</a>')
+        self.assertEqual(self.audit(html, html)["raw"]["internal_link_count"], 4)
+
+    def test_an_earlier_robots_tag_the_render_changes_is_a_diff(self):
+        """Codex's review of 90134c7: the shared parser kept the last robots tag."""
+        raw = page('<meta name="robots" content="noindex"><meta name="robots" content="follow">')
+        rendered = page('<meta name="robots" content="index"><meta name="robots" content="follow">')
+        self.assertEqual(verdict("MB-105", self.audit(raw, rendered)), FAIL)
 
 
 class MeasuresSentences(unittest.TestCase):
@@ -209,7 +267,7 @@ class MeasuresSentences(unittest.TestCase):
         "MS-030": "convention",
         "TE-166": "MB-104",
         "AR-146": "rel=prev",
-        "CN-048": "main",
+        "CN-048": "<main> element",
         "CN-066": "H2",
         "IN-123": "lang",
         "MS-020": str(TITLE_MAX_CHARS),

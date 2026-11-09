@@ -85,6 +85,13 @@ def _is_breadcrumb_type(value: Any) -> bool:
     return False
 
 
+def _is_list_element_property(value: Any) -> bool:
+    """Whether a Microdata `itemprop` or RDFa `property` names `itemListElement`, bare,
+    prefixed (`schema:itemListElement`) or as an IRI."""
+    return any(re.search(r"(?:^|[:/#])itemListElement$", token)
+               for token in str(value or "").split())
+
+
 def _breadcrumb_markup(soup) -> list:
     """The Microdata or RDFa BreadcrumbList carriers that hold a trail entry.
 
@@ -96,10 +103,19 @@ def _breadcrumb_markup(soup) -> list:
         if ((element.has_attr("itemscope")
                 and _is_breadcrumb_type(element.get("itemtype")))
                 or _is_breadcrumb_type(element.get("typeof"))):
-            if element.find(lambda tag: "itemListElement" in str(
-                    tag.get("itemprop") or tag.get("property") or "").split()):
+            if element.find(lambda tag: _is_list_element_property(
+                    tag.get("itemprop")) or _is_list_element_property(tag.get("property"))):
                 carriers.append(element)
     return carriers
+
+
+def _has_trail_entry(entries: Any) -> bool:
+    """Whether a JSON-LD `itemListElement` holds one entry a trail can show: an object
+    naming its page (`item`) or its label (`name`). `[null]`, `[{}]` and a string are
+    no trail (Codex's review of F15 batch 1)."""
+    entries = entries if isinstance(entries, list) else [entries]
+    return any(isinstance(entry, dict) and (entry.get("item") or entry.get("name"))
+               for entry in entries)
 
 
 def _nav_accessible_name(nav, soup) -> str:
@@ -327,8 +343,10 @@ def parse_html(
         href = result["pagination"].get(rel_name)
         if not href:
             continue
+        # Hosts compare case-insensitively (F15 batch 1, Codex's review: AR-146 failed
+        # `https://EXAMPLE.COM/page2` on its own host).
         if base_url and urlparse(href).netloc and (
-                urlparse(href).netloc != urlparse(base_url).netloc):
+                urlparse(href).netloc.lower() != urlparse(base_url).netloc.lower()):
             result["pagination"]["issues"].append({
                 "severity": "error", "type": f"pagination_{rel_name}_offsite",
                 "message": f"rel={rel_name} points at another host: {href}"})
@@ -443,7 +461,7 @@ def parse_html(
         result["breadcrumbs"]["schema"]
         or any(_is_breadcrumb_type(item.get("@types"))
                and isinstance(item.get("raw"), dict)
-               and item["raw"].get("itemListElement")
+               and _has_trail_entry(item["raw"].get("itemListElement"))
                for item in result["schema"] if isinstance(item, dict))
     )
 

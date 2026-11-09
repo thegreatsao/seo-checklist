@@ -2487,7 +2487,7 @@ class MeasuresQualifications(unittest.TestCase):
         "MS-028": "That the page carries a meta description that is not empty or whitespace. Which pages are high-value, and whether they were filled first, is not read.",
         "TE-166": "That the page declares an icon: a link whose rel names icon or apple-touch-icon. Whether the file loads and meets Google's requirements is MB-104, which fetches it.",
         "AR-146": "That a paginated page's rel=prev and rel=next stay on this host and do not point at the page itself. The order of the series and its visible controls are not read.",
-        "CN-048": "That headings never skip a level and the page marks its content with a main landmark. Other semantic markup is not read.",
+        "CN-048": "That headings never skip a level and the page marks its content with a <main> element; role=\"main\" and other semantic markup are not read.",
         "CN-066": "That the page has at least two non-empty H2 headings. Whether they organise the content is not read.",
         "IN-123": "That the html element carries a non-empty lang attribute. Whether the code is valid and matches the page's text is not read.",
         "MS-020": "That the title is at most 65 characters, what the 600 px desktop title shows of ordinary text by this tool's calibration. Rendered width is not measured, so capitals can be cut sooner.",
