@@ -276,6 +276,19 @@ class RenderedSnippet(unittest.TestCase):
                 out = self.measure([{"tag": "p", "style": grey, "kids": kids}])
                 self.assertEqual(out["links_indistinct"], 1)
 
+    def test_text_in_a_child_block_is_not_running_text(self):
+        """Review round 8: a footer column's heading, a nav item's toggle button and a
+        card's paragraph are not text around the link."""
+        link = {"tag": "a", "attrs": {"href": "/a"}, "kids": ["About us"]}
+        for kids in ([{"tag": "h4", "kids": ["Company"]}, link],
+                     [link, {"tag": "button", "style": {"display": "inline-block"},
+                             "kids": [{"tag": "span", "kids": ["Open menu"]}]}],
+                     [{"tag": "h3", "kids": ["Title"]}, {"tag": "p", "kids": ["Some text"]},
+                      link]):
+            with self.subTest(kids=kids):
+                out = self.measure([{"tag": "div", "kids": kids}])
+                self.assertEqual(out["links_indistinct"], 0)
+
     def test_a_row_of_links_is_not_running_text(self):
         out = self.measure([{"tag": "nav", "kids": [
             {"tag": "a", "attrs": {"href": "/a"}, "kids": ["Home"]},
@@ -650,6 +663,10 @@ class ResponsiveMeansWidths(unittest.TestCase):
         out = weigh(f'<picture><source media="(max-width: 600px)" srcset="{ABS}/s.webp">'
                     f'<img src="{ABS}/a.webp" alt="w"></picture>')
         self.assertEqual(verdict("MB-096", out), PASS)
+
+    def test_a_not_print_source_is_what_a_phone_gets(self):
+        self.assertTrue(image_weight_audit._responsive(
+            {"srcset": ""}, [{"media": "not print", "srcset": "s.jpg 400w, a.jpg 3000w"}]))
 
     def test_a_desktop_or_print_source_is_not_what_a_phone_gets(self):
         """Review round 4: a phone matches no `min-width` or `print` source, so it

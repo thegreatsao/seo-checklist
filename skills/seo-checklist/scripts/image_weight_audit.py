@@ -123,8 +123,8 @@ def _responsive(img: dict, sources: list[dict]) -> bool:
     # candidates are used only when no source matches.
     for source in sources:
         media = (source.get("media") or "").lower()
-        if not source.get("srcset") or "print" in media and "screen" not in media \
-                or _DESKTOP_WIDTH.search(media):
+        if not source.get("srcset") or _DESKTOP_WIDTH.search(media) \
+                or "print" in media and "screen" not in media and "not" not in media:
             continue
         if "width" in media:
             return True

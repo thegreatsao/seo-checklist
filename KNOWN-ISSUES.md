@@ -1243,7 +1243,7 @@ name. A column called `url` would be read as "fix this page".
   modern formats and responsive images, two facts already measured separately by MB-097
   and MB-096. MD-189 now reads the responsive count and defers to MB-096, whose title
   names that shared assertion exactly; MB-097 carries the modern-format weight itself.
-  `tools/audit_item_semantics.py` still reports eight duplicate groups. A conjunction
+  `tools/audit_item_semantics.py` then reported eight duplicate groups. A conjunction
   would raise the theme from 6 to 9 weight points and charge a missing modern format to
   both MD-189 and MB-097, so `scores_with` cannot make that aggregate honest. (F15 batch
   2, on the owner's ruling of 2026-11-08, reversed this: MD-189 asserts both halves and

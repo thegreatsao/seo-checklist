@@ -309,17 +309,17 @@ Resize to a phone viewport first (375×812), load the page, then run one
   // bolder, no background of its own, and the text's own colour or under 3:1
   // against it (WCAG technique G183). A colour rgb() cannot read is unmeasured.
   // Running text: the nearest block around the link holds text outside its links,
-  // whether that text sits beside the link or in spans and bold leads around it.
+  // beside the link or in inline spans and bold leads around it — not in a heading,
+  // paragraph or button of its own.
+  const inline = el => ['inline', 'contents'].includes(getComputedStyle(el).display);
   const outside = n => [...n.childNodes].map(c => c.nodeType === 3 ? c.textContent :
-    c.nodeType === 1 && c.tagName !== 'A' ? outside(c) : '').join('');
+    c.nodeType === 1 && c.tagName !== 'A' && inline(c) ? outside(c) : '').join('');
   let indistinct = 0, linksUnmeasured = 0;
   for (const a of document.querySelectorAll('a[href]')) {
     const p = a.parentElement;
     if (!p || !visible(a) || !a.textContent.trim()) continue;
     let block = p;
-    while (block.parentElement &&
-           ['inline', 'contents'].includes(getComputedStyle(block).display))
-      block = block.parentElement;
+    while (block.parentElement && inline(block)) block = block.parentElement;
     if (!outside(block).trim()) continue;
     const s = getComputedStyle(a), parent = getComputedStyle(p);
     const underlined = (s.textDecorationLine || '').includes('underline');
