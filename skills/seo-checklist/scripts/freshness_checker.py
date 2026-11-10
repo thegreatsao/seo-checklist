@@ -98,6 +98,9 @@ PUBLISHED_LABEL = re.compile(
     r"\s*(?:published|posted|effective|veröffentlicht|publié|publicado|опубликовано)"
     r"(?:\s+(?:date|on|le|am|el))?\s*:?\s*", re.I)
 LABELLED_BLOCKS = ("p", "div", "li", "dd", "dt", "td", "small", "span")
+# A comments section by its usual id or class (`#comments`, WordPress's `.comment-list`):
+# a commenter's date is not the page's.
+COMMENTS = re.compile(r"(?:^|\s)(?:comments?|comment-list|commentlist|comments-area)(?:\s|$)", re.I)
 
 
 def labelled_publications(soup, cutoff: date, skip) -> list[date]:
@@ -240,9 +243,17 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
     # date shown, and a later one the update (the ruling: "the later <time>"). Dates
     # past the future tolerance are content, not publication.
     claimed = parsed.get("foreign_itemref_ids")
+    # The page's own dates (review round 8): a sidebar's recent posts, a site footer's
+    # "last updated", a top bar's today, a comment's date are not this page's.
+    def not_the_pages(tag) -> bool:
+        return in_page_furniture(tag) or any(
+            COMMENTS.search(" ".join([str(p.get("id") or "")]
+                                     + [str(c) for c in (p.get("class") or [])]))
+            for p in (tag, *tag.parents) if getattr(p, "get", None))
+
     shown_time = [
         found for tag in soup.find_all("time")
-        if tag.get_text(strip=True) and not shown_away(tag)
+        if tag.get_text(strip=True) and not shown_away(tag) and not not_the_pages(tag)
         and not any(shown_away(p) or p.name == "head" for p in tag.parents)
         and not under_foreign_credit(tag, claimed=claimed)
         and (found := (_parse_date(tag.get("datetime"))
@@ -252,10 +263,10 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
     # review: "05/03/2026" read again month first made one shown date two).
     shown_page = visible_text(
         soup, skip=lambda tag: tag.name == "time" or tag.find_parent("time") is not None
-        or under_foreign_credit(tag, claimed=claimed))
+        or not_the_pages(tag) or under_foreign_credit(tag, claimed=claimed))
     shown_text = shown_dates_in(shown_page, cutoff)
     labelled = labelled_publications(
-        soup, cutoff, lambda block: in_page_furniture(block) or shown_away(block)
+        soup, cutoff, lambda block: not_the_pages(block) or shown_away(block)
         or any(shown_away(p) for p in block.parents)
         or under_foreign_credit(block, claimed=claimed))
     # The publication shown is the earliest `<time>`, or with none the earliest date in

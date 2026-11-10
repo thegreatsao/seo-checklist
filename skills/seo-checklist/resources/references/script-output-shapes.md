@@ -708,8 +708,9 @@ title, including noindex pages. Unlike title duplication, absence is not competi
   - schema and `<time>` dates come from the page's own nodes; contributions and subjects
     are excluded whether nested under their key or, for schema dates, hoisted into
     `@graph`
-`date_signals.shown.published` — bool — since F15 batch 5, a date a visitor sees: a
-  page-owned `<time>` with text of its own, or a date written in the visible text (ISO,
+`date_signals.shown.published` — bool — since F15 batch 5, a date a visitor sees in the page's
+  own content (not its furniture or a comments section): a `<time>` with text of its own, or a
+  date written in the visible text (ISO,
   month or day first in English, German, French, Spanish or Russian, or numeric)
 `date_signals.shown.updated` — bool — a shown date later than the publication shown: the
   earliest `<time>` or a date written right after "Published", "Posted" or "Effective" (with

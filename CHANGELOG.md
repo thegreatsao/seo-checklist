@@ -63,7 +63,8 @@ as a source, and one under a content heading that is exactly Sources, References
 Citations or Works cited; a social link elsewhere still is not one. A date written right after "Published", "Posted" or
 "Effective" at the start of a block of the page's content stands for the publication beside an update `<time>`; a video
 in a sidebar or site-footer widget is not the page's video (MD-190), one in the page's header is; the schema tables read
-a type written as an IRI.
+a type written as an IRI. CN-056 reads only the page's own dates: a sidebar's recent posts, a site footer's "last
+updated", a top bar's today or a comments section's dates are not the page's.
 
 F15 batch 4 (`445b7ca058d2` → `ecaf0dc17e56`) — robots, sitemaps, redirects and URLs, and the owner's rulings on
 batch 3's questions. **Verdicts of a real audit can move**: a canonical naming another host no longer fails CI-009 or

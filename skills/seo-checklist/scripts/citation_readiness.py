@@ -235,6 +235,14 @@ def check_citation_readiness(source: str, timeout: int = 15) -> dict:
     # in its sentence was no source). An outbound link elsewhere, a social profile in
     # "Follow us", still is not one (0.87.0's reason).
     sourcing_links = set()
+    # Each link's nearest content heading, in one pass (review round 8: a backward
+    # search per link was quadratic on a long resource list).
+    heading_of, current = {}, None
+    for tag in soup.find_all(True):
+        if re.fullmatch(r"h[1-6]", tag.name or "") and not in_page_furniture(tag):
+            current = tag
+        elif tag.name == "a":
+            heading_of[id(tag)] = current
     for tag in soup.find_all("a", href=True):
         host = urlparse(spelled(tag.get("href", ""))).netloc
         if not host or host == page_host or in_page_furniture(tag) or under_foreign_credit(
@@ -242,8 +250,7 @@ def check_citation_readiness(source: str, timeout: int = 15) -> dict:
             continue
         block = tag.find_parent(["p", "li", "td", "dd", "figcaption", "blockquote"])
         text = block.get_text(" ", strip=True) if block else ""
-        heading = tag.find_previous(lambda t: bool(re.fullmatch(r"h[1-6]", t.name or ""))
-                                    and not in_page_furniture(t))
+        heading = heading_of.get(id(tag))
         if (CLAIM_RE.search(text) or re.match(r"\s*sources?\b", text, re.I)
                 or (heading is not None
                     and SOURCES_HEADING.fullmatch(heading.get_text(" ", strip=True)))):

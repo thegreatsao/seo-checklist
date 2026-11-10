@@ -919,6 +919,37 @@ class ReviewRound7(unittest.TestCase):
         self.assertEqual(page_verdict(citation_readiness, "GO-145", page), FAIL)
 
 
+class ReviewRound8(unittest.TestCase):
+    POST = "<main><article><p>Posted on <time datetime='2024-05-01'>May 1, 2024</time></p>"
+
+    def test_dates_in_the_page_furniture_or_comments_are_not_the_pages(self):
+        for extra in ("</article></main><aside><p>Recent: <time datetime='2025-02-01'>Feb 1, 2025</time>"
+                      "</p></aside>",
+                      "</article></main><aside><p><time datetime='2023-01-01'>Jan 1, 2023</time></p></aside>",
+                      "</article></main><footer><p>Site last updated 2025-01-02</p></footer>",
+                      "<div id='comments'><p>Ann, <time datetime='2025-03-01'>March 1, 2025</time></p>"
+                      "</div></article></main>"):
+            with self.subTest(extra=extra[:40]):
+                self.assertEqual(VisibleDates.cn_056(self, self.POST + extra), WARN)
+        top = "<header><p>Monday, November 10, 2026</p></header>"
+        self.assertEqual(VisibleDates.cn_056(self, top + self.POST + "</article></main>"), WARN)
+
+    def test_a_page_with_no_date_of_its_own_shows_none(self):
+        body = ("<main><h1>About</h1><p>We bake.</p></main><aside>"
+                "<p><time datetime='2024-01-01'>Jan 1, 2024</time></p>"
+                "<p><time datetime='2024-02-01'>Feb 1, 2024</time></p></aside>")
+        self.assertEqual(VisibleDates.cn_056(self, body), FAIL)
+
+    def test_many_outbound_links_are_read_in_one_pass(self):
+        import time as clock
+        links = "".join(f"<li><a href='https://site{i}.test/'>Site {i}</a></li>" for i in range(2000))
+        body = (f"<main><article><p class='byline'>By Jane Doe</p><h2>Sources</h2><ul>{links}</ul>"
+                f"</article></main>")
+        started = clock.monotonic()
+        page_verdict(citation_readiness, "GO-145", html(body, head='<link rel="canonical" href="/">'))
+        self.assertLess(clock.monotonic() - started, 3.0)
+
+
 # ---------------------------------------------------------------------------
 # The sets batch 5 wrote, held to their sources (GOV-3)
 # ---------------------------------------------------------------------------
