@@ -970,6 +970,23 @@ class ReviewRound9(unittest.TestCase):
                 "<time datetime='2025-03-01'>March 1, 2025</time></p></article></main>")
         self.assertEqual(VisibleDates.cn_056(self, body), WARN)
 
+    def test_a_hidden_h1_does_not_unmake_a_hero(self):
+        """Review round 11: a hidden mobile-menu <h1> elsewhere."""
+        body = ("<div class='mobile-menu' hidden><h1>Site</h1></div>"
+                "<header class='masthead'><h1>Rye</h1><span class='meta'>Posted by Jane on "
+                "August 24, 2023</span></header><article><p>Bread.</p></article>")
+        self.assertEqual(VisibleDates.cn_056(self, body), WARN)
+
+    def test_a_large_site_header_is_read_in_linear_time(self):
+        import time as clock
+        menu = "".join(f"<div class='item'><a href='/m{i}'>Menu {i}</a></div>" for i in range(3000))
+        paras = "".join(f"<p>Paragraph {i} about bread.</p>" for i in range(3000))
+        body = (f"<header><h1><a href='/'>Logo</a></h1>{menu}</header><main><h1>Post</h1>"
+                f"<p>Posted on <time datetime='2025-03-01'>March 1, 2025</time></p>{paras}</main>")
+        started = clock.monotonic()
+        VisibleDates.cn_056(self, body)
+        self.assertLess(clock.monotonic() - started, 4.0)
+
     def test_cn_056s_sentence_says_what_it_leaves_out(self):
         self.assertIn("furniture", ITEMS["CN-056"]["measures"])
 

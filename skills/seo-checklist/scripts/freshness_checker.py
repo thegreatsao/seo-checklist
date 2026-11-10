@@ -246,6 +246,11 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
     # "last updated", a top bar's today, a comment's date are not this page's.
     # A page-level `<header>` holding the page's `<h1>` is a hero, where a theme writes
     # the post's own date under its title (review round 9: Clean Blog, Beautiful Jekyll).
+    # The page's shown `<h1>`s, read once (review round 11: a hidden mobile-menu `<h1>`
+    # unmade a hero, and reading them per header was quadratic).
+    shown_h1 = [h1 for h1 in soup.find_all("h1")
+                if not shown_away(h1) and not any(shown_away(p) for p in h1.parents)]
+
     def furniture(tag) -> bool:
         for parent in tag.parents:
             if not getattr(parent, "name", None) or parent.name == "[document]":
@@ -260,8 +265,7 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
             # the article's own title is no hero (review round 10).
             if (parent.name == "header" or role == "banner") \
                     and parent.find_parent(["article", "main", "section"]) is None \
-                    and (parent.find("h1") is None or any(
-                        parent not in h1.parents for h1 in soup.find_all("h1"))):
+                    and (not shown_h1 or any(parent not in h1.parents for h1 in shown_h1)):
                 return True
         return False
 
