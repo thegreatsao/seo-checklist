@@ -644,6 +644,62 @@ class ReviewRound1(unittest.TestCase):
         self.assertIn("alternateName", ITEMS["GO-143"]["fix"])
 
 
+class ReviewRound2(unittest.TestCase):
+    FAQ_ANSWER = ("Yes, within fourteen days of delivery if the loaf is unopened, and we will refund "
+                  "the full price to the card you paid with, no questions asked at all.")
+
+    def test_a_knowledge_graph_hit_on_another_name_resolves_nothing(self):
+        node = {**ORG, "name": "Olive Tree Bakery Limassol"}
+        self.assertEqual(geo_006(node, kg={"checked": True, "found": True, "name": "Limassol"}),
+                         FAIL)
+        self.assertEqual(geo_006(node, kg={"checked": True, "found": True,
+                                           "name": "Olive Tree Bakery Limassol"}), PASS)
+
+    def test_an_autoplaying_video_without_controls_is_a_background(self):
+        page = html('<video autoplay loop playsinline src="/hero.mp4"></video>')
+        self.assertEqual(page_verdict(video_schema_checker, "MD-190", page), NA)
+
+    def test_a_name_shown_with_typographic_punctuation_is_shown(self):
+        head = ('<meta name="author" content="Ann O\'Neil">'
+                '<meta property="og:site_name" content="Jane\'s Kitchen">')
+        body = "<p>By Ann O&#8217;Neil</p><footer>&copy; Jane&#8217;s Kitchen</footer>"
+        self.assertEqual(VisibleAuthorship.cn_057(self, body, head=head), PASS)
+
+    def test_ordinal_dates_are_dates(self):
+        for body in ("<p>Published March 3rd, 2025. Updated April 2nd, 2025.</p>",
+                     "<p>Published 3rd March 2025. Updated 21st April 2025.</p>",
+                     "<p>Publié le 1er janvier 2025, mis à jour le 2 février 2025.</p>"):
+            with self.subTest(body=body):
+                self.assertEqual(VisibleDates.cn_056(self, body), PASS)
+
+    def test_faq_markup_is_a_question_and_answer_block(self):
+        for body in (f'<strong class="schema-faq-question">Can I return an item?</strong>'
+                     f'<p class="schema-faq-answer">{self.FAQ_ANSWER}</p>',
+                     f"<details><summary>Can I return an item?</summary><p>{self.FAQ_ANSWER}</p>"
+                     f"</details>",
+                     f"<dl><dt>Can I return an item?</dt><dd>{self.FAQ_ANSWER}</dd></dl>"):
+            with self.subTest(body=body[:30]):
+                self.assertEqual(page_verdict(answer_block_scanner, "GO-144", html(body)), PASS)
+
+    def test_a_definition_may_open_with_a_non_ascii_term(self):
+        text = ("Café au lait is a drink of strong coffee and hot milk in equal parts, served in a "
+                "wide cup at breakfast in most French homes.")
+        self.assertEqual(page_verdict(answer_block_scanner, "GO-144", html(f"<p>{text}</p>")), PASS)
+
+    def test_a_language_tagged_name_is_a_name(self):
+        node = {"@type": "Product", "name": {"@value": "Rye loaf", "@language": "en"},
+                "offers": {"price": "3"}}
+        self.assertEqual(page_verdict(rich_results_guard, "TE-172", html(head=jsonld(node))), PASS)
+
+    def test_a_numeric_telephone_is_a_telephone(self):
+        self.assertEqual(CompleteNap.lo_200(self, {**SHOP, "telephone": 35725000000}), PASS)
+
+    def test_an_article_header_is_body_copy(self):
+        body = ("<main><article><header><h1>Loaves</h1><p>Our rye bread is dark.</p></header>"
+                "<p>Baked daily.</p></article></main>")
+        self.assertEqual(BodyCopy.kw_076(self, body), PASS)
+
+
 # ---------------------------------------------------------------------------
 # The sets batch 5 wrote, held to their sources (GOV-3)
 # ---------------------------------------------------------------------------

@@ -185,7 +185,8 @@ Reads `--inventory` (see `site_crawl.py`); crawls one for itself without it.
 
 `url` — str
 `score` — int
-`answer_blocks` — int — direct answers plus definitions: what GO-144 and GEO-004 assert (F15 batch 5).
+`answer_blocks` — int — direct answers (after a heading, `<summary>`, `<dt>` or FAQ-question
+  element asking something) plus definitions: what GO-144 and GEO-004 assert (F15 batch 5).
   A definition opens its paragraph with its term; lists inside `<nav>`, `role=navigation`,
   `<header>` or `<footer>`, and lists of links only, are not counted in `lists`
 `questions[]` — array
@@ -616,7 +617,9 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `summary.sameas_missing_critical` — int
 `summary.entity_resolution` — str — `resolved` (a Wikidata or Wikipedia `sameAs`, a Wikidata
   item labelled with the entity's name, or a Knowledge Graph match), `unresolved` (Wikidata
-  answered with none), `not_asked` (Wikidata could not be asked): GEO-006's value map (F15 batch 5)
+  gave no item labelled with a name the page declares, or the name was only cut from the
+  `<title>`), `not_asked` (Wikidata could not be asked): GEO-006's value map (F15 batch 5).
+  A Knowledge Graph hit counts only under the entity's own name
 `summary.wikidata_found` — bool | null — null when Wikidata could not be asked (0.124.0)
 `summary.wikipedia_found` — bool | null — null when Wikipedia could not be asked
 `summary.google_kg_checked` — bool

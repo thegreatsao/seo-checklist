@@ -37,6 +37,7 @@ import ipaddress
 import json
 import os
 import re
+import unicodedata
 import socket
 import sys
 import xml.etree.ElementTree as ET
@@ -628,11 +629,25 @@ def visible_text(soup, skip=None) -> str:
     return re.sub(r"\s+", " ", " ".join(parts)).strip()
 
 
+_TYPOGRAPHIC = str.maketrans({"\u2018": "'", "\u2019": "'", "\u201b": "'", "\u2032": "'",
+                              "\u201c": '"', "\u201d": '"', "\u201e": '"',
+                              "\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-",
+                              "\u2014": "-", "\u00a0": " "})
+
+
+def _comparable_text(value: str) -> str:
+    """Case, spacing and typographic punctuation aside: a CMS curls the apostrophe in a
+    shown `Jane’s Kitchen` that its meta tag writes straight (review round 2)."""
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", value).translate(_TYPOGRAPHIC)
+                  ).strip().casefold()
+
+
 def shown_in(names, text: str) -> list[str]:
-    """The names that appear in `text` as words, case and spacing aside."""
-    folded = re.sub(r"\s+", " ", text).casefold()
+    """The names that appear in `text` as words, case, spacing and typographic
+    punctuation aside."""
+    folded = _comparable_text(text)
     return [name for name in names
-            if (key := re.sub(r"\s+", " ", name).strip().casefold())
+            if (key := _comparable_text(name))
             and re.search(rf"(?<!\w){re.escape(key)}(?!\w)", folded)]
 
 

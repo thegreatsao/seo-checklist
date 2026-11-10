@@ -206,6 +206,13 @@ BODY_COPY_EXCLUDED = frozenset({"h1", "h2", "h3", "h4", "h5", "h6", "nav", "head
                                 "footer", "aside", "title"})
 
 
+def _sectioning_furniture(tag) -> bool:
+    """A `<header>` or `<footer>` inside an `<article>`, `<main>` or `<section>` belongs
+    to that content (an intro, a byline), not to the page's furniture (review round 2)."""
+    return tag.name in ("header", "footer") and tag.find_parent(
+        ["article", "main", "section"]) is not None
+
+
 def extract_content(parsed: dict, cms: str) -> dict:
     """
     Extract structured content from the parsed page.
@@ -305,7 +312,8 @@ def extract_content(parsed: dict, cms: str) -> dict:
     for scope in containers:
         for tag in scope.find_all(string=True):
             if type(tag).__name__ != "NavigableString" or any(
-                    parent.name in BODY_COPY_EXCLUDED or parent.name == "head"
+                    (parent.name in BODY_COPY_EXCLUDED and not _sectioning_furniture(parent))
+                    or parent.name == "head"
                     for parent in tag.parents):
                 continue
             copy.append(str(tag))

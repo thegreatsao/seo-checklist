@@ -33,8 +33,8 @@ PLAYER_PATHS = {"youtube.com": "/embed/", "youtube-nocookie.com": "/embed/",
 
 
 def page_videos(html: str, base_url: str = "") -> list[str]:
-    """The videos a visitor is shown: a `<video>` with a source, unless it is a muted
-    autoplaying or looping background with no controls, and an `<iframe>` or `<embed>`
+    """The videos a visitor is shown: a `<video>` with a source, unless it is a
+    background (autoplaying, or a muted loop, with no controls), and an `<iframe>` or `<embed>`
     from a video player. Each as its source URL."""
     if not html:
         return []
@@ -43,8 +43,13 @@ def page_videos(html: str, base_url: str = "") -> list[str]:
     for video in soup.find_all("video"):
         source = video.get("src") or next(
             (tag.get("src") for tag in video.find_all("source") if tag.get("src")), "")
-        background = (not video.has_attr("controls") and video.has_attr("muted")
-                      and (video.has_attr("autoplay") or video.has_attr("loop")))
+        # Browsers autoplay only a muted video, and a framework may set `muted` as a
+        # property the HTML never shows (React's `<video autoPlay muted>`), so an
+        # autoplaying video with no controls is a background whether `muted` is
+        # written or not (review round 2); a muted loop with no controls is one too.
+        background = (not video.has_attr("controls")
+                      and (video.has_attr("autoplay")
+                           or (video.has_attr("muted") and video.has_attr("loop"))))
         if source and not background:
             found.append(urljoin(base_url, source))
     for frame in soup.find_all(["iframe", "embed"]):

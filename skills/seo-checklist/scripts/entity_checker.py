@@ -610,7 +610,12 @@ def run_entity_check(url: str, entity_name: str = "", kg_api_key: str = "") -> d
     named = (not guessed and wikidata.get("found") is True
              and str(wikidata.get("label") or "").strip().casefold()
              == str(entity_name or "").strip().casefold())
-    if linked or named or (not guessed and google_kg.get("found") is True):
+    # The Knowledge Graph's top hit counts only under the entity's own name, as the
+    # Wikidata label does (review round 2: "Limassol" is not "Olive Tree Bakery").
+    kg_named = (not guessed and google_kg.get("found") is True
+                and str(google_kg.get("name") or "").strip().casefold()
+                == str(entity_name or "").strip().casefold())
+    if linked or named or kg_named:
         resolution = "resolved"
     elif wikidata.get("checked") and wikidata.get("found") is not None:
         resolution = "unresolved"

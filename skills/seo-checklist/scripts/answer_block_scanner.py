@@ -30,7 +30,7 @@ from seo_common import load_source, parse_html
 
 
 QUESTION_RE = re.compile(r"^(what|why|how|when|where|who|which|can|does|is|are)\b|\?$", re.I)
-# A definition opens its paragraph with the term it defines: "Sourdough is bread
+# A definition opens its paragraph with the term it defines: "Sourdough is a bread
 # leavened by …". Searched anywhere, "X is" matched any sentence with a capital and a
 # verb ("It also carries … is"), which was harmless while a definition was 12 points of
 # a floor and decides GO-144 and GEO-004 alone since F15 (the rulings: one direct answer
@@ -40,7 +40,7 @@ NOT_A_TERM = (r"(?!(?:it|its|this|that|these|those|there|here|we|our|you|your|he
               r"they|their|his|her|i|my|if|when|while|because|although|though|as|since|"
               r"once|unless|whether|where|everything|something|anything|nothing)\b)")
 DEFINITION_RE = re.compile(r"\s*" + NOT_A_TERM
-                           + r"([A-Z][A-Za-z0-9 -]{2,80}?)\s+(is|are|refers to|means)\s+(.{20,220})",
+                           + r"([^\W\d_][\w -]{2,80}?)\s+(is|are|refers to|means)\s+(.{20,220})",
                            re.S | re.I)
 # Review round 1 of F15 batch 5: "Free delivery within Cyprus is available on …" opened
 # its paragraph with words and a copula, and passed both items. A term is a short noun
@@ -155,6 +155,15 @@ def _own_descendants(node, tag: str, containers: tuple[str, ...]) -> list:
             if el.find_parent(list(containers)) is node]
 
 
+def _asks_a_question(tag) -> bool:
+    """Where a page puts a question (F15 batch 5's review): a heading, a `<summary>`, a
+    `<dt>`, or an element an FAQ block classes as its question (Yoast's
+    `schema-faq-question`, a bare `question`)."""
+    classes = [str(c).lower() for c in (tag.get("class") or [])]
+    return bool(HEADING_RE.match(tag.name or "") or tag.name in ("summary", "dt")
+                or any("faq-question" in c or c == "question" for c in classes))
+
+
 def _answer_after(heading):
     """The block that answers a question heading, found in document order.
 
@@ -211,7 +220,7 @@ def scan_answer_blocks(source: str, timeout: int = 15) -> dict:
 
     questions = []
     direct_answers = []
-    for heading in soup.find_all(HEADING_RE):
+    for heading in soup.find_all(_asks_a_question):
         heading_text = heading.get_text(" ", strip=True)
         if not QUESTION_RE.search(heading_text):
             continue

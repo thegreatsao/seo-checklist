@@ -67,6 +67,8 @@ MONTH_NAMES = {
     ), start=1) for name in names},
 }
 _DAY = r"(?:0?[1-9]|[12]\d|3[01])"
+# An ordinal after the day (review round 2): "3rd", "21st", French "1er".
+_ORD = r"(?:st|nd|rd|th|er)?"
 _YEAR = r"(?:19|20)\d{2}"
 _MONTH = r"[^\W\d_]{3,10}\.?"
 # A date as a visitor reads it: ISO, month first ("Jan. 12, 2026"), day first ("12. Januar
@@ -74,8 +76,8 @@ _MONTH = r"[^\W\d_]{3,10}\.?"
 # DATE_RE, which also feeds the age behind CN-038.
 SHOWN_DATE_RE = re.compile(
     rf"\b(?P<iso>{_YEAR}[-/]\d{{1,2}}[-/]\d{{1,2}})\b"
-    rf"|(?<![\w.])(?P<md_month>{_MONTH})\s+(?P<md_day>{_DAY}),?\s+(?P<md_year>{_YEAR})\b"
-    rf"|\b(?P<dm_day>{_DAY})\.?\s+(?:de\s+)?(?P<dm_month>{_MONTH}),?\s+(?:de\s+)?(?P<dm_year>{_YEAR})\b"
+    rf"|(?<![\w.])(?P<md_month>{_MONTH})\s+(?P<md_day>{_DAY}){_ORD},?\s+(?P<md_year>{_YEAR})\b"
+    rf"|\b(?P<dm_day>{_DAY}){_ORD}\.?\s+(?:of\s+|de\s+)?(?P<dm_month>{_MONTH}),?\s+(?:de\s+)?(?P<dm_year>{_YEAR})\b"
     rf"|\b(?P<n1>{_DAY})(?P<sep>[./])(?P<n2>\d{{1,2}})(?P=sep)(?P<n_year>{_YEAR})\b",
     re.I,
 )

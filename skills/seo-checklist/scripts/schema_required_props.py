@@ -49,6 +49,9 @@ DATE_PROPS = frozenset({"uploadDate"})
 
 
 def _is_text(value: Any) -> bool:
+    """A non-blank string, or a JSON-LD value object carrying one (`{"@value": …}`)."""
+    if isinstance(value, dict) and "@value" in value:
+        value = value["@value"]
     return isinstance(value, str) and bool(value.strip())
 
 

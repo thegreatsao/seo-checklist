@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "a6b19fafcebf",
+  "registry_version": "e438efcd7a69",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -3217,7 +3217,7 @@
           "gte": 1
         }
       },
-      "measures": "That the page carries a direct answer (20 to 70 words under a question heading) or a definition paragraph. Lists and tables do not stand in for one; whether Google lifts a snippet is not observable.",
+      "measures": "That the page carries a direct answer (20 to 70 words after a question: a heading, a summary, a dt or an FAQ question) or a definition. Lists and tables do not stand in for one; whether Google lifts a snippet is not seen.",
       "effort": "low",
       "fix": "Optimize for featured snippets: direct answers, lists, tables"
     },
@@ -4555,7 +4555,7 @@
           "gte": 1
         }
       },
-      "measures": "That the page carries a direct answer (20 to 70 words under a question heading) or a definition paragraph; navigation menus are not lists. Whether an AI answer quotes it is not observable here.",
+      "measures": "That the page carries a direct answer (20 to 70 words after a question: a heading, a summary, a dt or an FAQ question) or a definition; menus are not lists. Whether an AI answer quotes it is not observable here.",
       "effort": "medium",
       "fix": "Add direct answers, definitions, lists and tables for featured snippets",
       "scores_with": "GO-144"

@@ -21,8 +21,11 @@ GBP_PATTERNS = ("g.page/", "business.google.com", "search.google.com/local/write
 
 
 def _text(value) -> bool:
-    """Text, not whitespace; a list holding one such entry is text too."""
-    return any(isinstance(entry, str) and bool(entry.strip()) for entry in as_list(value))
+    """Text, not whitespace; a number (a telephone written as one) or a list holding one
+    such entry is text too."""
+    return any((isinstance(entry, str) and bool(entry.strip()))
+               or (isinstance(entry, (int, float)) and not isinstance(entry, bool))
+               for entry in as_list(value))
 
 
 def nap_gaps(node: dict, by_id: dict | None = None) -> list[str]:
