@@ -37,6 +37,25 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `skills/seo-checklist/scripts/` (structured data and content) — graded 2026-11-10, F15 batch 5
+
+Read for the grade: `schema_required_props.py` (`missing_rich_result_props`, `value_ok`, `find_schema_nodes`,
+`validate_schema_required_props`), `rich_results_guard.py`, `video_schema_checker.py` (`page_videos`, `_widget`),
+`local_seo_checker.py` (`nap_gaps`), `lib/schema_types.py` (`schema_org_name`, `markup_types`), `site_crawl.py`'s
+`schema_nodes`, `answer_block_scanner.py` (`_asks_a_question`, `_is_definition`, `_is_menu`), `citation_readiness.py`
+(sources), `eeat_signal_checker.py`, `freshness_checker.py` (`shown_dates_in`, `labelled_publications`, the furniture
+reading), `entity_checker.py` (resolution), `article_seo.py` (`body_copy`, `_names_content`), `social_meta.py`,
+`collection_page_checker.py`, `hreflang_checker.py` (`self_only`), `seo_common.py` (`visible_text`, `shown_in`,
+`in_page_furniture`).
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `make check` on `1b24a6b` (ci_local 27/27, check-arch 3/3, vcr red by design); 116 tests in `tests/test_f15_batch5.py`, each review round red on the commit before it; twelve census runs, each declared first, each matched; Claude review round 11 "ship" |
+| Agent understandable | B | each rule names its item and the round that shaped it; CN-056's "the page's own dates" and the definition and source readings are heuristics stacked over eleven rounds, readable only with their comments |
+| Test stability | A | loopback pages and crawls; lookups mocked; two timing guards with wide margins |
+| Architecture boundaries | A | `make check-arch` 3/3 |
+| Code conventions | A | ruff clean; new sets held by `TheSetsAreHeld`; one new verdict-deciding number (`DEFINITION_TERM_MAX_WORDS`, a convention: 138) |
+
 ## `skills/seo-checklist/scripts/` (robots, sitemaps, redirects, URLs) — graded 2026-11-10, F15 batch 4
 
 Read for the grade: `robots_checker.py` (`correctness_problems`, `crawled_paths`, `main`), `lib/robots_rules.py`
