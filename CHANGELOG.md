@@ -12,10 +12,10 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `26906b83d873` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+Registry version: `ba377a649ce8` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4, `e2d01d02779d` after batch 5).
 
-F15 batch 6 (`e2d01d02779d` → `26906b83d873`) — security, speed and technical, and the owner's ruling 1 on batch 5's
+F15 batch 6 (`e2d01d02779d` → `ba377a649ce8`) — security, speed and technical, and the owner's ruling 1 on batch 5's
 questions. **Verdicts of a real audit can move**: GO-145 and GEO-005 are N/A on a privacy, terms or contact page, read
 from the page's slug (the one before an `index` page): every word of it is a privacy, terms or contact word in English,
 German, Russian or Lithuanian (`UTILITY_WORDS`, run-together forms such as `termsofuse` included; `get-in-touch`,
@@ -25,7 +25,8 @@ and `/blog/privacy-tips`, `/kontaktlinsen` and `/oferta` are not (an about page 
 URL it read, 500 to a request (a listed inner page fails; one unanswered request withholds a clean answer; `page`
 mode, which does not crawl, and a live run whose entry or crawl read nothing ask about the page alone); TE-178's script assertion is retired (its field was never written) and the market
 lens answers it; SE-120 asserts `hardening_gaps`, the three headers' values read (`'unsafe-inline'` with no nonce, hash
-or `'strict-dynamic'`, `'unsafe-eval'`, or a source allowing any host, `*` or a bare scheme, in the policy scripts obey; a Permissions-Policy feature whose allowlist holds `*`; `unsafe-url`
+or `'strict-dynamic'`, `'unsafe-eval'`, or a source allowing any host, `*` or a bare scheme, unless `'strict-dynamic'`,
+in the policy scripts obey; a Permissions-Policy feature whose allowlist holds `*`; `unsafe-url`
 as the last known Referrer-Policy token); GO-131 asserts `installed_by` (a Google tag loaded by its ID, or a GTM
 container the page loads, counts); GO-132 reads a GTM container beside a hardcoded GA4 tag and fails when its Google
 tag or GA4 configuration tag names the same ID, through a variable too (an event tag sending to it is no duplicate, a

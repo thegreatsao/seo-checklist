@@ -830,6 +830,33 @@ class ReviewRound4(unittest.TestCase):
                          ["big.css"])
 
 
+class ReviewRound5(unittest.TestCase):
+    def se_120(self, **overrides) -> str:
+        return HardenedHeaderValues.se_120(self, **overrides)
+
+    def test_only_strict_dynamic_makes_a_host_source_ignored(self):
+        for csp in ("script-src 'self' 'nonce-r4nd0m' https:; object-src 'none'",
+                    "script-src 'sha256-abc=' *"):
+            with self.subTest(csp=csp):
+                self.assertEqual(self.se_120(**{"Content_Security_Policy": csp}), WARN)
+        self.assertEqual(self.se_120(**{"Content_Security_Policy":
+                                        "script-src 'self' 'nonce-r4nd0m' https: 'strict-dynamic'"}),
+                         PASS)
+
+    def test_the_sentence_says_a_utility_word_is_needed(self):
+        for item_id in ("GO-145", "GEO-005"):
+            with self.subTest(item=item_id):
+                self.assertIn("holding one", ITEMS[item_id]["measures"])
+
+    def test_a_prose_parenthesis_does_not_hide_an_inline_width(self):
+        page = html('<p>Our menu (see <div style="width:1200px">table</div>) is here</p>',
+                    head=VIEWPORT)
+        self.assertEqual(page_verdict(mobile_render_checker, "MB-100", page), FAIL)
+        page = html("<p>x</p>", head=VIEWPORT + "<style>@media (400px < width < 700px)"
+                    "{.a{color:red}}</style>")
+        self.assertEqual(page_verdict(mobile_render_checker, "MB-100", page), PASS)
+
+
 # ---------------------------------------------------------------------------
 # The sets the batch adds, held to their sources
 # ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "26906b83d873",
+  "registry_version": "ba377a649ce8",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -3254,7 +3254,7 @@
           "falsy": true
         }
       },
-      "measures": "A citation-readiness score of 25 on a page whose content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). N/A on a slug made only of listed privacy, terms, contact and filler words.",
+      "measures": "A citation-readiness score of 25 on a page whose content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). N/A on a slug made only of listed privacy, terms, contact and filler words, holding one.",
       "effort": "low",
       "fix": "Optimize for AI Overviews and zero-click: citability, facts, sources"
     },
@@ -4588,7 +4588,7 @@
           "falsy": true
         }
       },
-      "measures": "A citation-readiness score of 25 on a page whose content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). N/A on a slug made only of listed privacy, terms, contact and filler words.",
+      "measures": "A citation-readiness score of 25 on a page whose content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). N/A on a slug made only of listed privacy, terms, contact and filler words, holding one.",
       "effort": "medium",
       "fix": "Back factual claims with sources, add cite/blockquote, populate sameAs",
       "scores_with": "GO-145"

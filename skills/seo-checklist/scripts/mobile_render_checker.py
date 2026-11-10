@@ -99,7 +99,9 @@ def _static_checks(source: str, timeout: int = 15) -> dict:
     # otherwise swallow the rule after it).
     declarations = phone_css(text)
     while True:
-        stripped = re.sub(r"\([^(){};]*\)", " ", declarations)
+        # Nor one holding a tag (review round 5: "(see <div style=…>)" in prose); a range
+        # condition's `<` or `>` is followed by a space or `=`.
+        stripped = re.sub(r"\((?:[^(){};<>]|[<>](?=[\s=]))*\)", " ", declarations)
         if stripped == declarations:
             break
         declarations = stripped

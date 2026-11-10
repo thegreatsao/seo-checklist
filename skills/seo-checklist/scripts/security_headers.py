@@ -162,8 +162,11 @@ def _csp_weakness(value: str) -> str | None:
         weak.append("'unsafe-inline'")
     if all("'unsafe-eval'" in sources for sources in script_sources):
         weak.append("'unsafe-eval'")
+    # Only 'strict-dynamic' makes browsers ignore host and scheme sources; a nonce or a
+    # hash does not, so `'nonce-x' https:` still runs a script from any host (review
+    # round 5).
     open_sources = [sorted(CSP_ANY_SOURCE & set(sources)) for sources in script_sources]
-    if all(found and not any(s.startswith(CSP_INLINE_OVERRIDES) for s in sources)
+    if all(found and "'strict-dynamic'" not in sources
            for found, sources in zip(open_sources, script_sources, strict=True)):
         weak.append(" ".join(open_sources[0]))
     return f"{' and '.join(weak)} in script-src" if weak else None
