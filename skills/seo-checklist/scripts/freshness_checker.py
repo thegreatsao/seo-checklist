@@ -256,9 +256,12 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
             if (parent.name in ("aside", "footer") or role in ("complementary", "contentinfo")) \
                     and parent.find_parent(["article", "main", "section"]) is None:
                 return True
+            # A hero holds every `<h1>` on the page: a logo `<h1>` in a site header beside
+            # the article's own title is no hero (review round 10).
             if (parent.name == "header" or role == "banner") \
                     and parent.find_parent(["article", "main", "section"]) is None \
-                    and parent.find("h1") is None:
+                    and (parent.find("h1") is None or any(
+                        parent not in h1.parents for h1 in soup.find_all("h1"))):
                 return True
         return False
 

@@ -65,7 +65,7 @@ Citations or Works cited; a social link elsewhere still is not one. A date writt
 in a sidebar or site-footer widget is not the page's video (MD-190), one in the page's header is; the schema tables read
 a type written as an IRI. CN-056 reads only the page's own dates: a sidebar's recent posts, a site footer's "last
 updated", a top bar's today or a comments section's dates are not the page's; a date under the page's `<h1>` in a hero
-header is.
+header (one holding every `<h1>` on the page) is.
 
 F15 batch 4 (`445b7ca058d2` → `ecaf0dc17e56`) — robots, sitemaps, redirects and URLs, and the owner's rulings on
 batch 3's questions. **Verdicts of a real audit can move**: a canonical naming another host no longer fails CI-009 or

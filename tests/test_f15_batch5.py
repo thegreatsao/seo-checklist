@@ -962,6 +962,14 @@ class ReviewRound9(unittest.TestCase):
         self.assertEqual(VisibleDates.cn_056(self, clean_blog), WARN)
         self.assertEqual(VisibleDates.cn_056(self, beautiful), PASS)
 
+    def test_a_logo_h1_beside_the_articles_own_h1_is_no_hero(self):
+        """Review round 10: a site header whose logo is an <h1>, with a top bar's today."""
+        body = ("<header class='site-header'><div class='top-bar'><span class='date'>"
+                "Tuesday, November 10, 2026</span></div><h1 class='site-title'><a href='/'>Daily</a>"
+                "</h1></header><main><article><h1>Council votes</h1><p>Posted on "
+                "<time datetime='2025-03-01'>March 1, 2025</time></p></article></main>")
+        self.assertEqual(VisibleDates.cn_056(self, body), WARN)
+
     def test_cn_056s_sentence_says_what_it_leaves_out(self):
         self.assertIn("furniture", ITEMS["CN-056"]["measures"])
 
