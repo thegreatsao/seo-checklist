@@ -12,8 +12,37 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `ecaf0dc17e56` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
-after batch 2, `445b7ca058d2` after batch 3).
+Registry version: `1a7837e21273` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4).
+
+F15 batch 5 (`ecaf0dc17e56` → `1a7837e21273`) — structured data and content, and the owner's ruling 2 on batch 4's
+questions. **The inventory is version 6**: `schema_nodes` carries Microdata and RDFa items (`format: markup`), so LO-198
+finds a LocalBusiness written in either, and a schema.org IRI `@type` counts. **Verdicts of a real audit can move**:
+MS-032 applies to a page whose only JSON-LD does not parse and fails any page with an unparseable block (the warn band
+reads `summary.warnings_if_every_block_parses`, withheld beside one); GO-143 judges a WebSite node by its own
+properties, `alternateName` among them, and a placeholder is an `example.com`/`.org`/`.net` host, not a substring
+(`myexample.com`, `example.com.au` are not); TE-172 fails an Article, NewsArticle or BlogPosting with no headline (the
+owner's ruling; Google names no required Article property) and reads Google's required properties by value (text, a
+URL reference, an ISO 8601 date); MD-190 applies to a page showing a video (a `<video>` that is not a muted background
+loop, a YouTube, Vimeo, Wistia, Dailymotion or Twitch player) and fails one with no VideoObject, and a missing
+`description`, `contentUrl` or `embedUrl` warns (Google calls them recommended); LO-200 needs name and telephone as text
+and a PostalAddress with a street and a locality; GO-144 and GEO-004 assert `answer_blocks` (a direct answer or a
+definition opening its paragraph with its term; lists and tables alone no longer pass, navigation menus are not lists);
+GO-145 and GEO-005 assert `sourced_score` (0 on a page naming no source, so a sampled about or privacy page with an
+author and a canonical now fails, the good fixture's included); CN-057 needs the author's and publisher's names in the
+visible text; CN-068 asserts `authored_score` (0 with no author); CN-056 reads dates a visitor sees (a `<time>` with
+text, a date written out, `20 July 2026` included), not metadata; GEO-006 maps `summary.entity_resolution` (a Wikidata
+or Wikipedia `sameAs`, a Wikidata item labelled with the entity's name, or a Knowledge Graph match; `not_asked`, so
+NO_DATA, when Wikidata cannot be asked) and matches `sameAs` platforms by host; KW-076 reads the body copy (lists,
+tables, divs; not headings or page furniture) and matches across `&nbsp;`; MS-033 asserts `preview_score` (0 without
+`og:image` and `twitter:card`); AR-154 no longer reads a link to the product listing as a product, so a home page
+whose nav says Products is not graded as a category page; IN-122 is N/A on a set naming only the page itself, unless a code in it is invalid. Sentences for MS-032,
+MB-102 and AR-154 (measures), IN-122 (the owner's ruling) and beside the fixes for GO-144, GEO-004, GO-145, GEO-005,
+CN-057, CN-068, CN-056, MS-033, GEO-006 and KW-076. The good fixture's WebSite node gains `alternateName`, its
+Organization a `sameAs` to Wikidata's sandbox item, and its privacy page says "Bread orders" in its copy; it now fails
+GO-145 and GEO-005 on its about and privacy pages, as the ruling reads. 141 assertions seen failing in the census (was
+142): GEO-006's FAIL, Wikidata answering with no item, is never asked offline. LO-200 reads an address named by `@id`;
+an empty JSON-LD block is no block.
 
 F15 batch 4 (`445b7ca058d2` → `ecaf0dc17e56`) — robots, sitemaps, redirects and URLs, and the owner's rulings on
 batch 3's questions. **Verdicts of a real audit can move**: a canonical naming another host no longer fails CI-009 or

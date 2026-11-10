@@ -185,6 +185,9 @@ Reads `--inventory` (see `site_crawl.py`); crawls one for itself without it.
 
 `url` — str
 `score` — int
+`answer_blocks` — int — direct answers plus definitions: what GO-144 and GEO-004 assert (F15 batch 5).
+  A definition opens its paragraph with its term; lists inside `<nav>`, `role=navigation`,
+  `<header>` or `<footer>`, and lists of links only, are not counted in `lists`
 `questions[]` — array
 `direct_answers[]` — array
 `definitions[]` — array
@@ -210,6 +213,8 @@ Reads `--inventory` (see `site_crawl.py`); crawls one for itself without it.
 `headings.h3[]` — array
 `paragraphs[]` — array — every non-empty `<p>` in the body containers (until 0.174.0,
   only those of more than eight words; KW-076's body text is these and the headings)
+`body_copy` — str — not printed; the text `keyword_usage.in_body` reads since F15 batch 5: the
+  containers' text with headings, `<nav>`, `<header>`, `<footer>` and `<aside>` taken out
 `images[]` — array
   - item keys: src, alt, width, height, loading
 `structured_data[]` — array
@@ -330,6 +335,10 @@ that could not be checked when there are any.
 
 `url` — str
 `score` — int
+`sourced_score` — int — `score` on a page naming at least one source, 0 on one naming none:
+  what GO-145 and GEO-005 assert (F15 batch 5)
+`citation_capacity` — int — trusted links, cite/blockquote tags, footnote links and schema
+  citations, counted together
 `factual_claims` — int
 `claim_samples[]` — array
 `citation_signals.external_links` — int
@@ -373,6 +382,9 @@ that could not be checked when there are any.
 `word_count` — int
 `filter_parameters[]` — array
 `product_links_detected` — int
+`category_page` — bool — the page links products: AR-154's subject (F15 batch 5). A product
+  link names a segment after `/product/`, `/products/` or `/p/`, so a link to the listing
+  itself is none
 `issues[]` — array
   - item keys: severity, message, url, evidence
 
@@ -522,6 +534,8 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 
 `url` — str
 `score` — int
+`authored_score` — int — `score` on a page naming an author, 0 on one naming none: what
+  CN-068 asserts (F15 batch 5)
 `lang` — str | None — declared primary language subtag, or null when none is declared
 `matched_locales[]` — array — sorted vocabularies used: English plus a carried declared locale
 `signals.authors[]` — array
@@ -551,6 +565,8 @@ title, including noindex pages. Unlike title duplication, absence is not competi
     file: `authors []`, `publishers ['Plerdy', …2]`, `authorship {author: False,
     publisher: True}` — a checklist article with no byline, which is the verdict the
     item's title asks for.
+`signals.authors_shown[]`, `signals.publishers_shown[]` — array — the names the page's visible
+  text carries; since F15 batch 5 `signals.authorship` is true for a half only when one is shown
 `signals.credential_markers[]` — array
 `signals.first_hand_experience_markers[]` — array
 `signals.policy_links[]` — array
@@ -598,6 +614,9 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `summary.entities_found` — int
 `summary.sameas_count` — int
 `summary.sameas_missing_critical` — int
+`summary.entity_resolution` — str — `resolved` (a Wikidata or Wikipedia `sameAs`, a Wikidata
+  item labelled with the entity's name, or a Knowledge Graph match), `unresolved` (Wikidata
+  answered with none), `not_asked` (Wikidata could not be asked): GEO-006's value map (F15 batch 5)
 `summary.wikidata_found` — bool | null — null when Wikidata could not be asked (0.124.0)
 `summary.wikipedia_found` — bool | null — null when Wikipedia could not be asked
 `summary.google_kg_checked` — bool
@@ -687,6 +706,10 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `date_signals.sources.published` / `.updated` — str | null — `meta`, `schema`, or `time`,
   naming the declared source that established each signal. Body-text regex dates never
   set either signal.
+`date_signals.declared.published` / `.updated` — str | null — what metadata, JSON-LD or a
+  `<time>` declares; since F15 batch 5 `date_signals.shown` reads only dates a visitor sees
+  (a `<time>` with text, a date in the visible text), the earliest as published and a later
+  one as updated, and `sources` says `time` or `text`
 `old_years[]` — array
 `stale_stat_sentences` — int
 `schema_date_mismatch` — bool
@@ -910,6 +933,8 @@ because until then no rule read it. Absent, both land on `NO_DATA`.
 `checks.canonical_alignment.detail` — str
 `checks.return_tags.verified` — bool
 `checks.return_tags.alternates_checked` — int
+`checks.return_tags.self_only` — bool — every URL in the set is the page itself and every code
+  is valid: IN-122 is N/A (the owner's ruling 2 on F15 batch 4's questions)
 `checks.return_tags.verified_and_valid` — bool — **absent** when verification was not
   requested or any alternate could not be fetched, so IN-122 reports `NO_DATA`
   instead of inferring validity from an incomplete check. False, whatever the returns,
@@ -1424,6 +1449,8 @@ remain present, and the site path additionally emits `scope`, `pages_checked`, a
 `fetch_error` — NoneType or str (the page could not be read; LO-198 and LO-200 are `high`)
 `local_business_nodes` — int; absent on the inventory path when the crawl was truncated and found none, so LO-198 answers NO_DATA rather than failing on pages never read
 `nap_complete` — bool: true when every LocalBusiness node has name, address, and telephone; written only for a page carrying at least one LocalBusiness node, so a page with none reports no key and the item answers NO_DATA
+  Since F15 batch 5: name and telephone as non-blank text, and an address that is a
+  PostalAddress with `streetAddress` and `addressLocality`
 `scope` — str: `site` (inventory only)
 `pages_checked` — int (inventory only)
 `local_business_pages[]` — array (inventory only)
@@ -1770,10 +1797,14 @@ to walk `rows[].decisions` directly; there is no aggregate to assert against.
 ### schema_required_props.py
 
 `schema_nodes` — int
+`nodes_and_invalid_blocks` — int — MS-032's subject: typed nodes plus JSON-LD blocks that do
+  not parse (F15 batch 5)
+`invalid_blocks` — int
 `checked_type` — NoneType
 `incomplete_nodes_by_type` — object — one entry per schema type present on the page,
   counting the nodes of that type with a missing required or recommended property or a
-  placeholder value. A type with nothing wrong still gets a key, at zero, so an absent
+  placeholder value — since F15 batch 5 among that type's own properties only (a
+  co-type's are not its), `alternateName` among WebSite's. A type with nothing wrong still gets a key, at zero, so an absent
   key means the page declares no node of that type — which is what GO-143's
   `missing_is: pass` answers on `incomplete_nodes_by_type.WebSite`
 `rows[]` — array
@@ -1782,6 +1813,8 @@ to walk `rows[].decisions` directly; there is no aggregate to assert against.
   - item keys: severity, message, url, evidence
 `summary.errors` — int
 `summary.warnings` — int
+`summary.warnings_if_every_block_parses` — int — `summary.warnings`, absent when a block does
+  not parse, so MS-032's warn band cannot soften that failure (F15 batch 5)
 `source` — str
 `final_url` — str
 
@@ -1938,7 +1971,8 @@ output contracts derive from it, so a change here moves them at once.
     canonical, `null` when there are none or two that disagree (F15, TE-176)
   - `content_words`, `text_hash`, `signature[]` (MinHash, 100 values)
   - `internal_out`, `unique_internal_out`, `external_out`
-  - `schema_nodes[]` — one object per parseable JSON-LD node; item key: `types[]`
+  - `schema_nodes[]` — one object per parseable JSON-LD node; item key: `types[]`; since
+    F15 batch 5 also one per Microdata item and RDFa resource, with `format: "markup"`
   - `links[]` — item keys: target, anchor, rel, nofollow, internal, alt_named; `anchor`
     is the link's text, else its `aria-label` or its images' alt (`alt_named` true then;
     F15, BL-081)
@@ -1961,7 +1995,7 @@ sitemap-walk cap is reached; a fetch error item retains `error_kind` beside `err
 
 A page key is `scheme://host/path` spelled as requests sends it (`/café` and
 `/caf%C3%A9` are one), the query dropped except a page number (`?page=2`,
-`PAGE_NUMBER_PARAMS`; page 1 is the page itself), trailing slash kept only on the root. Inventory version 5 (F15). `--out PATH` writes the inventory to a file and prints the summary instead.
+`PAGE_NUMBER_PARAMS`; page 1 is the page itself), trailing slash kept only on the root. Inventory version 6 (F15 batch 5: `schema_nodes` also carries Microdata and RDFa items, each `{types, format: "markup"}`). `--out PATH` writes the inventory to a file and prints the summary instead.
 
 ### sitemap_checker.py
 
@@ -2006,6 +2040,8 @@ A page key is `scheme://host/path` spelled as requests sends it (`/café` and
 
 `url` — str
 `score` — int
+`preview_score` — int — `score` on a page carrying `og:image` and `twitter:card`, 0 otherwise:
+  what MS-033 asserts (F15 batch 5)
 `og_tags.og:locale` — str
 `og_tags.og:site_name` — str
 `og_tags.og:type` — str
@@ -2108,6 +2144,9 @@ the scheme. Three shapes, and the difference between them is the whole contract:
 ### video_schema_checker.py
 
 `videos` — int
+`page_videos[]` — array — the videos the page shows: a `<video>` with a source (not a muted
+  autoplaying or looping one without controls) and a player `<iframe>`/`<embed>`
+`video_signals` — int — the larger of `videos` and `page_videos`: MD-190's subject (F15 batch 5)
 `rows[]` — array
 `issues[]` — array
 `source` — str

@@ -10,6 +10,7 @@ import json
 import os
 import re
 from collections.abc import Iterable
+from datetime import datetime
 from typing import Any
 
 from seo_common import (read_source, as_list, issue, load_html, parse_html, print_json_or_text,
@@ -29,16 +30,73 @@ RICH_RESULT_REQUIRED = {
 }
 
 
+# Google's Article page names no required property; `headline` is required here by the
+# owner's F03 ruling on TE-172 ("an Article with no headline fails"): without it Google
+# has no title of its own to show for the article. Kept apart from Google's table above,
+# which `tests/test_closed_sets.py` holds to Google's pages.
+RULED_REQUIRED = {
+    "Article": ("headline",),
+    "BlogPosting": ("headline",),
+    "NewsArticle": ("headline",),
+}
+
+# The properties of the two tables read by value (F15, TE-172's ruling "by value"):
+# text is a non-blank string, a URL an http(s) address or a relative reference with no
+# space (or an ImageObject carrying one), a date ISO 8601. Every other property is read as present.
+TEXT_PROPS = frozenset({"name", "headline"})
+URL_PROPS = frozenset({"thumbnailUrl"})
+DATE_PROPS = frozenset({"uploadDate"})
+
+
+def _is_text(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _url_value(value: Any) -> bool:
+    if isinstance(value, dict):
+        return any(_url_value(value.get(key)) for key in ("url", "contentUrl", "@id"))
+    if not isinstance(value, str) or not value.strip() or re.search(r"\s", value.strip()):
+        return False
+    # An http(s) address or a reference resolved against the page; another scheme
+    # (`data:`, `javascript:`) is no URL Google fetches a thumbnail from.
+    value = value.strip()
+    scheme = re.match(r"([A-Za-z][A-Za-z0-9+.-]*):", value)
+    return (bool(re.match(r"(?i)https?://[^/]", value)) if scheme
+            else not value.startswith("//") or bool(re.match(r"//[^/]", value)))
+
+
+def _is_date(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return True
+
+
+def value_ok(node: dict[str, Any], prop: str) -> bool:
+    """Whether `prop` carries a value of its kind; a list needs one such entry."""
+    if not has_value(node, prop):
+        return False
+    kind = (_is_text if prop in TEXT_PROPS else _url_value if prop in URL_PROPS
+            else _is_date if prop in DATE_PROPS else None)
+    if kind is None:
+        return True
+    return any(kind(entry) for entry in as_list(node[prop]))
+
+
 def missing_rich_result_props(type_name: str, node: dict, path: str) -> list[str]:
-    """What a node lacks of `RICH_RESULT_REQUIRED`, each as it is printed."""
+    """What a node lacks of `RICH_RESULT_REQUIRED` and `RULED_REQUIRED`, each as it is
+    printed; a property whose value is not of its kind is missing."""
     missing = []
-    for prop in RICH_RESULT_REQUIRED.get(type_name, ()):
+    for prop in RICH_RESULT_REQUIRED.get(type_name, ()) + RULED_REQUIRED.get(type_name, ()):
         if isinstance(prop, tuple):
-            if not any(has_value(node, p) for p in prop):
+            if not any(value_ok(node, p) for p in prop):
                 missing.append(" or ".join(prop))
         # A review nested in the item it reviews names that item by nesting, and
         # Google says to omit `itemReviewed` there.
-        elif not has_value(node, prop) and not (
+        elif not value_ok(node, prop) and not (
                 prop == "itemReviewed" and re.search(r"\.reviews?(\[\d+\])?$", path)):
             missing.append(prop)
     return missing
@@ -101,11 +159,18 @@ RECOMMENDED_PROPS: dict[str, set[str]] = {
     # `WebSite` itself stays required (`name`, `url`) and stays useful: it is what
     # Google reads for the site name in results, and its live documentation lists
     # exactly those two as required and `alternateName` as optional. `alternateName`
-    # is not added here — optional is not recommended, and this table is read as an
-    # instruction.
+    # is here by the owner's F03 ruling on GO-143 ("include alternateName"): the item
+    # is the site name Google shows, and `alternateName` is the one other property
+    # Google reads for it.
+    "WebSite": {"alternateName"},
 }
 
-PLACEHOLDER_MARKERS = ("REPLACE", "TODO", "INSERT", "example.com", "lorem ipsum")
+PLACEHOLDER_MARKERS = ("REPLACE", "TODO", "INSERT", "lorem ipsum")
+# The reserved example domains (RFC 2606), matched as a host: `example.com`,
+# `www.example.org/x`, `info@example.net`, but not `myexample.com` or `example.com.au`,
+# which a substring search took for placeholders (F15, GO-143's ruling).
+PLACEHOLDER_HOST = re.compile(r"(?<![\w.-])(?:[\w-]+\.)*example\.(?:com|org|net)(?![\w-]|\.[\w-])",
+                              re.I)
 
 # `[SHOUTED TEXT IN BRACKETS]` is what an unfilled template looks like. The marker
 # list used to contain a bare `"["`, tested against `json.dumps` of the property
@@ -170,6 +235,9 @@ def extract_schema_documents(source: str, timeout: int = 15) -> tuple[list[Any],
         parsed = parse_html(html_or_json, final_url or source)
         # Validate every type the document declares, including contributed blocks.
         for item in parsed.get("schema", []):
+            if (isinstance(item, dict) and item.get("error")
+                    and not str(item.get("snippet") or "").strip()):
+                continue                  # an empty block declares nothing (F15)
             if isinstance(item, dict) and item.get("error"):
                 # Dropped silently before. A block of JSON-LD that does not parse is
                 # not an absence of structured data, and reporting it as one made
@@ -180,7 +248,7 @@ def extract_schema_documents(source: str, timeout: int = 15) -> tuple[list[Any],
             else:
                 documents.append(item)
     return documents, {"source": source, "final_url": final_url or source,
-                       "fetch": fetch, "invalid_blocks": invalid}
+                       "fetch": fetch, "invalid_blocks": invalid, "html": html_or_json or ""}
 
 
 def find_schema_nodes(documents: list[Any], schema_type: str | None = None) -> list[dict[str, Any]]:
@@ -218,6 +286,7 @@ def contains_placeholder(value: Any) -> bool:
     if isinstance(value, str):
         upper = value.upper()
         return (any(marker.upper() in upper for marker in PLACEHOLDER_MARKERS)
+                or bool(PLACEHOLDER_HOST.search(value))
                 or bool(PLACEHOLDER_BRACKETS.search(value)))
     if isinstance(value, dict):
         return any(contains_placeholder(item) for item in value.values())
@@ -277,15 +346,30 @@ def validate_schema_required_props(documents: list[Any], schema_type: str | None
     # name against a human-readable message. `GO-143` did, with `(?i)WebSite`, and
     # a pattern aimed at wording is a verdict that passes in silence the day the
     # wording changes.
+    #
+    # Per type, by that type's own properties (F15, GO-143's ruling): a node typed
+    # `["WebSite", "Organization"]` is not an incomplete WebSite for lacking the
+    # Organization's logo. A type with no table of its own is judged by every finding,
+    # as before.
     incomplete: dict[str, int] = {}
     for row in rows:
-        wrong = bool(row["missing_required"] or row["missing_recommended"]
-                     or row["placeholder_properties"])
         for type_name in row["types"]:
-            incomplete[type_name] = incomplete.get(type_name, 0) + int(wrong)
-    return {
+            own = (REQUIRED_PROPS.get(type_name, set()) | RECOMMENDED_PROPS.get(type_name, set())
+                   | {p for prop in RICH_RESULT_REQUIRED.get(type_name, ())
+                      + RULED_REQUIRED.get(type_name, ())
+                      for p in (prop if isinstance(prop, tuple) else (prop,))})
+            findings = (row["missing_required"] + row["missing_recommended"]
+                        + row["placeholder_properties"])
+            if own:
+                findings = [prop for prop in findings
+                            if prop in own or set(prop.split(" or ")) <= own]
+            incomplete[type_name] = incomplete.get(type_name, 0) + int(bool(findings))
+    result = {
         "schema_nodes": len(nodes),
         "invalid_blocks": len(invalid_blocks or []),
+        # What MS-032 applies to: a page whose only JSON-LD does not parse has no
+        # node and still has structured data Google cannot read (F15, the ruling).
+        "nodes_and_invalid_blocks": len(nodes) + len(invalid_blocks or []),
         "checked_type": schema_type,
         "incomplete_nodes_by_type": incomplete,
         "rows": rows,
@@ -295,6 +379,11 @@ def validate_schema_required_props(documents: list[Any], schema_type: str | None
             "warnings": sum(1 for item in issues if item["severity"] == "warning"),
         },
     }
+    # MS-032's warn band, withheld when a JSON-LD block does not parse: Google reads
+    # none of that block, so the page fails rather than warns (F15, MS-032's ruling).
+    if not invalid_blocks:
+        result["summary"]["warnings_if_every_block_parses"] = result["summary"]["warnings"]
+    return result
 
 
 def main() -> None:

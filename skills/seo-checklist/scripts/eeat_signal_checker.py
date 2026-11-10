@@ -20,7 +20,9 @@ from seo_common import (
     parse_html,
     primary_language,
     schema_values,
+    shown_in,
     under_foreign_credit,
+    visible_text,
     walk_json,
 )
 
@@ -229,6 +231,12 @@ def check_eeat(source: str, timeout: int = 15) -> dict:
                                                    parsed.get("page_own_ids", frozenset()))
                         if value and value.strip()})
     publishers = sorted({v.strip() for v in _publisher_names(parsed, soup) if v and v.strip()})
+    # "Show ... clearly" means visible (F15, CN-057's ruling): a name counts for the
+    # item only where the page's visible text carries it; meta tags, `og:site_name` and
+    # JSON-LD say who, and the text must show it.
+    shown = visible_text(soup)
+    authors_shown = shown_in(authors, shown)
+    publishers_shown = shown_in(publishers, shown)
 
     credential_hits = _text_hits(patterns["credential"], body)
     experience_hits = _text_hits(patterns["first_hand"], body)
@@ -289,8 +297,14 @@ def check_eeat(source: str, timeout: int = 15) -> dict:
         # markup, and the warning above would read as "no reviewer either".
         issues.append({"severity": "info",
                        "message": "Content is credited to a reviewer but names no author."})
+    if authors and not authors_shown:
+        issues.append({"severity": "warning",
+                       "message": "An author is declared but the page text does not show the name."})
     if not publishers:
         issues.append({"severity": "warning", "message": "No publisher or site-identity signal found."})
+    elif not publishers_shown:
+        issues.append({"severity": "warning",
+                       "message": "A publisher is declared but the page text does not show the name."})
     if not credential_hits:
         issues.append({"severity": "info", "message": "No visible credential or review language found."})
     if not policy_links:
@@ -303,6 +317,9 @@ def check_eeat(source: str, timeout: int = 15) -> dict:
     return {
         "url": url or source,
         "score": min(100, score),
+        # What CN-068 asserts (F15, the ruling: "make an author required, then score
+        # the rest"): the score on a page naming an author, 0 on a page naming none.
+        "authored_score": min(100, score) if authors else 0,
         "lang": lang,
         "matched_locales": sorted(locales),
         "signals": {
@@ -313,7 +330,9 @@ def check_eeat(source: str, timeout: int = 15) -> dict:
             # reads one path, so the pair is emitted as an object the rule can compare
             # whole — the shape AR-158 uses for "breadcrumbs in the UI *and* as
             # BreadcrumbList markup".
-            "authorship": {"author": bool(authors), "publisher": bool(publishers)},
+            "authors_shown": authors_shown[:20],
+            "publishers_shown": publishers_shown[:20],
+            "authorship": {"author": bool(authors_shown), "publisher": bool(publishers_shown)},
             "credential_markers": credential_hits[:20],
             "first_hand_experience_markers": experience_hits[:20],
             "policy_links": policy_links[:20],

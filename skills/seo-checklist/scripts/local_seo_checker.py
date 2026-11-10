@@ -12,12 +12,32 @@ from typing import Any
 import site_crawl
 from lib.schema_types import is_local_business_type
 from schema_required_props import extract_schema_documents, find_schema_nodes, load_source_html
-from seo_common import read_source, parse_html, print_json_or_text, issue
+from seo_common import as_list, read_source, parse_html, print_json_or_text, issue
 
 
 PHONE_RE = re.compile(r"(\+?\d[\d\s().-]{7,}\d)")
 MAP_PATTERNS = ("google.com/maps", "maps.google.", "bing.com/maps", "openstreetmap.org")
 GBP_PATTERNS = ("g.page/", "business.google.com", "search.google.com/local/writereview")
+
+
+def _text(value) -> bool:
+    """Text, not whitespace; a list holding one such entry is text too."""
+    return any(isinstance(entry, str) and bool(entry.strip()) for entry in as_list(value))
+
+
+def nap_gaps(node: dict, by_id: dict | None = None) -> list[str]:
+    """What a LocalBusiness node lacks of a complete NAP (F15, LO-200's ruling): a name
+    and a telephone that are text, not whitespace, and a PostalAddress with a street
+    and a locality. An address written as one string has neither field; one named by
+    `@id` is read where the page defines it (`by_id`)."""
+    gaps = [prop for prop in ("name", "telephone") if not _text(node.get(prop))]
+    addresses = [{**(by_id or {}).get(value.get("@id"), {}), **value}
+                 if isinstance(value.get("@id"), str) else value
+                 for value in as_list(node.get("address")) if isinstance(value, dict)]
+    if not any(_text(a.get("streetAddress")) and _text(a.get("addressLocality"))
+               for a in addresses):
+        gaps.append("address (a PostalAddress with streetAddress and addressLocality)")
+    return gaps
 
 
 def find_local_business_nodes(documents: list) -> list:
@@ -39,8 +59,9 @@ def check_local_business_inventory(source: str, inventory_path: str) -> dict[str
     truncated = bool((inventory.get("summary") or {}).get("truncated"))
     issues = []
     if not matches:
-        issues.append(issue("warning", "No LocalBusiness JSON-LD found on any "
-                            "crawled page (nor any of its subtypes)", source))
+        issues.append(issue("warning", "No LocalBusiness markup (JSON-LD, Microdata or "
+                            "RDFa) found on any crawled page (nor any of its subtypes)",
+                            source))
     result = {
         "source": source,
         "final_url": source,
@@ -83,11 +104,12 @@ def check_local_seo(source: str, timeout: int = 15) -> dict[str, Any]:
         # to grade and therefore no page-level verdict to raise.
         issues.append(issue("info", "No LocalBusiness JSON-LD found (nor any of "
                             "its subtypes)", final_url or source))
+    by_id = {node["@id"]: node for row in find_schema_nodes(documents)
+             if isinstance((node := row["node"]).get("@id"), str)}
     for row in local_nodes:
         node = row["node"]
-        for prop in ("name", "address", "telephone"):
-            if not node.get(prop):
-                issues.append(issue("error", f"LocalBusiness is missing {prop}", evidence=row["path"]))
+        for prop in nap_gaps(node, by_id):
+            issues.append(issue("error", f"LocalBusiness is missing {prop}", evidence=row["path"]))
         if not node.get("areaServed") and not node.get("serviceArea"):
             issues.append(issue("info", "LocalBusiness is missing service area signal", evidence=row["path"]))
         if node.get("telephone") and phones and str(node["telephone"]).replace(" ", "") not in "".join(phones).replace(" ", ""):
@@ -116,10 +138,7 @@ def check_local_seo(source: str, timeout: int = 15) -> dict[str, Any]:
         "issues": issues,
     }
     if local_nodes:
-        result["nap_complete"] = all(
-            all(row["node"].get(prop) for prop in ("name", "address", "telephone"))
-            for row in local_nodes
-        )
+        result["nap_complete"] = not any(nap_gaps(row["node"], by_id) for row in local_nodes)
     return result
 
 

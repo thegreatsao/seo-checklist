@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "ecaf0dc17e56",
+  "registry_version": "1a7837e21273",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -896,14 +896,15 @@
           "eq": 0
         },
         "applies_when": {
-          "path": "schema_nodes",
+          "path": "nodes_and_invalid_blocks",
           "gt": 0
         },
         "warn": {
-          "path": "summary.warnings",
+          "path": "summary.warnings_if_every_block_parses",
           "lte": 3
         }
       },
+      "measures": "JSON-LD only: a block that does not parse fails, and each node's required properties for the types this tool tables are present (Google's by value). Other types' properties are not checked; Microdata is not read.",
       "effort": "low",
       "fix": "Add required schema properties and validate with the Rich Results Test"
     },
@@ -922,10 +923,11 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
+          "path": "preview_score",
           "gte": 80
         }
       },
+      "measures": "A score of 80 over thirteen Open Graph and Twitter Card tags on a page carrying og:image and twitter:card, the two a preview is drawn from. Whether the preview looks right is not checked.",
       "effort": "low",
       "fix": "Fill in Open Graph and Twitter Card tags"
     },
@@ -1364,6 +1366,7 @@
           "truthy": true
         }
       },
+      "measures": "That the visible text shows a date (a <time> with text, or one written out) and a later one as the update. Dates in metadata or JSON-LD alone are not shown; which date is which is not read.",
       "effort": "high",
       "fix": "Show publication and updated dates"
     },
@@ -1389,6 +1392,7 @@
           }
         }
       },
+      "measures": "That an author's and a publisher's names appear in the page's visible text, each named by markup (a byline, meta or JSON-LD). A name in metadata alone is not shown; CSS from stylesheets is not applied.",
       "effort": "high",
       "fix": "Show author and publisher clearly"
     },
@@ -1555,10 +1559,11 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
+          "path": "authored_score",
           "gte": 35
         }
       },
+      "measures": "A score of 35 from E-E-A-T signals on a page that names an author: byline, credential and first-hand words, policy and trust links, outbound links. Whether the expertise is real is not judged.",
       "effort": "high",
       "fix": "Strengthen authorship and E-E-A-T: author, credentials, first-hand experience, sourced claims"
     },
@@ -1699,6 +1704,7 @@
           "truthy": true
         }
       },
+      "measures": "That the primary keyword appears in the body copy: the content's text, lists, tables and divs included, headings, navigation and page furniture not. How naturally it is used is not judged.",
       "effort": "medium",
       "fix": "The primary keyword should appear naturally in body copy"
     },
@@ -2215,6 +2221,7 @@
           ]
         }
       },
+      "measures": "That each VideoObject node has Google's required properties (name, thumbnailUrl, uploadDate); recommended ones warn. Nothing about playback, layout or speed on a phone is measured.",
       "effort": "medium",
       "fix": "Optimize video for mobile",
       "scores_with": "MD-190"
@@ -2751,8 +2758,13 @@
         "assert": {
           "path": "checks.return_tags.verified_and_valid",
           "truthy": true
+        },
+        "applies_when": {
+          "path": "checks.return_tags.self_only",
+          "falsy": true
         }
       },
+      "measures": "That every hreflang code is in Google's format (ISO 639-1, ISO 3166-1) and each other URL the set names links back. A set naming only the page itself is N/A, unless a code in it is invalid.",
       "effort": "high",
       "fix": "Valid hreflang with return tags"
     },
@@ -3201,10 +3213,11 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
-          "gte": 32
+          "path": "answer_blocks",
+          "gte": 1
         }
       },
+      "measures": "That the page carries a direct answer (20 to 70 words under a question heading) or a definition paragraph. Lists and tables do not stand in for one; whether Google lifts a snippet is not observable.",
       "effort": "low",
       "fix": "Optimize for featured snippets: direct answers, lists, tables"
     },
@@ -3223,11 +3236,11 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
+          "path": "sourced_score",
           "gte": 25
         }
       },
-      "measures": "How citation-ready this page's content is. Whether it appears in AI Overviews or zero-click results is not observable here.",
+      "measures": "A citation-readiness score of 25 on a page naming a source (a cite, blockquote, footnote, trusted-host link or schema citation). Whether it appears in AI Overviews or zero-click results is not observable here.",
       "effort": "low",
       "fix": "Optimize for AI Overviews and zero-click: citability, facts, sources"
     },
@@ -3451,8 +3464,8 @@
           ]
         },
         "applies_when": {
-          "path": "product_links_detected",
-          "gt": 0
+          "path": "category_page",
+          "truthy": true
         },
         "warn": {
           "path": "issues",
@@ -3462,6 +3475,7 @@
           ]
         }
       },
+      "measures": "Presence counts on a page linking products (a link to the listing alone is none): an H1, a meta description, 150 words of copy, filter canonicals. Whether the copy, filters or grid serve shoppers is not judged.",
       "effort": "high",
       "fix": "Optimize e-commerce category pages"
     },
@@ -4288,7 +4302,7 @@
           ]
         },
         "applies_when": {
-          "path": "videos",
+          "path": "video_signals",
           "gt": 0
         },
         "warn": {
@@ -4537,10 +4551,11 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
-          "gte": 32
+          "path": "answer_blocks",
+          "gte": 1
         }
       },
+      "measures": "That the page carries a direct answer (20 to 70 words under a question heading) or a definition paragraph; navigation menus are not lists. Whether an AI answer quotes it is not observable here.",
       "effort": "medium",
       "fix": "Add direct answers, definitions, lists and tables for featured snippets",
       "scores_with": "GO-144"
@@ -4560,10 +4575,11 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
+          "path": "sourced_score",
           "gte": 25
         }
       },
+      "measures": "A citation-readiness score of 25 on a page naming a source (a cite, blockquote, footnote, trusted-host link or schema citation). Whether a source supports a claim is not read.",
       "effort": "medium",
       "fix": "Back factual claims with sources, add cite/blockquote, populate sameAs",
       "scores_with": "GO-145"
@@ -4583,10 +4599,14 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "summary.sameas_missing_critical",
-          "eq": 0
+          "path": "summary.entity_resolution",
+          "value_map": {
+            "resolved": "pass",
+            "unresolved": "fail"
+          }
         }
       },
+      "measures": "That the entity resolves: a Wikidata or Wikipedia link in sameAs, a Wikidata item labelled with its name, or a Knowledge Graph match. Withheld when Wikidata cannot be asked.",
       "effort": "medium",
       "fix": "Populate sameAs with key profiles and establish a Wikidata link"
     },

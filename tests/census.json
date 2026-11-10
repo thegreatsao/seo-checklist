@@ -3080,38 +3080,6 @@
         "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
-        "fixture:good": "PASS",
-        "fixture:good_tls": "PASS",
-        "flagged": "FAIL",
-        "indexed": "FAIL",
-        "no-location": "FAIL",
-        "page-defects": "FAIL",
-        "page-sound": "FAIL",
-        "redirect-chain": "FAIL",
-        "site-defects": "FAIL",
-        "slow-field": "FAIL",
-        "unindexed": "FAIL",
-        "url-shapes": "FAIL",
-        "went-down": "FAIL"
-      },
-      "distinct": [
-        "FAIL",
-        "NO_DATA",
-        "PASS"
-      ],
-      "script": "citation_readiness.py",
-      "severity": "high",
-      "source": "script",
-      "title": "Content is citation-ready for AI search"
-    },
-    "GEO-006": {
-      "answers": {
-        "cleared": "FAIL",
-        "error-entry": "NO_DATA",
-        "failing-shapes": "FAIL",
-        "fast-field": "FAIL",
-        "fixture:broken": "FAIL",
-        "fixture:broken_tls": "FAIL",
         "fixture:good": "FAIL",
         "fixture:good_tls": "FAIL",
         "flagged": "FAIL",
@@ -3129,6 +3097,37 @@
       "distinct": [
         "FAIL",
         "NO_DATA"
+      ],
+      "script": "citation_readiness.py",
+      "severity": "high",
+      "source": "script",
+      "title": "Content is citation-ready for AI search"
+    },
+    "GEO-006": {
+      "answers": {
+        "cleared": "NO_DATA",
+        "error-entry": "NO_DATA",
+        "failing-shapes": "NO_DATA",
+        "fast-field": "NO_DATA",
+        "fixture:broken": "NO_DATA",
+        "fixture:broken_tls": "NO_DATA",
+        "fixture:good": "PASS",
+        "fixture:good_tls": "PASS",
+        "flagged": "NO_DATA",
+        "indexed": "NO_DATA",
+        "no-location": "NO_DATA",
+        "page-defects": "NO_DATA",
+        "page-sound": "NO_DATA",
+        "redirect-chain": "NO_DATA",
+        "site-defects": "NO_DATA",
+        "slow-field": "NO_DATA",
+        "unindexed": "NO_DATA",
+        "url-shapes": "NO_DATA",
+        "went-down": "NO_DATA"
+      },
+      "distinct": [
+        "NO_DATA",
+        "PASS"
       ],
       "script": "entity_checker.py",
       "severity": "medium",
@@ -3595,7 +3594,7 @@
         "indexed": "N/A",
         "no-location": "N/A",
         "page-defects": "FAIL",
-        "page-sound": "PASS",
+        "page-sound": "FAIL",
         "redirect-chain": "N/A",
         "site-defects": "N/A",
         "slow-field": "N/A",
@@ -3654,8 +3653,8 @@
         "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
-        "fixture:good": "PASS",
-        "fixture:good_tls": "PASS",
+        "fixture:good": "FAIL",
+        "fixture:good_tls": "FAIL",
         "flagged": "FAIL",
         "indexed": "FAIL",
         "no-location": "FAIL",
@@ -3670,8 +3669,7 @@
       },
       "distinct": [
         "FAIL",
-        "NO_DATA",
-        "PASS"
+        "NO_DATA"
       ],
       "script": "citation_readiness.py",
       "severity": "high",
@@ -6848,7 +6846,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "ecaf0dc17e56",
+  "registry_version": "1a7837e21273",
   "sites": [
     "fixture:good",
     "fixture:broken",

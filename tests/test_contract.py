@@ -298,13 +298,9 @@ SAME_ON_BOTH = {
     # --- Needs an input this audit cannot produce ----------------------------
     "GEO-007": "needs an IndexNow key, which is a secret and not a fixture",
 
-    # --- Would take the suite online ----------------------------------------
-    # The one exemption worth arguing with. entity_checker verifies sameAs targets by
-    # fetching them, so a fixture with a real Wikidata link would make this suite
-    # reach the internet — see PLACEHOLDER_EXTERNAL in harness.py for what the
-    # fixtures do instead where a link only has to be counted.
-    "GEO-006": "sameAs targets are verified by fetching wikipedia/wikidata; an "
-               "offline fixture cannot demonstrate them without egress",
+    # GEO-006 was here, "would take the suite online", until F15 batch 5: the good
+    # fixture's Wikidata `sameAs` resolves its entity without asking Wikidata, and the
+    # broken one, with no link and no lookup, is NO_DATA.
     "KW-076": "no keyword is supplied to a fixture run, so neither side is measured",
     "GO-143": "schema_required_props reports on schemas that are present, so a site "
               "with no WebSite block produces no issue to match — the item cannot "
@@ -585,9 +581,9 @@ class NothingAccusesTheGoodSiteWithoutAReason(unittest.TestCase):
         # SP-110 was here until 0.87.0, and it left because the reasoning stopped
         # being true: a render-blocking stylesheet is how CSS is delivered, not a
         # defect the good fixture carries on purpose, and it is graded `info` now.
-        "GEO-006": "entity_checker verifies sameAs targets by fetching them, so a "
-                   "fixture with real Wikidata links would take this suite online — "
-                   "see PLACEHOLDER_EXTERNAL in harness.py",
+        # GEO-006 was here until F15 batch 5, when it began to map the Wikidata and
+        # Knowledge Graph lookups: a loopback-only run never makes them, so the item is
+        # NO_DATA on the good origin rather than an accusation.
     }
 
     def setUp(self):

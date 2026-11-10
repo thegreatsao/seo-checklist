@@ -761,7 +761,7 @@ name. A column called `url` would be read as "fix this page".
   of a defect is not evidence the defect is still there**, and this one read as open
   through every audit of this file until somebody ran the detector it asked for. Since
   F05 `audit_reachability.py` claims reachability only from a run — a FAIL the recorded
-  census saw — and 1 of 145 script-backed assertions is still not claimed either way;
+  census saw — and 2 of 145 script-backed assertions are still not claimed either way;
   that number is the honest measure of how much of the registry this tool speaks about.
   <!-- ki: items-that-could-not-fail -->
 
@@ -1653,7 +1653,10 @@ name. A column called `url` would be read as "fix this page".
   <!-- ki: foreign-credit-keys-width -->
 
 - **`entity_checker.py` reads the same graph with no boundary and a top-level-only
-  scan, and `GEO-006` is graded on what it finds.** The item asserts
+  scan, and `GEO-006` is graded on what it finds.** Since F15 batch 5 the item maps
+  `summary.entity_resolution` (a Wikidata or Wikipedia `sameAs`, a Wikidata item
+  labelled with the entity's name, or a Knowledge Graph match), so the `sameAs` half
+  below still decides it; until then it asserted
   `summary.sameas_missing_critical eq 0`, counted over four platforms — Wikidata,
   Wikipedia, LinkedIn and Twitter/X, four rather than five because `twitter.com` and
   `x.com` are two domains under one name and `missing` is keyed by name. Measured on
@@ -1710,7 +1713,10 @@ name. A column called `url` would be read as "fix this page".
   two are exactly what `schema_required_props.py` requires. The item now says so:
   *Complete Every WebSite Node Google Reads for the Site Name*. Measured either way — a `WebSite`
   with name and url passes, one missing either fails, and the retired markup is
-  neither asked for nor penalised.
+  neither asked for nor penalised. Since F15 batch 5 (the owner's ruling on GO-143)
+  `alternateName`, the one other property Google reads for the site name, is asked
+  too, so a node with name and url alone fails, with or without the retired markup;
+  the fixture's node carries one.
 
   **The exemplary fixture was publishing the same false claim.**
   `tests/fixtures/good/index.html` declared a `SearchAction` targeting `/search?q=`, a
@@ -1803,17 +1809,23 @@ name. A column called `url` would be read as "fix this page".
    checklist, and Google's word for a property is not the only word. What is missing
    is that nobody wrote down which it is, per type, and the file reads as though it
    were quoting an authority. The probe records both tables so a change to either is
-   visible; closing this needs a reading per type, not a patch.
+   visible; closing this needs a reading per type, not a patch. Since F15 batch 5 the
+   owner has ruled one of these positions for TE-172: an Article, NewsArticle or
+   BlogPosting with no `headline` fails (`RULED_REQUIRED`, kept apart from Google's
+   table), and `WebSite` recommends `alternateName` (GO-143).
    <!-- ki: the-schema-property-tables-have-not-been-re-read -->
 
 4. **Placeholder text in structured data decides almost nothing, and 0.89.0 made that
    slightly worse.** `schema_required_props.py` reports an unfilled template — `TODO`,
-   `REPLACE`, `INSERT`, `example.com`, `[SHOUTED TEXT]` — as a **warning**, and two
+   `REPLACE`, `INSERT`, an `example.com`/`.org`/`.net` host (matched as a host since
+   F15 batch 5, so `myexample.com` is not one), `[SHOUTED TEXT]` — as a **warning**, and two
    items read this script, and **neither can fail on one**. `MS-032` (`high`) asserts
    `summary.errors eq 0`; a placeholder is not an error, so the assertion passes and
-   the `summary.warnings lte 3` band beside it is never consulted — the runner reads a
-   warn band only when the assertion has already failed, so that band softens a page
-   that has errors and does not judge one that has none. Measured: a `Product` with
+   the warn band beside it (`summary.warnings_if_every_block_parses lte 3` since F15
+   batch 5, withheld beside a JSON-LD block that does not parse, so that one fails) is
+   never consulted — the runner reads a warn band only when the assertion has already
+   failed, so that band softens a page that has errors and does not judge one that has
+   none. Measured: a `Product` with
    four unfilled properties produces **seven warnings, zero errors, and `MS-032`
    PASS**. `GO-143` (`low`) catches a placeholder only when it sits on a `WebSite`
    node, which is exactly its subject and not a general answer.

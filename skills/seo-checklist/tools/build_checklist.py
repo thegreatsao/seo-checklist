@@ -266,7 +266,6 @@ ENTRY_ONLY = {
 # seventeen of them went unnoticed for the life of the registry.
 APPLIES_WHEN = {
     "MB-102": {"path": "videos", "gt": 0},
-    "MD-190": {"path": "videos", "gt": 0},
     # Images. `image_inventory.py` already withholds `count`, `missing_alt` and
     # `summary.lazy_lcp_candidates` on a page with no images, so these three reported
     # NO_DATA rather than a free pass — the debt was the status, not the pass. The
@@ -286,7 +285,9 @@ APPLIES_WHEN = {
     # Structured data. A page that declares no schema has nothing for either of these
     # to validate, and both returned `summary.errors` 0 — a pass for "implement
     # structured data" awarded to a page that implements none.
-    "MS-032": {"path": "schema_nodes", "gt": 0},
+    # F15 (MS-032's ruling): a page whose only JSON-LD does not parse has no node and
+    # still fails, so the subject is nodes and unparseable blocks together.
+    "MS-032": {"path": "nodes_and_invalid_blocks", "gt": 0},
     "GO-143": {"path": "schema_nodes", "gt": 0},
     "TE-172": {"path": "nodes", "gt": 0},
     "TECH-001": {"path": "nodes", "gt": 0},
@@ -300,7 +301,15 @@ APPLIES_WHEN = {
     # a missing description about whatever page it was given — two `warning` issues,
     # which `SEVERITY_ALIAS` reads as `medium`, so the item returned WARN about a page
     # it should never have judged. The only free-pass entry here that was not a pass.
-    "AR-154": {"path": "product_links_detected", "gt": 0},
+    # F15 (AR-154's ruling): a link to the product listing is not a product, so a home
+    # page whose nav says Products is no category page; `category_page` is the answer.
+    "AR-154": {"path": "category_page", "truthy": True},
+    # F15 (MD-190's ruling): a page showing a video with no VideoObject fails, so the
+    # subject is a node or a video the page shows. MB-102 stays on VideoObject nodes.
+    "MD-190": {"path": "video_signals", "gt": 0},
+    # The owner's ruling 2 on F15 batch 4's questions: a set naming only the page itself
+    # has nothing to compare (a bad code in it still fails: `self_only` is false then).
+    "IN-122": {"path": "checks.return_tags.self_only", "falsy": True},
     # Faceted URLs. `count` is `len(rows)` over every internal URL and read 1 on a page
     # with no facets at all, so the subject needed a count of its own — see
     # `faceted_count` in `faceted_nav_audit.py`.
@@ -516,7 +525,6 @@ SUBJECT_ALWAYS_PRESENT = {
     "MS-023": "Search Console answered with the queries this site ranks for",
     "KW-071": "the same queries, read for contested ones",
     "CI-018": "a server log was supplied and parsed; no issues is a finding about it",
-    "GEO-006": "every entity check asks about this site's own identity",
 }
 
 # Items whose rule cannot report FAIL, and are meant not to.
@@ -681,7 +689,6 @@ MEASURES = {
     "CN-065": "That the page has exactly one non-empty H1.",
     "AR-147": "That the URL is at most 115 characters, five path segments and two query parameters. Whether its words describe the page is not read.",
     "GO-135": "URL Inspection's verdict on the audited URL: coverage, canonical, robots and indexing state. The API returns no rendered HTML, so that half is not read.",
-    "GO-145": "How citation-ready this page's content is. Whether it appears in AI Overviews or zero-click results is not observable here.",
     "TE-174": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
     "CN-044": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
     # F15 batch 1: the owner's `measures` rulings on F03 batch 3, and the sentence
@@ -694,6 +701,23 @@ MEASURES = {
     "IN-123": "That the html element carries a non-empty lang attribute. Whether the code is valid and matches the page's text is not read.",
     "MS-020": f"That the title is at most {TITLE_MAX_CHARS} characters, what the 600 px desktop title shows of ordinary text by this tool's calibration. Rendered width is not measured, so capitals can be cut sooner.",
     "TE-180": "The WCAG level-A failures the HTML shows: images without alt, form fields without an accessible name, no page language. Contrast is CN-036; keyboard use is not tested.",
+    # F15 batch 5: the owner's `measures` rulings (MS-032's untabled types, MB-102,
+    # AR-154), ruling 2 on batch 4's questions (IN-122), and the sentence beside fixes
+    # that changed what a rule decides.
+    "MS-032": "JSON-LD only: a block that does not parse fails, and each node's required properties for the types this tool tables are present (Google's by value). Other types' properties are not checked; Microdata is not read.",
+    "MB-102": "That each VideoObject node has Google's required properties (name, thumbnailUrl, uploadDate); recommended ones warn. Nothing about playback, layout or speed on a phone is measured.",
+    "AR-154": "Presence counts on a page linking products (a link to the listing alone is none): an H1, a meta description, 150 words of copy, filter canonicals. Whether the copy, filters or grid serve shoppers is not judged.",
+    "IN-122": "That every hreflang code is in Google's format (ISO 639-1, ISO 3166-1) and each other URL the set names links back. A set naming only the page itself is N/A, unless a code in it is invalid.",
+    "GO-144": "That the page carries a direct answer (20 to 70 words under a question heading) or a definition paragraph. Lists and tables do not stand in for one; whether Google lifts a snippet is not observable.",
+    "GEO-004": "That the page carries a direct answer (20 to 70 words under a question heading) or a definition paragraph; navigation menus are not lists. Whether an AI answer quotes it is not observable here.",
+    "GO-145": "A citation-readiness score of 25 on a page naming a source (a cite, blockquote, footnote, trusted-host link or schema citation). Whether it appears in AI Overviews or zero-click results is not observable here.",
+    "GEO-005": "A citation-readiness score of 25 on a page naming a source (a cite, blockquote, footnote, trusted-host link or schema citation). Whether a source supports a claim is not read.",
+    "CN-057": "That an author's and a publisher's names appear in the page's visible text, each named by markup (a byline, meta or JSON-LD). A name in metadata alone is not shown; CSS from stylesheets is not applied.",
+    "CN-068": "A score of 35 from E-E-A-T signals on a page that names an author: byline, credential and first-hand words, policy and trust links, outbound links. Whether the expertise is real is not judged.",
+    "CN-056": "That the visible text shows a date (a <time> with text, or one written out) and a later one as the update. Dates in metadata or JSON-LD alone are not shown; which date is which is not read.",
+    "MS-033": "A score of 80 over thirteen Open Graph and Twitter Card tags on a page carrying og:image and twitter:card, the two a preview is drawn from. Whether the preview looks right is not checked.",
+    "GEO-006": "That the entity resolves: a Wikidata or Wikipedia link in sameAs, a Wikidata item labelled with its name, or a Knowledge Graph match. Withheld when Wikidata cannot be asked.",
+    "KW-076": "That the primary keyword appears in the body copy: the content's text, lists, tables and divs included, headings, navigation and page furniture not. How naturally it is used is not judged.",
 }
 
 
@@ -958,12 +982,16 @@ item(30, "low", S, "parse_html.py", HTMLARG,
 item(31, "low", S, "parse_html.py", HTMLARG,
      {"path": "meta_keywords", "falsy": True},
      "Remove meta keywords - search engines ignore it")
+# F15 (MS-032's ruling): a JSON-LD block that does not parse fails; the warn band reads
+# `summary.warnings_if_every_block_parses`, which the script withholds beside one.
 item(32, "high", S, "schema_required_props.py", PAGE,
      {"path": "summary.errors", "eq": 0},
      "Add required schema properties and validate with the Rich Results Test",
-     {"path": "summary.warnings", "lte": 3})
+     {"path": "summary.warnings_if_every_block_parses", "lte": 3})
+# F15 (the ruling): `preview_score` is the tag score on a page carrying og:image and
+# twitter:card, the two tags a preview is drawn from, and 0 on one lacking either.
 item(33, "medium", S, "social_meta.py", PAGE,
-     {"path": "score", "gte": 80},
+     {"path": "preview_score", "gte": 80},
      "Fill in Open Graph and Twitter Card tags")
 
 # --- 3. Content -------------------------------------------------------------
@@ -1124,8 +1152,11 @@ item(67, "high", L, fix="Publish people-first content; AI assistance is fine whe
 # tell the exemplary tree from the broken one has stopped measuring. A page-level check
 # aggregates on the worst sampled page, so a floor above 35 asks a policy page for a
 # byline's worth of expertise and fails every real site that has one.
+#
+# F15 (the ruling: "make an author required, then score the rest"): `authored_score` is
+# the score on a page naming an author, 0 on a page naming none.
 item(68, "high", S, "eeat_signal_checker.py", PAGE,
-     {"path": "score", "gte": 35},
+     {"path": "authored_score", "gte": 35},
      "Strengthen authorship and E-E-A-T: author, credentials, first-hand experience, sourced claims")
 
 # --- 4. Keyword analysis ----------------------------------------------------
@@ -1532,29 +1563,27 @@ item(143, "low", S, "schema_required_props.py", PAGE,
      {"path": "incomplete_nodes_by_type.WebSite", "eq": 0, "missing_is": "pass"},
      "Give the WebSite node a name and a url; Google reads both for the site name "
      "shown in results")
-# 32 is one direct answer (20) plus one definition (12) — the two strongest of the four
-# signals answer_block_scanner scores, the one a snippet can be lifted from verbatim and
-# the one that says what the subject is. Unlike item 68's, this derivation is not about
-# page types: all four signals are content-structure signals and none of them belongs to
-# an article the way a credential marker does. It is the level a page that structures its
-# content at all reaches.
-#
-# At 70 the item needed at least four signals, because the three strongest sum to 60;
-# the cheapest four are three direct answers and a list, which is an FAQ page, asked of
-# every sampled page including a privacy policy.
-#
-# And a floor is a number rather than a requirement: four lists reach 40 and clear this
-# without a direct answer anywhere. The derivation says where the line sits, not which
-# signals a page must carry. GEO-004 is its twin and carries the same floor.
+# Until F15 this asserted `score gte 32`, one direct answer plus one definition, and a
+# floor is a number rather than a requirement: three two-row tables reached 36 and four
+# navigation menus 40 with no answer anywhere, while one plain direct answer scored 20
+# and failed. The owner's rulings (GO-144: at least one question-and-answer or
+# definition block, lists and tables alone do not pass; GEO-004: nav menus out, one
+# direct answer enough) make the requirement the rule: `answer_blocks`, a direct answer
+# under a question heading or a definition. Lists and tables still add to `score`.
+# GEO-004 is its twin and carries the same rule.
 item(144, "medium", S, "answer_block_scanner.py", PAGE,
-     {"path": "score", "gte": 32},
+     {"path": "answer_blocks", "gte": 1},
      "Optimize for featured snippets: direct answers, lists, tables")
 # 25 is author (15) plus canonical (10) — the two components of citation_readiness's
 # score that any page type can carry. Claim coverage (35), trusted links (20) and
 # sameAs (20) are article and entity signals. GEO-005 is its twin and carries the same
 # floor.
+#
+# F15 (the rulings: "require a citation or source; author plus canonical must not
+# pass"): `sourced_score` is that score on a page naming at least one source, 0 on a
+# page naming none.
 item(145, "high", S, "citation_readiness.py", PAGE,
-     {"path": "score", "gte": 25},
+     {"path": "sourced_score", "gte": 25},
      "Optimize for AI Overviews and zero-click: citability, facts, sources")
 
 # --- 11. Website Architecture ----------------------------------------------
@@ -1809,6 +1838,7 @@ item(196, "medium", L, fix="Determine whether the site needs local traffic")
 # and phone consistency — never the title tag. Whether a title is localised for
 # its city and service is a market judgement.
 item(197, "medium", L, fix="Localized title tags")
+# F15 (the ruling): Microdata and RDFa LocalBusiness items count, as Google reads them.
 item(198, "high", S, "local_seo_checker.py", CRAWLARG,
      {"path": "local_business_nodes", "gte": 1},
      "Implement LocalBusiness structured data")
@@ -1842,16 +1872,20 @@ EXTRA = [
      "nosnippet",
      {"path": "policy_grade", "value_map": {
          "explicit": "pass", "partial": "pass", "silent": "fail"}}),
-    # The floor moves with its twin GO-144; the derivation is written there.
+    # The rule moves with its twin GO-144; the reason is written there.
     ("GEO-004", "geo_ai", "Answer blocks present for AEO", "medium", S,
-     "answer_block_scanner.py", PAGE, {"path": "score", "gte": 32},
+     "answer_block_scanner.py", PAGE, {"path": "answer_blocks", "gte": 1},
      "Add direct answers, definitions, lists and tables for featured snippets"),
     # The floor moves with its twin GO-145; the derivation is written there.
     ("GEO-005", "geo_ai", "Content is citation-ready for AI search", "high", S,
-     "citation_readiness.py", PAGE, {"path": "score", "gte": 25},
+     "citation_readiness.py", PAGE, {"path": "sourced_score", "gte": 25},
      "Back factual claims with sources, add cite/blockquote, populate sameAs"),
     ("GEO-006", "geo_ai", "Entity is resolvable (Wikidata / KG)", "medium", S,
-     "entity_checker.py", PAGE, {"path": "summary.sameas_missing_critical", "eq": 0},
+     # F15 (the ruling: "count the Wikidata and Knowledge Graph results"): until then
+     # this asserted `summary.sameas_missing_critical eq 0`, four platform names
+     # missing from `sameAs`, and never read the lookups its title names.
+     "entity_checker.py", PAGE, {"path": "summary.entity_resolution", "value_map": {
+         "resolved": "pass", "unresolved": "fail"}},
      "Populate sameAs with key profiles and establish a Wikidata link"),
     ("GEO-007", "geo_ai", "IndexNow configured", "low", S,
      "indexnow_checker.py", ["{url}", "--key", "{indexnow_key}"],

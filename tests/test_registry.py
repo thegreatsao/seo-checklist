@@ -199,7 +199,10 @@ class RegistryShape(unittest.TestCase):
                 self.assertEqual(block(check["applies_when"]), block(check["assert"]),
                                  f"{item_id} declares applicability over something its "
                                  f"assertion does not read")
-        self.assertEqual(sorted(declared - candidates), ["AR-153", "GO-139", "KW-070"])
+        # IN-122 (the owner's ruling 2 on F15 batch 4's questions): a set naming only the
+        # page itself; `checks.return_tags.self_only` beside the asserted
+        # `checks.return_tags.verified_and_valid`, the same block.
+        self.assertEqual(sorted(declared - candidates), ["AR-153", "GO-139", "IN-122", "KW-070"])
 
     def test_every_recorded_reason_names_a_subject_rather_than_asserting_a_verdict(self):
         """A reason is only worth keeping if the next person can argue with it. The
@@ -2505,7 +2508,6 @@ class MeasuresQualifications(unittest.TestCase):
         # 0.115.0: the four A.10 owed as statements rather than repairs.
         "AR-147": "That the URL is at most 115 characters, five path segments and two query parameters. Whether its words describe the page is not read.",
         "GO-135": "URL Inspection's verdict on the audited URL: coverage, canonical, robots and indexing state. The API returns no rendered HTML, so that half is not read.",
-        "GO-145": "How citation-ready this page's content is. Whether it appears in AI Overviews or zero-click results is not observable here.",
         "TE-174": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
         # 0.116.0: CN-044 repaired to contact routes, with a statement for *clear*.
         "CN-044": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
@@ -2543,6 +2545,22 @@ class MeasuresQualifications(unittest.TestCase):
         "MB-097": "Per image: none over 250 KB, and a WebP or AVIF offer for any image wider than 1280px. Compression under 250 KB and the format of smaller images are not judged.",
         "MD-189": "Images wider than 1280px lacking either half: w descriptors in what a phone gets (or a max-width <source> before it), and a WebP or AVIF offer. Smaller images and the widths offered are not read.",
         "SP-107": "The worse of the first and the largest contentful paint (LCP counts only what the first screen shows), both from CrUX, or both from Lighthouse for a page CrUX lacks. Resource priorities are not read.",
+        # F15 batch 5: the owner's measures rulings (MS-032, MB-102, AR-154), ruling 2 on
+        # batch 4's questions (IN-122), and the sentences beside fixes that changed a rule.
+        "MS-032": "JSON-LD only: a block that does not parse fails, and each node's required properties for the types this tool tables are present (Google's by value). Other types' properties are not checked; Microdata is not read.",
+        "MB-102": "That each VideoObject node has Google's required properties (name, thumbnailUrl, uploadDate); recommended ones warn. Nothing about playback, layout or speed on a phone is measured.",
+        "AR-154": "Presence counts on a page linking products (a link to the listing alone is none): an H1, a meta description, 150 words of copy, filter canonicals. Whether the copy, filters or grid serve shoppers is not judged.",
+        "IN-122": "That every hreflang code is in Google's format (ISO 639-1, ISO 3166-1) and each other URL the set names links back. A set naming only the page itself is N/A, unless a code in it is invalid.",
+        "GO-144": "That the page carries a direct answer (20 to 70 words under a question heading) or a definition paragraph. Lists and tables do not stand in for one; whether Google lifts a snippet is not observable.",
+        "GEO-004": "That the page carries a direct answer (20 to 70 words under a question heading) or a definition paragraph; navigation menus are not lists. Whether an AI answer quotes it is not observable here.",
+        "GO-145": "A citation-readiness score of 25 on a page naming a source (a cite, blockquote, footnote, trusted-host link or schema citation). Whether it appears in AI Overviews or zero-click results is not observable here.",
+        "GEO-005": "A citation-readiness score of 25 on a page naming a source (a cite, blockquote, footnote, trusted-host link or schema citation). Whether a source supports a claim is not read.",
+        "CN-057": "That an author's and a publisher's names appear in the page's visible text, each named by markup (a byline, meta or JSON-LD). A name in metadata alone is not shown; CSS from stylesheets is not applied.",
+        "CN-068": "A score of 35 from E-E-A-T signals on a page that names an author: byline, credential and first-hand words, policy and trust links, outbound links. Whether the expertise is real is not judged.",
+        "CN-056": "That the visible text shows a date (a <time> with text, or one written out) and a later one as the update. Dates in metadata or JSON-LD alone are not shown; which date is which is not read.",
+        "MS-033": "A score of 80 over thirteen Open Graph and Twitter Card tags on a page carrying og:image and twitter:card, the two a preview is drawn from. Whether the preview looks right is not checked.",
+        "GEO-006": "That the entity resolves: a Wikidata or Wikipedia link in sameAs, a Wikidata item labelled with its name, or a Knowledge Graph match. Withheld when Wikidata cannot be asked.",
+        "KW-076": "That the primary keyword appears in the body copy: the content's text, lists, tables and divs included, headings, navigation and page furniture not. How naturally it is used is not judged.",
     }
 
     module = staticmethod(EveryRulelessItemSaysWhenItApplies.module)

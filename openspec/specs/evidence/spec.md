@@ -510,7 +510,10 @@ from its first `<article>`; a page with neither, from the first element whose `i
 recognised as Blogger, WordPress or Ghost and that template names blocks of post content
 on it, those blocks SHALL be the body copy instead: every one of them, and a block inside
 another read once. Where the template names none, the page MUST be read by the order
-above and not whole.
+above and not whole. The body copy SHALL be the chosen blocks' text — paragraphs, list
+items, table cells and the text of any other element — with headings (`<h1>`–`<h6>`),
+`<nav>`, `<header>`, `<footer>` and `<aside>` taken out, and a keyword's spaces SHALL
+match any whitespace, a no-break space included.
 
 **Why:** KW-076 asks whether the primary keyword is in the body copy, and `<main>` is the
 element HTML has for a page's dominant content. Until 0.148.0 `article_seo.py` took the
@@ -520,8 +523,12 @@ keyword in `<main>`. It was found by auditing the good fixture with every page s
 `/blog/first-post.html` says "raises bread more slowly" in `<main>`, after its article.
 The declaration of KW-076 on that fixture had said "the corpus is h1, h2s, h3s and
 paragraphs inside `<main>`" since 0.48.0; the three pages it samples have no `<article>`,
-so the sentence was true of them and nothing compared it with the code.
-**Reader:** enforced, at 0.148.0, through the script as the runner starts it.
+so the sentence was true of them and nothing compared it with the code. Until F15 batch
+5 the copy was only the headings and `<p>` text inside the chosen blocks, so a keyword in a
+list, a table or a `<div>` failed KW-076 and one only in the H1 passed; the owner ruled both
+the other way (F03, KW-076).
+**Reader:** enforced, at 0.148.0, through the script as the runner starts it; the F15
+batch 5 sentence by `tests/test_f15_batch5.py` `BodyCopy`.
 `ArticleKeyword.test_body_copy_is_main_and_not_its_first_article` serves copy after the
 article and a listing whose second card says the keyword;
 `test_a_keyword_outside_the_body_copy_is_not_in_it` serves the keyword in a footer beside

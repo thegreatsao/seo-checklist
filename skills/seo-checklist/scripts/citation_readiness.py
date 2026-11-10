@@ -75,8 +75,8 @@ HIGH_TRUST_HOST_RE = re.compile(
 # one key and does not carry to the third. **A page is not about the works it cites.**
 #
 # Measured before this was changed: a page about nothing in particular that declares
-# four `citation` nodes with DOIs took the whole 20-point entity component — a third of
-# the floor of 60 that GO-145 and GEO-005 assert, both `high` — for identifiers that
+# four `citation` nodes with DOIs took the whole 20-point entity component — most of
+# the floor of 25 that GO-145 and GEO-005 assert, both `high` — for identifiers that
 # resolve somebody else's work. No test asserted that behaviour, which is how it lasted.
 #
 # `citation` is not merely dropped. `claim_coverage` below counts `cite`, `blockquote`
@@ -235,6 +235,12 @@ def check_citation_readiness(source: str, timeout: int = 15) -> dict:
     return {
         "url": url or source,
         "score": min(100, score),
+        # What GO-145 and GEO-005 assert (F15, the rulings: "require a citation or
+        # source; author plus canonical must not pass"): the score on a page naming at
+        # least one source — a trusted-host link, a cite or blockquote, a footnote link
+        # or a schema citation — and 0 on a page naming none.
+        "sourced_score": min(100, score) if citation_capacity else 0,
+        "citation_capacity": citation_capacity,
         "factual_claims": len(factual_claims),
         "claim_samples": factual_claims[:10],
         "citation_signals": {

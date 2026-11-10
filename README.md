@@ -618,10 +618,11 @@ mechanism other than the one proved. The third is the one an exemption list can
 never catch, and this repository has watched one rot in exactly that spot.
 
 It proves rather than surveys. Of 145 script-backed assertions, 2 are proved
-unable to fail, 142 are **seen to fail** — the recorded census, which its CI job
+unable to fail, 141 are **seen to fail** — the recorded census, which its CI job
 re-derives from runs, holds a FAIL the runner gave them through the registry's own
-arguments — and the other 1 is **not claimed either way** (`SE-118`, whose failure the
-entry gate hides): the summary line prints that count instead of implying coverage it
+arguments — and the other 2 are **not claimed either way** (`SE-118`, whose failure the
+entry gate hides; `GEO-006`, whose failure since F15 batch 5 is Wikidata's answer, never
+asked offline): the summary line prints that count instead of implying coverage it
 does not have.
 
 The same tool audits the other unreachable verdict. A `warn` band fires only when

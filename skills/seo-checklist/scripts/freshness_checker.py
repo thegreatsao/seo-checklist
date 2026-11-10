@@ -17,7 +17,9 @@ from seo_common import (
     load_source,
     page_nodes,
     parse_html,
+    shown_away,
     under_foreign_credit,
+    visible_text,
 )
 
 
@@ -45,6 +47,14 @@ DATE_RE = re.compile(
     r"(?:0?[1-9]|[12]\d|3[01]),?\s+(?:20\d{2}|19\d{2})\b",
     re.I,
 )
+# A date as a visitor reads it, for CN-056 only: DATE_RE's two spellings and the
+# day-first one ("20 July 2026"), common outside the US. Kept apart from DATE_RE, which
+# also feeds the age behind CN-038.
+SHOWN_DATE_RE = re.compile(
+    DATE_RE.pattern + r"|\b(?:0?[1-9]|[12]\d|3[01])\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|"
+    r"Oct|Nov|Dec)[a-z]*\.?,?\s+(?:20\d{2}|19\d{2})\b",
+    re.I,
+)
 YEAR_RE = re.compile(r"\b(20\d{2}|19\d{2})\b")
 STAT_RE = re.compile(r"\b(\d+(?:\.\d+)?%|\$[\d,.]+|\d[\d,.]+\s+(?:users|customers|people|studies|respondents|pages))\b", re.I)
 
@@ -61,6 +71,20 @@ def _parse_date(value: str | None) -> date | None:
     for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%B %d, %Y", "%b %d, %Y", "%B %d %Y", "%b %d %Y"):
         try:
             return datetime.strptime(value, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _shown_date(value: str | None) -> date | None:
+    """`_parse_date`, and the day-first spelling SHOWN_DATE_RE also finds."""
+    found = _parse_date(value)
+    if found or not value:
+        return found
+    cleaned = re.sub(r"[.,]", " ", value).split()
+    for fmt in ("%d %B %Y", "%d %b %Y"):
+        try:
+            return datetime.strptime(" ".join(cleaned), fmt).date()
         except ValueError:
             continue
     return None
@@ -135,27 +159,40 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
         ]),
         "schema": parsed_values(schema_dates["dateModified"]),
     }
-    parsed_time_dates = published_by_source["time"]
-    if parsed_time_dates and any(value > min(parsed_time_dates)
-                                 for value in parsed_time_dates):
-        updated_by_source["time"] = parsed_time_dates
-
-    published_source = next(
-        (name for name in ("meta", "schema", "time") if published_by_source[name]),
-        None,
-    )
-    updated_source = next(
-        (name for name in ("meta", "schema", "time") if updated_by_source.get(name)),
-        None,
-    )
+    # "Show" means visible (F15, CN-056's ruling): a date counts only where a visitor
+    # sees it — a `<time>` with text of its own, or a date written in the page's
+    # visible text — never from meta or JSON-LD alone. The earliest is the publication
+    # date shown, and a later one the update (the ruling: "the later <time>"). Dates
+    # past the future tolerance are content, not publication.
+    claimed = parsed.get("foreign_itemref_ids")
+    shown_time = [
+        found for tag in soup.find_all("time")
+        if tag.get_text(strip=True) and not shown_away(tag)
+        and not any(shown_away(p) or p.name == "head" for p in tag.parents)
+        and not under_foreign_credit(tag, claimed=claimed)
+        and (found := _shown_date(tag.get("datetime") or tag.get_text(" ", strip=True)))
+        and found <= cutoff]
+    shown_text = [
+        found for raw in SHOWN_DATE_RE.findall(visible_text(
+            soup, skip=lambda tag: under_foreign_credit(tag, claimed=claimed)))
+        if (found := _shown_date(raw)) and found <= cutoff]
+    shown_dates = shown_time + shown_text
+    later = bool(shown_dates) and any(value > min(shown_dates) for value in shown_dates)
     date_signals = {
-        "shown": {
-            "published": published_source is not None,
-            "updated": updated_source is not None,
-        },
+        "shown": {"published": bool(shown_dates), "updated": later},
         "sources": {
-            "published": published_source,
-            "updated": updated_source,
+            "published": "time" if shown_time else "text" if shown_text else None,
+            "updated": (None if not later
+                        else "time" if any(v > min(shown_dates) for v in shown_time)
+                        else "text"),
+        },
+        # What the page declares without showing: read for the score and the age,
+        # never for CN-056.
+        "declared": {
+            "published": next((name for name in ("meta", "schema", "time")
+                               if published_by_source[name]), None),
+            "updated": next((name for name in ("meta", "schema")
+                             if updated_by_source.get(name)), None),
         },
     }
 

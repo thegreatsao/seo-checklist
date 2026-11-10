@@ -807,6 +807,11 @@ def run_hreflang_check(url: str, verify_returns: bool = False) -> dict:
     # IN-122 is *valid* hreflang with return tags (F15, the owner's ruling): a code
     # that is no language or region (`jp`) fails whatever the returns say, and a set
     # naming no alternate has no return tag to verify — it passed on `all([])`.
+    # A set naming no URL but the page itself has nothing to compare: N/A, unless a
+    # code in it is invalid (the owner's ruling 2 on F15 batch 4's questions).
+    return_summary["self_only"] = (
+        not results["language_code_issues"]
+        and all(t["url"].rstrip("/") == final_url.rstrip("/") for t in tags))
     if results["language_code_issues"]:
         return_summary["verified_and_valid"] = False
         return_summary["detail"] = ("At least one hreflang value is not a valid "

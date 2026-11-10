@@ -74,6 +74,10 @@ TWITTER_REQUIREMENTS = {
 }
 
 
+# The two tags a share preview is drawn from: the image, and the card that says how.
+PREVIEW_TAGS = ("og:image", "twitter:card")
+
+
 def check_social_meta(url: str, timeout: int = 15) -> dict:
     """
     Validate social media meta tags for a URL.
@@ -191,6 +195,12 @@ def check_social_meta(url: str, timeout: int = 15) -> dict:
     # Calculate score
     if total_checks > 0:
         result["score"] = round((passed_checks / total_checks) * 100)
+    # What MS-033 asserts (F15, the ruling: "require og:image and twitter:card, the
+    # tags that draw a preview"): the score on a page carrying both, 0 on one lacking
+    # either.
+    draws = all(tag in result["og_present"] + result["twitter_present"]
+                for tag in PREVIEW_TAGS)
+    result["preview_score"] = result["score"] if draws else 0
 
     # Build preview
     result["preview"]["title"] = (

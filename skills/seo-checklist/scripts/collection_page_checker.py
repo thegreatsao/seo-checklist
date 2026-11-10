@@ -6,6 +6,7 @@ from __future__ import annotations
 from lib import python_floor  # noqa: F401
 
 import argparse
+import re
 from urllib.parse import parse_qs, urlparse
 
 from schema_required_props import load_source_html
@@ -25,6 +26,9 @@ COLLECTION_THIN_WORDS = 150
 #  zero, a count this number does not touch, so it decides what is printed, never a
 #  verdict (F11; held by `tests/test_presentation_basis.py`)
 MIN_PRODUCT_LINKS = 4
+
+
+PRODUCT_PATH = re.compile(r"/(?:products?|p)/[^/]+", re.I)
 
 
 def rel_values(value) -> set[str]:
@@ -59,7 +63,10 @@ def check_collection_page(source: str, timeout: int = 15) -> dict:
     for link in parsed.get("links", []):
         href = link.get("href", "")
         text = link.get("text", "")
-        if any(token in href.lower() for token in ("/product", "/products/", "/p/")) or text.lower() in {"view", "details", "buy"}:
+        # A product's own page: a segment after `/product/`, `/products/` or `/p/`. The
+        # listing itself (`/products`, `/products/`) is not one, so a nav link to it no
+        # longer made every page a category page (F15, AR-154's ruling).
+        if PRODUCT_PATH.search(urlparse(href).path) or text.lower() in {"view", "details", "buy"}:
             product_links.append(href)
     if len(set(product_links)) < MIN_PRODUCT_LINKS:
         issues.append(issue("info", "Few crawlable product links detected", url, str(len(set(product_links)))))
@@ -86,6 +93,10 @@ def check_collection_page(source: str, timeout: int = 15) -> dict:
         "word_count": word_count,
         "filter_parameters": filter_params,
         "product_links_detected": len(set(product_links)),
+        # What AR-154 applies to: a page linking products. A home page linking only
+        # the listing (`/products`) links none, so it is no longer read as a category
+        # page (F15, the ruling); a shop front that lists products still is one.
+        "category_page": bool(product_links),
         "issues": issues,
     }
 

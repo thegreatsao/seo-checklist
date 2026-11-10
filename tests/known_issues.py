@@ -1004,8 +1004,9 @@ def _the_schema_property_tables_have_not_been_re_read() -> dict:
         "recommended": {name: sorted(values)
                         for name, values in sorted(props.RECOMMENDED_PROPS.items())},
         "verified_against_google": {
-            "WebSite": "corrected in 0.89.0: name and url required, nothing "
-                       "recommended; the sitelinks search box is gone",
+            "WebSite": "corrected in 0.89.0: name and url required; the sitelinks "
+                       "search box is gone. alternateName recommended since F15 "
+                       "batch 5 (the owner's ruling on GO-143)",
             "Article": "diverges — Google documents no required properties for "
                        "Article/NewsArticle/BlogPosting and does not list "
                        "mainEntityOfPage or publisher among the recommended; read "

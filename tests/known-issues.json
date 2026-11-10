@@ -115,7 +115,7 @@
           "GO-143": "FAIL",
           "MS-032": "PASS",
           "errors": 0,
-          "warnings": 1
+          "warnings": 2
         }
       },
       "probe": "a_placeholder_in_structured_data_almost_never_decides",
@@ -372,8 +372,11 @@
         "entities_from_a_reviewed_product": [],
         "entities_from_the_pages_own_nested_publisher": [],
         "geo_006_assert": {
-          "eq": 0,
-          "path": "summary.sameas_missing_critical"
+          "path": "summary.entity_resolution",
+          "value_map": {
+            "resolved": "pass",
+            "unresolved": "fail"
+          }
         },
         "missing_critical_from_a_reviewed_organisation": 0,
         "missing_critical_with_no_entities": 4,
@@ -456,15 +459,17 @@
       "claim": "GO-143 failed any page whose WebSite node lacked potentialAction, so its remedy was to publish a SearchAction naming a search endpoint the site may not have — for the Sitelinks Search Box, which Google removed from Search on 21 November 2024. Retitled to the live feature the assertion measures: the WebSite node Google reads for the site name.",
       "measured": {
         "fixture_still_publishes_a_searchaction": false,
-        "name_and_url": "PASS",
-        "recommends_anything_for_website": [],
+        "name_and_url": "FAIL",
+        "recommends_anything_for_website": [
+          "alternateName"
+        ],
         "required_of_website": [
           "name",
           "url"
         ],
         "title": "Complete Every WebSite Node Google Reads for the Site Name",
         "url_missing": "FAIL",
-        "with_the_retired_searchaction": "PASS"
+        "with_the_retired_searchaction": "FAIL"
       },
       "probe": "go_143_asked_for_a_claim_that_was_not_true",
       "state": "closed"
@@ -845,6 +850,9 @@
             "embedUrl",
             "publisher",
             "transcript"
+          ],
+          "WebSite": [
+            "alternateName"
           ]
         },
         "required": {
@@ -899,7 +907,7 @@
         "verified_against_google": {
           "Article": "diverges — Google documents no required properties for Article/NewsArticle/BlogPosting and does not list mainEntityOfPage or publisher among the recommended; read in 0.89.0 and deliberately not acted on",
           "BreadcrumbList, Product, Review, VideoObject": "corrected in F04 (batch 4b): required properties read from RICH_RESULT_REQUIRED, Google's pages as of 2026-10-22, the table rich_results_guard reads",
-          "WebSite": "corrected in 0.89.0: name and url required, nothing recommended; the sitelinks search box is gone"
+          "WebSite": "corrected in 0.89.0: name and url required; the sitelinks search box is gone. alternateName recommended since F15 batch 5 (the owner's ruling on GO-143)"
         }
       },
       "probe": "the_schema_property_tables_have_not_been_re_read",
@@ -950,7 +958,7 @@
       "claim": "Seventy-six of 217 items pass only when a path is absent or bounded, over nine spellings; whether a title states the side of its subject that its assertion means is read by a person, and the entry says why no check can.",
       "measured": {
         "items": 217,
-        "negative_polarity": 79
+        "negative_polarity": 78
       },
       "probe": "negative_polarity_share",
       "state": "open"

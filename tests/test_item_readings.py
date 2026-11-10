@@ -119,7 +119,7 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         # F15 batch 3: five more — CI-009, CI-018, MS-022, CN-041, BL-081.
         # F15 batch 4: seven more — AR-153, AR-162, CI-012, CI-014, GEO-001, GEO-002,
         # TE-176.
-        self.assertEqual(counts, {"answers": 81, "measures": 64, "owed": 0})
+        self.assertEqual(counts, {"answers": 68, "measures": 77, "owed": 0})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
         """Line endings are normalised first: a Windows checkout writes CRLF, and how
@@ -338,7 +338,7 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
         # gsc_sitemap_reconcile.py (its page-number fold): 67 stale now. F15 batch 4
         # changed robots, sitemaps, redirects and URL scripts and the shared seo_common
         # and robots_rules: 89 stale now.
-        self.assertEqual(counts, {"current": 56, "agree": 14, "disputed": 42, "stale": 89})
+        self.assertEqual(counts, {"current": 38, "agree": 11, "disputed": 27, "stale": 107})
 
 
 class TheDigestCommand(unittest.TestCase):
@@ -363,8 +363,8 @@ class TheDigestCommand(unittest.TestCase):
     def test_the_summary_counts_second_readings(self):
         done = self.run_tool()
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertIn(f"second readings: 56 of {len(READINGS['items'])} current — 14 agree, "
-                      "42 disputed; 89 stale", done.stdout)
+        self.assertIn(f"second readings: 38 of {len(READINGS['items'])} current — 11 agree, "
+                      "27 disputed; 107 stale", done.stdout)
 
 
 class WhatTheSecondReaderIsShown(unittest.TestCase):

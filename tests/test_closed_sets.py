@@ -171,7 +171,10 @@ class RetiredSchemaTypesAreOneTable(unittest.TestCase):
         page = ('<html><head><script type="application/ld+json">{"@type": "%s"}'
                 '</script></head><body></body></html>' % type_name)
         parsed = parse_html.parse_html(page, "https://example.test/")
-        issues = rich_results_guard.guard_rich_results([{"@type": type_name}])["issues"]
+        # A missing required property is no retirement: since F15 batch 5 a bare
+        # `{"@type": "Article"}` lacks its ruled `headline`.
+        issues = [i for i in rich_results_guard.guard_rich_results([{"@type": type_name}])["issues"]
+                  if "missing rich-result property" not in i["message"]]
         guard = ("deprecated" if any(i["severity"] == "error" for i in issues)
                  else "restricted" if issues else "active")
         return (article_seo._describe_schema_node({"@type": type_name})["status"],

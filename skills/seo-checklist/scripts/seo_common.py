@@ -589,6 +589,53 @@ def image_carries_meaning(img) -> bool:
     return min(width, height) >= MEANINGFUL_IMAGE_MIN_PX and not _in_furniture(img)
 
 
+def shown_away(tag) -> bool:
+    """Whether an element is kept from view by its own markup: `hidden`,
+    `aria-hidden=true`, or an inline `display: none` / `visibility: hidden`. A
+    stylesheet's rules are not read."""
+    if not getattr(tag, "has_attr", None):
+        return False
+    style = re.sub(r"\s+", "", str(tag.get("style") or "")).lower()
+    return (tag.has_attr("hidden")
+            or (tag.get("aria-hidden") or "").strip().lower() == "true"
+            or "display:none" in style or "visibility:hidden" in style)
+
+
+def visible_text(soup, skip=None) -> str:
+    """The text a visitor is shown: the body's text and the alt of its images, nothing
+    under an element `shown_away`, nothing in `<head>` (its `<title>` included).
+
+    For the items whose titles say "show" (F15, the rulings on CN-057 and CN-056): a
+    name or a date in metadata alone is not shown. Read after `parse_html` has removed
+    scripts, styles and templates; CSS from a stylesheet is not applied. `skip(tag)`
+    leaves out the text of a tag it names, asked of each string's own element.
+    """
+    root = soup.find("body") or soup
+    parts = []
+    for node in root.find_all(string=True):
+        if type(node).__name__ != "NavigableString":
+            continue                      # a comment, doctype or CDATA section
+        parents = list(node.parents)
+        if any(p.name in ("head", "title") or shown_away(p) for p in parents):
+            continue
+        if skip is not None and skip(node.parent):
+            continue
+        parts.append(str(node))
+    for img in root.find_all("img"):
+        if (img.get("alt") or "").strip() and not shown_away(img) and not any(
+                p.name == "head" or shown_away(p) for p in img.parents):
+            parts.append(img["alt"])
+    return re.sub(r"\s+", " ", " ".join(parts)).strip()
+
+
+def shown_in(names, text: str) -> list[str]:
+    """The names that appear in `text` as words, case and spacing aside."""
+    folded = re.sub(r"\s+", " ", text).casefold()
+    return [name for name in names
+            if (key := re.sub(r"\s+", " ", name).strip().casefold())
+            and re.search(rf"(?<!\w){re.escape(key)}(?!\w)", folded)]
+
+
 def likely_lcp_candidate(img: dict, index: int) -> bool:
     """Whether this image could be the Largest Contentful Paint.
 
@@ -1415,7 +1462,7 @@ def parse_html(html: str, base_url: str = "") -> dict:
         try:
             data = json.loads(raw)
         except json.JSONDecodeError:
-            data = {"error": "invalid_json", "snippet": raw[:160]}
+            data = {"error": "invalid_json", "snippet": raw.strip()[:160]}
         schema.append(data)
         if not under_foreign_credit(script, claimed=foreign_itemref):
             # Share the same object with schema; neither list is mutated by readers.

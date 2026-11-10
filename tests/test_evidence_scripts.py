@@ -2620,19 +2620,21 @@ class EeatSignals(unittest.TestCase):
         author = self._schema_script({
             "@type": "Article", "author": {"@type": "Person", "name": "D Petras"},
         })
+        # F15 batch 5 (CN-057's ruling): a name counts where the page shows it.
         result = self._check_html(
-            publisher + '<div itemprop="comment">' + author + '</div>')
+            publisher + '<p>Page Press</p><div itemprop="comment">' + author + '</div>')
         self.assertEqual(result["signals"]["authors"], [])
         self.assertEqual(result["signals"]["authorship"],
                          {"author": False, "publisher": True})
         self.assertEqual(verdict("CN-057", result), FAIL)
 
     def test_the_pages_own_json_ld_author_still_passes_cn_057(self):
+        # F15 batch 5 (CN-057's ruling): both names shown in the page's text.
         result = self._check_html(self._schema_script({
             "@type": "Article",
             "author": {"@type": "Person", "name": "M K"},
             "publisher": {"@type": "Organization", "name": "Page Press"},
-        }))
+        }) + "<p>By M K, for Page Press.</p>")
         self.assertEqual(result["signals"]["authors"], ["M K"])
         self.assertEqual(result["signals"]["authorship"],
                          {"author": True, "publisher": True})
@@ -2712,7 +2714,7 @@ class EeatSignals(unittest.TestCase):
         """The other half, so the rule above is known to remove what a comment claims
         rather than everything on a page that happens to contain an `itemref`."""
         result = self._check_html(
-            self.PUBLISHER_META
+            self.PUBLISHER_META + '<p>Page Press</p>'
             + '<article itemscope itemtype="https://schema.org/Article"><h1>T</h1>'
             '<div itemprop="comment" itemscope itemtype="https://schema.org/Comment"'
             ' itemref="c1"></div>'
@@ -2789,10 +2791,16 @@ class EeatSignals(unittest.TestCase):
         self.assertFalse(result["signals"]["authorship"]["publisher"])
 
     def test_the_pages_own_publisher_meta_in_head_still_counts(self):
+        """Counts as the name to look for; since F15 batch 5 (CN-057's ruling) the
+        page must also show it."""
         result = self._check_html(
             '<html><head><meta property="og:site_name" content="Page Press">'
             '</head><body></body></html>')
         self.assertEqual(result["signals"]["publishers"], ["Page Press"])
+        self.assertFalse(result["signals"]["authorship"]["publisher"])
+        result = self._check_html(
+            '<html><head><meta property="og:site_name" content="Page Press">'
+            '</head><body><footer>&copy; Page Press</footer></body></html>')
         self.assertTrue(result["signals"]["authorship"]["publisher"])
 
     def test_json_ld_under_every_review_credit_spelling_is_excluded(self):
@@ -2839,7 +2847,7 @@ class EeatSignals(unittest.TestCase):
         <script type="application/ld+json">{{"@type":"Article","author":
         {{"@type":"Person","name":"A Baker"}},"publisher":
         {{"@type":"Organization","name":"Fixture Bakery"}}}}</script>
-        </head><body><span name="author">A Baker</span>
+        </head><body><span name="author">A Baker</span> <span>Fixture Bakery</span>
         <p>{words["credential"]} {words["experience"]}</p>{links}
         <a href="https://source-one.example/study">Study one</a>
         <a href="https://source-two.example/data">Study two</a>
@@ -3216,7 +3224,7 @@ class EeatSignals(unittest.TestCase):
         """This fails if one credited organisation can satisfy both CN-057 halves."""
         result = self._check_html("""<!doctype html><html><head>
         <script type="application/ld+json">{"@type":"Article","author":
-        {"@type":"Organization","name":"Acme"}}</script></head><body></body></html>""")
+        {"@type":"Organization","name":"Acme"}}</script></head><body>By Acme</body></html>""")
         self.assertEqual(result["signals"]["authors"], ["Acme"])
         self.assertEqual(result["signals"]["publishers"], [])
         self.assertEqual(result["signals"]["authorship"],
@@ -3272,7 +3280,8 @@ class EeatSignals(unittest.TestCase):
         parties."""
         result = self._ld({"@type": "Article",
                            "publisher": self._org(),
-                           "reviewedBy": self._org("Review Board")})
+                           "reviewedBy": self._org("Review Board")},
+                          body="<p>Fixture Bakery, reviewed by Review Board.</p>")
         self.assertEqual(result["signals"]["authorship"],
                          {"author": False, "publisher": True})
         self.assertEqual(verdict("CN-057", result), FAIL)
@@ -3559,7 +3568,10 @@ class Freshness(unittest.TestCase):
     def test_a_dated_article_is_fresh_and_its_dates_are_found(self):
         good = out("fresh")
         self.assertTrue(good["dates"])
-        self.assertEqual(verdict("CN-056", good), PASS)
+        # F15 batch 5: the page shows one date ("Last updated 20 July 2026"); its
+        # publication date is in metadata only, so CN-056 is half met.
+        self.assertEqual(good["date_signals"]["shown"], {"published": True, "updated": False})
+        self.assertEqual(verdict("CN-056", good), WARN)
         self.assertEqual(verdict("CN-038", good), PASS)
 
     def test_a_page_with_no_date_anywhere_reports_no_dates(self):
@@ -3576,15 +3588,18 @@ class Freshness(unittest.TestCase):
         self.assertEqual(result["dates"], [])
         self.assertEqual(verdict("CN-056", result), FAIL)
 
-    def test_a_body_date_does_not_pass_cn_056(self):
-        """A regex hit in prose is not a declared publication or update date."""
+    def test_a_body_date_is_one_date_shown(self):
+        """Since F15 batch 5 (CN-056's ruling, "show" means visible) a date in the
+        visible text is a date shown; which date it is is not read, and one date is
+        only half the item (WARN). Before, a date in prose was no declared date and
+        failed."""
         result = self._check_html(
             "<p>Our prices were set in the 2020-03-14 report.</p>",
             today=date(2026, 9, 23),
         )
         self.assertEqual(len(result["dates"]), 1)
         self.assertEqual(result["dates"][0]["source"], "body")
-        self.assertEqual(verdict("CN-056", result), FAIL)
+        self.assertEqual(verdict("CN-056", result), WARN)
 
     def test_one_time_is_half_the_title(self):
         """One page-owned `<time>` shows publication but no later update."""
@@ -3607,16 +3622,19 @@ class Freshness(unittest.TestCase):
                          {"published": True, "updated": True})
         self.assertEqual(verdict("CN-056", result), PASS)
 
-    def test_json_ld_publication_and_modification_pass_cn_056(self):
-        """The page's own datePublished and dateModified satisfy both title halves."""
+    def test_json_ld_publication_and_modification_alone_show_nothing(self):
+        """F15 batch 5 (CN-056's ruling): the page's own datePublished and dateModified
+        are declared, not shown; they passed both title halves before."""
         result = self._check_document({
             "@type": "Article",
             "datePublished": "2020-03-14",
             "dateModified": "2021-04-20",
         }, today=date(2026, 9, 23))
         self.assertEqual(result["date_signals"]["shown"],
-                         {"published": True, "updated": True})
-        self.assertEqual(verdict("CN-056", result), PASS)
+                         {"published": False, "updated": False})
+        self.assertEqual(result["date_signals"]["declared"],
+                         {"published": "schema", "updated": "schema"})
+        self.assertEqual(verdict("CN-056", result), FAIL)
 
     def test_a_foreign_credit_time_does_not_pass_cn_056(self):
         """A comment's `<time>` belongs to the commenter, not to the page."""
@@ -3698,13 +3716,14 @@ class Freshness(unittest.TestCase):
         }])
 
     def test_a_future_roled_date_stays_in_dates_but_not_in_latest(self):
-        """A declared publication date without an update is only half CN-056."""
+        """A future date is content, not publication; since F15 batch 5 a date in
+        JSON-LD alone is not shown either, so CN-056 fails."""
         today = date(2026, 8, 17)
         result = self._check_document(
             {"@type": "Article", "datePublished": "2027-03-14"}, today=today)
         self.assertEqual(len(result["dates"]), 1)
         self.assertEqual(result["dates"][0]["source"], "schema_published")
-        self.assertEqual(verdict("CN-056", result), WARN)
+        self.assertEqual(verdict("CN-056", result), FAIL)
         self.assertIsNone(result["latest_date"])
         self.assertEqual(result["score"], 65)
 
@@ -4179,30 +4198,14 @@ class AnswerBlocks(unittest.TestCase):
         self.assertEqual(verdict("GO-144", good), PASS)
         self.assertEqual(verdict("GEO-004", good), PASS)
 
-    def test_the_floor_is_one_direct_answer_and_one_definition(self):
-        """32 is derived from the script's own weights, not chosen as a round number.
-
-        `direct_answer` is the only one of the four signals a snippet can be lifted
-        from verbatim; a definition is the one that says what the subject is. At 70 the
-        item needed at least four signals, because the three strongest sum to 60, and
-        the cheapest four are three direct answers and a list — an FAQ page, asked of
-        every sampled page including a privacy policy. Both twins carry the same floor
-        because `scores_with` makes them one check.
-
-        The floor is a number and not a requirement, and this asserts only that it
-        equals the derivation: four lists reach 40 and clear it with no direct answer
-        anywhere.
-        """
-        sys.path.insert(0, SCRIPTS)
-        import answer_block_scanner
-        points = answer_block_scanner.SIGNAL_POINTS
+    def test_the_rule_is_an_answer_block_not_a_floor(self):
+        """Until F15 batch 5 both twins asserted `score gte 32`, one direct answer plus
+        one definition, and a floor is a number rather than a requirement: four lists
+        reached 40 with no answer anywhere. The owner's rulings make the requirement
+        the rule: `answer_blocks`, a direct answer or a definition, at least one."""
         for item_id in ("GO-144", "GEO-004"):
-            self.assertEqual(ITEMS[item_id]["check"]["assert"]["gte"],
-                             points["direct_answer"] + points["definition"], item_id)
-        # The claim about the old floor, computed rather than remembered: no three
-        # signals reach 70, whatever they are.
-        strongest = sorted(points.values(), reverse=True)
-        self.assertLess(sum(strongest[:3]), 70)
+            self.assertEqual(ITEMS[item_id]["check"]["assert"],
+                             {"path": "answer_blocks", "gte": 1}, item_id)
 
     def test_a_page_with_no_questions_scores_zero(self):
         bad = out("answers_bad")
@@ -5656,15 +5659,18 @@ class RichResults(unittest.TestCase):
 
 
 class Entities(unittest.TestCase):
-    """GEO-006 `summary.sameas_missing_critical`."""
+    """GEO-006 `summary.entity_resolution` (F15 batch 5; it asserted
+    `summary.sameas_missing_critical` before)."""
 
-    def test_an_organisation_with_no_sameas_targets_is_unresolvable(self):
-        """The contract pair exempts this item because verifying `sameAs` means
-        fetching Wikidata, and this suite does not leave loopback. The *absence*
-        side needs no egress, and that is what is asserted here."""
+    def test_an_organisation_no_lookup_could_reach_is_withheld(self):
+        """This suite does not leave loopback, so Wikidata is never asked; with no
+        Wikidata or Wikipedia `sameAs` either, whether the entity resolves is not
+        known. The FAIL side, Wikidata answering with no item, is
+        `tests/test_f15_batch5.py`'s."""
         entity = out("entity")
         self.assertGreater(entity["summary"]["sameas_missing_critical"], 0)
-        self.assertEqual(verdict("GEO-006", entity), FAIL)
+        self.assertEqual(entity["summary"]["entity_resolution"], "not_asked")
+        self.assertEqual(verdict("GEO-006", entity), NO_DATA)
 
 
 # ---------------------------------------------------------------------------
@@ -5858,6 +5864,8 @@ class LocalSeoNap(unittest.TestCase):
             "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "1 Fixture Street",
+                # F15 batch 5 (LO-200's ruling): a street and a locality.
+                "addressLocality": "Vilnius",
             },
             "telephone": "+370 5 000 0000",
         }

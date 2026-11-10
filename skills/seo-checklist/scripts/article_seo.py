@@ -200,6 +200,12 @@ def detect_cms(soup: BeautifulSoup, url: str) -> str:
 # Content extraction (CMS-aware)
 # ---------------------------------------------------------------------------
 
+# What is not body copy: headings, and the navigation and furniture a fallback to the
+# whole document would otherwise read as copy.
+BODY_COPY_EXCLUDED = frozenset({"h1", "h2", "h3", "h4", "h5", "h6", "nav", "header",
+                                "footer", "aside", "title"})
+
+
 def extract_content(parsed: dict, cms: str) -> dict:
     """
     Extract structured content from the parsed page.
@@ -292,6 +298,18 @@ def extract_content(parsed: dict, cms: str) -> dict:
             or soup.find(attrs={"class": re.compile(r"content|article|post|entry", re.I)})
             or soup
         ]
+
+    # Body copy (F15, KW-076's ruling): the containers' text with headings, navigation
+    # and page furniture taken out — `li`, `td` and `div` text included, an H1 alone not.
+    copy = []
+    for scope in containers:
+        for tag in scope.find_all(string=True):
+            if type(tag).__name__ != "NavigableString" or any(
+                    parent.name in BODY_COPY_EXCLUDED or parent.name == "head"
+                    for parent in tag.parents):
+                continue
+            copy.append(str(tag))
+    result["body_copy"] = re.sub(r"\s+", " ", " ".join(copy)).strip()
 
     for scope in containers:
         # ── Headings ──────────────────────────────────────────────────────
@@ -683,10 +701,13 @@ def main():
         # Match case-insensitively at word boundaries: "seo" must not match
         # "seoul". `full_text` is the body corpus already assembled above for
         # keyword extraction; using it here avoids inventing a second definition.
-        keyword_pattern = (re.compile(rf"(?<!\w){re.escape(args.keyword)}(?!\w)",
+        # Spaces in the keyword match any whitespace, `&nbsp;` included; the body is
+        # `body_copy`, not the headings-and-paragraphs corpus (F15, KW-076).
+        keyword_pattern = (re.compile(r"(?<!\w)" + r"\s+".join(
+                                          map(re.escape, args.keyword.split())) + r"(?!\w)",
                                       re.IGNORECASE)
-                           if args.keyword else None)
-        body_occurrences = (len(keyword_pattern.findall(full_text))
+                           if args.keyword and args.keyword.strip() else None)
+        body_occurrences = (len(keyword_pattern.findall(content["body_copy"]))
                             if keyword_pattern else 0)
         keyword_usage = {
             "keyword": args.keyword,

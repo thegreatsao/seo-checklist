@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 
 # schema.org's type hierarchy at one named release, bundled so a run gives the same
 # answer offline; `tools/refresh_schemaorg_types.py` replaces it and says which
@@ -71,6 +72,30 @@ def schema_types(value) -> list[str]:
     return [item for item in values if isinstance(item, str) and item]
 
 
+def schema_org_name(token: str) -> str:
+    """A type as schema.org names it: `https://schema.org/Bakery`, `schema:Bakery` and
+    `Bakery` are all `Bakery`. A token naming another vocabulary is kept whole, so it
+    matches no schema.org type."""
+    match = re.fullmatch(r"(?:(?:https?://)?(?:www\.)?schema\.org/|schema:)?(\w+)/?",
+                         token.strip(), re.I)
+    return match.group(1) if match else token
+
+
 def is_local_business_type(value) -> bool:
-    """Return whether any supplied @type is LocalBusiness or a known subtype."""
-    return bool(LOCAL_BUSINESS_TYPES.intersection(schema_types(value)))
+    """Return whether any supplied @type is LocalBusiness or a known subtype, written
+    bare, prefixed or as a schema.org IRI (F15 aside: an IRI `@type` was missed)."""
+    return bool(LOCAL_BUSINESS_TYPES.intersection(
+        schema_org_name(name) for name in schema_types(value)))
+
+
+def markup_types(soup) -> list[list[str]]:
+    """The types of every Microdata item (`itemscope` + `itemtype`) and RDFa resource
+    (`typeof`) in a document, one list per element, as written. Google reads both
+    formats (F15, LO-198's ruling)."""
+    found = []
+    for element in soup.find_all(True):
+        if element.has_attr("itemscope") and element.get("itemtype"):
+            found.append(str(element["itemtype"]).split())
+        if element.get("typeof"):
+            found.append(str(element["typeof"]).split())
+    return found

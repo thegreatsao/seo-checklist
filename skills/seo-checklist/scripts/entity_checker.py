@@ -126,11 +126,14 @@ def analyze_sameas(same_as_list: list) -> dict:
         if not isinstance(url, str):
             continue
         parsed = urlparse(url)
-        domain = parsed.netloc.replace("www.", "").lower()
+        domain = (parsed.hostname or "").lower()
+        if domain.startswith("www."):
+            domain = domain[4:]
 
         matched = False
         for platform_domain, info in SAMEAS_PLATFORMS.items():
-            if platform_domain in domain:
+            # By host (F15 aside): `"x.com" in "dropbox.com"` named Dropbox Twitter/X.
+            if domain == platform_domain or domain.endswith("." + platform_domain):
                 found[info["name"]] = {
                     "url": url,
                     "priority": info["priority"],
@@ -592,6 +595,23 @@ def run_entity_check(url: str, entity_name: str = "", kg_api_key: str = "") -> d
     issues.extend(sameas_analysis.get("issues", []))
     issues.extend(nap_issues)
 
+    # GEO-006's answer (F15, the ruling: "count the Wikidata and Knowledge Graph
+    # results"): the entity resolves when the page links its Wikidata or Wikipedia
+    # entry in `sameAs`, Wikidata holds an item labelled with its name, or the
+    # Knowledge Graph matches it. It does not when Wikidata answered with none and the
+    # Knowledge Graph found none or was not asked; when Wikidata could not be asked
+    # and nothing else resolves it, the answer is withheld.
+    linked = any(name in sameas_analysis["found"] for name in ("Wikidata", "Wikipedia"))
+    named = (wikidata.get("found") is True
+             and str(wikidata.get("label") or "").strip().casefold()
+             == str(entity_name or "").strip().casefold())
+    if linked or named or google_kg.get("found") is True:
+        resolution = "resolved"
+    elif wikidata.get("checked") and wikidata.get("found") is not None:
+        resolution = "unresolved"
+    else:
+        resolution = "not_asked"
+
     return {
         "url": url,
         "entity_name": entity_name,
@@ -606,6 +626,7 @@ def run_entity_check(url: str, entity_name: str = "", kg_api_key: str = "") -> d
             "entities_found": len(entities),
             "sameas_count": len(all_same_as),
             "sameas_missing_critical": sameas_analysis["total_missing_critical"],
+            "entity_resolution": resolution,
             "wikidata_found": wikidata["found"],
             "wikipedia_found": wikipedia["found"],
             "google_kg_checked": google_kg.get("checked", False),

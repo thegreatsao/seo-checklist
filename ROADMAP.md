@@ -63,8 +63,8 @@ can serve:
 
 | | count | what it means |
 |---|---|---|
-| answered somewhere, never FAIL | 1 | a rule whose failure the entry gate hides |
-| answered somewhere, never PASS | 2 | the mirror |
+| answered somewhere, never FAIL | 2 | a rule whose failure the entry gate hides, and one whose failure needs Wikidata's answer |
+| answered somewhere, never PASS | 3 | the mirror |
 | never answered anywhere | 2 | each needs an outside service or key, and the census names which |
 
 F06 (0.175.0) took both other rows to items, one at a time, with what each was expected
@@ -86,14 +86,18 @@ in a sentence like the one this row used to carry.
 `AR-153` and `MD-184` could not fail as registered, and what each should assert was
 Anton's decision: MD-184 is answered by the entry page alone and fails one that references
 no image; AR-153 reads the shared crawl and compares each topic's hub and spokes, on a topic
-read crudely from title words. The one still never seen failing is `SE-118`, which fails
+read crudely from title words. Two are still never seen failing: `GEO-006` since F15 batch 5,
+whose FAIL is Wikidata answering with no item, never asked offline, and `SE-118`, which fails
 only on a certificate that also stops the audit's own request for the entry page, so the
 entry gate turns the failure into NO_DATA — the defect 0.130.0 repaired for `CI-003` — and
 the census marks it in its output (`CI-014` has the same gap for a redirect loop, and fails
 here on a redirect with no `Location`).
 
-The two that were never seen passing are `AR-158`, whose visible-breadcrumb half no
-fixture carries, and `GEO-006`, whose script reads the JSON-LD graph with no boundary.
+`GEO-006` left this row in F15 batch 5: the good fixture's Wikidata `sameAs` resolves it, and
+its FAIL, Wikidata answering with no item, is never asked offline. The three that were never seen passing are `AR-158`, whose
+visible-breadcrumb half no fixture carries, and `GO-145` and `GEO-005`, twins which since
+F15 batch 5 fail a sampled page naming no source, as the good fixture's about and privacy
+pages do — the owner's ruling, its reach put back to the owner, not a reader with no boundary.
 `GO-138` left this row at 0.123.0: the good fixture's sitemap had listed a page its
 robots.txt forbids, and it no longer does.
 
@@ -132,8 +136,10 @@ measured and adopted at 5 by Anton's decision. The calibrations so
 far show what closing one costs: each took a corpus, a method and a stated limitation.
 
 `audit_reachability.py` proves 2 of the 145 script-backed assertions unable to report
-FAIL; the recorded census saw 142 of them fail, and the tool counts those as able; it
-claims nothing about the other 1 either way, `SE-118`, which item 5 below owns.
+FAIL; the recorded census saw 141 of them fail, and the tool counts those as able; it
+claims nothing about the other 2 either way: `SE-118`, which item 5 below owns, and
+`GEO-006`, whose FAIL since F15 batch 5 is Wikidata answering with no item, which a
+loopback-only run never asks.
 Proving that one reachable is this clause's other half.
 
 ### Clause 3 — the document says what the code does
@@ -167,7 +173,7 @@ modules read; no number is bound by both. It is narrower than the ask it answers
    gate step watched by the tripwire, the consumer list re-read against Workbench's native
    build, the protocol marked by section by Anton's ruling, and an unanswered model queue
    said on every surface.
-4. **The 1 unclaimed assertion**, reduced by extending the detectors
+4. **The 2 unclaimed assertions**, reduced by extending the detectors
    `audit_reachability.py` already has rather than by asserting reachability in prose —
    done locally in F05, five batches, each with its contract, and not yet released
    (F05, `docs/sprint-20261023-F05-plan.md`; its five batches claimed the 142 the
@@ -177,8 +183,9 @@ modules read; no number is bound by both. It is narrower than the ask it answers
    `fast-field/`, the fourth the validator's and Safe Browsing's from `flagged/` and
    `cleared/`, the fifth Search Console's from `unindexed/` and `indexed/`). The one left
    is `SE-118`, item 5's; Anton ruled F05 done with it left.
-5. **The census's 1 and 2**: the 2 (`TE-178`, `TE-179`, both declared unable to fail)
-   each name the outside service they wait for (F06, 0.175.0); the 1, `SE-118`, needs the entry gate to answer it.
+5. **The census's 2 and 2**: the 2 silent (`TE-178`, `TE-179`, both declared unable to fail)
+   each name the outside service they wait for (F06, 0.175.0); of the 2 never failing,
+   `SE-118` needs the entry gate to answer it and `GEO-006` a Wikidata stand-in (F15 batch 5).
 6. **Clause 3 beyond counts** — every checkable sentence in `SKILL.md`, `README.md` and
    this file tied to observable behaviour, the way counts now are.
 

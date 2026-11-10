@@ -68,6 +68,7 @@ from seo_common import (
     srcset_urls,
     walk_json,
 )
+from lib.schema_types import markup_types
 
 import sys
 
@@ -99,7 +100,9 @@ _utf8_stdout()
 # `Link` header's included), an image link's anchor is its alt, and `redirected` is per
 # linked spelling (`spellings`) — a version-4 inventory answers MS-022, TE-176, BL-081
 # and AR-149 the old way.
-INVENTORY_VERSION = 5
+# 6 (F15 batch 5) adds Microdata and RDFa items to `schema_nodes`: a version-5 inventory
+# reads a site whose LocalBusiness is in Microdata as having none (LO-198).
+INVENTORY_VERSION = 6
 
 # basis: convention — 100 pages, the request budget an audit's crawl runs with (the
 #  runner's `--crawl-max-pages` reads it): at the default 4 requests a second it is
@@ -529,6 +532,9 @@ def _read_page(fetched: dict, key: str, discovered_url: str, site_url: str,
                      if isinstance(value, str)]
             if types:
                 row["schema_nodes"].append({"types": types})
+    # Microdata and RDFa items too, marked by format (F15, LO-198: Google reads both).
+    for types in markup_types(parsed["soup"]):
+        row["schema_nodes"].append({"types": types, "format": "markup"})
 
     # One requestable URL per image reference, in document order. The parser has
     # already built the soup, and the shared helpers keep srcset and picture parsing

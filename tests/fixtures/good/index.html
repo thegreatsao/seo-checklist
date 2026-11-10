@@ -23,9 +23,14 @@
 {"@context":"https://schema.org","@type":"Organization","name":"Fixture Bakery",
  "url":"http://127.0.0.1:8000/","logo":"http://127.0.0.1:8000/assets/logo.png",
  "email":"hello@example.invalid",
+ "sameAs":["https://www.wikidata.org/wiki/Q4115189"],
  "address":{"@type":"PostalAddress","streetAddress":"1 Fixture Street",
             "addressLocality":"Vilnius","postalCode":"01100","addressCountry":"LT"}}
 </script>
+<!-- The Organization's sameAs names Wikidata's sandbox item (Q4115189), which exists to
+     be pointed at: GEO-006 resolves an entity by its Wikidata or Wikipedia link (F15
+     batch 5), and a loopback-only run never asks Wikidata, so the link is what lets the
+     exemplary tree pass offline. -->
 <!-- The exemplary tree carried a SearchAction here until 0.89.0, pointing at
      /search?q= — a path this tree does not serve and never has. It was markup
      stating a capability the site does not have, which is the thing the release
@@ -36,7 +41,7 @@
      requires of this type and what GO-143 now measures. -->
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Fixture Bakery",
- "url":"http://127.0.0.1:8000/"}
+ "alternateName":"The Fixture Bakery","url":"http://127.0.0.1:8000/"}
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[

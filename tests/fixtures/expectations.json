@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "registry_version": "ecaf0dc17e56",
+  "registry_version": "1a7837e21273",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -25,9 +25,9 @@
     ]
   },
   "fixture_digest": {
-    "good": "ab7d6b25602b",
+    "good": "d3c2d3f72371",
     "broken": "41915277914c",
-    "good_tls": "9e8d076b62d8",
+    "good_tls": "90a65a4c594f",
     "broken_tls": "be8038ea85ee"
   },
   "triage": [
@@ -345,6 +345,60 @@
       "to": "9e8d076b62d8",
       "decided": "new-material",
       "why": "blog/first-post.html's navigation also links About ('Who bakes it'). The entry-answer test serves this tree with / answering 404 or 503, and over the four pages left the good tree averaged 2.75 distinct internal links, so AR-162 failed under the entry gate: an accusation the gate hid rather than one it answers. With the link the tree averages 3.2 with its home page and 3.0 without. first-post is not a sampled page; no declared verdict moves."
+    },
+    {
+      "kind": "expect",
+      "origin": "good",
+      "item": "GEO-005",
+      "from": "PASS",
+      "to": "FAIL",
+      "decided": "checker-was-wrong",
+      "why": "F15 batch 5, the owner's ruling on F03's second reading: sourced_score is the score on a page naming a source, and /about.html and /privacy.html name none — no cite, blockquote, footnote link, trusted-host link or schema citation — so the author and the canonical no longer carry them to 25: FAIL, as the ruling says (author plus canonical must not pass)."
+    },
+    {
+      "kind": "expect",
+      "origin": "good",
+      "item": "GEO-006",
+      "from": "FAIL",
+      "to": "PASS",
+      "decided": "checker-was-wrong",
+      "why": "F15 batch 5, the owner's ruling on F03's second reading: GEO-006 maps summary.entity_resolution (a Wikidata or Wikipedia sameAs, a Wikidata item with the entity's name, or a Knowledge Graph match), and the fixture's Organization now names Wikidata's sandbox item in sameAs, so the entity resolves: PASS."
+    },
+    {
+      "kind": "expect",
+      "origin": "good",
+      "item": "GO-145",
+      "from": "PASS",
+      "to": "FAIL",
+      "decided": "checker-was-wrong",
+      "why": "F15 batch 5, the owner's ruling on F03's second reading: twin of GEO-005 through scores_with: /about.html and /privacy.html name no source, so sourced_score is 0 there: FAIL."
+    },
+    {
+      "kind": "expect",
+      "origin": "broken",
+      "item": "GEO-006",
+      "from": "FAIL",
+      "to": "NO_DATA",
+      "decided": "checker-was-wrong",
+      "why": "F15 batch 5, the owner's ruling on F03's second reading: summary.entity_resolution is not_asked: there is no sameAs to Wikidata or Wikipedia and the loopback-only run never asks Wikidata, so NO_DATA rather than a verdict on the Product's name."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good",
+      "item": null,
+      "from": "ab7d6b25602b",
+      "to": "d3c2d3f72371",
+      "decided": "new-material",
+      "why": "tests/fixtures/good/index.html's WebSite node gains alternateName 'The Fixture Bakery', its Organization a sameAs to Wikidata's sandbox item (Q4115189), and privacy.html's ordering paragraph opens 'Bread orders taken by telephone'. Since F15 batch 5 (the owner's rulings on F03's GO-143, KW-076 and GEO-006) a WebSite node without alternateName is incomplete, a keyword only in a heading is not body copy, and an entity resolves by a Wikidata link or a lookup the offline run never makes, so GO-143, KW-076 and GEO-006 could not pass on the half of the pair that has to be able to. GEO-006's declaration moves with it (recorded beside)."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good_tls",
+      "item": null,
+      "from": "9e8d076b62d8",
+      "to": "90a65a4c594f",
+      "decided": "new-material",
+      "why": "tests/fixtures/good/index.html's WebSite node gains alternateName 'The Fixture Bakery', its Organization a sameAs to Wikidata's sandbox item (Q4115189), and privacy.html's ordering paragraph opens 'Bread orders taken by telephone'. Since F15 batch 5 (the owner's rulings on F03's GO-143, KW-076 and GEO-006) a WebSite node without alternateName is incomplete, a keyword only in a heading is not body copy, and an entity resolves by a Wikidata link or a lookup the offline run never makes, so GO-143, KW-076 and GEO-006 could not pass on the half of the pair that has to be able to. GEO-006's declaration moves with it (recorded beside)."
     }
   ],
   "batches": [],
@@ -743,8 +797,8 @@
       "AR-154": {
         "expect": "N/A",
         "title": "Optimize E-commerce Category Pages",
-        "basis": "1cb65a1d08f7",
-        "why": "a five-page bakery with no category or collection page: the subject is absent and the item says so"
+        "basis": "ccc8f1048ff6",
+        "why": "a five-page bakery with no category or collection page: the subject is absent and the item says so Re-read for F15 batch 5 (the owner's rulings): the item applies to a page linking products, and a link to the product listing is not one; the sampled pages link none, so still N/A."
       },
       "AR-163": {
         "expect": "N/A",
@@ -767,8 +821,8 @@
       "CN-068": {
         "expect": "PASS",
         "title": "Strengthen Authorship & E-E-A-T Signals",
-        "basis": "ed93e6e25dee",
-        "why": "re-read for 0.87.0, which took the floor from 60 to 35 — the sum of the score components a page of any type can carry, authors 20 + trust 15. The sample is the entry page plus /about.html and /privacy.html. All three carry a named author and a contact route, so all three clear 35; the entry page reaches 75 on credential markers, first-hand experience and external citations, which are the article signals a policy page has no business carrying. The declaration this replaces read FAIL and said so about the floor rather than about the fixture, which is the reading 0.87.0 acted on"
+        "basis": "776c399a1066",
+        "why": "re-read for 0.87.0, which took the floor from 60 to 35 — the sum of the score components a page of any type can carry, authors 20 + trust 15. The sample is the entry page plus /about.html and /privacy.html. All three carry a named author and a contact route, so all three clear 35; the entry page reaches 75 on credential markers, first-hand experience and external citations, which are the article signals a policy page has no business carrying. The declaration this replaces read FAIL and said so about the floor rather than about the fixture, which is the reading 0.87.0 acted on Re-read for F15 batch 5 (the owner's rulings): the item asserts authored_score, the same score on a page naming an author; every sampled page names A Baker, so it is unchanged."
       },
       "GEO-008": {
         "expect": "PASS",
@@ -797,20 +851,20 @@
       "MD-190": {
         "expect": "N/A",
         "title": "Implement Video SEO Essentials",
-        "basis": "c94caee7d585",
-        "why": "the check applies only where videos are present; no page in either tree embeds a video, so 'Implement Video SEO Essentials' is out of scope rather than satisfied"
+        "basis": "9de3669fbcfe",
+        "why": "the check applies only where videos are present; no page in either tree embeds a video, so 'Implement Video SEO Essentials' is out of scope rather than satisfied Re-read for F15 batch 5 (the owner's rulings): the item now applies to a page showing a video as well as one declaring a VideoObject; no sampled page carries a <video> or a player embed, so still N/A."
       },
       "MS-032": {
         "expect": "PASS",
         "title": "Implement & Validate Structured Data (Where Relevant)",
-        "basis": "07359efb256a",
-        "why": "the entry page's four JSON-LD blocks are complete for the types they declare, and the two other sampled pages carry no structured data that could be wrong"
+        "basis": "3cd011bf885f",
+        "why": "the entry page's four JSON-LD blocks are complete for the types they declare, and the two other sampled pages carry no structured data that could be wrong Re-read for F15 batch 5 (the owner's rulings): an unparseable block now fails and the WebSite node needs alternateName, which the fixture's carries; the four blocks still parse and are complete, so it is unchanged."
       },
       "MS-033": {
         "expect": "PASS",
         "title": "Add Social Preview Tags (Open Graph & Twitter Cards)",
-        "basis": "3e89f7956875",
-        "why": "declared with the repair that makes it true, in the same commit: /about.html and /privacy.html now carry the full Open Graph and Twitter set the entry page carries, so every sampled page has something for a social preview to read. Flipped from FAIL, which described the tree before this commit"
+        "basis": "2700e37bd8ff",
+        "why": "declared with the repair that makes it true, in the same commit: /about.html and /privacy.html now carry the full Open Graph and Twitter set the entry page carries, so every sampled page has something for a social preview to read. Flipped from FAIL, which described the tree before this commit Re-read for F15 batch 5 (the owner's rulings): preview_score requires og:image and twitter:card, which all three sampled pages carry; unchanged."
       },
       "SP-109": {
         "expect": "PASS",
@@ -935,20 +989,20 @@
       "GEO-004": {
         "expect": "PASS",
         "title": "Answer blocks present for AEO",
-        "basis": "2ede7adce0c9",
-        "why": "re-read for 0.87.0, which took the floor from 70 to 32 — one direct answer (20) plus one definition (12), out of the four signals answer_block_scanner scores. Declared against the sampled set: the entry page carries question-shaped headings with their answers under them, and /about.html and /privacy.html each carry definition paragraphs. At 70 the item asked every sampled page to be an FAQ; at 32 it asks for the one signal a snippet can be lifted from"
+        "basis": "601a789035f9",
+        "why": "re-read for 0.87.0, which took the floor from 70 to 32 — one direct answer (20) plus one definition (12), out of the four signals answer_block_scanner scores. Declared against the sampled set: the entry page carries question-shaped headings with their answers under them, and /about.html and /privacy.html each carry definition paragraphs. At 70 the item asked every sampled page to be an FAQ; at 32 it asks for the one signal a snippet can be lifted from Re-read for F15 batch 5 (the owner's rulings): the rule is now answer_blocks, a direct answer or a definition on each sampled page: the entry page answers 'How long does a loaf keep?', /about.html answers 'How we test what we publish', /privacy.html answers 'What the server keeps'. Unchanged."
       },
       "GEO-005": {
-        "expect": "PASS",
+        "expect": "FAIL",
         "title": "Content is citation-ready for AI search",
-        "basis": "2ba7bbbca61e",
-        "why": "re-read for 0.87.0, which took the floor from 60 to 25 — author 15 plus canonical 10, the two components of the score any page type can carry. Declared against the sampled set: the entry page is built to be cited and reaches 60 on claim coverage, while /about.html and /privacy.html carry an author and a canonical and nothing a citation would rest on. Claim coverage, trusted links and sameAs are article and entity signals, and a floor above 25 asks a policy page for them"
+        "basis": "b8cd4f42be94",
+        "why": "re-read for 0.87.0, which took the floor from 60 to 25 — author 15 plus canonical 10, the two components of the score any page type can carry. Declared against the sampled set: the entry page is built to be cited and reaches 60 on claim coverage, while /about.html and /privacy.html carry an author and a canonical and nothing a citation would rest on. Claim coverage, trusted links and sameAs are article and entity signals, and a floor above 25 asks a policy page for them Re-read for F15 batch 5 (the owner's rulings): sourced_score is the score on a page naming a source, and /about.html and /privacy.html name none — no cite, blockquote, footnote link, trusted-host link or schema citation — so the author and the canonical no longer carry them to 25: FAIL, as the ruling says (author plus canonical must not pass)."
       },
       "GEO-006": {
-        "expect": "FAIL",
+        "expect": "PASS",
         "title": "Entity is resolvable (Wikidata / KG)",
-        "basis": "a3945f536a62",
-        "why": "'Entity is resolvable (Wikidata / KG)' asks for identifiers that resolve. The Organization and Bakery blocks here declare a name, a logo, an address and hours and no `sameAs` at all, so nothing points at an external identity"
+        "basis": "fac83d40db6a",
+        "why": "'Entity is resolvable (Wikidata / KG)' asks for identifiers that resolve. The Organization and Bakery blocks here declare a name, a logo, an address and hours and no `sameAs` at all, so nothing points at an external identity Re-read for F15 batch 5 (the owner's rulings): the item maps summary.entity_resolution, and the Organization's sameAs now names Wikidata's sandbox item (Q4115189), a Wikidata link that resolves the entity without asking Wikidata: PASS."
       },
       "GEO-007": {
         "expect": "NEEDS_INPUT",
@@ -965,14 +1019,14 @@
       "GO-144": {
         "expect": "PASS",
         "title": "Optimize for Featured Snippets",
-        "basis": "681d48253c3e",
-        "why": "twin of GEO-004 through scores_with, same script and same floor, so it must land on the same verdict. Re-read for 0.87.0: the floor is 32, one direct answer plus one definition, and every sampled page of this origin carries at least that"
+        "basis": "c2880369f03d",
+        "why": "twin of GEO-004 through scores_with, same script and same floor, so it must land on the same verdict. Re-read for 0.87.0: the floor is 32, one direct answer plus one definition, and every sampled page of this origin carries at least that Re-read for F15 batch 5 (the owner's rulings): twin of GEO-004 through scores_with, now asserting answer_blocks; every sampled page carries one, so unchanged."
       },
       "GO-145": {
-        "expect": "PASS",
+        "expect": "FAIL",
         "title": "Optimize for AI Overviews & Zero-Click SERPs",
-        "basis": "d504b3253124",
-        "why": "twin of GEO-005 through scores_with, same script and same floor: re-read for 0.87.0 against a floor of 25, which every sampled page of this origin clears on its author and its canonical alone"
+        "basis": "ae82afcee1cc",
+        "why": "twin of GEO-005 through scores_with, same script and same floor: re-read for 0.87.0 against a floor of 25, which every sampled page of this origin clears on its author and its canonical alone Re-read for F15 batch 5 (the owner's rulings): twin of GEO-005 through scores_with: /about.html and /privacy.html name no source, so sourced_score is 0 there: FAIL."
       },
       "IN-121": {
         "expect": "NO_DATA",
@@ -983,8 +1037,8 @@
       "IN-122": {
         "expect": "NO_DATA",
         "title": "Implement Valid hreflang (With Return Tags)",
-        "basis": "a5dbe5ffacd5",
-        "why": "no hreflang link exists anywhere in the tree, so the return-tag rule has no pair to read"
+        "basis": "9b1660ac61bb",
+        "why": "no hreflang link exists anywhere in the tree, so the return-tag rule has no pair to read Re-read for F15 batch 5 (the owner's rulings): a page whose set names only itself is now N/A; there is no set at all here, so still NO_DATA."
       },
       "IN-127": {
         "expect": "NO_DATA",
@@ -1447,8 +1501,8 @@
       "AR-154": {
         "expect": "N/A",
         "title": "Optimize E-commerce Category Pages",
-        "basis": "1cb65a1d08f7",
-        "why": "a five-page bakery with no category or collection page: the subject is absent and the item says so"
+        "basis": "ccc8f1048ff6",
+        "why": "a five-page bakery with no category or collection page: the subject is absent and the item says so Re-read for F15 batch 5 (the owner's rulings): the item applies to a page linking products, a link to the listing being none; none of the three sampled pages links a product, so still N/A."
       },
       "AR-163": {
         "expect": "N/A",
@@ -1471,8 +1525,8 @@
       "CN-068": {
         "expect": "FAIL",
         "title": "Strengthen Authorship & E-E-A-T Signals",
-        "basis": "ed93e6e25dee",
-        "why": "no page on this origin carries an author, a byline, credentials, a policy page or a date, so there is nothing for 'Strengthen Authorship & E-E-A-T Signals' to find Re-read for 0.87.0 against the new floor of 35: no page here carries an author or a contact route, so the two page-type-neutral components are both absent and FAIL stands."
+        "basis": "776c399a1066",
+        "why": "no page on this origin carries an author, a byline, credentials, a policy page or a date, so there is nothing for 'Strengthen Authorship & E-E-A-T Signals' to find Re-read for 0.87.0 against the new floor of 35: no page here carries an author or a contact route, so the two page-type-neutral components are both absent and FAIL stands. Re-read for F15 batch 5 (the owner's rulings): authored_score is 0 on a page naming no author, and none here does; unchanged."
       },
       "GEO-008": {
         "expect": "FAIL",
@@ -1501,20 +1555,20 @@
       "MD-190": {
         "expect": "N/A",
         "title": "Implement Video SEO Essentials",
-        "basis": "c94caee7d585",
-        "why": "the check applies only where videos are present; no page in this tree embeds a video either"
+        "basis": "9de3669fbcfe",
+        "why": "the check applies only where videos are present; no page in this tree embeds a video either Re-read for F15 batch 5 (the owner's rulings): the entry page's iframe is an insecure frame, not a video player, and no page declares a VideoObject, so still N/A."
       },
       "MS-032": {
         "expect": "FAIL",
         "title": "Implement & Validate Structured Data (Where Relevant)",
-        "basis": "07359efb256a",
-        "why": "the entry page carries an unparseable JSON-LD block, a Product with no offers, price or availability, and a BreadcrumbList with no itemListElement"
+        "basis": "3cd011bf885f",
+        "why": "the entry page carries an unparseable JSON-LD block, a Product with no offers, price or availability, and a BreadcrumbList with no itemListElement Re-read for F15 batch 5 (the owner's rulings): the unparseable block now fails whatever the warning count; it failed already."
       },
       "MS-033": {
         "expect": "FAIL",
         "title": "Add Social Preview Tags (Open Graph & Twitter Cards)",
-        "basis": "3e89f7956875",
-        "why": "no page on this origin carries an Open Graph or Twitter tag"
+        "basis": "2700e37bd8ff",
+        "why": "no page on this origin carries an Open Graph or Twitter tag Re-read for F15 batch 5 (the owner's rulings): preview_score is 0 without og:image and twitter:card, and no page here has either; unchanged."
       },
       "SP-109": {
         "expect": "PASS",
@@ -1639,20 +1693,20 @@
       "GEO-004": {
         "expect": "FAIL",
         "title": "Answer blocks present for AEO",
-        "basis": "2ede7adce0c9",
-        "why": "no page here poses a question or answers one; the entry page is filler prose, the duplicates are one paragraph twice and the orphan is three sentences Re-read for 0.87.0 against the new floor of 32: a single definition paragraph is 12, and no page here carries a direct answer, so the worst sampled page stays below it."
+        "basis": "601a789035f9",
+        "why": "no page here poses a question or answers one; the entry page is filler prose, the duplicates are one paragraph twice and the orphan is three sentences Re-read for 0.87.0 against the new floor of 32: a single definition paragraph is 12, and no page here carries a direct answer, so the worst sampled page stays below it. Re-read for F15 batch 5 (the owner's rulings): answer_blocks counts a direct answer or a definition opening its paragraph with its term; no page here has a question heading, and the entry page's paragraphs open with 'This', 'It' and 'An http link', so none. Unchanged."
       },
       "GEO-005": {
         "expect": "FAIL",
         "title": "Content is citation-ready for AI search",
-        "basis": "2ba7bbbca61e",
-        "why": "nothing here carries a citation, a date, an author or an evidence claim, which is the whole of what makes content citable Re-read for 0.87.0 against the new floor of 25: the sampled pages carry no author, so canonical alone is 10 and FAIL stands."
+        "basis": "b8cd4f42be94",
+        "why": "nothing here carries a citation, a date, an author or an evidence claim, which is the whole of what makes content citable Re-read for 0.87.0 against the new floor of 25: the sampled pages carry no author, so canonical alone is 10 and FAIL stands. Re-read for F15 batch 5 (the owner's rulings): sourced_score is 0 on a page naming no source, and nothing here is cited; unchanged."
       },
       "GEO-006": {
-        "expect": "FAIL",
+        "expect": "NO_DATA",
         "title": "Entity is resolvable (Wikidata / KG)",
-        "basis": "a3945f536a62",
-        "why": "the only parseable schema here is a Product with a name and an image; there is no organization, no identifier and no `sameAs`"
+        "basis": "fac83d40db6a",
+        "why": "the only parseable schema here is a Product with a name and an image; there is no organization, no identifier and no `sameAs` Re-read for F15 batch 5 (the owner's rulings): summary.entity_resolution is not_asked: there is no sameAs to Wikidata or Wikipedia and the loopback-only run never asks Wikidata, so NO_DATA rather than a verdict on the Product's name."
       },
       "GEO-007": {
         "expect": "NEEDS_INPUT",
@@ -1669,14 +1723,14 @@
       "GO-144": {
         "expect": "FAIL",
         "title": "Optimize for Featured Snippets",
-        "basis": "681d48253c3e",
-        "why": "twin of GEO-004 through scores_with: no answer blocks anywhere Re-read for 0.87.0 against the new floor of 32; unchanged."
+        "basis": "c2880369f03d",
+        "why": "twin of GEO-004 through scores_with: no answer blocks anywhere Re-read for 0.87.0 against the new floor of 32; unchanged. Re-read for F15 batch 5 (the owner's rulings): twin of GEO-004: answer_blocks is 0 on every sampled page; unchanged."
       },
       "GO-145": {
         "expect": "FAIL",
         "title": "Optimize for AI Overviews & Zero-Click SERPs",
-        "basis": "d504b3253124",
-        "why": "twin of GEO-005 through scores_with: nothing here is citable Re-read for 0.87.0 against the new floor of 25; unchanged."
+        "basis": "ae82afcee1cc",
+        "why": "twin of GEO-005 through scores_with: nothing here is citable Re-read for 0.87.0 against the new floor of 25; unchanged. Re-read for F15 batch 5 (the owner's rulings): twin of GEO-005 through scores_with: nothing here names a source; unchanged."
       },
       "IN-121": {
         "expect": "NO_DATA",
@@ -1687,8 +1741,8 @@
       "IN-122": {
         "expect": "NO_DATA",
         "title": "Implement Valid hreflang (With Return Tags)",
-        "basis": "a5dbe5ffacd5",
-        "why": "no hreflang link exists anywhere in the tree, so the return-tag rule has no pair to read"
+        "basis": "9b1660ac61bb",
+        "why": "no hreflang link exists anywhere in the tree, so the return-tag rule has no pair to read Re-read for F15 batch 5 (the owner's rulings): a self-only set is now N/A; this tree has no hreflang at all, so still NO_DATA."
       },
       "IN-127": {
         "expect": "NO_DATA",

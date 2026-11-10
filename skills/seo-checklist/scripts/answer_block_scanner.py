@@ -30,7 +30,18 @@ from seo_common import load_source, parse_html
 
 
 QUESTION_RE = re.compile(r"^(what|why|how|when|where|who|which|can|does|is|are)\b|\?$", re.I)
-DEFINITION_RE = re.compile(r"\b([A-Z][A-Za-z0-9 -]{2,80})\s+(?:is|are|refers to|means)\s+.{20,220}", re.S)
+# A definition opens its paragraph with the term it defines: "Sourdough is bread
+# leavened by …". Searched anywhere, "X is" matched any sentence with a capital and a
+# verb ("It also carries … is"), which was harmless while a definition was 12 points of
+# a floor and decides GO-144 and GEO-004 alone since F15 (the rulings: one direct answer
+# or definition is enough). Words that open a sentence about something else — pronouns,
+# determiners of no term, conjunctions — are no term.
+NOT_A_TERM = (r"(?!(?:it|its|this|that|these|those|there|here|we|our|you|your|he|she|"
+              r"they|their|his|her|i|my|if|when|while|because|although|though|as|since|"
+              r"once|unless|whether|where|everything|something|anything|nothing)\b)")
+DEFINITION_RE = re.compile(r"\s*" + NOT_A_TERM
+                           + r"([A-Z][A-Za-z0-9 -]{2,80}?)\s+(?:is|are|refers to|means)\s+.{20,220}",
+                           re.S | re.I)
 HEADING_RE = re.compile(r"^h[1-6]$")
 
 # Elements whose text is not the page's prose, skipped subtree and all. `<template>`
@@ -154,6 +165,21 @@ def _answer_after(heading):
     return None
 
 
+def _is_menu(node) -> bool:
+    """A list a reader navigates rather than reads (F15, GEO-004's ruling: nav menus
+    out): one inside `<nav>`, `role=navigation`, `<header>` or `<footer>`, or one whose
+    every item is a link and nothing else."""
+    for element in (node, *node.parents):
+        if element.name in ("nav", "header", "footer") or (
+                str(element.get("role") or "").lower() == "navigation"):
+            return True
+    items = _own_descendants(node, "li", ("ol", "ul"))
+    return bool(items) and all(
+        (links := li.find_all("a")) and " ".join(a.get_text(" ", strip=True) for a in links)
+        .split() == li.get_text(" ", strip=True).split()
+        for li in items)
+
+
 def scan_answer_blocks(source: str, timeout: int = 15) -> dict:
     html, url, fetched = load_source(source, timeout)
     parsed = parse_html(html, url)
@@ -179,11 +205,13 @@ def scan_answer_blocks(source: str, timeout: int = 15) -> dict:
     for paragraph in soup.find_all("p"):
         text = _own_text(paragraph)
         if DEFINITION_MIN_WORDS <= _word_count(text) <= DEFINITION_MAX_WORDS \
-                and DEFINITION_RE.search(text):
+                and DEFINITION_RE.match(text):
             definitions.append(text[:320])
 
     lists = []
     for node in soup.find_all(["ol", "ul"]):
+        if _is_menu(node):
+            continue
         items = [_own_text(li) for li in _own_descendants(node, "li", ("ol", "ul"))]
         if len(items) >= LIST_MIN_ITEMS:
             lists.append({"type": node.name, "items": len(items), "sample": items[:5]})
@@ -211,6 +239,10 @@ def scan_answer_blocks(source: str, timeout: int = 15) -> dict:
     return {
         "url": url or source,
         "score": score,
+        # What GO-144 and GEO-004 assert (F15, the rulings): a direct answer under a
+        # question heading or a definition — a block a snippet can be lifted from.
+        # Lists and tables add to `score` and never stand in for one.
+        "answer_blocks": len(direct_answers) + len(definitions),
         "questions": questions[:50],
         "direct_answers": direct_answers[:50],
         "definitions": definitions[:50],

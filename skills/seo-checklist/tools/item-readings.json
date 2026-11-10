@@ -839,19 +839,19 @@
           "eq": 0
         },
         "applies_when": {
-          "path": "schema_nodes",
+          "path": "nodes_and_invalid_blocks",
           "gt": 0
         },
         "warn": {
-          "path": "summary.warnings",
+          "path": "summary.warnings_if_every_block_parses",
           "lte": 3
         }
       },
-      "verdict": "answers",
-      "reading": "`summary.errors` is schema_required_props' count of missing required properties, applicable where nodes exist.",
+      "verdict": "measures",
+      "reading": "`summary.errors` is schema_required_props' count of missing required properties (Google's rich-result ones read by value) and of JSON-LD blocks that do not parse, applicable where a node or an unparseable block exists; an unparseable block withholds the warn band (`summary.warnings_if_every_block_parses`), so it fails (F15). Types the tool does not table, and Microdata, are not checked, and `measures` says so.",
       "shapes": {
-        "conjunction": "Implemented is the applicability gate; validated is the assertion.",
-        "qualifier": "*Where relevant* is `applies_when schema_nodes > 0`."
+        "conjunction": "Implemented is the applicability gate (`nodes_and_invalid_blocks`); validated is the assertion.",
+        "qualifier": "*Where relevant* is `applies_when nodes_and_invalid_blocks > 0`; untabled types are named in `measures`."
       },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -870,14 +870,14 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
+          "path": "preview_score",
           "gte": 80
         }
       },
-      "verdict": "answers",
-      "reading": "`score` is the share of Open Graph and Twitter Card checks the page passes; 80 is four in five.",
+      "verdict": "measures",
+      "reading": "`preview_score` is the share of thirteen Open Graph and Twitter Card tags the page carries, on a page carrying og:image and twitter:card, and 0 on a page lacking either (F15, the owner's ruling); 80 is four in five. Whether the preview looks right is not checked, and `measures` says so.",
       "shapes": {
-        "conjunction": "Both tag families feed the score."
+        "conjunction": "Both tag families feed the score, and each family's preview tag is required."
       },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -1210,8 +1210,8 @@
           "truthy": true
         }
       },
-      "verdict": "answers",
-      "reading": "`date_signals.shown` requires a publication and an update date from declared sources; publication alone warns (0.112.0).",
+      "verdict": "measures",
+      "reading": "`date_signals.shown` requires a date a visitor sees (a `<time>` with text or a date written in the visible text) and a later one as the update; one date warns. Dates in metadata or JSON-LD alone are not shown (F15, the owner's ruling), and `measures` says which date is which is not read.",
       "shapes": {
         "conjunction": "Both halves are read."
       },
@@ -1239,8 +1239,8 @@
           }
         }
       },
-      "verdict": "answers",
-      "reading": "`signals.authorship` requires both an author and a publisher signal.",
+      "verdict": "measures",
+      "reading": "`signals.authorship` requires an author's and a publisher's names, each named by markup, to appear in the page's visible text (F15, the owner's ruling: show means visible); metadata alone shows nothing, and `measures` says so.",
       "shapes": {
         "conjunction": "Both halves are read, as a two-key object."
       },
@@ -1314,14 +1314,14 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
+          "path": "authored_score",
           "gte": 35
         }
       },
-      "verdict": "answers",
-      "reading": "`score` is eeat_signal_checker's weighted sum of an author, credentials, first-hand experience, policy and trust links, and external citations.",
+      "verdict": "measures",
+      "reading": "`authored_score` is eeat_signal_checker's weighted sum of an author, credentials, first-hand experience, policy and trust links, and external citations on a page naming an author, and 0 on a page naming none (F15, the owner's ruling). Whether the expertise is real is not judged, and `measures` says so.",
       "shapes": {
-        "conjunction": "Authorship is part of the E-E-A-T score, not a separate subject."
+        "conjunction": "Authorship is required (`authored_score` is 0 without it), then the rest is scored."
       },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -1409,8 +1409,8 @@
           "truthy": true
         }
       },
-      "verdict": "answers",
-      "reading": "`keyword_usage.in_body` is whether the supplied primary keyword occurs in the body copy.",
+      "verdict": "measures",
+      "reading": "`keyword_usage.in_body` is whether the supplied primary keyword occurs in the body copy: the content's text, lists, tables and divs included, headings, navigation and page furniture not (F15, the owner's ruling). How naturally it is used is not judged, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -1810,10 +1810,10 @@
           ]
         }
       },
-      "verdict": "answers",
-      "reading": "`issues` carries video_schema_checker's mobile-relevant video findings, applicable only where videos exist.",
+      "verdict": "measures",
+      "reading": "`issues` carries video_schema_checker's VideoObject findings — Google's required properties fail, recommended ones warn — applicable where a VideoObject node exists. Nothing about playback, layout or speed on a phone is measured, and `measures` says so (F15, the owner's ruling).",
       "shapes": {
-        "qualifier": "*Optimize* is read as the script's issue set."
+        "qualifier": "*Optimize* is read as the VideoObject's properties, and `measures` says that is all."
       },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -2380,13 +2380,17 @@
         "assert": {
           "path": "checks.return_tags.verified_and_valid",
           "truthy": true
+        },
+        "applies_when": {
+          "path": "checks.return_tags.self_only",
+          "falsy": true
         }
       },
-      "verdict": "answers",
-      "reading": "`checks.return_tags.verified_and_valid` requires every alternate to link back, fetched and checked, at least one alternate, and every hreflang code a valid language (and region) — `jp` fails, `zh-CN` is valid with advice (F15).",
+      "verdict": "measures",
+      "reading": "`checks.return_tags.verified_and_valid` requires every alternate to link back, fetched and checked, and every hreflang code in Google's format — `jp` fails, `zh-CN` is valid with advice (F15). A set naming only the page itself is N/A (`checks.return_tags.self_only`, the owner's ruling 2 on F15 batch 4's questions), unless a code in it is invalid; `measures` says so.",
       "shapes": {
         "conjunction": "Return tags are the validity condition the rule reads, with the codes.",
-        "qualifier": "*Valid* is return tags verified and codes valid (F15: the codes are read now)."
+        "qualifier": "*Valid* is return tags verified and codes valid."
       },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -2762,14 +2766,15 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
-          "gte": 32
+          "path": "answer_blocks",
+          "gte": 1
         }
       },
-      "verdict": "answers",
-      "reading": "`score` is answer_block_scanner's measure of question-and-answer blocks a snippet can lift.",
+      "verdict": "measures",
+      "reading": "`answer_blocks` counts the direct answers under a question heading and the definition paragraphs answer_block_scanner finds; lists and tables add to `score` and never stand in for one (F15, the owner's ruling). Whether Google lifts a snippet is not observable, and `measures` says so.",
       "shapes": {
-        "qualifier": "*Optimize* is read as answer-block readiness."
+        "existential": "One direct answer or definition is enough (`gte 1`).",
+        "qualifier": "*Optimize* is read as carrying an answer block, and `measures` says that is all."
       },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -2788,16 +2793,16 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
+          "path": "sourced_score",
           "gte": 25
         }
       },
       "verdict": "measures",
-      "reading": "`score` is citation_readiness for this one page — GEO-005's twin. Presence in AI Overviews or zero-click results is not observable here, and `measures` says so.",
+      "reading": "`sourced_score` is citation_readiness's score for this one page when it names a source, and 0 when it names none — GEO-005's twin; author and canonical alone no longer reach 25 (F15, the owner's ruling). Presence in AI Overviews or zero-click results is not observable here, and `measures` says so.",
       "shapes": {
         "conjunction": "Neither surface is observed; `measures` names both.",
         "external": "AI Overview presence needs a source this audit does not have; `measures` says so.",
-        "qualifier": "*Optimize* is read as citation readiness, and `measures` says that is all."
+        "qualifier": "*Optimize* is read as citation readiness on a page naming a source, and `measures` says that is all."
       },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -3027,8 +3032,8 @@
           ]
         },
         "applies_when": {
-          "path": "product_links_detected",
-          "gt": 0
+          "path": "category_page",
+          "truthy": true
         },
         "warn": {
           "path": "issues",
@@ -3038,10 +3043,10 @@
           ]
         }
       },
-      "verdict": "answers",
-      "reading": "`issues` carries collection_page_checker's category-page findings, applicable only where product links are detected.",
+      "verdict": "measures",
+      "reading": "`issues` carries collection_page_checker's presence findings on a page linking products (`category_page`, F15): a link to the product listing alone is none, so a home page whose nav says Products is not graded; the copy, filters and product grid are not judged, and `measures` says so (F15, the owner's ruling).",
       "shapes": {
-        "qualifier": "*Optimize* is read as the script's issue set."
+        "qualifier": "*Optimize* is read as the script's presence findings, and `measures` says that is all."
       },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -3800,7 +3805,7 @@
           ]
         },
         "applies_when": {
-          "path": "videos",
+          "path": "video_signals",
           "gt": 0
         },
         "warn": {
@@ -3812,7 +3817,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`issues` carries video_schema_checker's VideoObject findings, applicable only where videos exist.",
+      "reading": "`issues` carries video_schema_checker's findings: a video the page shows with no VideoObject fails, Google's required VideoObject properties fail and recommended ones warn, applicable where a VideoObject node or a shown video exists (`video_signals`, F15).",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -3973,13 +3978,15 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
-          "gte": 32
+          "path": "answer_blocks",
+          "gte": 1
         }
       },
-      "verdict": "answers",
-      "reading": "`score` is answer_block_scanner's answer-block readiness, GO-144's twin.",
-      "shapes": {},
+      "verdict": "measures",
+      "reading": "`answer_blocks` counts the direct answers under a question heading and the definition paragraphs answer_block_scanner finds — GO-144's twin; navigation menus are not lists, and one answer is enough (F15, the owner's ruling). Whether an AI answer quotes it is not observable, and `measures` says so.",
+      "shapes": {
+        "existential": "*Present* is one block (`gte 1`)."
+      },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
         "session": "01a1bc05-4bf8-79c0-967e-086f0a56fa8c",
@@ -3997,12 +4004,12 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "score",
+          "path": "sourced_score",
           "gte": 25
         }
       },
-      "verdict": "answers",
-      "reading": "`score` is citation_readiness for the page.",
+      "verdict": "measures",
+      "reading": "`sourced_score` is citation_readiness's score for this one page when it names a source (a cite, blockquote, footnote link, trusted-host link or schema citation), and 0 when it names none (F15, the owner's ruling). Whether a source supports a given claim is not read, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -4021,14 +4028,17 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "summary.sameas_missing_critical",
-          "eq": 0
+          "path": "summary.entity_resolution",
+          "value_map": {
+            "resolved": "pass",
+            "unresolved": "fail"
+          }
         }
       },
-      "verdict": "answers",
-      "reading": "`summary.sameas_missing_critical` counts critical entities with no sameAs to a knowledge base.",
+      "verdict": "measures",
+      "reading": "`summary.entity_resolution` maps `resolved` (a Wikidata or Wikipedia `sameAs`, a Wikidata item labelled with the entity's name, or a Knowledge Graph match) to pass and `unresolved` (Wikidata answered with none) to fail; `not_asked` is unmapped, NO_DATA (F15, the owner's ruling).",
       "shapes": {
-        "conjunction": "Wikidata and the Knowledge Graph are the targets sameAs may name."
+        "conjunction": "Wikidata or the Knowledge Graph resolving the entity is enough; `measures` names both."
       },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",

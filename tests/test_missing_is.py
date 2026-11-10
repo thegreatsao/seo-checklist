@@ -86,8 +86,10 @@ def schema_output(*nodes: dict) -> dict:
 
 ORGANISATION = {"@context": "https://schema.org", "@type": "Organization",
                 "name": "Example", "url": "https://example.test/"}
+# `alternateName` since F15 batch 5 (GO-143's ruling): a WebSite node without it is
+# incomplete.
 WEBSITE = {"@context": "https://schema.org", "@type": "WebSite",
-           "name": "Example", "url": "https://example.test/"}
+           "name": "Example", "alternateName": "The Example", "url": "https://example.test/"}
 
 
 class AbsenceAnswersOnlyUnderSomethingPresent(unittest.TestCase):
