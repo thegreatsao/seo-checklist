@@ -741,10 +741,11 @@ class HreflangValidity(unittest.TestCase):
 
     def test_codes_outside_googles_format_are_invalid(self):
         """Review round 3: ISO 639-1 languages and ISO 3166-1 alpha-2 regions."""
-        for code in ("eng-US", "es-419"):
+        for code in ("eng-US", "es-419", "jp-JP"):
             with self.subTest(code=code):
                 self.assertFalse(hreflang_checker.validate_lang_code(code)["valid"])
-        for code in ("en-US", "es-MX", "pt-BR"):
+        # Review round 4: a language with no two-letter code is valid in its three.
+        for code in ("en-US", "es-MX", "pt-BR", "fil-PH", "yue"):
             with self.subTest(code=code):
                 self.assertTrue(hreflang_checker.validate_lang_code(code)["valid"])
 
@@ -777,6 +778,15 @@ class FacetControls(unittest.TestCase):
             "/old": (301, {"Location": "/shop"}, ""),
             "/shop": page_html(canonical="{origin}/shop")})
         self.assertEqual(verdict("AR-163", out), PASS)
+
+    def test_a_facet_redirecting_to_another_spelling_of_itself_is_not(self):
+        """Review round 4: `/shop?color=red` -> `/shop/?color=red` naming itself is the
+        same facet, indexable, uncontrolled."""
+        out = self.ar_163({
+            "/": '<html><body><a href="/shop?color=red">Red</a></body></html>',
+            "/shop": (301, {"Location": "/shop/?color=red"}, ""),
+            "/shop/": page_html(canonical="{origin}/shop/?color=red")})
+        self.assertEqual(verdict("AR-163", out), FAIL)
 
     def test_variants_robots_txt_disallows_are_no_path_explosion(self):
         links = "".join(f'<a href="/shop?sort=p{i}">s{i}</a>' for i in range(6))

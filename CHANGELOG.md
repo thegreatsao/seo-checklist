@@ -27,8 +27,8 @@ withholds its pass when a probe failed; GO-136 fails a `<url>` with no `<loc>`, 
 namespace or names, and an empty sitemap; GO-138 reads noindex as Google does (googlebot meta, `X-Robots-Tag`, `none`);
 GEO-008 ignores another crawler's `X-Robots-Tag` rules; AR-150 asserts `walk`, so `/a` → `/a` and `/a` → `/b` → `/a`
 fail as loops; CI-010 compares the canonicals as sent (`/page` ≠ `/page/`); IN-122 fails an invalid language or region
-code (not `zh-CN` or bare `zh`, which are valid; a three-letter language or a numeric region is
-invalid) even unverified, and a set naming no alternate; AR-163 counts a self-canonical as no control and a redirect to another URL as one,
+code (not `zh-CN` or bare `zh`, which are valid; `eng-US`, `jp-JP` or a numeric region is
+invalid) even unverified, and a set naming no alternate; AR-163 counts a self-canonical as no control and a redirect dropping the facet parameters as one,
 reads noindex as Google does, and no longer counts controlled
 variants as a path explosion; GEO-007 requires the key file to be the key alone, as text. Sentences for CI-014,
 AR-155 (corrected), CI-012, GEO-001, GEO-002, and beside the rulings for AR-153, AR-162, CI-009 and TE-176.

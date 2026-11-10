@@ -65,6 +65,12 @@ FREQUENT_PARAM_COUNT = 3
 MAX_URLS_FROM_PAGE = 300
 
 
+def _facet_params(url: str) -> list[str]:
+    """The filter, sort or facet parameters a URL carries."""
+    params = parse_qs(urlparse(url).query, keep_blank_values=True)
+    return sorted(k for k in params if k.lower() in FACET_KEYS or k.lower().startswith("filter"))
+
+
 def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:
     rows = []
     by_path = defaultdict(list)
@@ -94,14 +100,16 @@ def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:
                 row["meta_robots"] = html.get("meta_robots")
                 # A canonical naming the URL itself consolidates nothing: no control
                 # (AR-163, F15, the owner's ruling).
-                # Against the facet URL asked for: one that redirects to its clean
-                # page is folded away by the redirect, a control of its own (F15 review
-                # round 3: `/old?color=red` -> `/shop` naming itself failed).
-                row["redirected"] = (comparable_url(page.get("url") or url)
-                                     != comparable_url(url))
+                # A facet that redirects to a page carrying no facet parameter is
+                # folded away, a control of its own (F15 review round 3:
+                # `/old?color=red` -> `/shop` failed); one landing on another spelling
+                # of itself (`/shop/?color=red`, https) is not (review round 4).
+                landing = page.get("url") or url
+                row["redirected"] = bool(_facet_params(url)) and not _facet_params(landing)
                 row["canonical_elsewhere"] = bool(
                     html.get("canonical")
-                    and comparable_url(html["canonical"]) != comparable_url(url))
+                    and comparable_url(html["canonical"])
+                    not in (comparable_url(url), comparable_url(landing)))
                 # Google's reader, as GO-138's: the robots and googlebot metas and
                 # the header, `none` included (F15 review round 1).
                 row["noindex"] = bool(google_noindex(

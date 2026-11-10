@@ -264,7 +264,10 @@ def validate_lang_code(lang_tag: str) -> dict:
     if "_" in raw_tag:
         issues.append("Use hyphens, not underscores, in hreflang values.")
 
-    mistake = COMMON_LANG_MISTAKES.get(raw_tag.lower())
+    # The language subtag as well as the whole tag: `jp-JP` and `eng-US` are the same
+    # mistakes as `jp` and `eng` (F15 review rounds 3-4).
+    mistake = (COMMON_LANG_MISTAKES.get(raw_tag.lower())
+               or COMMON_LANG_MISTAKES.get(raw_tag.replace("_", "-").split("-")[0].lower()))
     if mistake:
         issues.append(f"'{raw_tag}' is a common invalid hreflang value. Use '{mistake}' instead.")
     advice = []
@@ -284,10 +287,6 @@ def validate_lang_code(lang_tag: str) -> dict:
             f"Invalid primary language subtag '{parts[0] if parts else ''}'. "
             "Use a 2-3 letter BCP 47 language subtag."
         )
-    elif len(lang) == 3 and not mistake:
-        # Google reads ISO 639-1 (F15 review round 3: `eng-US` passed).
-        issues.append(f"Language '{lang}' is a three-letter code; hreflang takes the "
-                      "two-letter ISO 639-1 code.")
     elif len(lang) == 2 and lang not in VALID_LANG_CODES:
         correction = COMMON_LANG_MISTAKES.get(lang)
         issue = f"Unknown language code '{lang}'."

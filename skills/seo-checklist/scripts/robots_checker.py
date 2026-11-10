@@ -267,8 +267,8 @@ def main():
         if not inventory.get("fetch_error"):
             paths = crawled_paths(inventory)
             if (inventory.get("summary") or {}).get("truncated"):
-                capped = ("every crawled path is shut to Googlebot, and the crawl stopped "
-                          "at its cap, so a path it did not reach may be open")
+                capped = ("every crawled path is shut to Googlebot, and the crawl did "
+                          "not read the whole site, so a path it did not reach may be open")
     result = fetch_robots_txt(args.url, paths=paths)
     shut = "the whole site is disallowed for Googlebot"
     if capped and shut in (result.get("correctness_problems") or []):
