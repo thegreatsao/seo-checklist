@@ -19,7 +19,7 @@ F15 batch 6 (`e2d01d02779d` → `ca2f4a06b209`) — security, speed and technica
 questions. **Verdicts of a real audit can move**: GO-145 and GEO-005 are N/A on a privacy, terms or contact page, read
 from the page's slug (the one before an `index` page): every word of it is a privacy, terms or contact word in English,
 German, Russian or Lithuanian (`UTILITY_WORDS`, run-together forms such as `termsofuse` included; `get-in-touch`,
-`data-protection`, `conditions-of-use` and `publichnaya-oferta` read as one), a word such slugs are written with (`our`, `of`, `me`, …) or a
+`data-protection`, `privacy-center`, `general-terms`, `conditions-of-use` and `publichnaya-oferta` read as one), a word such slugs are written with (`our`, `of`, `me`, …) or a
 number, the segment before an `/amp` page too, so `/privacy-policy-2`, `/contact-me` and `/kontakty` are utility pages
 and `/blog/privacy-tips`, `/kontaktlinsen` and `/oferta` are not (an about page keeps the rule); SE-114, SE-116 and TE-171 read the shared crawl and ask Safe Browsing about the entry and every
 URL it read, 500 to a request (a listed inner page fails; one unanswered request withholds a clean answer; `page`

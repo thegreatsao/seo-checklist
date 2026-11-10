@@ -183,7 +183,7 @@ def check(url: str, timeout: int = 15) -> dict:
         if n > 1 and Counter(config_ids)[gid] <= 1:
             duplicates.append({"id": gid, "count": n, "kind": "gtag_loader"})
     # A `<link rel=preload>` of the container fetches it ahead; it runs nothing (round 7).
-    loads_html = re.sub(r"<link\b[^>]*>", "", html, flags=re.I)
+    loads_html = re.sub(r"<link\s[^>]*>", "", html, flags=re.I)
     for cid, n in Counter(a or b for a, b in RE_GTM_SCRIPT_LOAD.findall(loads_html)).items():
         if n > 1:
             duplicates.append({"id": cid, "count": n, "kind": "gtm_container"})

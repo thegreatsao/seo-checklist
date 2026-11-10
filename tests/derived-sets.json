@@ -632,11 +632,11 @@
         },
         {
           "name": "UTILITY_PHRASES",
-          "entries": 4
+          "entries": 8
         },
         {
           "name": "UTILITY_SLUG_WORDS",
-          "entries": 36
+          "entries": 32
         }
       ],
       "unread": [

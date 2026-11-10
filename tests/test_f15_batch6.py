@@ -916,6 +916,24 @@ class ReviewRound7(unittest.TestCase):
                 self.assertEqual(ReviewRound2.both(self, path), FAIL)
 
 
+class ReviewRound8(unittest.TestCase):
+    def test_a_contact_center_product_and_an_online_privacy_article_keep_the_rule(self):
+        for path in ("/contact-center", "/contact-centre", "/solutions/contact-center",
+                     "/blog/online-privacy", "/blog/privacy-online",
+                     "/resources/general-data-protection"):
+            with self.subTest(path=path):
+                self.assertEqual(ReviewRound2.both(self, path), FAIL)
+        for path in ("/privacy-center", "/privacy-centre", "/online-privacy-policy"):
+            with self.subTest(path=path):
+                self.assertEqual(ReviewRound2.both(self, path), NA)
+
+    def test_a_less_than_link_in_a_script_hides_no_snippet(self):
+        head = GTM + GTM.replace("})(window", "if(i<link.length){}})(window")
+        out = run_item(ga4_tag_checker, "GO-132", {"/": html("<p>x</p>", head=head),
+                                                   "/gtm.js": "var x=1;"})
+        self.assertEqual(full_verdict("GO-132", out), FAIL)
+
+
 # ---------------------------------------------------------------------------
 # The sets the batch adds, held to their sources
 # ---------------------------------------------------------------------------
@@ -943,7 +961,10 @@ class TheSetsAreHeld(unittest.TestCase):
         # Review round 3: phrases whose words do not each name the page.
         self.assertEqual(UTILITY_PHRASES, {"get-in-touch": "contact", "data-protection": "privacy",
                                            "publichnaya-oferta": "terms",
-                                           "conditions-of-use": "terms"})
+                                           "conditions-of-use": "terms",
+                                           "privacy-center": "privacy", "privacy-centre": "privacy",
+                                           "online-privacy-policy": "privacy",
+                                           "general-terms": "terms"})
         self.assertLessEqual(set(UTILITY_PHRASES.values()), UTILITY_WORDS)
         self.assertEqual(UTILITY_WORDS & UTILITY_SLUG_WORDS, set())
         # Filler words name no kind of page: none is a subject an article is about.
@@ -951,7 +972,7 @@ class TheSetsAreHeld(unittest.TestCase):
             "our", "the", "of", "and", "us", "use", "service", "conditions",
             "notice", "statement", "policy", "policies", "page", "info", "information",
             "form", "sale", "sales", "business", "website", "site", "me", "user", "data",
-            "general", "notices", "online", "center", "centre", "declaration", "politika", "ispolzovaniya", "obrabotki", "polzovatelskoe", "naudojimo",
+            "notices", "declaration", "politika", "ispolzovaniya", "obrabotki", "polzovatelskoe", "naudojimo",
             "duomenu"})
         from security_headers import (CSP_ANY_SOURCE, CSP_INLINE_OVERRIDES,
                                       HARDENING_HEADERS, REFERRER_POLICIES)
