@@ -76,6 +76,28 @@ that drift.
 
 ---
 
+### [2026-11-10] An hreflang set naming only the page itself is N/A for IN-122
+
+**Decision:** The owner's ruling 2 on F15 batch 4's questions ("Принимаю, батч 5", 2026-11-10; the F15 contract, "The
+owner's rulings on batch 4's questions"). A page whose hreflang annotations name no URL but its own gets N/A from
+IN-122, not FAIL; the codes in it are still checked, so a malformed code on such a page still fails. Three-letter
+language codes keep failing (Google documents ISO 639-1). The `measures` sentence says so.
+
+**Why:** IN-122 judges whether alternates point at each other correctly; a set with no other URL has nothing to
+compare, so a FAIL would be a verdict on a comparison that never took place. Batch 4's FAIL read the F03 ruling's "no
+vacuous pass" as "fail"; N/A is also no pass.
+
+**Alternatives rejected:**
+- **FAIL (batch 4's reading):** a verdict about a comparison with nothing on the other side.
+- **PASS:** the vacuous pass the F03 ruling forbade.
+- **Accepting three-letter codes when no two-letter one exists (`fil`, `yue`):** Google's documentation names ISO
+  639-1; the owner kept the stricter reading.
+
+**Consequences:** A census tree whose pages carry a self-only set moves IN-122 FAIL → N/A; the move is declared before
+the run.
+
+---
+
 ### [2026-11-10] A cross-host canonical alone passes every canonical item; AR-153 and AR-162 are N/A on small sites
 
 **Decision:** The owner's rulings on F15 batch 3's questions ("Принимаю все", 2026-11-10; the F15 contract, "The
