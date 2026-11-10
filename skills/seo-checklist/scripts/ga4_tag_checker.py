@@ -46,6 +46,7 @@ GUARD_REFUSED = "blocked"
 # gtag('config', 'G-XXXX') and the gtag.js loader query string both carry the ID.
 RE_CONFIG = re.compile(r"""gtag\s*\(\s*['"]config['"]\s*,\s*['"](G-[A-Z0-9]+)['"]""", re.I)
 RE_GTAG_SRC = re.compile(r"gtag/js\?id=(G-[A-Z0-9]+)", re.I)
+RE_LOADER_URL = re.compile(r"[^\"'\s<>]*")
 RE_GTM = re.compile(r"(GTM-[A-Z0-9]+)", re.I)
 RE_UA = re.compile(r"(UA-\d{4,}-\d+)")
 RE_GTAG_LOADER = re.compile(r"gtag/js\?id=", re.I)
@@ -135,7 +136,10 @@ def check(url: str, timeout: int = 15) -> dict:
     html = re.sub(r"<!--.*?-->", "", page.text, flags=re.S)
 
     config_ids = [m.upper() for m in RE_CONFIG.findall(html)]
-    src_ids = [m.upper() for m in RE_GTAG_SRC.findall(html)]
+    # A loader carrying `gtm=` was written by GTM itself, at run time, and saved into a
+    # prerendered snapshot: the container's own tag, not a hardcoded one (review round 4).
+    src_ids = [m.group(1).upper() for m in RE_GTAG_SRC.finditer(html)
+               if "gtm=" not in RE_LOADER_URL.match(html, m.start()).group(0)]
     containers = [m.upper() for m in RE_GTM.findall(html)]
     ua_ids = RE_UA.findall(html)
 

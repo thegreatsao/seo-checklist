@@ -783,6 +783,53 @@ class ReviewRound3(unittest.TestCase):
                                                             'legacy.js" nomodule></script>')), PASS)
 
 
+class ReviewRound4(unittest.TestCase):
+    def go(self, path: str) -> str:
+        return ReviewRound2.both(self, path)
+
+    def test_an_offer_page_is_no_terms_page(self):
+        for path in ("/oferta", "/oferta/"):
+            with self.subTest(path=path):
+                self.assertEqual(self.go(path), FAIL)
+        self.assertEqual(self.go("/publichnaya-oferta"), NA)
+
+    def test_run_together_and_amp_utility_slugs_are_read(self):
+        for path in ("/TermsOfUse", "/termsandconditions", "/cookiepolicy", "/privacynotice",
+                     "/termsofservice", "/privacy-policy/amp/", "/contact/amp"):
+            with self.subTest(path=path):
+                self.assertEqual(self.go(path), NA)
+
+    def unnamed(self, body: str) -> int:
+        return ReviewRound3.unnamed(self, body)
+
+    def test_a_descendants_aria_label_names_a_label_and_hidden_text_does_not(self):
+        for body in ('<label for="s"><svg aria-label="Search" role="img"></svg></label>'
+                     '<input id="s" type="search">',
+                     '<label for="s"><i class="fa fa-search" aria-label="Search"></i></label>'
+                     '<input id="s" type="search">'):
+            with self.subTest(body=body):
+                self.assertEqual(self.unnamed(body), 0)
+        self.assertEqual(self.unnamed('<label for="e"><span aria-hidden="true">*</span></label>'
+                                      '<input id="e" type="email">'), 1)
+
+    def test_a_loader_gtm_injected_is_no_hardcoded_tag(self):
+        injected = ('<script async src="https://www.googletagmanager.com/gtag/js?id=G-ABC123'
+                    '&amp;cx=c&amp;gtm=45He4b11v9"></script>')
+        routes = {"/": html("<p>x</p>", head=GTM + injected),
+                  "/gtm.js": 'var data={"tags":[{"function":"__googtag","vtp_tagId":"G-ABC123"}]};'}
+        out = run_item(ga4_tag_checker, "GO-132", routes)
+        self.assertEqual(full_verdict("GO-132", out), PASS)
+        self.assertEqual(full_verdict("GO-131", out), PASS)
+
+    def test_a_commented_import_is_not_a_sheet_and_a_minified_one_is(self):
+        out = run_item(css_minify_check, "TE-174", {
+            "/": html("<p>x</p>", head="<style>/* @import url(old.css); */"
+                                       '@import"/big.css";</style>'),
+            "/big.css": (200, {"Content-Type": "text/css"}, UNMINIFIED)})
+        self.assertEqual([row["href"].rsplit("/", 1)[-1] for row in out["stylesheets"]],
+                         ["big.css"])
+
+
 # ---------------------------------------------------------------------------
 # The sets the batch adds, held to their sources
 # ---------------------------------------------------------------------------
@@ -805,10 +852,11 @@ class TheSetsAreHeld(unittest.TestCase):
                 words = fragment.split("-")
                 self.assertTrue(any(w in UTILITY_WORDS or any(u.startswith(w) for u in UTILITY_WORDS)
                                     for w in words), fragment)
-        self.assertEqual(len(UTILITY_WORDS), 45)
+        self.assertEqual(len(UTILITY_WORDS), 49)
         from citation_readiness import UTILITY_PHRASES
         # Review round 3: phrases whose words do not each name the page.
-        self.assertEqual(UTILITY_PHRASES, {"get-in-touch": "contact", "data-protection": "privacy"})
+        self.assertEqual(UTILITY_PHRASES, {"get-in-touch": "contact", "data-protection": "privacy",
+                                           "publichnaya-oferta": "terms"})
         self.assertLessEqual(set(UTILITY_PHRASES.values()), UTILITY_WORDS)
         self.assertEqual(UTILITY_WORDS & UTILITY_SLUG_WORDS, set())
         # Filler words name no kind of page: none is a subject an article is about.
@@ -816,8 +864,8 @@ class TheSetsAreHeld(unittest.TestCase):
             "our", "the", "of", "and", "us", "use", "service", "conditions",
             "notice", "statement", "policy", "policies", "page", "info", "information",
             "form", "sale", "sales", "business", "website", "site", "me", "user", "data",
-            "politika", "ispolzovaniya", "obrabotki", "polzovatelskoe", "publichnaya",
-            "naudojimo", "duomenu"})
+            "politika", "ispolzovaniya", "obrabotki", "polzovatelskoe", "naudojimo",
+            "duomenu"})
         from security_headers import (CSP_ANY_SOURCE, CSP_INLINE_OVERRIDES,
                                       HARDENING_HEADERS, REFERRER_POLICIES)
         # A source expression matching every host: the wildcard, and a bare scheme

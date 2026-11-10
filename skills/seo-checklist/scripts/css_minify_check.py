@@ -90,7 +90,7 @@ RE_COMMENT = re.compile(r"/\*.*?\*/", re.S)
 # stylesheets the page loads).
 # A quoted URL is read to its closing quote: a `;` inside it is part of the URL
 # (`css2?family=Roboto:wght@400;700`, review round 1).
-RE_IMPORT = re.compile(r"""@import\s+(?:url\(\s*(?:"([^"]+)"|'([^']+)'|([^)\s]+))\s*\)"""
+RE_IMPORT = re.compile(r"""@import\s*(?:url\(\s*(?:"([^"]+)"|'([^']+)'|([^)\s]+))\s*\)"""
                        r"""|"([^"]+)"|'([^']+)')""", re.I)
 
 
@@ -152,7 +152,8 @@ def check(url: str, timeout: int = 15) -> dict:
         if href:
             hrefs.append(urljoin(url, href))
     for style in soup.find_all("style"):
-        for groups in RE_IMPORT.findall(style.get_text() or ""):
+        # A commented-out import is no sheet; `@import"a.css"` is one (review round 4).
+        for groups in RE_IMPORT.findall(RE_COMMENT.sub("", style.get_text() or "")):
             hrefs.append(urljoin(url, next(g for g in groups if g)))
     hrefs = list(dict.fromkeys(hrefs))
     result["truncated"] = len(hrefs) > MAX_SHEETS

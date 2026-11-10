@@ -90,16 +90,20 @@ UTILITY_WORDS = frozenset({
     "konfidentsialnosti", "konfidenczialnost", "konfidenczialnosti", "personalnyh",
     "personalnykh", "dannyh", "dannykh", "privatumo", "privatumas", "slapuku", "slapukai",
     "bdar", "apsauga", "apsaugos",
-    "privacypolicy",
+    "privacypolicy", "privacynotice", "cookiepolicy",
     # terms, and the legal notice a site publishes beside them
     "terms", "tos", "agb", "nutzungsbedingungen", "usloviya", "pravila", "soglashenie",
-    "oferta", "taisykles", "salygos", "agreement", "legal", "impressum",
+    "taisykles", "salygos", "agreement", "legal", "impressum", "termsofuse", "termsofservice",
+    "termsandconditions",
     # contact
     "contact", "contacts", "contactus", "kontakt", "kontakte", "kontakty", "kontaktai"})
 # Phrases that name such a page in words that do not each name one (review round 3):
 # read as the utility word they stand for, so `/data-protection` is a privacy page and
 # `/blog/data-protection-tips` is still an article.
-UTILITY_PHRASES = {"get-in-touch": "contact", "data-protection": "privacy"}
+# `oferta` alone is a Polish or Spanish offer page, so only the Russian public offer
+# (round 4).
+UTILITY_PHRASES = {"get-in-touch": "contact", "data-protection": "privacy",
+                   "publichnaya-oferta": "terms"}
 # The other words such slugs are written with: "our-privacy-policy",
 # "terms-and-conditions", "usloviya-ispolzovaniya", "polzovatelskoe-soglashenie".
 UTILITY_SLUG_WORDS = frozenset({
@@ -107,14 +111,14 @@ UTILITY_SLUG_WORDS = frozenset({
     "statement", "policy", "policies", "page", "info", "information", "form", "sale",
     "sales", "business", "website", "site", "me", "user", "data", "politika",
     "ispolzovaniya", "obrabotki",
-    "polzovatelskoe", "publichnaya", "naudojimo", "duomenu"})
+    "polzovatelskoe", "naudojimo", "duomenu"})
 
 
 def utility_page(url: str) -> bool:
     """Whether the page at `url` is a privacy, terms or contact page, by its slug."""
     segments = [s for s in unquote(urlparse(url or "").path).lower().split("/") if s]
     slugs = [re.sub(r"\.(?:html?|php|aspx?|jsp)$", "", s) for s in segments]
-    if len(slugs) > 1 and slugs[-1] in ("index", "default"):
+    if len(slugs) > 1 and slugs[-1] in ("index", "default", "amp"):
         slugs.pop()
     if not slugs:
         return False

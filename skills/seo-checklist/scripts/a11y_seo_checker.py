@@ -44,14 +44,19 @@ def _text(tag) -> str:
     if (tag.get("aria-label") or "").strip():
         return tag["aria-label"].strip()
     parts = []
-    for piece in tag.descendants:
+    for piece in tag.children:
         if isinstance(piece, Comment):
             continue
         if isinstance(piece, str):
-            if not piece.find_parent(["select", "textarea", "option", "script", "style"]):
-                parts.append(str(piece))
-        elif piece.name == "img" and (piece.get("alt") or "").strip():
-            parts.append(piece["alt"])
+            parts.append(str(piece))
+        elif piece.name in ("select", "textarea", "option", "script", "style"):
+            continue
+        elif (piece.get("aria-hidden") or "").strip().lower() == "true":
+            continue   # hidden text is no part of a name (review round 4)
+        elif piece.name == "img":
+            parts.append(piece.get("alt") or "")
+        else:
+            parts.append(_text(piece))   # a child's own aria-label counts (round 4)
     return " ".join(parts).strip()
 
 

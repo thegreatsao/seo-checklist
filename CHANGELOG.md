@@ -18,9 +18,10 @@ after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4, `e2d0
 F15 batch 6 (`e2d01d02779d` → `26906b83d873`) — security, speed and technical, and the owner's ruling 1 on batch 5's
 questions. **Verdicts of a real audit can move**: GO-145 and GEO-005 are N/A on a privacy, terms or contact page, read
 from the page's slug (the one before an `index` page): every word of it is a privacy, terms or contact word in English,
-German, Russian or Lithuanian (`UTILITY_WORDS`; `get-in-touch` and `data-protection` read as one), a word such slugs
-are written with (`our`, `of`, `me`, …) or a number, so `/privacy-policy-2`, `/contact-me` and `/kontakty` are utility
-pages and `/blog/privacy-tips` and `/kontaktlinsen` are not (an about page keeps the rule); SE-114, SE-116 and TE-171 read the shared crawl and ask Safe Browsing about the entry and every
+German, Russian or Lithuanian (`UTILITY_WORDS`, run-together forms such as `termsofuse` included; `get-in-touch`,
+`data-protection` and `publichnaya-oferta` read as one), a word such slugs are written with (`our`, `of`, `me`, …) or a
+number, the segment before an `/amp` page too, so `/privacy-policy-2`, `/contact-me` and `/kontakty` are utility pages
+and `/blog/privacy-tips`, `/kontaktlinsen` and `/oferta` are not (an about page keeps the rule); SE-114, SE-116 and TE-171 read the shared crawl and ask Safe Browsing about the entry and every
 URL it read, 500 to a request (a listed inner page fails; one unanswered request withholds a clean answer; `page`
 mode, which does not crawl, and a live run whose entry or crawl read nothing ask about the page alone); TE-178's script assertion is retired (its field was never written) and the market
 lens answers it; SE-120 asserts `hardening_gaps`, the three headers' values read (`'unsafe-inline'` with no nonce, hash
@@ -28,13 +29,15 @@ or `'strict-dynamic'`, `'unsafe-eval'`, or a source allowing any host, `*` or a 
 as the last known Referrer-Policy token); GO-131 asserts `installed_by` (a Google tag loaded by its ID, or a GTM
 container the page loads, counts); GO-132 reads a GTM container beside a hardcoded GA4 tag and fails when its Google
 tag or GA4 configuration tag names the same ID, through a variable too (an event tag sending to it is no duplicate, a
-commented-out snippet is no tag; NO_DATA when the container cannot be read); TE-181 validates the rendered DOM with the page's doctype put back
+commented-out snippet is no tag, nor a loader GTM itself wrote (`gtm=`); NO_DATA when the container cannot be
+read); TE-181 validates the rendered DOM with the page's doctype put back
 in front (the snippet records `doctype`; an artifact with neither is NO_DATA), after Nu was checked to report a missing
 doctype as an error; MB-100 no longer reads a width inside a media query, a `media` or `sizes` condition, or a rule
 that never applies on a 360px phone (a `min-width` or `min-device-width` query above it, `print`, a wide
 `@container`) as a fixed width; MB-104 reads an icon on another origin under that origin's robots.txt; TE-180 resolves `aria-labelledby` to
-text, takes a blank label as no name (an image's `alt` in a label is text, a comment is not), reads image and button
-inputs, and leaves out a field hidden from assistive technology (`aria-hidden`, `hidden`, an inline `display:none`); TE-174 reads `<style>` `@import`s, does not
+text, takes a blank label as no name (an image's `alt` or a child's `aria-label` in a label is text, a comment or
+`aria-hidden` text is not), reads image and button
+inputs, and leaves out a field hidden from assistive technology (`aria-hidden`, `hidden`, an inline `display:none`); TE-174 reads `<style>` `@import`s (not a commented-out one), does not
 judge an error page's body as CSS, and a sheet that cannot be read leaves a clean answer NO_DATA; SP-109 reads a
 `//host` script on its host and leaves data blocks (`type="text/plain"`) and `nomodule` scripts out, and SP-110 counts
 neither as parser-blocking; TECH-002 fails `font-display: block` and
