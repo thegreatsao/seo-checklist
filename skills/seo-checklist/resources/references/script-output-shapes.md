@@ -1670,7 +1670,8 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
   over 500 KiB, a line that is not `field: value`, an unread directive, a rule before any
   user-agent, a relative sitemap, a `User-agent:` line with no name (F15), or the whole
   site disallowed for Googlebot — `/` and every path of the `--inventory` crawl (F15;
-  each crawled row's own URL, not its key); on a 404 the one entry "no robots.txt at this
+  each crawled row's own URL and each refused URL as asked, `robots_blocked_urls`, not
+  their keys); on a 404 the one entry "no robots.txt at this
   origin"; **absent** on any other status. Without readable crawled paths (no
   `--inventory`, or one unread or another site's) a disallowed `/` adds no problem and
   sets `truncated`; a capped crawl sets `truncated` too, so the runner withholds a PASS
@@ -1737,7 +1738,8 @@ Under `--probe` only, and absent without it:
   `<meta name="robots">` or an `X-Robots-Tag`. A 404 or 410 is not an indexable page
   and does not appear. Comments are stripped before the meta tag is looked for —
   markup inside a comment is not markup.
-`unprobed_urls[]` — array of str — permitted URLs whose fetch failed or answered 5xx.
+`unprobed_urls[]` — array of str — permitted URLs whose fetch failed or answered 5xx or
+  429 (F15 review round 2).
   Deliberately neither list: an unreachable page is not proven absent and not proven
   indexable, so a network failure cannot read as a clean site. Any of them sets
   `truncated` and names them in `truncated_reason`, so CI-019's PASS is withheld (F15).
@@ -1937,6 +1939,8 @@ output contracts derive from it, so a change here moves them at once.
 `reachable[]` — array of page keys
 `unchecked_internal_targets[]` — array
 `robots_blocked.<key>` — str
+`robots_blocked_urls.<key>` — str — the URL a refused key was asked as (a key folds the
+  trailing slash; AR-151 tests this one, F15 review round 2)
 `sitemap.urls[]` / `.off_host[]` / `.sitemaps_checked[]` / `.unvisited[]` /
 `.errors[]` — `unvisited` contains normalised sitemap URLs left unread when the
 sitemap-walk cap is reached; a fetch error item retains `error_kind` beside `error`
@@ -2039,8 +2043,8 @@ A page key is `scheme://host/path` spelled as requests sends it (`/café` and
 ### topical_cluster_mapper.py
 
 `page_count` — int
-`too_few_pages_for_hubs` — bool — a whole crawl (not `truncated`) of fewer pages than
-  `MIN_PAGES_FOR_HUBS` (4), where a word two titles share is on more than half of them
+`too_few_pages_for_hubs` — bool — a whole crawl (not `truncated`) of fewer pages answering
+  with content (an error page is none) than `MIN_PAGES_FOR_HUBS` (4), where a word two titles share is on more than half of them
   and no subtopic can form; AR-153 is N/A on it (F15, the owner's ruling on batch 3's
   question 3)
 `cluster_count` — int

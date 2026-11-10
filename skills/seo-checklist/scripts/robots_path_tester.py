@@ -210,7 +210,9 @@ def probe_url(url: str, timeout: int = 15) -> dict:
     if out["status"] in (404, 410):
         out["exists"] = False
         return out
-    if out["status"] is None or out["status"] >= 500:
+    # 429 too: a server too busy to answer has not said the page is absent (CI-019,
+    # F15 review round 2; `canonical_checker._busy` reads it the same way).
+    if out["status"] is None or out["status"] >= 500 or out["status"] == 429:
         out["error"] = f"status {out['status']}"
         return out
     out["exists"] = 200 <= out["status"] < 400

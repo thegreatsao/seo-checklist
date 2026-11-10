@@ -634,6 +634,7 @@ def crawl(site_url: str, depth: int = DEFAULT_DEPTH,
 
     pages: dict[str, dict] = {}
     robots_blocked: dict[str, str] = {}
+    blocked_urls: dict[str, str] = {}
     queue: deque = deque([(entry, site_url, 0, "entry")])
     queued = {entry}
     for key in sitemap["urls"]:
@@ -674,6 +675,7 @@ def crawl(site_url: str, depth: int = DEFAULT_DEPTH,
                 (key, discovered_url, page_depth, source), fetched = future.result()
                 if fetched.get("robots_blocked"):
                     robots_blocked[key] = fetched.get("error") or "robots.txt"
+                    blocked_urls[key] = discovered_url
                     continue
                 row = _read_page(fetched, key, discovered_url, site_url, signatures)
                 row["depth"] = page_depth
@@ -692,9 +694,13 @@ def crawl(site_url: str, depth: int = DEFAULT_DEPTH,
                                       "link"))
 
     spellings = _linked_spellings(pages, _fetch, timeout, max_pages)
-    return _finish(site_url, entry, pages, robots_blocked, sitemap, sitemap_set,
-                   counter["requests"], depth, max_pages, bool(queue), signatures,
-                   spellings)
+    inventory = _finish(site_url, entry, pages, robots_blocked, sitemap, sitemap_set,
+                        counter["requests"], depth, max_pages, bool(queue), signatures,
+                        spellings)
+    # The URL each refused key was asked as: a key folds the trailing slash, and
+    # robots.txt does not (AR-151 tests the paths the site has; F15 review round 2).
+    inventory["robots_blocked_urls"] = {key: url for key, url in sorted(blocked_urls.items())}
+    return inventory
 
 
 def _linked_spellings(pages: dict, fetch, timeout: int, budget: int) -> dict:

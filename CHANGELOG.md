@@ -12,10 +12,10 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `083c71f2725e` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+Registry version: `ecaf0dc17e56` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2, `445b7ca058d2` after batch 3).
 
-F15 batch 4 (`445b7ca058d2` → `083c71f2725e`) — robots, sitemaps, redirects and URLs, and the owner's rulings on
+F15 batch 4 (`445b7ca058d2` → `ecaf0dc17e56`) — robots, sitemaps, redirects and URLs, and the owner's rulings on
 batch 3's questions. **Verdicts of a real audit can move**: a canonical naming another host no longer fails CI-009 or
 TE-176 on its own (its target is still requested; one not answering 200 fails); AR-153 is N/A on a crawl of fewer
 than 4 pages and AR-162 on one that found fewer than 4 internal URLs (`too_few_pages_for_hubs`,

@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "registry_version": "083c71f2725e",
+  "registry_version": "ecaf0dc17e56",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -366,7 +366,7 @@
         "expect": "PASS",
         "title": "Strengthen Internal Links and Remove Orphans",
         "basis": "df40352ad175",
-        "why": "the crawlable pages are connected by descriptive internal links and no crawlable sitemap page is orphaned (re-read for F15 batch 4: five pages crawled, over the four the average needs, so the item applies)"
+        "why": "the crawlable pages are connected by descriptive internal links and no crawlable sitemap page is orphaned (re-read for F15 batch 4: the crawl finds five internal URLs, over the four the average needs, so the item applies)"
       },
       "BL-081": {
         "expect": "PASS",
@@ -1070,7 +1070,7 @@
         "expect": "FAIL",
         "title": "Strengthen Internal Links and Remove Orphans",
         "basis": "df40352ad175",
-        "why": "orphan.html exists in the sitemap but no page links to it (re-read for F15 batch 4: five pages crawled, so the item applies)"
+        "why": "orphan.html exists in the sitemap but no page links to it (re-read for F15 batch 4: the crawl finds more than four internal URLs, so the item applies)"
       },
       "BL-081": {
         "expect": "WARN",

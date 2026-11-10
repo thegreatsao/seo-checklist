@@ -31,6 +31,7 @@ import redirect_checker  # noqa: E402
 import robots_checker  # noqa: E402
 import robots_path_tester  # noqa: E402
 import seo_common  # noqa: E402
+import site_crawl  # noqa: E402
 import sitemap_checker  # noqa: E402
 import topical_cluster_mapper  # noqa: E402
 from harness import served  # noqa: E402
@@ -79,6 +80,21 @@ def site_with(routes: dict):
         yield site
 
 
+def two_headers(module, path: str, values: list):
+    """`module.fetch_url` answering `path` with `X-Robots-Tag` sent once per value, as
+    `seo_common.fetch_url` reports a repeated header: `x_robots_tags` keeps them apart,
+    `headers` joins them (a served route can carry one header of a name)."""
+    real = module.fetch_url
+
+    def fetch(url, *args, **kwargs):
+        answer = real(url, *args, **kwargs)
+        if url.split("?")[0].endswith(path):
+            answer["x_robots_tags"] = list(values)
+            answer.setdefault("headers", {})["x-robots-tag"] = ", ".join(values)
+        return answer
+    return mock.patch.object(module, "fetch_url", fetch)
+
+
 # ---------------------------------------------------------------------------
 # The owner's ruling 1: a cross-host canonical alone fails no canonical item
 # ---------------------------------------------------------------------------
@@ -102,6 +118,16 @@ class CrossHostCanonical(unittest.TestCase):
         with site_with({"/a": page_html(canonical="http://127.0.0.1:9/x")}) as site:
             out = run_rule_script(canonical_checker, "CI-009", site.origin + "/a")
         self.assertEqual(verdict("CI-009", out), NO_DATA)
+
+    def test_a_cross_host_canonical_still_has_its_variants_requested(self):
+        """Review round 2: `/a/` serving the page beside `/a` is CI-009's failure whatever
+        host the canonical names."""
+        with site_with({"/a": page_html(canonical="{other}/original"),
+                        "/original": page_html(canonical="{other}/original"),
+                        "/a/": page_html()}) as site:
+            out = run_rule_script(canonical_checker, "CI-009", site.origin + "/a")
+        self.assertEqual(out["rows"][0]["verdict"], "variant_unconsolidated")
+        self.assertEqual(verdict("CI-009", out), FAIL)
 
     def test_te_176_lists_no_issue_for_a_cross_host_canonical_alone(self):
         with site_with({"/original": page_html(canonical="{other}/original")}) as site:
@@ -153,6 +179,14 @@ class SmallSites(unittest.TestCase):
 
     def test_ar_153_is_na_on_a_one_page_site(self):
         out = topical_cluster_mapper.map_inventory(pages(["Sourdough bread"]))
+        self.assertEqual(full_verdict("AR-153", out), NA)
+
+    def test_ar_153_does_not_count_an_error_page_toward_the_minimum(self):
+        """Review round 2: a broken link's 404 page is no page of the site's."""
+        inv = pages(["Sourdough bread", "Rye loaves", "Opening hours"])
+        gone = row(f"{SITE}gone", title="Page not found", status=404)
+        inv["pages"][f"{SITE}gone"] = gone
+        out = topical_cluster_mapper.map_inventory(inv)
         self.assertEqual(full_verdict("AR-153", out), NA)
 
     def test_ar_153_still_judges_a_four_page_site(self):
@@ -327,6 +361,21 @@ class RobotsFile(unittest.TestCase):
                           crawled_paths=("/", "/en/"))
         self.assertEqual(out["correctness_problems"], [])
 
+    def test_a_refused_url_is_tested_as_it_was_asked(self):
+        """Review round 2: the crawl refuses `/en/` under `*`; Googlebot may fetch it.
+        The refused key folds to `/en`, which `Allow: /en/` does not match."""
+        robots = ("User-agent: *\nDisallow: /\n\nUser-agent: Googlebot\nDisallow: /\n"
+                  "Allow: /en/\n")
+        routes = {"/robots.txt": (200, {"Content-Type": "text/plain"}, robots),
+                  "/": '<html><body><a href="/en/">English</a></body></html>',
+                  "/en/": page_html()}
+        with site_with(routes) as site:
+            crawled_inv = site_crawl.crawl(site.url, workers=1, use_sitemap=False)
+            self.assertIn(site.origin + "/en/",
+                          crawled_inv["robots_blocked_urls"].values())
+            out = run_rule_script(robots_checker, "AR-151", site.url, written(crawled_inv))
+        self.assertEqual(out["correctness_problems"], [])
+
     def test_an_empty_sitemap_line_is_no_declaration(self):
         self.assertEqual(robots_rules.parse("User-agent: *\nSitemap:\n")["sitemaps"], [])
         out = robots_rule("CI-006", "User-agent: *\nAllow: /\nSitemap:   \n")
@@ -408,6 +457,13 @@ class SystemPages(unittest.TestCase):
         self.assertTrue(out.get("truncated"))
         self.assertIn("/cart", out.get("truncated_reason", ""))
 
+    def test_a_rate_limited_probe_truncates_the_result(self):
+        """Review round 2: a 429 has not said the page is absent."""
+        with site_with({"/search": (429, {"Retry-After": "1"}, "")}) as site:
+            out = run_rule_script(robots_path_tester, "CI-019", site.url)
+        self.assertIn(site.origin + "/search", out["unprobed_urls"])
+        self.assertTrue(out.get("truncated"))
+
     def test_paths_that_answer_404_leave_the_result_whole(self):
         with site_with({}) as site:
             out = run_rule_script(robots_path_tester, "CI-019", site.url)
@@ -455,6 +511,13 @@ class CleanSitemaps(unittest.TestCase):
                 out = sitemap_rule("GO-136", urlset("{origin}/", ns=ns))
                 self.assertEqual(verdict("GO-136", out), FAIL)
 
+    def test_an_index_entry_without_loc_fails(self):
+        doc = (f'<?xml version="1.0"?><sitemapindex xmlns="{NS}"><sitemap><loc>'
+               f'{{origin}}/s1.xml</loc></sitemap><sitemap><lastmod>2026-01-01</lastmod>'
+               f"</sitemap></sitemapindex>")
+        out = sitemap_rule("GO-136", doc, {"/s1.xml": (200, XML, urlset("{origin}/"))})
+        self.assertEqual(verdict("GO-136", out), FAIL)
+
     def test_an_unknown_root_with_url_children_fails(self):
         doc = (f'<?xml version="1.0"?><pages xmlns="{NS}"><url><loc>{{origin}}/</loc>'
                f"</url></pages>")
@@ -483,6 +546,12 @@ class SitemapNoindex(unittest.TestCase):
             with self.subTest(head=head):
                 out = self.go_138(f"<html><head>{head}</head><body>x</body></html>")
                 self.assertEqual(verdict("GO-138", out), FAIL)
+
+    def test_each_header_is_read_on_its_own(self):
+        """Review round 2: `otherbot: noarchive` in one header does not own the next."""
+        with two_headers(sitemap_checker, "/b", ["otherbot: noarchive", "noindex"]):
+            out = self.go_138(page_html(canonical="/b"))
+        self.assertEqual(verdict("GO-138", out), FAIL)
 
     def test_another_crawlers_header_noindex_is_not_googles(self):
         out = self.go_138((200, {"X-Robots-Tag": "otherbot: noindex"},
@@ -522,6 +591,13 @@ class SnippetScope(unittest.TestCase):
             page_html(), ["bingbot: noarchive", "nosnippet"])
         self.assertEqual(controls["snippet_availability"], "suppressed")
 
+    def test_the_script_reads_each_header_on_its_own(self):
+        """Review round 2: the row passes `x_robots_tags`, not the joined header."""
+        with two_headers(indexability_matrix, "/", ["bingbot: noarchive", "nosnippet"]):
+            with site_with({"/": page_html()}) as site:
+                out = run_rule_script(indexability_matrix, "GEO-008", site.url)
+        self.assertEqual(verdict("GEO-008", out), FAIL)
+
     def test_geo_008_through_the_script(self):
         with site_with({"/": (200, {"X-Robots-Tag": "bingbot: nosnippet"},
                               page_html())}) as site:
@@ -546,6 +622,14 @@ class RedirectLoops(unittest.TestCase):
     def test_a_two_url_loop_fails(self):
         out = self.ar_150({"/a": (301, {"Location": "/b"}, ""),
                            "/b": (302, {"Location": "/a"}, "")})
+        self.assertEqual(verdict("AR-150", out), FAIL)
+
+    def test_a_walk_stopped_at_the_cap_is_a_chain(self):
+        """Ten hops and more fail as a chain; the loop question is withheld, not the hops."""
+        routes = {f"/r{i}": (301, {"Location": f"/r{i + 1}"}, "") for i in range(12)}
+        routes["/r12"] = page_html()
+        out = self.ar_150(routes, path="/r0")
+        self.assertEqual(out.get("walk"), "chain")
         self.assertEqual(verdict("AR-150", out), FAIL)
 
     def test_one_hop_passes_and_two_fail(self):
@@ -629,6 +713,14 @@ class HreflangValidity(unittest.TestCase):
         pair = (("en", "{origin}/en"), ("jp", "{origin}/ja"))
         with site_with({"/en": hreflang_page(*pair)}) as site:
             out = hreflang_checker.run_hreflang_check(site.origin + "/en")
+        self.assertEqual(verdict("IN-122", out), FAIL)
+
+    def test_one_language_beside_an_x_default_elsewhere_is_verified(self):
+        """Review round 2: the x-default names another URL, whose return is checked."""
+        pair = (("en", "{origin}/en"), ("x-default", "{origin}/"))
+        out = self.in_122({"/en": hreflang_page(*pair), "/": hreflang_page(*pair)})
+        self.assertEqual(verdict("IN-122", out), PASS)
+        out = self.in_122({"/en": hreflang_page(*pair), "/": hreflang_page()})
         self.assertEqual(verdict("IN-122", out), FAIL)
 
     def test_a_set_with_no_alternate_does_not_pass(self):

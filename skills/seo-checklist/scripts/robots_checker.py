@@ -112,7 +112,9 @@ def crawled_paths(inventory: dict) -> list[str]:
     # A row's own URL, not its key: a key folds the trailing slash and the query, and
     # `Allow: /en/` matches `/en/` and not `/en` (F15 review round 1).
     urls = [row.get("url") or key for key, row in (inventory.get("pages") or {}).items()]
-    for url in [*urls, *(inventory.get("robots_blocked") or {})]:
+    asked = inventory.get("robots_blocked_urls") or {}
+    urls += [asked.get(key) or key for key in inventory.get("robots_blocked") or {}]
+    for url in urls:
         split = urlparse(url)
         found.add((split.path or "/") + (f"?{split.query}" if split.query else ""))
     return sorted(found)

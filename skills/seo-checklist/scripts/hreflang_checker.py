@@ -624,6 +624,11 @@ def check_return_tags(
     issues = []
     non_self = [t for t in tags if t["url"].rstrip("/") != page_url.rstrip("/")
                 and t["lang"] != "x-default"]
+    if not non_self:
+        # One language beside an x-default elsewhere still names a URL that must link
+        # back; it is verified rather than read as an empty set (IN-122, F15 review
+        # round 2).
+        non_self = [t for t in tags if t["url"].rstrip("/") != page_url.rstrip("/")]
 
     if not non_self:
         return []

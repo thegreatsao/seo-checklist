@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "083c71f2725e",
+  "registry_version": "ecaf0dc17e56",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -406,7 +406,7 @@
           "gte": 70
         }
       },
-      "measures": "A heuristic score over url_quality's flags (length, case, underscores, archive pattern, depth, parameters): 100 less 12 a flag, at least 70. No words are read, so whether a reader finds the URL friendly is not judged.",
+      "measures": "A heuristic score over url_quality's flags (length, case, underscores, archive pattern, depth, parameters): 100 less 12 a flag, passing at 70. No words are read, so whether a reader finds the URL friendly is not judged.",
       "effort": "low",
       "fix": "Keep URLs short, readable, lowercase, words separated by hyphens"
     },

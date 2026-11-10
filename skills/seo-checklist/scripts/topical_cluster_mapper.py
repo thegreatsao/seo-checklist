@@ -12,7 +12,8 @@ import re
 from collections import Counter, defaultdict
 
 import site_crawl
-from seo_common import load_source, normalize_url, parse_html, read_as_url, refused_kind
+from seo_common import (carries_content, load_source, normalize_url, parse_html,
+                         read_as_url, refused_kind)
 
 
 STOPWORDS = {
@@ -141,8 +142,11 @@ def map_inventory(inventory: dict) -> dict:
     # AR-153's applicability (the owner's ruling on F15 batch 3's question 3): a whole
     # crawl of fewer pages than a hub needs is a site too small for the rule. A crawl
     # cut at its cap has more pages than it read, so it is never too small.
+    # Pages that answered with content: a 404's "Page not found" is no page of the
+    # site's (F15 review round 2: one broken link lifted a 3-page site over the line).
+    served = sum(1 for key in pages if carries_content(pages[key].get("status")))
     result["too_few_pages_for_hubs"] = (not result["truncated"]
-                                        and len(rows) < MIN_PAGES_FOR_HUBS)
+                                        and served < MIN_PAGES_FOR_HUBS)
     if result["truncated"]:
         result["truncated_reason"] = (
             "the crawl stopped at its page or depth cap, and a page it left out can be "
