@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "fa7b53d275af",
+  "registry_version": "fa658a9072e2",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1366,7 +1366,7 @@
           "truthy": true
         }
       },
-      "measures": "That the visible text shows a date (a <time> with text, or one written out) and a later one as the update. Dates in metadata or JSON-LD alone are not shown; which date is which is not read.",
+      "measures": "That the visible text shows a date (a <time> with text, or one written out) and a later one as the update; the publication is the earliest <time> or a date labelled published. Metadata alone is not shown.",
       "effort": "high",
       "fix": "Show publication and updated dates"
     },

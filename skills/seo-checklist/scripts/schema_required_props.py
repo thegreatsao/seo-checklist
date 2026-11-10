@@ -275,13 +275,15 @@ def find_schema_nodes(documents: list[Any], schema_type: str | None = None) -> l
     rows = []
     for doc_index, doc in enumerate(documents):
         for path, node in iter_schema_nodes(doc, f"$[{doc_index}]"):
-            types = schema_type_names(node.get("@type"))
+            # Each type by its schema.org name, so the tables read an IRI spelling too
+            # (review round 6).
+            types = [schema_org_name(t) for t in schema_type_names(node.get("@type"))]
             if not types:
                 continue
             if not set(node) - REFERENCE_KEYS and node.get("@id") in defined:
                 continue
             # A type written as a schema.org IRI is that type (review round 5).
-            if schema_type and schema_type not in {schema_org_name(t) for t in types}:
+            if schema_type and schema_type not in types:
                 continue
             rows.append({"path": path, "types": types, "node": node})
     return rows

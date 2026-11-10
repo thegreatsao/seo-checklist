@@ -87,6 +87,24 @@ def _month(word: str) -> int | None:
     return MONTH_NAMES.get(word.rstrip(".").casefold())
 
 
+# The words that say a written date is the publication (review round 6): a labelled one
+# stands for the publication beside an update `<time>`.
+PUBLISHED_LABEL = re.compile(
+    r"(?:published|posted|effective|written|veröffentlicht|publié|publicado|опубликовано)"
+    # The connector in lower case: "Published  On March 3" is a label, a skipped `<time>`
+    # and the story's next sentence.
+    r"\W{0,3}(?-i:on|le|am|el|date)?\W{0,3}$", re.I)
+
+
+def labelled_publications(text: str, cutoff: date) -> list[date]:
+    """The dates in `text` written right after a publication label."""
+    found = []
+    for m in SHOWN_DATE_RE.finditer(text):
+        if PUBLISHED_LABEL.search(text[max(0, m.start() - 40):m.start()]):
+            found += shown_dates_in(m.group(0), cutoff)
+    return found
+
+
 def shown_dates_in(text: str, cutoff: date) -> list[date]:
     """Every date SHOWN_DATE_RE finds in `text`, on or before `cutoff`. A numeric date is
     day first with dots; with slashes it is month first unless that is impossible or
@@ -223,15 +241,19 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
         and found <= cutoff]
     # A `<time>`'s own text is read once, above, through its `datetime` (F15 batch 5's
     # review: "05/03/2026" read again month first made one shown date two).
-    shown_text = shown_dates_in(visible_text(
+    shown_page = visible_text(
         soup, skip=lambda tag: tag.name == "time" or tag.find_parent("time") is not None
-        or under_foreign_credit(tag, claimed=claimed)), cutoff)
+        or under_foreign_credit(tag, claimed=claimed))
+    shown_text = shown_dates_in(shown_page, cutoff)
+    labelled = labelled_publications(shown_page, cutoff)
     # The publication shown is the earliest `<time>`, or with none the earliest date in
     # the text; the update is a shown date later than it. Taken from every shown date,
     # a date in the story ("On March 3 the council voted") made the real publication
     # `<time>` an update (review round 5).
     shown_dates = shown_time + shown_text
-    published_on = min(shown_time or shown_text) if shown_dates else None
+    # A date the text labels as published counts as a publication beside the `<time>`s
+    # (review round 6: "Published May 1. Last updated <time>June 2</time>").
+    published_on = min(shown_time + labelled or shown_text) if shown_dates else None
     later = published_on is not None and any(value > published_on for value in shown_dates)
     date_signals = {
         "shown": {"published": bool(shown_dates), "updated": later},

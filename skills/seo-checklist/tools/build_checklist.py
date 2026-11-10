@@ -714,7 +714,7 @@ MEASURES = {
     "GEO-005": "A citation-readiness score of 25 on a page whose content names a source: a cite, blockquote, footnote, trusted-host link, schema citation or a link beside a claim. Whether a source supports a claim is not read.",
     "CN-057": "That an author's and a publisher's names appear in the page's visible text, each named by markup (a byline, meta or JSON-LD). A name in metadata alone is not shown; CSS from stylesheets is not applied.",
     "CN-068": "A score of 35 from E-E-A-T signals on a page that names an author: byline, credential and first-hand words, policy and trust links, outbound links. Whether the expertise is real is not judged.",
-    "CN-056": "That the visible text shows a date (a <time> with text, or one written out) and a later one as the update. Dates in metadata or JSON-LD alone are not shown; which date is which is not read.",
+    "CN-056": "That the visible text shows a date (a <time> with text, or one written out) and a later one as the update; the publication is the earliest <time> or a date labelled published. Metadata alone is not shown.",
     "MS-033": "A score of 80 over thirteen Open Graph and Twitter Card tags on a page carrying og:image and twitter:card, the two a preview is drawn from. Whether the preview looks right is not checked.",
     "GEO-006": "That the entity resolves: a Wikidata or Wikipedia link in sameAs, a Wikidata item or Knowledge Graph match under its declared name. Withheld when Wikidata cannot be asked or the page names no entity.",
     "KW-076": "That the primary keyword appears in the body copy: the content's text, lists, tables and divs included, headings, navigation and page furniture not. How naturally it is used is not judged.",

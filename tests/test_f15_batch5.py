@@ -841,6 +841,39 @@ class ReviewRound5(unittest.TestCase):
                 self.assertEqual(page_verdict(video_schema_checker, "MD-190", page), PASS)
 
 
+class ReviewRound6(unittest.TestCase):
+    def test_a_labelled_publication_before_an_update_time_passes(self):
+        for body in ("<p>Published May 1, 2024. Last updated <time datetime='2024-06-02'>"
+                     "June 2, 2024</time>.</p>",
+                     "<p>Effective date: January 1, 2024. Last updated: <time datetime='2025-03-03'>"
+                     "March 3, 2025</time></p>"):
+            with self.subTest(body=body[:30]):
+                self.assertEqual(VisibleDates.cn_056(self, body), PASS)
+
+    def test_links_under_a_sources_heading_are_sources(self):
+        for heading in ("Sources", "References", "Further reading"):
+            with self.subTest(heading=heading):
+                body = (f"<main><article><p class='byline'>By Jane Doe</p><p>Rye is back.</p>"
+                        f"<h2>{heading}</h2><ul><li><a href='https://www.bbc.co.uk/news/rye'>"
+                        f"BBC News: Why rye is back</a></li></ul></article></main>")
+                page = html(body, head='<link rel="canonical" href="/">')
+                self.assertEqual(page_verdict(citation_readiness, "GO-145", page), PASS)
+
+    def test_a_video_widget_in_the_page_furniture_is_not_the_pages_video(self):
+        for widget in ("<aside class='widget'><iframe src='https://www.youtube.com/embed/abc'>"
+                       "</iframe></aside>",
+                       "<footer><video controls src='/promo.mp4'></video></footer>"):
+            with self.subTest(widget=widget[:20]):
+                page = html("<main><article><p>Bread.</p></article></main>" + widget)
+                self.assertEqual(page_verdict(video_schema_checker, "MD-190", page), NA)
+
+    def test_an_iri_typed_article_is_held_to_its_table(self):
+        for kind in ("https://schema.org/Article", "schema:Article"):
+            with self.subTest(kind=kind):
+                page = html(head=jsonld({"@type": kind, "author": "Jane"}))
+                self.assertEqual(page_verdict(rich_results_guard, "TE-172", page), FAIL)
+
+
 # ---------------------------------------------------------------------------
 # The sets batch 5 wrote, held to their sources (GOV-3)
 # ---------------------------------------------------------------------------

@@ -10,7 +10,7 @@ from typing import Any
 
 from lib.schema_types import DEPRECATED_TYPES, RESTRICTED_TYPES
 from schema_required_props import (extract_schema_documents, find_schema_nodes,
-                                   missing_rich_result_props, schema_type_names)
+                                   missing_rich_result_props)
 from seo_common import read_source, issue, print_json_or_text
 
 
@@ -27,7 +27,7 @@ def guard_rich_results(documents: list[Any],
         ))
     for row in find_schema_nodes(documents):
         node = row["node"]
-        type_names = schema_type_names(node.get("@type"))
+        type_names = row["types"]   # schema.org names, an IRI spelling folded (round 6)
         row_issues = []
         for type_name in type_names:
             if type_name in DEPRECATED_TYPES:

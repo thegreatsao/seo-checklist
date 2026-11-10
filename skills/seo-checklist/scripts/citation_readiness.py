@@ -49,6 +49,12 @@ FOOTNOTE_WORDS = ("footnote", "footnotes", "reference", "references",
                   "citation", "citations", "source", "sources", "cite", "ref")
 
 
+# A section that lists its sources under its own heading (review round 6).
+SOURCES_HEADING = re.compile(
+    r"\s*(?:sources?|references?|further reading|bibliography|citations?|works cited|notes)\b",
+    re.I)
+
+
 def _declares_a_source(link) -> bool:
     rel = " ".join(map(str, link.get("rel", []))).lower().split()
     if any(token in FOOTNOTE_WORDS for token in rel):
@@ -234,7 +240,9 @@ def check_citation_readiness(source: str, timeout: int = 15) -> dict:
             continue
         block = tag.find_parent(["p", "li", "td", "dd", "figcaption", "blockquote"])
         text = block.get_text(" ", strip=True) if block else ""
-        if CLAIM_RE.search(text) or re.match(r"\s*sources?\b", text, re.I):
+        heading = tag.find_previous(re.compile(r"^h[1-6]$"))
+        if (CLAIM_RE.search(text) or re.match(r"\s*sources?\b", text, re.I)
+                or (heading is not None and SOURCES_HEADING.match(heading.get_text(" ", strip=True)))):
             sourcing_links.add(spelled(tag.get("href", "")))
     counted = {str(link.get("href") or "").strip() for link in trusted_links + footnote_links}
     citation_capacity = (sum(1 for link in trusted_links if in_content(link)) + len(cite_tags)

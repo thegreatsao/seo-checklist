@@ -1211,7 +1211,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`date_signals.shown` requires a date a visitor sees (a `<time>` with text or a date written in the visible text) and a later one as the update; one date warns. Dates in metadata or JSON-LD alone are not shown (F15, the owner's ruling), and `measures` says which date is which is not read.",
+      "reading": "`date_signals.shown` requires a date a visitor sees (a `<time>` with text or a date written in the visible text) and a later one as the update, the publication being the earliest `<time>` or a date labelled published; one date warns. Dates in metadata or JSON-LD alone are not shown (F15, the owner's ruling), and `measures` says so.",
       "shapes": {
         "conjunction": "Both halves are read."
       },

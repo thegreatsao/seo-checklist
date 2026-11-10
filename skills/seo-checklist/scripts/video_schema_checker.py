@@ -15,7 +15,8 @@ from bs4 import BeautifulSoup
 from lib.schema_types import markup_types, schema_org_name
 from schema_required_props import (extract_schema_documents, find_schema_nodes,
                                    missing_rich_result_props)
-from seo_common import read_source, as_list, html_parser, issue, print_json_or_text
+from seo_common import (read_source, as_list, html_parser, in_page_furniture, issue,
+                        print_json_or_text)
 
 
 ISO_DURATION_RE = re.compile(r"^P(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)$")
@@ -50,7 +51,9 @@ def page_videos(html: str, base_url: str = "") -> list[str]:
         background = (not video.has_attr("controls")
                       and (video.has_attr("autoplay")
                            or (video.has_attr("muted") and video.has_attr("loop"))))
-        if source and not background:
+        # A widget in the page's furniture (a sidebar, a site footer) is not the page's
+        # video (review round 6), as GO-144's and GO-145's readers leave furniture out.
+        if source and not background and not in_page_furniture(video):
             found.append(urljoin(base_url, source))
     for frame in soup.find_all(["iframe", "embed"]):
         # A lazy or consent-gated player keeps its URL in `data-src` / `data-lazy-src`
@@ -61,7 +64,8 @@ def page_videos(html: str, base_url: str = "") -> list[str]:
         parsed = urlparse(src)
         host = (parsed.hostname or "").lower()
         player = next((p for p in PLAYER_HOSTS if host == p or host.endswith("." + p)), None)
-        if player and parsed.path.startswith(PLAYER_PATHS.get(player, "/")):
+        if (player and parsed.path.startswith(PLAYER_PATHS.get(player, "/"))
+                and not in_page_furniture(frame)):
             found.append(src)
     return found
 

@@ -341,8 +341,8 @@ that could not be checked when there are any.
 `sourced_score` — int — `score` on a page naming at least one source, 0 on one naming none:
   what GO-145 and GEO-005 assert (F15 batch 5)
 `citation_capacity` — int — trusted links, cite/blockquote tags, footnote links, schema
-  citations, and outbound links in a block that makes a claim or says "Source" (review round
-  5), counted together, each outside the page's furniture (a `<nav>`, a page-level
+  citations, and outbound links in a block that makes a claim or says "Source", or under a
+  Sources/References/Further reading heading, counted together, each outside the page's furniture (a `<nav>`, a page-level
   `<aside>`, `<header>` or `<footer>`); `citation_signals` still counts every one of them
 `factual_claims` — int
 `claim_samples[]` — array
@@ -710,7 +710,9 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `date_signals.shown.published` — bool — since F15 batch 5, a date a visitor sees: a
   page-owned `<time>` with text of its own, or a date written in the visible text (ISO,
   month or day first in English, German, French, Spanish or Russian, or numeric)
-`date_signals.shown.updated` — bool — a second date shown, later than the earliest
+`date_signals.shown.updated` — bool — a shown date later than the publication shown: the
+  earliest `<time>` or written date labelled "Published"/"Posted"/"Effective" (and their German,
+  French, Spanish and Russian words), or with neither the earliest written date
 `date_signals.sources.published` / `.updated` — str | null — `time` or `text`, naming where
   each shown date was read
 `date_signals.declared.published` / `.updated` — str | null — what is declared without being
@@ -2152,7 +2154,8 @@ the scheme. Three shapes, and the difference between them is the whole contract:
 `videos` — int
 `page_videos[]` — array — the videos the page shows: a `<video>` with a source (not one without
   controls that autoplays, muted or not, or is a muted loop) and a player `<iframe>`/`<embed>`
-  (its `src`, or a lazy `data-src`/`data-lazy-src`; a Microdata/RDFa VideoObject declares one)
+  (its `src`, or a lazy `data-src`/`data-lazy-src`; a Microdata/RDFa VideoObject declares one),
+  none in the page's furniture (a sidebar or site footer widget)
 `video_signals` — int — the larger of `videos` and `page_videos`: MD-190's subject (F15 batch 5)
 `rows[]` — array
 `issues[]` — array
