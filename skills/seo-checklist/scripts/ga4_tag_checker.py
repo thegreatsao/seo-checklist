@@ -68,6 +68,13 @@ RE_PAGEVIEW_TAG = re.compile(r'"function"\s*:\s*"__(?:googtag|gaawc)"')
 # A container ID as GTM writes one, case-sensitive: `RE_GTM` above also reads a
 # `gtm-wrapper` class, and asking Google for container GTM-WRAPPER is a 404.
 RE_CONTAINER_ID = re.compile(r"\bGTM-[A-Z0-9]{4,}\b")
+# A container's script load: a `gtm.js?id=` URL written out, or GTM's snippet called
+# with the ID. A mention elsewhere — the noscript iframe, a config value, a
+# `data-gtm-section` attribute, a `gtm-server` host — loads nothing (review round 6).
+RE_GTM_SCRIPT_LOAD = re.compile(
+    r"gtm\.js\?id=(GTM-[A-Z0-9]{4,})\b"
+    r"|\(\s*window\s*,\s*document\s*,\s*['\"]script['\"]\s*,\s*['\"][^'\"]*['\"]\s*,"
+    r"\s*['\"](GTM-[A-Z0-9]{4,})['\"]\s*\)")
 
 
 def pageview_ids(container: str) -> set[str]:
@@ -175,8 +182,8 @@ def check(url: str, timeout: int = 15) -> dict:
     for gid, n in Counter(src_ids).items():
         if n > 1 and Counter(config_ids)[gid] <= 1:
             duplicates.append({"id": gid, "count": n, "kind": "gtag_loader"})
-    for cid, n in Counter(containers).items():
-        if n > 2:  # GTM ships a <script> plus a <noscript> iframe by design.
+    for cid, n in Counter(a or b for a, b in RE_GTM_SCRIPT_LOAD.findall(html)).items():
+        if n > 1:
             duplicates.append({"id": cid, "count": n, "kind": "gtm_container"})
     # A hardcoded tag beside a GTM container that fires the same ID (GO-132's ruling,
     # the case this docstring names). The container's script is read for the hardcoded

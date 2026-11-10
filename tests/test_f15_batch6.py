@@ -857,6 +857,46 @@ class ReviewRound5(unittest.TestCase):
         self.assertEqual(page_verdict(mobile_render_checker, "MB-100", page), PASS)
 
 
+class ReviewRound6(unittest.TestCase):
+    def go132(self, head: str, body: str = "<p>x</p>", extra=None) -> dict:
+        routes = {"/": html(body, head=head)}
+        routes.update(extra or {})
+        return run_item(ga4_tag_checker, "GO-132", routes)
+
+    def test_gtm_named_attributes_and_classes_are_no_containers(self):
+        body = ''.join(f'<a href="/{n}" data-gtm-section-heading="s{n}">x</a>' for n in range(3))
+        out = self.go132(GTM, body, {"/gtm.js": "var x=1;"})
+        self.assertEqual(full_verdict("GO-132", out), PASS, out.get("duplicates"))
+        out = self.go132("", '<div class="gtm-track">a</div>' * 3)
+        self.assertEqual(full_verdict("GO-132", out), PASS, out.get("duplicates"))
+
+    def test_a_container_mentioned_three_times_and_loaded_once_is_no_duplicate(self):
+        head = (GTM.replace("{origin}/gtm.js", "https://gtm-server.example.test/gtm.js")
+                + '<script>var cfg={"gtmConfigValue":"GTM-XYZ9"};</script>')
+        body = ('<noscript><iframe src="https://gtm-server.example.test/ns.html?id=GTM-XYZ9">'
+                '</iframe></noscript>')
+        out = self.go132(head, body)
+        self.assertNotIn("gtm_container", [d["kind"] for d in out.get("duplicates") or []])
+
+    def test_a_container_loaded_twice_is_one(self):
+        loader = '<script async src="{origin}/gtm.js?id=GTM-XYZ9"></script>'
+        out = self.go132(loader + loader, extra={"/gtm.js": "var x=1;"})
+        self.assertEqual(full_verdict("GO-132", out), FAIL)
+
+    def test_a_local_fallback_face_downloads_nothing(self):
+        css = ("@font-face{font-family:Inter;src:url(/i.woff2) format('woff2');font-display:swap}"
+               "@font-face{font-family:'Inter Fallback';src:local('Arial');size-adjust:107%;"
+               "ascent-override:90%}")
+        self.assertEqual(page_verdict(font_audit, "TECH-002",
+                                      html("<p>x</p>", head=f"<style>{css}</style>")), PASS)
+        mixed = "@font-face{font-family:X;src:local('X'),url(/x.woff2) format('woff2')}"
+        self.assertEqual(page_verdict(font_audit, "TECH-002",
+                                      html("<p>x</p>", head=f"<style>{mixed}</style>")), FAIL)
+
+    def test_go_131_says_it_reads_the_served_html(self):
+        self.assertIn("served HTML", ITEMS["GO-131"]["measures"])
+
+
 # ---------------------------------------------------------------------------
 # The sets the batch adds, held to their sources
 # ---------------------------------------------------------------------------

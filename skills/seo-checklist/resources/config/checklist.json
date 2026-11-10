@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "ba377a649ce8",
+  "registry_version": "ca2f4a06b209",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -2927,7 +2927,7 @@
           "len_gte": 1
         }
       },
-      "measures": "A GA4 measurement ID configured or loaded, a Google tag loaded by its ID, or a Google Tag Manager container the page loads. What the container fires, and whether data arrives, are not read.",
+      "measures": "A GA4 measurement ID configured or loaded, a Google tag loaded by its ID, or a Google Tag Manager container loaded, in the served HTML. What the container fires, and whether data arrives, are not read.",
       "effort": "low",
       "fix": "Install and configure Google Analytics 4"
     },

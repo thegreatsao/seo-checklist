@@ -752,7 +752,8 @@ title, including noindex pages. Unlike title duplication, absence is not competi
   IDs a `gtag/js` loader names, and GTM containers the page loads: GO-131's subject (F15
   batch 6)
 `duplicates[]` — array — the same ID configured or loaded more than once, a container
-  loaded more than twice, or a hardcoded ID that a GTM container beside it names in its
+  whose script is loaded twice (a `gtm.js?id=` URL or GTM's snippet; a mention elsewhere is
+  not a load), or a hardcoded ID that a GTM container beside it names in its
   Google tag or GA4 configuration tag, a Constant variable followed (`kind:
   gtm_and_hardcoded`, the container's script read; an event tag is not one). IDs are read
   with HTML comments removed. **Absent** when such a
