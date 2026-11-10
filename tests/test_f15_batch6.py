@@ -978,6 +978,28 @@ class ReviewRound10(unittest.TestCase):
                 self.assertEqual(ReviewRound2.both(self, path), NA)
 
 
+class ReviewRound11(unittest.TestCase):
+    TYPES = ('type="text/plain" data-cookieconsent="statistics"', 'type="rocketlazyloadscript"',
+             'type="litespeed/javascript"', 'type="4f2a9c-text/javascript"',
+             'type="text/partytown"', 'data-perfmatters-type="text/javascript" type="pmdelayedscript"')
+
+    def tag(self, attrs: str) -> str:
+        return (f'<script async {attrs} src="https://www.googletagmanager.com/gtag/js?id=G-ABC123">'
+                f"</script><script {attrs}>window.dataLayer=window.dataLayer||[];"
+                "function gtag(){dataLayer.push(arguments)}gtag('config','G-ABC123');</script>")
+
+    def test_a_deferred_or_consent_gated_tag_is_installed(self):
+        for attrs in self.TYPES:
+            with self.subTest(attrs=attrs):
+                out = run_item(ga4_tag_checker, "GO-131", {"/": html("<p>x</p>", head=self.tag(attrs))})
+                self.assertEqual(full_verdict("GO-131", out), PASS)
+
+    def test_a_deferred_copy_of_the_snippet_is_a_duplicate(self):
+        out = run_item(ga4_tag_checker, "GO-132", {"/": html(
+            "<p>x</p>", head=GTAG + self.tag('type="rocketlazyloadscript"'))})
+        self.assertEqual(full_verdict("GO-132", out), FAIL)
+
+
 # ---------------------------------------------------------------------------
 # The sets the batch adds, held to their sources
 # ---------------------------------------------------------------------------

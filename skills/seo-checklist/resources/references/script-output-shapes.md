@@ -756,7 +756,8 @@ title, including noindex pages. Unlike title duplication, absence is not competi
   not a load), or a hardcoded ID that a GTM container beside it names in its
   Google tag or GA4 configuration tag, a Constant variable followed (`kind:
   gtm_and_hardcoded`, the container's script read; an event tag is not one). IDs are read
-  with HTML comments, data-block scripts and Next.js flight payloads removed. **Absent** when such a
+  with HTML comments, JSON data-block scripts and Next.js flight payloads removed (a
+  script typed for a consent manager or a delay plugin stays). **Absent** when such a
   container could not be read and nothing else is duplicated, so GO-132 is NO_DATA
 `duplicates_unread` — str — why, when `duplicates` is absent
 `withheld` — object — `{"duplicates": "blocked"}` when the guard refused the container

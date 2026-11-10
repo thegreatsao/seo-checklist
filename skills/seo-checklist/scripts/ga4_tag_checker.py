@@ -38,10 +38,8 @@ except ImportError:
 
 try:
     from seo_common import fetch_error_kind
-    from third_party_script_audit import JAVASCRIPT_TYPES
 except ImportError:
     from scripts.seo_common import fetch_error_kind
-    from scripts.third_party_script_audit import JAVASCRIPT_TYPES
 
 GUARD_REFUSED = "blocked"
 
@@ -66,12 +64,16 @@ _SCRIPT_BLOCK = re.compile(r"<script\b([^>]*)>(.*?)</script\s*>", re.I | re.S)
 
 
 def strip_inert_scripts(html: str) -> str:
-    """The page without the `<script>` blocks a browser never runs as its own code: a
-    data block (a type outside JavaScript's) and Next.js's flight payload."""
+    """The page without the `<script>` blocks that only carry data: a JSON block
+    (`__NEXT_DATA__`, JSON-LD) and Next.js's flight payload. A script typed for a loader
+    to run later — a consent manager's `text/plain`, WP Rocket's, Perfmatters',
+    LiteSpeed's, Rocket Loader's, Partytown's — is the page's tag and stays (review round
+    11: stripping every non-JavaScript type erased them)."""
     def keep(match) -> str:
-        kind = re.search(r"""\btype\s*=\s*["']?([^"'\s>]+)""", match.group(1), re.I)
+        kind = re.search(r"""(?<![-\w])type\s*=\s*["']?([^"'\s>]+)""", match.group(1), re.I)
         essence = kind.group(1).split(";", 1)[0].strip().lower() if kind else ""
-        inert = ((essence not in JAVASCRIPT_TYPES and essence != "module")
+        inert = (essence in ("application/json", "application/ld+json")
+                 or essence.endswith("+json")
                  or match.group(2).lstrip().startswith("self.__next_f.push("))
         return "" if inert else match.group(0)
     return _SCRIPT_BLOCK.sub(keep, html)
@@ -162,8 +164,8 @@ def check(url: str, timeout: int = 15) -> dict:
         result["fetch_error"] = f"the page answered HTTP {page.status_code}"
         return result
     # A commented-out snippet never runs (review round 2: an old tag kept in a comment
-    # beside GTM read as a duplicate), nor does a data block or a framework's serialised
-    # copy of the page (review round 10: Next.js repeats the GTM snippet in
+    # beside GTM read as a duplicate), nor does a JSON data block or a framework's
+    # serialised copy of the page (review round 10: Next.js repeats the GTM snippet in
     # `__NEXT_DATA__` and `self.__next_f.push(...)`; zapier.com, deel.com, zillow.com).
     html = strip_inert_scripts(re.sub(r"<!--.*?-->", "", page.text, flags=re.S))
 

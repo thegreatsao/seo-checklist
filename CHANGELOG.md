@@ -32,7 +32,8 @@ container the page loads, or the GA4 IDs Shopify's Google channel writes into it
 tag or GA4 configuration tag names the same ID, through a variable too (an event tag sending to it is no duplicate, a
 commented-out snippet is no tag, nor a loader GTM itself wrote (`gtm=`); NO_DATA when the container cannot be
 read), and counts a container twice only when its script is loaded twice, not a `data-gtm-*` attribute, a `gtm-*` class
-or a mention in a noscript, a config, a preload, a data block or Next.js's serialised copy of the page; TE-181 validates the rendered DOM with the page's doctype put back
+or a mention in a noscript, a config, a preload, a JSON data block or Next.js's serialised copy of the page (a tag a consent manager or a delay plugin
+types for later still counts); TE-181 validates the rendered DOM with the page's doctype put back
 in front (the snippet records `doctype`; an artifact with neither is NO_DATA), after Nu was checked to report a missing
 doctype as an error; MB-100 no longer reads a width inside a media query, a `media` or `sizes` condition, or a rule
 that never applies on a 360px phone (a `min-width` or `min-device-width` query above it, `print`, a wide
