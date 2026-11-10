@@ -261,7 +261,8 @@ class AFurtherURLIsRefused(unittest.TestCase):
 
     def test_the_files_a_script_grades_are_blocked_not_the_sites_defect(self):
         rows = {row["id"]: row for rows in self.rows.values() for row in rows}
-        for item in ("GEO-007", "MB-104", "TE-174", "CI-006", "AR-151", "AR-152",
+        # AR-151 reads the shared crawl since F15 batch 4, which this census rejects.
+        for item in ("GEO-007", "MB-104", "TE-174", "CI-006", "AR-152",
                      "GEO-001", "GEO-002", "GEO-003", "GO-136", "GO-138", "CI-019"):
             with self.subTest(item=item):
                 self.assertEqual((rows[item]["status"], rows[item].get("error_kind")),

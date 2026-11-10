@@ -1688,12 +1688,17 @@ class Robots(unittest.TestCase):
             return robots_checker.fetch_robots_txt(site.url)
 
     def test_a_200_that_shuts_googlebot_out_is_not_correct(self):
-        """The defect 0.117.0 repairs: AR-151 asserted `status == 200`."""
+        """The defect 0.117.0 repairs: AR-151 asserted `status == 200`. Since F15 batch 4
+        the whole site is `/` and the crawled paths; without them a shut `/` withholds
+        the answer rather than deciding it."""
+        import robots_checker
+        self.assertIn("the whole site is disallowed for Googlebot",
+                      robots_checker.correctness_problems(
+                          "User-agent: *\nDisallow: /\n", "text/plain", paths=["/about"]))
         result = self.check("User-agent: *\nDisallow: /\n")
         self.assertEqual(result["status"], 200)
-        self.assertIn("the whole site is disallowed for Googlebot",
-                      result["correctness_problems"])
-        self.assertEqual(verdict("AR-151", result), FAIL)
+        self.assertEqual(result["correctness_problems"], [])
+        self.assertTrue(result["truncated"])
 
     def test_the_html_shell_served_at_the_path_is_not_a_robots_txt(self):
         result = self.check("<!doctype html><html><body>Not found</body></html>",
@@ -7562,10 +7567,12 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
         the web-ports switch refused a stylesheet, instead of a warning that blamed the
         site for it (F14). Same definition, one new member. Thirty-four in the same
         release: CI-013 and CI-019, whose `robots_path_tester.py` sets `truncated` when the
-        guard refused the paths it probes behind a robots.txt it read (F14 review)."""
+        guard refused the paths it probes behind a robots.txt it read (F14 review).
+        Thirty-five at F15 batch 4: AR-151, whose `robots_checker.py` sets `truncated` when
+        the paths that decide "the whole site is shut" were not all read."""
         ids = sorted(i["id"] for i in self._covered())
         self.assertEqual(ids, [
-            "AR-149", "AR-162", "AR-163", "BL-081", "BL-083", "CI-008", "CI-013", "CI-014",
+            "AR-149", "AR-151", "AR-162", "AR-163", "BL-081", "BL-083", "CI-008", "CI-013", "CI-014",
             "CI-015", "CI-018", "CI-019", "CN-039", "CN-041", "GO-136", "GO-137", "GO-138", "KW-071", "MB-096",
             "MB-097", "MB-098", "MD-185", "MD-187", "MD-189", "MS-022", "MS-023",
             "MS-026", "MS-029", "TE-168", "TE-170", "TE-172", "TE-174", "TE-176",
@@ -7672,13 +7679,16 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
         AR-153 (F06) scores missing hub links over the crawl, and
         `topical_cluster_mapper.map_inventory` withholds the score when the crawl was
         truncated: the page a cap left out can be a topic's hub.
+        CI-006 (F15 batch 4) counts the Sitemap lines of a robots.txt read whole: the
+        `truncated` its script now sets is AR-151's whole-site question, which no cap
+        on the file shortens.
         A new member means a new script that must withhold its count or say why not."""
         reporters = self._reporters()
         ids = sorted(i["id"] for i in ITEMS.values()
                      if (i.get("check") or {}).get("assert")
                      and i["check"]["script"] in reporters
                      and {"gte", "gt", "len_gte"} & set(i["check"]["assert"]))
-        self.assertEqual(ids, ["AR-153", "BL-086", "BL-087", "LO-198"],
+        self.assertEqual(ids, ["AR-153", "BL-086", "BL-087", "CI-006", "LO-198"],
                          "the set moved; say why the new member's FAIL cannot be "
                          "faked by its cap, or withhold its count")
 
