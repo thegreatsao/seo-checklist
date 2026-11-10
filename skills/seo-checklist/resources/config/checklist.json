@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "1fc5514f671b",
+  "registry_version": "e16753ff6071",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -2950,7 +2950,7 @@
           "len_eq": 0
         }
       },
-      "measures": "No GA4 ID configured or loaded twice, no GTM container loaded twice, and no hardcoded ID that a GTM container beside it also fires, its script read. Tags added at run time are not read.",
+      "measures": "No GA4 ID configured or loaded twice, no GTM container loaded twice, and no hardcoded ID that a GTM container beside it names in its Google tag or GA4 configuration tag. Tags added at run time are not read.",
       "effort": "low",
       "fix": "Remove duplicate GA4/GTM tags"
     },

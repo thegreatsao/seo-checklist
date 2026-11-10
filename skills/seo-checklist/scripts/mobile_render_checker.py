@@ -23,9 +23,10 @@ MAX_FIXED_WIDTH_PX = 360
 
 # A container query too: a container at least 700px wide cannot sit on a 360px screen.
 RE_MEDIA = re.compile(r"@(?:media|container)\b([^{;]*)\{", re.I)
-# A lower bound on the viewport width: `min-width: 768px`, `48em`, or `width >= 768px`.
+# A lower bound on the viewport width: `min-width: 768px`, `48em`, `width >= 768px`, or
+# the older `min-device-width` (review round 2).
 RE_MIN_WIDTH = re.compile(
-    r"min-width\s*:\s*([\d.]+)\s*(px|r?em)\b|\bwidth\s*>=?\s*([\d.]+)\s*(px|r?em)\b"
+    r"min-(?:device-)?width\s*:\s*([\d.]+)\s*(px|r?em)\b|\bwidth\s*>=?\s*([\d.]+)\s*(px|r?em)\b"
     r"|([\d.]+)\s*(px|r?em)\s*<=?\s*width\b", re.I)
 
 

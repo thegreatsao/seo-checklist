@@ -662,36 +662,116 @@ class ReviewRound1(unittest.TestCase):
         self.assertIn("restricting scripts", ITEMS["SE-120"]["measures"])
 
 
+class ReviewRound2(unittest.TestCase):
+    SB = ("SE-114", "SE-116", "TE-171")
+
+    def plan(self, ctx, rejected=None):
+        return checklist_runner.build_plan(
+            [ITEMS[i] for i in self.SB], ctx, set(checklist_runner.MODE_CAPS["live"]), "live",
+            rejected=rejected, has_safe_browsing=True)
+
+    def test_live_mode_without_a_crawl_asks_about_the_entry(self):
+        for ctx, rejected in (({"url": SITE}, None),
+                              ({"url": SITE}, {"inventory_json": "the shared crawl read nothing"})):
+            with self.subTest(rejected=rejected):
+                plan, skipped = self.plan(ctx, rejected)
+                self.assertEqual(skipped, {})
+                self.assertEqual(list(plan), [("domain_safety_check.py", (SITE,))])
+
+    def test_a_crawl_item_still_needs_its_crawl(self):
+        plan, skipped = checklist_runner.build_plan(
+            [ITEMS["TE-176"]], {"url": SITE}, set(checklist_runner.MODE_CAPS["live"]), "live",
+            rejected={"inventory_json": "the shared crawl read nothing"})
+        self.assertEqual(skipped["TE-176"][0], NO_DATA)
+
+    def both(self, path: str) -> str:
+        page = html(UtilityPages.BODY, head='<link rel="canonical" href="' + path + '">')
+        return page_verdict(citation_readiness, "GO-145", page, path=path)
+
+    def test_a_compound_word_is_not_a_utility_word(self):
+        for path in ("/kontaktlinsen", "/contactless", "/privacyscreen", "/cookiecutter",
+                     "/termsheet", "/cookie-recipes", "/policy", "/blog/data-2026"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), FAIL)
+
+    def test_ordinary_utility_slugs_are_read(self):
+        for path in ("/privacy-policy-2", "/terms-of-sale", "/terms-of-business",
+                     "/website-terms", "/politika-konfidentsialnosti",
+                     "/politika-konfidenczialnosti", "/contact/index.html", "/contacts",
+                     "/kontaktai", "/datenschutzerklaerung", "/polzovatelskoe-soglashenie",
+                     "/privatumo-politika", "/taisykles", "/agb"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), NA)
+
+    def test_a_google_tag_naming_its_id_through_a_constant_variable_is_read(self):
+        container = ('var data = {"resource": {"version": "5", "macros": ['
+                     '{"function": "__e"}, {"function": "__c", "vtp_value": "G-ABC123"}], '
+                     '"tags": [{"function": "__googtag", "vtp_tagId": ["macro", 1], '
+                     '"tag_id": 2}]}};')
+        routes = {"/": html("<p>x</p>", head=GTAG + GTM), "/gtm.js": container}
+        self.assertEqual(full_verdict("GO-132", run_item(ga4_tag_checker, "GO-132", routes)),
+                         FAIL)
+
+    def test_a_commented_out_snippet_is_not_installed(self):
+        routes = {"/": html("<p>x</p>", head="<!-- old tag " + GTAG + " -->" + GTM),
+                  "/gtm.js": 'var data={"tags":[{"function":"__googtag","vtp_tagId":"G-ABC123"}]};'}
+        out = run_item(ga4_tag_checker, "GO-132", routes)
+        self.assertEqual(full_verdict("GO-132", out), PASS)
+        self.assertNotIn("G-ABC123", out["measurement_ids"])
+
+    def test_min_device_width_is_a_wide_only_query(self):
+        page = html("<p>x</p>", head=VIEWPORT + "<style>@media only screen and "
+                    "(min-device-width: 768px){.container{width:960px}}</style>")
+        self.assertEqual(page_verdict(mobile_render_checker, "MB-100", page), PASS)
+
+    def se_120(self, **overrides) -> str:
+        return HardenedHeaderValues.se_120(self, **overrides)
+
+    def test_a_script_wildcard_and_an_allowlist_wildcard_are_gaps(self):
+        for csp in ("script-src *", "default-src 'self' https:", "script-src 'self' data:"):
+            with self.subTest(csp=csp):
+                self.assertEqual(self.se_120(**{"Content_Security_Policy": csp}), WARN)
+        self.assertEqual(self.se_120(**{"Content_Security_Policy":
+                                        "script-src 'nonce-a' 'strict-dynamic' https:"}), PASS)
+        self.assertEqual(self.se_120(**{"Permissions_Policy": "geolocation=(self *)"}), WARN)
+
+
 # ---------------------------------------------------------------------------
 # The sets the batch adds, held to their sources
 # ---------------------------------------------------------------------------
 
 class TheSetsAreHeld(unittest.TestCase):
     def test_each_set_is_what_its_source_says(self):
+        from citation_readiness import UTILITY_SLUG_WORDS, UTILITY_WORDS
         import eeat_signal_checker
-        from citation_readiness import TERMS_STEMS, UTILITY_CONCEPTS
-        # The utility families of `eeat-terms.json`, and the terms-of-service stems
-        # among its `trust` hrefs (trust also holds /about, /team and /author).
-        self.assertEqual(UTILITY_CONCEPTS, ("privacy", "contact"))
-        trust = {stem for concepts in eeat_signal_checker._TERMS["languages"].values()
-                 for stem in concepts.get("trust", {}).get("href", [])}
-        self.assertLessEqual(set(TERMS_STEMS), trust)
-        self.assertEqual(set(TERMS_STEMS), {"/terms", "/taisykl", "/salygos", "/usloviya",
-                                            "/pravila"})
-        from citation_readiness import (GENERIC_STEM_WORDS, UTILITY_SLUG_WORDS,
-                                        UTILITY_STEM_WORDS)
-        # The stems' words that name no kind of page alone: "policy" (cookie-policy),
-        # "politika" (slapuku-politika, politika-cookie).
-        self.assertEqual(GENERIC_STEM_WORDS, {"policy", "politika"})
-        self.assertLessEqual(GENERIC_STEM_WORDS, set(UTILITY_STEM_WORDS))
-        # Review round 1: the words a privacy, terms or contact slug is written with,
-        # none of them a subject an article could be about.
+        # Every privacy and contact href fragment eeat-terms.json holds as one word is a
+        # utility word, and the terms ones among its trust fragments (review round 2: the
+        # fragments are href substrings; the slug words are their whole-word forms).
+        fragments = {stem.strip("/") for concepts in
+                     eeat_signal_checker._TERMS["languages"].values()
+                     for concept in ("privacy", "contact")
+                     for stem in concepts.get(concept, {}).get("href", [])}
+        self.assertLessEqual({"privacy", "gdpr", "datenschutz", "bdar", "contact", "kontakt",
+                              "terms", "salygos", "usloviya", "pravila"}, UTILITY_WORDS)
+        for fragment in fragments:
+            with self.subTest(fragment=fragment):
+                words = fragment.split("-")
+                self.assertTrue(any(w in UTILITY_WORDS or any(u.startswith(w) for u in UTILITY_WORDS)
+                                    for w in words), fragment)
+        self.assertEqual(len(UTILITY_WORDS), 40)
+        self.assertEqual(UTILITY_WORDS & UTILITY_SLUG_WORDS, set())
+        # Filler words name no kind of page: none is a subject an article is about.
         self.assertEqual(UTILITY_SLUG_WORDS, {
             "our", "the", "of", "and", "us", "use", "service", "services", "conditions",
             "notice", "statement", "policy", "policies", "page", "info", "information",
-            "form", "ispolzovaniya", "obrabotki", "naudojimo"})
-        from security_headers import (CSP_INLINE_OVERRIDES, HARDENING_HEADERS,
-                                      REFERRER_POLICIES)
+            "form", "sale", "sales", "business", "website", "site", "politika",
+            "ispolzovaniya", "obrabotki", "polzovatelskoe", "publichnaya", "naudojimo",
+            "duomenu"})
+        from security_headers import (CSP_ANY_SOURCE, CSP_INLINE_OVERRIDES,
+                                      HARDENING_HEADERS, REFERRER_POLICIES)
+        # A source expression matching every host: the wildcard, and a bare scheme
+        # (CSP Level 3, "source expressions"); review round 2.
+        self.assertEqual(CSP_ANY_SOURCE, {"*", "http:", "https:", "data:"})
         # SE-120's title names these three headers.
         self.assertEqual(HARDENING_HEADERS, ("content-security-policy", "permissions-policy",
                                              "referrer-policy"))

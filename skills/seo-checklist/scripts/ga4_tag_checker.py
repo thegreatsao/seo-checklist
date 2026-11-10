@@ -64,10 +64,40 @@ RE_MEASUREMENT_ID = re.compile(r"\bG-[A-Z0-9]{4,}\b")
 # is the ordinary correct setup, not a duplicate (review round 1 of F15 batch 6).
 RE_PAGEVIEW_TAG = re.compile(r'"function"\s*:\s*"__(?:googtag|gaawc)"')
 
+# A container ID as GTM writes one, case-sensitive: `RE_GTM` above also reads a
+# `gtm-wrapper` class, and asking Google for container GTM-WRAPPER is a 404.
+RE_CONTAINER_ID = re.compile(r"\bGTM-[A-Z0-9]{4,}\b")
+
 
 def pageview_ids(container: str) -> set[str]:
-    """The GA4 IDs a GTM container's page-view tags name: each such tag's own object."""
-    found = set()
+    """The GA4 IDs a GTM container's page-view tags name.
+
+    Read from the container's `resource` JSON when it parses, so a tag naming its ID
+    through a variable (`"vtp_tagId": ["macro", 1]`, a Constant variable) is followed to
+    the variable (review round 2); otherwise each such tag's own object is read."""
+    found = re.search(r'"resource"\s*:\s*\{', container)
+    if found:
+        try:
+            resource, _end = json.JSONDecoder().raw_decode(container, found.end() - 1)
+        except ValueError:
+            resource = None
+        if isinstance(resource, dict):
+            macros = resource.get("macros") or []
+
+            def ids(value, seen=frozenset()) -> set[str]:
+                if isinstance(value, str):
+                    return {m for m in RE_MEASUREMENT_ID.findall(value.upper())}
+                if (isinstance(value, list) and len(value) == 2 and value[0] == "macro"
+                        and isinstance(value[1], int) and 0 <= value[1] < len(macros)
+                        and value[1] not in seen):
+                    return ids(macros[value[1]], seen | {value[1]})
+                parts = (value.values() if isinstance(value, dict)
+                         else value if isinstance(value, list) else ())
+                return set().union(*(ids(part, seen) for part in parts))
+            return set().union(*(ids(tag) for tag in resource.get("tags") or []
+                                 if isinstance(tag, dict)
+                                 and tag.get("function") in ("__googtag", "__gaawc")))
+    pageview = set()
     for match in RE_PAGEVIEW_TAG.finditer(container):
         start = container.rfind("{", 0, match.start())
         depth, end = 0, start
@@ -76,11 +106,8 @@ def pageview_ids(container: str) -> set[str]:
             end += 1
             if depth == 0:
                 break
-        found.update(m.upper() for m in RE_MEASUREMENT_ID.findall(container[start:end]))
-    return found
-# A container ID as GTM writes one, case-sensitive: `RE_GTM` above also reads a
-# `gtm-wrapper` class, and asking Google for container GTM-WRAPPER is a 404.
-RE_CONTAINER_ID = re.compile(r"\bGTM-[A-Z0-9]{4,}\b")
+        pageview.update(m.upper() for m in RE_MEASUREMENT_ID.findall(container[start:end]))
+    return pageview
 
 
 def check(url: str, timeout: int = 15) -> dict:
@@ -103,7 +130,9 @@ def check(url: str, timeout: int = 15) -> dict:
         # An error page's tags are not the page's (F15 batch 6's aside).
         result["fetch_error"] = f"the page answered HTTP {page.status_code}"
         return result
-    html = page.text
+    # A commented-out snippet never runs (review round 2: an old tag kept in a comment
+    # beside GTM read as a duplicate).
+    html = re.sub(r"<!--.*?-->", "", page.text, flags=re.S)
 
     config_ids = [m.upper() for m in RE_CONFIG.findall(html)]
     src_ids = [m.upper() for m in RE_GTAG_SRC.findall(html)]

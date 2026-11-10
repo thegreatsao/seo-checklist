@@ -1399,11 +1399,13 @@ def build_plan(items: list[dict], ctx: dict, caps: set[str], mode: str,
             skipped[it["id"]] = (NA, f"needs '{need}'; not available in {mode} mode")
             continue
         template = list(chk.get("args") or [])
-        if "inventory_json" in ctx_keys_of(it) and "crawl" not in caps:
+        if (need != "crawl" and "inventory_json" in ctx_keys_of(it)
+                and ("inventory_json" not in ctx or "inventory_json" in (rejected or {}))):
             # An item that reads the shared crawl beside another capability (SE-114,
-            # Safe Browsing over every crawled URL) asks about the page alone where
-            # the mode never crawls (review round 1 of F15 batch 6: N/A dropped the
-            # page's own lookup).
+            # Safe Browsing over every crawled URL) asks about the page alone where no
+            # crawl was read: a mode that never crawls, an entry that did not answer, a
+            # crawl that read nothing (F15 batch 6, review rounds 1 and 2: the lookup
+            # of the page itself was dropped).
             at = template.index("{inventory_json}")
             del template[at - 1:at + 1]
         args = []

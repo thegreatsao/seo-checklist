@@ -713,7 +713,7 @@ MEASURES = {
     "TE-179": "Domain age from the registry's creation date in whois: 90 days or more passes, younger warns. Ownership and transfer history are not read.",
     "SE-120": "CSP, Permissions-Policy and Referrer-Policy each sent: a CSP restricting scripts without 'unsafe-inline' or 'unsafe-eval', no feature open to every origin (=*), no unsafe-url. One gap warns. Other directives are not judged.",
     "GO-131": "A GA4 measurement ID configured or loaded, a Google tag loaded by its ID, or a Google Tag Manager container the page loads. What the container fires, and whether data arrives, are not read.",
-    "GO-132": "No GA4 ID configured or loaded twice, no GTM container loaded twice, and no hardcoded ID that a GTM container beside it also fires, its script read. Tags added at run time are not read.",
+    "GO-132": "No GA4 ID configured or loaded twice, no GTM container loaded twice, and no hardcoded ID that a GTM container beside it names in its Google tag or GA4 configuration tag. Tags added at run time are not read.",
     "TE-181": "Nu validator errors in the rendered DOM, with the page's doctype put back in front of it. An artifact without the doctype key is not validated.",
     "MB-100": "A width=device-width viewport and no CSS width or min-width over 360px in the served HTML outside rules never applying on a 360px phone (min-width queries, print). Linked CSS and tap targets, which static CSS cannot judge, are not read.",
     "TECH-002": "An @font-face with no font-display, or block or auto, which hide text; a font preload without crossorigin; a stylesheet that cannot be fetched. Font file sizes are not read.",

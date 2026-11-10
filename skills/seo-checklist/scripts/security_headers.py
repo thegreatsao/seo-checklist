@@ -124,8 +124,11 @@ MANY_MISSING_HEADERS = 3
 # SE-120's ruling (F15): the title is about hardening, so the three headers' values are
 # read, not only their names. Each header present but weak is a gap like one missing.
 HARDENING_HEADERS = ("content-security-policy", "permissions-policy", "referrer-policy")
-# CSP keywords that make 'unsafe-inline' a no-op for scripts in CSP Level 2+ browsers.
+# CSP keywords that make 'unsafe-inline' a no-op for scripts in CSP Level 2+ browsers;
+# with 'strict-dynamic' a host or scheme source is ignored too.
 CSP_INLINE_OVERRIDES = ("'nonce-", "'sha256-", "'sha384-", "'sha512-", "'strict-dynamic'")
+# Script sources that allow any host (review round 2: `script-src *` restricts nothing).
+CSP_ANY_SOURCE = frozenset({"*", "http:", "https:", "data:"})
 # Referrer-Policy tokens a browser understands (W3C Referrer Policy, section 3).
 REFERRER_POLICIES = frozenset({
     "no-referrer", "no-referrer-when-downgrade", "same-origin", "origin",
@@ -159,13 +162,17 @@ def _csp_weakness(value: str) -> str | None:
         weak.append("'unsafe-inline'")
     if all("'unsafe-eval'" in sources for sources in script_sources):
         weak.append("'unsafe-eval'")
+    open_sources = [sorted(CSP_ANY_SOURCE & set(sources)) for sources in script_sources]
+    if all(found and not any(s.startswith(CSP_INLINE_OVERRIDES) for s in sources)
+           for found, sources in zip(open_sources, script_sources, strict=True)):
+        weak.append(" ".join(open_sources[0]))
     return f"{' and '.join(weak)} in script-src" if weak else None
 
 
 def _permissions_weakness(value: str) -> str | None:
     """A feature allowed to every origin (`camera=*`), or None."""
     wild = [part.split("=", 1)[0].strip() for part in value.split(",")
-            if "=" in part and part.split("=", 1)[1].strip() in ("*", "(*)")]
+            if "=" in part and "*" in part.split("=", 1)[1].strip(" ()").split()]
     return f"{', '.join(wild)} allowed to every origin" if wild else None
 
 
