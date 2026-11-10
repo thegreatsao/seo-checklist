@@ -749,8 +749,8 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `gtm_containers[]` — array of str
 `ua_legacy[]` — array of str — retired `UA-` properties still on the page
 `installed_by[]` — array of str — GA4 IDs configured or loaded, Google tag (`G-`, `GT-`)
-  IDs a `gtag/js` loader names, and GTM containers the page loads: GO-131's subject (F15
-  batch 6)
+  IDs a `gtag/js` loader names, GTM containers the page loads, and the `G-`/`GT-` IDs of
+  Shopify's Google channel pixel (`google_tag_ids`): GO-131's subject (F15 batch 6)
 `duplicates[]` — array — the same ID configured or loaded more than once, a container
   whose script is loaded twice (a `gtm.js?id=` URL or GTM's snippet; a mention elsewhere is
   not a load), or a hardcoded ID that a GTM container beside it names in its

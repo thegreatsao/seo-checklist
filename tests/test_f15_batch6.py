@@ -934,6 +934,23 @@ class ReviewRound8(unittest.TestCase):
         self.assertEqual(full_verdict("GO-132", out), FAIL)
 
 
+class ReviewRound9(unittest.TestCase):
+    PIXEL = ('<script id="web-pixels-manager-setup">(function(){var c={"webPixelsConfigList":'
+             '[{"id":"1","configuration":"{\\"config\\":\\"{\\\\\\"google_tag_ids\\\\\\":'
+             '[\\\\\\"G-LKLMZ8CNB2\\\\\\",\\\\\\"AW-953365524\\\\\\"],\\\\\\"target_country\\\\\\":'
+             '\\\\\\"US\\\\\\"}\\"}","type":"APP"}]};})();</script>')
+
+    def test_shopifys_google_channel_is_installed(self):
+        out = run_item(ga4_tag_checker, "GO-131", {"/": html("<p>x</p>", head=self.PIXEL)})
+        self.assertEqual(full_verdict("GO-131", out), PASS)
+        self.assertEqual(out["installed_by"], ["G-LKLMZ8CNB2"])
+
+    def test_an_ads_only_pixel_is_no_ga4(self):
+        out = run_item(ga4_tag_checker, "GO-131", {"/": html("<p>x</p>", head=self.PIXEL.replace(
+            '\\\\\\"G-LKLMZ8CNB2\\\\\\",', ''))})
+        self.assertEqual(full_verdict("GO-131", out), FAIL)
+
+
 # ---------------------------------------------------------------------------
 # The sets the batch adds, held to their sources
 # ---------------------------------------------------------------------------

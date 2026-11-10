@@ -60,6 +60,11 @@ RE_GTM_SRC = re.compile(r"""((?:https?:)?//[^\s"'<>+]+?/gtm\.js|(?<=["'])/[^\s"'
                         re.I)
 GTM_DEFAULT = "https://www.googletagmanager.com/gtm.js"
 RE_MEASUREMENT_ID = re.compile(r"\bG-[A-Z0-9]{4,}\b")
+# Shopify's Google & YouTube channel configures GA4 in its web pixel's JSON, served in
+# the page, and loads gtag at run time (review round 9): the array `google_tag_ids` names
+# the tags, escaped to any depth.
+RE_PIXEL_TAG_IDS = re.compile(r"google_tag_ids[\\\"':\s]*\[([^\]]{0,400})\]")
+RE_GOOGLE_TAG_ID = re.compile(r"\b(?:G|GT)-[A-Z0-9]{4,}\b")
 # The container tags that send a page view: the Google tag and the GA4 configuration
 # tag. A GA4 event tag (`__gaawe`) sending to the hardcoded ID beside a hardcoded config
 # is the ordinary correct setup, not a duplicate (review round 1 of F15 batch 6).
@@ -162,9 +167,11 @@ def check(url: str, timeout: int = 15) -> dict:
     # container ID with no loader beside it is text, not an installation.
     loaded_containers = (sorted(set(RE_CONTAINER_ID.findall(html)))
                          if result["loaders"]["gtm_js"] else [])
+    pixel_ids = {tag for ids in RE_PIXEL_TAG_IDS.findall(html)
+                 for tag in RE_GOOGLE_TAG_ID.findall(ids)}
     result["installed_by"] = sorted(set(result["measurement_ids"])
                                     | {m.upper() for m in RE_GOOGLE_TAG_SRC.findall(html)}
-                                    | set(loaded_containers))
+                                    | set(loaded_containers) | pixel_ids)
 
     # Written at the end, and only when decided (GO-132's `withheld_key`).
     duplicates = []
