@@ -141,6 +141,7 @@
       "claim": "Twenty items — eleven of them `high` — asserted a clean verdict over an input their own script had capped; the runner now withholds the PASS and leaves the FAIL alone, across all six ways this registry spells `none of these`.",
       "measured": {
         "high_among_them": [
+          "AR-151",
           "AR-162",
           "CI-008",
           "CI-014",
@@ -159,6 +160,7 @@
         ],
         "items_covered": [
           "AR-149",
+          "AR-151",
           "AR-162",
           "AR-163",
           "BL-081",
@@ -212,6 +214,7 @@
           "local_seo_checker.py",
           "redirect_checker.py",
           "rich_results_guard.py",
+          "robots_checker.py",
           "robots_path_tester.py",
           "server_log_audit.py",
           "site_crawl.py",
@@ -725,6 +728,7 @@
         ],
         "items_silenced_past_either_limit": [
           "AR-149",
+          "AR-151",
           "AR-162",
           "BL-081",
           "CI-008",
@@ -774,9 +778,6 @@
           "video_schema_checker.py": "slices the printed lines, not `issues`"
         },
         "not_yet_read": {
-          "robots_checker.py": [
-            "AR-151"
-          ],
           "security_headers.py": [
             "SE-120"
           ]

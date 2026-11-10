@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "d7d44f72d70b",
+  "registry_version": "083c71f2725e",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -3607,7 +3607,7 @@
           "falsy": true
         }
       },
-      "measures": "That crawled pages link on average to 3 distinct other pages and none is a dead end. On fewer than 4 pages that average cannot be reached, so the item is N/A; orphans are CI-008.",
+      "measures": "That no crawled page is an orphan or a dead end, and that pages link on average to 3 distinct other internal URLs. A crawl finding fewer than 4 cannot reach that, so the item is N/A there; CI-008 still reads orphans.",
       "effort": "high",
       "fix": "Strengthen internal linking, remove orphans"
     },

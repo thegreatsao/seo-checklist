@@ -224,6 +224,30 @@ class SmallSites(unittest.TestCase):
                          {"path": "too_few_pages_for_average", "falsy": True})
 
 
+class ReviewRound1SmallSites(unittest.TestCase):
+    """F15 review round 1: the average counts distinct internal URLs, files and refused
+    paths among them, so three pages linking a PDF and `/cart` can reach it."""
+
+    def test_three_pages_linking_other_urls_are_judged(self):
+        def site(links):
+            inv = pages(["Home", "Menu", "Hours"], links)
+            inv["entry"] = inv["site"] = f"{SITE}p0"
+            for row_ in inv["pages"].values():
+                if not row_["links"]:
+                    continue        # a dead end links nothing at all
+                row_["links"] += [{"target": f"{SITE}menu.pdf", "internal": True,
+                                   "anchor": "Menu (PDF)", "rel": [], "nofollow": False},
+                                  {"target": f"{SITE}cart", "internal": True,
+                                   "anchor": "Cart", "rel": [], "nofollow": False}]
+            graph, crawled, base, refused = link_profile.graph_from_inventory(inv)
+            return link_profile.analyze_link_profile(graph, crawled, base, refused)
+        full = site({0: [1, 2], 1: [0, 2], 2: [0, 1]})
+        self.assertIs(full["too_few_pages_for_average"], False)
+        self.assertEqual(full_verdict("AR-162", full), PASS)
+        self.assertEqual(full_verdict("AR-162", site({0: [1, 2], 1: [0, 2], 2: []})),
+                         FAIL)
+
+
 # ---------------------------------------------------------------------------
 # robots_checker.py — AR-151, CI-006
 # ---------------------------------------------------------------------------
@@ -261,6 +285,47 @@ class RobotsFile(unittest.TestCase):
         out = robots_rule("AR-151", "User-agent:\nDisallow: /private\n")
         self.assertEqual(verdict("AR-151", out), FAIL)
         self.assertTrue(any("user-agent" in p for p in out["correctness_problems"]))
+
+    def unread_crawl(self, robots_answer) -> dict:
+        with site_with({"/robots.txt": robots_answer}) as site:
+            inv = inventory([row(site.origin + "/")])
+            inv["site"] = inv["entry"] = site.origin + "/"
+            inv["pages"] = {}
+            inv["fetch_error"] = "the crawl read no page"
+            return run_rule_script(robots_checker, "AR-151", site.origin + "/", written(inv))
+
+    def test_a_problem_the_crawl_does_not_decide_stands_without_it(self):
+        """Review round 1: a 404 or an HTML page is a problem whatever the crawl read."""
+        with site_with({}) as site:
+            inv = inventory([row(site.origin + "/")])
+            inv["site"] = inv["entry"] = site.origin + "/"
+            inv["fetch_error"] = "the crawl read no page"
+            out = run_rule_script(robots_checker, "AR-151", site.origin + "/", written(inv))
+        self.assertEqual(verdict("AR-151", out), FAIL)
+        out = self.unread_crawl((200, "<!doctype html><html><body>Home</body></html>"))
+        self.assertEqual(verdict("AR-151", out), FAIL)
+
+    def test_a_shut_home_page_without_the_crawl_withholds_the_whole_site_answer(self):
+        out = self.unread_crawl((200, {"Content-Type": "text/plain"},
+                                 "User-agent: *\nDisallow: /\n"))
+        self.assertEqual(out["correctness_problems"], [])
+        self.assertTrue(out["truncated"])
+
+    def test_a_capped_crawl_withholds_the_pass(self):
+        with site_with({"/robots.txt": (200, {"Content-Type": "text/plain"},
+                                        "User-agent: *\nAllow: /\n")}) as site:
+            inv = inventory([row(site.origin + "/")], truncated=True)
+            inv["site"] = inv["entry"] = site.origin + "/"
+            inv["pages"] = {k.replace("https://example.test", site.origin): v
+                            for k, v in inv["pages"].items()}
+            out = run_rule_script(robots_checker, "AR-151", site.origin + "/", written(inv))
+        self.assertTrue(out["truncated"])
+
+    def test_the_paths_tested_are_the_urls_crawled_not_their_keys(self):
+        """`Allow: /en/` matches `/en/`, the URL read; its key folds the slash."""
+        out = robots_rule("AR-151", "User-agent: *\nDisallow: /\nAllow: /en/\n",
+                          crawled_paths=("/", "/en/"))
+        self.assertEqual(out["correctness_problems"], [])
 
     def test_an_empty_sitemap_line_is_no_declaration(self):
         self.assertEqual(robots_rules.parse("User-agent: *\nSitemap:\n")["sitemaps"], [])
@@ -306,6 +371,14 @@ class CriticalAssets(unittest.TestCase):
             "/private/c.css": (200, CSS, "p{}")})
         self.assertEqual([u.rsplit("/", 2)[-2:] for u in out["blocked_urls"]],
                          [["private", "c.css"]])
+
+    def test_a_minified_import_is_followed(self):
+        """Review round 1: `@import"x.css"` with no space is valid CSS minifiers write."""
+        for rule in ('@import"/private/a.css";', "@import'/private/a.css';"):
+            with self.subTest(rule=rule):
+                self.assertEqual([u.rsplit("/", 1)[-1] for u in
+                                  robots_path_tester.css_imports(rule, "https://x.test/")],
+                                 ["a.css"])
 
     def test_an_unread_stylesheet_withholds_the_pass(self):
         out = self.run_ci_013({
@@ -537,6 +610,27 @@ class HreflangValidity(unittest.TestCase):
         self.assertTrue(out["language_code_issues"])
         self.assertEqual(verdict("IN-122", out), FAIL)
 
+    def test_a_valid_code_with_a_better_spelling_passes(self):
+        """Review round 1: `zh-CN`, `zh-TW` and `zh` are valid language-region codes;
+        that a script subtag says more is advice, not invalidity."""
+        for code in hreflang_checker.SCRIPT_ADVICE:
+            with self.subTest(table=code):
+                checked = hreflang_checker.validate_lang_code(code)
+                self.assertTrue(checked["valid"])
+                self.assertTrue(checked["advice"])
+        for code in ("zh-CN", "zh-TW", "zh"):
+            with self.subTest(code=code):
+                pair = (("en", "{origin}/en"), (code, "{origin}/zh"))
+                out = self.in_122({"/en": hreflang_page(*pair), "/zh": hreflang_page(*pair)})
+                self.assertEqual(verdict("IN-122", out), PASS)
+
+    def test_an_invalid_code_fails_without_fetching_the_alternates(self):
+        """Archive mode passes no `--verify-returns`; a code needs no network."""
+        pair = (("en", "{origin}/en"), ("jp", "{origin}/ja"))
+        with site_with({"/en": hreflang_page(*pair)}) as site:
+            out = hreflang_checker.run_hreflang_check(site.origin + "/en")
+        self.assertEqual(verdict("IN-122", out), FAIL)
+
     def test_a_set_with_no_alternate_does_not_pass(self):
         out = self.in_122({"/en": hreflang_page(("en", "{origin}/en"),
                                                 ("x-default", "{origin}/en"))})
@@ -564,6 +658,18 @@ class FacetControls(unittest.TestCase):
             "/": '<html><body><a href="/shop?color=red">Red</a></body></html>',
             "/shop": page_html(canonical="{origin}/shop")})
         self.assertEqual(verdict("AR-163", out), PASS)
+
+    def test_a_noindex_google_reads_is_a_control(self):
+        """Review round 1: the header, the googlebot meta and `none` noindex a facet."""
+        for answer in ((200, {"X-Robots-Tag": "noindex"}, page_html(canonical="{origin}/shop?color=red")),
+                       page_html(canonical="{origin}/shop?color=red", robots="none"),
+                       '<html><head><link rel="canonical" href="{origin}/shop?color=red">'
+                       '<meta name="googlebot" content="noindex"></head><body>x</body></html>'):
+            with self.subTest(answer=str(answer)[:60]):
+                out = self.ar_163({
+                    "/": '<html><body><a href="/shop?color=red">Red</a></body></html>',
+                    "/shop": answer})
+                self.assertEqual(verdict("AR-163", out), PASS)
 
     def test_controlled_variants_are_no_path_explosion(self):
         links = "".join(f'<a href="/shop?sort=p{i}">s{i}</a>' for i in range(6))
@@ -618,8 +724,8 @@ class MeasuresSentences(unittest.TestCase):
         "CI-012": "heuristic",
         "GEO-001": "except 204",
         "GEO-002": "convention",
-        "AR-153": "4 pages",
-        "AR-162": "4 pages",
+        "AR-153": "fewer than 4",
+        "AR-162": "fewer than 4",
         "TE-176": "another host",
         "CI-009": "another host",
     }

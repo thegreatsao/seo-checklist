@@ -2383,7 +2383,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`checks.return_tags.verified_and_valid` requires every alternate to link back, fetched and checked, every hreflang code valid, and at least one alternate (F15).",
+      "reading": "`checks.return_tags.verified_and_valid` requires every alternate to link back, fetched and checked, at least one alternate, and every hreflang code a valid language (and region) — `jp` fails, `zh-CN` is valid with advice (F15).",
       "shapes": {
         "conjunction": "Return tags are the validity condition the rule reads, with the codes.",
         "qualifier": "*Valid* is return tags verified and codes valid (F15: the codes are read now)."
@@ -2942,7 +2942,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`correctness_problems` lists what stops the file saying what its owner means: an HTML page served at the path, more than the 500 KiB Google reads, a line that is not `field: value`, a `User-agent:` line with no name, a directive no crawler reads, a rule before any user-agent, a relative sitemap, or the whole site disallowed for Googlebot — `/` and every crawled path (F15); a 404 is the problem *no robots.txt* (0.117.0).",
+      "reading": "`correctness_problems` lists what stops the file saying what its owner means: an HTML page served at the path, more than the 500 KiB Google reads, a line that is not `field: value`, a `User-agent:` line with no name, a directive no crawler reads, a rule before any user-agent, a relative sitemap, or the whole site disallowed for Googlebot — `/` and every crawled URL (F15; withheld when the crawl is unread or capped); a 404 is the problem *no robots.txt* (0.117.0).",
       "shapes": {
         "qualifier": "*Correct* is the problem list: syntax a crawler parses, directives it reads, and not shutting Googlebot out."
       },
@@ -3132,7 +3132,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`issues` carries link_profile's internal-link findings over the crawl: orphans, dead ends, and an average under 3 distinct other pages linked (F15). On a whole crawl of fewer than 4 pages (`too_few_pages_for_average`) that average cannot be reached, so the item is N/A (F15, the owner's ruling), and `measures` says so.",
+      "reading": "`issues` carries link_profile's internal-link findings over the crawl: orphans, dead ends, and an average under 3 distinct other internal URLs linked (F15). On a whole crawl that found fewer than 4 internal URLs (`too_few_pages_for_average`) that average cannot be reached, so the item is N/A (F15, the owner's ruling), and `measures` says so.",
       "shapes": {
         "conjunction": "Strengthening links and removing orphans are both issue types in the set."
       },

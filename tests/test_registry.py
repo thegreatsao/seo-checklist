@@ -2472,7 +2472,7 @@ class MeasuresQualifications(unittest.TestCase):
         # F15 batch 4: the owner's measures rulings and rulings 1 and 3 on batch 3's questions.
         "TE-176": "Crawled pages whose canonical is missing, conflicting or names a page not answering 200 or pointing on. A canonical on another host is no issue on its own. Duplicates without one are CN-041 and MS-022.",
         "AR-153": "Topic clusters from crawled page titles: a hub is a subtopic two titles share, linked with its pages. Headings and body text are not read. On fewer than 4 pages no subtopic can form, so the item is N/A.",
-        "AR-162": "That crawled pages link on average to 3 distinct other pages and none is a dead end. On fewer than 4 pages that average cannot be reached, so the item is N/A; orphans are CI-008.",
+        "AR-162": "That no crawled page is an orphan or a dead end, and that pages link on average to 3 distinct other internal URLs. A crawl finding fewer than 4 cannot reach that, so the item is N/A there; CI-008 still reads orphans.",
         "CI-014": "Redirects from the audited URL: a loop, a missing Location or more than 10 hops fail; a chain warns. Whether a move is temporary cannot be known, so temporary codes are flagged for review (302, 303, 307 warn).",
         "CI-012": "A heuristic score over url_quality's flags (length, case, underscores, archive pattern, depth, parameters): 100 less 12 a flag, at least 70. No words are read, so whether a reader finds the URL friendly is not judged.",
         "GEO-001": "That /llms.txt answers 2xx except 204 with a `# ` title as its first line and is not an HTML page. Whether its sections, links and summaries are useful is not read.",

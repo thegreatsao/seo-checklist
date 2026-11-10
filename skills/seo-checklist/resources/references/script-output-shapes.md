@@ -618,7 +618,8 @@ title, including noindex pages. Unlike title duplication, absence is not competi
   - item keys: url, path, params, facet_params, flags; with `--fetch` also status,
     refused, canonical, meta_robots, canonical_elsewhere, noindex
   - `facet_missing_canonical` is a facet whose canonical does not name another URL: a
-    self-canonical is no control (AR-163, F15)
+    self-canonical is no control (AR-163, F15); `noindex` is Google's reading
+    (`seo_common.google_noindex`: metas, header, `none`)
 `path_explosions` — object — paths with `PATH_EXPLOSION_VARIANTS` or more variants none
   of which is controlled (canonicalised elsewhere, noindex, or disallowed) (F15)
 `issues[]` — array
@@ -908,10 +909,12 @@ because until then no rule read it. Absent, both land on `NO_DATA`.
 `checks.return_tags.verified_and_valid` — bool — **absent** when verification was not
   requested or any alternate could not be fetched, so IN-122 reports `NO_DATA`
   instead of inferring validity from an incomplete check. False, whatever the returns,
-  when `language_code_issues` is not empty or the set names no alternate besides the
-  page itself and x-default (IN-122, F15)
+  when `language_code_issues` is not empty (with or without `--verify-returns`) or the
+  set names no alternate besides the page itself and x-default (IN-122, F15)
+`language_code_issues[]` — codes that are no language or region (`jp`, `eng`, an unknown
+  region, a malformed tag); a valid code's better spelling (`zh-CN` -> `zh-Hans`, bare
+  `zh`) is `validate_lang_code`'s `advice` and not listed (F15 review round 1)
 `checks.return_tags.detail` — str
-`language_code_issues[]` — array
 `return_tag_checks[]` — array
   - item keys: passed, severity, confidence, finding, fix, alternates
 `summary.critical` — int
@@ -1248,9 +1251,11 @@ below are examples rather than a schema.
 `domain` — str
 `pages_crawled` — int
 `pages_read` — int — HTML pages, a redirect row read again counted once
-`too_few_pages_for_average` — bool — a whole crawl (not `truncated`) of fewer
-  `pages_read` than `MIN_PAGES_FOR_AVERAGE` (4); AR-162 is N/A on it (F15, the owner's
-  ruling on batch 3's question 3)
+`internal_urls` — int — distinct internal URLs the crawl found: the pages read and every
+  internal URL they link (files and robots-refused paths included), each where it lands
+`too_few_pages_for_average` — bool — a whole crawl (not `truncated`) that found fewer
+  `internal_urls` than `MIN_PAGES_FOR_AVERAGE` (4), where no page can link 3 distinct
+  others; AR-162 is N/A on it (F15, the owner's ruling on batch 3's question 3)
 `total_internal_links` — int
 `unique_pages_found` — int
 `max_depth_reached` — int
@@ -1665,9 +1670,11 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
   over 500 KiB, a line that is not `field: value`, an unread directive, a rule before any
   user-agent, a relative sitemap, a `User-agent:` line with no name (F15), or the whole
   site disallowed for Googlebot — `/` and every path of the `--inventory` crawl (F15;
-  `/` alone without one); on a 404 the one entry "no robots.txt at this origin";
-  **absent** on any other status. With an `--inventory` that cannot be read or is
-  another site's, only `fetch_error` is written
+  each crawled row's own URL, not its key); on a 404 the one entry "no robots.txt at this
+  origin"; **absent** on any other status. Without readable crawled paths (no
+  `--inventory`, or one unread or another site's) a disallowed `/` adds no problem and
+  sets `truncated`; a capped crawl sets `truncated` too, so the runner withholds a PASS
+  and every problem found still fails
 `user_agents.*.allow[]` — array
 `user_agents.*.disallow[]` — array
 `sitemaps[]` — array — an empty `Sitemap:` line is no entry (CI-006, F15)

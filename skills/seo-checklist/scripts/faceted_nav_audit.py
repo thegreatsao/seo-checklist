@@ -31,7 +31,7 @@ try:
 except ImportError:
     from scripts.lib.safe_http import robots_allows
 
-from seo_common import FACET_PARAMS as FACET_KEYS, comparable_url, fetch_url, parse_html, read_urls, same_host
+from seo_common import FACET_PARAMS as FACET_KEYS, comparable_url, fetch_url, google_noindex, parse_html, read_urls, same_host
 
 
 # basis: presentation — three query parameters on one URL, present at import. It adds
@@ -98,8 +98,12 @@ def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:
                     html.get("canonical")
                     and comparable_url(html["canonical"])
                     != comparable_url(page.get("url") or url))
-                row["noindex"] = bool(html.get("meta_robots")
-                                      and "noindex" in html["meta_robots"].lower())
+                # Google's reader, as GO-138's: the robots and googlebot metas and
+                # the header, `none` included (F15 review round 1).
+                row["noindex"] = bool(google_noindex(
+                    html.get("meta_robots"), html.get("meta_googlebot"),
+                    page.get("x_robots_tags")
+                    or (page.get("headers") or {}).get("x-robots-tag")))
                 if facet_params and not row["canonical_elsewhere"]:
                     flags.append("facet_missing_canonical")
                 if facet_params and not row["noindex"]:

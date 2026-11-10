@@ -78,10 +78,15 @@ VALID_LANG_CODES = {
 COMMON_LANG_MISTAKES = {
     "eng": "en",   # ISO 639-2 (3-letter), not valid for hreflang
     "jp": "ja",    # Wrong code for Japanese
-    "zh-cn": "zh-Hans",  # Simplified Chinese region variant gone wrong
-    "zh-tw": "zh-Hant",  # Traditional Chinese
     "iw": "he",    # Old code for Hebrew
     "in": "id",    # Old code for Indonesian
+}
+# Valid language-region pairs (ISO 639-1 + ISO 3166-1, Google's documented format) for
+# which a script subtag says more. Advice, not invalidity: IN-122 fails no valid code
+# (F15 review: `zh-CN` failed the item it is valid for).
+SCRIPT_ADVICE = {
+    "zh-cn": "zh-Hans",  # Simplified Chinese
+    "zh-tw": "zh-Hant",  # Traditional Chinese
 }
 
 # ISO 3166-1 alpha-2, the 249 officially assigned codes: the registry's two-letter region
@@ -240,7 +245,8 @@ def validate_lang_code(lang_tag: str) -> dict:
       language[-script][-region][-variant...]
 
     Examples: en, en-US, zh-Hans, zh-Hant-TW, sr-Cyrl-RS.
-    Returns {valid, lang, script, region, variants, issues}.
+    Returns {valid, lang, script, region, variants, issues, advice}; `advice` is a
+    valid code's better spelling and does not make it invalid.
     """
     raw_tag = (lang_tag or "").strip()
     if raw_tag.lower() == "x-default":
@@ -251,6 +257,7 @@ def validate_lang_code(lang_tag: str) -> dict:
             "region": None,
             "variants": [],
             "issues": [],
+            "advice": [],
         }
 
     issues = []
@@ -260,6 +267,10 @@ def validate_lang_code(lang_tag: str) -> dict:
     mistake = COMMON_LANG_MISTAKES.get(raw_tag.lower())
     if mistake:
         issues.append(f"'{raw_tag}' is a common invalid hreflang value. Use '{mistake}' instead.")
+    advice = []
+    if raw_tag.lower() in SCRIPT_ADVICE:
+        advice.append(f"'{raw_tag}' is valid; '{SCRIPT_ADVICE[raw_tag.lower()]}' names the "
+                      "script as well.")
 
     parts = raw_tag.replace("_", "-").split("-")
     lang = parts[0].lower() if parts and parts[0] else ""
@@ -304,7 +315,8 @@ def validate_lang_code(lang_tag: str) -> dict:
         index += 1
 
     if lang == "zh" and not script and region not in {"CN", "SG", "TW", "HK", "MO"}:
-        issues.append("'zh' is ambiguous — use 'zh-Hans' or 'zh-Hant' when no clear region is present.")
+        advice.append("'zh' is valid but ambiguous — 'zh-Hans' or 'zh-Hant' names the "
+                      "script when no clear region is present.")
 
     if region:
         if region in COMMON_REGION_MISTAKES:
@@ -323,6 +335,7 @@ def validate_lang_code(lang_tag: str) -> dict:
         "region": region,
         "variants": variants,
         "issues": issues,
+        "advice": advice,
     }
 
 
@@ -775,7 +788,7 @@ def run_hreflang_check(url: str, verify_returns: bool = False) -> dict:
     # IN-122 is *valid* hreflang with return tags (F15, the owner's ruling): a code
     # that is no language or region (`jp`) fails whatever the returns say, and a set
     # naming no alternate has no return tag to verify — it passed on `all([])`.
-    if verify_returns and results["language_code_issues"]:
+    if results["language_code_issues"]:
         return_summary["verified_and_valid"] = False
         return_summary["detail"] = ("At least one hreflang value is not a valid "
                                     "language or region code.")

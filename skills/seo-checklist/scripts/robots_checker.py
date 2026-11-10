@@ -34,10 +34,10 @@ except ImportError:
 
 try:
     from ai_crawler_policy_matrix import AI_CRAWLERS
-    from seo_common import carries_content, unread_kind
+    from seo_common import carries_content, read_as_url, unread_kind
 except ImportError:
     from scripts.ai_crawler_policy_matrix import AI_CRAWLERS
-    from scripts.seo_common import carries_content, unread_kind
+    from scripts.seo_common import carries_content, read_as_url, unread_kind
 
 
 # basis: standard — Google reads the first 500 KiB of a robots.txt and ignores the rest
@@ -63,7 +63,9 @@ def correctness_problems(text: str, content_type: str,
     served at the path — was *correct*.
 
     `paths` are the site's crawled paths: the whole site is shut to Googlebot only when
-    `/` and every one of them is (F15: `Disallow: /$` shuts the home page alone).
+    `/` and every one of them is (F15: `Disallow: /$` shuts the home page alone). With
+    `paths` None they are unknown, and a disallowed `/` decides nothing here: the caller
+    withholds the answer (`fetch_robots_txt`).
     """
     head = text.lstrip()[:200].lower()
     if "html" in (content_type or "").lower() or head.startswith(("<!doctype", "<html")):
@@ -93,9 +95,9 @@ def correctness_problems(text: str, content_type: str,
         elif field == "sitemap" and not value.lower().startswith(("http://", "https://")):
             problems.append(f"line {number}: a sitemap must be an absolute URL")
     parsed = robots_rules.parse(text)
-    if not any(robots_rules.allowed(parsed, "https://example.invalid" + path,
-                                    "Googlebot")[0]
-               for path in ["/", *(paths or [])]):
+    if paths is not None and not any(
+            robots_rules.allowed(parsed, "https://example.invalid" + path, "Googlebot")[0]
+            for path in ["/", *paths]):
         problems.append("the whole site is disallowed for Googlebot")
     return problems
 
@@ -107,7 +109,10 @@ def crawled_paths(inventory: dict) -> list[str]:
     F15).
     """
     found = set()
-    for url in [*(inventory.get("pages") or {}), *(inventory.get("robots_blocked") or {})]:
+    # A row's own URL, not its key: a key folds the trailing slash and the query, and
+    # `Allow: /en/` matches `/en/` and not `/en` (F15 review round 1).
+    urls = [row.get("url") or key for key, row in (inventory.get("pages") or {}).items()]
+    for url in [*urls, *(inventory.get("robots_blocked") or {})]:
         split = urlparse(url)
         found.add((split.path or "/") + (f"?{split.query}" if split.query else ""))
     return sorted(found)
@@ -156,6 +161,14 @@ def fetch_robots_txt(url: str, timeout: int = 15, paths: list[str] | None = None
         result["raw"] = resp.text
         result["correctness_problems"] = correctness_problems(
             resp.text, (resp.headers or {}).get("content-type", ""), paths)
+        if paths is None and not robots_rules.allowed(
+                robots_rules.parse(resp.text), "https://example.invalid/", "Googlebot")[0]:
+            # `/` is shut and nothing says which other paths the site has: whether the
+            # whole site is shut is unknown, so a clean answer is withheld (AR-151).
+            result["truncated"] = True
+            result["truncated_reason"] = (
+                "robots.txt disallows / for Googlebot and the site's other paths were "
+                "not read, so whether the whole site is shut is not decided")
         _parse_robots(resp.text, result)
 
     except requests.exceptions.RequestException as e:
@@ -238,20 +251,27 @@ def main():
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
 
     args = parser.parse_args()
-    paths = None
+    args.url = read_as_url(args.url)
+    paths, capped = None, ""
     if args.inventory:
         try:
             import site_crawl
         except ImportError:
             from scripts import site_crawl
         inventory = site_crawl.inventory_for(args.url, args.inventory)
-        if inventory.get("fetch_error"):
-            # Which paths the site has is unknown, so whether it is all shut is too.
-            print(json.dumps({"url": args.url, "fetch_error": inventory["fetch_error"],
-                              "fetch_error_kind": inventory.get("fetch_error_kind")}))
-            return
-        paths = crawled_paths(inventory)
+        # An unread crawl leaves the site's paths unknown, and only the whole-site
+        # question needs them: a 404, an HTML page or a bad line is a problem whatever
+        # the crawl did (F15 review round 1).
+        if not inventory.get("fetch_error"):
+            paths = crawled_paths(inventory)
+            if (inventory.get("summary") or {}).get("truncated"):
+                capped = ("the crawl stopped at its page or depth cap, so the site has "
+                          "paths whose rules were not tested")
     result = fetch_robots_txt(args.url, paths=paths)
+    if capped and "correctness_problems" in result:
+        result["truncated"] = True
+        result["truncated_reason"] = "; ".join(filter(None, [
+            result.get("truncated_reason"), capped]))
 
     if args.json:
         # Exclude raw content from JSON for brevity

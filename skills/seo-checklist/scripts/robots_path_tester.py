@@ -61,10 +61,10 @@ def _origin(url: str) -> tuple[str, str, int | None]:
     return parsed.scheme.lower(), (parsed.hostname or "").lower(), port
 
 
-# `@import "x.css"`, `@import url(x.css)`, `@import url("x.css") screen` — the
-# stylesheet a rule names, whatever follows it.
+# `@import "x.css"`, `@import url(x.css)`, `@import url("x.css") screen`, and the
+# minified `@import"x.css"` — the stylesheet a rule names, whatever follows it.
 _IMPORT = re.compile(
-    r"""@import\s+(?:url\(\s*)?(?:"([^"]*)"|'([^']*)'|([^\s'")]+))""", re.I)
+    r"""@import\s*(?:url\(\s*)?(?:"([^"]*)"|'([^']*)'|([^\s'")]+))""", re.I)
 # basis: convention — at most 20 stylesheets read for `@import` rules (the page's own
 #  and what they import, each once), a bound chosen here, as MAX_SITEMAPS_FOLLOWED is:
 #  past it the sheets left are `unread_stylesheets`, the result is `truncated` and the

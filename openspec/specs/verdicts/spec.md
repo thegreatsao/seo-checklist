@@ -743,10 +743,11 @@ page, credited to the page it lands on (P2, 2026-11-04 audit, finding 16): a sel
 none, so a page linked only from itself is an orphan, and a link to `/old` that redirects to
 `/new` reaches `/new`. Only the home page is credited unlinked, not a deep audited entry
 (F15, CI-008), and AR-162's average and dead ends count distinct other pages linked, a
-repeated or self link no more (F15). On a crawl of fewer than 4 distinct pages that average
-cannot reach 3 however fully every page links, so AR-162 is `N/A` there (`pages_read`), as
-AR-153 is below the 4 pages on which a subtopic two titles share can form (`page_count`):
-the owner's ruling on F15 batch 3's question 3. Found re-reading every crawl-fed item
+repeated or self link no more (F15). On a whole crawl that found fewer than 4 distinct
+internal URLs (pages read and what they link) that average cannot reach 3 however fully
+every page links, so AR-162 is `N/A` there (`too_few_pages_for_average`), as AR-153 is
+below the 4 pages on which a subtopic two titles share can form (`too_few_pages_for_hubs`);
+a crawl cut at its cap is never too small: the owner's ruling on F15 batch 3's question 3. Found re-reading every crawl-fed item
 before the crawl caps' basis changed (F09); no census derives this shape, because it lives in
 what a script counts, not in the rule.
 
