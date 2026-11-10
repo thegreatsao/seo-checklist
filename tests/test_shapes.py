@@ -443,7 +443,12 @@ class ACrawlThatStoppedAtItsPageLimit(unittest.TestCase):
 
         # Only the ones that actually decided over the whole site: an item that was
         # `N/A` or `NEEDS_INPUT` there says nothing about propagation either way.
-        should_withhold = sorted(i for i in candidates if whole_status.get(i) == PASS)
+        # AR-151 (F15 batch 4, review round 3): its PASS is one an unread path cannot
+        # overturn — one open path read proves the site is not shut, and its other
+        # problems are the file's — so on a capped crawl it withholds only the claim
+        # that every path is shut, and a PASS stands.
+        should_withhold = sorted(i for i in candidates if whole_status.get(i) == PASS
+                                 and i != "AR-151")
         self.assertTrue(
             should_withhold,
             f"no inventory-reading item passed over the whole site, so this asserts "

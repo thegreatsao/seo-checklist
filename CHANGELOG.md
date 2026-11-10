@@ -20,14 +20,16 @@ batch 3's questions. **Verdicts of a real audit can move**: a canonical naming a
 TE-176 on its own (its target is still requested; one not answering 200 fails); AR-153 is N/A on a crawl of fewer
 than 4 pages and AR-162 on one that found fewer than 4 internal URLs (`too_few_pages_for_hubs`,
 `too_few_pages_for_average`; never on a crawl cut at its cap), where the rule could only fail; AR-151 reads the shared crawl
-(`--inventory`, `requires: crawl`) and calls the site shut to Googlebot only when `/` and every crawled URL are (withheld when the crawl is
-unread or capped; a 404 or an HTML file still fails), and fails a `User-agent:` line with no name; an empty `Sitemap:` line declares nothing (CI-006); CI-013 follows `@import` (minified too)
+(`--inventory`, `requires: crawl`) and calls the site shut to Googlebot only when `/` and every crawled URL are (that claim withheld when the crawl
+is unread or capped; a 404 or an HTML file still fails, and a capped crawl keeps its pass), and fails a `User-agent:` line with no name; an empty `Sitemap:` line declares nothing (CI-006); CI-013 follows `@import` (minified too)
 from same-origin stylesheets and `<style>` blocks and withholds its pass over a stylesheet it could not read; CI-019
 withholds its pass when a probe failed; GO-136 fails a `<url>` with no `<loc>`, a root outside the sitemaps.org
 namespace or names, and an empty sitemap; GO-138 reads noindex as Google does (googlebot meta, `X-Robots-Tag`, `none`);
 GEO-008 ignores another crawler's `X-Robots-Tag` rules; AR-150 asserts `walk`, so `/a` → `/a` and `/a` → `/b` → `/a`
 fail as loops; CI-010 compares the canonicals as sent (`/page` ≠ `/page/`); IN-122 fails an invalid language or region
-code (not `zh-CN` or bare `zh`, which are valid) even unverified, and a set naming no alternate; AR-163 counts a self-canonical as no control, reads noindex as Google does, and no longer counts controlled
+code (not `zh-CN` or bare `zh`, which are valid; a three-letter language or a numeric region is
+invalid) even unverified, and a set naming no alternate; AR-163 counts a self-canonical as no control and a redirect to another URL as one,
+reads noindex as Google does, and no longer counts controlled
 variants as a path explosion; GEO-007 requires the key file to be the key alone, as text. Sentences for CI-014,
 AR-155 (corrected), CI-012, GEO-001, GEO-002, and beside the rulings for AR-153, AR-162, CI-009 and TE-176.
 

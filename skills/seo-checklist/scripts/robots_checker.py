@@ -267,10 +267,16 @@ def main():
         if not inventory.get("fetch_error"):
             paths = crawled_paths(inventory)
             if (inventory.get("summary") or {}).get("truncated"):
-                capped = ("the crawl stopped at its page or depth cap, so the site has "
-                          "paths whose rules were not tested")
+                capped = ("every crawled path is shut to Googlebot, and the crawl stopped "
+                          "at its cap, so a path it did not reach may be open")
     result = fetch_robots_txt(args.url, paths=paths)
-    if capped and "correctness_problems" in result:
+    shut = "the whole site is disallowed for Googlebot"
+    if capped and shut in (result.get("correctness_problems") or []):
+        # Every path read is shut, and a path the cap skipped may be open: only that
+        # claim is withheld. One open path read already proves the site is not shut,
+        # and the other problems are the file's, so those answers stand (F15 review
+        # round 3: withholding every PASS made AR-151 NO_DATA past 100 pages).
+        result["correctness_problems"].remove(shut)
         result["truncated"] = True
         result["truncated_reason"] = "; ".join(filter(None, [
             result.get("truncated_reason"), capped]))

@@ -94,17 +94,21 @@ def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:
                 row["meta_robots"] = html.get("meta_robots")
                 # A canonical naming the URL itself consolidates nothing: no control
                 # (AR-163, F15, the owner's ruling).
+                # Against the facet URL asked for: one that redirects to its clean
+                # page is folded away by the redirect, a control of its own (F15 review
+                # round 3: `/old?color=red` -> `/shop` naming itself failed).
+                row["redirected"] = (comparable_url(page.get("url") or url)
+                                     != comparable_url(url))
                 row["canonical_elsewhere"] = bool(
                     html.get("canonical")
-                    and comparable_url(html["canonical"])
-                    != comparable_url(page.get("url") or url))
+                    and comparable_url(html["canonical"]) != comparable_url(url))
                 # Google's reader, as GO-138's: the robots and googlebot metas and
                 # the header, `none` included (F15 review round 1).
                 row["noindex"] = bool(google_noindex(
                     html.get("meta_robots"), html.get("meta_googlebot"),
                     page.get("x_robots_tags")
                     or (page.get("headers") or {}).get("x-robots-tag")))
-                if facet_params and not row["canonical_elsewhere"]:
+                if facet_params and not (row["canonical_elsewhere"] or row["redirected"]):
                     flags.append("facet_missing_canonical")
                 if facet_params and not row["noindex"]:
                     flags.append("facet_not_noindexed")
@@ -113,8 +117,8 @@ def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:
         # A variant canonicalised elsewhere, noindexed or disallowed is controlled, and
         # controlled variants are no crawl trap (AR-163, F15: `/shop?page=2..6`
         # warned whatever they declared). Unfetched, a variant's control is unknown.
-        if not (row.get("canonical_elsewhere") or row.get("noindex")
-                or not robots_allows(url)[0]):
+        if not (row.get("canonical_elsewhere") or row.get("redirected")
+                or row.get("noindex") or not robots_allows(url)[0]):
             by_path[row["path"]].append(url)
         rows.append(row)
     path_explosions = {path: vals for path, vals in by_path.items() if len(vals) >= PATH_EXPLOSION_VARIANTS}

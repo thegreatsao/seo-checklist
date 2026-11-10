@@ -345,15 +345,31 @@ class RobotsFile(unittest.TestCase):
         self.assertEqual(out["correctness_problems"], [])
         self.assertTrue(out["truncated"])
 
-    def test_a_capped_crawl_withholds_the_pass(self):
+    def capped(self, robots_txt: str, paths=("/",)) -> dict:
         with site_with({"/robots.txt": (200, {"Content-Type": "text/plain"},
-                                        "User-agent: *\nAllow: /\n")}) as site:
-            inv = inventory([row(site.origin + "/")], truncated=True)
+                                        robots_txt)}) as site:
+            inv = inventory([row(site.origin + p) for p in paths], truncated=True)
             inv["site"] = inv["entry"] = site.origin + "/"
             inv["pages"] = {k.replace("https://example.test", site.origin): v
                             for k, v in inv["pages"].items()}
-            out = run_rule_script(robots_checker, "AR-151", site.origin + "/", written(inv))
+            return run_rule_script(robots_checker, "AR-151", site.origin + "/",
+                                   written(inv))
+
+    def test_a_capped_crawl_withholds_only_the_whole_site_claim(self):
+        """Review round 3: a path the cap skipped may be open, so "every path is shut"
+        is withheld; it cannot overturn an open path read or the file's own problems."""
+        out = self.capped("User-agent: Googlebot\nDisallow: /\nAllow: /blog/\n\n"
+                          "User-agent: *\nAllow: /\n", paths=("/", "/shop/a"))
+        self.assertEqual(out["correctness_problems"], [])
         self.assertTrue(out["truncated"])
+        self.assertEqual(verdict("AR-151", out), PASS)      # the runner withholds it
+
+    def test_a_capped_crawl_keeps_a_pass_it_cannot_overturn(self):
+        out = self.capped("User-agent: *\nAllow: /\n")
+        self.assertEqual(out["correctness_problems"], [])
+        self.assertFalse(out.get("truncated"))
+        out = self.capped("User-agent: *\nAllow: /\nNoindex: /x\n")
+        self.assertEqual(verdict("AR-151", out), FAIL)
 
     def test_the_paths_tested_are_the_urls_crawled_not_their_keys(self):
         """`Allow: /en/` matches `/en/`, the URL read; its key folds the slash."""
@@ -723,6 +739,15 @@ class HreflangValidity(unittest.TestCase):
         out = self.in_122({"/en": hreflang_page(*pair), "/": hreflang_page()})
         self.assertEqual(verdict("IN-122", out), FAIL)
 
+    def test_codes_outside_googles_format_are_invalid(self):
+        """Review round 3: ISO 639-1 languages and ISO 3166-1 alpha-2 regions."""
+        for code in ("eng-US", "es-419"):
+            with self.subTest(code=code):
+                self.assertFalse(hreflang_checker.validate_lang_code(code)["valid"])
+        for code in ("en-US", "es-MX", "pt-BR"):
+            with self.subTest(code=code):
+                self.assertTrue(hreflang_checker.validate_lang_code(code)["valid"])
+
     def test_a_set_with_no_alternate_does_not_pass(self):
         out = self.in_122({"/en": hreflang_page(("en", "{origin}/en"),
                                                 ("x-default", "{origin}/en"))})
@@ -744,6 +769,21 @@ class FacetControls(unittest.TestCase):
             "/": '<html><body><a href="/shop?color=red">Red</a></body></html>',
             "/shop": page_html(canonical="{origin}/shop?color=red")})
         self.assertEqual(verdict("AR-163", out), FAIL)
+
+    def test_a_facet_redirecting_to_its_clean_page_is_controlled(self):
+        """Review round 3: `/old?color=red` 301s to `/shop`, which names itself."""
+        out = self.ar_163({
+            "/": '<html><body><a href="/old?color=red">Red</a></body></html>',
+            "/old": (301, {"Location": "/shop"}, ""),
+            "/shop": page_html(canonical="{origin}/shop")})
+        self.assertEqual(verdict("AR-163", out), PASS)
+
+    def test_variants_robots_txt_disallows_are_no_path_explosion(self):
+        links = "".join(f'<a href="/shop?sort=p{i}">s{i}</a>' for i in range(6))
+        out = self.ar_163({"/robots.txt": (200, "User-agent: *\nDisallow: /shop?\n"),
+                           "/": f"<html><body>{links}</body></html>",
+                           "/shop": page_html()})
+        self.assertEqual(out["path_explosions"], {})
 
     def test_a_canonical_elsewhere_is_a_control(self):
         out = self.ar_163({

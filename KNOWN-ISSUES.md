@@ -472,8 +472,8 @@ name. A column called `url` would be read as "fix this page".
     reader;
   - **`safe_http.DEFAULT_MAX_REDIRECTS` is a fetch budget and stays outside the
     inventory.** The two items about redirect chains do not read it: `redirect_checker.py`
-    carries its own `max_redirects=10`, so `AR-150` (`total_hops lte 1`) and `CI-014`
-    (`has_loop`) are bounded by that and not by this. Past the cap `safe_request` raises
+    carries its own `max_redirects=10`, so `AR-150` (`walk`, since F15 batch 4) and `CI-014`
+    (`redirect_issues`) are bounded by that and not by this. Past the cap `safe_request` raises
     `TooManyRedirects`, so the page reads as a fetch failure and its items report
     `NO_DATA` — the one thing this number can do to a verdict is withhold it, which is
     the family of `DEFAULT_TIMEOUT` and `DEFAULT_MAX_RESPONSE_BYTES`;

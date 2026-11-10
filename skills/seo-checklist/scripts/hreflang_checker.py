@@ -284,6 +284,10 @@ def validate_lang_code(lang_tag: str) -> dict:
             f"Invalid primary language subtag '{parts[0] if parts else ''}'. "
             "Use a 2-3 letter BCP 47 language subtag."
         )
+    elif len(lang) == 3 and not mistake:
+        # Google reads ISO 639-1 (F15 review round 3: `eng-US` passed).
+        issues.append(f"Language '{lang}' is a three-letter code; hreflang takes the "
+                      "two-letter ISO 639-1 code.")
     elif len(lang) == 2 and lang not in VALID_LANG_CODES:
         correction = COMMON_LANG_MISTAKES.get(lang)
         issue = f"Unknown language code '{lang}'."
@@ -327,6 +331,9 @@ def validate_lang_code(lang_tag: str) -> dict:
                 issues.append(f"'{region}' is not a valid ISO 3166-1 country code for hreflang.")
         elif re.fullmatch(r"[A-Z]{2}", region) and region not in VALID_REGION_CODES:
             issues.append(f"Unknown region code '{region}' — verify against ISO 3166-1 Alpha-2.")
+        elif region.isdigit():
+            issues.append(f"Region '{region}' is a UN M.49 number; hreflang takes an "
+                          "ISO 3166-1 Alpha-2 code.")
 
     return {
         "valid": len(issues) == 0,

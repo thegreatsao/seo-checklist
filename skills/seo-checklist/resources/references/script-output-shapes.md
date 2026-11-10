@@ -616,7 +616,9 @@ title, including noindex pages. Unlike title duplication, absence is not competi
   keys named at the top of this file
 `rows[]` — array
   - item keys: url, path, params, facet_params, flags; with `--fetch` also status,
-    refused, canonical, meta_robots, canonical_elsewhere, noindex
+    refused, canonical, meta_robots, redirected, canonical_elsewhere, noindex
+  - a facet that redirects elsewhere (`redirected`) or whose canonical names a URL
+    other than the facet asked for is controlled (F15 review round 3)
   - `facet_missing_canonical` is a facet whose canonical does not name another URL: a
     self-canonical is no control (AR-163, F15); `noindex` is Google's reading
     (`seo_common.google_noindex`: metas, header, `none`)
@@ -911,8 +913,8 @@ because until then no rule read it. Absent, both land on `NO_DATA`.
   instead of inferring validity from an incomplete check. False, whatever the returns,
   when `language_code_issues` is not empty (with or without `--verify-returns`) or the
   set names no alternate besides the page itself and x-default (IN-122, F15)
-`language_code_issues[]` — codes that are no language or region (`jp`, `eng`, an unknown
-  region, a malformed tag); a valid code's better spelling (`zh-CN` -> `zh-Hans`, bare
+`language_code_issues[]` — codes that are no language or region (`jp`, `eng`, any
+  three-letter language, an unknown or numeric region such as `es-419`, a malformed tag); a valid code's better spelling (`zh-CN` -> `zh-Hans`, bare
   `zh`) is `validate_lang_code`'s `advice` and not listed (F15 review round 1)
 `checks.return_tags.detail` — str
 `return_tag_checks[]` — array
@@ -1674,8 +1676,8 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
   their keys); on a 404 the one entry "no robots.txt at this
   origin"; **absent** on any other status. Without readable crawled paths (no
   `--inventory`, or one unread or another site's) a disallowed `/` adds no problem and
-  sets `truncated`; a capped crawl sets `truncated` too, so the runner withholds a PASS
-  and every problem found still fails
+  sets `truncated`; on a capped crawl every path read being shut is likewise withheld
+  (no problem, `truncated`), while an open path read or any other problem stands
 `user_agents.*.allow[]` — array
 `user_agents.*.disallow[]` — array
 `sitemaps[]` — array — an empty `Sitemap:` line is no entry (CI-006, F15)
