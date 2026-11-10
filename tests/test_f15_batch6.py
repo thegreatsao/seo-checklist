@@ -1000,6 +1000,36 @@ class ReviewRound11(unittest.TestCase):
         self.assertEqual(full_verdict("GO-132", out), FAIL)
 
 
+class ReviewRound12(unittest.TestCase):
+    """Next.js App Router: a `next/script` tag is in the served HTML only inside the
+    flight payload (retool.com, contentful.com)."""
+    SNIPPET = ("(function(w,d,s,l,i){w[l]=w[l]||[];var f=d.getElementsByTagName(s)[0],"
+               "j=d.createElement(s);j.async=true;j.src='{origin}/gtm.js?id='+i;"
+               "f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-WHDC2N5');")
+
+    def flight(self, children: str = "", src: str = "") -> str:
+        props = '\\"id\\":\\"gtm\\",\\"strategy\\":\\"lazyOnload\\"'
+        if children:
+            props += ',\\"children\\":\\"' + children + '\\"'
+        if src:
+            props += ',\\"src\\":\\"' + src + '\\"'
+        return ('<script>self.__next_f.push([1,"[\\"$\\",\\"$La\\",null,{' + props + '}]"])</script>')
+
+    def test_a_tag_only_in_the_flight_payload_is_installed(self):
+        for body in (self.flight(children=self.SNIPPET),
+                     self.flight(src="https://www.googletagmanager.com/gtag/js?id=G-ABC123")
+                     + self.flight(children="gtag('config','G-ABC123');")):
+            with self.subTest(body=body[:60]):
+                out = run_item(ga4_tag_checker, "GO-131", {"/": html("<p>x</p>" + body),
+                                                           "/gtm.js": "var x=1;"})
+                self.assertEqual(full_verdict("GO-131", out), PASS)
+
+    def test_a_hardcoded_tag_beside_a_flight_only_container_is_read(self):
+        routes = {"/": html("<p>x</p>" + self.flight(children=self.SNIPPET), head=GTAG),
+                  "/gtm.js": 'var data={"tags":[{"function":"__googtag","vtp_tagId":"G-ABC123"}]};'}
+        self.assertEqual(full_verdict("GO-132", run_item(ga4_tag_checker, "GO-132", routes)), FAIL)
+
+
 # ---------------------------------------------------------------------------
 # The sets the batch adds, held to their sources
 # ---------------------------------------------------------------------------

@@ -164,16 +164,22 @@ def check(url: str, timeout: int = 15) -> dict:
         result["fetch_error"] = f"the page answered HTTP {page.status_code}"
         return result
     # A commented-out snippet never runs (review round 2: an old tag kept in a comment
-    # beside GTM read as a duplicate), nor does a JSON data block or a framework's
-    # serialised copy of the page (review round 10: Next.js repeats the GTM snippet in
-    # `__NEXT_DATA__` and `self.__next_f.push(...)`; zapier.com, deel.com, zillow.com).
-    html = strip_inert_scripts(re.sub(r"<!--.*?-->", "", page.text, flags=re.S))
+    # beside GTM read as a duplicate).
+    html = re.sub(r"<!--.*?-->", "", page.text, flags=re.S)
+    # What is installed is read from all of it: a Next.js App Router `next/script` tag is
+    # in the served HTML only inside the flight payload (review round 12: retool.com).
+    # What is loaded twice is counted without the copies a framework serialises beside a
+    # rendered tag, in `__NEXT_DATA__` and `self.__next_f.push(...)` (review round 10:
+    # zapier.com, deel.com, zillow.com).
+    counted = strip_inert_scripts(html)
 
-    config_ids = [m.upper() for m in RE_CONFIG.findall(html)]
-    # A loader carrying `gtm=` was written by GTM itself, at run time, and saved into a
-    # prerendered snapshot: the container's own tag, not a hardcoded one (review round 4).
-    src_ids = [m.group(1).upper() for m in RE_GTAG_SRC.finditer(html)
-               if "gtm=" not in RE_LOADER_URL.match(html, m.start()).group(0)]
+    def gtag_ids(text: str) -> tuple[list, list]:
+        # A loader carrying `gtm=` was written by GTM itself, at run time, and saved into a
+        # prerendered snapshot: the container's own tag, not a hardcoded one (round 4).
+        return ([m.upper() for m in RE_CONFIG.findall(text)],
+                [m.group(1).upper() for m in RE_GTAG_SRC.finditer(text)
+                 if "gtm=" not in RE_LOADER_URL.match(text, m.start()).group(0)])
+    config_ids, src_ids = gtag_ids(html)
     containers = [m.upper() for m in RE_GTM.findall(html)]
     ua_ids = RE_UA.findall(html)
 
@@ -197,6 +203,7 @@ def check(url: str, timeout: int = 15) -> dict:
 
     # Written at the end, and only when decided (GO-132's `withheld_key`).
     duplicates = []
+    config_ids, src_ids = gtag_ids(counted)
     # A measurement ID configured more than once double-counts pageviews.
     for gid, n in Counter(config_ids).items():
         if n > 1:
@@ -212,7 +219,7 @@ def check(url: str, timeout: int = 15) -> dict:
         if n > 1 and Counter(config_ids)[gid] <= 1:
             duplicates.append({"id": gid, "count": n, "kind": "gtag_loader"})
     # A `<link rel=preload>` of the container fetches it ahead; it runs nothing (round 7).
-    loads_html = re.sub(r"<link\s[^>]*>", "", html, flags=re.I)
+    loads_html = re.sub(r"<link\s[^>]*>", "", counted, flags=re.I)
     for cid, n in Counter(a or b for a, b in RE_GTM_SCRIPT_LOAD.findall(loads_html)).items():
         if n > 1:
             duplicates.append({"id": cid, "count": n, "kind": "gtm_container"})

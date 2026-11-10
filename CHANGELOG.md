@@ -28,7 +28,8 @@ lens answers it; SE-120 asserts `hardening_gaps`, the three headers' values read
 or `'strict-dynamic'`, `'unsafe-eval'`, or a source allowing any host, `*` or a bare scheme, unless `'strict-dynamic'`,
 in the policy scripts obey; a Permissions-Policy feature whose allowlist holds `*`; `unsafe-url`
 as the last known Referrer-Policy token); GO-131 asserts `installed_by` (a Google tag loaded by its ID, a GTM
-container the page loads, or the GA4 IDs Shopify's Google channel writes into its web pixel, counts); GO-132 reads a GTM container beside a hardcoded GA4 tag and fails when its Google
+container the page loads — a Next.js `next/script` one served only in the flight payload included — or the GA4 IDs
+Shopify's Google channel writes into its web pixel, counts); GO-132 reads a GTM container beside a hardcoded GA4 tag and fails when its Google
 tag or GA4 configuration tag names the same ID, through a variable too (an event tag sending to it is no duplicate, a
 commented-out snippet is no tag, nor a loader GTM itself wrote (`gtm=`); NO_DATA when the container cannot be
 read), and counts a container twice only when its script is loaded twice, not a `data-gtm-*` attribute, a `gtm-*` class
