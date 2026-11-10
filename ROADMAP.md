@@ -64,7 +64,7 @@ can serve:
 | | count | what it means |
 |---|---|---|
 | answered somewhere, never FAIL | 2 | a rule whose failure the entry gate hides, and one whose failure needs Wikidata's answer |
-| answered somewhere, never PASS | 3 | the mirror |
+| answered somewhere, never PASS | 1 | the mirror |
 | never answered anywhere | 1 | it needs an outside service, and the census names which |
 
 F06 (0.175.0) took both other rows to items, one at a time, with what each was expected
@@ -94,10 +94,10 @@ the census marks it in its output (`CI-014` has the same gap for a redirect loop
 here on a redirect with no `Location`).
 
 `GEO-006` left this row in F15 batch 5: the good fixture's Wikidata `sameAs` resolves it, and
-its FAIL, Wikidata answering with no item, is never asked offline. The three that were never seen passing are `AR-158`, whose
-visible-breadcrumb half no fixture carries, and `GO-145` and `GEO-005`, twins which since
-F15 batch 5 fail a sampled page naming no source, as the good fixture's about and privacy
-pages do — the owner's ruling, its reach put back to the owner, not a reader with no boundary.
+its FAIL, Wikidata answering with no item, is never asked offline. The one that was never seen passing is `AR-158`, whose
+visible-breadcrumb half no fixture carries — a part of the item's title, not a reader with no boundary. `GO-145` and
+`GEO-005` left this row in F15 batch 6: privacy pages are N/A for them (the owner's ruling) and the good fixture's about
+page cites its source.
 `GO-138` left this row at 0.123.0: the good fixture's sitemap had listed a page its
 robots.txt forbids, and it no longer does.
 

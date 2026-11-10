@@ -246,7 +246,7 @@ CLAIMS = (
 )
 
 
-NEVER_PASS = (r"The (?P<n>\w+) that were never seen passing are "
+NEVER_PASS = (r"The (?P<n>\w+) that (?:were|was) never seen passing (?:are|is) "
               r"(?P<body>.+?)with no boundary\.")
 
 
