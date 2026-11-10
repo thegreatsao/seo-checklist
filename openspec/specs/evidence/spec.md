@@ -512,7 +512,8 @@ on it, those blocks SHALL be the body copy instead: every one of them, and a blo
 another read once. Where the template names none, the page MUST be read by the order
 above and not whole. The body copy SHALL be the chosen blocks' text — paragraphs, list
 items, table cells and the text of any other element — with headings (`<h1>`–`<h6>`),
-`<nav>`, `<header>`, `<footer>` and `<aside>` taken out, and a keyword's spaces SHALL
+`<nav>`, `<aside>`, and a `<header>` or `<footer>` that is not inside an `<article>`,
+`<main>` or `<section>` taken out, and a keyword's spaces SHALL
 match any whitespace, a no-break space included.
 
 **Why:** KW-076 asks whether the primary keyword is in the body copy, and `<main>` is the

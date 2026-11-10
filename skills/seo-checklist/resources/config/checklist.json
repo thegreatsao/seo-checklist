@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "e438efcd7a69",
+  "registry_version": "c89dfee34833",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -4606,7 +4606,7 @@
           }
         }
       },
-      "measures": "That the entity resolves: a Wikidata or Wikipedia link in sameAs, a Wikidata item labelled with its name, or a Knowledge Graph match. Withheld when Wikidata cannot be asked.",
+      "measures": "That the entity resolves: a Wikidata or Wikipedia link in sameAs, a Wikidata item or Knowledge Graph match under its declared name. Withheld when Wikidata cannot be asked or the page names no entity.",
       "effort": "medium",
       "fix": "Populate sameAs with key profiles and establish a Wikidata link"
     },

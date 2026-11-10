@@ -617,6 +617,10 @@ def run_entity_check(url: str, entity_name: str = "", kg_api_key: str = "") -> d
                 == str(entity_name or "").strip().casefold())
     if linked or named or kg_named:
         resolution = "resolved"
+    elif guessed:
+        # No name the page declares: a lookup on a guess says nothing about this
+        # entity either way, so the answer is withheld (review round 3).
+        resolution = "unnamed"
     elif wikidata.get("checked") and wikidata.get("found") is not None:
         resolution = "unresolved"
     else:

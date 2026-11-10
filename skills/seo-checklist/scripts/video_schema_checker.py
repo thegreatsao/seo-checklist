@@ -53,7 +53,11 @@ def page_videos(html: str, base_url: str = "") -> list[str]:
         if source and not background:
             found.append(urljoin(base_url, source))
     for frame in soup.find_all(["iframe", "embed"]):
-        src = urljoin(base_url, frame.get("src") or "")
+        # A lazy or consent-gated player keeps its URL in `data-src` / `data-lazy-src`
+        # until a script moves it (review round 3).
+        raw = next((frame.get(attr) for attr in ("src", "data-src", "data-lazy-src")
+                    if frame.get(attr) and not str(frame.get(attr)).startswith("about:")), "")
+        src = urljoin(base_url, raw)
         parsed = urlparse(src)
         host = (parsed.hostname or "").lower()
         player = next((p for p in PLAYER_HOSTS if host == p or host.endswith("." + p)), None)

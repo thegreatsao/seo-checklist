@@ -254,12 +254,23 @@ def extract_schema_documents(source: str, timeout: int = 15) -> tuple[list[Any],
                        "fetch": fetch, "invalid_blocks": invalid, "html": html_or_json or ""}
 
 
+REFERENCE_KEYS = frozenset({"@type", "@id", "@context"})
+
+
 def find_schema_nodes(documents: list[Any], schema_type: str | None = None) -> list[dict[str, Any]]:
+    """Every typed node, except a bare reference — `{"@type", "@id"}` and nothing else —
+    to a node the documents define in full under the same `@id` (F15 batch 5's review:
+    a WebPage's `mainEntity` pointing at its Article is that Article, not a second one
+    with no headline)."""
+    defined = {node["@id"] for doc in documents for _, node in iter_schema_nodes(doc)
+               if isinstance(node.get("@id"), str) and set(node) - REFERENCE_KEYS}
     rows = []
     for doc_index, doc in enumerate(documents):
         for path, node in iter_schema_nodes(doc, f"$[{doc_index}]"):
             types = schema_type_names(node.get("@type"))
             if not types:
+                continue
+            if not set(node) - REFERENCE_KEYS and node.get("@id") in defined:
                 continue
             if schema_type and schema_type not in types:
                 continue

@@ -24,6 +24,8 @@ def _text(value) -> bool:
     """Text, not whitespace; a number (a telephone written as one) or a list holding one
     such entry is text too."""
     return any((isinstance(entry, str) and bool(entry.strip()))
+               or (isinstance(entry, dict) and isinstance(entry.get("@value"), str)
+                   and bool(entry["@value"].strip()))
                or (isinstance(entry, (int, float)) and not isinstance(entry, bool))
                for entry in as_list(value))
 

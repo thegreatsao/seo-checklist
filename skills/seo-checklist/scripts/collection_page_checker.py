@@ -29,6 +29,9 @@ MIN_PRODUCT_LINKS = 4
 
 
 PRODUCT_PATH = re.compile(r"/(?:products?|p)/[^/]+", re.I)
+# A product routed by its query (review round 3): OpenCart's `route=product/product`, a
+# `product_id`, osCommerce's `products_id`, or a `product.php?…` page.
+PRODUCT_QUERY = re.compile(r"[?&](?:route=product/product\b|products?_id=)|/product\.(?:php|aspx?)\?", re.I)
 
 
 def rel_values(value) -> set[str]:
@@ -66,7 +69,9 @@ def check_collection_page(source: str, timeout: int = 15) -> dict:
         # A product's own page: a segment after `/product/`, `/products/` or `/p/`. The
         # listing itself (`/products`, `/products/`) is not one, so a nav link to it no
         # longer made every page a category page (F15, AR-154's ruling).
-        if PRODUCT_PATH.search(urlparse(href).path) or text.lower() in {"view", "details", "buy"}:
+        parsed_href = urlparse(href)
+        if (PRODUCT_PATH.search(parsed_href.path) or PRODUCT_QUERY.search(href)
+                or text.lower() in {"view", "details", "buy"}):
             product_links.append(href)
     if len(set(product_links)) < MIN_PRODUCT_LINKS:
         issues.append(issue("info", "Few crawlable product links detected", url, str(len(set(product_links)))))

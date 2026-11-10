@@ -12,10 +12,10 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `e438efcd7a69` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+Registry version: `c89dfee34833` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4).
 
-F15 batch 5 (`ecaf0dc17e56` → `e438efcd7a69`) — structured data and content, and the owner's ruling 2 on batch 4's
+F15 batch 5 (`ecaf0dc17e56` → `c89dfee34833`) — structured data and content, and the owner's ruling 2 on batch 4's
 questions. **The inventory is version 6**: `schema_nodes` carries Microdata and RDFa items (`format: markup`), so LO-198
 finds a LocalBusiness written in either, and a schema.org IRI `@type` counts. **Verdicts of a real audit can move**:
 MS-032 applies to a page whose only JSON-LD does not parse and fails any page with an unparseable block (the warn band
@@ -49,7 +49,11 @@ Russian dates, ordinals included (`March 3rd`, `1er janvier`); MD-190 counts a M
 an autoplaying `<video>` with no controls as a background; GEO-006 does not resolve a name cut from the `<title>`, and a
 Knowledge Graph hit counts only under the entity's own name; GO-144 and GEO-004 read a question in a `<summary>`, a
 `<dt>` or an FAQ block's question element; CN-057 matches a shown name across curly apostrophes and dashes; KW-076
-reads an article's own `<header>` as copy.
+reads an article's own `<header>` as copy. A question, a definition or a source in the page's furniture (a `<nav>`, an
+`<aside>`, a page-level header or footer) is not the page's: a footer's "Have a question?" or a regulator's footer link
+passes nothing (GO-144, GEO-004, GO-145, GEO-005); a `<time>`'s text is read once; query-routed product links
+(`route=product/product`, `product_id`) count for AR-154; a bare `@type`/`@id` reference to a node defined in full is
+that node; GEO-006 is withheld (`unnamed`) on a page that declares no entity name.
 
 F15 batch 4 (`445b7ca058d2` → `ecaf0dc17e56`) — robots, sitemaps, redirects and URLs, and the owner's rulings on
 batch 3's questions. **Verdicts of a real audit can move**: a canonical naming another host no longer fails CI-009 or

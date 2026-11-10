@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 from seo_common import (
     CONTRIBUTION_KEYS,
+    in_page_furniture,
     load_source,
     page_author_names,
     page_nodes,
@@ -165,10 +166,16 @@ def check_citation_readiness(source: str, timeout: int = 15) -> dict:
         if HIGH_TRUST_HOST_RE.search(host):
             trusted_links.append(link)
 
+    # A source in the page's furniture — a regulator's link in every footer, a nav link
+    # to /references, a testimonial in an aside — cites nothing on this page (F15 batch
+    # 5's review): what counts as a source is read from the content only.
+    content_hrefs = {tag.get("href", "").strip() for tag in soup.find_all("a", href=True)
+                     if not in_page_furniture(tag)}
     cite_tags = [tag.get_text(" ", strip=True)
                  for tag in soup.find_all(["cite", "blockquote"])
                  if not under_foreign_credit(
-                     tag, claimed=parsed.get("foreign_itemref_ids"))]
+                     tag, claimed=parsed.get("foreign_itemref_ids"))
+                 and not in_page_furniture(tag)]
     # The `rel` tokens and the URL *path*, never the query string. Measured on the
     # deliberately failing evidence page: six faceted-navigation links of the form
     # `/shop?utm_source=s0&sort=k0` were counted as footnote links, because `source`
@@ -204,8 +211,11 @@ def check_citation_readiness(source: str, timeout: int = 15) -> dict:
     # already computed for its own 20-point component, and counting it here as well is
     # deliberate — the same link is both evidence that a claim has a source and
     # evidence that the source is a good one.
-    citation_capacity = (len(trusted_links) + len(cite_tags)
-                         + len(footnote_links) + schema_citations)
+    def in_content(link):
+        return str(link.get("href") or "").strip() in content_hrefs
+    citation_capacity = (sum(1 for link in trusted_links if in_content(link)) + len(cite_tags)
+                         + sum(1 for link in footnote_links if in_content(link))
+                         + schema_citations)
     # A page with no factual claims has nothing to cover, and that is not the same as
     # having covered everything. `max(1, 0)` made the denominator one, so any single
     # citation signal saturated the component and a page asserting nothing took all 35

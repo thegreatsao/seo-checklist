@@ -638,7 +638,9 @@ class ReviewRound1(unittest.TestCase):
                                   return_value={"checked": True, "found": True, "name": "Home"}):
             verdict = page_verdict(entity_checker, "GEO-006", html("<p>Bread</p>",
                                                                   title="Home | Crumb Bakery"))
-        self.assertEqual(verdict, FAIL)
+        # Not resolved; since review round 3 withheld rather than failed (a guess is no
+        # entity to judge).
+        self.assertEqual(verdict, NO_DATA)
 
     def test_go_143s_fix_names_alternate_name(self):
         self.assertIn("alternateName", ITEMS["GO-143"]["fix"])
@@ -700,6 +702,69 @@ class ReviewRound2(unittest.TestCase):
         self.assertEqual(BodyCopy.kw_076(self, body), PASS)
 
 
+class ReviewRound3(unittest.TestCase):
+    def test_one_time_element_is_one_date(self):
+        for body in ('<p><time datetime="2026-03-05T09:00:00+00:00">05/03/2026</time></p>',
+                     '<p><time datetime="2026-03-04T23:30:00Z">5 March 2026</time></p>'):
+            with self.subTest(body=body):
+                self.assertEqual(VisibleDates.cn_056(self, body), WARN)
+
+    def test_query_routed_product_links_are_product_links(self):
+        for href in ("/index.php?route=product/product&product_id={}", "/product.php?id={}"):
+            with self.subTest(href=href):
+                links = "".join(f"<a href='{href.format(i)}'>Loaf {i}</a>" for i in range(6))
+                page = html("<h1>Bread</h1>" + links)
+                self.assertNotEqual(page_verdict(collection_page_checker, "AR-154", page,
+                                                 "/index.php"), NA)
+
+    def test_a_source_in_the_page_furniture_is_no_source(self):
+        head = '<link rel="canonical" href="/">'
+        byline = "<p class='byline'>By Jane Doe</p><p>Bread is good for you.</p>"
+        for furniture in ("<footer><a href='https://www.cysec.gov.cy/'>Licensed by CySEC</a></footer>",
+                          "<nav><a href='/references'>References</a></nav>",
+                          "<aside><blockquote>Best bread in town!</blockquote></aside>"):
+            with self.subTest(furniture=furniture[:20]):
+                page = html(byline + furniture, head=head)
+                self.assertEqual(page_verdict(citation_readiness, "GO-145", page), FAIL)
+        page = html(byline + "<blockquote>A quoted study says so.</blockquote>", head=head)
+        self.assertEqual(page_verdict(citation_readiness, "GO-145", page), PASS)
+
+    def test_a_footer_question_is_not_the_pages_answer(self):
+        cta = ("<footer><h3>Have a question?</h3><p>Write to the bakery at any time and the person who "
+               "bakes the bread will answer you within a day, usually the same morning, by email or "
+               "telephone.</p></footer>")
+        page = html("<h1>Privacy</h1><p>We keep nothing.</p>" + cta)
+        self.assertEqual(page_verdict(answer_block_scanner, "GO-144", page), FAIL)
+
+    def test_a_language_tagged_business_name_is_a_name(self):
+        self.assertEqual(CompleteNap.lo_200(self, {**SHOP, "name": {"@value": "Crumb",
+                                                                    "@language": "en"}}), PASS)
+
+    def test_a_typed_reference_to_a_defined_node_is_that_node(self):
+        graph = {"@context": "https://schema.org", "@graph": [
+            {"@type": "WebPage", "@id": "https://a.test/#page",
+             "mainEntity": {"@type": "Article", "@id": "https://a.test/#article"}},
+            {"@type": "Article", "@id": "https://a.test/#article", "headline": "Rye"}]}
+        self.assertEqual(page_verdict(rich_results_guard, "TE-172", html(head=jsonld(graph))), PASS)
+
+    def test_a_lazy_player_is_a_video(self):
+        for frame in ('<iframe data-src="https://www.youtube.com/embed/abc"></iframe>',
+                      '<iframe src="about:blank" data-lazy-src="https://player.vimeo.com/video/1">'
+                      '</iframe>'):
+            with self.subTest(frame=frame[:30]):
+                self.assertEqual(page_verdict(video_schema_checker, "MD-190", html(frame)), FAIL)
+
+    def test_a_name_only_guessed_from_the_title_is_withheld(self):
+        with mock.patch.object(entity_checker, "check_wikidata",
+                               return_value={"found": True, "checked": True, "label": "Home"}), \
+                mock.patch.object(entity_checker, "check_wikipedia", return_value=dict(NOT_FOUND)), \
+                mock.patch.object(entity_checker, "check_google_knowledge_graph",
+                                  return_value=dict(UNCHECKED)):
+            verdict = page_verdict(entity_checker, "GEO-006", html("<p>Bread</p>",
+                                                                  title="Home | Crumb Bakery"))
+        self.assertEqual(verdict, NO_DATA)
+
+
 # ---------------------------------------------------------------------------
 # The sets batch 5 wrote, held to their sources (GOV-3)
 # ---------------------------------------------------------------------------
@@ -709,7 +774,11 @@ class TheSetsAreHeld(unittest.TestCase):
         from answer_block_scanner import DEFINITION_TERM_PREPOSITIONS, SIGNAL_POINTS
         from freshness_checker import MONTH_NAMES
         from article_seo import BODY_COPY_EXCLUDED
-        from schema_required_props import DATE_PROPS, RULED_REQUIRED, TEXT_PROPS, URL_PROPS
+        from schema_required_props import (DATE_PROPS, REFERENCE_KEYS, RULED_REQUIRED,
+                                           TEXT_PROPS, URL_PROPS)
+        # A bare reference carries only these (JSON-LD's own keywords for a node's type,
+        # identity and vocabulary).
+        self.assertEqual(REFERENCE_KEYS, {"@type", "@id", "@context"})
         from social_meta import PREVIEW_TAGS
         from video_schema_checker import PLAYER_HOSTS, PLAYER_PATHS
         # The owner's TE-172 ruling: an Article with no headline fails, its two

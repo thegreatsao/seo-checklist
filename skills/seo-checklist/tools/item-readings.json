@@ -4036,7 +4036,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`summary.entity_resolution` maps `resolved` (a Wikidata or Wikipedia `sameAs`, a Wikidata item labelled with the entity's name, or a Knowledge Graph match) to pass and `unresolved` (Wikidata answered with none) to fail; `not_asked` is unmapped, NO_DATA (F15, the owner's ruling).",
+      "reading": "`summary.entity_resolution` maps `resolved` (a Wikidata or Wikipedia `sameAs`, or a Wikidata item or Knowledge Graph match under the entity's declared name) to pass and `unresolved` (Wikidata answered with none) to fail; `not_asked` and `unnamed` (a name only cut from the `<title>`) are unmapped, NO_DATA (F15, the owner's ruling).",
       "shapes": {
         "conjunction": "Wikidata or the Knowledge Graph resolving the entity is enough; `measures` names both."
       },

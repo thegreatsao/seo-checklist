@@ -215,7 +215,8 @@ Reads `--inventory` (see `site_crawl.py`); crawls one for itself without it.
 `paragraphs[]` — array — every non-empty `<p>` in the body containers (until 0.174.0,
   only those of more than eight words; KW-076's body text is these and the headings)
 `body_copy` — str — not printed; the text `keyword_usage.in_body` reads since F15 batch 5: the
-  containers' text with headings, `<nav>`, `<header>`, `<footer>` and `<aside>` taken out
+  containers' text with headings, `<nav>`, `<aside>`, and a `<header>`/`<footer>` that is not an
+  `<article>`'s, `<main>`'s or `<section>`'s own, taken out
 `images[]` — array
   - item keys: src, alt, width, height, loading
 `structured_data[]` — array
@@ -617,8 +618,9 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `summary.sameas_missing_critical` — int
 `summary.entity_resolution` — str — `resolved` (a Wikidata or Wikipedia `sameAs`, a Wikidata
   item labelled with the entity's name, or a Knowledge Graph match), `unresolved` (Wikidata
-  gave no item labelled with a name the page declares, or the name was only cut from the
-  `<title>`), `not_asked` (Wikidata could not be asked): GEO-006's value map (F15 batch 5).
+  gave no item labelled with a name the page declares), `unnamed` (the name was only cut from the
+  `<title>`), `not_asked` (Wikidata could not be asked); the last two unmapped, NO_DATA:
+  GEO-006's value map (F15 batch 5).
   A Knowledge Graph hit counts only under the entity's own name
 `summary.wikidata_found` — bool | null — null when Wikidata could not be asked (0.124.0)
 `summary.wikipedia_found` — bool | null — null when Wikipedia could not be asked
@@ -2145,8 +2147,9 @@ the scheme. Three shapes, and the difference between them is the whole contract:
 ### video_schema_checker.py
 
 `videos` — int
-`page_videos[]` — array — the videos the page shows: a `<video>` with a source (not a muted
-  autoplaying or looping one without controls) and a player `<iframe>`/`<embed>`
+`page_videos[]` — array — the videos the page shows: a `<video>` with a source (not one without
+  controls that autoplays, muted or not, or is a muted loop) and a player `<iframe>`/`<embed>`
+  (its `src`, or a lazy `data-src`/`data-lazy-src`; a Microdata/RDFa VideoObject declares one)
 `video_signals` — int — the larger of `videos` and `page_videos`: MD-190's subject (F15 batch 5)
 `rows[]` — array
 `issues[]` — array

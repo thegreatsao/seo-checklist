@@ -26,7 +26,7 @@ import argparse
 import json
 import re
 
-from seo_common import load_source, parse_html
+from seo_common import in_page_furniture, load_source, parse_html
 
 
 QUESTION_RE = re.compile(r"^(what|why|how|when|where|who|which|can|does|is|are)\b|\?$", re.I)
@@ -220,7 +220,10 @@ def scan_answer_blocks(source: str, timeout: int = 15) -> dict:
 
     questions = []
     direct_answers = []
-    for heading in soup.find_all(_asks_a_question):
+    # The page's own content: a question or a definition in its furniture (a footer's
+    # "Have a question?") is on every page and answers nothing here (F15 batch 5's review).
+    for heading in soup.find_all(lambda tag: _asks_a_question(tag)
+                                 and not in_page_furniture(tag)):
         heading_text = heading.get_text(" ", strip=True)
         if not QUESTION_RE.search(heading_text):
             continue
@@ -235,7 +238,7 @@ def scan_answer_blocks(source: str, timeout: int = 15) -> dict:
                                    "answer": answer_text[:320], "word_count": words})
 
     definitions = []
-    for paragraph in soup.find_all("p"):
+    for paragraph in soup.find_all(lambda tag: tag.name == "p" and not in_page_furniture(tag)):
         text = _own_text(paragraph)
         if DEFINITION_MIN_WORDS <= _word_count(text) <= DEFINITION_MAX_WORDS \
                 and _is_definition(text):

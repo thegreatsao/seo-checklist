@@ -520,6 +520,14 @@ _SECTIONING = ("article", "aside", "main", "nav", "section")
 _SECTIONING_ROLES = ("main", "article", "region", "navigation", "complementary")
 
 
+def in_page_furniture(tag) -> bool:
+    """Whether `tag` sits in the page's furniture — a `<nav>`, an `<aside>`, a page-level
+    `<header>` or `<footer>`, or their ARIA roles — rather than in its content. The
+    reading `image_carries_meaning` uses, shared since F15 batch 5's review (GO-144,
+    GEO-004, GO-145, GEO-005 read the page's own content)."""
+    return _in_furniture(tag)
+
+
 def _in_furniture(img) -> bool:
     for tag in img.parents:
         if not getattr(tag, "name", None) or tag.name == "[document]":

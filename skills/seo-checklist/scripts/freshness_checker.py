@@ -221,8 +221,11 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
         and (found := (_parse_date(tag.get("datetime"))
                        or next(iter(shown_dates_in(tag.get_text(" ", strip=True), cutoff)), None)))
         and found <= cutoff]
+    # A `<time>`'s own text is read once, above, through its `datetime` (F15 batch 5's
+    # review: "05/03/2026" read again month first made one shown date two).
     shown_text = shown_dates_in(visible_text(
-        soup, skip=lambda tag: under_foreign_credit(tag, claimed=claimed)), cutoff)
+        soup, skip=lambda tag: tag.name == "time" or tag.find_parent("time") is not None
+        or under_foreign_credit(tag, claimed=claimed)), cutoff)
     shown_dates = shown_time + shown_text
     later = bool(shown_dates) and any(value > min(shown_dates) for value in shown_dates)
     date_signals = {
