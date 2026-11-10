@@ -617,10 +617,10 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `rows[]` — array
   - item keys: url, path, params, facet_params, flags; with `--fetch` also status,
     refused, canonical, meta_robots, redirected, canonical_elsewhere, noindex
-  - a URL that redirects away (`redirected`) — not to another spelling of itself, and for
-    a facet not to a URL keeping its facet parameters — or whose canonical names a URL
-    other than both the one asked for and where it landed, is controlled (F15 review
-    rounds 3-5)
+  - a URL that redirects away (`redirected`) — not to another spelling of itself, nor to
+    a URL keeping its facet parameters (else, for a non-facet variant, all its
+    parameters) — or whose canonical names a URL other than both the one asked for and
+    where it landed, is controlled (F15 review rounds 3-6)
   - `facet_missing_canonical` is a facet whose canonical does not name another URL: a
     self-canonical is no control (AR-163, F15); `noindex` is Google's reading
     (`seo_common.google_noindex`: metas, header, `none`)

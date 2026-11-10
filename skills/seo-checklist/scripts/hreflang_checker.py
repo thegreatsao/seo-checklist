@@ -285,7 +285,7 @@ def validate_lang_code(lang_tag: str) -> dict:
     if not re.fullmatch(r"[A-Za-z]{2,3}", lang or ""):
         issues.append(
             f"Invalid primary language subtag '{parts[0] if parts else ''}'. "
-            "Use a 2-3 letter BCP 47 language subtag."
+            "Use a two-letter ISO 639-1 language code."
         )
     elif mistake:
         pass                # named above; one issue per bad code

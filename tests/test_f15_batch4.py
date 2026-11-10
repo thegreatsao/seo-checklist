@@ -803,6 +803,29 @@ class FacetControls(unittest.TestCase):
                            "/clean": page_html(canonical="{origin}/clean")})
         self.assertEqual(out["path_explosions"], {})
 
+    def test_a_redirect_keeping_the_variant_is_no_control(self):
+        """Review round 6: `/list?page=N` -> `/en/list?page=N`, each naming itself, are
+        six indexable variants still; `/old?color=red` -> `/new?color=red` naming itself
+        is the facet still."""
+        links = "".join(f'<a href="/list?page={i}">p{i}</a>' for i in range(2, 8))
+        routes = {"/": f'<html><body>{links}</body></html>',
+                  "/en/list": page_html()}
+        for i in range(2, 8):
+            routes[f"/list?page={i}"] = (301, {"Location": f"/en/list?page={i}"}, "")
+        out = self.ar_163(routes)
+        self.assertTrue(out["path_explosions"])
+        out = self.ar_163({
+            "/": '<html><body><a href="/old?color=red">Red</a></body></html>',
+            "/old": (301, {"Location": "/new?color=red"}, ""),
+            "/new": page_html(canonical="{origin}/new?color=red")})
+        self.assertEqual(verdict("AR-163", out), FAIL)
+        # A facet is its facet parameters: dropping a tracking one keeps it the facet.
+        out = self.ar_163({
+            "/": '<html><body><a href="/old?color=red&amp;utm_source=x">Red</a></body></html>',
+            "/old": (301, {"Location": "/new?color=red"}, ""),
+            "/new": page_html(canonical="{origin}/new?color=red")})
+        self.assertEqual(verdict("AR-163", out), FAIL)
+
     def test_variants_robots_txt_disallows_are_no_path_explosion(self):
         links = "".join(f'<a href="/shop?sort=p{i}">s{i}</a>' for i in range(6))
         out = self.ar_163({"/robots.txt": (200, "User-agent: *\nDisallow: /shop?\n"),

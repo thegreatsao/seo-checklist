@@ -71,6 +71,11 @@ def _facet_items(url: str) -> set:
             if k.lower() in FACET_KEYS or k.lower().startswith("filter")}
 
 
+def _query_items(url: str) -> set:
+    """Every query parameter a URL carries, with its value, names lower-cased."""
+    return {(k.lower(), v) for k, v in parse_qsl(urlparse(url).query, keep_blank_values=True)}
+
+
 def _spelling(url: str) -> tuple:
     """A URL less what only respells it: scheme, host case, trailing slash, query order."""
     split = urlparse(comparable_url(url))
@@ -109,13 +114,14 @@ def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:
                 # (AR-163, F15, the owner's ruling).
                 # A URL that redirects away is folded into where it lands, a control
                 # of its own (F15 review round 3: `/old?color=red` -> `/shop` failed;
-                # round 5: `/list?page=2` -> `/clean` too). Landing on another spelling
-                # of itself (`/shop/?color=red`, https) or keeping its facet's
-                # parameters is not away (round 4).
+                # round 5: `/list?page=2` -> `/clean` too). Not away: another spelling
+                # of itself (`/shop/?color=red`, https), or a landing that keeps what
+                # makes it a variant — its facet parameters, else all its parameters
+                # (`/list?page=2` -> `/en/list?page=2`; rounds 4 and 6).
                 landing = page.get("url") or url
+                kept = _facet_items(url) or _query_items(url)
                 row["redirected"] = (_spelling(landing) != _spelling(url)
-                                     and not (_facet_items(url)
-                                              and _facet_items(url) <= _facet_items(landing)))
+                                     and not (kept and kept <= _query_items(landing)))
                 row["canonical_elsewhere"] = bool(
                     html.get("canonical")
                     and comparable_url(html["canonical"])

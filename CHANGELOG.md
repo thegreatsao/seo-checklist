@@ -29,7 +29,7 @@ GEO-008 ignores another crawler's `X-Robots-Tag` rules; AR-150 asserts `walk`, s
 fail as loops; CI-010 compares the canonicals as sent (`/page` ≠ `/page/`); IN-122 fails an invalid language or region
 code (not `zh-CN` or bare `zh`, which are valid; `jp-JP`, any three-letter language or a
 numeric region is invalid) even unverified, and a set naming no alternate; AR-163 counts a self-canonical as no control and a redirect away (not to another spelling of the
-same URL, nor keeping a facet's parameters) as one,
+same URL, nor to one keeping the variant's parameters) as one,
 reads noindex as Google does, and no longer counts controlled
 variants as a path explosion; GEO-007 requires the key file to be the key alone, as text. Sentences for CI-014,
 AR-155 (corrected), CI-012, GEO-001, GEO-002, and beside the rulings for AR-153, AR-162, CI-009 and TE-176.
