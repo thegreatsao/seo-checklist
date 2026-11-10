@@ -496,12 +496,17 @@ def run_entity_check(url: str, entity_name: str = "", kg_api_key: str = "") -> d
     if not entity_name and entities:
         entity_name = entities[0].get("name", "")
 
+    # A name the page declares (an entity's, `og:site_name`) or the operator gives is
+    # one a lookup can confirm; one cut from the `<title>` is a guess ("Home"), and a
+    # Wikidata or Knowledge Graph match on it resolves nothing (review round 1).
+    guessed = False
     if not entity_name:
         # Try og:site_name or title
         og_site = soup.find("meta", property="og:site_name")
         if og_site:
             entity_name = og_site.get("content", "")
         else:
+            guessed = True
             title = soup.find("title")
             if title:
                 entity_name = title.get_text(strip=True).split("|")[0].split("-")[0].strip()
@@ -602,10 +607,10 @@ def run_entity_check(url: str, entity_name: str = "", kg_api_key: str = "") -> d
     # Knowledge Graph found none or was not asked; when Wikidata could not be asked
     # and nothing else resolves it, the answer is withheld.
     linked = any(name in sameas_analysis["found"] for name in ("Wikidata", "Wikipedia"))
-    named = (wikidata.get("found") is True
+    named = (not guessed and wikidata.get("found") is True
              and str(wikidata.get("label") or "").strip().casefold()
              == str(entity_name or "").strip().casefold())
-    if linked or named or google_kg.get("found") is True:
+    if linked or named or (not guessed and google_kg.get("found") is True):
         resolution = "resolved"
     elif wikidata.get("checked") and wikidata.get("found") is not None:
         resolution = "unresolved"

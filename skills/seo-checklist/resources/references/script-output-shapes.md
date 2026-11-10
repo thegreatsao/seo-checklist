@@ -699,17 +699,15 @@ title, including noindex pages. Unlike title duplication, absence is not competi
   - schema and `<time>` dates come from the page's own nodes; contributions and subjects
     are excluded whether nested under their key or, for schema dates, hoisted into
     `@graph`
-`date_signals.shown.published` — bool — a parseable publication date is declared by
-  page-owned publication meta, schema `datePublished`, or a page-owned `<time>`
-`date_signals.shown.updated` — bool — a parseable update date is declared by modification
-  meta, schema `dateModified`, or a second page-owned `<time>` later than the earliest
-`date_signals.sources.published` / `.updated` — str | null — `meta`, `schema`, or `time`,
-  naming the declared source that established each signal. Body-text regex dates never
-  set either signal.
-`date_signals.declared.published` / `.updated` — str | null — what metadata, JSON-LD or a
-  `<time>` declares; since F15 batch 5 `date_signals.shown` reads only dates a visitor sees
-  (a `<time>` with text, a date in the visible text), the earliest as published and a later
-  one as updated, and `sources` says `time` or `text`
+`date_signals.shown.published` — bool — since F15 batch 5, a date a visitor sees: a
+  page-owned `<time>` with text of its own, or a date written in the visible text (ISO,
+  month or day first in English, German, French, Spanish or Russian, or numeric)
+`date_signals.shown.updated` — bool — a second date shown, later than the earliest
+`date_signals.sources.published` / `.updated` — str | null — `time` or `text`, naming where
+  each shown date was read
+`date_signals.declared.published` / `.updated` — str | null — what is declared without being
+  shown, read for the score and the age and never for CN-056: published from `meta`,
+  `schema` or `time`, updated from `meta` or `schema`
 `old_years[]` — array
 `stale_stat_sentences` — int
 `schema_date_mismatch` — bool

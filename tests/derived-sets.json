@@ -1,8 +1,8 @@
 {
   "measured": "upper-case names bound to a list, tuple, set or dict literal, bare or handed to a constructor, at module level or in a function, in scripts/, scripts/lib/ or tools/",
   "read_means": "a test imports the name from its module, under its own name or an alias the test bound, which is an upper bound on the membership being asserted",
-  "total": 216,
-  "read": 173,
+  "total": 218,
+  "read": 175,
   "unread": 43,
   "unread_closed": 0,
   "modules": {
@@ -36,6 +36,10 @@
     },
     "answer_block_scanner": {
       "read": [
+        {
+          "name": "DEFINITION_TERM_PREPOSITIONS",
+          "entries": 20
+        },
         {
           "name": "SIGNAL_POINTS",
           "entries": 4
@@ -705,6 +709,15 @@
         {
           "name": "FONT_EXTENSIONS",
           "entries": 6
+        }
+      ],
+      "unread": []
+    },
+    "freshness_checker": {
+      "read": [
+        {
+          "name": "MONTH_NAMES",
+          "entries": 1
         }
       ],
       "unread": []

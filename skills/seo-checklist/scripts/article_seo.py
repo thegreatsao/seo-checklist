@@ -699,8 +699,7 @@ def main():
     keyword_usage = None
     if args.keyword is not None:
         # Match case-insensitively at word boundaries: "seo" must not match
-        # "seoul". `full_text` is the body corpus already assembled above for
-        # keyword extraction; using it here avoids inventing a second definition.
+        # "seoul".
         # Spaces in the keyword match any whitespace, `&nbsp;` included; the body is
         # `body_copy`, not the headings-and-paragraphs corpus (F15, KW-076).
         keyword_pattern = (re.compile(r"(?<!\w)" + r"\s+".join(

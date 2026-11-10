@@ -1561,8 +1561,8 @@ item(143, "low", S, "schema_required_props.py", PAGE,
      # no `WebSite` node at all — which is what `missing_is: pass` preserves, exactly
      # as the pattern did by matching nothing.
      {"path": "incomplete_nodes_by_type.WebSite", "eq": 0, "missing_is": "pass"},
-     "Give the WebSite node a name and a url; Google reads both for the site name "
-     "shown in results")
+     "Give the WebSite node a name, a url and an alternateName; Google reads them for "
+     "the site name shown in results")
 # Until F15 this asserted `score gte 32`, one direct answer plus one definition, and a
 # floor is a number rather than a requirement: three two-row tables reached 36 and four
 # navigation menus 40 with no answer anywhere, while one plain direct answer scored 20

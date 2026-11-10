@@ -12,10 +12,10 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `1a7837e21273` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+Registry version: `a6b19fafcebf` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4).
 
-F15 batch 5 (`ecaf0dc17e56` → `1a7837e21273`) — structured data and content, and the owner's ruling 2 on batch 4's
+F15 batch 5 (`ecaf0dc17e56` → `a6b19fafcebf`) — structured data and content, and the owner's ruling 2 on batch 4's
 questions. **The inventory is version 6**: `schema_nodes` carries Microdata and RDFa items (`format: markup`), so LO-198
 finds a LocalBusiness written in either, and a schema.org IRI `@type` counts. **Verdicts of a real audit can move**:
 MS-032 applies to a page whose only JSON-LD does not parse and fails any page with an unparseable block (the warn band
@@ -42,7 +42,10 @@ CN-057, CN-068, CN-056, MS-033, GEO-006 and KW-076. The good fixture's WebSite n
 Organization a `sameAs` to Wikidata's sandbox item, and its privacy page says "Bread orders" in its copy; it now fails
 GO-145 and GEO-005 on its about and privacy pages, as the ruling reads. 141 assertions seen failing in the census (was
 142): GEO-006's FAIL, Wikidata answering with no item, is never asked offline. LO-200 reads an address named by `@id`;
-an empty JSON-LD block is no block.
+an empty JSON-LD block is no block. A definition (GO-144, GEO-004) opens with a short term, no preposition in it, and
+says what kind of thing it is (`is a/an/the …`) or what it means; `DEFINITION_TERM_MAX_WORDS` (6) is a convention that
+decides a verdict (138 numbers a verdict depends on). CN-056 reads numeric, abbreviated and German, French, Spanish and
+Russian dates; MD-190 counts a Microdata or RDFa VideoObject; GEO-006 does not resolve a name cut from the `<title>`.
 
 F15 batch 4 (`445b7ca058d2` → `ecaf0dc17e56`) — robots, sitemaps, redirects and URLs, and the owner's rulings on
 batch 3's questions. **Verdicts of a real audit can move**: a canonical naming another host no longer fails CI-009 or

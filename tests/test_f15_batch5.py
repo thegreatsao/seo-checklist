@@ -305,7 +305,7 @@ class CompleteNap(unittest.TestCase):
 # answer_block_scanner.py — GO-144, GEO-004
 # ---------------------------------------------------------------------------
 
-ANSWER = ("Sourdough is bread leavened by a culture of wild yeast and lactic acid bacteria "
+ANSWER = ("Sourdough is a bread leavened by a culture of wild yeast and lactic acid bacteria "
           "kept alive by regular feeding with flour and water, which gives it a sour taste.")
 TABLE = "<table><tr><th>Flour</th><th>Water</th></tr><tr><td>500 g</td><td>350 g</td></tr></table>"
 MENU = "<nav><ul><li><a href='/a'>A</a></li><li><a href='/b'>B</a></li><li><a href='/c'>C</a></li></ul></nav>"
@@ -595,12 +595,63 @@ class SelfOnlyHreflang(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Review round 1
+# ---------------------------------------------------------------------------
+
+class ReviewRound1(unittest.TestCase):
+    def test_a_microdata_video_object_is_a_video_object(self):
+        page = html('<div itemscope itemtype="https://schema.org/VideoObject">'
+                    '<meta itemprop="name" content="Bake">'
+                    '<meta itemprop="thumbnailUrl" content="https://a.test/t.jpg">'
+                    '<meta itemprop="uploadDate" content="2024-03-01">'
+                    '<iframe src="https://www.youtube.com/embed/abc123"></iframe></div>')
+        self.assertNotEqual(page_verdict(video_schema_checker, "MD-190", page), FAIL)
+
+    def test_dates_shown_in_ordinary_spellings_are_dates(self):
+        cn_056 = VisibleDates.cn_056
+        for body in ("<p>Published Jan. 12, 2026. Updated Feb. 3, 2026.</p>",
+                     "<p>Published Sept 5, 2025. Updated Oct 1, 2025.</p>",
+                     "<p>Published 12.01.2026. Updated 03.02.2026.</p>",
+                     "<p>Published 12/01/2026. Updated 13/02/2026.</p>",
+                     "<p>Veröffentlicht 12. Januar 2026, aktualisiert 3. Februar 2026.</p>",
+                     "<p>Опубликовано 12 января 2026, обновлено 3 февраля 2026.</p>"):
+            with self.subTest(body=body):
+                self.assertEqual(cn_056(self, body), PASS)
+
+    def test_an_ordinary_sentence_is_no_definition(self):
+        for text in ("Free delivery within Cyprus is available on every order over fifty euros, "
+                     "and orders placed before noon leave the bakery the same afternoon by courier.",
+                     "Welcome to our family bakery where every loaf is shaped by hand from flour "
+                     "milled down the road and baked in a wood oven before the sun comes up."):
+            with self.subTest(text=text[:20]):
+                page = html(f"<h1>Shipping</h1><p>{text}</p>")
+                self.assertEqual(page_verdict(answer_block_scanner, "GO-144", page), FAIL)
+                self.assertEqual(page_verdict(answer_block_scanner, "GEO-004", page), FAIL)
+
+    def test_a_name_guessed_from_the_title_resolves_nothing(self):
+        """`Home | Crumb Bakery` names no entity; Wikidata's item labelled Home is not it."""
+        found = {"found": True, "checked": True, "qid": "Q16870856", "label": "Home",
+                 "confidence": "High"}
+        with mock.patch.object(entity_checker, "check_wikidata", return_value=found), \
+                mock.patch.object(entity_checker, "check_wikipedia", return_value=dict(NOT_FOUND)), \
+                mock.patch.object(entity_checker, "check_google_knowledge_graph",
+                                  return_value={"checked": True, "found": True, "name": "Home"}):
+            verdict = page_verdict(entity_checker, "GEO-006", html("<p>Bread</p>",
+                                                                  title="Home | Crumb Bakery"))
+        self.assertEqual(verdict, FAIL)
+
+    def test_go_143s_fix_names_alternate_name(self):
+        self.assertIn("alternateName", ITEMS["GO-143"]["fix"])
+
+
+# ---------------------------------------------------------------------------
 # The sets batch 5 wrote, held to their sources (GOV-3)
 # ---------------------------------------------------------------------------
 
 class TheSetsAreHeld(unittest.TestCase):
     def test_each_set_is_what_its_source_says(self):
-        from answer_block_scanner import SIGNAL_POINTS
+        from answer_block_scanner import DEFINITION_TERM_PREPOSITIONS, SIGNAL_POINTS
+        from freshness_checker import MONTH_NAMES
         from article_seo import BODY_COPY_EXCLUDED
         from schema_required_props import DATE_PROPS, RULED_REQUIRED, TEXT_PROPS, URL_PROPS
         from social_meta import PREVIEW_TAGS
@@ -635,6 +686,12 @@ class TheSetsAreHeld(unittest.TestCase):
         self.assertEqual(PLAYER_PATHS, {"youtube.com": "/embed/", "youtube-nocookie.com": "/embed/",
                                         "dailymotion.com": "/embed/"})
         self.assertLessEqual(set(PLAYER_PATHS), set(PLAYER_HOSTS))
+        # Twelve months, each named in English, German, French, Spanish and Russian.
+        self.assertEqual(sorted(set(MONTH_NAMES.values())), list(range(1, 13)))
+        for word in ("january", "januar", "janvier", "enero", "января", "sept", "dec"):
+            self.assertIn(word, MONTH_NAMES)
+        # Prepositions and relatives that open a clause, not a term.
+        self.assertLessEqual({"within", "to", "for", "with", "where"}, DEFINITION_TERM_PREPOSITIONS)
         # Still the four signals `score` adds; since F15 batch 5 it decides no verdict.
         self.assertEqual(set(SIGNAL_POINTS), {"direct_answer", "definition", "list", "table"})
 

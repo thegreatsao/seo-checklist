@@ -47,14 +47,74 @@ DATE_RE = re.compile(
     r"(?:0?[1-9]|[12]\d|3[01]),?\s+(?:20\d{2}|19\d{2})\b",
     re.I,
 )
-# A date as a visitor reads it, for CN-056 only: DATE_RE's two spellings and the
-# day-first one ("20 July 2026"), common outside the US. Kept apart from DATE_RE, which
-# also feeds the age behind CN-038.
+# The months a date written out names, for CN-056 only (F15 batch 5's review): English
+# names and abbreviations, and the German, French, Spanish and Russian (genitive) names. A
+# date in another language is read only from a `<time datetime>`.
+MONTH_NAMES = {
+    **{name: n for n, names in enumerate((
+        ("january", "jan", "januar", "janvier", "enero", "января"),
+        ("february", "feb", "februar", "février", "fevrier", "febrero", "февраля"),
+        ("march", "mar", "märz", "maerz", "mars", "marzo", "марта"),
+        ("april", "apr", "avril", "abril", "апреля"),
+        ("may", "mai", "mayo", "мая"),
+        ("june", "jun", "juni", "juin", "junio", "июня"),
+        ("july", "jul", "juli", "juillet", "julio", "июля"),
+        ("august", "aug", "août", "aout", "agosto", "августа"),
+        ("september", "sep", "sept", "septembre", "septiembre", "сентября"),
+        ("october", "oct", "oktober", "octobre", "octubre", "октября"),
+        ("november", "nov", "novembre", "noviembre", "ноября"),
+        ("december", "dec", "dezember", "décembre", "decembre", "diciembre", "декабря"),
+    ), start=1) for name in names},
+}
+_DAY = r"(?:0?[1-9]|[12]\d|3[01])"
+_YEAR = r"(?:19|20)\d{2}"
+_MONTH = r"[^\W\d_]{3,10}\.?"
+# A date as a visitor reads it: ISO, month first ("Jan. 12, 2026"), day first ("12. Januar
+# 2026", "12 de enero de 2026") or numeric ("12.01.2026", "12/01/2026"). Kept apart from
+# DATE_RE, which also feeds the age behind CN-038.
 SHOWN_DATE_RE = re.compile(
-    DATE_RE.pattern + r"|\b(?:0?[1-9]|[12]\d|3[01])\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|"
-    r"Oct|Nov|Dec)[a-z]*\.?,?\s+(?:20\d{2}|19\d{2})\b",
+    rf"\b(?P<iso>{_YEAR}[-/]\d{{1,2}}[-/]\d{{1,2}})\b"
+    rf"|(?<![\w.])(?P<md_month>{_MONTH})\s+(?P<md_day>{_DAY}),?\s+(?P<md_year>{_YEAR})\b"
+    rf"|\b(?P<dm_day>{_DAY})\.?\s+(?:de\s+)?(?P<dm_month>{_MONTH}),?\s+(?:de\s+)?(?P<dm_year>{_YEAR})\b"
+    rf"|\b(?P<n1>{_DAY})(?P<sep>[./])(?P<n2>\d{{1,2}})(?P=sep)(?P<n_year>{_YEAR})\b",
     re.I,
 )
+
+
+def _month(word: str) -> int | None:
+    return MONTH_NAMES.get(word.rstrip(".").casefold())
+
+
+def shown_dates_in(text: str, cutoff: date) -> list[date]:
+    """Every date SHOWN_DATE_RE finds in `text`, on or before `cutoff`. A numeric date is
+    day first with dots; with slashes it is month first unless that is impossible or
+    past `cutoff` and the day-first reading is not."""
+    found = []
+    for m in SHOWN_DATE_RE.finditer(text):
+        candidates = []
+        try:
+            if m["iso"]:
+                candidates = [_parse_date(m["iso"].replace("/", "-"))]
+            elif m["md_month"] and _month(m["md_month"]):
+                candidates = [date(int(m["md_year"]), _month(m["md_month"]), int(m["md_day"]))]
+            elif m["dm_month"] and _month(m["dm_month"]):
+                candidates = [date(int(m["dm_year"]), _month(m["dm_month"]), int(m["dm_day"]))]
+            elif m["n1"]:
+                a, b, y = int(m["n1"]), int(m["n2"]), int(m["n_year"])
+                orders = [(a, b)] if m["sep"] == "." else [(b, a), (a, b)]
+                for day_, month_ in orders:
+                    try:
+                        candidates.append(date(y, month_, day_))
+                    except ValueError:
+                        continue
+        except ValueError:
+            continue
+        valid = [c for c in candidates if c and c <= cutoff]
+        if valid:
+            found.append(valid[0])
+    return found
+
+
 YEAR_RE = re.compile(r"\b(20\d{2}|19\d{2})\b")
 STAT_RE = re.compile(r"\b(\d+(?:\.\d+)?%|\$[\d,.]+|\d[\d,.]+\s+(?:users|customers|people|studies|respondents|pages))\b", re.I)
 
@@ -71,20 +131,6 @@ def _parse_date(value: str | None) -> date | None:
     for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%B %d, %Y", "%b %d, %Y", "%B %d %Y", "%b %d %Y"):
         try:
             return datetime.strptime(value, fmt).date()
-        except ValueError:
-            continue
-    return None
-
-
-def _shown_date(value: str | None) -> date | None:
-    """`_parse_date`, and the day-first spelling SHOWN_DATE_RE also finds."""
-    found = _parse_date(value)
-    if found or not value:
-        return found
-    cleaned = re.sub(r"[.,]", " ", value).split()
-    for fmt in ("%d %B %Y", "%d %b %Y"):
-        try:
-            return datetime.strptime(" ".join(cleaned), fmt).date()
         except ValueError:
             continue
     return None
@@ -170,12 +216,11 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
         if tag.get_text(strip=True) and not shown_away(tag)
         and not any(shown_away(p) or p.name == "head" for p in tag.parents)
         and not under_foreign_credit(tag, claimed=claimed)
-        and (found := _shown_date(tag.get("datetime") or tag.get_text(" ", strip=True)))
+        and (found := (_parse_date(tag.get("datetime"))
+                       or next(iter(shown_dates_in(tag.get_text(" ", strip=True), cutoff)), None)))
         and found <= cutoff]
-    shown_text = [
-        found for raw in SHOWN_DATE_RE.findall(visible_text(
-            soup, skip=lambda tag: under_foreign_credit(tag, claimed=claimed)))
-        if (found := _shown_date(raw)) and found <= cutoff]
+    shown_text = shown_dates_in(visible_text(
+        soup, skip=lambda tag: under_foreign_credit(tag, claimed=claimed)), cutoff)
     shown_dates = shown_time + shown_text
     later = bool(shown_dates) and any(value > min(shown_dates) for value in shown_dates)
     date_signals = {

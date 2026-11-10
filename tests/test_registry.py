@@ -755,15 +755,18 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # `topical_cluster_mapper.py` and `MIN_PAGES_FOR_AVERAGE` in `link_profile.py`,
         # the smallest crawls AR-153 and AR-162 judge (the owner's ruling), and
         # `MAX_STYLESHEETS_READ` in `robots_path_tester.py`, CI-013's `@import` walk.
+        # F15 batch 5 adds one `convention`: `DEFINITION_TERM_MAX_WORDS` in
+        # `answer_block_scanner.py`, since a definition alone decides GO-144 and GEO-004.
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 14,
-            "convention": 103,
+            "convention": 104,
             "inherited": 0,
             "presentation": 45,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 137)
-        self.assertEqual(len(named), 182)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 138)
+        self.assertEqual(len(named), 183)
+        # 182 -> 183 at F15 batch 5: `DEFINITION_TERM_MAX_WORDS`.
         # 179 -> 182 at F15 batch 4: the three `convention`s above.
         # 178 -> 179 at F15 batch 3: `NEAR_DUPLICATE_SIMILARITY` in `duplicate_content.py`
         # is named, where 0.85 was a default argument.
@@ -809,10 +812,11 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 197 -> 196: `THIN_CONTENT_THRESHOLDS` deleted at 0.176.0 (F04 batch 4b).
         # 196 -> 197: `MEANINGFUL_IMAGE_MIN_PX` in `seo_common.py` (F15 batch 2).
         # 197 -> 198: `NEAR_DUPLICATE_SIMILARITY` in `duplicate_content.py` (F15 batch 3).
+        # 201 -> 202 at F15 batch 5: `DEFINITION_TERM_MAX_WORDS`.
         # 198 -> 201: `MIN_PAGES_FOR_HUBS`, `MIN_PAGES_FOR_AVERAGE`, `MAX_STYLESHEETS_READ`
         # (F15 batch 4).
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 201)
+                             for path in at._script_paths()), 202)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()

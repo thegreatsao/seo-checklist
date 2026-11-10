@@ -40,8 +40,32 @@ NOT_A_TERM = (r"(?!(?:it|its|this|that|these|those|there|here|we|our|you|your|he
               r"they|their|his|her|i|my|if|when|while|because|although|though|as|since|"
               r"once|unless|whether|where|everything|something|anything|nothing)\b)")
 DEFINITION_RE = re.compile(r"\s*" + NOT_A_TERM
-                           + r"([A-Z][A-Za-z0-9 -]{2,80}?)\s+(?:is|are|refers to|means)\s+.{20,220}",
+                           + r"([A-Z][A-Za-z0-9 -]{2,80}?)\s+(is|are|refers to|means)\s+(.{20,220})",
                            re.S | re.I)
+# Review round 1 of F15 batch 5: "Free delivery within Cyprus is available on …" opened
+# its paragraph with words and a copula, and passed both items. A term is a short noun
+# phrase with no preposition in it, and what it is said to be is a kind of thing
+# ("is a/an/the/one …") or what it means ("refers to", "means").
+DEFINITION_TERM_PREPOSITIONS = frozenset({
+    "about", "after", "at", "before", "by", "for", "from", "in", "into", "on", "over",
+    "through", "to", "under", "with", "within", "without", "where", "when", "which"})
+# basis: convention — the longest term a definition opens with, in words: "A sourdough
+# starter culture" is four, and a clause of seven words before its verb is a sentence
+# about something, not a term.
+DEFINITION_TERM_MAX_WORDS = 6
+
+
+def _is_definition(text: str) -> bool:
+    match = DEFINITION_RE.match(text)
+    if not match:
+        return False
+    term = match.group(1).split()
+    if len(term) > DEFINITION_TERM_MAX_WORDS or any(
+            word.lower() in DEFINITION_TERM_PREPOSITIONS for word in term):
+        return False
+    verb = match.group(2).lower()
+    return verb in ("refers to", "means") or bool(
+        re.match(r"(?:a|an|the|one|any)\b", match.group(3), re.I))
 HEADING_RE = re.compile(r"^h[1-6]$")
 
 # Elements whose text is not the page's prose, skipped subtree and all. `<template>`
@@ -205,7 +229,7 @@ def scan_answer_blocks(source: str, timeout: int = 15) -> dict:
     for paragraph in soup.find_all("p"):
         text = _own_text(paragraph)
         if DEFINITION_MIN_WORDS <= _word_count(text) <= DEFINITION_MAX_WORDS \
-                and DEFINITION_RE.match(text):
+                and _is_definition(text):
             definitions.append(text[:320])
 
     lists = []

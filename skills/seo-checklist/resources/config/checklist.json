@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "1a7837e21273",
+  "registry_version": "a6b19fafcebf",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -3196,7 +3196,7 @@
         }
       },
       "effort": "low",
-      "fix": "Give the WebSite node a name and a url; Google reads both for the site name shown in results"
+      "fix": "Give the WebSite node a name, a url and an alternateName; Google reads them for the site name shown in results"
     },
     {
       "id": "GO-144",

@@ -12,6 +12,7 @@ from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
+from lib.schema_types import markup_types, schema_org_name
 from schema_required_props import (extract_schema_documents, find_schema_nodes,
                                    missing_rich_result_props)
 from seo_common import read_source, as_list, html_parser, issue, print_json_or_text
@@ -61,7 +62,12 @@ def check_video_schema(documents: list[Any], html: str = "", base_url: str = "")
     issues = []
     videos = find_schema_nodes(documents, "VideoObject")
     shown = page_videos(html, base_url)
-    if shown and not videos:
+    # A VideoObject in Microdata or RDFa is one too (review round 1); its properties are
+    # not read, so it answers only "the page declares the video".
+    in_markup = sum(1 for types in (markup_types(BeautifulSoup(html, html_parser()))
+                                    if html else [])
+                    if "VideoObject" in {schema_org_name(t) for t in types})
+    if shown and not videos and not in_markup:
         issues.append(issue("error", "The page shows a video but declares no VideoObject",
                             evidence=shown[0]))
     for row in videos:

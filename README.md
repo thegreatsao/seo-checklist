@@ -434,7 +434,7 @@ depends on and requires a stated basis — an external standard (named, so you c
 it), something measured, a convention admitted as one, or a number inherited from the
 borrowed code and not yet examined. CI refuses a bare one. The count that matters is
 how many came with code from elsewhere and are still unexamined: after F15 batch 4, none of
-137; 20 are standards, 14 measured, 103 conventions with the judgement written, and 45 more
+138; 20 are standards, 14 measured, 104 conventions with the judgement written, and 45 more
 decide only what is printed. That is in [KNOWN-ISSUES.md](KNOWN-ISSUES.md) §2 and [ROADMAP.md](ROADMAP.md).
 
 **The report says what changed since last time, and hands over a task list.** Every run
