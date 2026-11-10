@@ -37,6 +37,24 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `skills/seo-checklist/scripts/` (security, speed and technical) — graded 2026-11-10, F15 batch 6
+
+Read for the grade: `domain_safety_check.py` (`crawled_urls`, `check_safe_browsing`), `security_headers.py`
+(`hardening_gaps`, `_csp_weakness`), `ga4_tag_checker.py` (`installed_by`, `pageview_ids`, `strip_inert_scripts`,
+container loads), `html_validator.py` (`with_doctype`), `mobile_render_checker.py` (`phone_css`, `_wide_only`),
+`favicon_check.py` (per-origin robots.txt), `a11y_seo_checker.py` (`accessible_name`, `_hidden`, `_text`),
+`css_minify_check.py` (`RE_IMPORT`, unread sheets), `third_party_script_audit.py` (`_classic_script`),
+`critical_request_chain.py`, `font_audit.py`, `citation_readiness.py` (`utility_page`), `checklist_runner.build_plan`
+(`--inventory` dropped where no crawl was read).
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `make check` on `78fc08d` (ci_local 27/27, check-arch 3/3, vcr red by design); 101 tests in `tests/test_f15_batch6.py`, each review round red on the commit before it; fourteen census runs, each declared first (run 1 missed went-down's moves, recorded); Claude review round 13 "ship" |
+| Agent understandable | B | each rule names its item and the round that shaped it; GO-132's split between what is installed (the whole page) and what is counted twice (without serialised copies), and the slug vocabulary, are readable only with their comments |
+| Test stability | A | loopback pages; Safe Browsing, Nu and GTM containers stood in or mocked; no timing dependence |
+| Architecture boundaries | A | `make check-arch` 3/3 |
+| Code conventions | A | ruff clean; new sets held by `TheSetsAreHeld`; one new verdict-deciding number (`SB_MAX_ENTRIES`, a standard: 139) |
+
 ## `skills/seo-checklist/scripts/` (structured data and content) — graded 2026-11-10, F15 batch 5
 
 Read for the grade: `schema_required_props.py` (`missing_rich_result_props`, `value_ok`, `find_schema_nodes`,
