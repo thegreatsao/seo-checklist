@@ -76,6 +76,30 @@ that drift.
 
 ---
 
+### [2026-11-10] A cross-host canonical alone passes every canonical item; AR-153 and AR-162 are N/A on small sites
+
+**Decision:** The owner's rulings on F15 batch 3's questions ("Принимаю все", 2026-11-10; the F15 contract, "The
+owner's rulings on batch 3's questions"). (1) TE-176 and CI-009 no longer fail a canonical that names another host on
+its own; its target is still requested, and a target not answering 200 still fails. (3) AR-153 and AR-162 report N/A,
+not FAIL, below a minimum page count, the smallest the rule's own arithmetic justifies; each minimum is in the item's
+`measures` sentence. BL-081's single generic or empty anchor still flags its target (ruling 2), until F03 batch 6.
+
+**Why:** CI-011's ruling already calls a cross-host canonical legitimate (syndication, a moved section); three items
+reading the same declaration three ways told a client one thing was right and wrong at once. A site too small for the
+rule's bar to be reachable cannot be judged by it: a FAIL there is the rule's arithmetic, not the site's design.
+
+**Alternatives rejected:**
+- **Warn on a cross-host canonical:** still a verdict about a declaration the owner ruled legitimate.
+- **A fixed "small site" size for both items:** each rule's bar is different; a shared number would be unjustified
+  for at least one of them.
+- **Keeping AR-162's orphan and dead-end findings on a small site:** orphans are CI-008's, which still reads them;
+  the ruling is N/A for the item.
+
+**Consequences:** CI-009's `cross_host` maps to pass; TE-176's `issues` carries no cross-host entry. A site below the
+minimum gets no AR-153 or AR-162 verdict at all.
+
+---
+
 ### [2026-11-09] A stale second reading is counted, not failed, until F03 batch 6
 
 **Decision:** `tools/audit_item_readings.py` counts a well-formed second reading whose digest no longer matches as
