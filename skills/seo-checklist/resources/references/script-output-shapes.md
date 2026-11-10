@@ -709,7 +709,8 @@ title, including noindex pages. Unlike title duplication, absence is not competi
     are excluded whether nested under their key or, for schema dates, hoisted into
     `@graph`
 `date_signals.shown.published` — bool — since F15 batch 5, a date a visitor sees in the page's
-  own content (not its furniture or a comments section): a `<time>` with text of its own, or a
+  own content (not its furniture — a page-level header without the page's `<h1>` among it — nor a
+  comments section): a `<time>` with text of its own, or a
   date written in the visible text (ISO,
   month or day first in English, German, French, Spanish or Russian, or numeric)
 `date_signals.shown.updated` — bool — a shown date later than the publication shown: the

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "259710d51e70",
+  "registry_version": "e2d01d02779d",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1366,7 +1366,7 @@
           "truthy": true
         }
       },
-      "measures": "That the visible text shows a date (a <time> with text, or one written out) and a later one as the update; the publication is the earliest <time> or a date labelled published. Metadata alone is not shown.",
+      "measures": "That the page's own visible text (not its furniture or comments) shows a date, a <time> with text or one written out, and a later one as the update; the publication is the earliest <time> or one labelled published.",
       "effort": "high",
       "fix": "Show publication and updated dates"
     },

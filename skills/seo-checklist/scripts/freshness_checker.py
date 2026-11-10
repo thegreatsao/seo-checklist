@@ -16,7 +16,6 @@ from seo_common import (
     declared_publication_dates_by_source,
     load_source,
     page_nodes,
-    in_page_furniture,
     parse_html,
     shown_away,
     under_foreign_credit,
@@ -245,8 +244,26 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
     claimed = parsed.get("foreign_itemref_ids")
     # The page's own dates (review round 8): a sidebar's recent posts, a site footer's
     # "last updated", a top bar's today, a comment's date are not this page's.
+    # A page-level `<header>` holding the page's `<h1>` is a hero, where a theme writes
+    # the post's own date under its title (review round 9: Clean Blog, Beautiful Jekyll).
+    def furniture(tag) -> bool:
+        for parent in tag.parents:
+            if not getattr(parent, "name", None) or parent.name == "[document]":
+                continue
+            role = (parent.get("role") or "").strip().lower()
+            if parent.name == "nav" or role == "navigation":
+                return True
+            if (parent.name in ("aside", "footer") or role in ("complementary", "contentinfo")) \
+                    and parent.find_parent(["article", "main", "section"]) is None:
+                return True
+            if (parent.name == "header" or role == "banner") \
+                    and parent.find_parent(["article", "main", "section"]) is None \
+                    and parent.find("h1") is None:
+                return True
+        return False
+
     def not_the_pages(tag) -> bool:
-        return in_page_furniture(tag) or any(
+        return furniture(tag) or any(
             COMMENTS.search(" ".join([str(p.get("id") or "")]
                                      + [str(c) for c in (p.get("class") or [])]))
             for p in (tag, *tag.parents) if getattr(p, "get", None))

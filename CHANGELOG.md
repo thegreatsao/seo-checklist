@@ -12,10 +12,10 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `259710d51e70` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+Registry version: `e2d01d02779d` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4).
 
-F15 batch 5 (`ecaf0dc17e56` → `259710d51e70`) — structured data and content, and the owner's ruling 2 on batch 4's
+F15 batch 5 (`ecaf0dc17e56` → `e2d01d02779d`) — structured data and content, and the owner's ruling 2 on batch 4's
 questions. **The inventory is version 6**: `schema_nodes` carries Microdata and RDFa items (`format: markup`), so LO-198
 finds a LocalBusiness written in either, and a schema.org IRI `@type` counts. **Verdicts of a real audit can move**:
 MS-032 applies to a page whose only JSON-LD does not parse and fails any page with an unparseable block (the warn band
@@ -64,7 +64,8 @@ Citations or Works cited; a social link elsewhere still is not one. A date writt
 "Effective" at the start of a block of the page's content stands for the publication beside an update `<time>`; a video
 in a sidebar or site-footer widget is not the page's video (MD-190), one in the page's header is; the schema tables read
 a type written as an IRI. CN-056 reads only the page's own dates: a sidebar's recent posts, a site footer's "last
-updated", a top bar's today or a comments section's dates are not the page's.
+updated", a top bar's today or a comments section's dates are not the page's; a date under the page's `<h1>` in a hero
+header is.
 
 F15 batch 4 (`445b7ca058d2` → `ecaf0dc17e56`) — robots, sitemaps, redirects and URLs, and the owner's rulings on
 batch 3's questions. **Verdicts of a real audit can move**: a canonical naming another host no longer fails CI-009 or

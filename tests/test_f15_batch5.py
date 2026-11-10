@@ -950,6 +950,22 @@ class ReviewRound8(unittest.TestCase):
         self.assertLess(clock.monotonic() - started, 3.0)
 
 
+class ReviewRound9(unittest.TestCase):
+    def test_a_post_date_in_a_hero_header_with_the_h1_is_the_pages(self):
+        clean_blog = ("<header class='masthead'><div class='post-heading'><h1>Rye</h1>"
+                      "<span class='meta'>Posted by Jane on August 24, 2023</span></div></header>"
+                      "<article><p>Bread.</p></article>")
+        beautiful = ("<header class='header-section'><h1>First post</h1>"
+                     "<span class='post-meta'>Posted on February 26, 2020</span>"
+                     "<span class='post-meta'>Last updated: March 3, 2021</span></header>"
+                     "<main><p>Bread.</p></main>")
+        self.assertEqual(VisibleDates.cn_056(self, clean_blog), WARN)
+        self.assertEqual(VisibleDates.cn_056(self, beautiful), PASS)
+
+    def test_cn_056s_sentence_says_what_it_leaves_out(self):
+        self.assertIn("furniture", ITEMS["CN-056"]["measures"])
+
+
 # ---------------------------------------------------------------------------
 # The sets batch 5 wrote, held to their sources (GOV-3)
 # ---------------------------------------------------------------------------
