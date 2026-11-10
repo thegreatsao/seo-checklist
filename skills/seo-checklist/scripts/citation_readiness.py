@@ -90,17 +90,23 @@ UTILITY_WORDS = frozenset({
     "konfidentsialnosti", "konfidenczialnost", "konfidenczialnosti", "personalnyh",
     "personalnykh", "dannyh", "dannykh", "privatumo", "privatumas", "slapuku", "slapukai",
     "bdar", "apsauga", "apsaugos",
-    # terms
+    "privacypolicy",
+    # terms, and the legal notice a site publishes beside them
     "terms", "tos", "agb", "nutzungsbedingungen", "usloviya", "pravila", "soglashenie",
-    "oferta", "taisykles", "salygos",
+    "oferta", "taisykles", "salygos", "agreement", "legal", "impressum",
     # contact
-    "contact", "contacts", "kontakt", "kontakte", "kontakty", "kontaktai"})
+    "contact", "contacts", "contactus", "kontakt", "kontakte", "kontakty", "kontaktai"})
+# Phrases that name such a page in words that do not each name one (review round 3):
+# read as the utility word they stand for, so `/data-protection` is a privacy page and
+# `/blog/data-protection-tips` is still an article.
+UTILITY_PHRASES = {"get-in-touch": "contact", "data-protection": "privacy"}
 # The other words such slugs are written with: "our-privacy-policy",
 # "terms-and-conditions", "usloviya-ispolzovaniya", "polzovatelskoe-soglashenie".
 UTILITY_SLUG_WORDS = frozenset({
-    "our", "the", "of", "and", "us", "use", "service", "services", "conditions", "notice",
+    "our", "the", "of", "and", "us", "use", "service", "conditions", "notice",
     "statement", "policy", "policies", "page", "info", "information", "form", "sale",
-    "sales", "business", "website", "site", "politika", "ispolzovaniya", "obrabotki",
+    "sales", "business", "website", "site", "me", "user", "data", "politika",
+    "ispolzovaniya", "obrabotki",
     "polzovatelskoe", "publichnaya", "naudojimo", "duomenu"})
 
 
@@ -112,7 +118,10 @@ def utility_page(url: str) -> bool:
         slugs.pop()
     if not slugs:
         return False
-    words = [w for w in re.split(r"[-_]+", slugs[-1]) if w]
+    slug = re.sub(r"[-_]+", "-", slugs[-1]).strip("-")
+    for phrase, word in UTILITY_PHRASES.items():
+        slug = re.sub(rf"(?:^|(?<=-)){re.escape(phrase)}(?=-|$)", word, slug)
+    words = [w for w in slug.split("-") if w]
     return (any(w in UTILITY_WORDS for w in words)
             and all(w in UTILITY_WORDS or w in UTILITY_SLUG_WORDS or w.isdigit()
                     for w in words))

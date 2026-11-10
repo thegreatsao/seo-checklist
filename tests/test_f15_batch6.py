@@ -736,6 +736,53 @@ class ReviewRound2(unittest.TestCase):
         self.assertEqual(self.se_120(**{"Permissions_Policy": "geolocation=(self *)"}), WARN)
 
 
+class ReviewRound3(unittest.TestCase):
+    def go(self, path: str) -> str:
+        return ReviewRound2.both(self, path)
+
+    def test_common_contact_and_privacy_slugs_are_utility_pages(self):
+        for path in ("/contact-me", "/contactus", "/get-in-touch", "/privacypolicy",
+                     "/legal-notice", "/impressum", "/data-protection", "/data-privacy-policy",
+                     "/user-agreement"):
+            with self.subTest(path=path):
+                self.assertEqual(self.go(path), NA)
+
+    def test_their_neighbours_keep_the_rule(self):
+        for path in ("/blog/data-privacy-laws-2026", "/data", "/me", "/blog/data-protection-tips",
+                     "/gdpr-services", "/touch", "/get-in-touch-with-your-inner-baker"):
+            with self.subTest(path=path):
+                self.assertEqual(self.go(path), FAIL)
+
+    def test_the_sentence_states_the_slug_rule(self):
+        for item_id in ("GO-145", "GEO-005"):
+            with self.subTest(item=item_id):
+                self.assertIn("slug made only of", ITEMS[item_id]["measures"])
+
+    def unnamed(self, body: str) -> int:
+        return run_item(a11y_seo_checker, "TE-180", {"/": html(body)})["wcag_a"]["unnamed_fields"]
+
+    def test_a_field_hidden_from_assistive_technology_is_not_counted(self):
+        for body in ('<div style="position:absolute;left:-5000px" aria-hidden="true">'
+                     '<input type="text" name="b_abc_def" tabindex="-1" value=""></div>',
+                     '<div hidden><input name="x"></div>',
+                     '<div style="display: none"><input name="x"></div>',
+                     '<input name="x" style="visibility:hidden">'):
+            with self.subTest(body=body):
+                self.assertEqual(self.unnamed(body), 0)
+        self.assertEqual(self.unnamed('<div aria-hidden="false"><input name="x"></div>'), 1)
+
+    def test_a_comment_is_no_label_text(self):
+        self.assertEqual(self.unnamed('<label for="e"><!-- email --></label><input id="e" type="email">'), 1)
+
+    def test_a_nomodule_script_blocks_nothing_in_a_modern_browser(self):
+        body = ('<script type="module" src="/app.js"></script>'
+                '<script src="https://cdn.example.net/legacy.js" nomodule></script>')
+        self.assertEqual(page_verdict(critical_request_chain, "SP-110", html("<p>x</p>" + body)), PASS)
+        self.assertEqual(page_verdict(third_party_script_audit, "SP-109",
+                                      html("<p>x</p>", head='<script src="https://cdn.example.net/'
+                                                            'legacy.js" nomodule></script>')), PASS)
+
+
 # ---------------------------------------------------------------------------
 # The sets the batch adds, held to their sources
 # ---------------------------------------------------------------------------
@@ -758,15 +805,19 @@ class TheSetsAreHeld(unittest.TestCase):
                 words = fragment.split("-")
                 self.assertTrue(any(w in UTILITY_WORDS or any(u.startswith(w) for u in UTILITY_WORDS)
                                     for w in words), fragment)
-        self.assertEqual(len(UTILITY_WORDS), 40)
+        self.assertEqual(len(UTILITY_WORDS), 45)
+        from citation_readiness import UTILITY_PHRASES
+        # Review round 3: phrases whose words do not each name the page.
+        self.assertEqual(UTILITY_PHRASES, {"get-in-touch": "contact", "data-protection": "privacy"})
+        self.assertLessEqual(set(UTILITY_PHRASES.values()), UTILITY_WORDS)
         self.assertEqual(UTILITY_WORDS & UTILITY_SLUG_WORDS, set())
         # Filler words name no kind of page: none is a subject an article is about.
         self.assertEqual(UTILITY_SLUG_WORDS, {
-            "our", "the", "of", "and", "us", "use", "service", "services", "conditions",
+            "our", "the", "of", "and", "us", "use", "service", "conditions",
             "notice", "statement", "policy", "policies", "page", "info", "information",
-            "form", "sale", "sales", "business", "website", "site", "politika",
-            "ispolzovaniya", "obrabotki", "polzovatelskoe", "publichnaya", "naudojimo",
-            "duomenu"})
+            "form", "sale", "sales", "business", "website", "site", "me", "user", "data",
+            "politika", "ispolzovaniya", "obrabotki", "polzovatelskoe", "publichnaya",
+            "naudojimo", "duomenu"})
         from security_headers import (CSP_ANY_SOURCE, CSP_INLINE_OVERRIDES,
                                       HARDENING_HEADERS, REFERRER_POLICIES)
         # A source expression matching every host: the wildcard, and a bare scheme

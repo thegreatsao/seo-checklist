@@ -9,6 +9,8 @@ import argparse
 import json
 import re
 
+from bs4 import Comment
+
 from seo_common import load_html, parse_html
 
 
@@ -21,6 +23,21 @@ DEFAULT_CAPTION_INPUT_TYPES = frozenset({"submit", "reset"})
 VALUE_NAMED_INPUT_TYPES = frozenset({"submit", "reset", "button"})
 
 
+def _hidden(field) -> bool:
+    """Whether the field is out of the accessibility tree by its own markup or an
+    ancestor's: `aria-hidden="true"`, `hidden`, or an inline `display:none` or
+    `visibility:hidden` (review round 3: Mailchimp's honeypot field). Stylesheets are not
+    read."""
+    for node in [field, *field.parents]:
+        if getattr(node, "attrs", None) is None:
+            continue
+        style = re.sub(r"\s+", "", (node.get("style") or "").lower())
+        if ((node.get("aria-hidden") or "").strip().lower() == "true" or node.has_attr("hidden")
+                or "display:none" in style or "visibility:hidden" in style):
+            return True
+    return False
+
+
 def _text(tag) -> str:
     """A label's own text: what it says, not what the controls inside it hold, with an
     image's `alt` read as its text (review round 1: an icon label named nothing)."""
@@ -28,6 +45,8 @@ def _text(tag) -> str:
         return tag["aria-label"].strip()
     parts = []
     for piece in tag.descendants:
+        if isinstance(piece, Comment):
+            continue
         if isinstance(piece, str):
             if not piece.find_parent(["select", "textarea", "option", "script", "style"]):
                 parts.append(str(piece))
@@ -123,7 +142,7 @@ def checker(source: str, timeout: int = 15) -> dict:
         1 for field in inputs
         if not (field.name == "input"
                 and (field.get("type") or "").lower() in UNRENDERED_INPUT_TYPES)
-        and not accessible_name(field, soup))
+        and not _hidden(field) and not accessible_name(field, soup))
     wcag_a = {"images_missing_alt": len(missing_alt),
               "unnamed_fields": unnamed_fields,
               "missing_lang": not parsed.get("lang")}

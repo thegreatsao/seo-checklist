@@ -55,7 +55,8 @@ JAVASCRIPT_TYPES = frozenset({
 def _classic_script(tag) -> bool:
     """Whether the browser runs this `<script>` as a classic, parser-blocking candidate."""
     essence = (tag.get("type") or "").split(";", 1)[0].strip().lower()
-    return essence in JAVASCRIPT_TYPES
+    # A `nomodule` script is skipped by every browser that runs modules (review round 3).
+    return essence in JAVASCRIPT_TYPES and not tag.has_attr("nomodule")
 
 
 def _script_category(src: str) -> str | None:

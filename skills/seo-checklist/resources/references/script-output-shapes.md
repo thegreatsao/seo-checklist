@@ -103,7 +103,8 @@ for that page. Use `--no-http-cache` for an isolated timing.
 `wcag_a.unnamed_fields` — int — form fields with no accessible name: `aria-labelledby`
   resolved to the text it names, a blank attribute or label no name; image inputs named
   by `alt`, button inputs by `value` (submit and reset have a default caption); hidden
-  inputs not counted (F15 batch 6)
+  inputs, and fields under `aria-hidden="true"`, `hidden` or an inline `display:none` /
+  `visibility:hidden`, not counted (F15 batch 6)
 `wcag_a.missing_lang` — bool
 `score` — int
 `checks.h1_count` — int
@@ -343,8 +344,9 @@ that could not be checked when there are any.
 `sourced_score` — int — `score` on a page naming at least one source, 0 on one naming none:
   what GO-145 and GEO-005 assert (F15 batch 5)
 `utility_page` — bool — every word of the page's slug (the segment before an `index`
-  page) is a privacy, terms or contact word (`UTILITY_WORDS`), a filler word
-  (`UTILITY_SLUG_WORDS`) or a number, and one is a utility word: GO-145's and
+  page) is a privacy, terms or contact word (`UTILITY_WORDS`, a `UTILITY_PHRASES` phrase
+  read as one), a filler word (`UTILITY_SLUG_WORDS`) or a number, and one is a utility
+  word: GO-145's and
   GEO-005's `applies_when`, N/A when true (F15 batch 6, the owner's ruling 1 on batch 5)
 `citation_capacity` — int — trusted links, cite/blockquote tags, footnote links, schema
   citations, and outbound links in a block that makes a claim or says "Source", or under a
