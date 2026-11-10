@@ -913,8 +913,9 @@ because until then no rule read it. Absent, both land on `NO_DATA`.
 `checks.return_tags.verified_and_valid` — bool — **absent** when verification was not
   requested or any alternate could not be fetched, so IN-122 reports `NO_DATA`
   instead of inferring validity from an incomplete check. False, whatever the returns,
-  when `language_code_issues` is not empty (with or without `--verify-returns`) or the
-  set names no alternate besides the page itself and x-default (IN-122, F15)
+  when `language_code_issues` is not empty (with or without `--verify-returns`), or, under
+  `--verify-returns`, when the set names no URL but the page itself; an x-default on
+  another URL is verified like an alternate (IN-122, F15)
 `language_code_issues[]` — codes outside Google's ISO 639-1 / ISO 3166-1 alpha-2 format:
   `jp`, `jp-JP`, any three-letter language (`eng-US`, `jpn`, and `fil`, which has no
   two-letter code), an unknown or numeric region (`es-419`), a malformed tag; one issue

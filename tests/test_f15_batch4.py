@@ -445,6 +445,18 @@ class CriticalAssets(unittest.TestCase):
                                   robots_path_tester.css_imports(rule, "https://x.test/")],
                                  ["a.css"])
 
+    def test_a_commented_out_import_is_not_followed(self):
+        """Review round 7: a sheet nobody loads is no critical resource."""
+        self.assertEqual(robots_path_tester.css_imports(
+            "/* @import url(/private/old.css); */ body{}", "https://x.test/"), [])
+
+    def test_a_stylesheet_answering_404_is_no_unread_sheet(self):
+        out = self.run_ci_013({
+            "/": '<html><head><link rel="stylesheet" href="/css/gone.css"></head>'
+                 '<body>Hi</body></html>'})
+        self.assertFalse(out.get("truncated"))
+        self.assertEqual(verdict("CI-013", out), PASS)
+
     def test_an_unread_stylesheet_withholds_the_pass(self):
         out = self.run_ci_013({
             "/": '<html><head><link rel="stylesheet" href="/css/main.css"></head>'
