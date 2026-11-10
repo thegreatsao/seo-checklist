@@ -7515,7 +7515,8 @@ class AClaimOfNoneIsNotMadeOverAnInputThatWasCapped(unittest.TestCase):
             # wants something true. Derived from the operator rather than special-cased
             # per item, so a declaration added tomorrow is satisfied by this too.
             operator = (set(applies_when) - {"path", "field", "missing_is", "scope"}).pop()
-            value = True if operator == "truthy" else (applies_when[operator] or 0) + 1
+            value = (True if operator == "truthy" else False if operator == "falsy"
+                     else (applies_when[operator] or 0) + 1)
             _set(payload, applies_when["path"], value)
         return payload
 

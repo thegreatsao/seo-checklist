@@ -42,6 +42,11 @@ import site_crawl
 #  show what averages sites have, and a navigation bar alone clears three, so this flags
 #  sites whose pages barely link at all — the judgement of where "barely" is
 LOW_AVERAGE_INTERNAL_LINKS = 3
+# basis: convention — derived, LOW_AVERAGE_INTERNAL_LINKS distinct other pages plus the page itself:
+#  on fewer pages read, the average cannot reach three however fully every page links,
+#  so AR-162 is N/A there (`too_few_pages_for_average`), not a FAIL the rule could not avoid (the
+#  owner's ruling on F15 batch 3's question 3). Orphans on a small site stay CI-008's.
+MIN_PAGES_FOR_AVERAGE = LOW_AVERAGE_INTERNAL_LINKS + 1
 
 def home_key(url: str) -> str:
     """The page key of the site's root, from any URL on it."""
@@ -106,6 +111,8 @@ def graph_from_inventory(inventory: dict) -> tuple:
         graph["linked_from_elsewhere"].update(lands_on(home_key(
             inventory.get("entry") or inventory.get("site"))))
     crawled = set(pages)
+    twice = site_crawl.read_twice(pages)
+    graph["pages_read"] = sum(1 for key in graph["pages"] if key not in twice)
     base_domain = urlparse(inventory.get("site") or "").netloc
     robots_refused = set(site_crawl.robots_refused(inventory))
     return graph, crawled, base_domain, robots_refused
@@ -211,6 +218,13 @@ def analyze_link_profile(graph: dict, crawled: set, base_domain: str,
         "truncated": truncated,
         **({"truncated_reason": withheld} if truncated else {}),
         "pages_crawled": total_pages,
+        # Distinct pages: a redirect row read again is its landing page (AR-162's
+        # applicability, `MIN_PAGES_FOR_AVERAGE`).
+        "pages_read": graph.get("pages_read", total_pages),
+        # Its applicability: a whole crawl of fewer pages than the average needs. A crawl
+        # cut at its cap has more pages than it read, so it is never too small.
+        "too_few_pages_for_average": (not truncated and graph.get("pages_read", total_pages)
+                                      < MIN_PAGES_FOR_AVERAGE),
         "total_internal_links": sum(d["internal_out"] for d in pages.values()),
         "total_external_links": sum(d["external_out"] for d in pages.values()),
         "unique_internal_targets": len(internal_targets),

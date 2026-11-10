@@ -686,11 +686,14 @@ class CanonicalChecker(unittest.TestCase):
         self.assertEqual(out["rows"][0]["verdict"], "self_canonical")
         self.assertEqual(verdict("CI-009", out), PASS)
 
-    def test_a_cross_host_canonical_fails(self):
+    def test_a_cross_host_canonical_alone_passes(self):
+        """Legitimate on its own (the owner's ruling on F15 batch 3's question 1); with
+        `--check-targets` its target decides, as a same-host one's does."""
         self.serve("https://other.example.net/page")
         out = self.check()
         self.assertEqual(out["rows"][0]["verdict"], "cross_host")
-        self.assertEqual(verdict("CI-009", out), FAIL)
+        self.assertEqual(out["issues"], [])
+        self.assertEqual(verdict("CI-009", out), PASS)
 
     def test_no_canonical_at_all_fails_ci_009_and_passes_ci_011(self):
         """The split is deliberate: CI-009 is "serve content at a single canonical
@@ -706,8 +709,8 @@ class CanonicalChecker(unittest.TestCase):
         """CI-009 asserted `issues` had no critical/high entry. This script says
         "warning" and "error" and never those two words, so the rule matched nothing
         and the item reported PASS on every site ever audited — including this one,
-        whose canonical points at another domain."""
-        self.serve("https://other.example.net/page")
+        which declares no canonical at all."""
+        self.serve(None)
         out = self.check()
         emitted = {i["severity"] for i in out["issues"]}
         self.assertTrue(emitted)

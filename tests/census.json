@@ -175,7 +175,7 @@
         "fixture:good_tls": "PASS",
         "flagged": "FAIL",
         "indexed": "FAIL",
-        "no-location": "FAIL",
+        "no-location": "NO_DATA",
         "page-defects": "FAIL",
         "page-sound": "FAIL",
         "redirect-chain": "FAIL",
@@ -183,7 +183,7 @@
         "slow-field": "FAIL",
         "unindexed": "FAIL",
         "url-shapes": "FAIL",
-        "went-down": "FAIL"
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -229,28 +229,29 @@
     },
     "AR-153": {
       "answers": {
-        "cleared": "PASS",
+        "cleared": "N/A",
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
-        "fast-field": "PASS",
+        "fast-field": "N/A",
         "fixture:broken": "PASS",
         "fixture:broken_tls": "PASS",
         "fixture:good": "PASS",
         "fixture:good_tls": "PASS",
-        "flagged": "PASS",
-        "indexed": "FAIL",
+        "flagged": "N/A",
+        "indexed": "N/A",
         "no-location": "NO_DATA",
         "page-defects": "FAIL",
         "page-sound": "FAIL",
-        "redirect-chain": "PASS",
+        "redirect-chain": "N/A",
         "site-defects": "FAIL",
-        "slow-field": "PASS",
-        "unindexed": "FAIL",
-        "url-shapes": "FAIL",
+        "slow-field": "N/A",
+        "unindexed": "N/A",
+        "url-shapes": "N/A",
         "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
+        "N/A",
         "NO_DATA",
         "PASS"
       ],
@@ -507,28 +508,29 @@
     },
     "AR-162": {
       "answers": {
-        "cleared": "FAIL",
+        "cleared": "N/A",
         "error-entry": "NO_DATA",
         "failing-shapes": "FAIL",
-        "fast-field": "FAIL",
+        "fast-field": "N/A",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
         "fixture:good": "PASS",
         "fixture:good_tls": "PASS",
-        "flagged": "FAIL",
-        "indexed": "FAIL",
+        "flagged": "N/A",
+        "indexed": "N/A",
         "no-location": "NO_DATA",
         "page-defects": "FAIL",
         "page-sound": "FAIL",
-        "redirect-chain": "FAIL",
+        "redirect-chain": "N/A",
         "site-defects": "FAIL",
-        "slow-field": "FAIL",
-        "unindexed": "FAIL",
-        "url-shapes": "FAIL",
+        "slow-field": "N/A",
+        "unindexed": "N/A",
+        "url-shapes": "N/A",
         "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
+        "N/A",
         "NO_DATA",
         "PASS"
       ],
@@ -6846,7 +6848,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "445b7ca058d2",
+  "registry_version": "d7d44f72d70b",
   "sites": [
     "fixture:good",
     "fixture:broken",

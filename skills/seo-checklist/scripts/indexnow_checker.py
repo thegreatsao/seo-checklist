@@ -88,13 +88,22 @@ def check_key_file(site_url: str, key: str) -> dict:
     parsed = urlparse(site_url)
     key_url = f"{parsed.scheme}://{parsed.netloc}/{key}.txt"
 
-    status, body, failure = fetch_url(key_url)
+    try:
+        resp = safe_get(key_url, timeout=8)
+        status, body, failure = resp.status_code, resp.text, None
+        ctype = (resp.headers or {}).get("content-type", "")
+    except Exception as exc:
+        status, body, failure, ctype = None, str(exc), exc, ""
     if isinstance(failure, NonStandardPort):
         # Never asked for, so neither hosted nor missing (HTTP-13). A key file behind a
         # private address stays missing: no search engine can fetch it either.
         return {"passed": None, "blocked": True, "url": key_url,
                 "finding": f"Key file not requested: {body}"}
-    if carries_content(status) and key in body:
+    # The file is the key and nothing else, as text (GEO-007, F15, the owner's
+    # ruling): a catch-all page echoing the requested path contained the key too.
+    mime = ctype.split(";", 1)[0].strip().lower()
+    if (carries_content(status) and (body or "").lstrip("\ufeff").strip() == key
+            and mime in ("", "text/plain")):
         return {
             "passed": True,
             "detail": f"Key file found at {key_url}",
@@ -104,7 +113,8 @@ def check_key_file(site_url: str, key: str) -> dict:
         return {
             "passed": False,
             "severity": "Critical",
-            "finding": f"Key file exists at {key_url} but does not contain the expected key.",
+            "finding": (f"Key file at {key_url} is not the expected key alone, "
+                        f"served as text ({mime or 'no content type'})."),
             "fix": f"Update {key_url} to contain only the key value: {key}",
         }
     else:

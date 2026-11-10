@@ -19,7 +19,7 @@ except ImportError:
 import argparse
 import json
 import re
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urldefrag, urljoin, urlsplit
 
 from bs4 import BeautifulSoup
 
@@ -61,20 +61,52 @@ def _origin(url: str) -> tuple[str, str, int | None]:
     return parsed.scheme.lower(), (parsed.hostname or "").lower(), port
 
 
+# `@import "x.css"`, `@import url(x.css)`, `@import url("x.css") screen` — the
+# stylesheet a rule names, whatever follows it.
+_IMPORT = re.compile(
+    r"""@import\s+(?:url\(\s*)?(?:"([^"]*)"|'([^']*)'|([^\s'")]+))""", re.I)
+# basis: convention — at most 20 stylesheets read for `@import` rules (the page's own
+#  and what they import, each once), a bound chosen here, as MAX_SITEMAPS_FOLLOWED is:
+#  past it the sheets left are `unread_stylesheets`, the result is `truncated` and the
+#  runner withholds CI-013's PASS (F15).
+MAX_STYLESHEETS_READ = 20
+
+
+def css_imports(css: str, base: str) -> list[str]:
+    """The URLs a stylesheet's `@import` rules name, resolved against `base`."""
+    css = _COMMENT_CSS.sub(" ", css or "")
+    return [urljoin(base, next(part for part in match.groups() if part is not None))
+            for match in _IMPORT.finditer(css)]
+
+
+_COMMENT_CSS = re.compile(r"/\*.*?\*/", re.S)
+
+
 def discover_asset_paths(site: str, timeout: int = 15) -> tuple[list[str], str | None]:
     """Return same-origin stylesheet, script and image paths referenced by the page.
 
     Same origin means the resolved asset has the page response's scheme, hostname
     and effective port. A CDN or even the same hostname on another scheme/port has
     its own robots.txt and is outside this site's policy.
+
+    Stylesheets a same-origin stylesheet or a `<style>` block `@import`s are the
+    page's too (CI-013, F15): each same-origin sheet is fetched once and read for its
+    imports. A sheet that could not be read leaves its imports unknown, named in
+    `unread_stylesheets`.
     """
+    paths, error, _unread = discover_assets(site, timeout)
+    return paths, error
+
+
+def discover_assets(site: str, timeout: int = 15) -> tuple[list[str], str | None, list[str]]:
+    """`discover_asset_paths`, with the stylesheets whose imports went unread."""
     response = safe_get(site, timeout=timeout, headers=default_headers(),
                         allow_redirects=True)    # raises: the caller keeps the kind
     if response is None:
-        return [], "no response"
+        return [], "no response", []
     status = getattr(response, "status_code", None)
     if status is None or status >= 400:
-        return [], f"status {status}"
+        return [], f"status {status}", []
 
     page_url = getattr(response, "url", None) or normalize_url(site)
     page_origin = _origin(page_url)
@@ -95,6 +127,43 @@ def discover_asset_paths(site: str, timeout: int = 15) -> tuple[list[str], str |
             references.extend(part.strip().split()[0]
                               for part in tag["srcset"].split(",") if part.strip())
 
+    stylesheets = [urljoin(page_url, tag["href"]) for tag in soup.find_all("link", href=True)
+                   if "stylesheet" in [str(v).lower() for v in (tag.get("rel") or [])]]
+    for block in soup.find_all("style"):
+        imported = css_imports(block.get_text(), page_url)
+        references.extend(imported)
+        stylesheets.extend(imported)
+
+    def same_origin(url: str) -> bool:
+        split = urlsplit(url)
+        return split.scheme in ("http", "https") and _origin(url) == page_origin
+
+    read, unread, queue = set(), [], [u for u in stylesheets if same_origin(u)]
+    while queue:
+        sheet = urldefrag(queue.pop(0))[0]
+        if sheet in read:
+            continue
+        if len(read) >= MAX_STYLESHEETS_READ:
+            unread.append(sheet)
+            continue
+        read.add(sheet)
+        try:
+            answer = safe_get(sheet, timeout=timeout, headers=default_headers(),
+                              allow_redirects=True)
+        except Exception:  # noqa: BLE001 - network, DNS, TLS, refusal: unread
+            answer = None
+        code = getattr(answer, "status_code", None)
+        if code in (404, 410):
+            continue                # no sheet, so nothing it imports
+        if answer is None or not carries_content(code):
+            unread.append(sheet)
+            continue
+        for imported in css_imports(getattr(answer, "text", "") or "",
+                                    getattr(answer, "url", None) or sheet):
+            references.append(imported)
+            if same_origin(imported):
+                queue.append(imported)
+
     paths = set()
     for reference in references:
         resolved = urlsplit(urljoin(page_url, reference))
@@ -104,7 +173,7 @@ def discover_asset_paths(site: str, timeout: int = 15) -> tuple[list[str], str |
         if resolved.query:
             path += "?" + resolved.query
         paths.add(path)
-    return sorted(paths), None
+    return sorted(paths), None, sorted(set(unread))
 
 
 def probe_url(url: str, timeout: int = 15) -> dict:
@@ -228,6 +297,13 @@ def test_paths(site: str, paths: list[str], agents: list[str], timeout: int = 15
             out["truncated"] = True
             out["truncated_reason"] = (f"{len(refused)} path(s) refused by this "
                                        f"audit's guard")
+        # Any probe that found nothing out (CI-019, F15): an empty `indexable_urls`
+        # over a path that answered 500 or nothing is not a clean answer either.
+        elif unprobed:
+            out["truncated"] = True
+            out["truncated_reason"] = ("whether these exist and are indexable is "
+                                       "unknown, their probe failed: "
+                                       + ", ".join(unprobed))
     return out
 
 
@@ -249,10 +325,11 @@ def main() -> None:
     if not args.paths and not args.discover_assets:
         parser.error("provide one or more paths or use --discover-assets")
     paths = args.paths
-    discovery_error, discovery_kind = None, "unread"
+    discovery_error, discovery_kind, unread_sheets = None, "unread", []
     if args.discover_assets:
         try:
-            paths, discovery_error = discover_asset_paths(args.site, args.timeout)
+            paths, discovery_error, unread_sheets = discover_assets(args.site,
+                                                                   args.timeout)
         except Exception as exc:  # noqa: BLE001 - network, DNS, TLS, refusal
             paths, discovery_error = [], f"{type(exc).__name__}: {exc}"
             discovery_kind = unread_kind(exc)
@@ -272,6 +349,14 @@ def main() -> None:
                             args.timeout, probe=args.probe)
         if args.discover_assets:
             result["discovered_assets"] = paths
+    if args.discover_assets and not discovery_error and unread_sheets:
+        # What an unread stylesheet imports is unknown, and so is whether robots.txt
+        # blocks it: no clean answer over it (CI-013, F15). A blocked asset found stands.
+        result["unread_stylesheets"] = unread_sheets
+        result["truncated"] = True
+        result["truncated_reason"] = "; ".join(filter(None, [
+            result.get("truncated_reason"),
+            "stylesheets not read for their @import rules: " + ", ".join(unread_sheets)]))
     if args.json:
         print(json.dumps(result, indent=2))
     else:

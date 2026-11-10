@@ -31,7 +31,7 @@ try:
 except ImportError:
     from scripts.lib.safe_http import robots_allows
 
-from seo_common import FACET_PARAMS as FACET_KEYS, fetch_url, parse_html, read_urls, same_host
+from seo_common import FACET_PARAMS as FACET_KEYS, comparable_url, fetch_url, parse_html, read_urls, same_host
 
 
 # basis: presentation — three query parameters on one URL, present at import. It adds
@@ -92,13 +92,26 @@ def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:
                 html = parse_html(page["text"], page.get("url") or url)
                 row["canonical"] = html.get("canonical")
                 row["meta_robots"] = html.get("meta_robots")
-                if facet_params and not html.get("canonical"):
+                # A canonical naming the URL itself consolidates nothing: no control
+                # (AR-163, F15, the owner's ruling).
+                row["canonical_elsewhere"] = bool(
+                    html.get("canonical")
+                    and comparable_url(html["canonical"])
+                    != comparable_url(page.get("url") or url))
+                row["noindex"] = bool(html.get("meta_robots")
+                                      and "noindex" in html["meta_robots"].lower())
+                if facet_params and not row["canonical_elsewhere"]:
                     flags.append("facet_missing_canonical")
-                if facet_params and not (html.get("meta_robots") and "noindex" in html["meta_robots"].lower()):
+                if facet_params and not row["noindex"]:
                     flags.append("facet_not_noindexed")
         for key in params:
             param_counts[key] += 1
-        by_path[row["path"]].append(url)
+        # A variant canonicalised elsewhere, noindexed or disallowed is controlled, and
+        # controlled variants are no crawl trap (AR-163, F15: `/shop?page=2..6`
+        # warned whatever they declared). Unfetched, a variant's control is unknown.
+        if not (row.get("canonical_elsewhere") or row.get("noindex")
+                or not robots_allows(url)[0]):
+            by_path[row["path"]].append(url)
         rows.append(row)
     path_explosions = {path: vals for path, vals in by_path.items() if len(vals) >= PATH_EXPLOSION_VARIANTS}
     issues = []

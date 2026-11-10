@@ -183,7 +183,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`sitemaps` lists the Sitemap: lines robots.txt declares; one is what the title asks.",
+      "reading": "`sitemaps` lists the non-empty Sitemap: lines robots.txt declares (F15: an empty line declares nothing); one is what the title asks.",
       "shapes": {
         "existential": "The title asks that the location be declared; one declaration satisfies it."
       },
@@ -239,7 +239,7 @@
           "value_map": {
             "self_canonical": "pass",
             "canonicalized": "pass",
-            "cross_host": "fail",
+            "cross_host": "pass",
             "missing": "fail",
             "conflicting": "fail",
             "target_unavailable": "fail",
@@ -248,7 +248,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`rows` maps canonical_checker's `verdict` with the target and the URL variants requested: a missing, conflicting or cross-host canonical, a target not answering 200, or a variant serving the page unconsolidated fails (F15). Other duplicate URLs are not requested, and `measures` says so.",
+      "reading": "`rows` maps canonical_checker's `verdict` with the target and the URL variants requested: a missing or conflicting canonical, a target not answering 200, or a variant serving the page unconsolidated fails; a canonical on another host passes on its own (F15, the owner's ruling). Other duplicate URLs are not requested, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -276,7 +276,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`canonical_match` compares URL Inspection's Google-selected canonical with the declared one.",
+      "reading": "`canonical_match` compares URL Inspection's Google-selected canonical with the declared one as sent: `/page` and `/page/` differ, one URL spelled two ways does not (F15).",
       "shapes": {
         "conjunction": "Google-selected and Declared are the two sides of the one comparison the rule makes."
       },
@@ -336,8 +336,8 @@
           "gte": 70
         }
       },
-      "verdict": "answers",
-      "reading": "`rows.0.score` is 100 less 12 per url_quality flag; 70 allows two flags.",
+      "verdict": "measures",
+      "reading": "`rows.0.score` is 100 less 12 per url_quality flag; 70 allows two flags. It is a heuristic over flags that reads no words, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -364,7 +364,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`blocked_urls` lists same-origin CSS, JS and image URLs the page references that robots.txt blocks for Googlebot.",
+      "reading": "`blocked_urls` lists same-origin CSS, JS and image URLs the page references, and the stylesheets same-origin sheets and `<style>` blocks `@import` (F15), that robots.txt blocks for Googlebot; a stylesheet left unread withholds the pass.",
       "shapes": {
         "conjunction": "CSS/JS/Images is one class of resource, all three read."
       },
@@ -400,8 +400,8 @@
           ]
         }
       },
-      "verdict": "answers",
-      "reading": "`redirect_issues` fails a loop, a missing Location or a chain past Google's 10-hop limit, and warns on any chain or 302/303/307 (0.112.0).",
+      "verdict": "measures",
+      "reading": "`redirect_issues` fails a loop, a missing Location or the ten-hop cap, and warns on a chain of two or more hops without a loop and on each 302/303/307 (0.112.0). Whether a move is temporary cannot be known, so temporary codes are flagged for review, and `measures` says so.",
       "shapes": {
         "conjunction": "Codes, chains and loops are each an issue type the rule reads.",
         "qualifier": "*Correct* is read as permanent codes: a temporary code warns, since Google treats it as a weak signal."
@@ -560,7 +560,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`indexable_urls` lists which of /search, /cart, /checkout, /login exist and are indexable when fetched (0.20 repair).",
+      "reading": "`indexable_urls` lists which of /search, /cart, /checkout, /login exist and are indexable when fetched (0.20 repair); a probe that failed truncates the result, so its pass is withheld (F15).",
       "shapes": {
         "conjunction": "The parenthetical lists the paths the rule requests."
       },
@@ -2383,10 +2383,10 @@
         }
       },
       "verdict": "answers",
-      "reading": "`checks.return_tags.verified_and_valid` requires every alternate to link back, fetched and checked.",
+      "reading": "`checks.return_tags.verified_and_valid` requires every alternate to link back, fetched and checked, every hreflang code valid, and at least one alternate (F15).",
       "shapes": {
-        "conjunction": "Return tags are the validity condition the rule reads.",
-        "qualifier": "*Valid* is return tags verified and codes valid."
+        "conjunction": "Return tags are the validity condition the rule reads, with the codes.",
+        "qualifier": "*Valid* is return tags verified and codes valid (F15: the codes are read now)."
       },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -2617,7 +2617,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`issues` carries sitemap_checker's hygiene findings, robots conflicts included since 0.110.0.",
+      "reading": "`issues` carries sitemap_checker's hygiene findings, robots conflicts included since 0.110.0, and a sitemap that parsed but is invalid — an entry with no `<loc>`, a root outside the sitemaps.org namespace or element names, an empty sitemap (F15).",
       "shapes": {
         "qualifier": "*Clean* is no finding at medium or above."
       },
@@ -2680,7 +2680,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`invalid_url_count` counts listed URLs answering 400 or more, redirecting, noindex, or disallowed for Googlebot (0.110.0).",
+      "reading": "`invalid_url_count` counts listed URLs answering 400 or more, redirecting, noindex as Google reads it (robots or googlebot meta, the header unscoped or for googlebot, `none` included; F15), or disallowed for Googlebot (0.110.0).",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -2904,14 +2904,19 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "total_hops",
-          "lte": 1
+          "path": "walk",
+          "value_map": {
+            "direct": "pass",
+            "one_hop": "pass",
+            "chain": "fail",
+            "loop": "fail"
+          }
         }
       },
       "verdict": "answers",
-      "reading": "`total_hops` at most one on the entry URL's redirect walk.",
+      "reading": "`walk` names the entry URL's redirect walk: direct or one hop passes; a chain of two or more hops, the ten-hop cap reached, or a loop — `/a` -> `/a` and `/a` -> `/b` -> `/a` included — fails (F15; `total_hops` read a loop as short).",
       "shapes": {
-        "conjunction": "A loop is a chain with no end; both exceed one hop."
+        "conjunction": "Chains and loops are each a `walk` value the rule fails."
       },
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -2926,16 +2931,18 @@
       "check": {
         "script": "robots_checker.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
-        "requires": "fetch",
+        "requires": "crawl",
         "assert": {
           "path": "correctness_problems",
           "len_eq": 0
         }
       },
       "verdict": "answers",
-      "reading": "`correctness_problems` lists what stops the file saying what its owner means: an HTML page served at the path, more than the 500 KiB Google reads, a line that is not `field: value`, a directive no crawler reads, a rule before any user-agent, a relative sitemap, or the whole site disallowed for Googlebot; a 404 is the problem *no robots.txt* (0.117.0; it read `status` alone).",
+      "reading": "`correctness_problems` lists what stops the file saying what its owner means: an HTML page served at the path, more than the 500 KiB Google reads, a line that is not `field: value`, a `User-agent:` line with no name, a directive no crawler reads, a rule before any user-agent, a relative sitemap, or the whole site disallowed for Googlebot — `/` and every crawled path (F15); a 404 is the problem *no robots.txt* (0.117.0).",
       "shapes": {
         "qualifier": "*Correct* is the problem list: syntax a crawler parses, directives it reads, and not shutting Googlebot out."
       },
@@ -2983,10 +2990,14 @@
         "assert": {
           "path": "score",
           "gte": 70
+        },
+        "applies_when": {
+          "path": "too_few_pages_for_hubs",
+          "falsy": true
         }
       },
-      "verdict": "answers",
-      "reading": "`score` is topical_cluster_mapper's score over topical clusters and their internal-link coverage, read since F06 over the pages the shared crawl read: a page's topic is its most frequent title word once the words more than half the titles share are set aside, and each topic's hub and spokes are expected to link both ways. The topic is a crude reading of a title, so the item answers whether pages that share a title word link to one another, not whether the site is designed in silos; a crawl cut at its caps withholds the score. A page whose title gives no readable word is a cluster of its own.",
+      "verdict": "measures",
+      "reading": "`score` is topical_cluster_mapper's score over topical clusters and their internal-link coverage, over the pages the shared crawl read: a page's topic is its most frequent title word once the words more than half the titles share are set aside; a one-page cluster is no hub, and no hub scores 0 (F15). On a whole crawl of fewer than 4 pages (`too_few_pages_for_hubs`) no subtopic can form, so the item is N/A (F15, the owner's ruling); headings and body text are not read, and `measures` says so.",
       "shapes": {
         "conjunction": "*(Silos)* is another name for the hubs.",
         "qualifier": "*Clear* is read as the cluster score."
@@ -3054,7 +3065,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`rows.0.flags` must be empty: no uppercase, underscore, archive pattern, deep path, parameters or excess length; whether the words describe the page is not read.",
+      "reading": "`rows.0.flags` must be empty: no uppercase or underscore in the path, no archive pattern or deep path, no parameters or excess length; whether the words describe the page is not read.",
       "shapes": {
         "qualifier": "*Consistent* is the flag set; *descriptive* is what `measures` says is not read."
       },
@@ -3114,10 +3125,14 @@
             "high",
             "medium"
           ]
+        },
+        "applies_when": {
+          "path": "too_few_pages_for_average",
+          "falsy": true
         }
       },
-      "verdict": "answers",
-      "reading": "`issues` carries link_profile's internal-link findings over the crawl, orphans included.",
+      "verdict": "measures",
+      "reading": "`issues` carries link_profile's internal-link findings over the crawl: orphans, dead ends, and an average under 3 distinct other pages linked (F15). On a whole crawl of fewer than 4 pages (`too_few_pages_for_average`) that average cannot be reached, so the item is N/A (F15, the owner's ruling), and `measures` says so.",
       "shapes": {
         "conjunction": "Strengthening links and removing orphans are both issue types in the set."
       },
@@ -3160,7 +3175,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`issues` carries faceted_nav_audit's findings on facet URLs that are neither canonicalised nor noindexed, applicable only where facets exist.",
+      "reading": "`issues` carries faceted_nav_audit's findings on facet URLs that are neither canonicalised to another URL nor noindexed (a self-canonical is no control, F15), and on paths with five or more uncontrolled variants, applicable only where facets exist.",
       "shapes": {
         "conjunction": "*(E-commerce)* scopes the item; the applicability gate is facet presence."
       },
@@ -3463,8 +3478,8 @@
           "len_eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`issues` carries canonical_checker's findings over every crawled HTML page: a missing or cross-host canonical, a canonical whose target does not answer 200, and a target that canonicalises elsewhere.",
+      "verdict": "measures",
+      "reading": "`issues` carries canonical_checker's findings over every crawled HTML page: a missing or conflicting canonical, a canonical whose target does not answer 200, and a target that canonicalises elsewhere; a canonical on another host is no issue on its own (F15, the owner's ruling), and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -3874,8 +3889,8 @@
           "truthy": true
         }
       },
-      "verdict": "answers",
-      "reading": "`well_formed` is true when /llms.txt answers 200 with a `# ` title as its first line and is not an HTML page — the one element the format requires (0.115.0; it read `exists`, which any 200 satisfied). A 404 is false; any other status leaves it unset.",
+      "verdict": "measures",
+      "reading": "`well_formed` is true when /llms.txt answers 2xx except 204 with a `# ` title as its first line and is not an HTML page — the one element the format requires (0.115.0). A 404 is false; any other status leaves it unset. Whether its content is useful is not read, and `measures` says so.",
       "shapes": {
         "conjunction": "Present and well-formed are both read: a 404 fails, and so does a 200 that is not an llms.txt file."
       },
@@ -3900,8 +3915,8 @@
           "gte": 60
         }
       },
-      "verdict": "answers",
-      "reading": "`quality.score` is llms_txt_checker's structure and content score, at least 60.",
+      "verdict": "measures",
+      "reading": "`quality.score` is llms_txt_checker's structural score, at least 60: points for a title, a description, sections and links, and their counts and lengths. llms.txt has no quality standard, so the score is a convention, and `measures` says so.",
       "shapes": {
         "qualifier": "*Quality* is the score."
       },
@@ -4039,7 +4054,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`key_valid` is whether the supplied IndexNow key file is served and matches.",
+      "reading": "`key_valid` is whether the supplied IndexNow key file is served as text and is the key alone (F15).",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -4075,7 +4090,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`rows.0.snippet_controls.snippet_availability` is full, limited or suppressed from meta and header snippet directives.",
+      "reading": "`rows.0.snippet_controls.snippet_availability` is full, limited or suppressed from the meta and the header snippet directives Google obeys — a header rule unscoped or for `googlebot:` (F15).",
       "shapes": {
         "conjunction": "AI answers and result snippets obey the same directives."
       },

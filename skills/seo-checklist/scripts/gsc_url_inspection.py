@@ -63,6 +63,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
     from gsc_checker import build_service
+    from seo_common import comparable_url
 except ImportError:
     print("Error: gsc_checker.py must be importable from the same directory")
     sys.exit(1)
@@ -200,7 +201,9 @@ def analyze(inspected_url: str, site_url: str, credentials: str, lang: str) -> d
     # about, so the comparison is absent rather than passing.
     gc, uc = result["google_canonical"], result["user_canonical"]
     if gc and uc:
-        result["canonical_match"] = gc.rstrip("/") == uc.rstrip("/")
+        # As sent (CI-010, F15): `/page` and `/page/` are two URLs to Google; one
+        # URL spelled two ways (`/café`, `/caf%C3%A9`, a default port) is one.
+        result["canonical_match"] = comparable_url(gc) == comparable_url(uc)
 
     if result.get("canonical_match") is False:
         result["issues"].append({

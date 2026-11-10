@@ -679,8 +679,13 @@ class TheBrokenSiteFailsWhatItWasBuiltToFail(unittest.TestCase):
             self.assertMoved(item_id, PASS, (FAIL,))
         self.assertMoved("GEO-008", PASS, (FAIL,))
 
-    def test_a_canonical_pointing_at_another_domain_fails(self):
-        self.assertMoved("CI-009", PASS, (FAIL,))
+    def test_a_canonical_pointing_at_another_domain_is_judged_by_its_target(self):
+        """A cross-host canonical is legitimate on its own (the owner's ruling on F15
+        batch 3's question 1); the broken entry's names a domain nobody serves, whose
+        target never answers, so CI-009 is undecided there — and CI-011 still fails the
+        same page for pairing it with noindex."""
+        self.assertMoved("CI-009", PASS, (NO_DATA,))
+        self.assertMoved("CI-011", PASS, (FAIL,))
 
     def test_a_missing_robots_txt_fails_and_a_present_one_passes(self):
         """Two origins is what makes this testable: robots.txt is per-origin, so one

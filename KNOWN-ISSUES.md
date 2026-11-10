@@ -446,11 +446,12 @@ name. A column called `url` would be read as "fix this page".
   every rule-carrying item a second time (F03 batches 3–5) and the owner ruled each
   dispute: 74 code defects, 33 sentences, 1 assertion to retire, 2 not defects. Until F15
   is `passing` a verdict on an item still listed may be narrower than its title says —
-  e.g. `GO-138` reads one noindex source. Batch 1 (2026-11-09)
+  e.g. `SE-114` looks up the entry URL alone. Batch 1 (2026-11-09)
   repaired the 14 items `parse_html.py` and `javascript_render_audit.py` carry, batch 2
   (2026-11-09) the 18 that `rendered_audit.py` and its snippet, `pagespeed.py`,
   `image_inventory.py` and `image_weight_audit.py` carry, batch 3 (2026-11-09) the 14
-  the crawl inventory readers carry; the open list, 64 items with each ruling, is
+  the crawl inventory readers carry, batch 4 (2026-11-10) the 18 of robots, sitemaps,
+  redirects and URLs; the open list, 46 items with each ruling, is
   `docs/sprint-20261109-F15.md`.
   <!-- ki: f03-ruled-defects-open -->
 
@@ -2019,8 +2020,9 @@ name. A column called `url` would be read as "fix this page".
   tell apart become indistinguishable exactly where the walk stops, and the verdict it
   produces there is the passing one.
 
-  `AR-150` still fails both — it asserts `total_hops lte 1` — so a site with a deep loop
-  is not scored clean overall. That is a second rule catching it by accident, not this
+  `AR-150` still fails both — it asserted `total_hops lte 1`, and since F15 batch 4 it
+  asserts `walk`, which is `chain` for a walk that reached the cap and `loop` for one that
+  came back — so a site with a deep loop is not scored clean overall. That is a second rule catching it by accident, not this
   one being right. The honest repair is a withheld verdict rather than a louder one:
   when the walk stops at the cap, whether a loop exists is unknown, and `NO_DATA` is what
   this tree says when it does not know. That changes a live verdict and a script's output

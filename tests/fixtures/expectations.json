@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "registry_version": "445b7ca058d2",
+  "registry_version": "d7d44f72d70b",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -353,8 +353,8 @@
       "AR-151": {
         "expect": "PASS",
         "title": "Provide a Correct robots.txt",
-        "basis": "35e973f9b0c7",
-        "why": "robots.txt exists, has a user-agent policy, and declares the sitemap"
+        "basis": "5cf777768e18",
+        "why": "robots.txt exists, has a user-agent policy, and declares the sitemap (re-read for F15 batch 4: every crawled path is allowed, so the site is not shut to Googlebot, and no user-agent line is empty)"
       },
       "AR-158": {
         "expect": "FAIL",
@@ -365,8 +365,8 @@
       "AR-162": {
         "expect": "PASS",
         "title": "Strengthen Internal Links and Remove Orphans",
-        "basis": "1f83296abce7",
-        "why": "the crawlable pages are connected by descriptive internal links and no crawlable sitemap page is orphaned"
+        "basis": "df40352ad175",
+        "why": "the crawlable pages are connected by descriptive internal links and no crawlable sitemap page is orphaned (re-read for F15 batch 4: five pages crawled, over the four the average needs, so the item applies)"
       },
       "BL-081": {
         "expect": "PASS",
@@ -683,8 +683,8 @@
       "CI-009": {
         "expect": "PASS",
         "title": "Serve Content at a Single Canonical URL",
-        "basis": "7b59029407bb",
-        "why": "every page in the tree carries a self-referencing canonical at its own served URL; the entry is the root of an IP origin, so it has no trailing-slash or www twin, and its other scheme is not served (re-read for F15: targets and variants are requested)"
+        "basis": "b00bb329ce0d",
+        "why": "every page in the tree carries a self-referencing canonical at its own served URL; the entry is the root of an IP origin, so it has no trailing-slash or www twin, and its other scheme is not served (re-read for F15: targets and variants are requested) (re-read for F15 batch 4: a canonical on another host would pass on its own too; none is here)"
       },
       "CI-011": {
         "expect": "PASS",
@@ -929,8 +929,8 @@
       "AR-153": {
         "expect": "PASS",
         "title": "Design Clear Topic Hubs (Silos)",
-        "basis": "e4dc0fa8b3b8",
-        "why": "The two blog posts share a topic (bake: 'How we bake sourdough', 'Bake days and opening hours') and link each other both ways, so they form a topic cluster with a hub and nothing missing, and the score is 100. Re-read for F15 (the owner's ruling on F03's AR-153: a one-page cluster is not a hub): until then five flat pages scored 80 as five one-page 'hubs', so the item could not tell a site with hubs from one without"
+        "basis": "739df4f206bb",
+        "why": "The two blog posts share a topic (bake: 'How we bake sourdough', 'Bake days and opening hours') and link each other both ways, so they form a topic cluster with a hub and nothing missing, and the score is 100. Re-read for F15 (the owner's ruling on F03's AR-153: a one-page cluster is not a hub): until then five flat pages scored 80 as five one-page 'hubs', so the item could not tell a site with hubs from one without Re-read for F15 batch 4: the crawl reads five pages, over the four a hub needs, so the item applies."
       },
       "GEO-004": {
         "expect": "PASS",
@@ -1057,8 +1057,8 @@
       "AR-151": {
         "expect": "FAIL",
         "title": "Provide a Correct robots.txt",
-        "basis": "35e973f9b0c7",
-        "why": "there is no robots.txt in the tree, so the requested file is a 404"
+        "basis": "5cf777768e18",
+        "why": "there is no robots.txt in the tree, so the requested file is a 404 (re-read for F15 batch 4: unchanged by reading the crawl's paths)"
       },
       "AR-158": {
         "expect": "FAIL",
@@ -1069,8 +1069,8 @@
       "AR-162": {
         "expect": "FAIL",
         "title": "Strengthen Internal Links and Remove Orphans",
-        "basis": "1f83296abce7",
-        "why": "orphan.html exists in the sitemap but no page links to it"
+        "basis": "df40352ad175",
+        "why": "orphan.html exists in the sitemap but no page links to it (re-read for F15 batch 4: five pages crawled, so the item applies)"
       },
       "BL-081": {
         "expect": "WARN",
@@ -1387,8 +1387,8 @@
       "CI-009": {
         "expect": "FAIL",
         "title": "Serve Content at a Single Canonical URL",
-        "basis": "7b59029407bb",
-        "why": "the entry page's canonical points at https://not-this-site.example.net/elsewhere, a domain the fixture does not own or serve (re-read for F15: a cross-host canonical still fails this item)"
+        "basis": "b00bb329ce0d",
+        "why": "blog/duplicate-a.html, among the sampled pages, declares no canonical at all (re-read for F15 batch 4: the entry's canonical to https://not-this-site.example.net/elsewhere, another host, no longer fails on its own — the owner's ruling — and its target never answers, so that page is undecided; the missing canonical decides the FAIL)"
       },
       "CI-011": {
         "expect": "FAIL",
@@ -1400,7 +1400,7 @@
         "expect": "FAIL",
         "title": "Fix Canonicalization Issues",
         "basis": "0c9f09d63656",
-        "why": "the crawl records an entry-page canonical to a domain the fixture does not serve, so nothing resolves the duplicate it claims"
+        "why": "blog/duplicate-a.html, duplicate-b.html and thin.html declare no canonical (re-read for F15 batch 4: the entry's canonical to a domain the fixture does not serve is no issue on its own — the owner's ruling — and its unanswered target only withholds a pass, which the missing canonicals have already lost)"
       },
       "CI-012": {
         "expect": "PASS",
@@ -1633,8 +1633,8 @@
       "AR-153": {
         "expect": "PASS",
         "title": "Design Clear Topic Hubs (Silos)",
-        "basis": "e4dc0fa8b3b8",
-        "why": "duplicate-a.html and duplicate-b.html share a title, so they form a two-page cluster with a hub, unlinked to each other (two missing links), and no cluster has an internal edge: 100 - 8 - 20 = 72, over the floor of 70. Re-read for F15: singleton clusters no longer count as hubs, and this one is not a singleton"
+        "basis": "739df4f206bb",
+        "why": "duplicate-a.html and duplicate-b.html share a title, so they form a two-page cluster with a hub, unlinked to each other (two missing links), and no cluster has an internal edge: 100 - 8 - 20 = 72, over the floor of 70. Re-read for F15: singleton clusters no longer count as hubs, and this one is not a singleton Re-read for F15 batch 4: five pages crawled, over the four a hub needs, so the item applies."
       },
       "GEO-004": {
         "expect": "FAIL",
@@ -1791,8 +1791,8 @@
       "AR-150": {
         "expect": "PASS",
         "title": "Remove Redirect Chains and Loops",
-        "basis": "c36da76824ae",
-        "why": "the audited HTTPS entry responds directly and therefore has no redirect hops"
+        "basis": "5cfa9797a27f",
+        "why": "the audited HTTPS entry responds directly and therefore has no redirect hops (re-read for F15 batch 4: `walk` is `direct` or `one_hop`, neither a chain nor a loop)"
       },
       "SE-118": {
         "expect": "PASS",
@@ -1835,8 +1835,8 @@
       "AR-150": {
         "expect": "PASS",
         "title": "Remove Redirect Chains and Loops",
-        "basis": "c36da76824ae",
-        "why": "the audited entry redirects at most once, and a rule forbidding chains passes when there is none; exercising a real chain needs a dedicated entry URL, which this fixture does not have"
+        "basis": "5cfa9797a27f",
+        "why": "the audited entry redirects at most once, and a rule forbidding chains passes when there is none; exercising a real chain needs a dedicated entry URL, which this fixture does not have (re-read for F15 batch 4: `walk` is `direct` or `one_hop`, neither a chain nor a loop)"
       },
       "SE-118": {
         "expect": "PASS",

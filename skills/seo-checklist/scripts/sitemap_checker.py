@@ -20,6 +20,7 @@ from seo_common import (read_as_url,
     discover_sitemap_urls,
     fetch_robots,
     fetch_url,
+    google_noindex,
     issue,
     normalize_url,
     origin,
@@ -153,6 +154,9 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
         entry["sitemap_count"] = len(parsed["sitemaps"])
         if parsed["error"]:
             result["issues"].append(issue("error", f"Invalid sitemap XML: {parsed['error']}", sm_url))
+        for problem in parsed.get("problems") or []:
+            # Parsed, and still not a valid sitemap (GO-136, F15).
+            result["issues"].append(issue("error", f"Invalid sitemap: {problem}", sm_url))
         if parsed["type"] == "sitemapindex":
             result["summary"]["indexes"] += 1
             queue.extend(item["loc"] for item in parsed["sitemaps"])
@@ -210,12 +214,23 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
                 if page.get("redirect_chain"):
                     result["issues"].append(issue("warning", "Sitemap URL redirects", loc, " -> ".join(page["redirect_chain"] + [page.get("url", "")])))
                 ctype = page.get("headers", {}).get("content-type", "")
+                html = {}
                 if page.get("text") and "html" in ctype:
                     html = parse_html(page["text"], page.get("url") or loc)
                     url_entry["checks"]["meta_robots"] = html.get("meta_robots")
                     url_entry["checks"]["canonical"] = html.get("canonical")
-                    if html.get("meta_robots") and "noindex" in html["meta_robots"].lower():
-                        result["issues"].append(issue("error", "Sitemap URL has meta noindex", loc, html["meta_robots"]))
+                # Google's reader (GO-138, F15): the robots and googlebot metas and
+                # the header, `none` included, a header rule named for another
+                # crawler not — as `indexability_matrix` reads it.
+                noindex = google_noindex(
+                    html.get("meta_robots"), html.get("meta_googlebot"),
+                    page.get("x_robots_tags")
+                    or (page.get("headers") or {}).get("x-robots-tag"))
+                url_entry["checks"]["noindex"] = noindex
+                if noindex:
+                    result["issues"].append(issue("error", "Sitemap URL is noindex", loc,
+                                                  ", ".join(noindex)))
+                if html:
                     if html.get("canonical") and normalize_url(html["canonical"]) != normalize_url(page.get("url") or loc):
                         result["issues"].append(issue("warning", "Canonical does not match sitemap URL", loc, html["canonical"]))
             result["urls"].append(url_entry)
@@ -352,7 +367,7 @@ def check_sitemaps(site_url: str, sitemap_urls: list[str] | None = None, fetch_u
         row["url"] for row in read
         if row["checks"]["status"] >= 400
         or row["checks"].get("redirects")
-        or "noindex" in (row["checks"].get("meta_robots") or "").lower()
+        or row["checks"].get("noindex")
     }
     invalid_urls.update(row["url"] for row in blocked_by_robots)
     if invalid_urls or (read and not unread and not unread_robots):

@@ -320,7 +320,10 @@ that could not be checked when there are any.
   - `signal` (CI-011): consistent, conflicting, noindex_canonicalized,
     canonical_to_noindex, target_unchecked; a cross-host canonical alone is consistent
     (F15)
-`issues[]` — array
+  - `cross_host` is a canonical on another host, checked like `canonicalized` (its
+    target fetched, its variants requested) and no issue on its own; CI-009 maps it to
+    pass (F15, the owner's ruling on batch 3's question 1)
+`issues[]` — array — no entry for a cross-host canonical alone (TE-176, F15)
 `fetch_error` — NoneType or str (no URL answered; CI-009 is `critical`)
 
 ### citation_readiness.py
@@ -612,7 +615,12 @@ title, including noindex pages. Unlike title duplication, absence is not competi
   from a fixture run rather than from the live probe, on the same terms as the four
   keys named at the top of this file
 `rows[]` — array
-  - item keys: url, path, params, facet_params, flags
+  - item keys: url, path, params, facet_params, flags; with `--fetch` also status,
+    refused, canonical, meta_robots, canonical_elsewhere, noindex
+  - `facet_missing_canonical` is a facet whose canonical does not name another URL: a
+    self-canonical is no control (AR-163, F15)
+`path_explosions` — object — paths with `PATH_EXPLOSION_VARIANTS` or more variants none
+  of which is controlled (canonicalised elsewhere, noindex, or disallowed) (F15)
 `issues[]` — array
 `truncated` — bool — internal URLs after `MAX_URLS_FROM_PAGE` remained unaudited,
   so `rows` and `issues` cover only the page-derived URLs before the cap
@@ -850,7 +858,8 @@ property. Quota: 2000 inspections per property per day.
 `last_crawl_time` — str (ISO-8601 with `Z`)
 `crawled_as` — str (`MOBILE` / `DESKTOP`)
 `google_canonical` / `user_canonical` — str | null
-`canonical_match` — bool, **absent** when the page declares no canonical
+`canonical_match` — bool, **absent** when the page declares no canonical; the two
+  URLs compared as sent (`seo_common.comparable_url`), so `/page` and `/page/` differ (CI-010, F15)
 `indexed` — bool, **absent** when the coverage wording is unrecognised or the API
   never answered
 `sitemaps[]` — array of str
@@ -898,7 +907,9 @@ because until then no rule read it. Absent, both land on `NO_DATA`.
 `checks.return_tags.alternates_checked` — int
 `checks.return_tags.verified_and_valid` — bool — **absent** when verification was not
   requested or any alternate could not be fetched, so IN-122 reports `NO_DATA`
-  instead of inferring validity from an incomplete check
+  instead of inferring validity from an incomplete check. False, whatever the returns,
+  when `language_code_issues` is not empty or the set names no alternate besides the
+  page itself and x-default (IN-122, F15)
 `checks.return_tags.detail` — str
 `language_code_issues[]` — array
 `return_tag_checks[]` — array
@@ -1190,6 +1201,8 @@ Inventory mode:
     when neither a document nor an `X-Robots-Tag` was read
   - `max_snippet` is the effective integer: -1 is unlimited, 0 suppresses the
     snippet, and the smallest non-negative value wins when sources disagree
+  - an `X-Robots-Tag` rule counts only unscoped or for `googlebot:`, each header value
+    read on its own (GEO-008, F15: `bingbot: nosnippet` is Bing's)
 
 With `--inventory`, no URL is fetched. The alternate output shape is:
 
@@ -1214,7 +1227,8 @@ string and prove ownership by serving `<key>.txt` from the site root.
   - item keys: passed, severity, finding, fix
 `summary.passed` / `summary.failed` / `summary.info` — int
 `key_valid` — bool — the roll-up GEO-007 reads: True only when `/<key>.txt` is served
-  and contains the key. Added in 0.8.0; it had never been emitted, so GEO-007 reported
+  as text (`text/plain`, or no content type) and is the key alone, a BOM and
+  surrounding whitespace aside (F15; it accepted any body containing the key). Added in 0.8.0; it had never been emitted, so GEO-007 reported
   NO_DATA on every site including one with a correctly hosted key. The meta tag and
   the robots.txt reference are optional in the protocol and do not affect it.
 
@@ -1233,6 +1247,10 @@ below are examples rather than a schema.
 `start_url` — str
 `domain` — str
 `pages_crawled` — int
+`pages_read` — int — HTML pages, a redirect row read again counted once
+`too_few_pages_for_average` — bool — a whole crawl (not `truncated`) of fewer
+  `pages_read` than `MIN_PAGES_FOR_AVERAGE` (4); AR-162 is N/A on it (F15, the owner's
+  ruling on batch 3's question 3)
 `total_internal_links` — int
 `unique_pages_found` — int
 `max_depth_reached` — int
@@ -1607,6 +1625,9 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
 `chain[]` — array
   - item keys: step, url, status, time_ms, final
 `total_hops` — int
+`walk` — str — AR-150 (F15): `direct`, `one_hop`, `chain` (two or more hops, or the
+  ten-hop cap reached), or `loop` (`/a` -> `/a` and `/a` -> `/b` -> `/a` included);
+  absent when the walk stopped on an error
 `total_time_ms` — int
 `has_loop` — bool — CI-014, **absent when `truncated`**: the walk stopped at ten hops
   and whether the rest of the chain loops was never seen. Absent rather than null,
@@ -1642,11 +1663,14 @@ a not-indexed finding in the sitemap URLs that were read remains a failure.
 `status` — int
 `correctness_problems[]` — array of str — AR-151 (0.117.0): an HTML page at the path,
   over 500 KiB, a line that is not `field: value`, an unread directive, a rule before any
-  user-agent, a relative sitemap, or the whole site disallowed for Googlebot; on a 404 the
-  one entry "no robots.txt at this origin"; **absent** on any other status
+  user-agent, a relative sitemap, a `User-agent:` line with no name (F15), or the whole
+  site disallowed for Googlebot — `/` and every path of the `--inventory` crawl (F15;
+  `/` alone without one); on a 404 the one entry "no robots.txt at this origin";
+  **absent** on any other status. With an `--inventory` that cannot be read or is
+  another site's, only `fetch_error` is written
 `user_agents.*.allow[]` — array
 `user_agents.*.disallow[]` — array
-`sitemaps[]` — array
+`sitemaps[]` — array — an empty `Sitemap:` line is no entry (CI-006, F15)
 `ai_crawler_status.GPTBot` — str
 `ai_crawler_status.OAI-SearchBot` — str
 `ai_crawler_status.ChatGPT-User` — str
@@ -1693,7 +1717,11 @@ is an accusation.
   reference or robots.txt cannot be read, so either empty input or an unavailable
   policy produces NO_DATA rather than a critical PASS.
 `discovered_assets[]` — array of str — normalized same-origin paths found by
-  `--discover-assets`, including query strings because robots rules can match them.
+  `--discover-assets`, including query strings because robots rules can match them,
+  and the stylesheets same-origin sheets and `<style>` blocks `@import` (CI-013, F15).
+`unread_stylesheets[]` — array of str — same-origin stylesheets that answered neither
+  content nor 404/410 (or past `MAX_STYLESHEETS_READ`), so their imports are unknown;
+  with them `truncated` is true and the runner withholds CI-013's PASS (F15).
 
 Under `--probe` only, and absent without it:
 
@@ -1704,7 +1732,8 @@ Under `--probe` only, and absent without it:
   markup inside a comment is not markup.
 `unprobed_urls[]` — array of str — permitted URLs whose fetch failed or answered 5xx.
   Deliberately neither list: an unreachable page is not proven absent and not proven
-  indexable, so a network failure cannot read as a clean site.
+  indexable, so a network failure cannot read as a clean site. Any of them sets
+  `truncated` and names them in `truncated_reason`, so CI-019's PASS is withheld (F15).
 `rows[].probe` — object, present only for permitted paths (a disallowed path is out of
   the index already and fetching it would spend a request to learn nothing)
   - `probed` — bool (always true when the key exists)
@@ -1942,12 +1971,18 @@ A page key is `scheme://host/path` spelled as requests sends it (`/café` and
 `invalid_url_count` — int — **absent** unless URLs were read, and absent again when any
   probe failed and none of the ones that answered was invalid. An unread robots.txt
   also withholds the key unless another invalid URL was found. A URL is invalid at a
-  status of 400 or above, on a redirect chain, on a meta noindex, or when robots.txt
-  disallows it for Googlebot. GO-138 asserts `eq: 0`; before 0.93.0 it matched
+  status of 400 or above, on a redirect chain, on a noindex Google obeys
+  (`seo_common.google_noindex`: robots or googlebot meta, the `X-Robots-Tag` unscoped or
+  for `googlebot:`, `none` included; F15, `checks.noindex` lists where), or when
+  robots.txt disallows it for Googlebot. GO-138 asserts `eq: 0`; before 0.93.0 it matched
   `(?i)404|redirect|noindex` against the messages, and since the message reads
   "Sitemap URL returns HTTP {status}", a sitemap of URLs answering 500 passed
 `issues[]` — array
   - item keys: severity, message, url, evidence
+  - an `error` "Invalid sitemap: …" for a sitemap that parsed but is not valid: an
+    entry with no `<loc>`, a root other than `<urlset>`/`<sitemapindex>` or outside
+    `http://www.sitemaps.org/schemas/sitemap/0.9`, or one listing nothing (GO-136, F15;
+    `seo_common.parse_sitemap_xml`'s `problems`)
 
 ### social_meta.py
 
@@ -1997,6 +2032,10 @@ A page key is `scheme://host/path` spelled as requests sends it (`/café` and
 ### topical_cluster_mapper.py
 
 `page_count` — int
+`too_few_pages_for_hubs` — bool — a whole crawl (not `truncated`) of fewer pages than
+  `MIN_PAGES_FOR_HUBS` (4), where a word two titles share is on more than half of them
+  and no subtopic can form; AR-153 is N/A on it (F15, the owner's ruling on batch 3's
+  question 3)
 `cluster_count` — int
 `hub_count` — int — clusters of two or more pages (F15)
 `score` — int — 0 when a site of more than one page has no hub (AR-153, F15)

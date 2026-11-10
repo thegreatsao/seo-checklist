@@ -22,6 +22,7 @@ from seo_common import (read_as_url,
     fetch_robots,
     fetch_url,
     google_noindex,
+    google_robots_directives,
     html_parser,
     parse_html,
     parse_sitemap_xml,
@@ -40,8 +41,13 @@ MAX_SNIPPET_RE = re.compile(r"\bmax-snippet\s*:\s*(-?\d+)", re.I)
 NOSNIPPET_RE = re.compile(r"\bnosnippet\b", re.I)
 
 
-def snippet_controls(html_text: str, x_robots_tag: str | None) -> dict:
-    """Snippet restrictions Google reads from this response, with their sources."""
+def snippet_controls(html_text: str, x_robots_tag: str | list[str] | None) -> dict:
+    """Snippet restrictions Google reads from this response, with their sources.
+
+    `x_robots_tag` is the header's value, or each value it was sent with: only its
+    unscoped and `googlebot:` rules are Google's (GEO-008, F15), as `google_noindex`
+    reads them.
+    """
     directives = []
     data_nosnippet_count = 0
     visible_text_outside_data_nosnippet = False
@@ -59,8 +65,10 @@ def snippet_controls(html_text: str, x_robots_tag: str | None) -> dict:
             and text.find_parent(attrs={"data-nosnippet": True}) is None
             for text in soup.find_all(string=True)
         )
-    if x_robots_tag:
-        directives.append(("x-robots-tag", str(x_robots_tag)))
+    for header in (x_robots_tag if isinstance(x_robots_tag, list) else [x_robots_tag]):
+        google = ", ".join(google_robots_directives(header, scoped=True))
+        if google:
+            directives.append(("x-robots-tag", google))
 
     nosnippet_sources = sorted({source for source, value in directives
                                  if NOSNIPPET_RE.search(value)})
@@ -187,7 +195,7 @@ def evaluate(urls: list[str], site: str | None = None, timeout: int = 15) -> dic
         html_text = (fetched.get("text") or "") if "html" in ctype else ""
         if html_text:
             html = parse_html(html_text, fetched.get("url") or url)
-        snippets = snippet_controls(html_text, xrobots)
+        snippets = snippet_controls(html_text, fetched.get("x_robots_tags") or xrobots)
         blockers = []
         if allowed is False:
             blockers.append("robots.txt disallow")

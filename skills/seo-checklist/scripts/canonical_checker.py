@@ -130,9 +130,10 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
             if comparable_url(canonical) == comparable_url(fetched.get("url") or url):
                 row["verdict"] = "self_canonical"
             elif not same_host(row["url"], canonical):
+                # Named, not an issue: a canonical on another host is a legitimate
+                # declaration (the owner's ruling on F15 batch 3's question 1); its
+                # target is requested like any other.
                 row["verdict"] = "cross_host"
-                row["issues"].append("cross-host canonical")
-                issues.append(issue("warning", "Cross-host canonical", row["url"], canonical))
             else:
                 row["verdict"] = "canonicalized"
             elsewhere = row["verdict"] != "self_canonical"
@@ -148,11 +149,11 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
                     # Nothing answered, or a server too busy to (429, 503): neither
                     # broken nor indexable is known (review round 5).
                     target_unanswered = True
-                    if row["verdict"] == "canonicalized":
+                    if row["verdict"] in ("canonicalized", "cross_host"):
                         row["verdict"] = "target_unchecked"
                     row["issues"].append("canonical target not answered")
                 elif not carries_content(target.get("status")):
-                    if row["verdict"] == "canonicalized":
+                    if row["verdict"] in ("canonicalized", "cross_host"):
                         row["verdict"] = "target_unavailable"
                     row["issues"].append(f"canonical target HTTP {target.get('status')}")
                     issues.append(issue("error", "Canonical target is not 200", row["url"], str(target.get("status"))))
@@ -168,7 +169,8 @@ def check_canonicals(urls: list[str], timeout: int = 15, check_targets: bool = F
                 if target_html.get("canonical") and normalize_url(target_html["canonical"]) != canonical:
                     row["issues"].append("canonical chain detected")
                     issues.append(issue("warning", "Canonical target points elsewhere", row["url"], target_html["canonical"]))
-            if variants and row["verdict"] in ("self_canonical", "canonicalized"):
+            if variants and row["verdict"] in ("self_canonical", "canonicalized",
+                                               "cross_host"):
                 accepted = {comparable_url(canonical),
                             comparable_url(fetched.get("url") or url)}
                 page_print = _page_print(html)
@@ -275,10 +277,9 @@ def check_inventory(site_url: str, inventory_path: str,
             rows.append(row)
             continue
         if not same_host(row["url"], canonical):
+            # Legitimate on its own (the owner's ruling on F15 batch 3's question 1):
+            # only what its target answers below can make it an issue.
             row["verdict"] = "cross_host"
-            row["issues"].append("cross-host canonical")
-            issues.append(issue("warning", "Cross-host canonical", row["url"],
-                                canonical))
         else:
             row["verdict"] = "canonicalized"
 

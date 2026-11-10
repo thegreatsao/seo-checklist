@@ -62,8 +62,13 @@
       "claim": "The cap is a named constant with a basis, and the walk that stops at it removes has_loop rather than answering False, so CI-014 reports NO_DATA on a chain nobody followed to its end.",
       "measured": {
         "ar_150_assert": {
-          "lte": 1,
-          "path": "total_hops"
+          "path": "walk",
+          "value_map": {
+            "chain": "fail",
+            "direct": "pass",
+            "loop": "fail",
+            "one_hop": "pass"
+          }
         },
         "branches_that_withhold_has_loop": 2,
         "cap": 10,
@@ -903,13 +908,13 @@
       "claim": "The four shapes 0.71.0 singled out are judged and declared — the two MinHash constants (presentation since 0.170.0: no rule reads a near-duplicate field) and the three detect_profile tables as inherited (convention since F11, with the detector measured as a whole), DEFAULT_MAX_REDIRECTS left outside as a fetch budget — and nineteen module-level numeric constants carry no basis and are beyond the name-based scan.",
       "measured": {
         "basis": {
-          "convention": 100,
+          "convention": 103,
           "inherited": 0,
           "measured": 14,
           "presentation": 45,
           "standard": 20
         },
-        "counted": 134,
+        "counted": 137,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:38"
         ],
@@ -944,7 +949,7 @@
       "claim": "Seventy-six of 217 items pass only when a path is absent or bounded, over nine spellings; whether a title states the side of its subject that its assertion means is read by a person, and the entry says why no check can.",
       "measured": {
         "items": 217,
-        "negative_polarity": 80
+        "negative_polarity": 79
       },
       "probe": "negative_polarity_share",
       "state": "open"

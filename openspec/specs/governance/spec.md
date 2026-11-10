@@ -83,8 +83,8 @@ that decides only what is printed is marked as such and is not counted among the
 threshold with no stated basis cannot be argued with, and the honest answer "we do not know,
 it came with the code" is only available if somebody wrote it down.
 **Reader:** enforced. `audit_thresholds.py --check` runs in CI and fails when a
-verdict-deciding number names no basis. It counts 134 such numbers at F15 batch 3 — 20
-`standard`, 14 `measured`, 100 `convention`, **0 `inherited`**, 0 without a basis — plus 45
+verdict-deciding number names no basis. It counts 137 such numbers at F15 batch 4 — 20
+`standard`, 14 `measured`, 103 `convention`, **0 `inherited`**, 0 without a basis — plus 45
 that decide only presentation. `tests/test_prose_counts.py` reads the counts in this
 paragraph since 0.145.0 (`evidence` EVD-6 says what their going unread had cost).
 
@@ -106,12 +106,12 @@ paragraph since 0.145.0 (`evidence` EVD-6 says what their going unread had cost)
 `inherited` licenses no conclusion about whether a number is right. It is the recorded
 absence of a decision, and it MUST NOT be cited as anything else.
 
-**Why:** the gate passes at any count — 0 of 134 undefended after F15 batch 3 — which is fine as an
+**Why:** the gate passes at any count — 0 of 137 undefended after F15 batch 4 — which is fine as an
 accounting and dangerous as a standard. The category exists so the debt is countable, and it stops working
 the moment it reads as a fourth kind of justification.
 **Reader:** enforced, since F04, with the narrowing said below.
 `tests/test_inherited_basis.py` holds the two halves a test can reach. The count may not
-rise — 0 of 134 today, ratcheted downward (it rose by two once, by decision: 0.172.0 moved
+rise — 0 of 137 today, ratcheted downward (it rose by two once, by decision: 0.172.0 moved
 the crawl caps back from `convention`, F13; F11 moved them out again once no sampled
 verdict rested on them), which is the second scenario as an assertion: at a ceiling of 0
 `test_the_undefended_count_does_not_rise` refuses every `inherited` line, so the
@@ -1112,7 +1112,7 @@ commit and date. Before changing a name the module holds, tell the Workbench ses
 ## 6. Open questions
 
 **Should `inherited` be allowed to increase?** Settled: no, except by a commit that says
-so. `tests/test_inherited_basis.py` ratchets the count, at 0 of 134 now (0 of 130 at 0.174.0), so a
+so. `tests/test_inherited_basis.py` ratchets the count, at 0 of 137 now (0 of 130 at 0.174.0), so a
 new undefended constant fails until the ceiling is raised in the commit that adds it —
 the deliberate act GOV-2's second scenario asks for (F04).
 

@@ -65,7 +65,8 @@ def parse(text: str) -> dict:
                 continue
             if delay >= 0:
                 current["crawl_delay"] = delay
-        elif name == "sitemap":
+        elif name == "sitemap" and value:
+            # An empty `Sitemap:` line declares no location (CI-006, F15).
             sitemaps.append(value)
     return {"groups": groups, "sitemaps": sitemaps}
 

@@ -187,13 +187,19 @@ class RegistryShape(unittest.TestCase):
         # block its assertion reads.
         def block(rule):
             return rule["path"].split(".")[0]
+        # F15 (the owner's ruling on batch 3's question 3): AR-153's subject is a site
+        # big enough for a topic hub, which its score cannot say; its script names it.
+        own_subject = {"AR-153": "too_few_pages_for_hubs"}
         for item_id in sorted(declared - candidates):
             with self.subTest(item=item_id):
                 check = next(i for i in ITEMS if i["id"] == item_id)["check"]
+                if item_id in own_subject:
+                    self.assertEqual(check["applies_when"]["path"], own_subject[item_id])
+                    continue
                 self.assertEqual(block(check["applies_when"]), block(check["assert"]),
                                  f"{item_id} declares applicability over something its "
                                  f"assertion does not read")
-        self.assertEqual(sorted(declared - candidates), ["GO-139", "KW-070"])
+        self.assertEqual(sorted(declared - candidates), ["AR-153", "GO-139", "KW-070"])
 
     def test_every_recorded_reason_names_a_subject_rather_than_asserting_a_verdict(self):
         """A reason is only worth keeping if the next person can argue with it. The
@@ -742,15 +748,20 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # F15 batch 3 adds three `convention`s: `NEAR_DUPLICATE_SIMILARITY` in
         # `duplicate_content.py`, and `MINHASH_FUNCTIONS` and `SHINGLE_WORDS`, which were
         # `presentation` until CN-041 counted near-duplicate pairs.
+        # F15 batch 4 adds three `convention`s: `MIN_PAGES_FOR_HUBS` in
+        # `topical_cluster_mapper.py` and `MIN_PAGES_FOR_AVERAGE` in `link_profile.py`,
+        # the smallest crawls AR-153 and AR-162 judge (the owner's ruling), and
+        # `MAX_STYLESHEETS_READ` in `robots_path_tester.py`, CI-013's `@import` walk.
         self.assertEqual(by_kind, {
             "standard": 20,
             "measured": 14,
-            "convention": 100,
+            "convention": 103,
             "inherited": 0,
             "presentation": 45,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 134)
-        self.assertEqual(len(named), 179)
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 137)
+        self.assertEqual(len(named), 182)
+        # 179 -> 182 at F15 batch 4: the three `convention`s above.
         # 178 -> 179 at F15 batch 3: `NEAR_DUPLICATE_SIMILARITY` in `duplicate_content.py`
         # is named, where 0.85 was a default argument.
         # 15 -> 17 at 0.156.0: `WINDOWS_LOCK_PATIENCE` and `WINDOWS_LOCK_POLL` in
@@ -795,8 +806,10 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 197 -> 196: `THIN_CONTENT_THRESHOLDS` deleted at 0.176.0 (F04 batch 4b).
         # 196 -> 197: `MEANINGFUL_IMAGE_MIN_PX` in `seo_common.py` (F15 batch 2).
         # 197 -> 198: `NEAR_DUPLICATE_SIMILARITY` in `duplicate_content.py` (F15 batch 3).
+        # 198 -> 201: `MIN_PAGES_FOR_HUBS`, `MIN_PAGES_FOR_AVERAGE`, `MAX_STYLESHEETS_READ`
+        # (F15 batch 4).
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 198)
+                             for path in at._script_paths()), 201)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -2455,7 +2468,15 @@ class DeliberateTitleOverrides(unittest.TestCase):
 
 class MeasuresQualifications(unittest.TestCase):
     EXPECTED = {
-        "CI-009": "That the page names one canonical that answers 200, and that its other scheme, www or bare host, and trailing-slash variant redirect to it, declare it, are noindex or serve another page. Other duplicate URLs are not requested.",
+        "CI-009": "That the page names one canonical, here or on another host, answering 200, and that its variants (other scheme, www or bare host, trailing slash) redirect to it, declare it, are noindex or serve another page. Other URLs are not requested.",
+        # F15 batch 4: the owner's measures rulings and rulings 1 and 3 on batch 3's questions.
+        "TE-176": "Crawled pages whose canonical is missing, conflicting or names a page not answering 200 or pointing on. A canonical on another host is no issue on its own. Duplicates without one are CN-041 and MS-022.",
+        "AR-153": "Topic clusters from crawled page titles: a hub is a subtopic two titles share, linked with its pages. Headings and body text are not read. On fewer than 4 pages no subtopic can form, so the item is N/A.",
+        "AR-162": "That crawled pages link on average to 3 distinct other pages and none is a dead end. On fewer than 4 pages that average cannot be reached, so the item is N/A; orphans are CI-008.",
+        "CI-014": "Redirects from the audited URL: a loop, a missing Location or more than 10 hops fail; a chain warns. Whether a move is temporary cannot be known, so temporary codes are flagged for review (302, 303, 307 warn).",
+        "CI-012": "A heuristic score over url_quality's flags (length, case, underscores, archive pattern, depth, parameters): 100 less 12 a flag, at least 70. No words are read, so whether a reader finds the URL friendly is not judged.",
+        "GEO-001": "That /llms.txt answers 2xx except 204 with a `# ` title as its first line and is not an HTML page. Whether its sections, links and summaries are useful is not read.",
+        "GEO-002": "A structural convention, as llms.txt has no quality standard: points for a title, a description, sections and links, and their counts and lengths. Whether the content is accurate or useful is not read.",
         "CI-018": "Crawl waste in a supplied server log: search-bot requests answered with errors, redirects or nothing indexable, disallowed or parameterised paths, sitemap URLs never crawled. Whether crawl budget is managed is not decided.",
         "MS-022": "Titles shared by indexable crawled pages, a numbered page (?page=2) counted on its own. A noindex page, or one whose canonical names another URL, is left out: it does not compete. Titles Google rewrites are not read.",
         "CN-041": "Identical body text on indexable crawled pages fails; pages estimated 85% alike (MinHash) warn. A noindex copy, or one canonicalised to another page, is the fix and not a duplicate. Other sites are not compared.",
@@ -2479,7 +2500,7 @@ class MeasuresQualifications(unittest.TestCase):
         "BL-086": "That the Links export lists at least one linking site. Tracking the count over time happens outside the audit.",
         "SP-111": "Chrome UX Report field data for desktop, read through PageSpeed Insights: the data the Search Console report is built from.",
         "SP-112": "Chrome UX Report field data for mobile, read through PageSpeed Insights: the data the Search Console report is built from.",
-        "AR-155": "That the URL has no uppercase letters, underscores, archive pattern, deep path, parameters or excess length. Whether the words describe the page is not read.",
+        "AR-155": "That the URL's path has no uppercase letters or underscores, no archive pattern and at most five segments, and that the URL has no parameters and at most 115 characters. Whether the words describe the page is not read.",
         "CN-065": "That the page has exactly one non-empty H1.",
         # 0.115.0: the four A.10 owed as statements rather than repairs.
         "AR-147": "That the URL is at most 115 characters, five path segments and two query parameters. Whether its words describe the page is not read.",

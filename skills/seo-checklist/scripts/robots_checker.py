@@ -54,12 +54,16 @@ KNOWN_ROBOTS_FIELDS = frozenset({"user-agent", "allow", "disallow", "sitemap",
                                  "crawl-delay", "clean-param"})
 
 
-def correctness_problems(text: str, content_type: str) -> list[str]:
+def correctness_problems(text: str, content_type: str,
+                         paths: list[str] | None = None) -> list[str]:
     """What stops a served robots.txt from saying what its owner means, one line each.
 
     AR-151 *Provide a Correct robots.txt* asserted `status == 200` until 0.117.0, so a
     file answering 200 with `Disallow: /` for every crawler — or the site's HTML shell
     served at the path — was *correct*.
+
+    `paths` are the site's crawled paths: the whole site is shut to Googlebot only when
+    `/` and every one of them is (F15: `Disallow: /$` shuts the home page alone).
     """
     head = text.lstrip()[:200].lower()
     if "html" in (content_type or "").lower() or head.startswith(("<!doctype", "<html")):
@@ -81,17 +85,35 @@ def correctness_problems(text: str, content_type: str) -> list[str]:
             problems.append(f"line {number}: `{field}` is not a directive crawlers read")
         elif field == "user-agent":
             in_group = True
+            if not value:
+                problems.append(f"line {number}: a user-agent line with no name "
+                                "matches no crawler")
         elif field in ("allow", "disallow") and not in_group:
             problems.append(f"line {number}: a rule before any user-agent line is ignored")
         elif field == "sitemap" and not value.lower().startswith(("http://", "https://")):
             problems.append(f"line {number}: a sitemap must be an absolute URL")
     parsed = robots_rules.parse(text)
-    if not robots_rules.allowed(parsed, "https://example.invalid/", "Googlebot")[0]:
+    if not any(robots_rules.allowed(parsed, "https://example.invalid" + path,
+                                    "Googlebot")[0]
+               for path in ["/", *(paths or [])]):
         problems.append("the whole site is disallowed for Googlebot")
     return problems
 
 
-def fetch_robots_txt(url: str, timeout: int = 15) -> dict:
+def crawled_paths(inventory: dict) -> list[str]:
+    """Path and query of every URL the shared crawl read or robots.txt refused it.
+
+    A robots.txt is about the paths a site has, and `/` is only one of them (AR-151,
+    F15).
+    """
+    found = set()
+    for url in [*(inventory.get("pages") or {}), *(inventory.get("robots_blocked") or {})]:
+        split = urlparse(url)
+        found.add((split.path or "/") + (f"?{split.query}" if split.query else ""))
+    return sorted(found)
+
+
+def fetch_robots_txt(url: str, timeout: int = 15, paths: list[str] | None = None) -> dict:
     """Fetch and parse robots.txt from a domain."""
     parsed = urlparse(url)
     if not parsed.scheme:
@@ -133,7 +155,7 @@ def fetch_robots_txt(url: str, timeout: int = 15) -> dict:
 
         result["raw"] = resp.text
         result["correctness_problems"] = correctness_problems(
-            resp.text, (resp.headers or {}).get("content-type", ""))
+            resp.text, (resp.headers or {}).get("content-type", ""), paths)
         _parse_robots(resp.text, result)
 
     except requests.exceptions.RequestException as e:
@@ -210,10 +232,26 @@ def _parse_robots(content: str, result: dict):
 def main():
     parser = argparse.ArgumentParser(description="Analyze robots.txt for SEO and AI crawlers")
     parser.add_argument("url", help="Website URL or domain")
+    parser.add_argument("--inventory", default="",
+                        help="crawl inventory from site_crawl.py: its paths are tested "
+                             "for a site shut to Googlebot (AR-151)")
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
 
     args = parser.parse_args()
-    result = fetch_robots_txt(args.url)
+    paths = None
+    if args.inventory:
+        try:
+            import site_crawl
+        except ImportError:
+            from scripts import site_crawl
+        inventory = site_crawl.inventory_for(args.url, args.inventory)
+        if inventory.get("fetch_error"):
+            # Which paths the site has is unknown, so whether it is all shut is too.
+            print(json.dumps({"url": args.url, "fetch_error": inventory["fetch_error"],
+                              "fetch_error_kind": inventory.get("fetch_error_kind")}))
+            return
+        paths = crawled_paths(inventory)
+    result = fetch_robots_txt(args.url, paths=paths)
 
     if args.json:
         # Exclude raw content from JSON for brevity

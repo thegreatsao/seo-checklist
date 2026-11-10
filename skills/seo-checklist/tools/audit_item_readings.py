@@ -72,7 +72,8 @@ PRODUCERS = {"rendered_audit.py": "## Measuring the rendered page",
                               "canonical_checker.py", "duplicate_content.py",
                               "image_weight_audit.py", "indexability_matrix.py",
                               "internal_links.py", "link_profile.py", "local_seo_checker.py",
-                              "server_log_audit.py", "topical_cluster_mapper.py"),
+                              "robots_checker.py", "server_log_audit.py",
+                              "topical_cluster_mapper.py"),
                              "site_crawl.py")}
 
 VERDICTS = ("answers", "measures", "owed")

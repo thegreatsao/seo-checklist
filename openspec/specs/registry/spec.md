@@ -1162,7 +1162,9 @@ holds.
 *Repaired at 0.117.0 (`950f09b9ca61`):* AR-151 reads `correctness_problems` — an HTML page at
 the path, over the 500 KiB Google reads, a line that is not `field: value`, a directive no
 crawler reads, a rule before any user-agent, a relative sitemap, or the whole site
-disallowed for Googlebot — where it read `status == 200`; TE-180 reads `wcag_a_failures`,
+disallowed for Googlebot — where it read `status == 200` (F15: the whole site is `/` and
+every path of the shared crawl, so the item reads the crawl, and a `User-agent:` line with
+no name is a problem too); TE-180 reads `wcag_a_failures`,
 the level-A failures static HTML shows, where a score passed two of them, and carries
 `measures` for contrast and keyboard use.
 

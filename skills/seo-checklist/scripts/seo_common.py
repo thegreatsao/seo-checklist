@@ -300,22 +300,34 @@ def google_robots_rules(value: str | None, scoped: bool = False) -> set[str]:
     apart in `x_robots_tags`). A rule with an argument (`max-image-preview: none`) is
     its name only, so its argument is never read as a rule. Case-insensitive.
     """
-    rules, agent = set(), None
-    for part in (value or "").split(","):
-        part = part.strip().lower()
+    rules = set()
+    for part in google_robots_directives(value, scoped):
         named = re.match(r"([a-z][a-z0-9_.-]*)\s*:\s*(.*)$", part)
-        with_argument = ("max-snippet", "max-image-preview", "max-video-preview",
-                         "unavailable_after")
-        if scoped and named and named.group(1) not in with_argument:
-            agent, part = named.group(1), named.group(2)
-            named = re.match(r"([a-z][a-z0-9_.-]*)\s*:\s*(.*)$", part)
-        if agent not in (None, "googlebot"):
-            continue
-        if named and named.group(1) in with_argument:
+        if named and named.group(1) in _RULES_WITH_ARGUMENT:
             rules.add(named.group(1))
         else:
             rules.update(part.split())
     return rules
+
+
+_RULES_WITH_ARGUMENT = ("max-snippet", "max-image-preview", "max-video-preview",
+                        "unavailable_after")
+
+
+def google_robots_directives(value: str | None, scoped: bool = False) -> list[str]:
+    """The comma-separated directives in `value` that Googlebot obeys, lower-cased,
+    each with its argument (`max-snippet: 0`), the crawler name read off as
+    `google_robots_rules` reads it (GEO-008, F15: `bingbot: nosnippet` is Bing's)."""
+    found, agent = [], None
+    for part in (value or "").split(","):
+        part = part.strip().lower()
+        named = re.match(r"([a-z][a-z0-9_.-]*)\s*:\s*(.*)$", part)
+        if scoped and named and named.group(1) not in _RULES_WITH_ARGUMENT:
+            agent, part = named.group(1), named.group(2)
+        if agent not in (None, "googlebot"):
+            continue
+        found.append(part)
+    return found
 
 
 def google_noindex(meta_robots: str | None, meta_googlebot: str | None,
@@ -1644,6 +1656,32 @@ def parse_sitemap_xml(document: bytes | str, sitemap_url: str = "") -> dict:
         return {"type": "invalid", "urls": [], "sitemaps": [], "error": str(exc)}
 
 
+# The namespace the sitemaps.org protocol requires on `<urlset>` and `<sitemapindex>`;
+# Search Console reports any other as an invalid namespace.
+SITEMAP_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9"
+
+
+def _sitemap_problems(root: ET.Element, entries: int, without_loc: int) -> list[str]:
+    """What makes a sitemap that parsed invalid all the same (GO-136, F15): an entry
+    with no `<loc>`, a root outside the protocol's namespace or element names, and a
+    sitemap that lists nothing. Read by `sitemap_checker`; the other readers keep
+    whatever URLs it does list."""
+    problems = []
+    namespace, _, name = root.tag[1:].partition("}") if root.tag.startswith("{") \
+        else ("", "", root.tag)
+    if name not in ("urlset", "sitemapindex"):
+        problems.append(f"the root element is <{name}>, not <urlset> or <sitemapindex>")
+    elif namespace != SITEMAP_NAMESPACE:
+        problems.append(f"the root element's namespace is {namespace or 'missing'}, "
+                        f"not {SITEMAP_NAMESPACE}")
+    if without_loc:
+        problems.append(f"{without_loc} entr{'y has' if without_loc == 1 else 'ies have'}"
+                        " no <loc>")
+    elif not entries:
+        problems.append("it lists no URL")
+    return problems
+
+
 def _sitemap_entries(root: ET.Element, sitemap_url: str) -> dict:
     def local(tag: str) -> str:
         return tag.split("}", 1)[-1]
@@ -1651,16 +1689,22 @@ def _sitemap_entries(root: ET.Element, sitemap_url: str) -> dict:
     urls = []
     children = list(root)
     if local(root.tag) == "sitemapindex":
+        without_loc = 0
         for sm in root:
             loc = sm.findtext("{*}loc") or sm.findtext("loc")
             if loc:
                 urls.append({"loc": normalize_url(loc, sitemap_url), "lastmod": sm.findtext("{*}lastmod") or sm.findtext("lastmod")})
-        return {"type": "sitemapindex", "urls": [], "sitemaps": urls, "error": None}
+            elif local(sm.tag) == "sitemap":
+                without_loc += 1
+        return {"type": "sitemapindex", "urls": [], "sitemaps": urls, "error": None,
+                "problems": _sitemap_problems(root, len(urls), without_loc)}
 
     if local(root.tag) == "urlset" or any(local(child.tag) == "url" for child in children):
+        without_loc = 0
         for node in root.findall("{*}url") or root.findall("url"):
             loc = node.findtext("{*}loc") or node.findtext("loc")
             if not loc:
+                without_loc += 1
                 continue
             urls.append({
                 "loc": normalize_url(loc, sitemap_url),
@@ -1668,7 +1712,8 @@ def _sitemap_entries(root: ET.Element, sitemap_url: str) -> dict:
                 "changefreq": node.findtext("{*}changefreq") or node.findtext("changefreq"),
                 "priority": node.findtext("{*}priority") or node.findtext("priority"),
             })
-        return {"type": "urlset", "urls": urls, "sitemaps": [], "error": None}
+        return {"type": "urlset", "urls": urls, "sitemaps": [], "error": None,
+                "problems": _sitemap_problems(root, len(urls), without_loc)}
 
     return {"type": "unknown", "urls": [], "sitemaps": [], "error": f"Unknown root element: {root.tag}"}
 

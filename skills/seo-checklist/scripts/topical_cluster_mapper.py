@@ -38,6 +38,12 @@ def _topic_from_text(text: str) -> str:
 #  one-page clusters stopped counting as hubs (F15 batch 3) it leaves the pages without a
 #  hub unless a subtopic groups two of them, so a one-subject site fails.
 SITE_WIDE_SHARE = 0.5
+# basis: convention — derived, the fewest crawled pages on which a topic hub can form: a hub needs a
+#  subtopic two titles share, and below four pages a word on two titles is on more than
+#  SITE_WIDE_SHARE of them, so it is set aside as the site's own and every page stands
+#  alone. Below it AR-153 is N/A (`too_few_pages_for_hubs`), not a FAIL the rule could not avoid
+#  (the owner's ruling on F15 batch 3's question 3).
+MIN_PAGES_FOR_HUBS = 4
 
 
 def _split_links(value: str | None) -> list[str]:
@@ -132,6 +138,11 @@ def map_inventory(inventory: dict) -> dict:
         None if rows else "the crawl read no page")
     result["fetch_error_kind"] = inventory.get("fetch_error_kind")
     result["truncated"] = bool((inventory.get("summary") or {}).get("truncated"))
+    # AR-153's applicability (the owner's ruling on F15 batch 3's question 3): a whole
+    # crawl of fewer pages than a hub needs is a site too small for the rule. A crawl
+    # cut at its cap has more pages than it read, so it is never too small.
+    result["too_few_pages_for_hubs"] = (not result["truncated"]
+                                        and len(rows) < MIN_PAGES_FOR_HUBS)
     if result["truncated"]:
         result["truncated_reason"] = (
             "the crawl stopped at its page or depth cap, and a page it left out can be "

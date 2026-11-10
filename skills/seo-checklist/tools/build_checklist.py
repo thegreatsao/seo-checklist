@@ -220,6 +220,9 @@ ITEM_REQUIRES = {
     "LO-198": "crawl",
     "MD-187": "crawl",
     "TE-176": "crawl",
+    # The crawl's paths are what AR-151 tests the file against (F15): `/` alone read
+    # `Disallow: /$` as the whole site shut.
+    "AR-151": "crawl",
     # gsc_links_csv.py is offline for the three report-only items, but BL-083 asks
     # it to request the exported target pages.
     "BL-083": "fetch",
@@ -302,6 +305,12 @@ APPLIES_WHEN = {
     # with no facets at all, so the subject needed a count of its own — see
     # `faceted_count` in `faceted_nav_audit.py`.
     "AR-163": {"path": "faceted_count", "gt": 0},
+    # Small sites (the owner's ruling on F15 batch 3's question 3): on a whole crawl of
+    # fewer pages than the rule's bar can be met on, it could only fail. Each minimum is
+    # the script's, derived from its rule (`MIN_PAGES_FOR_HUBS`, `MIN_PAGES_FOR_AVERAGE`:
+    # 4 both); a crawl cut at its cap is never too small.
+    "AR-153": {"path": "too_few_pages_for_hubs", "falsy": True},
+    "AR-162": {"path": "too_few_pages_for_average", "falsy": True},
     # Stylesheets. A page linking none has no CSS to minify, and `unminified_count`
     # was 0 out of `checked` 0.
     "TE-174": {"path": "checked", "gt": 0},
@@ -440,7 +449,6 @@ SUBJECT_ALWAYS_PRESENT = {
     "CN-036": "every rendered page has text nodes to measure",
     # The site's own crawl and link graph. A site always has pages and a shape.
     "CI-008": "every crawled site has a link graph; orphans are a property of it",
-    "AR-162": "the same link graph, judged for strength rather than for orphans",
     "AR-149": "every crawled site has internal links, redirecting or not",
     "TE-168": "every crawled site has internal and external links to check",
     "CI-013": "withheld_key: `blocked_urls` is written only where assets were "
@@ -620,7 +628,14 @@ EFFORT_RANK = {effort: rank for rank, effort in enumerate(sorted(EFFORT_COST, ke
 # Keep the title for traceability, and tell the operator exactly which part the
 # attached rule measures. Items absent from this table need no qualification.
 MEASURES = {
-    "CI-009": "That the page names one canonical that answers 200, and that its other scheme, www or bare host, and trailing-slash variant redirect to it, declare it, are noindex or serve another page. Other duplicate URLs are not requested.",
+    "CI-009": "That the page names one canonical, here or on another host, answering 200, and that its variants (other scheme, www or bare host, trailing slash) redirect to it, declare it, are noindex or serve another page. Other URLs are not requested.",
+    "AR-153": "Topic clusters from crawled page titles: a hub is a subtopic two titles share, linked with its pages. Headings and body text are not read. On fewer than 4 pages no subtopic can form, so the item is N/A.",
+    "AR-162": "That crawled pages link on average to 3 distinct other pages and none is a dead end. On fewer than 4 pages that average cannot be reached, so the item is N/A; orphans are CI-008.",
+    "CI-014": "Redirects from the audited URL: a loop, a missing Location or more than 10 hops fail; a chain warns. Whether a move is temporary cannot be known, so temporary codes are flagged for review (302, 303, 307 warn).",
+    "CI-012": "A heuristic score over url_quality's flags (length, case, underscores, archive pattern, depth, parameters): 100 less 12 a flag, at least 70. No words are read, so whether a reader finds the URL friendly is not judged.",
+    "GEO-001": "That /llms.txt answers 2xx except 204 with a `# ` title as its first line and is not an HTML page. Whether its sections, links and summaries are useful is not read.",
+    "GEO-002": "A structural convention, as llms.txt has no quality standard: points for a title, a description, sections and links, and their counts and lengths. Whether the content is accurate or useful is not read.",
+    "TE-176": "Crawled pages whose canonical is missing, conflicting or names a page not answering 200 or pointing on. A canonical on another host is no issue on its own. Duplicates without one are CN-041 and MS-022.",
     "CI-018": "Crawl waste in a supplied server log: search-bot requests answered with errors, redirects or nothing indexable, disallowed or parameterised paths, sitemap URLs never crawled. Whether crawl budget is managed is not decided.",
     "MS-022": "Titles shared by indexable crawled pages, a numbered page (?page=2) counted on its own. A noindex page, or one whose canonical names another URL, is left out: it does not compete. Titles Google rewrites are not read.",
     "CN-041": "Identical body text on indexable crawled pages fails; pages estimated 85% alike (MinHash) warn. A noindex copy, or one canonicalised to another page, is the fix and not a duplicate. Other sites are not compared.",
@@ -662,7 +677,7 @@ MEASURES = {
     "BL-086": "That the Links export lists at least one linking site. Tracking the count over time happens outside the audit.",
     "SP-111": "Chrome UX Report field data for desktop, read through PageSpeed Insights: the data the Search Console report is built from.",
     "SP-112": "Chrome UX Report field data for mobile, read through PageSpeed Insights: the data the Search Console report is built from.",
-    "AR-155": "That the URL has no uppercase letters, underscores, archive pattern, deep path, parameters or excess length. Whether the words describe the page is not read.",
+    "AR-155": "That the URL's path has no uppercase letters or underscores, no archive pattern and at most five segments, and that the URL has no parameters and at most 115 characters. Whether the words describe the page is not read.",
     "CN-065": "That the page has exactly one non-empty H1.",
     "AR-147": "That the URL is at most 115 characters, five path segments and two query parameters. Whether its words describe the page is not read.",
     "GO-135": "URL Inspection's verdict on the audited URL: coverage, canonical, robots and indexing state. The API returns no rendered HTML, so that half is not read.",
@@ -772,11 +787,14 @@ item(8, "high", S, "link_profile.py", CRAWLARG,
 # page without redirecting to, declaring or noindexing it (`variant_unconsolidated`).
 # `target_unchecked` (the target never answered, or answered 429/503) and
 # `variant_unchecked` (a variant answered 429/503) are unmapped: NO_DATA.
+# `cross_host` passes (the owner's ruling on F15 batch 3's question 1, as CI-011's):
+# a canonical on another host is a legitimate declaration; its target is requested
+# like any other and fails the same way.
 CANONICAL_ARGS = ["{url}", "--check-targets", "--variants"]
 item(9, "critical", S, "canonical_checker.py", CANONICAL_ARGS,
      {"path": "rows", "field": "verdict",
       "value_map": {"self_canonical": "pass", "canonicalized": "pass",
-                    "cross_host": "fail", "missing": "fail",
+                    "cross_host": "pass", "missing": "fail",
                     "conflicting": "fail", "target_unavailable": "fail",
                     "variant_unconsolidated": "fail"}},
      "Self-canonical on the primary version, 301 from duplicates")
@@ -1571,16 +1589,23 @@ item(149, "medium", S, "internal_links.py", CRAWLARG,
      {"path": "summary.internal_redirects", "eq": 0},
      "Point internal links at the final URL instead of a redirect",
      warn={"path": "summary.internal_redirects", "lte": 3})
+# F15 (the owner's ruling on F03's AR-150): `total_hops` read a loop as short — `/a`
+# -> `/a` is 0 hops and `/a` -> `/b` -> `/a` is 1 — so both passed. `walk` names the
+# shape; a walk that did not finish leaves it absent (NO_DATA).
 item(150, "high", S, "redirect_checker.py", PAGE,
-     {"path": "total_hops", "lte": 1},
+     {"path": "walk",
+      "value_map": {"direct": "pass", "one_hop": "pass", "chain": "fail",
+                    "loop": "fail"}},
      "Remove redirect chains and loops")
 # robots_checker.py appends plain strings to `issues`, never dicts, so no severity
 # rule can read them and this item passed on every site ever audited. What it can
 # answer structurally is the item's own verb — *provide* a robots.txt: `status` is
 # 200 when one exists, 404 when it does not, and absent when the request itself
 # failed, which is NO_DATA rather than a verdict. The Sitemap directive and the
-# per-agent rules are already AR-152 and item 6.
-item(151, "high", S, "robots_checker.py", PAGE,
+# per-agent rules are already AR-152 and item 6. F15 (the owner's ruling on F03's
+# AR-151): the whole site is shut only when `/` and every crawled path are, so the
+# shared crawl is read; an empty `User-agent:` line is a problem of its own.
+item(151, "high", S, "robots_checker.py", CRAWLARG,
      {"path": "correctness_problems", "len_eq": 0},
      "Correct robots.txt")
 item(152, "medium", S, "robots_checker.py", PAGE,

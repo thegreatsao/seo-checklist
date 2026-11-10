@@ -772,7 +772,18 @@ def run_hreflang_check(url: str, verify_returns: bool = False) -> dict:
         "verified": verify_returns,
         "alternates_checked": len(return_outcomes),
     }
-    if verify_returns and all(outcome is not None for outcome in return_outcomes):
+    # IN-122 is *valid* hreflang with return tags (F15, the owner's ruling): a code
+    # that is no language or region (`jp`) fails whatever the returns say, and a set
+    # naming no alternate has no return tag to verify — it passed on `all([])`.
+    if verify_returns and results["language_code_issues"]:
+        return_summary["verified_and_valid"] = False
+        return_summary["detail"] = ("At least one hreflang value is not a valid "
+                                    "language or region code.")
+    elif verify_returns and not return_outcomes:
+        return_summary["verified_and_valid"] = False
+        return_summary["detail"] = ("The hreflang set names no alternate version, so "
+                                    "it declares nothing to return to.")
+    elif verify_returns and all(outcome is not None for outcome in return_outcomes):
         return_summary["verified_and_valid"] = all(return_outcomes)
         return_summary["detail"] = (
             f"Verified {len(return_outcomes)} alternate return tag(s); "

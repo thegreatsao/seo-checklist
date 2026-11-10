@@ -72,7 +72,7 @@ measures read from a rendered page.
 | a human | 31 |
 | Search Console, with no API to answer it, so a person opens the UI | 3 |
 
-Those 145 items collapse to **68 unique process launches** over 57 distinct scripts —
+Those 145 items collapse to **69 unique process launches** over 57 distinct scripts —
 the runner deduplicates by script *and* arguments, so `pagespeed.py` runs once, not
 seven times, and `MB-107` and `MB-108` cost no launch at all: they read the artifact
 five other items already read.
@@ -433,8 +433,8 @@ cannot show the number is right, so `tools/audit_thresholds.py` finds each one a
 depends on and requires a stated basis — an external standard (named, so you can check
 it), something measured, a convention admitted as one, or a number inherited from the
 borrowed code and not yet examined. CI refuses a bare one. The count that matters is
-how many came with code from elsewhere and are still unexamined: after F15 batch 3, none of
-134; 20 are standards, 14 measured, 100 conventions with the judgement written, and 45 more
+how many came with code from elsewhere and are still unexamined: after F15 batch 4, none of
+137; 20 are standards, 14 measured, 103 conventions with the judgement written, and 45 more
 decide only what is printed. That is in [KNOWN-ISSUES.md](KNOWN-ISSUES.md) §2 and [ROADMAP.md](ROADMAP.md).
 
 **The report says what changed since last time, and hands over a task list.** Every run

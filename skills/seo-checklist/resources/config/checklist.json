@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "445b7ca058d2",
+  "registry_version": "d7d44f72d70b",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -319,7 +319,7 @@
           "value_map": {
             "self_canonical": "pass",
             "canonicalized": "pass",
-            "cross_host": "fail",
+            "cross_host": "pass",
             "missing": "fail",
             "conflicting": "fail",
             "target_unavailable": "fail",
@@ -327,7 +327,7 @@
           }
         }
       },
-      "measures": "That the page names one canonical that answers 200, and that its other scheme, www or bare host, and trailing-slash variant redirect to it, declare it, are noindex or serve another page. Other duplicate URLs are not requested.",
+      "measures": "That the page names one canonical, here or on another host, answering 200, and that its variants (other scheme, www or bare host, trailing slash) redirect to it, declare it, are noindex or serve another page. Other URLs are not requested.",
       "effort": "low",
       "fix": "Self-canonical on the primary version, 301 from duplicates"
     },
@@ -406,6 +406,7 @@
           "gte": 70
         }
       },
+      "measures": "A heuristic score over url_quality's flags (length, case, underscores, archive pattern, depth, parameters): 100 less 12 a flag, at least 70. No words are read, so whether a reader finds the URL friendly is not judged.",
       "effort": "low",
       "fix": "Keep URLs short, readable, lowercase, words separated by hyphens"
     },
@@ -464,6 +465,7 @@
           ]
         }
       },
+      "measures": "Redirects from the audited URL: a loop, a missing Location or more than 10 hops fail; a chain warns. Whether a move is temporary cannot be known, so temporary codes are flagged for review (302, 303, 307 warn).",
       "effort": "low",
       "fix": "Use 301/308 for permanent and 302/307 for temporary; remove chains and loops"
     },
@@ -3338,8 +3340,13 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "total_hops",
-          "lte": 1
+          "path": "walk",
+          "value_map": {
+            "direct": "pass",
+            "one_hop": "pass",
+            "chain": "fail",
+            "loop": "fail"
+          }
         }
       },
       "effort": "high",
@@ -3356,9 +3363,11 @@
       "check": {
         "script": "robots_checker.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
-        "requires": "fetch",
+        "requires": "crawl",
         "assert": {
           "path": "correctness_problems",
           "len_eq": 0
@@ -3409,8 +3418,13 @@
         "assert": {
           "path": "score",
           "gte": 70
+        },
+        "applies_when": {
+          "path": "too_few_pages_for_hubs",
+          "falsy": true
         }
       },
+      "measures": "Topic clusters from crawled page titles: a hub is a subtopic two titles share, linked with its pages. Headings and body text are not read. On fewer than 4 pages no subtopic can form, so the item is N/A.",
       "effort": "high",
       "fix": "Build topic hubs (silos)"
     },
@@ -3470,7 +3484,7 @@
           "len_eq": 0
         }
       },
-      "measures": "That the URL has no uppercase letters, underscores, archive pattern, deep path, parameters or excess length. Whether the words describe the page is not read.",
+      "measures": "That the URL's path has no uppercase letters or underscores, no archive pattern and at most five segments, and that the URL has no parameters and at most 115 characters. Whether the words describe the page is not read.",
       "effort": "high",
       "fix": "Consistent, descriptive URL slugs"
     },
@@ -3587,8 +3601,13 @@
             "high",
             "medium"
           ]
+        },
+        "applies_when": {
+          "path": "too_few_pages_for_average",
+          "falsy": true
         }
       },
+      "measures": "That crawled pages link on average to 3 distinct other pages and none is a dead end. On fewer than 4 pages that average cannot be reached, so the item is N/A; orphans are CI-008.",
       "effort": "high",
       "fix": "Strengthen internal linking, remove orphans"
     },
@@ -3939,6 +3958,7 @@
           "len_eq": 0
         }
       },
+      "measures": "Crawled pages whose canonical is missing, conflicting or names a page not answering 200 or pointing on. A canonical on another host is no issue on its own. Duplicates without one are CN-041 and MS-022.",
       "effort": "low",
       "fix": "Fix canonicalization issues"
     },
@@ -4441,6 +4461,7 @@
           "truthy": true
         }
       },
+      "measures": "That /llms.txt answers 2xx except 204 with a `# ` title as its first line and is not an HTML page. Whether its sections, links and summaries are useful is not read.",
       "effort": "medium",
       "fix": "Publish /llms.txt describing the site and mapping its key sections"
     },
@@ -4463,6 +4484,7 @@
           "gte": 60
         }
       },
+      "measures": "A structural convention, as llms.txt has no quality standard: points for a title, a description, sections and links, and their counts and lengths. Whether the content is accurate or useful is not read.",
       "effort": "medium",
       "fix": "Flesh out llms.txt: title, description, sections, links"
     },

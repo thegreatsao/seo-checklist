@@ -183,6 +183,16 @@ def check_redirects(url: str, max_redirects: int = MAX_REDIRECT_HOPS,
         result.pop("redirect_issues", None)
 
     result["total_hops"] = max(0, len(result["chain"]) - 1)
+    # What AR-150 reads (F15, the owner's ruling): a loop is no chain of one hop, however
+    # few hops the walk took before it came back — `/a` -> `/a` counted 0 and
+    # `/a` -> `/b` -> `/a` 1, and both passed. Absent when the walk did not finish.
+    if result.get("error") is None and "has_loop" in result:
+        result["walk"] = ("loop" if result["has_loop"]
+                          else "chain" if result["total_hops"] > 1
+                          else "one_hop" if result["total_hops"] == 1
+                          else "direct")
+    elif result.get("truncated") and not result.get("error"):
+        result["walk"] = "chain"    # ten hops and more: a chain whether or not it loops
 
     # Check for mixed protocol
     protocols = set()
