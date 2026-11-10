@@ -76,6 +76,30 @@ that drift.
 
 ---
 
+### [2026-11-10] GO-145 and GEO-005 are N/A on utility pages (privacy, terms, contact)
+
+**Decision:** The owner's ruling 1 on F15 batch 5's questions ("Принимаю, батч 6", 2026-11-10; the F15 contract, "The
+owner's rulings on batch 5's questions"). A sampled page that is a privacy, terms or contact page gets N/A from GO-145
+and GEO-005 instead of FAIL; every other page keeps the batch 5 rule (a page whose content names no source scores 0).
+An about page is not a utility page: it makes claims about the business. The page is classified by its own URL path,
+with the smallest deterministic rule the plugin already holds (F15 batch 6 states it in each item's `measures`
+sentence).
+
+**Why:** a privacy policy, terms of service or a contact page makes no factual claim a source could back, so a FAIL
+there is a verdict on citations the page never needed; batch 5's rule made the exemplary fixture fail both items on
+its privacy page.
+
+**Alternatives rejected:**
+- **Keep FAIL everywhere (batch 5's reading):** a high-severity FAIL on every site's privacy page.
+- **N/A on any page making no factual claim:** reads claims by a heuristic (`CLAIM_RE`); an about page with no number
+  in it would escape the rule the owner meant it to meet.
+- **About pages as utility pages:** the owner ruled them out; they make claims about the business.
+
+**Consequences:** census trees whose sampled pages include a privacy, terms or contact page drop that page's FAIL
+(the move declared before the run); a site whose only failing sampled page is a utility page moves FAIL → PASS or N/A.
+
+---
+
 ### [2026-11-10] An hreflang set naming only the page itself is N/A for IN-122
 
 **Decision:** The owner's ruling 2 on F15 batch 4's questions ("Принимаю, батч 5", 2026-11-10; the F15 contract, "The
