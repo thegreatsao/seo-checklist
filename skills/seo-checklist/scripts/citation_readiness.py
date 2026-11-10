@@ -8,7 +8,9 @@ from lib import python_floor  # noqa: F401
 import argparse
 import json
 import re
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
+
+import eeat_signal_checker
 
 from seo_common import (
     CONTRIBUTION_KEYS,
@@ -69,6 +71,42 @@ def _declares_a_source(link) -> bool:
     return any(fragment == word or fragment.startswith(word + "-")
                or fragment.startswith(word + "_")
                for word in FOOTNOTE_WORDS)
+# Utility pages (the owner's ruling 1 on F15 batch 5's questions): a privacy, terms or
+# contact page makes no claim a source could back, so GO-145 and GEO-005 are N/A there;
+# an about page makes claims about the business and is not one. Classified by the page's
+# own URL path with the vocabulary the plugin already holds for such links
+# (`eeat-terms.json`'s `privacy` and `contact` href stems, every language), plus the
+# terms-of-service stems among its `trust` hrefs, named here because `trust` also holds
+# /about and /team. The page's last path segment, its extension dropped, contains a stem,
+# as `eeat_signal_checker` reads a link's href (`/taisykl` for taisyklės,
+# `politika-konfidencialnosti`): `/privacy-policy`, `/legal/terms.html` and `/kontakty`
+# are utility pages, `/privacy/why-we-bake` is not. Known limits: an article whose slug
+# holds a stem (`/contact-lenses-guide`, `/glossary-of-terms`) is read as one, and a page
+# reached only by a query (`?page_id=3`) is not classified.
+UTILITY_CONCEPTS = ("privacy", "contact")
+TERMS_STEMS = ("/terms", "/taisykl", "/salygos", "/usloviya", "/pravila")
+
+
+def _utility_stems() -> tuple[str, ...]:
+    stems = set(TERMS_STEMS)
+    for concepts in eeat_signal_checker._TERMS["languages"].values():
+        for concept in UTILITY_CONCEPTS:
+            stems.update(concepts.get(concept, {}).get("href", []))
+    return tuple(sorted(stem.strip("/").lower() for stem in stems))
+
+
+UTILITY_STEMS = _utility_stems()
+
+
+def utility_page(url: str) -> bool:
+    """Whether the page at `url` is a privacy, terms or contact page, by its path."""
+    segments = [s for s in unquote(urlparse(url or "").path).lower().split("/") if s]
+    if not segments:
+        return False
+    last = re.sub(r"\.(?:html?|php|aspx?|jsp)$", "", segments[-1])
+    return any(stem in last for stem in UTILITY_STEMS)
+
+
 HIGH_TRUST_HOST_RE = re.compile(
     r"((^|\.)gov(\.|$)|(^|\.)edu$|who\.int$|nih\.gov$|cdc\.gov$|worldbank\.org$|oecd\.org$|wikipedia\.org$)",
     re.I,
@@ -294,6 +332,9 @@ def check_citation_readiness(source: str, timeout: int = 15) -> dict:
         # least one source — a trusted-host link, a cite or blockquote, a footnote link
         # or a schema citation — and 0 on a page naming none.
         "sourced_score": min(100, score) if citation_capacity else 0,
+        # GO-145's and GEO-005's `applies_when` (the owner's ruling 1 on batch 5's
+        # questions): a privacy, terms or contact page is N/A.
+        "utility_page": utility_page(url or ""),
         "citation_capacity": citation_capacity,
         "factual_claims": len(factual_claims),
         "claim_samples": factual_claims[:10],

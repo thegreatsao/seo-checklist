@@ -85,6 +85,25 @@ def rendered_document(path: str) -> tuple[str | None, str | None]:
     return document, None
 
 
+def with_doctype(path: str, document: str) -> tuple[str | None, str | None]:
+    """The rendered document with its doctype put back, or why it cannot be (TE-181).
+
+    `documentElement.outerHTML` has no doctype, and Nu reports a missing one as an
+    error, so every rendered page failed TE-181 (F15, its ruling: "put the doctype back
+    from document.doctype"). The snippet records `doctype`, serialised, `""` for a page
+    with none. A document that carries its own is sent as it is; an artifact taken with
+    an older snippet, with neither, cannot say whether the page had one, so nothing is
+    validated rather than an error invented."""
+    if document.lstrip()[:9].lower() == "<!doctype":
+        return document, None
+    with open(path, encoding="utf-8") as handle:
+        doctype = json.load(handle).get("doctype")
+    if isinstance(doctype, str):
+        return doctype + document, None
+    return None, ("the rendered artifact has no `doctype` key, so whether the page "
+                  "declares one is unknown; re-take it with the current snippet")
+
+
 def nu_standin() -> str:
     """The census's stand-in for Nu, or "" — always "" outside a loopback-only process."""
     standin = os.environ.get(NU_STANDIN_ENV, "").strip()
@@ -115,6 +134,12 @@ def validate(url: str, timeout: int = 45, rendered_json: str | None = None) -> d
             # for TE-181, claiming a rendered document was valid without one existing.
             result["error"] = f"no rendered document to validate: {render_error}"
             # The rendered artifact the operator supplied, not this script (EVD-1, F04).
+            result["error_kind"] = "input"
+            return result
+        document, render_error = with_doctype(rendered_json, document)
+        if document is None:
+            result["render_error"] = render_error
+            result["error"] = f"no rendered document to validate: {render_error}"
             result["error_kind"] = "input"
             return result
 

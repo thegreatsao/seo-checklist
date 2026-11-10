@@ -96,21 +96,31 @@ def check(url: str, timeout: int = 15) -> dict:
         result["issues"].append(issue("low", reason, page.url))
         return result
 
-    robots = fetch_robots(page.url, timeout=timeout)
+    # Each rule from the robots.txt that governs its URL (F15, MB-104's ruling): the
+    # home page under the page origin's file, the icon under its own origin's — a
+    # CDN-hosted icon is not governed by the site's robots.txt.
+    page_robots = fetch_robots(page.url, timeout=timeout)
+    icon_robots = page_robots
+    if (resolved.lower().startswith(("http://", "https://"))
+            and origin(resolved) != origin(page.url)):
+        icon_robots = fetch_robots(resolved, timeout=timeout)
     # A robots.txt this audit's guard refused says nothing either way (HTTP-13). The
     # icon is still read: a defect found in it fails whatever robots.txt says, and only
     # a grade that would pass is withheld at the end.
-    robots_refused = robots["fetch"].get("error_kind") == "blocked"
-    parsed_robots = None if robots_refused else robots.get("parsed")
-    if parsed_robots is not None:
-        for agent, target in (("Googlebot", origin(page.url) + "/"),
-                              ("Googlebot-Image", resolved)):
-            allowed, _rule = robots_allowed(parsed_robots, target, agent)
-            if not allowed:
-                reason = f"{agent} may not fetch {target} under robots.txt"
-                favicon.update({"grade": "fails", "reason": reason})
-                result["issues"].append(issue("low", reason, target))
-                return result
+    refused = [r for r in (page_robots, icon_robots) if r["fetch"].get("error_kind") == "blocked"]
+    robots_refused = bool(refused)
+    for agent, target, robots in (("Googlebot", origin(page.url) + "/", page_robots),
+                                  ("Googlebot-Image", resolved, icon_robots)):
+        parsed_robots = (None if robots["fetch"].get("error_kind") == "blocked"
+                         else robots.get("parsed"))
+        if parsed_robots is None:
+            continue
+        allowed, _rule = robots_allowed(parsed_robots, target, agent)
+        if not allowed:
+            reason = f"{agent} may not fetch {target} under {robots['url']}"
+            favicon.update({"grade": "fails", "reason": reason})
+            result["issues"].append(issue("low", reason, target))
+            return result
 
     try:
         response = safe_get(resolved, timeout=timeout, max_response_bytes=MAX_ICON_BYTES)
@@ -182,7 +192,7 @@ def check(url: str, timeout: int = 15) -> dict:
     if grade == "fails":
         result["issues"].append(issue("low", reason, resolved))
     elif robots_refused:
-        result["fetch_error"] = f"robots.txt not requested: {robots['fetch'].get('error')}"
+        result["fetch_error"] = f"robots.txt not requested: {refused[0]['fetch'].get('error')}"
         result["fetch_error_kind"] = "blocked"
     return result
 

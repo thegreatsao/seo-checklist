@@ -446,13 +446,14 @@ name. A column called `url` would be read as "fix this page".
   every rule-carrying item a second time (F03 batches 3–5) and the owner ruled each
   dispute: 74 code defects, 33 sentences, 1 assertion to retire, 2 not defects. Until F15
   is `passing` a verdict on an item still listed may be narrower than its title says —
-  e.g. `SE-114` looks up the entry URL alone. Batch 1 (2026-11-09)
+  e.g. `BL-086` reads a missing links sheet as FAIL. Batch 1 (2026-11-09)
   repaired the 14 items `parse_html.py` and `javascript_render_audit.py` carry, batch 2
   (2026-11-09) the 18 that `rendered_audit.py` and its snippet, `pagespeed.py`,
   `image_inventory.py` and `image_weight_audit.py` carry, batch 3 (2026-11-09) the 14
   the crawl inventory readers carry, batch 4 (2026-11-10) the 18 of robots, sitemaps,
-  redirects and URLs; the open list, 46 items with each ruling, is
-  `docs/sprint-20261109-F15.md`.
+  redirects and URLs, batch 5 (2026-11-10) the 18 of structured data and content, batch
+  6 (2026-11-10) the 18 of security, speed and technical; the open list, 10 items with
+  each ruling, is `docs/sprint-20261109-F15.md`.
   <!-- ki: f03-ruled-defects-open -->
 
 - **The four shapes this entry singled out are judged, and twenty constants are still

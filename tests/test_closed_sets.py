@@ -297,8 +297,15 @@ class StandardVocabulariesAsPublished(unittest.TestCase):
                       "range", "color", "checkbox", "radio", "file", "submit", "image",
                       "reset", "button"}
         self.assertEqual(len(html_types), 22)
-        self.assertEqual(set(a11y_seo_checker.UNLABELLED_INPUT_TYPES),
-                         {"hidden", "submit", "reset", "button", "image"} & html_types)
+        # F15 batch 6 (TE-180's ruling) reads the ones named by their own text instead
+        # of skipping them: only `hidden` is never named.
+        self.assertEqual(set(a11y_seo_checker.UNRENDERED_INPUT_TYPES), {"hidden"})
+        self.assertEqual(set(a11y_seo_checker.VALUE_NAMED_INPUT_TYPES),
+                         {"submit", "reset", "button"} & html_types)
+        # HTML gives submit and reset a default caption when `value` is absent; a
+        # button input has none.
+        self.assertEqual(set(a11y_seo_checker.DEFAULT_CAPTION_INPUT_TYPES),
+                         {"submit", "reset"})
 
     def test_safe_browsing_threat_types(self):
         """Safe Browsing v4 `ThreatType` (reference last updated 2024-09-18) less

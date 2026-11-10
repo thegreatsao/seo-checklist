@@ -86,6 +86,9 @@ MAX_SHEETS = 12
 # not a general small-CSS population; 159 are source-labelled and 11 minified.
 SMALL_FILE_BYTES = 2048  # suppress files too small to matter
 RE_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+# `@import url(x)`, `@import "x"` (F15, TE-174's ruling: a <style> block's imports are
+# stylesheets the page loads).
+RE_IMPORT = re.compile(r"""@import\s+(?:url\(\s*)?["']?([^"')\s;]+)""", re.I)
 
 
 def minification_signals(css: str) -> tuple[float, float, int]:
@@ -125,11 +128,15 @@ def check(url: str, timeout: int = 15) -> dict:
         "fetch_error": None,
     }
     try:
-        html = safe_get(url, timeout=timeout).text
+        page = safe_get(url, timeout=timeout)
     except Exception as exc:
         result["fetch_error"] = str(exc)[:200]
         result["fetch_error_kind"] = fetch_error_kind(exc)
         return result
+    if page.status_code >= 400:
+        result["fetch_error"] = f"the page answered HTTP {page.status_code}"
+        return result
+    html = page.text
 
     soup = BeautifulSoup(html, html_parser())
     hrefs = []
@@ -141,6 +148,9 @@ def check(url: str, timeout: int = 15) -> dict:
         href = link.get("href")
         if href:
             hrefs.append(urljoin(url, href))
+    for style in soup.find_all("style"):
+        for imported in RE_IMPORT.findall(style.get_text() or ""):
+            hrefs.append(urljoin(url, imported))
     hrefs = list(dict.fromkeys(hrefs))
     result["truncated"] = len(hrefs) > MAX_SHEETS
     hrefs = hrefs[:MAX_SHEETS]
@@ -151,6 +161,11 @@ def check(url: str, timeout: int = 15) -> dict:
         try:
             resp = safe_get(href, timeout=timeout)
             row["status"] = resp.status_code
+            if resp.status_code >= 400:
+                # An error page's body is not the stylesheet (F15 batch 6's aside).
+                row["error"] = f"HTTP {resp.status_code}"
+                result["stylesheets"].append(row)
+                continue
             css = resp.text
             row["bytes"] = len(css.encode("utf-8", errors="ignore"))
             if row["bytes"] < SMALL_FILE_BYTES:
@@ -172,19 +187,28 @@ def check(url: str, timeout: int = 15) -> dict:
     # (HTTP-13): with none read the item has nothing to stand on, and with some read
     # a clean answer covers only those.
     refused = [row["href"] for row in result["stylesheets"] if row.get("refused")]
-    if refused and not result["checked"]:
+    # A sheet that failed is unread too (F15, TE-174's ruling: "count failed fetches as
+    # truncated"): a clean answer covers only the sheets read, and none read is no answer.
+    failed = [row["href"] for row in result["stylesheets"]
+              if row["error"] and not row.get("refused")]
+    if refused and not result["checked"] and not failed:
         result["fetch_error"] = f"stylesheet not requested: {refused[0]}"
         result["fetch_error_kind"] = "blocked"
-    elif refused:
+    elif (refused or failed) and not result["checked"]:
+        result["fetch_error"] = f"no stylesheet could be read: {(failed or refused)[0]}"
+    elif refused or failed:
         result["truncated"] = True
-        result["truncated_reason"] = (f"{len(refused)} stylesheet(s) refused by this "
-                                      f"audit's guard")
+        result["truncated_reason"] = "; ".join(
+            part for part in (
+                f"{len(refused)} stylesheet(s) refused by this audit's guard" if refused else "",
+                f"{len(failed)} stylesheet(s) could not be read" if failed else "")
+            if part)
 
     if not hrefs:
         result["issues"].append({
             "severity": "low",
-            "message": "No external stylesheets found (inline or JS-injected CSS "
-                       "is not evaluated here)",
+            "message": "No external or imported stylesheets found (inline or "
+                       "JS-injected CSS is not evaluated here)",
             "url": url,
         })
     for row in result["stylesheets"]:

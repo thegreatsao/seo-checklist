@@ -197,7 +197,7 @@ class ThePageItselfIsRefused(unittest.TestCase):
     # neighbours' addresses, which are not the page (no key, no programs here). Its
     # other items are NO_DATA for those reasons, not for the refusal. Until F04 TE-167
     # was among them: the runner kept one kind per result (narrowed in F14's review).
-    OTHER_SUBJECTS = {"SE-114", "SE-116", "TE-171", "TE-178", "TE-179"}
+    OTHER_SUBJECTS = {"SE-114", "SE-116", "TE-171", "TE-179"}
 
     def test_no_refused_page_is_graded_or_called_unread_or_a_crash(self):
         wrong = [describe(row) for rows in self.rows.values() for row in rows

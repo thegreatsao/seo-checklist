@@ -310,6 +310,10 @@ APPLIES_WHEN = {
     # The owner's ruling 2 on F15 batch 4's questions: a set naming only the page itself
     # has nothing to compare (a bad code in it still fails: `self_only` is false then).
     "IN-122": {"path": "checks.return_tags.self_only", "falsy": True},
+    # The owner's ruling 1 on F15 batch 5's questions: a privacy, terms or contact page
+    # makes no claim a source could back (an about page does, and stays in).
+    "GO-145": {"path": "utility_page", "falsy": True},
+    "GEO-005": {"path": "utility_page", "falsy": True},
     # Faceted URLs. `count` is `len(rows)` over every internal URL and read 1 on a page
     # with no facets at all, so the subject needed a count of its own — see
     # `faceted_count` in `faceted_nav_audit.py`.
@@ -352,8 +356,8 @@ APPLIES_WHEN = {
 # after all, the item passes and nothing says otherwise. That is how `BL-083` and
 # `GO-137` sat here for the life of the registry. For others the key is *withheld* when
 # there was nothing to measure, and the item is NO_DATA rather than a pass whatever the
-# sentence says — there the prose is a description, not a guard. One entry, `TE-178`,
-# names a key the checker writes nowhere at all.
+# sentence says — there the prose is a description, not a guard. A third kind, a key
+# the checker writes nowhere at all, was `TE-178`'s until F15 batch 6 retired its rule.
 #
 # `reason_matches_what_the_checker_emits` derives which of the three each entry is,
 # from the checker's own source through `audit_reachability`, and requires the sentence
@@ -432,6 +436,7 @@ RULELESS_SUBJECT_ALWAYS_PRESENT = {
     "TE-165": "every site has a host and path structure",
     "TE-173": "every rendered page has a console",
     "CO-191": "every site has competitors in search results",
+    "TE-178": "every site is served from an address, shared or not",
     "CO-192": "every site has competitors in search results",
     "CO-193": "every site has competitors in search results",
     "CO-194": "every site has competitors in search results",
@@ -507,18 +512,10 @@ SUBJECT_ALWAYS_PRESENT = {
     "SE-114": "Safe Browsing answered; an empty threat list is that answer",
     "SE-116": "the same answer, read for hacked content",
     "TE-171": "the same answer, read as a blocklist check",
-    # Not a subject that is always present: a subject the checker never reports at
-    # all. `check_neighbors()` resolves the hosting IP and stops, so `suspicious`
-    # appears nowhere in `domain_safety_check.py` and the rule reads
-    # `neighbors.suspicious missing` — NO_DATA on every site, which is what
-    # `CANNOT_FAIL` records as `path_never_emitted`. The entry that stood here said
-    # the lookup answered with an empty list. It never answers, and the day the
-    # reverse-IP service is wired in that sentence becomes a free pass nobody
-    # re-read. `reason_matches_what_the_checker_emits` holds the two tables together
-    # now.
-    "TE-178": "path_never_emitted: `suspicious` is written nowhere in the checker, so "
-              "this item is NO_DATA everywhere and never passes by absence",
-    "GO-132": "the page either carries duplicate GA4 tags or does not",
+    # TE-178 stood here until F15 batch 6 under `path_never_emitted`: its script never
+    # wrote `neighbors.suspicious`, so the rule was retired and an agent answers it.
+    "GO-132": "withheld_key: `duplicates` is written only where every GTM container "
+              "loaded beside a hardcoded tag was read, so no key when one was not",
     "GO-134": "withheld_key: `issues` is written only where the sitemap report could "
               "be read, so no key rather than an empty list when it could not",
     "GO-135": "URL Inspection answered for this URL",
@@ -542,14 +539,6 @@ SUBJECT_ALWAYS_PRESENT = {
 # Adding an entry is a claim that a site cannot be wrong in the way the item's
 # title names. Make sure that is what you mean before writing one.
 CANNOT_FAIL = {
-    "TE-178": {
-        "mechanism": "path_never_emitted",
-        "why": "check_neighbors() resolves the hosting IP and stops there. Judging "
-               "the neighbours needs a paid reverse-IP service this project does "
-               "not buy, and a fabricated `suspicious` would be worse than no "
-               "answer, so the field is deliberately never written and the item is "
-               "NO_DATA everywhere until that input exists.",
-    },
     "TE-179": {
         "mechanism": "warn_complement",
         "why": "0.44.0 gave this item the domain-history half of its title through "
@@ -656,10 +645,10 @@ MEASURES = {
     "MS-030": "That the description runs 100 to 144 characters: 144 is what the desktop snippet shows of ordinary text by this tool's calibration, 100 an editorial convention; the title's 150–160 is cut. Clarity and relevance are not read.",
     "GO-139": "Whether the site ranks first, with any of its pages, for its most-searched branded query in Search Console. The rest of the brand's results page — knowledge panel, reviews, other sites — is not read.",
     "SE-117": "That the audited page and up to three same-site pages it links to answer their http:// address with a permanent redirect to HTTPS. Other pages are not requested.",
-    "TE-175": "That the page is served over HTTPS and loads nothing over plain HTTP that a browser blocks or upgrades: scripts, stylesheets, frames, objects, images and media. URLs inside CSS and other page errors are not read.",
+    "TE-175": "That the page is served over HTTPS and its served HTML references no http:// script, stylesheet, frame, object, image or media a browser blocks or upgrades. What scripts or CSS load later is not read.",
     "SE-119": "The Cumulative Layout Shift of the whole page. The cookie banner is not identified, so a shift caused by anything else counts too.",
     "CN-038": "How recent this page's own dates and statistics are. The balance of fresh and evergreen content across the site is not measured.",
-    "SP-110": "Render-blocking resources and critical request chains read from the page's HTML. The other speed checks are separate items.",
+    "SP-110": "Only parser-blocking scripts in the served HTML decide: one in <head> fails, one later in the body warns. Stylesheets, @import chains and preconnects are listed but decide nothing.",
     "TE-170": "Caching, compression and Vary headers on the page's response. URL rewrite rules are not read.",
     "TECH-003": "Time to first byte, the first of the four LCP subparts. The other three need a browser trace.",
     "MB-093": "That the page declares a viewport. Whether the layout fits a phone is MB-107, which renders it.",
@@ -681,7 +670,7 @@ MEASURES = {
     "MD-189": "Images wider than 1280px lacking either half: w descriptors in what a phone gets (or a max-width <source> before it), and a WebP or AVIF offer. Smaller images and the widths offered are not read.",
     "AR-152": "That robots.txt declares at least one user-agent group. Whether its rules are the right ones is a judgement the audit does not make.",
     "CN-040": "That the page links to a privacy policy. Whether the policy is current is not read.",
-    "SP-109": "Third-party scripts that block rendering. The other common speed traps are separate items.",
+    "SP-109": "Third-party scripts that block rendering: no async, defer or module; //host URLs read on their host; data blocks (text/plain) left out. The other speed traps are separate items.",
     "BL-086": "That the Links export lists at least one linking site. Tracking the count over time happens outside the audit.",
     "SP-111": "Chrome UX Report field data for desktop, read through PageSpeed Insights: the data the Search Console report is built from.",
     "SP-112": "Chrome UX Report field data for mobile, read through PageSpeed Insights: the data the Search Console report is built from.",
@@ -689,7 +678,7 @@ MEASURES = {
     "CN-065": "That the page has exactly one non-empty H1.",
     "AR-147": "That the URL is at most 115 characters, five path segments and two query parameters. Whether its words describe the page is not read.",
     "GO-135": "URL Inspection's verdict on the audited URL: coverage, canonical, robots and indexing state. The API returns no rendered HTML, so that half is not read.",
-    "TE-174": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
+    "TE-174": "That every stylesheet the page links, or @imports from a <style> block, is minified; a sheet that cannot be read leaves a clean answer undecided. Unused rules and critical-path CSS are not read.",
     "CN-044": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
     # F15 batch 1: the owner's `measures` rulings on F03 batch 3, and the sentence
     # half of two fixes (MS-028, TE-166).
@@ -700,7 +689,7 @@ MEASURES = {
     "CN-066": "That the page has at least two non-empty H2 headings. Whether they organise the content is not read.",
     "IN-123": "That the html element carries a non-empty lang attribute. Whether the code is valid and matches the page's text is not read.",
     "MS-020": f"That the title is at most {TITLE_MAX_CHARS} characters, what the 600 px desktop title shows of ordinary text by this tool's calibration. Rendered width is not measured, so capitals can be cut sooner.",
-    "TE-180": "The WCAG level-A failures the HTML shows: images without alt, form fields without an accessible name, no page language. Contrast is CN-036; keyboard use is not tested.",
+    "TE-180": "The WCAG level-A failures the HTML shows: images without alt, fields with no accessible name (aria-labelledby resolved, blank labels none; image and button inputs too), no page language. Contrast is CN-036.",
     # F15 batch 5: the owner's `measures` rulings (MS-032's untabled types, MB-102,
     # AR-154), ruling 2 on batch 4's questions (IN-122), and the sentence beside fixes
     # that changed what a rule decides.
@@ -710,14 +699,24 @@ MEASURES = {
     "IN-122": "That every hreflang code is in Google's format (ISO 639-1, ISO 3166-1) and each other URL the set names links back. A set naming only the page itself is N/A, unless a code in it is invalid.",
     "GO-144": "That the page carries a direct answer (20 to 70 words after a question: a heading, a summary, a dt or an FAQ question) or a definition. Lists and tables do not stand in for one; whether Google lifts a snippet is not seen.",
     "GEO-004": "That the page carries a direct answer (20 to 70 words after a question: a heading, a summary, a dt or an FAQ question) or a definition; menus are not lists. Whether an AI answer quotes it is not observable here.",
-    "GO-145": "A citation-readiness score of 25 on a page whose content names a source: a cite, blockquote, footnote, trusted-host link, schema citation, a link beside a claim or under a Sources heading. AI Overviews are not observed.",
-    "GEO-005": "A citation-readiness score of 25 on a page whose content names a source: a cite, blockquote, footnote, trusted-host link, schema citation, a link beside a claim or under a Sources heading. Support is not read.",
+    "GO-145": "A citation-readiness score of 25 on a page whose content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). A privacy, terms or contact page, by its URL path, is N/A.",
+    "GEO-005": "A citation-readiness score of 25 on a page whose content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). A privacy, terms or contact page, by its URL path, is N/A.",
     "CN-057": "That an author's and a publisher's names appear in the page's visible text, each named by markup (a byline, meta or JSON-LD). A name in metadata alone is not shown; CSS from stylesheets is not applied.",
     "CN-068": "A score of 35 from E-E-A-T signals on a page that names an author: byline, credential and first-hand words, policy and trust links, outbound links. Whether the expertise is real is not judged.",
     "CN-056": "That the page's own visible text (not its furniture or comments) shows a date, a <time> with text or one written out, and a later one as the update; the publication is the earliest <time> or one labelled published.",
     "MS-033": "A score of 80 over thirteen Open Graph and Twitter Card tags on a page carrying og:image and twitter:card, the two a preview is drawn from. Whether the preview looks right is not checked.",
     "GEO-006": "That the entity resolves: a Wikidata or Wikipedia link in sameAs, a Wikidata item or Knowledge Graph match under its declared name. Withheld when Wikidata cannot be asked or the page names no entity.",
     "KW-076": "That the primary keyword appears in the body copy: the content's text, lists, tables and divs included, headings, navigation and page furniture not. How naturally it is used is not judged.",
+    "SE-114": "No Safe Browsing threat (malware, social engineering, unwanted or harmful software) on the entry or any URL the crawl read, asked 500 to a request. URLs beyond the crawl are not asked.",
+    "SE-116": "The same Safe Browsing answer over the crawled URLs. Hacked content Safe Browsing does not list, such as injected SEO spam, is not detected.",
+    "TE-171": "The same Safe Browsing answer over the crawled URLs: Safe Browsing only. DNS blocklists such as Spamhaus DBL or SURBL are not asked.",
+    "TE-179": "Domain age from the registry's creation date in whois: 90 days or more passes, younger warns. Ownership and transfer history are not read.",
+    "SE-120": "CSP, Permissions-Policy and Referrer-Policy each sent, with no 'unsafe-inline' or 'unsafe-eval' for scripts, no feature open to every origin (=*) and no unsafe-url. One gap warns. Other directives are not judged.",
+    "GO-131": "A GA4 measurement ID configured or loaded, a Google tag loaded by its ID, or a Google Tag Manager container the page loads. What the container fires, and whether data arrives, are not read.",
+    "GO-132": "No GA4 ID configured or loaded twice, no GTM container loaded twice, and no hardcoded ID that a GTM container beside it also fires, its script read. Tags added at run time are not read.",
+    "TE-181": "Nu validator errors in the rendered DOM, with the page's doctype put back in front of it. An artifact without the doctype key is not validated.",
+    "MB-100": "A width=device-width viewport and no CSS width or min-width above 360px in the served HTML outside media queries and other conditions. Static CSS cannot judge tap targets; they and linked stylesheets are not read.",
+    "TECH-002": "An @font-face with no font-display, or block or auto, which hide text; a font preload without crossorigin; a stylesheet that cannot be fetched. Font file sizes are not read.",
 }
 
 
@@ -1391,13 +1390,16 @@ item(113, "critical", S, "pagespeed.py", ["{url}", "--strategy", "mobile"],
 # script never re-emits it under that name. `audit_assertions.py` caught the difference,
 # which is what it is for — and it is already in that tool's PATH_EXEMPT, since a field
 # that needs a key is absent from a keyless probe without being wrong.
-item(114, "critical", S, "domain_safety_check.py", PAGE,
+# F15 (SE-114's ruling): every URL the shared crawl read is asked, 500 to a request, so
+# a listed inner path fails the site; SE-116 and TE-171 are its twins. A mode with no
+# crawl leaves all three N/A (the runner's `inventory_json` gate).
+item(114, "critical", S, "domain_safety_check.py", CRAWLARG,
      {"path": "safe_browsing.threats", "len_eq": 0},
      "Scan the site for malicious code via Safe Browsing")
 item(115, "medium", S, "security_headers.py", PAGE,
      {"path": "hsts_enabled", "truthy": True},
      "Enable HSTS")
-item(116, "critical", S, "domain_safety_check.py", PAGE,
+item(116, "critical", S, "domain_safety_check.py", CRAWLARG,
      {"path": "safe_browsing.threats", "len_eq": 0},
      "Confirm there is no hacked content or malware")
 # SE-117 asserted `https` until 0.118.0 and never asked `http://`. A temporary
@@ -1423,10 +1425,13 @@ item(118, "critical", S, "tls_certificate.py", PAGE,
 item(119, "medium", S, "pagespeed.py", ["{url}", "--strategy", "mobile"],
      RATING("CLS"),
      "The cookie banner must not cause layout shift", warn=RATING_WARN("CLS"))
+# F15 (SE-120's ruling): the values are read — a CSP whose scripts may run inline or
+# through eval, a Permissions-Policy feature open to every origin, `unsafe-url` — and a
+# weak header is a gap like a missing one. One gap warns, as one missing header did.
 item(120, "medium", S, "security_headers.py", PAGE,
-     {"path": "hardening_missing", "len_eq": 0},
+     {"path": "hardening_gaps", "len_eq": 0},
      "Configure CSP, Permissions-Policy and Referrer-Policy",
-     {"path": "hardening_missing", "len_lte": 1})
+     {"path": "hardening_gaps", "len_lte": 1})
 
 # --- 9. International -------------------------------------------------------
 item(121, "medium", S, "hreflang_checker.py", PAGE,
@@ -1467,9 +1472,13 @@ item(129, "low", M, fix="Earn local backlinks in target markets")
 item(130, "low", L, fix="Clarify the site type: multilingual, multiregional, or both")
 
 # --- 10. Google -------------------------------------------------------------
+# F15 (GO-131's ruling): a Google tag loaded by its ID, or a GTM container the page
+# loads, is installed — GA4 through GTM must not fail. `installed_by` names what counted.
 item(131, "medium", S, "ga4_tag_checker.py", PAGE,
-     {"path": "measurement_ids", "len_gte": 1},
+     {"path": "installed_by", "len_gte": 1},
      "Install and configure Google Analytics 4")
+# F15 (GO-132's ruling): a hardcoded tag beside a GTM container is read against the
+# container's own script; a container that could not be read withholds `duplicates`.
 item(132, "medium", S, "ga4_tag_checker.py", PAGE,
      {"path": "duplicates", "len_eq": 0},
      "Remove duplicate GA4/GTM tags")
@@ -1702,7 +1711,7 @@ item(169, "high", S, "javascript_render_audit.py", PAGE,
 item(170, "medium", S, "cache_compression_checker.py", PAGE,
      ISSUES_ANY(),
      "Configure server rewrites and cache/compression headers", warn=NOTHING_SERIOUS())
-item(171, "critical", S, "domain_safety_check.py", PAGE,
+item(171, "critical", S, "domain_safety_check.py", CRAWLARG,
      {"path": "safe_browsing.threats", "len_eq": 0},
      "Check the domain against blocklists and Safe Browsing")
 item(172, "high", S, "rich_results_guard.py", PAGE,
@@ -1730,9 +1739,11 @@ item(176, "high", S, "canonical_checker.py", CRAWLARG,
 item(177, "medium", S, "javascript_render_audit.py", PAGE,
      {"path": "raw.title", "truthy": True},
      "Put the page title in the served HTML, not only in what JavaScript builds")
-item(178, "low", S, "domain_safety_check.py", PAGE,
-     {"path": "neighbors.suspicious", "len_eq": 0},
-     "Audit neighboring sites on the same server IP")
+# Retired to an agent (F15, TE-178's ruling): `check_neighbors()` resolves the hosting
+# IP and stops, so the script assertion over `neighbors.suspicious` was NO_DATA on every
+# site. Judging the neighbours needs a reverse-IP source this project does not buy; the
+# market lens answers it from what it can reach until a real neighbour source exists.
+item(178, "low", L, fix="Audit neighboring sites on the same server IP")
 # 0.44 deliberately reverses 0.21's TE-179 ruling. That ruling correctly objected that
 # age is neither a full registration history nor reputation, and that a FAIL whose only
 # remedy is waiting pollutes a prioritised fix list. The decision changes because
@@ -2100,7 +2111,9 @@ LENS = {
     # TE-165 (subdomain vs subdirectory) is filed under technical, but the
     # decision is almost always driven by language/region targeting.
     "locale": ["IN-126", "IN-130", "TE-165"],
-    "market": ["CO-191", "LO-196", "LO-197"],
+    # TE-178 since F15 batch 6: its script assertion was retired; the neighbours are
+    # an off-page question this lens answers with the search tools it already has.
+    "market": ["CO-191", "LO-196", "LO-197", "TE-178"],
 }
 LENS_OF = {eid: lens for lens, ids in LENS.items() for eid in ids}
 

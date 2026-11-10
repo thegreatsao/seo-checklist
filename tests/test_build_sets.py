@@ -86,7 +86,9 @@ class EveryInvocationIsOneTheRunnerCanAnswer(unittest.TestCase):
             argv = " ".join(check.get("args") or [])
             with self.subTest(item=item_id):
                 if "{inventory_json}" in argv:
-                    self.assertEqual(check["requires"], "crawl")
+                    # Or Safe Browsing over every crawled URL (SE-114, F15 batch 6),
+                    # which the runner leaves N/A in a mode that does not crawl.
+                    self.assertIn(check["requires"], ("crawl", "safe_browsing"))
                 if "{gsc_property}" in argv:
                     self.assertEqual(check["requires"], "gsc")
 
@@ -200,7 +202,10 @@ class TheTablesThatGatesReadThroughTheRegistry(unittest.TestCase):
         claimed = {token for token in b.GUARD_TOKENS
                    for why in b.SUBJECT_ALWAYS_PRESENT.values()
                    if re.match(re.escape(token) + ":", why)}
-        self.assertEqual(claimed, set(b.GUARD_TOKENS))
+        # TE-178 was the one `path_never_emitted` reason; F15 batch 6 retired its rule.
+        # The token stays a mechanism: the gate still demands it of any reason over a
+        # key its checker writes nowhere (`reason_matches_what_the_checker_emits`).
+        self.assertEqual(claimed, set(b.GUARD_TOKENS) - {b.NEVER_EMITTED})
 
 
 if __name__ == "__main__":

@@ -198,7 +198,7 @@ a report for somebody else.
 
 ## The second reading
 
-The LLM queue produces 38 verdicts from one model's reading of one page, and the
+The LLM queue produces 39 verdicts from one model's reading of one page, and the
 report presents them beside measured HTTP statuses with the same confidence. Have
 them reviewed before the report goes to anyone:
 
@@ -369,6 +369,8 @@ Resize to a phone viewport first (375×812), load the page, then run one
           links_contrast_unmeasured: linksUnmeasured,
           overlays_covering_content: overlays, tap_targets_below_48px: taps,
           horizontal_overflow_px: overflow, text_nodes_clipped: clipped,
+          doctype: document.doctype
+            ? new XMLSerializer().serializeToString(document.doctype) : '',
           html: document.documentElement.outerHTML};
 })()
 ```
@@ -378,7 +380,9 @@ Save the object, adding a `source` line that says how it was taken, and pass
 
 The `html` key is the serialised DOM after scripts have run. `MB-105` compares its SEO
 signals with the served document, and `TE-181` *Validate the Rendered DOM (W3C)* sends
-it to the W3C checker. It is captured here rather than
+it to the W3C checker with `doctype` put back in front (`outerHTML` has none, and the
+checker reports a missing doctype as an error); a file without the `doctype` key
+reports `NO_DATA` for TE-181. It is captured here rather than
 by a browser inside the audit on purpose: a browser started mid-run fetches the page
 and its subresources again behind the response cache, which took one audit of the
 test fixture from 22 requests to 31. Omit the key and both MB-105 and TE-181 report
@@ -592,7 +596,7 @@ interstitial without admitting it would be the same lie in a new place.
 Two doors, deliberately separate, and neither can touch a verdict a script reached.
 
 ```bash
-# the model's 38, after the lens agents have read the page
+# the model's 39, after the lens agents have read the page
 python3 <SKILL_DIR>/scripts/checklist_report.py checklist-results.json \
     --llm-answers answers.json
 
@@ -818,7 +822,7 @@ concurrently, each reading its own slice of the page once:
 | `LLM-QUEUE-copy.md` | [seo-llm-copy](resources/agents/seo-llm-copy.md) | 19 — prose quality, originality, intent match, keyword placement |
 | `LLM-QUEUE-layout.md` | [seo-llm-layout](resources/agents/seo-llm-layout.md) | 13 — ads, pop-ups, cloaking, navigation |
 | `LLM-QUEUE-locale.md` | [seo-llm-locale](resources/agents/seo-llm-locale.md) | 3 — translation, language/region targeting |
-| `LLM-QUEUE-market.md` | [seo-llm-market](resources/agents/seo-llm-market.md) | 3 — competitors, local-traffic need, localized titles |
+| `LLM-QUEUE-market.md` | [seo-llm-market](resources/agents/seo-llm-market.md) | 4 — competitors, local-traffic need, localized titles, server neighbours |
 
 Splitting by lens rather than by category is deliberate: 16 category agents would
 have four of them re-reading the same body copy. Answering the combined

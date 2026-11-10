@@ -4508,7 +4508,9 @@ class RenderedPageMeasurements(unittest.TestCase):
     # key scan below cannot tell from top-level ones — naming them here is cheaper
     # than parsing the object, and a new metric colliding with either name would
     # fail this test rather than slip through.
-    NON_METRIC = {"url", "viewport", "width", "height", "html"}
+    # `html` and `doctype` are the document, read by html_validator.py and
+    # javascript_render_audit.py (TE-181 puts the doctype back, F15 batch 6).
+    NON_METRIC = {"url", "viewport", "width", "height", "html", "doctype"}
 
     def _snippet_keys(self):
         """The keys the SKILL.md snippet's `return {...}` actually names.

@@ -67,12 +67,12 @@ measures read from a rendered page.
 
 | Answered by | Items |
 |---|---|
-| a script, asserted against its real output | 145 |
-| a language model reading the page | 38 |
+| a script, asserted against its real output | 144 |
+| a language model reading the page | 39 |
 | a human | 31 |
 | Search Console, with no API to answer it, so a person opens the UI | 3 |
 
-Those 145 items collapse to **69 unique process launches** over 57 distinct scripts —
+Those 144 items collapse to **70 unique process launches** over 57 distinct scripts —
 the runner deduplicates by script *and* arguments, so `pagespeed.py` runs once, not
 seven times, and `MB-107` and `MB-108` cost no launch at all: they read the artifact
 five other items already read.
@@ -336,7 +336,7 @@ apart in a delivered report is the record of which was which.
 
 ## The LLM queue is not optional
 
-38 items cannot be settled by a script — grammar, cloaking, doorway patterns,
+39 items cannot be settled by a script — grammar, cloaking, doorway patterns,
 translation quality, ad density, whether the page was written for a reader. Left
 unanswered they stay `LLM_PENDING` and cap coverage.
 
@@ -349,7 +349,7 @@ agents can work concurrently, each reading its own slice once:
 | `LLM-QUEUE-copy.md` | `seo-llm-copy` | 19 |
 | `LLM-QUEUE-layout.md` | `seo-llm-layout` | 13 |
 | `LLM-QUEUE-locale.md` | `seo-llm-locale` | 3 |
-| `LLM-QUEUE-market.md` | `seo-llm-market` | 3 |
+| `LLM-QUEUE-market.md` | `seo-llm-market` | 4 |
 
 Answer each `PASS` / `FAIL` / `WARN` / `N/A` with concrete evidence, then merge:
 
@@ -433,8 +433,8 @@ cannot show the number is right, so `tools/audit_thresholds.py` finds each one a
 depends on and requires a stated basis — an external standard (named, so you can check
 it), something measured, a convention admitted as one, or a number inherited from the
 borrowed code and not yet examined. CI refuses a bare one. The count that matters is
-how many came with code from elsewhere and are still unexamined: after F15 batch 4, none of
-138; 20 are standards, 14 measured, 104 conventions with the judgement written, and 45 more
+how many came with code from elsewhere and are still unexamined: after F15 batch 6, none of
+139; 21 are standards, 14 measured, 104 conventions with the judgement written, and 45 more
 decide only what is printed. That is in [KNOWN-ISSUES.md](KNOWN-ISSUES.md) §2 and [ROADMAP.md](ROADMAP.md).
 
 **The report says what changed since last time, and hands over a task list.** Every run
@@ -617,7 +617,7 @@ declared, a declaration nothing proves any more, and a declaration naming a
 mechanism other than the one proved. The third is the one an exemption list can
 never catch, and this repository has watched one rot in exactly that spot.
 
-It proves rather than surveys. Of 145 script-backed assertions, 2 are proved
+It proves rather than surveys. Of 144 script-backed assertions, 1 is proved
 unable to fail, 141 are **seen to fail** — the recorded census, which its CI job
 re-derives from runs, holds a FAIL the runner gave them through the registry's own
 arguments — and the other 2 are **not claimed either way** (`SE-118`, whose failure the
@@ -665,7 +665,7 @@ readings recorded, and coverage drops accordingly.
 
 The reviewer cannot change a verdict, cannot touch a script's result, and cannot
 answer an item the first pass left unanswered. It withdraws confidence, which is
-the one thing 38 unopposed judgements had no way to express.
+the one thing 39 unopposed judgements had no way to express.
 
 ## Bundled playbooks
 

@@ -21,6 +21,7 @@ import json
 import re
 import sys
 from collections import Counter
+from urllib.parse import urljoin
 
 try:
     import requests  # noqa: F401  (kept for the shared dependency error contract)
@@ -40,6 +41,8 @@ try:
 except ImportError:
     from scripts.seo_common import fetch_error_kind
 
+GUARD_REFUSED = "blocked"
+
 # gtag('config', 'G-XXXX') and the gtag.js loader query string both carry the ID.
 RE_CONFIG = re.compile(r"""gtag\s*\(\s*['"]config['"]\s*,\s*['"](G-[A-Z0-9]+)['"]""", re.I)
 RE_GTAG_SRC = re.compile(r"gtag/js\?id=(G-[A-Z0-9]+)", re.I)
@@ -47,6 +50,18 @@ RE_GTM = re.compile(r"(GTM-[A-Z0-9]+)", re.I)
 RE_UA = re.compile(r"(UA-\d{4,}-\d+)")
 RE_GTAG_LOADER = re.compile(r"gtag/js\?id=", re.I)
 RE_GTM_LOADER = re.compile(r"gtm\.js\?id=|googletagmanager\.com/gtm\.js", re.I)
+# A Google tag loaded by ID (GO-131's ruling, F15: "a gtag loader with an ID counts as
+# installed"): a GA4 measurement ID or a Google tag ID (`GT-`), which can carry GA4.
+RE_GOOGLE_TAG_SRC = re.compile(r"gtag/js\?(?:[^\"'\s<>]*&(?:amp;)?)?id=((?:G|GT)-[A-Z0-9]+)", re.I)
+# Where a GTM container's script is fetched from: the loader's own URL when the page
+# writes it out (a server-side container on the site's own host included), else Google's.
+RE_GTM_SRC = re.compile(r"""((?:https?:)?//[^\s"'<>+]+?/gtm\.js|(?<=["'])/[^\s"'<>+]*?gtm\.js)\?id=""",
+                        re.I)
+GTM_DEFAULT = "https://www.googletagmanager.com/gtm.js"
+RE_MEASUREMENT_ID = re.compile(r"\bG-[A-Z0-9]{4,}\b")
+# A container ID as GTM writes one, case-sensitive: `RE_GTM` above also reads a
+# `gtm-wrapper` class, and asking Google for container GTM-WRAPPER is a 404.
+RE_CONTAINER_ID = re.compile(r"\bGTM-[A-Z0-9]{4,}\b")
 
 
 def check(url: str, timeout: int = 15) -> dict:
@@ -55,17 +70,21 @@ def check(url: str, timeout: int = 15) -> dict:
         "measurement_ids": [],
         "gtm_containers": [],
         "ua_legacy": [],
-        "duplicates": [],
         "loaders": {"gtag_js": 0, "gtm_js": 0},
         "issues": [],
         "fetch_error": None,
     }
     try:
-        html = safe_get(url, timeout=timeout).text
+        page = safe_get(url, timeout=timeout)
     except Exception as exc:
         result["fetch_error"] = str(exc)[:200]
         result["fetch_error_kind"] = fetch_error_kind(exc)
         return result
+    if page.status_code >= 400:
+        # An error page's tags are not the page's (F15 batch 6's aside).
+        result["fetch_error"] = f"the page answered HTTP {page.status_code}"
+        return result
+    html = page.text
 
     config_ids = [m.upper() for m in RE_CONFIG.findall(html)]
     src_ids = [m.upper() for m in RE_GTAG_SRC.findall(html)]
@@ -79,11 +98,21 @@ def check(url: str, timeout: int = 15) -> dict:
         "gtag_js": len(RE_GTAG_LOADER.findall(html)),
         "gtm_js": len(RE_GTM_LOADER.findall(html)),
     }
+    # GO-131's subject (F15, its ruling): a GA4 ID configured or loaded, a Google tag
+    # loaded by its ID, or a GTM container the page loads — GA4 through GTM is GA4. A
+    # container ID with no loader beside it is text, not an installation.
+    loaded_containers = (sorted(set(RE_CONTAINER_ID.findall(html)))
+                         if result["loaders"]["gtm_js"] else [])
+    result["installed_by"] = sorted(set(result["measurement_ids"])
+                                    | {m.upper() for m in RE_GOOGLE_TAG_SRC.findall(html)}
+                                    | set(loaded_containers))
 
+    # Written at the end, and only when decided (GO-132's `withheld_key`).
+    duplicates = []
     # A measurement ID configured more than once double-counts pageviews.
     for gid, n in Counter(config_ids).items():
         if n > 1:
-            result["duplicates"].append({"id": gid, "count": n, "kind": "gtag_config"})
+            duplicates.append({"id": gid, "count": n, "kind": "gtag_config"})
     # And one *loaded* more than once, which is the ordinary way GA4 ends up installed
     # twice over: a theme ships `gtag/js?id=` and a plugin ships it again, or somebody
     # adds it by hand beside GTM. Only `gtag('config', …)` calls were counted, so the
@@ -93,10 +122,41 @@ def check(url: str, timeout: int = 15) -> dict:
     # the number the registry reads was the one that could not see it.
     for gid, n in Counter(src_ids).items():
         if n > 1 and Counter(config_ids)[gid] <= 1:
-            result["duplicates"].append({"id": gid, "count": n, "kind": "gtag_loader"})
+            duplicates.append({"id": gid, "count": n, "kind": "gtag_loader"})
     for cid, n in Counter(containers).items():
         if n > 2:  # GTM ships a <script> plus a <noscript> iframe by design.
-            result["duplicates"].append({"id": cid, "count": n, "kind": "gtm_container"})
+            duplicates.append({"id": cid, "count": n, "kind": "gtm_container"})
+    # A hardcoded tag beside a GTM container that fires the same ID (GO-132's ruling,
+    # the case this docstring names). The container's script is read for the hardcoded
+    # IDs; one that could not be read leaves `duplicates` unwritten unless another
+    # duplicate already decides it, so the item is NO_DATA rather than a pass.
+    unread = None
+    hardcoded = set(result["measurement_ids"])
+    if hardcoded and loaded_containers:
+        found = RE_GTM_SRC.search(html)
+        base = urljoin(page.url, found.group(1)) if found else GTM_DEFAULT
+        for cid in loaded_containers:
+            container_url = f"{base}?id={cid}"
+            try:
+                answer = safe_get(container_url, timeout=timeout)
+            except Exception as exc:
+                unread = (f"GTM container {cid} not read: {str(exc)[:160]}",
+                          fetch_error_kind(exc))
+                continue
+            if answer.status_code >= 400:
+                unread = (f"GTM container {cid} answered HTTP {answer.status_code}", None)
+                continue
+            fired = {m.upper() for m in RE_MEASUREMENT_ID.findall(answer.text)}
+            for gid in sorted(hardcoded & fired):
+                duplicates.append({"id": gid, "count": 2,
+                                             "kind": "gtm_and_hardcoded",
+                                             "container": cid})
+    if not unread or duplicates:
+        result["duplicates"] = duplicates
+    if unread and not duplicates:
+        result["duplicates_unread"] = unread[0]
+        if unread[1] == GUARD_REFUSED:
+            result["withheld"] = {"duplicates": GUARD_REFUSED}
 
     if not result["measurement_ids"] and not result["gtm_containers"]:
         result["issues"].append({
@@ -104,7 +164,7 @@ def check(url: str, timeout: int = 15) -> dict:
             "message": "No GA4 measurement ID or GTM container found on the page",
             "url": url,
         })
-    for d in result["duplicates"]:
+    for d in duplicates:
         result["issues"].append({
             "severity": "high",
             "message": f"{d['id']} appears {d['count']}x ({d['kind']}) — pageviews will "
@@ -158,7 +218,7 @@ def main():
     print(f"  GTM containers:      {', '.join(result['gtm_containers']) or 'none'}")
     if result["ua_legacy"]:
         print(f"  Legacy UA:           {', '.join(result['ua_legacy'])}")
-    print(f"  Duplicates:          {len(result['duplicates'])}")
+    print(f"  Duplicates:          {len(result['duplicates']) if 'duplicates' in result else 'unread'}")
     for i in result["issues"]:
         print(f"  [{i['severity']}] {i['message']}")
 

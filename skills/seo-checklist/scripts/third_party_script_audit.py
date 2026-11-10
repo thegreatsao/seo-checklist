@@ -7,7 +7,7 @@ from lib import python_floor  # noqa: F401
 
 import argparse
 import json
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from seo_common import (BeautifulSoup, fetch_url, html_parser, load_source,
                         require_bs4, same_host)
@@ -41,6 +41,23 @@ MANY_THIRD_PARTY_SCRIPTS = 8
 THIRD_PARTY_BYTES_WARN = 300_000
 
 
+# The `type` values a browser runs as classic script (WHATWG HTML, "JavaScript MIME
+# type"), plus absent or empty. Anything else but `module` is a data block the browser
+# never executes (F15, SP-109's ruling: `type="text/plain"` blocks nothing).
+JAVASCRIPT_TYPES = frozenset({
+    "", "application/ecmascript", "application/javascript", "application/x-ecmascript",
+    "application/x-javascript", "text/ecmascript", "text/javascript",
+    "text/javascript1.0", "text/javascript1.1", "text/javascript1.2",
+    "text/javascript1.3", "text/javascript1.4", "text/javascript1.5", "text/jscript",
+    "text/livescript", "text/x-ecmascript", "text/x-javascript"})
+
+
+def _classic_script(tag) -> bool:
+    """Whether the browser runs this `<script>` as a classic, parser-blocking candidate."""
+    essence = (tag.get("type") or "").split(";", 1)[0].strip().lower()
+    return essence in JAVASCRIPT_TYPES
+
+
 def _script_category(src: str) -> str | None:
     host = urlparse(src).netloc.lower()
     for domain, label in KNOWN_TAGS.items():
@@ -65,7 +82,13 @@ def audit(source: str, fetch_scripts: bool = False, timeout: int = 15) -> dict:
     issues = []
 
     for tag in soup.find_all("script"):
-        src = tag.get("src") or ""
+        # Resolved against the page, so a protocol-relative `//cdn…` script is read on
+        # its own host (F15, SP-109's ruling); a relative one stays the page's.
+        src = (tag.get("src") or "").strip()
+        if src and url:
+            src = urljoin(url, src)
+        elif src.startswith("//"):
+            src = "https:" + src
         row = {
             "src": src,
             "inline": not bool(src),
@@ -76,7 +99,8 @@ def audit(source: str, fetch_scripts: bool = False, timeout: int = 15) -> dict:
             "known_tag": _script_category(src),
             "content_length": None,
             "status": None,
-            "blocking": bool(src) and not tag.has_attr("async") and not tag.has_attr("defer") and tag.get("type") != "module",
+            "blocking": (bool(src) and not tag.has_attr("async") and not tag.has_attr("defer")
+                         and _classic_script(tag)),
         }
         if row["third_party"] and row["blocking"]:
             issues.append({"severity": "warning", "message": "Third-party script can block rendering", "url": src})

@@ -21,6 +21,49 @@ except ImportError:
 # basis: measured — corpus=tools/calibration/mobile-viewport.json (StatCounter worldwide mobile screen resolutions, 2025-09..2026-09, CSS pixels); date=2026-10-20; method=the narrowest viewport width the list holds, 360, a quarter of its share, since a fixed width above it overflows every phone that wide. It was 390 (F11), so a 361-390px column passed MB-100 while overflowing on 25.7% (at 361px) to 48.9% (at 390px) of the listed share, which StatCounter counts in page views, not phones. The list folds a third of its share into "Other", and the rule was chosen after the earlier value was checked against it.
 MAX_FIXED_WIDTH_PX = 360
 
+RE_MEDIA = re.compile(r"@media\b([^{;]*)\{", re.I)
+# A lower bound on the viewport width: `min-width: 768px`, `48em`, or `width >= 768px`.
+RE_MIN_WIDTH = re.compile(
+    r"min-width\s*:\s*([\d.]+)\s*(px|r?em)\b|\bwidth\s*>=?\s*([\d.]+)\s*(px|r?em)\b"
+    r"|([\d.]+)\s*(px|r?em)\s*<=?\s*width\b", re.I)
+
+
+def _wide_only(prelude: str) -> bool:
+    """Whether a media query's every alternative needs a viewport wider than
+    MAX_FIXED_WIDTH_PX, so nothing inside it applies on the narrowest phone."""
+    def floor(alternative: str) -> float:
+        if re.search(r"\bnot\b", alternative, re.I):
+            return 0.0
+        floors = [0.0]
+        for match in RE_MIN_WIDTH.finditer(alternative):
+            value, unit = [part for part in match.groups() if part]
+            floors.append(float(value) * (1 if unit.lower() == "px" else 16))
+        return max(floors)
+    return all(floor(alt) > MAX_FIXED_WIDTH_PX for alt in prelude.split(","))
+
+
+def phone_css(text: str) -> str:
+    """`text` without the @media blocks that never apply on a 360px phone (F15, MB-100's
+    ruling): a `.container{width:960px}` inside `@media (min-width: 992px)` is how a
+    responsive page sizes its desktop column, not a width a phone overflows."""
+    kept, pos = [], 0
+    while True:
+        found = RE_MEDIA.search(text, pos)
+        if not found:
+            kept.append(text[pos:])
+            return "".join(kept)
+        depth, end = 1, found.end()
+        while end < len(text) and depth:
+            depth += {"{": 1, "}": -1}.get(text[end], 0)
+            end += 1
+        if _wide_only(found.group(1)):
+            kept.append(text[pos:found.start()])
+            pos = end
+        else:
+            kept.append(text[pos:found.end()])
+            pos = found.end()
+
+
 def _static_checks(source: str, timeout: int = 15) -> dict:
     html, final_url, fetched = load_html(source, timeout=timeout)
     parsed = parse_html(html, final_url)
@@ -42,8 +85,21 @@ def _static_checks(source: str, timeout: int = 15) -> dict:
 
     # This used to match max-width; an inert finding hid the false positive, and
     # letting the finding decide is what surfaced it.
+    #
+    # A width inside parentheses is a media or container query's feature, or a `sizes`
+    # or `media` attribute's condition — `@media (min-width: 768px)` is how responsive
+    # CSS is written, and it failed MB-100 (F15, its ruling). A declaration is never
+    # parenthesised, so the parenthesised text goes first, innermost out; a group that
+    # spans a brace or a semicolon is not a condition (a stray "(" in prose would
+    # otherwise swallow the rule after it).
+    declarations = phone_css(text)
+    while True:
+        stripped = re.sub(r"\([^(){};]*\)", " ", declarations)
+        if stripped == declarations:
+            break
+        declarations = stripped
     fixed_width_hits = re.findall(
-        r"(?<![-\w])(?:min-width|width)\s*:\s*(\d{3,})px", text, flags=re.I)
+        r"(?<![-\w])(?:min-width|width)\s*:\s*(\d{3,})px", declarations, flags=re.I)
     wide_values = [int(value) for value in fixed_width_hits if int(value) > MAX_FIXED_WIDTH_PX]
     if wide_values:
         issues.append({

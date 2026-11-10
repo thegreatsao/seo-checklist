@@ -12,10 +12,54 @@ import re
 from seo_common import load_html, parse_html
 
 
-# HTML input types that are either not rendered (`hidden`) or whose
-#  accessible name comes from their own value or alt attribute (`submit`, `button`,
-#  `reset`, `image`), per the HTML-AAM accessible-name computation.
-UNLABELLED_INPUT_TYPES = frozenset({"hidden", "submit", "button", "reset", "image"})
+# Inputs never rendered, so never named.
+UNRENDERED_INPUT_TYPES = frozenset({"hidden"})
+# Inputs whose name is their own text, not a label (HTML-AAM): `submit` and `reset`
+# have a default caption when `value` is absent, `button` has none; `image` is named by
+# its `alt` (WCAG H36), which F15 batch 6 reads instead of skipping all four.
+DEFAULT_CAPTION_INPUT_TYPES = frozenset({"submit", "reset"})
+VALUE_NAMED_INPUT_TYPES = frozenset({"submit", "reset", "button"})
+
+
+def _text(tag) -> str:
+    """A label's own text: what it says, not what the controls inside it hold."""
+    return " ".join(
+        str(piece) for piece in tag.find_all(string=True)
+        if not piece.find_parent(["select", "textarea", "option", "script", "style"])
+    ).strip()
+
+
+def accessible_name(field, soup) -> str:
+    """The field's accessible name, or "" (F15, TE-180's ruling): `aria-labelledby`
+    resolved to the text of the elements it names, an empty or blank attribute or
+    label being no name, and image and button inputs named by their `alt` or value."""
+    ids = (field.get("aria-labelledby") or "").split()
+    if ids:
+        named = " ".join(_text(target) for target in
+                         (soup.find(id=ref) for ref in ids) if target is not None).strip()
+        if named:
+            return named
+    if (field.get("aria-label") or "").strip():
+        return field["aria-label"].strip()
+    kind = (field.get("type") or "").lower() if field.name == "input" else ""
+    if kind == "image":
+        if (field.get("alt") or "").strip():
+            return field["alt"].strip()
+    elif kind in VALUE_NAMED_INPUT_TYPES:
+        if field.has_attr("value"):
+            if field["value"].strip():
+                return field["value"].strip()
+        elif kind in DEFAULT_CAPTION_INPUT_TYPES:
+            return kind.capitalize()
+    else:
+        field_id = field.get("id")
+        labels = list(field.find_parents("label", limit=1))
+        if field_id:
+            labels += soup.find_all("label", attrs={"for": field_id})
+        for label in labels:
+            if _text(label):
+                return _text(label)
+    return (field.get("title") or "").strip()
 
 
 def checker(source: str, timeout: int = 15) -> dict:
@@ -64,21 +108,15 @@ def checker(source: str, timeout: int = 15) -> dict:
     # an image with no alt (1.1.1), a form field with no accessible name (1.3.1, 4.1.2),
     # and no page language (3.1.1).
     #
-    # A field's name can come from aria-label, aria-labelledby, title, a label[for], or
-    # a <label> wrapping it. Hidden inputs are not rendered, and submit, button, reset
-    # and image inputs take their name from their value or alt, so none of those needs
-    # a label; the score above still counts them the old way.
-    unnamed_fields = 0
-    for field in inputs:
-        if (field.name == "input"
-                and (field.get("type") or "").lower() in UNLABELLED_INPUT_TYPES):
-            continue
-        field_id = field.get("id")
-        if (field.get("aria-label") or field.get("aria-labelledby") or field.get("title")
-                or field.find_parent("label")
-                or (field_id and soup.find("label", attrs={"for": field_id}))):
-            continue
-        unnamed_fields += 1
+    # A field's name can come from aria-labelledby, aria-label, a label[for] or a
+    # <label> wrapping it, title, and for image and button inputs their alt or value
+    # (`accessible_name`). Hidden inputs are not rendered; the score above still counts
+    # fields the old way.
+    unnamed_fields = sum(
+        1 for field in inputs
+        if not (field.name == "input"
+                and (field.get("type") or "").lower() in UNRENDERED_INPUT_TYPES)
+        and not accessible_name(field, soup))
     wcag_a = {"images_missing_alt": len(missing_alt),
               "unnamed_fields": unnamed_fields,
               "missing_lang": not parsed.get("lang")}

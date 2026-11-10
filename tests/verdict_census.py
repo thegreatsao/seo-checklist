@@ -254,8 +254,6 @@ EXTERNAL_INPUT = {
     "domain_safety_check.py:safe_browsing": "a Google Safe Browsing API key",
     "domain_safety_check.py:whois": "whois, which asks a registry on the public internet "
                                     "about a registered domain",
-    "domain_safety_check.py:neighbors": "a paid reverse-IP service this project does not "
-                                        "buy (check.cannot_fail)",
 }
 
 

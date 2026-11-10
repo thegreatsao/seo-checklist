@@ -65,7 +65,7 @@ can serve:
 |---|---|---|
 | answered somewhere, never FAIL | 2 | a rule whose failure the entry gate hides, and one whose failure needs Wikidata's answer |
 | answered somewhere, never PASS | 3 | the mirror |
-| never answered anywhere | 2 | each needs an outside service or key, and the census names which |
+| never answered anywhere | 1 | it needs an outside service, and the census names which |
 
 F06 (0.175.0) took both other rows to items, one at a time, with what each was expected
 to be written down before anything was run (`docs/sprint-20261021-F06.md`). Of the 54,
@@ -109,14 +109,14 @@ robots.txt forbids, and it no longer does.
 
 | basis | count |
 |---|---|
-| standard | 20 |
+| standard | 21 |
 | measured | 14 |
 | convention | 104 |
 | inherited | 0 |
 | no basis | 0 |
-| **numbers a verdict depends on** | **138** |
+| **numbers a verdict depends on** | **139** |
 
-**`inherited` at 0 of 138 closes what was the largest single gap between this tree and 1.0.** It was
+**`inherited` at 0 of 139 closes what was the largest single gap between this tree and 1.0.** It was
 75 of 144 at 0.87.1 and 77 of 164 until 0.167.1, which moved eleven coverage caps out: ten
 to `convention`, one to `presentation`. 0.170.0 moved the crawl's page and depth caps to
 `convention` and the MinHash pair to `presentation`; 0.172.0 moved the two crawl caps back,
@@ -135,7 +135,7 @@ Nothing is unnamed — that took a gate — and the last, the profile detector's
 measured and adopted at 5 by Anton's decision. The calibrations so
 far show what closing one costs: each took a corpus, a method and a stated limitation.
 
-`audit_reachability.py` proves 2 of the 145 script-backed assertions unable to report
+`audit_reachability.py` proves 1 of the 144 script-backed assertions unable to report
 FAIL; the recorded census saw 141 of them fail, and the tool counts those as able; it
 claims nothing about the other 2 either way: `SE-118`, which item 5 below owns, and
 `GEO-006`, whose FAIL since F15 batch 5 is Wikidata answering with no item, which a
@@ -183,9 +183,10 @@ modules read; no number is bound by both. It is narrower than the ask it answers
    `fast-field/`, the fourth the validator's and Safe Browsing's from `flagged/` and
    `cleared/`, the fifth Search Console's from `unindexed/` and `indexed/`). The one left
    is `SE-118`, item 5's; Anton ruled F05 done with it left.
-5. **The census's 2 and 2**: the 2 silent (`TE-178`, `TE-179`, both declared unable to fail)
-   each name the outside service they wait for (F06, 0.175.0); of the 2 never failing,
-   `SE-118` needs the entry gate to answer it and `GEO-006` a Wikidata stand-in (F15 batch 5).
+5. **The census's 2 and 1**: of the 2 never failing, `SE-118` needs the entry gate to answer
+   it and `GEO-006` a Wikidata stand-in (F15 batch 5); the 1 silent (`TE-179`, declared unable
+   to fail) names the outside service it waits for (F06, 0.175.0) — `TE-178`, silent beside
+   it, became an agent's item when F15 batch 6 retired its rule.
 6. **Clause 3 beyond counts** — every checkable sentence in `SKILL.md`, `README.md` and
    this file tied to observable behaviour, the way counts now are.
 

@@ -3219,7 +3219,7 @@
         "slow-field": "FAIL",
         "unindexed": "FAIL",
         "url-shapes": "FAIL",
-        "went-down": "FAIL"
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -3251,7 +3251,7 @@
         "slow-field": "PASS",
         "unindexed": "PASS",
         "url-shapes": "PASS",
-        "went-down": "PASS"
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -6455,7 +6455,7 @@
         "slow-field": "N/A",
         "unindexed": "N/A",
         "url-shapes": "N/A",
-        "went-down": "N/A"
+        "went-down": "NO_DATA"
       },
       "distinct": [
         "FAIL",
@@ -6566,32 +6566,32 @@
     },
     "TE-178": {
       "answers": {
-        "cleared": "NO_DATA",
-        "error-entry": "NO_DATA",
-        "failing-shapes": "NO_DATA",
-        "fast-field": "NO_DATA",
-        "fixture:broken": "NO_DATA",
-        "fixture:broken_tls": "NO_DATA",
-        "fixture:good": "NO_DATA",
-        "fixture:good_tls": "NO_DATA",
-        "flagged": "NO_DATA",
-        "indexed": "NO_DATA",
-        "no-location": "NO_DATA",
-        "page-defects": "NO_DATA",
-        "page-sound": "NO_DATA",
-        "redirect-chain": "NO_DATA",
-        "site-defects": "NO_DATA",
-        "slow-field": "NO_DATA",
-        "unindexed": "NO_DATA",
-        "url-shapes": "NO_DATA",
-        "went-down": "NO_DATA"
+        "cleared": "LLM_PENDING",
+        "error-entry": "LLM_PENDING",
+        "failing-shapes": "LLM_PENDING",
+        "fast-field": "LLM_PENDING",
+        "fixture:broken": "LLM_PENDING",
+        "fixture:broken_tls": "LLM_PENDING",
+        "fixture:good": "LLM_PENDING",
+        "fixture:good_tls": "LLM_PENDING",
+        "flagged": "LLM_PENDING",
+        "indexed": "LLM_PENDING",
+        "no-location": "LLM_PENDING",
+        "page-defects": "LLM_PENDING",
+        "page-sound": "LLM_PENDING",
+        "redirect-chain": "LLM_PENDING",
+        "site-defects": "LLM_PENDING",
+        "slow-field": "LLM_PENDING",
+        "unindexed": "LLM_PENDING",
+        "url-shapes": "LLM_PENDING",
+        "went-down": "LLM_PENDING"
       },
       "distinct": [
-        "NO_DATA"
+        "LLM_PENDING"
       ],
-      "script": "domain_safety_check.py",
+      "script": null,
       "severity": "low",
-      "source": "script",
+      "source": "llm",
       "title": "Audit Neighboring Sites on the Server"
     },
     "TE-179": {
@@ -6846,7 +6846,7 @@
       "title": "LCP subparts within budget"
     }
   },
-  "registry_version": "e2d01d02779d",
+  "registry_version": "a2064d353ad0",
   "sites": [
     "fixture:good",
     "fixture:broken",

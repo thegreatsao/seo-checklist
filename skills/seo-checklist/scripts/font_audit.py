@@ -67,7 +67,12 @@ def _record_font_faces(
             font_files.append(normalize_url(font_url, base_url) if base_url else font_url)
 
         finding_url = {"url": stylesheet_url} if stylesheet_url else {}
-        if not face["font_display"]:
+        display = re.sub(r"\s*!important\s*$", "", face["font_display"] or "",
+                         flags=re.I).strip().lower()
+        # `block` hides the text for up to three seconds, and `auto` is the browser's
+        # default, which every major browser makes `block`: both are what a missing
+        # value does (F15, TECH-002's ruling).
+        if display in ("", "block", "auto"):
             # The item is *Font loading does not block render*, and this is the
             # markup that makes it block: with no `font-display`, the browser
             # hides the text until the font arrives. The other findings in this
@@ -75,11 +80,13 @@ def _record_font_faces(
             # the page, and it is what makes TECH-002's FAIL reachable.
             issues.append({
                 "severity": "error",
-                "message": "@font-face missing font-display",
+                "message": ("@font-face missing font-display" if not display else
+                            f"@font-face font-display: {display} hides text until the "
+                            f"font loads"),
                 "evidence": face.get("family"),
                 **finding_url,
             })
-        elif face["font_display"].lower() not in ("swap", "optional", "fallback"):
+        elif display not in ("swap", "optional", "fallback"):
             issues.append({
                 "severity": "info",
                 "message": "font-display may delay text rendering",
@@ -106,7 +113,7 @@ def audit(source: str, fetch_fonts: bool = False, timeout: int = 15) -> dict:
         href = normalize_url(href, url) if href and url else href
         if "preconnect" in rel:
             preconnects.append(href)
-        if "stylesheet" in rel:
+        if "stylesheet" in rel and href:   # no href, nothing to fetch (an aside)
             stylesheets.append(href)
         if "preload" in rel and (link.get("as") == "font" or _font_format(href)):
             preloads.append({

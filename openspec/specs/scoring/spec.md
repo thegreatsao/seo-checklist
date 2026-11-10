@@ -84,8 +84,8 @@ comparisons with archived runs in `.seo-runs/`.
 
 | effort | cost | items in the registry |
 |---|---:|---:|
-| low | 1 | 67 |
-| medium | 2 | 52 |
+| low | 1 | 66 |
+| medium | 2 | 53 |
 | high | 4 | 98 |
 
 All three are **normative constants of the audit**, not implementation details. The

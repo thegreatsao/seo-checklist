@@ -66,7 +66,7 @@ PAGE_SECURITY_STATES = ("plain_http", "blocked_content", "upgraded_content", "se
 # basis: presentation — per-header weights, present at import, summing to a 0-100
 #  `score`. The weights are one project's opinion of which header matters most, and they
 #  feed `score` and nothing else; no item reads `score` (SE-115 reads `hsts_enabled`,
-#  SE-117 `http_to_https`, SE-120 `hardening_missing`, TE-175 `page_security`), so the
+#  SE-117 `http_to_https`, SE-120 `hardening_gaps`, TE-175 `page_security`), so the
 #  table decides what the evidence prints, never a verdict (F11; held by
 #  `tests/test_presentation_basis.py`). The header list itself decides `header_values`
 #  and `headers_missing`, which no item reads either
@@ -119,6 +119,77 @@ HSTS_MIN_MAX_AGE = 31_536_000
 #  missing"), and no item reads this script's `issues`, so it decides what is printed,
 #  never a verdict (F11; held by `tests/test_presentation_basis.py`)
 MANY_MISSING_HEADERS = 3
+
+
+# SE-120's ruling (F15): the title is about hardening, so the three headers' values are
+# read, not only their names. Each header present but weak is a gap like one missing.
+HARDENING_HEADERS = ("content-security-policy", "permissions-policy", "referrer-policy")
+# CSP keywords that make 'unsafe-inline' a no-op for scripts in CSP Level 2+ browsers.
+CSP_INLINE_OVERRIDES = ("'nonce-", "'sha256-", "'sha384-", "'sha512-", "'strict-dynamic'")
+# Referrer-Policy tokens a browser understands (W3C Referrer Policy, section 3).
+REFERRER_POLICIES = frozenset({
+    "no-referrer", "no-referrer-when-downgrade", "same-origin", "origin",
+    "strict-origin", "origin-when-cross-origin", "strict-origin-when-cross-origin",
+    "unsafe-url"})
+
+
+def _csp_weakness(value: str) -> str | None:
+    """Why a CSP header leaves scripts unhardened, or None.
+
+    Read per policy (a comma joins repeated headers; a script runs only if every
+    policy allows it), from the directive scripts obey: `script-src`, else
+    `default-src`. `'unsafe-inline'` counts unless a nonce, hash or
+    `'strict-dynamic'` makes browsers ignore it; `'unsafe-eval'` counts as it is."""
+    script_sources = []
+    for policy in value.split(","):
+        directives = {}
+        for part in policy.split(";"):
+            tokens = part.strip().lower().split()
+            if tokens and tokens[0] not in directives:   # the first one wins
+                directives[tokens[0]] = tokens[1:]
+        sources = directives.get("script-src", directives.get("default-src"))
+        if sources is not None:
+            script_sources.append(sources)
+    if not script_sources:
+        return "no script-src or default-src"
+    weak = []
+    if all("'unsafe-inline'" in sources
+           and not any(s.startswith(CSP_INLINE_OVERRIDES) for s in sources)
+           for sources in script_sources):
+        weak.append("'unsafe-inline'")
+    if all("'unsafe-eval'" in sources for sources in script_sources):
+        weak.append("'unsafe-eval'")
+    return f"{' and '.join(weak)} in script-src" if weak else None
+
+
+def _permissions_weakness(value: str) -> str | None:
+    """A feature allowed to every origin (`camera=*`), or None."""
+    wild = [part.split("=", 1)[0].strip() for part in value.split(",")
+            if "=" in part and part.split("=", 1)[1].strip() in ("*", "(*)")]
+    return f"{', '.join(wild)} allowed to every origin" if wild else None
+
+
+def _referrer_weakness(value: str) -> str | None:
+    """`unsafe-url` as the policy a browser applies (the last one it understands)."""
+    known = [token.strip().lower() for token in value.split(",")
+             if token.strip().lower() in REFERRER_POLICIES]
+    return "unsafe-url" if known and known[-1] == "unsafe-url" else None
+
+
+def hardening_gaps(headers: dict) -> list[str]:
+    """One entry per hardening header missing or weak: SE-120's subject."""
+    readers = {"content-security-policy": _csp_weakness,
+               "permissions-policy": _permissions_weakness,
+               "referrer-policy": _referrer_weakness}
+    gaps = []
+    for name in HARDENING_HEADERS:
+        if name not in headers:
+            gaps.append(f"{name}: missing")
+            continue
+        weakness = readers[name](headers[name])
+        if weakness:
+            gaps.append(f"{name}: {weakness}")
+    return gaps
 
 
 def http_form(url: str) -> str:
@@ -296,6 +367,7 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
         "hsts_enabled": False,
         "hsts_disabled_reason": None,
         "hardening_missing": [],
+        "hardening_gaps": [],
         "http_variants": [],
         "mixed_content": [],
         "issues": [],
@@ -342,10 +414,9 @@ def check_security_headers(url: str, timeout: int = 15) -> dict:
                                 "HSTS max-age must be greater than zero"
                             )
 
-        hardening_headers = {
-            "content-security-policy", "permissions-policy", "referrer-policy"
-        }
-        result["hardening_missing"] = sorted(hardening_headers - response_headers.keys())
+        result["hardening_missing"] = sorted(set(HARDENING_HEADERS)
+                                             - response_headers.keys())
+        result["hardening_gaps"] = hardening_gaps(response_headers)
 
         for header_key, header_info in SECURITY_HEADERS.items():
             if header_key in response_headers:

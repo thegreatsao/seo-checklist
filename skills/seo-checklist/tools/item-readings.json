@@ -1769,8 +1769,8 @@
           ]
         }
       },
-      "verdict": "answers",
-      "reading": "`issues` carries mobile_render_checker's mobile usability findings.",
+      "verdict": "measures",
+      "reading": "`issues` holds no critical, high or medium finding: a viewport without width=device-width, or a CSS width or min-width above 360px outside media queries and other parenthesised conditions (F15, the ruling). `measures` says static CSS cannot judge tap targets.",
       "shapes": {
         "conjunction": "*(see UX)* points at the UX items; it is not a subject."
       },
@@ -2142,7 +2142,9 @@
       "check": {
         "script": "domain_safety_check.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
         "requires": "safe_browsing",
         "assert": {
@@ -2150,8 +2152,8 @@
           "len_eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`safe_browsing.threats` is Google Safe Browsing's threat list for the URL, required empty.",
+      "verdict": "measures",
+      "reading": "`safe_browsing.threats` is Google Safe Browsing's threat list for the entry URL and every URL the shared crawl read, asked 500 to a request (F15, the ruling), required empty; one unanswered request withholds a clean answer. A mode with no crawl is N/A.",
       "shapes": {
         "conjunction": "Malware and security are both what Safe Browsing reports."
       },
@@ -2193,7 +2195,9 @@
       "check": {
         "script": "domain_safety_check.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
         "requires": "safe_browsing",
         "assert": {
@@ -2201,8 +2205,8 @@
           "len_eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`safe_browsing.threats` required empty.",
+      "verdict": "measures",
+      "reading": "`safe_browsing.threats` over every crawled URL (SE-114's lookup) required empty. Hacked content Safe Browsing does not list, such as injected SEO spam, is not detected, and `measures` says so (F15, the ruling).",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -2325,16 +2329,16 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "hardening_missing",
+          "path": "hardening_gaps",
           "len_eq": 0
         },
         "warn": {
-          "path": "hardening_missing",
+          "path": "hardening_gaps",
           "len_lte": 1
         }
       },
-      "verdict": "answers",
-      "reading": "`hardening_missing` lists which of CSP, Permissions-Policy and Referrer-Policy are absent (0.112.0).",
+      "verdict": "measures",
+      "reading": "`hardening_gaps` lists each of CSP, Permissions-Policy and Referrer-Policy that is absent or weak: scripts allowed inline or through eval, a feature open to every origin, unsafe-url (F15, the ruling); one gap warns.",
       "shapes": {
         "conjunction": "The three headers the title names are exactly the three read."
       },
@@ -2485,12 +2489,12 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "measurement_ids",
+          "path": "installed_by",
           "len_gte": 1
         }
       },
-      "verdict": "answers",
-      "reading": "`measurement_ids` lists GA4 measurement IDs configured on the page.",
+      "verdict": "measures",
+      "reading": "`installed_by` lists GA4 IDs configured or loaded, Google tag IDs a gtag loader names, and GTM containers the page loads (F15, the ruling: GA4 through GTM is installed).",
       "shapes": {
         "conjunction": "Install and configure are both read as a configured ID.",
         "existential": "One configured property is an installed GA4."
@@ -2516,8 +2520,8 @@
           "len_eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`duplicates` lists GA4 IDs configured more than once.",
+      "verdict": "measures",
+      "reading": "`duplicates` lists GA4 IDs configured or loaded twice, GTM containers loaded more than twice, and a hardcoded ID a GTM container beside it also fires, read from the container's script (F15, the ruling); unwritten when such a container could not be read. `measures` says what is not read.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -2795,10 +2799,14 @@
         "assert": {
           "path": "sourced_score",
           "gte": 25
+        },
+        "applies_when": {
+          "path": "utility_page",
+          "falsy": true
         }
       },
       "verdict": "measures",
-      "reading": "`sourced_score` is citation_readiness's score for this one page when it names a source, and 0 when it names none — GEO-005's twin; author and canonical alone no longer reach 25 (F15, the owner's ruling). Presence in AI Overviews or zero-click results is not observable here, and `measures` says so.",
+      "reading": "`sourced_score` is citation_readiness's score for this one page when it names a source, and 0 when it names none — GEO-005's twin; author and canonical alone no longer reach 25 (F15, the owner's ruling). A privacy, terms or contact page, by its URL path, is N/A (the owner's ruling 1 on F15 batch 5). Presence in AI Overviews or zero-click results is not observable here, and `measures` says so.",
       "shapes": {
         "conjunction": "Neither surface is observed; `measures` names both.",
         "external": "AI Overview presence needs a source this audit does not have; `measures` says so.",
@@ -3347,7 +3355,9 @@
       "check": {
         "script": "domain_safety_check.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
         "requires": "safe_browsing",
         "assert": {
@@ -3355,8 +3365,8 @@
           "len_eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`safe_browsing.threats` required empty.",
+      "verdict": "measures",
+      "reading": "`safe_browsing.threats` over every crawled URL (SE-114's lookup) required empty. Only Safe Browsing is asked, no DNS blocklist, and `measures` says so (F15, the ruling).",
       "shapes": {
         "conjunction": "Blocklist and Safe Browsing are the same lookup."
       },
@@ -3518,34 +3528,6 @@
         "dispute": "The `answers` verdict and reading overlook that `parse_html()` uses `text_or_none(soup.find(\"title\"))`, which takes nonempty text from the first matching element anywhere, including an SVG `<title>`. Consequently, `raw.title` can pass without an HTML document title, while an empty HTML title element fails despite being present."
       }
     },
-    "TE-178": {
-      "title": "Audit Neighboring Sites on the Server",
-      "check": {
-        "script": "domain_safety_check.py",
-        "args": [
-          "{url}"
-        ],
-        "requires": "api",
-        "assert": {
-          "path": "neighbors.suspicious",
-          "len_eq": 0
-        },
-        "cannot_fail": {
-          "mechanism": "path_never_emitted",
-          "why": "check_neighbors() resolves the hosting IP and stops there. Judging the neighbours needs a paid reverse-IP service this project does not buy, and a fabricated `suspicious` would be worse than no answer, so the field is deliberately never written and the item is NO_DATA everywhere until that input exists."
-        }
-      },
-      "verdict": "answers",
-      "reading": "`neighbors.suspicious` is never fabricated: enumerating co-hosted sites needs a reverse-IP service, so the item is NO_DATA until one is wired in.",
-      "shapes": {},
-      "second_reading": {
-        "reader": "codex gpt-6.1-sol high",
-        "session": "01a1bbb6-10d3-7f32-899f-41ee461c50ee",
-        "read": "8b7c692e15bb33d3",
-        "verdict": "owed",
-        "dispute": "The reading accurately acknowledges the missing computation but incorrectly awards `answers`. `check_neighbors()` resolves an IP and never emits `suspicious`, so the assertion always yields no verdict and never answers the neighboring-sites question."
-      }
-    },
     "TE-179": {
       "title": "Review Domain Registration History",
       "check": {
@@ -3567,8 +3549,8 @@
           "why": "0.44.0 gave this item the domain-history half of its title through whois age: established passes, younger than 90 days warns, an absent age is NO_DATA. The warn band is the assertion's exact complement on purpose — a young domain is worth pricing, not a defect to fix — and the ruling that no 'worth knowing' status exists still stands. ROADMAP.md records the reasoning."
         }
       },
-      "verdict": "answers",
-      "reading": "`whois.age_days` at least 90, a younger domain warning (renamed and ruled 0.101.0).",
+      "verdict": "measures",
+      "reading": "`whois.age_days` from the registry's creation date: 90 days or more passes, younger warns. `measures` says ownership and transfer history are not read (F15, the ruling).",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -3619,8 +3601,8 @@
           "eq": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`summary.errors` is the W3C validator's error count for the rendered DOM from the supplied artifact.",
+      "verdict": "measures",
+      "reading": "`summary.errors` is Nu's error count for the rendered DOM with the page's doctype put back in front (F15, the ruling); an artifact without the `doctype` key is not validated. `measures` says so.",
       "shapes": {
         "conjunction": "W3C names the validator."
       },
@@ -4006,10 +3988,14 @@
         "assert": {
           "path": "sourced_score",
           "gte": 25
+        },
+        "applies_when": {
+          "path": "utility_page",
+          "falsy": true
         }
       },
       "verdict": "measures",
-      "reading": "`sourced_score` is citation_readiness's score for this one page when it names a source (a cite, blockquote, footnote link, trusted-host link or schema citation), and 0 when it names none (F15, the owner's ruling). Whether a source supports a given claim is not read, and `measures` says so.",
+      "reading": "`sourced_score` is citation_readiness's score for this one page when it names a source (a cite, blockquote, footnote link, trusted-host link or schema citation), and 0 when it names none (F15, the owner's ruling). A privacy, terms or contact page, by its URL path, is N/A (the owner's ruling 1 on F15 batch 5). Whether a source supports a given claim is not read, and `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -4165,8 +4151,8 @@
           ]
         }
       },
-      "verdict": "answers",
-      "reading": "`issues` carries font_audit's render-blocking font findings.",
+      "verdict": "measures",
+      "reading": "`issues` holds no critical, high or medium finding: an @font-face with no font-display, or block or auto (F15, the ruling), a font preload without crossorigin, a stylesheet that could not be fetched. `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",

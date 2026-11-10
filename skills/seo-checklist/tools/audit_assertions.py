@@ -58,8 +58,9 @@ from checklist_runner import SEVERITY_ALIAS, normal_severity  # noqa: E402
 # has never had one, so the field is not withheld for want of a credential — no
 # code writes it at all. The entry was right about the symptom for three releases
 # and wrong about the cause, which is what an exemption list does when it is only
-# ever read. It is now a `cannot_fail` declaration on the item, where
-# `audit_reachability.py` re-derives the mechanism from the source every run.
+# ever read. It was then a `cannot_fail` declaration on the item, where
+# `audit_reachability.py` re-derived the mechanism from the source every run, until F15
+# batch 6 retired TE-178's script assertion and left the item to an agent.
 # Everything left here must be a path its script demonstrably writes.
 PATH_EXEMPT = {
     ("domain_safety_check.py", "safe_browsing.threats"): "needs a Safe Browsing key",

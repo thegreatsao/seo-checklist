@@ -917,7 +917,7 @@ def inventory_for(site_url: str, path: str = "", **kw) -> dict:
 
     Two entry points, one implementation. The artifact is checked against the site
     it is supposed to describe, for the same reason the browser artifacts are: a
-    crawl of some other host decides seventeen items — two `critical`, ten `high` — from
+    crawl of some other host decides twenty items — five `critical`, ten `high` — from
     observations nobody made about this one. A mismatch is `fetch_error`, which
     every reader propagates, so it lands as NO_DATA with the reason rather than as a
     verdict.

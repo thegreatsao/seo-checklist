@@ -100,8 +100,10 @@ for that page. Use `--no-http-cache` for an isolated timing.
 `wcag_a_failures` — int — TE-180 (0.117.0): the level-A failures the HTML shows, the
   sum of the three keys below, each counted over its whole list
 `wcag_a.images_missing_alt` — int
-`wcag_a.unnamed_fields` — int — form fields with no accessible name; hidden,
-  submit, button, reset and image inputs are not counted
+`wcag_a.unnamed_fields` — int — form fields with no accessible name: `aria-labelledby`
+  resolved to the text it names, a blank attribute or label no name; image inputs named
+  by `alt`, button inputs by `value` (submit and reset have a default caption); hidden
+  inputs not counted (F15 batch 6)
 `wcag_a.missing_lang` — bool
 `score` — int
 `checks.h1_count` — int
@@ -340,6 +342,9 @@ that could not be checked when there are any.
 `score` — int
 `sourced_score` — int — `score` on a page naming at least one source, 0 on one naming none:
   what GO-145 and GEO-005 assert (F15 batch 5)
+`utility_page` — bool — the page's last path segment holds a privacy, contact or terms
+  stem (`eeat-terms.json`'s `privacy` and `contact` hrefs, `TERMS_STEMS`): GO-145's and
+  GEO-005's `applies_when`, N/A when true (F15 batch 6, the owner's ruling 1 on batch 5)
 `citation_capacity` — int — trusted links, cite/blockquote tags, footnote links, schema
   citations, and outbound links in a block that makes a claim or says "Source", or under a
   content heading that is exactly Sources, References, Further reading, Bibliography,
@@ -413,11 +418,12 @@ that could not be checked when there are any.
     minification heuristic), status, error
 `checked` — int
 `unminified_count` — int
-`truncated` — bool — the page links more than `MAX_SHEETS` stylesheets, so
-  `unminified_count` counts only the first twelve
+`truncated` — bool — the page links or `@import`s (from a `<style>` block) more than
+  `MAX_SHEETS` stylesheets, so `unminified_count` counts only the first twelve; or a sheet
+  could not be read (an error, a 4xx/5xx, a guard refusal), with `truncated_reason`
+`fetch_error` — str | null — also when the page answers 4xx/5xx, or no sheet could be read
 `wasted_bytes` — int
 `issues[]` — array
-`fetch_error` — str | null
 
 Observed on plerdy: 5 stylesheets checked, 3 unminified, 51999 wasted bytes.
 
@@ -458,6 +464,10 @@ click-to-call), `ecommerce` at 2 (price markup), confidence `high`.
   the runner records TE-167's NO_DATA with the guard's kind (F04, HTTP-13); absent otherwise
 `safe_browsing.checked` — bool
 `safe_browsing.error` — str
+`safe_browsing.threats[]` — array of `{type, platform, url}` — absent unless every request
+  was answered or one found a threat; `url` is the listed URL (F15 batch 6)
+`safe_browsing.urls_asked` — int — with `--inventory`, the entry and every URL the crawl
+  read, asked 500 to a request (SE-114, SE-116, TE-171)
 `whois.checked` — bool
 `whois.created` — str (`YYYY-MM-DD`)
 `whois.registrar` — str
@@ -735,7 +745,15 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `measurement_ids[]` — array of str (e.g. `G-15X5JYHSHC`)
 `gtm_containers[]` — array of str
 `ua_legacy[]` — array of str — retired `UA-` properties still on the page
-`duplicates[]` — array — the same ID configured more than once
+`installed_by[]` — array of str — GA4 IDs configured or loaded, Google tag (`G-`, `GT-`)
+  IDs a `gtag/js` loader names, and GTM containers the page loads: GO-131's subject (F15
+  batch 6)
+`duplicates[]` — array — the same ID configured or loaded more than once, a container
+  loaded more than twice, or a hardcoded ID a GTM container beside it also fires
+  (`kind: gtm_and_hardcoded`, the container's script read). **Absent** when such a
+  container could not be read and nothing else is duplicated, so GO-132 is NO_DATA
+`duplicates_unread` — str — why, when `duplicates` is absent
+`withheld` — object — `{"duplicates": "blocked"}` when the guard refused the container
 `loaders.gtag_js` — int
 `loaders.gtm_js` — int
 `issues[]` — array
@@ -979,7 +997,9 @@ W3C Nu validator (`validator.w3.org/nu/`) — free, no key.
   mid-run fetches the page and its subresources again behind the response cache, which
   took a fixture audit from 22 requests to 31 and asked for the entry URL three times.
 `render_error` — str | null — why there was no document to validate: the artifact was
-  unreadable, was not JSON, was not an object, or recorded measurements without `html`.
+  unreadable, was not JSON, was not an object, recorded measurements without `html`, or
+  has no `doctype` key beside an `html` without one (F15 batch 6: `doctype` is put back in
+  front of `html` before validation, `""` for a page that declares none).
 `summary.errors` — int — **absent** when `--rendered-json` was given but the artifact
   yielded no document. TE-181 asserts `eq: 0` on it, and an absent key is NO_DATA: a
   DOM that was never built cannot pass or fail validation. Without the flag at all the
@@ -1852,6 +1872,10 @@ to walk `rows[].decisions` directly; there is no aggregate to assert against.
   null when enabled or when the header is absent
 `hardening_missing[]` — sorted array of missing `content-security-policy`,
   `permissions-policy`, and `referrer-policy` header names
+`hardening_gaps[]` — array of str, one `<header>: <why>` per hardening header missing or
+  weak: a CSP letting scripts run inline or through eval (`'unsafe-inline'` with no nonce,
+  hash or `'strict-dynamic'`), a Permissions-Policy feature `=*`, a Referrer-Policy whose
+  last known token is `unsafe-url`. SE-120 reads it (F15 batch 6)
 `http_to_https` — str — the worst decided answer the `http://` addresses gave:
   `permanent` (301/308 to https), `temporary` (302/303/307 on the way to https),
   `not_listening` (the connection was refused), `not_redirected` (a page, an error, a
@@ -2091,6 +2115,8 @@ A page key is `scheme://host/path` spelled as requests sends it (`/café` and
   - item keys: severity, message, url
 `scripts[]` — array
   - item keys: src, inline, async, defer, type, third_party, known_tag, content_length, status, blocking
+    — `src` resolved against the page (a `//host` script is read on its host); `blocking`
+    only for a classic script (a JavaScript `type` or none), never a data block (F15 batch 6)
 `truncated` — bool — the sitemap index walk stopped at `MAX_SITEMAPS_FOLLOWED`
   with files still queued, so `issues` is over the files that were read
 `fetch_error` — NoneType

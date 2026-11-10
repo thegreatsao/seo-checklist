@@ -6,7 +6,7 @@ resources/config/checklist.json gets a status, and items nobody could answer
 are reported as NO_DATA rather than silently dropped.
 
 Each unique (script, args) pair executes exactly once no matter how many
-checklist items depend on it — 217 items collapse to 69 process launches.
+checklist items depend on it — 217 items collapse to 70 process launches.
 
 Usage:
     python3 checklist_runner.py https://example.com
@@ -1397,6 +1397,12 @@ def build_plan(items: list[dict], ctx: dict, caps: set[str], mode: str,
                 continue
         elif need not in caps:
             skipped[it["id"]] = (NA, f"needs '{need}'; not available in {mode} mode")
+            continue
+        if "inventory_json" in ctx_keys_of(it) and "crawl" not in caps:
+            # An item that reads the shared crawl beside another capability (SE-114,
+            # Safe Browsing over every crawled URL): a mode that never crawls cannot
+            # decide it, as it cannot decide a `crawl` item.
+            skipped[it["id"]] = (NA, f"needs 'crawl'; not available in {mode} mode")
             continue
         args = []
         no_input = no_input_key = ""

@@ -1384,7 +1384,8 @@ class DomainSafety(unittest.TestCase):
         whois.assert_not_called()
         resolver.assert_not_called()
         self.assertIs(out["uptime"]["reachable"], True)
-        for item_id in ("SE-114", "SE-116", "TE-171", "TE-178", "TE-179"):
+        # TE-178's script assertion was retired in F15 batch 6.
+        for item_id in ("SE-114", "SE-116", "TE-171", "TE-179"):
             self.assertEqual(verdict(item_id, out), NO_DATA, item_id)
 
     def test_no_key_omits_the_verdict_instead_of_reporting_clean(self):

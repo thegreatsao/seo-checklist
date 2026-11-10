@@ -189,7 +189,11 @@ class RegistryShape(unittest.TestCase):
             return rule["path"].split(".")[0]
         # F15 (the owner's ruling on batch 3's question 3): AR-153's subject is a site
         # big enough for a topic hub, which its score cannot say; its script names it.
-        own_subject = {"AR-153": "too_few_pages_for_hubs"}
+        own_subject = {"AR-153": "too_few_pages_for_hubs",
+                       # The owner's ruling 1 on F15 batch 5's questions: a privacy,
+                       # terms or contact page, which the score cannot say; the script
+                       # names it from the page's path.
+                       "GO-145": "utility_page", "GEO-005": "utility_page"}
         for item_id in sorted(declared - candidates):
             with self.subTest(item=item_id):
                 check = next(i for i in ITEMS if i["id"] == item_id)["check"]
@@ -202,7 +206,8 @@ class RegistryShape(unittest.TestCase):
         # IN-122 (the owner's ruling 2 on F15 batch 4's questions): a set naming only the
         # page itself; `checks.return_tags.self_only` beside the asserted
         # `checks.return_tags.verified_and_valid`, the same block.
-        self.assertEqual(sorted(declared - candidates), ["AR-153", "GO-139", "IN-122", "KW-070"])
+        self.assertEqual(sorted(declared - candidates),
+                         ["AR-153", "GEO-005", "GO-139", "GO-145", "IN-122", "KW-070"])
 
     def test_every_recorded_reason_names_a_subject_rather_than_asserting_a_verdict(self):
         """A reason is only worth keeping if the next person can argue with it. The
@@ -240,16 +245,18 @@ class RegistryShape(unittest.TestCase):
         """The gate itself, in both directions, because half of it would pass a tree
         that says nothing and half would pass a tree that says anything.
 
-        `TE-178` is the one entry whose key its checker writes nowhere — the mutation
-        that drops its token must be caught, or the gate does not read the token — and
-        `CI-004`'s key is written unconditionally, so claiming a withholding there is
-        the opposite error and must be caught too. A gate that only complained about
-        missing tokens would let every false claim of protection through."""
+        `GO-132`'s key is withheld when a GTM container could not be read (F15 batch 6;
+        `TE-178`, the one entry whose key its checker wrote nowhere, served here until
+        that batch retired its rule) — the mutation that drops its token must be caught,
+        or the gate does not read the token — and `CI-004`'s key is written
+        unconditionally, so claiming a withholding there is the opposite error and must be
+        caught too. A gate that only complained about missing tokens would let every false
+        claim of protection through."""
         sys.path.insert(0, os.path.join(SKILL, "tools"))
         import build_checklist
         table = build_checklist.SUBJECT_ALWAYS_PRESENT
-        for item_id, mutation in (("TE-178", "the neighbour lookup answered with an "
-                                             "empty list"),
+        for item_id, mutation in (("GO-132", "the page either carries duplicate GA4 "
+                                             "tags or does not"),
                                   ("CI-004", "withheld_key: every page has indexing "
                                              "directives, present or absent")):
             with mock.patch.dict(table, {item_id: mutation}):
@@ -321,7 +328,8 @@ class RegistryShape(unittest.TestCase):
         # One request of this audit, with no third party in it (F06): answered on a
         # host only we can reach, so not `api`.
         self.assertEqual(requires["TE-167"], "crawl")
-        self.assertEqual(requires["TE-178"], "api")
+        # TE-178's script assertion was retired in F15 batch 6; an agent answers it.
+        self.assertNotIn("TE-178", requires)
         self.assertEqual(requires["TE-179"], "api")
 
     def test_a_rule_does_more_than_name_a_path(self):
@@ -757,16 +765,18 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # `MAX_STYLESHEETS_READ` in `robots_path_tester.py`, CI-013's `@import` walk.
         # F15 batch 5 adds one `convention`: `DEFINITION_TERM_MAX_WORDS` in
         # `answer_block_scanner.py`, since a definition alone decides GO-144 and GEO-004.
+        # F15 batch 6 adds one `standard`: `SB_MAX_ENTRIES` in `domain_safety_check.py`,
+        # Safe Browsing's 500 entries a request (SE-114's ruling).
         self.assertEqual(by_kind, {
-            "standard": 20,
+            "standard": 21,
             "measured": 14,
             "convention": 104,
             "inherited": 0,
             "presentation": 45,
         })
-        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 138)
-        self.assertEqual(len(named), 183)
-        # 182 -> 183 at F15 batch 5: `DEFINITION_TERM_MAX_WORDS`.
+        self.assertEqual(sum(by_kind[kind] for kind in at.VERDICT_KINDS), 139)
+        self.assertEqual(len(named), 184)
+        # 182 -> 183 at F15 batch 5: `DEFINITION_TERM_MAX_WORDS`; 184 at batch 6: `SB_MAX_ENTRIES`.
         # 179 -> 182 at F15 batch 4: the three `convention`s above.
         # 178 -> 179 at F15 batch 3: `NEAR_DUPLICATE_SIMILARITY` in `duplicate_content.py`
         # is named, where 0.85 was a default argument.
@@ -812,11 +822,11 @@ class EveryThresholdSaysWhatItRestsOn(unittest.TestCase):
         # 197 -> 196: `THIN_CONTENT_THRESHOLDS` deleted at 0.176.0 (F04 batch 4b).
         # 196 -> 197: `MEANINGFUL_IMAGE_MIN_PX` in `seo_common.py` (F15 batch 2).
         # 197 -> 198: `NEAR_DUPLICATE_SIMILARITY` in `duplicate_content.py` (F15 batch 3).
-        # 201 -> 202 at F15 batch 5: `DEFINITION_TERM_MAX_WORDS`.
+        # 201 -> 202 at F15 batch 5: `DEFINITION_TERM_MAX_WORDS`; 203 at batch 6: `SB_MAX_ENTRIES`.
         # 198 -> 201: `MIN_PAGES_FOR_HUBS`, `MIN_PAGES_FOR_AVERAGE`, `MAX_STYLESHEETS_READ`
         # (F15 batch 4).
         self.assertEqual(sum(len(at.numeric_constants(path))
-                             for path in at._script_paths()), 202)
+                             for path in at._script_paths()), 203)
 
     def test_a_basis_the_scan_cannot_see_is_counted_whatever_the_constant_is(self):
         at = self._tool()
@@ -2495,7 +2505,7 @@ class MeasuresQualifications(unittest.TestCase):
         "IN-128": "That the page lists itself in its own hreflang set. Which version a visitor is actually served is not tested.",
         "SE-119": "The Cumulative Layout Shift of the whole page. The cookie banner is not identified, so a shift caused by anything else counts too.",
         "CN-038": "How recent this page's own dates and statistics are. The balance of fresh and evergreen content across the site is not measured.",
-        "SP-110": "Render-blocking resources and critical request chains read from the page's HTML. The other speed checks are separate items.",
+        "SP-110": "Only parser-blocking scripts in the served HTML decide: one in <head> fails, one later in the body warns. Stylesheets, @import chains and preconnects are listed but decide nothing.",
         "TE-170": "Caching, compression and Vary headers on the page's response. URL rewrite rules are not read.",
         "TECH-003": "Time to first byte, the first of the four LCP subparts. The other three need a browser trace.",
         "MB-093": "That the page declares a viewport. Whether the layout fits a phone is MB-107, which renders it.",
@@ -2503,7 +2513,7 @@ class MeasuresQualifications(unittest.TestCase):
         "MB-104": "Google's size, shape, format and crawl requirements for the icon the page declares. Whether it represents the brand, or keeps a stable URL, is not read.",
         "AR-152": "That robots.txt declares at least one user-agent group. Whether its rules are the right ones is a judgement the audit does not make.",
         "CN-040": "That the page links to a privacy policy. Whether the policy is current is not read.",
-        "SP-109": "Third-party scripts that block rendering. The other common speed traps are separate items.",
+        "SP-109": "Third-party scripts that block rendering: no async, defer or module; //host URLs read on their host; data blocks (text/plain) left out. The other speed traps are separate items.",
         "BL-086": "That the Links export lists at least one linking site. Tracking the count over time happens outside the audit.",
         "SP-111": "Chrome UX Report field data for desktop, read through PageSpeed Insights: the data the Search Console report is built from.",
         "SP-112": "Chrome UX Report field data for mobile, read through PageSpeed Insights: the data the Search Console report is built from.",
@@ -2512,17 +2522,17 @@ class MeasuresQualifications(unittest.TestCase):
         # 0.115.0: the four A.10 owed as statements rather than repairs.
         "AR-147": "That the URL is at most 115 characters, five path segments and two query parameters. Whether its words describe the page is not read.",
         "GO-135": "URL Inspection's verdict on the audited URL: coverage, canonical, robots and indexing state. The API returns no rendered HTML, so that half is not read.",
-        "TE-174": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
+        "TE-174": "That every stylesheet the page links, or @imports from a <style> block, is minified; a sheet that cannot be read leaves a clean answer undecided. Unused rules and critical-path CSS are not read.",
         # 0.116.0: CN-044 repaired to contact routes, with a statement for *clear*.
         "CN-044": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
         # 0.117.0: TE-180 repaired to level-A failures, with a statement for the rest.
-        "TE-180": "The WCAG level-A failures the HTML shows: images without alt, form fields without an accessible name, no page language. Contrast is CN-036; keyboard use is not tested.",
+        "TE-180": "The WCAG level-A failures the HTML shows: images without alt, fields with no accessible name (aria-labelledby resolved, blank labels none; image and button inputs too), no page language. Contrast is CN-036.",
         # 0.118.0: SE-117 asks the http:// address, of the page and a sample of its links.
         "SE-117": "That the audited page and up to three same-site pages it links to answer their http:// address with a permanent redirect to HTTPS. Other pages are not requested.",
         # 0.120.0: MS-030 reads the calibrated length band.
         "MS-030": "That the description runs 100 to 144 characters: 144 is what the desktop snippet shows of ordinary text by this tool's calibration, 100 an editorial convention; the title's 150–160 is cut. Clarity and relevance are not read.",
         # 0.121.0: TE-175 reads what a browser blocks or upgrades on the page.
-        "TE-175": "That the page is served over HTTPS and loads nothing over plain HTTP that a browser blocks or upgrades: scripts, stylesheets, frames, objects, images and media. URLs inside CSS and other page errors are not read.",
+        "TE-175": "That the page is served over HTTPS and its served HTML references no http:// script, stylesheet, frame, object, image or media a browser blocks or upgrades. What scripts or CSS load later is not read.",
         # 0.122.0: GO-139 ranks the brand's own query; the rest of its results page is
         # not read.
         "GO-139": "Whether the site ranks first, with any of its pages, for its most-searched branded query in Search Console. The rest of the brand's results page — knowledge panel, reviews, other sites — is not read.",
@@ -2557,14 +2567,24 @@ class MeasuresQualifications(unittest.TestCase):
         "IN-122": "That every hreflang code is in Google's format (ISO 639-1, ISO 3166-1) and each other URL the set names links back. A set naming only the page itself is N/A, unless a code in it is invalid.",
         "GO-144": "That the page carries a direct answer (20 to 70 words after a question: a heading, a summary, a dt or an FAQ question) or a definition. Lists and tables do not stand in for one; whether Google lifts a snippet is not seen.",
         "GEO-004": "That the page carries a direct answer (20 to 70 words after a question: a heading, a summary, a dt or an FAQ question) or a definition; menus are not lists. Whether an AI answer quotes it is not observable here.",
-        "GO-145": "A citation-readiness score of 25 on a page whose content names a source: a cite, blockquote, footnote, trusted-host link, schema citation, a link beside a claim or under a Sources heading. AI Overviews are not observed.",
-        "GEO-005": "A citation-readiness score of 25 on a page whose content names a source: a cite, blockquote, footnote, trusted-host link, schema citation, a link beside a claim or under a Sources heading. Support is not read.",
+        "GO-145": "A citation-readiness score of 25 on a page whose content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). A privacy, terms or contact page, by its URL path, is N/A.",
+        "GEO-005": "A citation-readiness score of 25 on a page whose content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). A privacy, terms or contact page, by its URL path, is N/A.",
         "CN-057": "That an author's and a publisher's names appear in the page's visible text, each named by markup (a byline, meta or JSON-LD). A name in metadata alone is not shown; CSS from stylesheets is not applied.",
         "CN-068": "A score of 35 from E-E-A-T signals on a page that names an author: byline, credential and first-hand words, policy and trust links, outbound links. Whether the expertise is real is not judged.",
         "CN-056": "That the page's own visible text (not its furniture or comments) shows a date, a <time> with text or one written out, and a later one as the update; the publication is the earliest <time> or one labelled published.",
         "MS-033": "A score of 80 over thirteen Open Graph and Twitter Card tags on a page carrying og:image and twitter:card, the two a preview is drawn from. Whether the preview looks right is not checked.",
         "GEO-006": "That the entity resolves: a Wikidata or Wikipedia link in sameAs, a Wikidata item or Knowledge Graph match under its declared name. Withheld when Wikidata cannot be asked or the page names no entity.",
         "KW-076": "That the primary keyword appears in the body copy: the content's text, lists, tables and divs included, headings, navigation and page furniture not. How naturally it is used is not judged.",
+        "SE-114": "No Safe Browsing threat (malware, social engineering, unwanted or harmful software) on the entry or any URL the crawl read, asked 500 to a request. URLs beyond the crawl are not asked.",
+        "SE-116": "The same Safe Browsing answer over the crawled URLs. Hacked content Safe Browsing does not list, such as injected SEO spam, is not detected.",
+        "TE-171": "The same Safe Browsing answer over the crawled URLs: Safe Browsing only. DNS blocklists such as Spamhaus DBL or SURBL are not asked.",
+        "TE-179": "Domain age from the registry's creation date in whois: 90 days or more passes, younger warns. Ownership and transfer history are not read.",
+        "SE-120": "CSP, Permissions-Policy and Referrer-Policy each sent, with no 'unsafe-inline' or 'unsafe-eval' for scripts, no feature open to every origin (=*) and no unsafe-url. One gap warns. Other directives are not judged.",
+        "GO-131": "A GA4 measurement ID configured or loaded, a Google tag loaded by its ID, or a Google Tag Manager container the page loads. What the container fires, and whether data arrives, are not read.",
+        "GO-132": "No GA4 ID configured or loaded twice, no GTM container loaded twice, and no hardcoded ID that a GTM container beside it also fires, its script read. Tags added at run time are not read.",
+        "TE-181": "Nu validator errors in the rendered DOM, with the page's doctype put back in front of it. An artifact without the doctype key is not validated.",
+        "MB-100": "A width=device-width viewport and no CSS width or min-width above 360px in the served HTML outside media queries and other conditions. Static CSS cannot judge tap targets; they and linked stylesheets are not read.",
+        "TECH-002": "An @font-face with no font-display, or block or auto, which hide text; a font preload without crossorigin; a stylesheet that cannot be fetched. Font file sizes are not read.",
     }
 
     module = staticmethod(EveryRulelessItemSaysWhenItApplies.module)

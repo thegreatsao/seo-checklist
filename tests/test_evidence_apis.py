@@ -396,9 +396,10 @@ class HtmlValidator(unittest.TestCase):
         return path
 
     def render(self, html="<!doctype html><html><body></body></html>"):
+        # `doctype` as the snippet records it since F15 batch 6 (TE-181).
         return self.artifact({"url": "https://example.com/",
                               "viewport": {"width": 390, "height": 844},
-                              "html": html})
+                              "html": html, "doctype": "<!DOCTYPE html>"})
 
     def test_a_clean_document_reports_no_errors(self):
         self.serve([])

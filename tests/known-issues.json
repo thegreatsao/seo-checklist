@@ -921,9 +921,9 @@
           "inherited": 0,
           "measured": 14,
           "presentation": 45,
-          "standard": 20
+          "standard": 21
         },
-        "counted": 138,
+        "counted": 139,
         "non_numeric_basis": [
           "scripts/robots_path_tester.py:38"
         ],
@@ -958,7 +958,7 @@
       "claim": "Seventy-six of 217 items pass only when a path is absent or bounded, over nine spellings; whether a title states the side of its subject that its assertion means is read by a person, and the entry says why no check can.",
       "measured": {
         "items": 217,
-        "negative_polarity": 78
+        "negative_polarity": 77
       },
       "probe": "negative_polarity_share",
       "state": "open"
@@ -992,9 +992,9 @@
           "checked",
           "unminified_count",
           "truncated",
+          "fetch_error",
           "wasted_bytes",
-          "issues[]",
-          "fetch_error"
+          "issues[]"
         ],
         "pairs": 173,
         "savings_fraction": 0.189,

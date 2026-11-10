@@ -190,7 +190,7 @@ CLAIMS = (
     Claim("README.md", "non-script items", r"(?P<n>\d+) items cannot be settled by a script", source("llm")),
     Claim("README.md", "per-item translations", r"(?P<n>\d+) would drift out of", population("items")),
     Claim("README.md", "reachability assertions", r"Of (?P<n>\d+) script-backed assertions", assertion("total")),
-    Claim("README.md", "proved unreachable assertions", r"assertions, (?P<n>\d+) are proved", assertion("proved")),
+    Claim("README.md", "proved unreachable assertions", r"assertions, (?P<n>\d+) (?:are|is) proved", assertion("proved")),
     Claim("README.md", "assertions seen failing", r"(?P<n>\d+) are \*\*seen to fail\*\*", assertion("seen")),
     Claim("README.md", "unclaimed assertions", r"the other (?P<n>\d+) (?:are|is) \*\*not claimed either way", assertion("unclaimed")),
     Claim("README.md", "unopposed model judgements", r"(?P<n>\d+) unopposed judgements", source("llm")),

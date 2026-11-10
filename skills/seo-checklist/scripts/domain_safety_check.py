@@ -45,11 +45,13 @@ try:
                                safe_post)
     from lib.typed_credential import read_as_url
     from seo_common import fetch_error_kind
+    import site_crawl
 except ImportError:
     from scripts.lib.safe_http import (default_headers, is_private_host, loopback_only,
                                        safe_get, safe_post)
     from scripts.lib.typed_credential import read_as_url
     from scripts.seo_common import fetch_error_kind
+    from scripts import site_crawl
 
 # basis: convention — three labels, definitional (F11): a whois lookup needs the
 #  registrable domain, and for a host under one of the hand-listed second-level labels
@@ -63,7 +65,7 @@ SECOND_LEVEL_LABELS = 3
 # basis: presentation — 3 seconds to first response, present at import. It raises a
 #  `medium` "Slow response" entry in `issues`, and no item reads this script's `issues`
 #  (SE-114, SE-116 and TE-171 read `safe_browsing.threats`, TE-167 `uptime.reachable`,
-#  TE-178 `neighbors.suspicious`, TE-179 `whois.age_days`), so it decides what the
+#  TE-179 `whois.age_days`), so it decides what the
 #  evidence prints, never a verdict (F11; held by `tests/test_presentation_basis.py`).
 #  Response time is decided by TECH-003 against Core Web Vitals' 800 ms TTFB band
 SLOW_RESPONSE_MS = 3000
@@ -82,6 +84,9 @@ SB_ENDPOINT = "https://safebrowsing.googleapis.com/v4/threatMatches:find"
 # this machine, and asked without a key, which it neither needs nor gets.
 SB_STANDIN_ENV = "SEO_SAFE_BROWSING_STANDIN"
 REDACTED = "<redacted>"
+# basis: standard — Safe Browsing v4's threatMatches:find takes at most 500 threat
+#  entries a request (Google's Lookup API documentation); SE-114's ruling names it.
+SB_MAX_ENTRIES = 500
 SB_THREAT_TYPES = ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE",
                    "POTENTIALLY_HARMFUL_APPLICATION"]
 RE_CREATED = re.compile(
@@ -116,9 +121,22 @@ def sb_standin() -> str:
     return standin if standin and loopback_only() else ""
 
 
-def check_safe_browsing(url: str, api_key: str, timeout: int) -> dict:
+def crawled_urls(url: str, inventory: dict | None) -> list[str]:
+    """The entry and every URL the shared crawl read, each once (SE-114's ruling)."""
+    urls = [url]
+    for key, row in sorted(((inventory or {}).get("pages") or {}).items()):
+        urls.extend(u for u in (row.get("url") or key, row.get("final_url")) if u)
+    return [u for u in dict.fromkeys(urls) if u.lower().startswith(("http://", "https://"))]
+
+
+def check_safe_browsing(url: str, api_key: str, timeout: int,
+                        urls: list[str] | None = None) -> dict:
     """Without a key the verdict keys are omitted entirely, so the checklist
-    reports NO_DATA rather than a clean bill of health."""
+    reports NO_DATA rather than a clean bill of health.
+
+    `urls` (default: `url` alone) are asked SB_MAX_ENTRIES to a request. A threat
+    found in any answered request stands; a clean answer needs every request
+    answered, so one unanswered batch withholds it."""
     standin = sb_standin()
     if not api_key and not standin:
         return {"checked": False,
@@ -128,38 +146,42 @@ def check_safe_browsing(url: str, api_key: str, timeout: int) -> dict:
         # host other than this machine, and the key does not change that.
         return {"checked": False,
                 "error": "Safe Browsing not asked: loopback-only (SEO_LOOPBACK_ONLY)"}
-    body = {
-        "client": {"clientId": "agentic-seo", "clientVersion": "1.0"},
-        "threatInfo": {
-            "threatTypes": SB_THREAT_TYPES,
-            "platformTypes": ["ANY_PLATFORM"],
-            "threatEntryTypes": ["URL"],
-            "threatEntries": [{"url": url}],
-        },
-    }
+    urls = list(urls or [url])
     headers = default_headers({"Content-Type": "application/json"})
-    try:
-        if standin:
-            resp = safe_post(standin, json=body, headers=headers, timeout=timeout)
-        else:
-            resp = requests.post(f"{SB_ENDPOINT}?key={api_key}", json=body,
-                                 headers=headers, timeout=timeout)
-    except requests.RequestException as exc:
-        # requests includes the complete request URL in connection errors, including
-        # its key query parameter. Nothing returned by this function may carry it.
-        error = f"Safe Browsing unreachable: {exc}"
-        if api_key:
-            error = error.replace(api_key, REDACTED)
-        return {"checked": False, "error": error[:200]}
-
-    if resp.status_code != 200:
-        return {"checked": False,
-                "error": f"Safe Browsing returned HTTP {resp.status_code}"}
-
-    matches = resp.json().get("matches", [])
-    threats = [{"type": m.get("threatType"), "platform": m.get("platformType")}
-               for m in matches]
-    return {"checked": True, "clean": not threats, "threats": threats, "error": None}
+    threats, error = [], None
+    for start in range(0, len(urls), SB_MAX_ENTRIES):
+        body = {
+            "client": {"clientId": "agentic-seo", "clientVersion": "1.0"},
+            "threatInfo": {
+                "threatTypes": SB_THREAT_TYPES,
+                "platformTypes": ["ANY_PLATFORM"],
+                "threatEntryTypes": ["URL"],
+                "threatEntries": [{"url": u} for u in urls[start:start + SB_MAX_ENTRIES]],
+            },
+        }
+        try:
+            if standin:
+                resp = safe_post(standin, json=body, headers=headers, timeout=timeout)
+            else:
+                resp = requests.post(f"{SB_ENDPOINT}?key={api_key}", json=body,
+                                     headers=headers, timeout=timeout)
+        except requests.RequestException as exc:
+            # requests includes the complete request URL in connection errors, including
+            # its key query parameter. Nothing returned by this function may carry it.
+            error = f"Safe Browsing unreachable: {exc}"
+            if api_key:
+                error = error.replace(api_key, REDACTED)
+            continue
+        if resp.status_code != 200:
+            error = f"Safe Browsing returned HTTP {resp.status_code}"
+            continue
+        threats.extend({"type": m.get("threatType"), "platform": m.get("platformType"),
+                        "url": (m.get("threat") or {}).get("url")}
+                       for m in resp.json().get("matches", []))
+    if error and not threats:
+        return {"checked": False, "error": error[:200], "urls_asked": len(urls)}
+    return {"checked": True, "clean": not threats, "threats": threats, "error": error,
+            "urls_asked": len(urls)}
 
 
 def registrable_domain(host: str) -> str:
@@ -247,8 +269,8 @@ def check_whois(domain: str, timeout: int) -> dict:
 
 def check_neighbors(domain: str) -> dict:
     """Resolves the hosting IP. Enumerating co-hosted domains needs a paid
-    reverse-IP service, so `suspicious` is deliberately never fabricated —
-    the checklist item stays NO_DATA until such a source is wired in."""
+    reverse-IP service, so `suspicious` is deliberately never fabricated; TE-178's
+    script assertion was retired for that reason (F15) and an agent answers it."""
     out = {"checked": False, "ip": None, "error": None}
     try:
         out["ip"] = socket.gethostbyname(domain)
@@ -260,13 +282,21 @@ def check_neighbors(domain: str) -> dict:
     return out
 
 
-def check(url: str, timeout: int = 20) -> dict:
+def check(url: str, timeout: int = 20, inventory: dict | None = None) -> dict:
     # `hostname`, not the netloc cut at a colon: that cut read `[` out of
     # `http://[::1]:8080/` and the user name out of `https://user:pw@host/`, and
     # both went to whois and to the resolver.
     domain = urlparse(url).hostname or ""
     api_key = (os.environ.get("GOOGLE_SAFE_BROWSING_KEY")
                or os.environ.get("SAFE_BROWSING_API_KEY") or "")
+    # SE-114, SE-116, TE-171 pass the shared crawl: every URL it read is asked (F15).
+    unread = (inventory or {}).get("fetch_error")
+    urls = crawled_urls(url, inventory)
+
+    def safe_browsing() -> dict:
+        if unread:
+            return {"checked": False, "error": f"the crawl was not read: {unread}"[:200]}
+        return check_safe_browsing(url, api_key, timeout, urls)
 
     # A host only we can reach is named to no third party (F06). TE-167 runs this
     # script there for its one request; Safe Browsing, whois and the resolver would
@@ -276,7 +306,7 @@ def check(url: str, timeout: int = 20) -> dict:
         result = {"url": url, "domain": domain,
                   "uptime": check_uptime(url, timeout),
                   # Unless the census's stand-in plays it, which is this machine too.
-                  "safe_browsing": (check_safe_browsing(url, api_key, timeout)
+                  "safe_browsing": (safe_browsing()
                                     if sb_standin() else
                                     {"checked": False, "error": private}),
                   "whois": {"checked": False, "created": None, "registrar": None,
@@ -288,7 +318,7 @@ def check(url: str, timeout: int = 20) -> dict:
             "url": url,
             "domain": domain,
             "uptime": check_uptime(url, timeout),
-            "safe_browsing": check_safe_browsing(url, api_key, timeout),
+            "safe_browsing": safe_browsing(),
             "whois": check_whois(domain, timeout),
             "neighbors": check_neighbors(domain),
             "issues": [],
@@ -314,12 +344,12 @@ def check(url: str, timeout: int = 20) -> dict:
 
     sb = result["safe_browsing"]
     if sb.get("checked") and sb.get("threats"):
-        kinds = ", ".join(t["type"] for t in sb["threats"])
-        result["issues"].append({
-            "severity": "critical",
-            "message": f"Google Safe Browsing flags this URL: {kinds}",
-            "url": url,
-        })
+        for threat in sb["threats"]:
+            result["issues"].append({
+                "severity": "critical",
+                "message": f"Google Safe Browsing flags this URL: {threat['type']}",
+                "url": threat.get("url") or url,
+            })
     elif not sb.get("checked"):
         result["issues"].append({
             "severity": "low",
@@ -343,11 +373,16 @@ def main():
         description="Check domain reachability, Safe Browsing status, and WHOIS age")
     parser.add_argument("url", help="URL to check")
     parser.add_argument("--timeout", type=int, default=20)
+    parser.add_argument("--inventory", default="",
+                        help="crawl inventory from site_crawl.py: ask Safe Browsing "
+                             "about every URL it read, not only this one")
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     args = parser.parse_args()
     args.url = read_as_url(args.url)
 
-    result = check(args.url, args.timeout)
+    inventory = (site_crawl.inventory_for(args.url, args.inventory)
+                 if args.inventory else None)
+    result = check(args.url, args.timeout, inventory)
 
     if args.json:
         print(json.dumps(result, indent=2))

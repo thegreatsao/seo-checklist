@@ -119,7 +119,9 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         # F15 batch 3: five more — CI-009, CI-018, MS-022, CN-041, BL-081.
         # F15 batch 4: seven more — AR-153, AR-162, CI-012, CI-014, GEO-001, GEO-002,
         # TE-176.
-        self.assertEqual(counts, {"answers": 68, "measures": 77, "owed": 0})
+        # F15 batch 6: ten more — SE-114, SE-116, TE-171, TE-179, SE-120, GO-131, GO-132,
+        # TE-181, MB-100, TECH-002; TE-178's reading left with its retired rule (145 -> 144).
+        self.assertEqual(counts, {"answers": 57, "measures": 87, "owed": 0})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
         """Line endings are normalised first: a Windows checkout writes CRLF, and how
@@ -337,8 +339,10 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
         # crawl inventory readers (and seo_common.py's link names), and GO-137's
         # gsc_sitemap_reconcile.py (its page-number fold): 67 stale now. F15 batch 4
         # changed robots, sitemaps, redirects and URL scripts and the shared seo_common
-        # and robots_rules: 89 stale now.
-        self.assertEqual(counts, {"current": 36, "agree": 10, "disputed": 26, "stale": 109})
+        # and robots_rules: 89 stale now. F15 batch 5 changed the structured-data and
+        # content scripts and seo_common: 109. F15 batch 6 changed the security, speed and
+        # technical scripts and retired TE-178's rule: 127 stale of 144.
+        self.assertEqual(counts, {"current": 17, "agree": 7, "disputed": 10, "stale": 127})
 
 
 class TheDigestCommand(unittest.TestCase):
@@ -363,8 +367,8 @@ class TheDigestCommand(unittest.TestCase):
     def test_the_summary_counts_second_readings(self):
         done = self.run_tool()
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertIn(f"second readings: 36 of {len(READINGS['items'])} current — 10 agree, "
-                      "26 disputed; 109 stale", done.stdout)
+        self.assertIn(f"second readings: 17 of {len(READINGS['items'])} current — 7 agree, "
+                      "10 disputed; 127 stale", done.stdout)
 
 
 class WhatTheSecondReaderIsShown(unittest.TestCase):

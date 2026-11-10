@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "registry_version": "e2d01d02779d",
+  "registry_version": "a2064d353ad0",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [
@@ -833,8 +833,8 @@
       "GO-131": {
         "expect": "PASS",
         "title": "Install & Configure Google Analytics 4",
-        "basis": "ac7c00c75063",
-        "why": "declared with the repair that makes it true, in the same commit: /about.html and /privacy.html now carry the same GA4 snippet and the single measurement ID the entry page configures, so the sample no longer finds a page with no analytics. Flipped from FAIL, which described the tree before this commit"
+        "basis": "36335a6f14f6",
+        "why": "declared with the repair that makes it true, in the same commit: /about.html and /privacy.html now carry the same GA4 snippet and the single measurement ID the entry page configures, so the sample no longer finds a page with no analytics. Flipped from FAIL, which described the tree before this commit Re-read for F15 batch 6 (GO-131's ruling, installed_by): each sampled page loads gtag.js by its G- ID; unchanged."
       },
       "GO-136": {
         "expect": "PASS",
@@ -995,8 +995,8 @@
       "GEO-005": {
         "expect": "FAIL",
         "title": "Content is citation-ready for AI search",
-        "basis": "b8cd4f42be94",
-        "why": "re-read for 0.87.0, which took the floor from 60 to 25 — author 15 plus canonical 10, the two components of the score any page type can carry. Declared against the sampled set: the entry page is built to be cited and reaches 60 on claim coverage, while /about.html and /privacy.html carry an author and a canonical and nothing a citation would rest on. Claim coverage, trusted links and sameAs are article and entity signals, and a floor above 25 asks a policy page for them Re-read for F15 batch 5 (the owner's rulings): sourced_score is the score on a page naming a source, and /about.html and /privacy.html name none — no cite, blockquote, footnote link, trusted-host link or schema citation — so the author and the canonical no longer carry them to 25: FAIL, as the ruling says (author plus canonical must not pass)."
+        "basis": "b34a99bee680",
+        "why": "re-read for 0.87.0, which took the floor from 60 to 25 — author 15 plus canonical 10, the two components of the score any page type can carry. Declared against the sampled set: the entry page is built to be cited and reaches 60 on claim coverage, while /about.html and /privacy.html carry an author and a canonical and nothing a citation would rest on. Claim coverage, trusted links and sameAs are article and entity signals, and a floor above 25 asks a policy page for them Re-read for F15 batch 5 (the owner's rulings): sourced_score is the score on a page naming a source, and /about.html and /privacy.html name none — no cite, blockquote, footnote link, trusted-host link or schema citation — so the author and the canonical no longer carry them to 25: FAIL, as the ruling says (author plus canonical must not pass). Re-read for F15 batch 6 (the owner's ruling 1 on batch 5's questions): /privacy.html is a utility page by its path, so N/A there; /about.html, not a utility page, still names no source: FAIL."
       },
       "GEO-006": {
         "expect": "PASS",
@@ -1025,8 +1025,8 @@
       "GO-145": {
         "expect": "FAIL",
         "title": "Optimize for AI Overviews & Zero-Click SERPs",
-        "basis": "ae82afcee1cc",
-        "why": "twin of GEO-005 through scores_with, same script and same floor: re-read for 0.87.0 against a floor of 25, which every sampled page of this origin clears on its author and its canonical alone Re-read for F15 batch 5 (the owner's rulings): twin of GEO-005 through scores_with: /about.html and /privacy.html name no source, so sourced_score is 0 there: FAIL."
+        "basis": "14ccb69cd37b",
+        "why": "twin of GEO-005 through scores_with, same script and same floor: re-read for 0.87.0 against a floor of 25, which every sampled page of this origin clears on its author and its canonical alone Re-read for F15 batch 5 (the owner's rulings): twin of GEO-005 through scores_with: /about.html and /privacy.html name no source, so sourced_score is 0 there: FAIL. Re-read for F15 batch 6 (the owner's ruling 1 on batch 5's questions): /privacy.html is a utility page by its path, so N/A there; /about.html still names no source: FAIL."
       },
       "IN-121": {
         "expect": "NO_DATA",
@@ -1537,8 +1537,8 @@
       "GO-131": {
         "expect": "FAIL",
         "title": "Install & Configure Google Analytics 4",
-        "basis": "ac7c00c75063",
-        "why": "the audit samples three pages and takes the worst, so this is declared about the sampled set, not the entry page: only the entry page carries a gtag snippet, and the sampled duplicate post and orphan page carry none"
+        "basis": "36335a6f14f6",
+        "why": "the audit samples three pages and takes the worst, so this is declared about the sampled set, not the entry page: only the entry page carries a gtag snippet, and the sampled duplicate post and orphan page carry none Re-read for F15 batch 6 (GO-131's ruling, installed_by): the sampled duplicate post and orphan page load no Google tag and no GTM container; unchanged."
       },
       "GO-136": {
         "expect": "WARN",
@@ -1699,8 +1699,8 @@
       "GEO-005": {
         "expect": "FAIL",
         "title": "Content is citation-ready for AI search",
-        "basis": "b8cd4f42be94",
-        "why": "nothing here carries a citation, a date, an author or an evidence claim, which is the whole of what makes content citable Re-read for 0.87.0 against the new floor of 25: the sampled pages carry no author, so canonical alone is 10 and FAIL stands. Re-read for F15 batch 5 (the owner's rulings): sourced_score is 0 on a page naming no source, and nothing here is cited; unchanged."
+        "basis": "b34a99bee680",
+        "why": "nothing here carries a citation, a date, an author or an evidence claim, which is the whole of what makes content citable Re-read for 0.87.0 against the new floor of 25: the sampled pages carry no author, so canonical alone is 10 and FAIL stands. Re-read for F15 batch 5 (the owner's rulings): sourced_score is 0 on a page naming no source, and nothing here is cited; unchanged. Re-read for F15 batch 6 (utility pages N/A): no sampled page here is a privacy, terms or contact page; unchanged."
       },
       "GEO-006": {
         "expect": "NO_DATA",
@@ -1729,8 +1729,8 @@
       "GO-145": {
         "expect": "FAIL",
         "title": "Optimize for AI Overviews & Zero-Click SERPs",
-        "basis": "ae82afcee1cc",
-        "why": "twin of GEO-005 through scores_with: nothing here is citable Re-read for 0.87.0 against the new floor of 25; unchanged. Re-read for F15 batch 5 (the owner's rulings): twin of GEO-005 through scores_with: nothing here names a source; unchanged."
+        "basis": "14ccb69cd37b",
+        "why": "twin of GEO-005 through scores_with: nothing here is citable Re-read for 0.87.0 against the new floor of 25; unchanged. Re-read for F15 batch 5 (the owner's rulings): twin of GEO-005 through scores_with: nothing here names a source; unchanged. Re-read for F15 batch 6 (utility pages N/A): no sampled page here is a privacy, terms or contact page; unchanged."
       },
       "IN-121": {
         "expect": "NO_DATA",
@@ -1827,8 +1827,8 @@
       "SE-120": {
         "expect": "PASS",
         "title": "Harden Security Headers (CSP, Permissions-Policy, Referrer-Policy)",
-        "basis": "685991b429ef",
-        "why": "the HTTPS origin emits CSP, Permissions-Policy, Referrer-Policy, and X-Content-Type-Options hardening headers"
+        "basis": "39f8c71f8687",
+        "why": "the HTTPS origin emits CSP, Permissions-Policy, Referrer-Policy, and X-Content-Type-Options hardening headers Re-read for F15 batch 6 (SE-120's ruling, the values read): CSP default-src 'self' allows no inline script or eval, Permissions-Policy grants no feature to every origin, Referrer-Policy is strict-origin-when-cross-origin; unchanged."
       },
       "TE-175": {
         "expect": "PASS",
@@ -1871,8 +1871,8 @@
       "SE-120": {
         "expect": "FAIL",
         "title": "Harden Security Headers (CSP, Permissions-Policy, Referrer-Policy)",
-        "basis": "685991b429ef",
-        "why": "the HTTPS origin omits CSP, Permissions-Policy, Referrer-Policy, and every other deliberate hardening header"
+        "basis": "39f8c71f8687",
+        "why": "the HTTPS origin omits CSP, Permissions-Policy, Referrer-Policy, and every other deliberate hardening header Re-read for F15 batch 6 (SE-120's ruling, hardening_gaps): all three headers missing is three gaps; unchanged."
       },
       "TE-175": {
         "expect": "FAIL",

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "e2d01d02779d",
+  "registry_version": "a2064d353ad0",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -2171,6 +2171,7 @@
           ]
         }
       },
+      "measures": "A width=device-width viewport and no CSS width or min-width above 360px in the served HTML outside media queries and other conditions. Static CSS cannot judge tap targets; they and linked stylesheets are not read.",
       "effort": "medium",
       "fix": "Fix mobile UX issues"
     },
@@ -2406,7 +2407,7 @@
           "lte": 2
         }
       },
-      "measures": "Third-party scripts that block rendering. The other common speed traps are separate items.",
+      "measures": "Third-party scripts that block rendering: no async, defer or module; //host URLs read on their host; data blocks (text/plain) left out. The other speed traps are separate items.",
       "effort": "high",
       "fix": "Remove render-blocking third-party scripts"
     },
@@ -2440,7 +2441,7 @@
           ]
         }
       },
-      "measures": "Render-blocking resources and critical request chains read from the page's HTML. The other speed checks are separate items.",
+      "measures": "Only parser-blocking scripts in the served HTML decide: one in <head> fails, one later in the body warns. Stylesheets, @import chains and preconnects are listed but decide nothing.",
       "effort": "medium",
       "fix": "Shorten the critical request chain"
     },
@@ -2540,7 +2541,9 @@
       "check": {
         "script": "domain_safety_check.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
         "requires": "safe_browsing",
         "assert": {
@@ -2548,6 +2551,7 @@
           "len_eq": 0
         }
       },
+      "measures": "No Safe Browsing threat (malware, social engineering, unwanted or harmful software) on the entry or any URL the crawl read, asked 500 to a request. URLs beyond the crawl are not asked.",
       "effort": "low",
       "fix": "Scan the site for malicious code via Safe Browsing"
     },
@@ -2584,7 +2588,9 @@
       "check": {
         "script": "domain_safety_check.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
         "requires": "safe_browsing",
         "assert": {
@@ -2592,6 +2598,7 @@
           "len_eq": 0
         }
       },
+      "measures": "The same Safe Browsing answer over the crawled URLs. Hacked content Safe Browsing does not list, such as injected SEO spam, is not detected.",
       "effort": "low",
       "fix": "Confirm there is no hacked content or malware",
       "scores_with": "SE-114"
@@ -2707,14 +2714,15 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "hardening_missing",
+          "path": "hardening_gaps",
           "len_eq": 0
         },
         "warn": {
-          "path": "hardening_missing",
+          "path": "hardening_gaps",
           "len_lte": 1
         }
       },
+      "measures": "CSP, Permissions-Policy and Referrer-Policy each sent, with no 'unsafe-inline' or 'unsafe-eval' for scripts, no feature open to every origin (=*) and no unsafe-url. One gap warns. Other directives are not judged.",
       "effort": "low",
       "fix": "Configure CSP, Permissions-Policy and Referrer-Policy"
     },
@@ -2915,10 +2923,11 @@
         ],
         "requires": "fetch",
         "assert": {
-          "path": "measurement_ids",
+          "path": "installed_by",
           "len_gte": 1
         }
       },
+      "measures": "A GA4 measurement ID configured or loaded, a Google tag loaded by its ID, or a Google Tag Manager container the page loads. What the container fires, and whether data arrives, are not read.",
       "effort": "low",
       "fix": "Install and configure Google Analytics 4"
     },
@@ -2941,6 +2950,7 @@
           "len_eq": 0
         }
       },
+      "measures": "No GA4 ID configured or loaded twice, no GTM container loaded twice, and no hardcoded ID that a GTM container beside it also fires, its script read. Tags added at run time are not read.",
       "effort": "low",
       "fix": "Remove duplicate GA4/GTM tags"
     },
@@ -3238,9 +3248,13 @@
         "assert": {
           "path": "sourced_score",
           "gte": 25
+        },
+        "applies_when": {
+          "path": "utility_page",
+          "falsy": true
         }
       },
-      "measures": "A citation-readiness score of 25 on a page whose content names a source: a cite, blockquote, footnote, trusted-host link, schema citation, a link beside a claim or under a Sources heading. AI Overviews are not observed.",
+      "measures": "A citation-readiness score of 25 on a page whose content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). A privacy, terms or contact page, by its URL path, is N/A.",
       "effort": "low",
       "fix": "Optimize for AI Overviews and zero-click: citability, facts, sources"
     },
@@ -3838,7 +3852,9 @@
       "check": {
         "script": "domain_safety_check.py",
         "args": [
-          "{url}"
+          "{url}",
+          "--inventory",
+          "{inventory_json}"
         ],
         "requires": "safe_browsing",
         "assert": {
@@ -3846,6 +3862,7 @@
           "len_eq": 0
         }
       },
+      "measures": "The same Safe Browsing answer over the crawled URLs: Safe Browsing only. DNS blocklists such as Spamhaus DBL or SURBL are not asked.",
       "effort": "low",
       "fix": "Check the domain against blocklists and Safe Browsing",
       "scores_with": "SE-114"
@@ -3910,7 +3927,7 @@
           "gt": 0
         }
       },
-      "measures": "That every stylesheet the page loads is minified. Unused rules and critical-path CSS are not read.",
+      "measures": "That every stylesheet the page links, or @imports from a <style> block, is minified; a sheet that cannot be read leaves a clean answer undecided. Unused rules and critical-path CSS are not read.",
       "effort": "low",
       "fix": "Minify and optimize CSS"
     },
@@ -3947,7 +3964,7 @@
           }
         }
       },
-      "measures": "That the page is served over HTTPS and loads nothing over plain HTTP that a browser blocks or upgrades: scripts, stylesheets, frames, objects, images and media. URLs inside CSS and other page errors are not read.",
+      "measures": "That the page is served over HTTPS and its served HTML references no http:// script, stylesheet, frame, object, image or media a browser blocks or upgrades. What scripts or CSS load later is not read.",
       "effort": "low",
       "fix": "Serve pages over HTTPS and request nothing over http:// — the browser blocks it"
     },
@@ -4005,23 +4022,9 @@
       "category_label": "Technical SEO Checks",
       "title": "Audit Neighboring Sites on the Server",
       "severity": "low",
-      "source": "script",
-      "check": {
-        "script": "domain_safety_check.py",
-        "args": [
-          "{url}"
-        ],
-        "requires": "api",
-        "assert": {
-          "path": "neighbors.suspicious",
-          "len_eq": 0
-        },
-        "cannot_fail": {
-          "mechanism": "path_never_emitted",
-          "why": "check_neighbors() resolves the hosting IP and stops there. Judging the neighbours needs a paid reverse-IP service this project does not buy, and a fabricated `suspicious` would be worse than no answer, so the field is deliberately never written and the item is NO_DATA everywhere until that input exists."
-        }
-      },
-      "effort": "low",
+      "source": "llm",
+      "lens": "market",
+      "effort": "medium",
       "fix": "Audit neighboring sites on the same server IP"
     },
     {
@@ -4051,6 +4054,7 @@
           "why": "0.44.0 gave this item the domain-history half of its title through whois age: established passes, younger than 90 days warns, an absent age is NO_DATA. The warn band is the assertion's exact complement on purpose — a young domain is worth pricing, not a defect to fix — and the ruling that no 'worth knowing' status exists still stands. ROADMAP.md records the reasoning."
         }
       },
+      "measures": "Domain age from the registry's creation date in whois: 90 days or more passes, younger warns. Ownership and transfer history are not read.",
       "effort": "low",
       "fix": "A young domain is a fact to plan around, not a defect: expect slower trust accumulation and no quick ranking wins. Check a domain's registration history before buying it."
     },
@@ -4073,7 +4077,7 @@
           "eq": 0
         }
       },
-      "measures": "The WCAG level-A failures the HTML shows: images without alt, form fields without an accessible name, no page language. Contrast is CN-036; keyboard use is not tested.",
+      "measures": "The WCAG level-A failures the HTML shows: images without alt, fields with no accessible name (aria-labelledby resolved, blank labels none; image and button inputs too), no page language. Contrast is CN-036.",
       "effort": "low",
       "fix": "Meet WCAG accessibility basics"
     },
@@ -4098,6 +4102,7 @@
           "eq": 0
         }
       },
+      "measures": "Nu validator errors in the rendered DOM, with the page's doctype put back in front of it. An artifact without the doctype key is not validated.",
       "effort": "low",
       "fix": "Fix W3C validation errors in the rendered DOM"
     },
@@ -4577,9 +4582,13 @@
         "assert": {
           "path": "sourced_score",
           "gte": 25
+        },
+        "applies_when": {
+          "path": "utility_page",
+          "falsy": true
         }
       },
-      "measures": "A citation-readiness score of 25 on a page whose content names a source: a cite, blockquote, footnote, trusted-host link, schema citation, a link beside a claim or under a Sources heading. Support is not read.",
+      "measures": "A citation-readiness score of 25 on a page whose content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). A privacy, terms or contact page, by its URL path, is N/A.",
       "effort": "medium",
       "fix": "Back factual claims with sources, add cite/blockquote, populate sameAs",
       "scores_with": "GO-145"
@@ -4724,6 +4733,7 @@
           ]
         }
       },
+      "measures": "An @font-face with no font-display, or block or auto, which hide text; a font preload without crossorigin; a stylesheet that cannot be fetched. Font file sizes are not read.",
       "effort": "low",
       "fix": "Preload key fonts, use font-display: swap"
     },
