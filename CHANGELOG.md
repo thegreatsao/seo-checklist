@@ -12,10 +12,10 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `c89dfee34833` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+Registry version: `fa7b53d275af` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4).
 
-F15 batch 5 (`ecaf0dc17e56` → `c89dfee34833`) — structured data and content, and the owner's ruling 2 on batch 4's
+F15 batch 5 (`ecaf0dc17e56` → `fa7b53d275af`) — structured data and content, and the owner's ruling 2 on batch 4's
 questions. **The inventory is version 6**: `schema_nodes` carries Microdata and RDFa items (`format: markup`), so LO-198
 finds a LocalBusiness written in either, and a schema.org IRI `@type` counts. **Verdicts of a real audit can move**:
 MS-032 applies to a page whose only JSON-LD does not parse and fails any page with an unparseable block (the warn band
@@ -55,7 +55,11 @@ passes nothing (GO-144, GEO-004, GO-145, GEO-005); a `<time>`'s text is read onc
 (`route=product/product`, `product_id`) count for AR-154; a bare `@type`/`@id` reference to a node defined in full is
 that node; GEO-006 is withheld (`unnamed`) on a page that declares no entity name. An article's own `<aside>` (a
 sources box) is content; KW-076 no longer takes a `mainmenu` or `header-content` element for the page's content; TE-172's
-ruled headline is the page's own article's (top level, `@graph` or `mainEntity`), not a cited work's.
+ruled headline is the page's own article's (top level, `@graph`, `mainEntity`, or inside a JSON-LD array), not a cited
+work's; a schema.org IRI `@type` matches every schema reader's type filter. CN-056's publication is the earliest
+`<time>` shown (the earliest written date on a page with none) and the update a later shown date, so a date in the story
+is no update. GO-145 and GEO-005 count an outbound link in the content beside a claim it sources, or after "Source",
+as a source; a social link elsewhere still is not one.
 
 F15 batch 4 (`445b7ca058d2` → `ecaf0dc17e56`) — robots, sitemaps, redirects and URLs, and the owner's rulings on
 batch 3's questions. **Verdicts of a real audit can move**: a canonical naming another host no longer fails CI-009 or

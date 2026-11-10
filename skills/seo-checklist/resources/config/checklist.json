@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "c89dfee34833",
+  "registry_version": "fa7b53d275af",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -3240,7 +3240,7 @@
           "gte": 25
         }
       },
-      "measures": "A citation-readiness score of 25 on a page naming a source (a cite, blockquote, footnote, trusted-host link or schema citation). Whether it appears in AI Overviews or zero-click results is not observable here.",
+      "measures": "A citation-readiness score of 25 on a page whose content names a source: a cite, blockquote, footnote, trusted-host link, schema citation or a link beside a claim. AI Overview presence is not observable here.",
       "effort": "low",
       "fix": "Optimize for AI Overviews and zero-click: citability, facts, sources"
     },
@@ -4579,7 +4579,7 @@
           "gte": 25
         }
       },
-      "measures": "A citation-readiness score of 25 on a page naming a source (a cite, blockquote, footnote, trusted-host link or schema citation). Whether a source supports a claim is not read.",
+      "measures": "A citation-readiness score of 25 on a page whose content names a source: a cite, blockquote, footnote, trusted-host link, schema citation or a link beside a claim. Whether a source supports a claim is not read.",
       "effort": "medium",
       "fix": "Back factual claims with sources, add cite/blockquote, populate sameAs",
       "scores_with": "GO-145"

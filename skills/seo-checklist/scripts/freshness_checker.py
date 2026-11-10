@@ -226,14 +226,19 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
     shown_text = shown_dates_in(visible_text(
         soup, skip=lambda tag: tag.name == "time" or tag.find_parent("time") is not None
         or under_foreign_credit(tag, claimed=claimed)), cutoff)
+    # The publication shown is the earliest `<time>`, or with none the earliest date in
+    # the text; the update is a shown date later than it. Taken from every shown date,
+    # a date in the story ("On March 3 the council voted") made the real publication
+    # `<time>` an update (review round 5).
     shown_dates = shown_time + shown_text
-    later = bool(shown_dates) and any(value > min(shown_dates) for value in shown_dates)
+    published_on = min(shown_time or shown_text) if shown_dates else None
+    later = published_on is not None and any(value > published_on for value in shown_dates)
     date_signals = {
         "shown": {"published": bool(shown_dates), "updated": later},
         "sources": {
             "published": "time" if shown_time else "text" if shown_text else None,
             "updated": (None if not later
-                        else "time" if any(v > min(shown_dates) for v in shown_time)
+                        else "time" if any(v > published_on for v in shown_time)
                         else "text"),
         },
         # What the page declares without showing: read for the score and the age,

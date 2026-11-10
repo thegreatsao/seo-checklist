@@ -222,8 +222,24 @@ def check_citation_readiness(source: str, timeout: int = 15) -> dict:
     # evidence that the source is a good one.
     def in_content(link):
         return str(link.get("href") or "").strip() in content_hrefs
+    # An outbound link in the content beside a claim it sources — in a block whose text
+    # makes one, or one that says "Source" — is a source (review round 5: a study linked
+    # in its sentence was no source). An outbound link elsewhere, a social profile in
+    # "Follow us", still is not one (0.87.0's reason).
+    sourcing_links = set()
+    for tag in soup.find_all("a", href=True):
+        host = urlparse(spelled(tag.get("href", ""))).netloc
+        if not host or host == page_host or in_page_furniture(tag) or under_foreign_credit(
+                tag, claimed=parsed.get("foreign_itemref_ids")):
+            continue
+        block = tag.find_parent(["p", "li", "td", "dd", "figcaption", "blockquote"])
+        text = block.get_text(" ", strip=True) if block else ""
+        if CLAIM_RE.search(text) or re.match(r"\s*sources?\b", text, re.I):
+            sourcing_links.add(spelled(tag.get("href", "")))
+    counted = {str(link.get("href") or "").strip() for link in trusted_links + footnote_links}
     citation_capacity = (sum(1 for link in trusted_links if in_content(link)) + len(cite_tags)
                          + sum(1 for link in footnote_links if in_content(link))
+                         + len(sourcing_links - counted)
                          + schema_citations)
     # A page with no factual claims has nothing to cover, and that is not the same as
     # having covered everything. `max(1, 0)` made the denominator one, so any single

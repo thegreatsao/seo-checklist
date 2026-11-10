@@ -803,6 +803,44 @@ class ReviewRound4(unittest.TestCase):
         self.assertEqual(page_verdict(rich_results_guard, "TE-172", page), FAIL)
 
 
+class ReviewRound5(unittest.TestCase):
+    def test_an_article_in_a_json_ld_array_needs_a_headline(self):
+        for doc in ([{"@context": "https://schema.org", "@type": "Article", "author": "Jane"}],
+                    [{"@context": "https://schema.org", "@graph": [{"@type": "Article"}]}]):
+            with self.subTest(doc=str(doc)[:40]):
+                page = html(head=f'<script type="application/ld+json">{json.dumps(doc)}</script>')
+                self.assertEqual(page_verdict(rich_results_guard, "TE-172", page), FAIL)
+
+    def test_an_earlier_date_in_the_story_is_no_update(self):
+        body = ("<article><p>Published <time datetime='2024-05-01'>May 1, 2024</time></p>"
+                "<p>On March 3, 2024, the council voted to keep the market open.</p></article>")
+        self.assertEqual(VisibleDates.cn_056(self, body), WARN)
+        body = ("<article><p>Published <time datetime='2024-05-01'>May 1, 2024</time>. "
+                "Updated June 2, 2024.</p></article>")
+        self.assertEqual(VisibleDates.cn_056(self, body), PASS)
+
+    def test_a_link_beside_the_claim_it_sources_is_a_source(self):
+        claim = "<p class='byline'>By Jane Doe</p><p>Bakers prefer rye in winter.</p>"
+        for link in ("<p>A 2023 study found that 40% of bakers use rye "
+                     "(<a href='https://www.nature.com/articles/x'>Nature</a>).</p>",
+                     "<p>Source: <a href='https://www.reuters.com/x'>Reuters</a></p>"):
+            with self.subTest(link=link[:30]):
+                page = html(f"<main><article>{claim}{link}</article></main>",
+                            head='<link rel="canonical" href="/">')
+                self.assertEqual(page_verdict(citation_readiness, "GO-145", page), PASS)
+        page = html(f"<main><article>{claim}<p>Follow us on "
+                    f"<a href='https://www.facebook.com/crumb'>Facebook</a>.</p></article></main>",
+                    head='<link rel="canonical" href="/">')
+        self.assertEqual(page_verdict(citation_readiness, "GO-145", page), FAIL)
+
+    def test_an_iri_typed_video_object_is_a_video_object(self):
+        for kind in ("https://schema.org/VideoObject", "schema:VideoObject"):
+            with self.subTest(kind=kind):
+                page = html('<iframe src="https://www.youtube.com/embed/abc"></iframe>',
+                            head=jsonld({**VIDEO, "@type": kind}))
+                self.assertEqual(page_verdict(video_schema_checker, "MD-190", page), PASS)
+
+
 # ---------------------------------------------------------------------------
 # The sets batch 5 wrote, held to their sources (GOV-3)
 # ---------------------------------------------------------------------------

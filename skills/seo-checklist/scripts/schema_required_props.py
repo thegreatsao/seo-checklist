@@ -13,6 +13,7 @@ from collections.abc import Iterable
 from datetime import datetime
 from typing import Any
 
+from lib.schema_types import schema_org_name
 from seo_common import (read_source, as_list, issue, load_html, parse_html, print_json_or_text,
                         read_as_file)
 
@@ -96,7 +97,9 @@ def missing_rich_result_props(type_name: str, node: dict, path: str) -> list[str
     # The ruled headline is the page's own article's: a top-level or `@graph` node, or
     # the page's `mainEntity`, not a cited work or a list's entry named by `name`
     # (review round 4).
-    own = bool(re.fullmatch(r"\$\[\d+\](?:\.@graph\[\d+\])?(?:\.mainEntity(?:\[\d+\])?)?", path))
+    # A block written as an array adds one index (`$[0][0]`, review round 5).
+    own = bool(re.fullmatch(r"\$\[\d+\](?:\[\d+\])?(?:\.@graph\[\d+\])?(?:\.mainEntity(?:\[\d+\])?)?",
+                            path))
     ruled = RULED_REQUIRED.get(type_name, ()) if own else ()
     for prop in RICH_RESULT_REQUIRED.get(type_name, ()) + ruled:
         if isinstance(prop, tuple):
@@ -277,7 +280,8 @@ def find_schema_nodes(documents: list[Any], schema_type: str | None = None) -> l
                 continue
             if not set(node) - REFERENCE_KEYS and node.get("@id") in defined:
                 continue
-            if schema_type and schema_type not in types:
+            # A type written as a schema.org IRI is that type (review round 5).
+            if schema_type and schema_type not in {schema_org_name(t) for t in types}:
                 continue
             rows.append({"path": path, "types": types, "node": node})
     return rows
