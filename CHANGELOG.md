@@ -45,7 +45,8 @@ judge an error page's body as CSS, and a sheet that cannot be read leaves a clea
 neither as parser-blocking; TECH-002 fails `font-display: block` and
 `auto` as it fails a missing value (a `local()`-only fallback face downloads nothing and is not read). `ga4_tag_checker.py` and `css_minify_check.py` no longer read an error page's body
 (GO-131, GO-132 and TE-174 NO_DATA on a page answering 4xx/5xx); `font_audit.py` no longer fetches a `<link>` with no
-href. Sentences for SE-116, TE-171, TE-179, TE-175, SP-110 (measures) and beside the fixes for SE-114, SE-120, GO-131,
+href. The good fixture's about page names its source in a `<cite>`, so the good pair passes GO-145 and GEO-005 (its
+privacy page N/A), a change for the owner to accept. Sentences for SE-116, TE-171, TE-179, TE-175, SP-110 (measures) and beside the fixes for SE-114, SE-120, GO-131,
 GO-132, TE-181, MB-100, TE-180, TE-174, SP-109, TECH-002, GO-145 and GEO-005.
 
 F15 batch 5 (`ecaf0dc17e56` → `e2d01d02779d`) — structured data and content, and the owner's ruling 2 on batch 4's

@@ -25,9 +25,9 @@
     ]
   },
   "fixture_digest": {
-    "good": "d3c2d3f72371",
+    "good": "1d3da940b7d3",
     "broken": "41915277914c",
-    "good_tls": "90a65a4c594f",
+    "good_tls": "3bff57140669",
     "broken_tls": "be8038ea85ee"
   },
   "triage": [
@@ -399,6 +399,42 @@
       "to": "90a65a4c594f",
       "decided": "new-material",
       "why": "tests/fixtures/good/index.html's WebSite node gains alternateName 'The Fixture Bakery', its Organization a sameAs to Wikidata's sandbox item (Q4115189), and privacy.html's ordering paragraph opens 'Bread orders taken by telephone'. Since F15 batch 5 (the owner's rulings on F03's GO-143, KW-076 and GEO-006) a WebSite node without alternateName is incomplete, a keyword only in a heading is not body copy, and an entity resolves by a Wikidata link or a lookup the offline run never makes, so GO-143, KW-076 and GEO-006 could not pass on the half of the pair that has to be able to. GEO-006's declaration moves with it (recorded beside)."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good",
+      "item": null,
+      "from": "d3c2d3f72371",
+      "to": "1d3da940b7d3",
+      "decided": "new-material",
+      "why": "tests/fixtures/good/about.html's 'How we test what we publish' section gains a paragraph naming its source in a <cite>. Since F15 batch 5 GO-145 and GEO-005 score a page whose content names no source 0, and since batch 6 (the owner's ruling 1 on batch 5's questions) privacy.html is N/A as a utility page, so about.html alone kept the half of the pair that has to be able to pass from passing either item. A change for the owner to accept, as batches 3 and 5's were. GO-145's and GEO-005's declarations move with it (recorded beside)."
+    },
+    {
+      "kind": "fixture",
+      "origin": "good_tls",
+      "item": null,
+      "from": "90a65a4c594f",
+      "to": "3bff57140669",
+      "decided": "new-material",
+      "why": "tests/fixtures/good/about.html's 'How we test what we publish' section gains a paragraph naming its source in a <cite>. Since F15 batch 5 GO-145 and GEO-005 score a page whose content names no source 0, and since batch 6 (the owner's ruling 1 on batch 5's questions) privacy.html is N/A as a utility page, so about.html alone kept the half of the pair that has to be able to pass from passing either item. A change for the owner to accept, as batches 3 and 5's were. GO-145's and GEO-005's declarations move with it (recorded beside)."
+    },
+    {
+      "kind": "expect",
+      "origin": "good",
+      "item": "GEO-005",
+      "from": "FAIL",
+      "to": "PASS",
+      "decided": "fixture-was-wrong",
+      "why": "F15 batch 6: /about.html now names a source in its content (a <cite>), so sourced_score is its score, 25 or more on its author and canonical; /privacy.html is N/A as a utility page and the entry page already cites: PASS."
+    },
+    {
+      "kind": "expect",
+      "origin": "good",
+      "item": "GO-145",
+      "from": "FAIL",
+      "to": "PASS",
+      "decided": "fixture-was-wrong",
+      "why": "F15 batch 6: /about.html now names a source in its content (a <cite>), so sourced_score is its score, 25 or more on its author and canonical; /privacy.html is N/A as a utility page and the entry page already cites: PASS."
     }
   ],
   "batches": [],
@@ -993,10 +1029,10 @@
         "why": "re-read for 0.87.0, which took the floor from 70 to 32 — one direct answer (20) plus one definition (12), out of the four signals answer_block_scanner scores. Declared against the sampled set: the entry page carries question-shaped headings with their answers under them, and /about.html and /privacy.html each carry definition paragraphs. At 70 the item asked every sampled page to be an FAQ; at 32 it asks for the one signal a snippet can be lifted from Re-read for F15 batch 5 (the owner's rulings): the rule is now answer_blocks, a direct answer or a definition on each sampled page: the entry page answers 'How long does a loaf keep?', /about.html answers 'How we test what we publish', /privacy.html answers 'What the server keeps'. Unchanged."
       },
       "GEO-005": {
-        "expect": "FAIL",
+        "expect": "PASS",
         "title": "Content is citation-ready for AI search",
         "basis": "b34a99bee680",
-        "why": "re-read for 0.87.0, which took the floor from 60 to 25 — author 15 plus canonical 10, the two components of the score any page type can carry. Declared against the sampled set: the entry page is built to be cited and reaches 60 on claim coverage, while /about.html and /privacy.html carry an author and a canonical and nothing a citation would rest on. Claim coverage, trusted links and sameAs are article and entity signals, and a floor above 25 asks a policy page for them Re-read for F15 batch 5 (the owner's rulings): sourced_score is the score on a page naming a source, and /about.html and /privacy.html name none — no cite, blockquote, footnote link, trusted-host link or schema citation — so the author and the canonical no longer carry them to 25: FAIL, as the ruling says (author plus canonical must not pass). Re-read for F15 batch 6 (the owner's ruling 1 on batch 5's questions): /privacy.html is a utility page by its path, so N/A there; /about.html, not a utility page, still names no source: FAIL."
+        "why": "re-read for 0.87.0, which took the floor from 60 to 25 — author 15 plus canonical 10, the two components of the score any page type can carry. Declared against the sampled set: the entry page is built to be cited and reaches 60 on claim coverage, while /about.html and /privacy.html carry an author and a canonical and nothing a citation would rest on. Claim coverage, trusted links and sameAs are article and entity signals, and a floor above 25 asks a policy page for them Re-read for F15 batch 5 (the owner's rulings): sourced_score is the score on a page naming a source, and /about.html and /privacy.html name none — no cite, blockquote, footnote link, trusted-host link or schema citation — so the author and the canonical no longer carry them to 25: FAIL, as the ruling says (author plus canonical must not pass). Re-read for F15 batch 6 (the owner's ruling 1 on batch 5's questions): /privacy.html is a utility page by its path, so N/A there; /about.html, not a utility page, still names no source: FAIL. Re-declared for F15 batch 6's fixture change: /about.html now cites its source in its content, so it reaches 25; /privacy.html is N/A: PASS."
       },
       "GEO-006": {
         "expect": "PASS",
@@ -1023,10 +1059,10 @@
         "why": "twin of GEO-004 through scores_with, same script and same floor, so it must land on the same verdict. Re-read for 0.87.0: the floor is 32, one direct answer plus one definition, and every sampled page of this origin carries at least that Re-read for F15 batch 5 (the owner's rulings): twin of GEO-004 through scores_with, now asserting answer_blocks; every sampled page carries one, so unchanged."
       },
       "GO-145": {
-        "expect": "FAIL",
+        "expect": "PASS",
         "title": "Optimize for AI Overviews & Zero-Click SERPs",
         "basis": "14ccb69cd37b",
-        "why": "twin of GEO-005 through scores_with, same script and same floor: re-read for 0.87.0 against a floor of 25, which every sampled page of this origin clears on its author and its canonical alone Re-read for F15 batch 5 (the owner's rulings): twin of GEO-005 through scores_with: /about.html and /privacy.html name no source, so sourced_score is 0 there: FAIL. Re-read for F15 batch 6 (the owner's ruling 1 on batch 5's questions): /privacy.html is a utility page by its path, so N/A there; /about.html still names no source: FAIL."
+        "why": "twin of GEO-005 through scores_with, same script and same floor: re-read for 0.87.0 against a floor of 25, which every sampled page of this origin clears on its author and its canonical alone Re-read for F15 batch 5 (the owner's rulings): twin of GEO-005 through scores_with: /about.html and /privacy.html name no source, so sourced_score is 0 there: FAIL. Re-read for F15 batch 6 (the owner's ruling 1 on batch 5's questions): /privacy.html is a utility page by its path, so N/A there; /about.html still names no source: FAIL. Re-declared for F15 batch 6's fixture change: /about.html now cites its source in its content, so it reaches 25; /privacy.html is N/A: PASS."
       },
       "IN-121": {
         "expect": "NO_DATA",

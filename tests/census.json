@@ -3080,8 +3080,8 @@
         "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
-        "fixture:good": "FAIL",
-        "fixture:good_tls": "FAIL",
+        "fixture:good": "PASS",
+        "fixture:good_tls": "PASS",
         "flagged": "FAIL",
         "indexed": "FAIL",
         "no-location": "FAIL",
@@ -3096,7 +3096,8 @@
       },
       "distinct": [
         "FAIL",
-        "NO_DATA"
+        "NO_DATA",
+        "PASS"
       ],
       "script": "citation_readiness.py",
       "severity": "high",
@@ -3653,8 +3654,8 @@
         "fast-field": "FAIL",
         "fixture:broken": "FAIL",
         "fixture:broken_tls": "FAIL",
-        "fixture:good": "FAIL",
-        "fixture:good_tls": "FAIL",
+        "fixture:good": "PASS",
+        "fixture:good_tls": "PASS",
         "flagged": "FAIL",
         "indexed": "FAIL",
         "no-location": "FAIL",
@@ -3669,7 +3670,8 @@
       },
       "distinct": [
         "FAIL",
-        "NO_DATA"
+        "NO_DATA",
+        "PASS"
       ],
       "script": "citation_readiness.py",
       "severity": "high",
