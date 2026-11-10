@@ -24,7 +24,7 @@ except ImportError:
 import argparse
 import json
 from collections import Counter, defaultdict
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, parse_qsl, urlparse
 
 try:
     from lib.safe_http import robots_allows
@@ -65,10 +65,17 @@ FREQUENT_PARAM_COUNT = 3
 MAX_URLS_FROM_PAGE = 300
 
 
-def _facet_params(url: str) -> list[str]:
-    """The filter, sort or facet parameters a URL carries."""
-    params = parse_qs(urlparse(url).query, keep_blank_values=True)
-    return sorted(k for k in params if k.lower() in FACET_KEYS or k.lower().startswith("filter"))
+def _facet_items(url: str) -> set:
+    """The filter, sort or facet parameters a URL carries, with their values."""
+    return {(k.lower(), v) for k, v in parse_qsl(urlparse(url).query, keep_blank_values=True)
+            if k.lower() in FACET_KEYS or k.lower().startswith("filter")}
+
+
+def _spelling(url: str) -> tuple:
+    """A URL less what only respells it: scheme, host case, trailing slash, query order."""
+    split = urlparse(comparable_url(url))
+    return ((split.hostname or ""), split.path.rstrip("/") or "/",
+            tuple(sorted(parse_qsl(split.query, keep_blank_values=True))))
 
 
 def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:
@@ -100,12 +107,15 @@ def audit(urls: list[str], fetch: bool = False, timeout: int = 15) -> dict:
                 row["meta_robots"] = html.get("meta_robots")
                 # A canonical naming the URL itself consolidates nothing: no control
                 # (AR-163, F15, the owner's ruling).
-                # A facet that redirects to a page carrying no facet parameter is
-                # folded away, a control of its own (F15 review round 3:
-                # `/old?color=red` -> `/shop` failed); one landing on another spelling
-                # of itself (`/shop/?color=red`, https) is not (review round 4).
+                # A URL that redirects away is folded into where it lands, a control
+                # of its own (F15 review round 3: `/old?color=red` -> `/shop` failed;
+                # round 5: `/list?page=2` -> `/clean` too). Landing on another spelling
+                # of itself (`/shop/?color=red`, https) or keeping its facet's
+                # parameters is not away (round 4).
                 landing = page.get("url") or url
-                row["redirected"] = bool(_facet_params(url)) and not _facet_params(landing)
+                row["redirected"] = (_spelling(landing) != _spelling(url)
+                                     and not (_facet_items(url)
+                                              and _facet_items(url) <= _facet_items(landing)))
                 row["canonical_elsewhere"] = bool(
                     html.get("canonical")
                     and comparable_url(html["canonical"])

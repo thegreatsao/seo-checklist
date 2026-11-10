@@ -741,13 +741,20 @@ class HreflangValidity(unittest.TestCase):
 
     def test_codes_outside_googles_format_are_invalid(self):
         """Review round 3: ISO 639-1 languages and ISO 3166-1 alpha-2 regions."""
-        for code in ("eng-US", "es-419", "jp-JP"):
+        # Review round 5: Google's format is ISO 639-1, a closed check; a three-letter
+        # code is outside it, a made-up one (`xyz`) and Filipino (`fil`) alike — the
+        # last put to the owner.
+        for code in ("eng-US", "es-419", "jp-JP", "jpn-JP", "xyz", "fil-PH", "yue"):
             with self.subTest(code=code):
                 self.assertFalse(hreflang_checker.validate_lang_code(code)["valid"])
-        # Review round 4: a language with no two-letter code is valid in its three.
-        for code in ("en-US", "es-MX", "pt-BR", "fil-PH", "yue"):
+        for code in ("en-US", "es-MX", "pt-BR", "zh-Hant-TW"):
             with self.subTest(code=code):
                 self.assertTrue(hreflang_checker.validate_lang_code(code)["valid"])
+
+    def test_one_bad_code_is_one_issue(self):
+        for code in ("jp-JP", "iw", "eng"):
+            with self.subTest(code=code):
+                self.assertEqual(len(hreflang_checker.validate_lang_code(code)["issues"]), 1)
 
     def test_a_set_with_no_alternate_does_not_pass(self):
         out = self.in_122({"/en": hreflang_page(("en", "{origin}/en"),
@@ -787,6 +794,14 @@ class FacetControls(unittest.TestCase):
             "/shop": (301, {"Location": "/shop/?color=red"}, ""),
             "/shop/": page_html(canonical="{origin}/shop/?color=red")})
         self.assertEqual(verdict("AR-163", out), FAIL)
+
+    def test_variants_redirecting_away_are_no_path_explosion(self):
+        """Review round 5: `/list?page=N` -> `/clean` is folded into `/clean`."""
+        links = "".join(f'<a href="/list?page={i}">p{i}</a>' for i in range(2, 8))
+        out = self.ar_163({"/": f"<html><body>{links}</body></html>",
+                           "/list": (301, {"Location": "/clean"}, ""),
+                           "/clean": page_html(canonical="{origin}/clean")})
+        self.assertEqual(out["path_explosions"], {})
 
     def test_variants_robots_txt_disallows_are_no_path_explosion(self):
         links = "".join(f'<a href="/shop?sort=p{i}">s{i}</a>' for i in range(6))

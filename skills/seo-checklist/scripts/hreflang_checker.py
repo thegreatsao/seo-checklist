@@ -287,6 +287,14 @@ def validate_lang_code(lang_tag: str) -> dict:
             f"Invalid primary language subtag '{parts[0] if parts else ''}'. "
             "Use a 2-3 letter BCP 47 language subtag."
         )
+    elif mistake:
+        pass                # named above; one issue per bad code
+    elif len(lang) == 3:
+        # Google's hreflang format is ISO 639-1 (F15 review rounds 3-5): a closed check,
+        # where reading three-letter codes as valid let `jpn-JP` and `xyz` pass.
+        issues.append(f"Language '{lang}' is a three-letter code; Google's hreflang format "
+                      "takes a two-letter ISO 639-1 code, and a language without one "
+                      "cannot be targeted this way.")
     elif len(lang) == 2 and lang not in VALID_LANG_CODES:
         correction = COMMON_LANG_MISTAKES.get(lang)
         issue = f"Unknown language code '{lang}'."
