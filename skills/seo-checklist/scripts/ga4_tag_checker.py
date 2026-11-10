@@ -38,8 +38,10 @@ except ImportError:
 
 try:
     from seo_common import fetch_error_kind
+    from third_party_script_audit import JAVASCRIPT_TYPES
 except ImportError:
     from scripts.seo_common import fetch_error_kind
+    from scripts.third_party_script_audit import JAVASCRIPT_TYPES
 
 GUARD_REFUSED = "blocked"
 
@@ -60,11 +62,27 @@ RE_GTM_SRC = re.compile(r"""((?:https?:)?//[^\s"'<>+]+?/gtm\.js|(?<=["'])/[^\s"'
                         re.I)
 GTM_DEFAULT = "https://www.googletagmanager.com/gtm.js"
 RE_MEASUREMENT_ID = re.compile(r"\bG-[A-Z0-9]{4,}\b")
+_SCRIPT_BLOCK = re.compile(r"<script\b([^>]*)>(.*?)</script\s*>", re.I | re.S)
+
+
+def strip_inert_scripts(html: str) -> str:
+    """The page without the `<script>` blocks a browser never runs as its own code: a
+    data block (a type outside JavaScript's) and Next.js's flight payload."""
+    def keep(match) -> str:
+        kind = re.search(r"""\btype\s*=\s*["']?([^"'\s>]+)""", match.group(1), re.I)
+        essence = kind.group(1).split(";", 1)[0].strip().lower() if kind else ""
+        inert = ((essence not in JAVASCRIPT_TYPES and essence != "module")
+                 or match.group(2).lstrip().startswith("self.__next_f.push("))
+        return "" if inert else match.group(0)
+    return _SCRIPT_BLOCK.sub(keep, html)
+
+
 # Shopify's Google & YouTube channel configures GA4 in its web pixel's JSON, served in
 # the page, and loads gtag at run time (review round 9): the array `google_tag_ids` names
 # the tags, escaped to any depth.
 RE_PIXEL_TAG_IDS = re.compile(r"google_tag_ids[\\\"':\s]*\[([^\]]{0,400})\]")
-RE_GOOGLE_TAG_ID = re.compile(r"\b(?:G|GT)-[A-Z0-9]{4,}\b")
+# Only its G- IDs: the channel's GT- tags measured on stores carry a Merchant Center
+# destination, not GA4 (review round 10).
 # The container tags that send a page view: the Google tag and the GA4 configuration
 # tag. A GA4 event tag (`__gaawe`) sending to the hardcoded ID beside a hardcoded config
 # is the ordinary correct setup, not a duplicate (review round 1 of F15 batch 6).
@@ -144,8 +162,10 @@ def check(url: str, timeout: int = 15) -> dict:
         result["fetch_error"] = f"the page answered HTTP {page.status_code}"
         return result
     # A commented-out snippet never runs (review round 2: an old tag kept in a comment
-    # beside GTM read as a duplicate).
-    html = re.sub(r"<!--.*?-->", "", page.text, flags=re.S)
+    # beside GTM read as a duplicate), nor does a data block or a framework's serialised
+    # copy of the page (review round 10: Next.js repeats the GTM snippet in
+    # `__NEXT_DATA__` and `self.__next_f.push(...)`; zapier.com, deel.com, zillow.com).
+    html = strip_inert_scripts(re.sub(r"<!--.*?-->", "", page.text, flags=re.S))
 
     config_ids = [m.upper() for m in RE_CONFIG.findall(html)]
     # A loader carrying `gtm=` was written by GTM itself, at run time, and saved into a
@@ -168,7 +188,7 @@ def check(url: str, timeout: int = 15) -> dict:
     loaded_containers = (sorted(set(RE_CONTAINER_ID.findall(html)))
                          if result["loaders"]["gtm_js"] else [])
     pixel_ids = {tag for ids in RE_PIXEL_TAG_IDS.findall(html)
-                 for tag in RE_GOOGLE_TAG_ID.findall(ids)}
+                 for tag in RE_MEASUREMENT_ID.findall(ids)}
     result["installed_by"] = sorted(set(result["measurement_ids"])
                                     | {m.upper() for m in RE_GOOGLE_TAG_SRC.findall(html)}
                                     | set(loaded_containers) | pixel_ids)

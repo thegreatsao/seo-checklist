@@ -951,6 +951,33 @@ class ReviewRound9(unittest.TestCase):
         self.assertEqual(full_verdict("GO-131", out), FAIL)
 
 
+class ReviewRound10(unittest.TestCase):
+    def test_a_merchant_center_google_tag_in_the_pixel_is_no_ga4(self):
+        pixel = ReviewRound9.PIXEL.replace("G-LKLMZ8CNB2", "GT-TQSS5284")
+        out = run_item(ga4_tag_checker, "GO-131", {"/": html("<p>x</p>", head=pixel)})
+        self.assertEqual(full_verdict("GO-131", out), FAIL)
+
+    def test_a_snippet_repeated_in_framework_data_is_loaded_once(self):
+        # The App Router's flight payload and the Pages Router's data block repeat the
+        # page's loader as text (zapier.com, deel.com, zillow.com).
+        flight = ("\\u003cscript\\u003e(function(){var j=document.createElement('script');"
+                  "j.src='https://www.googletagmanager.com/gtm.js?id=GTM-XYZ9';})()"
+                  "\\u003c/script\\u003e")
+        for copy in ('<script>self.__next_f.push([1,"' + flight.replace('"', '\\"') + '"])</script>',
+                     '<script id="__NEXT_DATA__" type="application/json">{"props":{"gtm":"'
+                     + flight.replace('"', '\\"') + '"}}</script>'):
+            with self.subTest(copy=copy[:40]):
+                out = run_item(ga4_tag_checker, "GO-132", {
+                    "/": html("<p>x</p>" + copy, head=GTM), "/gtm.js": "var x=1;"})
+                self.assertEqual(full_verdict("GO-132", out), PASS, out.get("duplicates"))
+
+    def test_platform_default_privacy_slugs(self):
+        for path in ("/privacy-policy-cookie-restriction-mode", "/cookie-policy-eu",
+                     "/cookie-policy-uk", "/privacy-statement-eu"):
+            with self.subTest(path=path):
+                self.assertEqual(ReviewRound2.both(self, path), NA)
+
+
 # ---------------------------------------------------------------------------
 # The sets the batch adds, held to their sources
 # ---------------------------------------------------------------------------
@@ -981,7 +1008,8 @@ class TheSetsAreHeld(unittest.TestCase):
                                            "conditions-of-use": "terms",
                                            "privacy-center": "privacy", "privacy-centre": "privacy",
                                            "online-privacy-policy": "privacy",
-                                           "general-terms": "terms"})
+                                           "general-terms": "terms",
+                                           "cookie-restriction-mode": "cookie"})
         self.assertLessEqual(set(UTILITY_PHRASES.values()), UTILITY_WORDS)
         self.assertEqual(UTILITY_WORDS & UTILITY_SLUG_WORDS, set())
         # Filler words name no kind of page: none is a subject an article is about.
@@ -989,7 +1017,7 @@ class TheSetsAreHeld(unittest.TestCase):
             "our", "the", "of", "and", "us", "use", "service", "conditions",
             "notice", "statement", "policy", "policies", "page", "info", "information",
             "form", "sale", "sales", "business", "website", "site", "me", "user", "data",
-            "notices", "declaration", "politika", "ispolzovaniya", "obrabotki", "polzovatelskoe", "naudojimo",
+            "notices", "declaration", "eu", "uk", "politika", "ispolzovaniya", "obrabotki", "polzovatelskoe", "naudojimo",
             "duomenu"})
         from security_headers import (CSP_ANY_SOURCE, CSP_INLINE_OVERRIDES,
                                       HARDENING_HEADERS, REFERRER_POLICIES)

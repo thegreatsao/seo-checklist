@@ -109,13 +109,16 @@ UTILITY_WORDS = frozenset({
 UTILITY_PHRASES = {"get-in-touch": "contact", "data-protection": "privacy",
                    "publichnaya-oferta": "terms", "conditions-of-use": "terms",
                    "privacy-center": "privacy", "privacy-centre": "privacy",
-                   "online-privacy-policy": "privacy", "general-terms": "terms"}
+                   "online-privacy-policy": "privacy", "general-terms": "terms",
+                   # Magento's default privacy page (review round 10).
+                   "cookie-restriction-mode": "cookie"}
 # The other words such slugs are written with: "our-privacy-policy",
 # "terms-and-conditions", "usloviya-ispolzovaniya", "polzovatelskoe-soglashenie".
 UTILITY_SLUG_WORDS = frozenset({
     "our", "the", "of", "and", "us", "use", "service", "conditions", "notice",
     "statement", "policy", "policies", "page", "info", "information", "form", "sale",
     "sales", "business", "website", "site", "me", "user", "data", "notices", "declaration",
+    "eu", "uk",
     "politika",
     "ispolzovaniya", "obrabotki",
     "polzovatelskoe", "naudojimo", "duomenu"})

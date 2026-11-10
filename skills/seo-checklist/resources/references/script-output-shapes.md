@@ -749,14 +749,14 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `gtm_containers[]` — array of str
 `ua_legacy[]` — array of str — retired `UA-` properties still on the page
 `installed_by[]` — array of str — GA4 IDs configured or loaded, Google tag (`G-`, `GT-`)
-  IDs a `gtag/js` loader names, GTM containers the page loads, and the `G-`/`GT-` IDs of
-  Shopify's Google channel pixel (`google_tag_ids`): GO-131's subject (F15 batch 6)
+  IDs a `gtag/js` loader names, GTM containers the page loads, and the `G-` IDs of
+  Shopify's Google channel pixel (`google_tag_ids`; its `GT-` tags are Merchant Center's): GO-131's subject (F15 batch 6)
 `duplicates[]` — array — the same ID configured or loaded more than once, a container
   whose script is loaded twice (a `gtm.js?id=` URL or GTM's snippet; a mention elsewhere is
   not a load), or a hardcoded ID that a GTM container beside it names in its
   Google tag or GA4 configuration tag, a Constant variable followed (`kind:
   gtm_and_hardcoded`, the container's script read; an event tag is not one). IDs are read
-  with HTML comments removed. **Absent** when such a
+  with HTML comments, data-block scripts and Next.js flight payloads removed. **Absent** when such a
   container could not be read and nothing else is duplicated, so GO-132 is NO_DATA
 `duplicates_unread` — str — why, when `duplicates` is absent
 `withheld` — object — `{"duplicates": "blocked"}` when the guard refused the container
