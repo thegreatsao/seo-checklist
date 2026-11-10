@@ -12,10 +12,10 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `fa658a9072e2` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+Registry version: `259710d51e70` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4).
 
-F15 batch 5 (`ecaf0dc17e56` → `fa658a9072e2`) — structured data and content, and the owner's ruling 2 on batch 4's
+F15 batch 5 (`ecaf0dc17e56` → `259710d51e70`) — structured data and content, and the owner's ruling 2 on batch 4's
 questions. **The inventory is version 6**: `schema_nodes` carries Microdata and RDFa items (`format: markup`), so LO-198
 finds a LocalBusiness written in either, and a schema.org IRI `@type` counts. **Verdicts of a real audit can move**:
 MS-032 applies to a page whose only JSON-LD does not parse and fails any page with an unparseable block (the warn band
@@ -59,9 +59,11 @@ ruled headline is the page's own article's (top level, `@graph`, `mainEntity`, o
 work's; a schema.org IRI `@type` matches every schema reader's type filter. CN-056's publication is the earliest
 `<time>` shown (the earliest written date on a page with none) and the update a later shown date, so a date in the story
 is no update. GO-145 and GEO-005 count an outbound link in the content beside a claim it sources, or after "Source",
-as a source, and one under a Sources, References or Further reading heading; a social link elsewhere still is not one.
-A date written after "Published", "Posted" or "Effective" stands for the publication beside an update `<time>`; a video
-widget in the page's furniture is not the page's video (MD-190); the schema tables read a type written as an IRI.
+as a source, and one under a content heading that is exactly Sources, References, Further reading, Bibliography,
+Citations or Works cited; a social link elsewhere still is not one. A date written right after "Published", "Posted" or
+"Effective" at the start of a block of the page's content stands for the publication beside an update `<time>`; a video
+in a sidebar or site-footer widget is not the page's video (MD-190), one in the page's header is; the schema tables read
+a type written as an IRI.
 
 F15 batch 4 (`445b7ca058d2` → `ecaf0dc17e56`) — robots, sitemaps, redirects and URLs, and the owner's rulings on
 batch 3's questions. **Verdicts of a real audit can move**: a canonical naming another host no longer fails CI-009 or

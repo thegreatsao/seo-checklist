@@ -16,6 +16,7 @@ from seo_common import (
     declared_publication_dates_by_source,
     load_source,
     page_nodes,
+    in_page_furniture,
     parse_html,
     shown_away,
     under_foreign_credit,
@@ -89,19 +90,27 @@ def _month(word: str) -> int | None:
 
 # The words that say a written date is the publication (review round 6): a labelled one
 # stands for the publication beside an update `<time>`.
+# A block that opens with the label, the date right after it: "Published May 1, 2024",
+# "Effective Date: January 1", "Posted On: …". Only at the start of a block of the page's
+# own content (review round 7): "The report, published March 3" is another document's
+# date, and a related post's "Posted March 2" follows that post's title.
 PUBLISHED_LABEL = re.compile(
-    r"(?:published|posted|effective|written|veröffentlicht|publié|publicado|опубликовано)"
-    # The connector in lower case: "Published  On March 3" is a label, a skipped `<time>`
-    # and the story's next sentence.
-    r"\W{0,3}(?-i:on|le|am|el|date)?\W{0,3}$", re.I)
+    r"\s*(?:published|posted|effective|veröffentlicht|publié|publicado|опубликовано)"
+    r"(?:\s+(?:date|on|le|am|el))?\s*:?\s*", re.I)
+LABELLED_BLOCKS = ("p", "div", "li", "dd", "dt", "td", "small", "span")
 
 
-def labelled_publications(text: str, cutoff: date) -> list[date]:
-    """The dates in `text` written right after a publication label."""
+def labelled_publications(soup, cutoff: date, skip) -> list[date]:
+    """The dates written right after a publication label opening a block of the page's
+    own content."""
     found = []
-    for m in SHOWN_DATE_RE.finditer(text):
-        if PUBLISHED_LABEL.search(text[max(0, m.start() - 40):m.start()]):
-            found += shown_dates_in(m.group(0), cutoff)
+    for block in soup.find_all(LABELLED_BLOCKS):
+        if skip(block):
+            continue
+        text = block.get_text(" ", strip=True)
+        label = PUBLISHED_LABEL.match(text)
+        if label and label.end() and SHOWN_DATE_RE.match(text, label.end()):
+            found += shown_dates_in(text[label.end():label.end() + 40], cutoff)[:1]
     return found
 
 
@@ -245,7 +254,10 @@ def check_freshness(source: str, timeout: int = 15, today: date | None = None) -
         soup, skip=lambda tag: tag.name == "time" or tag.find_parent("time") is not None
         or under_foreign_credit(tag, claimed=claimed))
     shown_text = shown_dates_in(shown_page, cutoff)
-    labelled = labelled_publications(shown_page, cutoff)
+    labelled = labelled_publications(
+        soup, cutoff, lambda block: in_page_furniture(block) or shown_away(block)
+        or any(shown_away(p) for p in block.parents)
+        or under_foreign_credit(block, claimed=claimed))
     # The publication shown is the earliest `<time>`, or with none the earliest date in
     # the text; the update is a shown date later than it. Taken from every shown date,
     # a date in the story ("On March 3 the council voted") made the real publication

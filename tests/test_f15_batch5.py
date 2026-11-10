@@ -874,6 +874,51 @@ class ReviewRound6(unittest.TestCase):
                 self.assertEqual(page_verdict(rich_results_guard, "TE-172", page), FAIL)
 
 
+class ReviewRound7(unittest.TestCase):
+    def test_a_hero_video_in_the_page_header_is_the_pages(self):
+        for hero in ("<header class='hero'><h1>Acme demo</h1>"
+                     "<iframe src='https://www.youtube.com/embed/abc'></iframe></header>",
+                     "<main><div role='banner' class='hero'>"
+                     "<iframe src='https://player.vimeo.com/video/1'></iframe></div></main>"):
+            with self.subTest(hero=hero[:20]):
+                page = html(hero + "<main><p>Text.</p></main>")
+                self.assertEqual(page_verdict(video_schema_checker, "MD-190", page), FAIL)
+
+    def test_a_labelled_date_from_another_document_is_no_publication(self):
+        time = "<p><time datetime='2024-05-01'>May 1, 2024</time></p>"
+        for other in ("<p>The report, published March 3, 2024, said rye was back.</p>",
+                      "<ul><li><a href='/rye'>Rye</a> Posted March 2, 2024</li></ul>",
+                      "SIDEBAR"):
+            with self.subTest(other=other[:25]):
+                body = f"<main><article>{time}{other}</article></main>"
+                if other == "SIDEBAR":    # a page-level sidebar's post list
+                    body = (f"<main><article>{time}</article></main>"
+                            f"<aside><p>Posted April 2, 2024</p></aside>")
+                self.assertEqual(VisibleDates.cn_056(self, body), WARN)
+
+    def test_a_title_case_label_is_a_label(self):
+        for label in ("Effective Date:", "Published Date:", "Posted On:"):
+            with self.subTest(label=label):
+                body = (f"<p>{label} January 1, 2024.</p><p>Last updated: "
+                        f"<time datetime='2025-03-03'>March 3, 2025</time></p>")
+                self.assertEqual(VisibleDates.cn_056(self, body), PASS)
+
+    def test_a_topic_heading_is_no_sources_list(self):
+        for heading, href in (("Sources of protein", "https://shop.test/whey"),
+                              ("Notes", "https://www.amazon.com/dp/x")):
+            with self.subTest(heading=heading):
+                body = (f"<main><article><p class='byline'>By Jane Doe</p><p>Rye is back.</p>"
+                        f"<h2>{heading}</h2><ul><li><a href='{href}'>Buy it here</a></li></ul>"
+                        f"</article></main>")
+                page = html(body, head='<link rel="canonical" href="/">')
+                self.assertEqual(page_verdict(citation_readiness, "GO-145", page), FAIL)
+        body = ("<header><h2>Sources</h2></header><main><article><p class='byline'>By Jane Doe</p>"
+                "<p>Rye is back.</p><ul><li><a href='https://shop.test/x'>Buy</a></li></ul>"
+                "</article></main>")
+        page = html(body, head='<link rel="canonical" href="/">')
+        self.assertEqual(page_verdict(citation_readiness, "GO-145", page), FAIL)
+
+
 # ---------------------------------------------------------------------------
 # The sets batch 5 wrote, held to their sources (GOV-3)
 # ---------------------------------------------------------------------------
@@ -881,7 +926,9 @@ class ReviewRound6(unittest.TestCase):
 class TheSetsAreHeld(unittest.TestCase):
     def test_each_set_is_what_its_source_says(self):
         from answer_block_scanner import DEFINITION_TERM_PREPOSITIONS, SIGNAL_POINTS
-        from freshness_checker import MONTH_NAMES
+        from freshness_checker import LABELLED_BLOCKS, MONTH_NAMES
+        # The elements a byline or a policy's date line is written in.
+        self.assertEqual(set(LABELLED_BLOCKS), {"p", "div", "li", "dd", "dt", "td", "small", "span"})
         from article_seo import BODY_COPY_EXCLUDED
         from schema_required_props import (DATE_PROPS, REFERENCE_KEYS, RULED_REQUIRED,
                                            TEXT_PROPS, URL_PROPS)

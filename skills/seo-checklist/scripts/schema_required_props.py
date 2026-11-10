@@ -277,7 +277,8 @@ def find_schema_nodes(documents: list[Any], schema_type: str | None = None) -> l
         for path, node in iter_schema_nodes(doc, f"$[{doc_index}]"):
             # Each type by its schema.org name, so the tables read an IRI spelling too
             # (review round 6).
-            types = [schema_org_name(t) for t in schema_type_names(node.get("@type"))]
+            types = list(dict.fromkeys(schema_org_name(t)
+                                       for t in schema_type_names(node.get("@type"))))
             if not types:
                 continue
             if not set(node) - REFERENCE_KEYS and node.get("@id") in defined:

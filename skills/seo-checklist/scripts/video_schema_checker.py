@@ -15,8 +15,7 @@ from bs4 import BeautifulSoup
 from lib.schema_types import markup_types, schema_org_name
 from schema_required_props import (extract_schema_documents, find_schema_nodes,
                                    missing_rich_result_props)
-from seo_common import (read_source, as_list, html_parser, in_page_furniture, issue,
-                        print_json_or_text)
+from seo_common import read_source, as_list, html_parser, issue, print_json_or_text
 
 
 ISO_DURATION_RE = re.compile(r"^P(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)$")
@@ -31,6 +30,20 @@ PLAYER_HOSTS = ("youtube.com", "youtube-nocookie.com", "player.vimeo.com",
 # a video embed takes.
 PLAYER_PATHS = {"youtube.com": "/embed/", "youtube-nocookie.com": "/embed/",
                 "dailymotion.com": "/embed/"}
+
+
+def _widget(tag) -> bool:
+    """A sidebar or site-footer widget: a page-level `<aside>` or `<footer>`, or their
+    roles. A hero in the page's header or a banner is the page's own video (review
+    round 7), so this is narrower than `in_page_furniture`."""
+    for parent in tag.parents:
+        if not getattr(parent, "name", None) or parent.name == "[document]":
+            continue
+        role = (parent.get("role") or "").strip().lower()
+        if (parent.name in ("aside", "footer") or role in ("complementary", "contentinfo")) \
+                and parent.find_parent(["article", "main", "section"]) is None:
+            return True
+    return False
 
 
 def page_videos(html: str, base_url: str = "") -> list[str]:
@@ -53,7 +66,7 @@ def page_videos(html: str, base_url: str = "") -> list[str]:
                            or (video.has_attr("muted") and video.has_attr("loop"))))
         # A widget in the page's furniture (a sidebar, a site footer) is not the page's
         # video (review round 6), as GO-144's and GO-145's readers leave furniture out.
-        if source and not background and not in_page_furniture(video):
+        if source and not background and not _widget(video):
             found.append(urljoin(base_url, source))
     for frame in soup.find_all(["iframe", "embed"]):
         # A lazy or consent-gated player keeps its URL in `data-src` / `data-lazy-src`
@@ -65,7 +78,7 @@ def page_videos(html: str, base_url: str = "") -> list[str]:
         host = (parsed.hostname or "").lower()
         player = next((p for p in PLAYER_HOSTS if host == p or host.endswith("." + p)), None)
         if (player and parsed.path.startswith(PLAYER_PATHS.get(player, "/"))
-                and not in_page_furniture(frame)):
+                and not _widget(frame)):
             found.append(src)
     return found
 
