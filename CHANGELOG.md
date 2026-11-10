@@ -53,7 +53,9 @@ reads an article's own `<header>` as copy. A question, a definition or a source 
 `<aside>`, a page-level header or footer) is not the page's: a footer's "Have a question?" or a regulator's footer link
 passes nothing (GO-144, GEO-004, GO-145, GEO-005); a `<time>`'s text is read once; query-routed product links
 (`route=product/product`, `product_id`) count for AR-154; a bare `@type`/`@id` reference to a node defined in full is
-that node; GEO-006 is withheld (`unnamed`) on a page that declares no entity name.
+that node; GEO-006 is withheld (`unnamed`) on a page that declares no entity name. An article's own `<aside>` (a
+sources box) is content; KW-076 no longer takes a `mainmenu` or `header-content` element for the page's content; TE-172's
+ruled headline is the page's own article's (top level, `@graph` or `mainEntity`), not a cited work's.
 
 F15 batch 4 (`445b7ca058d2` → `ecaf0dc17e56`) — robots, sitemaps, redirects and URLs, and the owner's rulings on
 batch 3's questions. **Verdicts of a real audit can move**: a canonical naming another host no longer fails CI-009 or

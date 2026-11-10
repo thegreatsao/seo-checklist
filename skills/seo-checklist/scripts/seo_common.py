@@ -521,11 +521,22 @@ _SECTIONING_ROLES = ("main", "article", "region", "navigation", "complementary")
 
 
 def in_page_furniture(tag) -> bool:
-    """Whether `tag` sits in the page's furniture — a `<nav>`, an `<aside>`, a page-level
-    `<header>` or `<footer>`, or their ARIA roles — rather than in its content. The
-    reading `image_carries_meaning` uses, shared since F15 batch 5's review (GO-144,
-    GEO-004, GO-145, GEO-005 read the page's own content)."""
-    return _in_furniture(tag)
+    """Whether `tag` sits in the page's furniture — a `<nav>`, a page-level `<aside>`,
+    `<header>` or `<footer>`, or their ARIA roles — rather than in its content (F15 batch
+    5's review: GO-144, GEO-004, GO-145, GEO-005 read the page's own content). An
+    `<aside>` inside an `<article>`, `<main>` or `<section>` is that content's own (a
+    sources box), as its header and footer are; `image_carries_meaning` keeps its own
+    reading, every aside furniture."""
+    for parent in tag.parents:
+        if not getattr(parent, "name", None) or parent.name == "[document]":
+            continue
+        role = (parent.get("role") or "").strip().lower()
+        if parent.name == "nav" or role in ("navigation", "banner", "contentinfo"):
+            return True
+        if (parent.name in ("aside", "header", "footer") or role == "complementary") and \
+                parent.find_parent(["article", "main", "section"]) is None:
+            return True
+    return False
 
 
 def _in_furniture(img) -> bool:

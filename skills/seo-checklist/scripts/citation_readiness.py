@@ -14,6 +14,7 @@ from seo_common import (
     CONTRIBUTION_KEYS,
     in_page_furniture,
     load_source,
+    normalize_url,
     page_author_names,
     page_nodes,
     parse_html,
@@ -169,7 +170,15 @@ def check_citation_readiness(source: str, timeout: int = 15) -> dict:
     # A source in the page's furniture — a regulator's link in every footer, a nav link
     # to /references, a testimonial in an aside — cites nothing on this page (F15 batch
     # 5's review): what counts as a source is read from the content only.
-    content_hrefs = {tag.get("href", "").strip() for tag in soup.find_all("a", href=True)
+    # Compared as `parse_html` spells a link (`normalize_url` against the page), or a
+    # host-only href, a fragment or a relative one never matched its row (review round 4).
+    def spelled(href: str) -> str:
+        href = href.strip()
+        try:
+            return normalize_url(href, url) if url else href
+        except ValueError:
+            return href
+    content_hrefs = {spelled(tag.get("href", "")) for tag in soup.find_all("a", href=True)
                      if not in_page_furniture(tag)}
     cite_tags = [tag.get_text(" ", strip=True)
                  for tag in soup.find_all(["cite", "blockquote"])

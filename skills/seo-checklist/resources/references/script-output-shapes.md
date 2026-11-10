@@ -186,7 +186,8 @@ Reads `--inventory` (see `site_crawl.py`); crawls one for itself without it.
 `url` — str
 `score` — int
 `answer_blocks` — int — direct answers (after a heading, `<summary>`, `<dt>` or FAQ-question
-  element asking something) plus definitions: what GO-144 and GEO-004 assert (F15 batch 5).
+  element asking something) plus definitions, neither in the page's furniture (a `<nav>`, a
+  page-level `<aside>`, `<header>` or `<footer>`): what GO-144 and GEO-004 assert (F15 batch 5).
   A definition opens its paragraph with its term; lists inside `<nav>`, `role=navigation`,
   `<header>` or `<footer>`, and lists of links only, are not counted in `lists`
 `questions[]` — array
@@ -340,7 +341,8 @@ that could not be checked when there are any.
 `sourced_score` — int — `score` on a page naming at least one source, 0 on one naming none:
   what GO-145 and GEO-005 assert (F15 batch 5)
 `citation_capacity` — int — trusted links, cite/blockquote tags, footnote links and schema
-  citations, counted together
+  citations, counted together, each outside the page's furniture (a `<nav>`, a page-level
+  `<aside>`, `<header>` or `<footer>`); `citation_signals` still counts every one of them
 `factual_claims` — int
 `claim_samples[]` — array
 `citation_signals.external_links` — int

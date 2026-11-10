@@ -765,6 +765,44 @@ class ReviewRound3(unittest.TestCase):
         self.assertEqual(verdict, NO_DATA)
 
 
+class ReviewRound4(unittest.TestCase):
+    CLAIM = "<p class='byline'>By Jane Doe</p><p>A 2023 survey found that 40% of bakers use rye.</p>"
+
+    def go_145(self, body: str) -> str:
+        return page_verdict(citation_readiness, "GO-145",
+                            html(body, head='<link rel="canonical" href="/">'))
+
+    def test_a_source_however_its_href_is_spelled_is_a_source(self):
+        for href in ("https://www.cdc.gov", "https://www.cdc.gov/flu/vaccines/#effect", "/sources/"):
+            with self.subTest(href=href):
+                self.assertEqual(self.go_145(f"<main>{self.CLAIM}<a href='{href}'>Source</a></main>"),
+                                 PASS)
+
+    def test_an_articles_own_aside_is_its_content(self):
+        body = (f"<main><article>{self.CLAIM}<aside class='sources'>"
+                f"<a href='https://www.cdc.gov/flu/vaccines'>CDC</a></aside></article></main>")
+        self.assertEqual(self.go_145(body), PASS)
+
+    def test_a_menu_named_main_is_no_body_copy(self):
+        for menu in ('<div id="mainmenu">', '<div class="header-content">'):
+            with self.subTest(menu=menu):
+                body = (f"{menu}<ul><li><a href='/r'>Rye bread</a></li></ul></div>"
+                        "<div id='content'><h1>Rye bread</h1><p>We bake daily.</p></div>")
+                self.assertEqual(BodyCopy.kw_076(self, body), FAIL)
+
+    def test_a_cited_or_listed_article_needs_no_headline(self):
+        for node in ({"@type": "BlogPosting", "headline": "Rye", "citation": [
+                         {"@type": "Article", "name": "A study", "url": "https://a.test/s"}]},
+                     {"@type": "ItemList", "itemListElement": [
+                         {"@type": "ListItem", "position": 1, "item": {
+                             "@type": "BlogPosting", "name": "Rye", "url": "https://a.test/r"}}]}):
+            with self.subTest(node=node["@type"]):
+                self.assertEqual(page_verdict(rich_results_guard, "TE-172", html(head=jsonld(node))),
+                                 PASS)
+        page = html(head=jsonld({"@type": "WebPage", "mainEntity": {"@type": "Article"}}))
+        self.assertEqual(page_verdict(rich_results_guard, "TE-172", page), FAIL)
+
+
 # ---------------------------------------------------------------------------
 # The sets batch 5 wrote, held to their sources (GOV-3)
 # ---------------------------------------------------------------------------

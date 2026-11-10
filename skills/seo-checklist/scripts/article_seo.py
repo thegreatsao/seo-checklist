@@ -206,6 +206,21 @@ BODY_COPY_EXCLUDED = frozenset({"h1", "h2", "h3", "h4", "h5", "h6", "nav", "head
                                 "footer", "aside", "title"})
 
 
+# An element whose id or class names it as content only in passing — `mainmenu`,
+# `main-nav`, `header-content` — is furniture, and its menu text is no body copy
+# (F15 batch 5's review: `body_copy` reads list items, so a menu picked as the container
+# passed KW-076 on its links).
+FURNITURE_NAME = re.compile(r"menu|nav|header|footer|sidebar|breadcrumb", re.I)
+
+
+def _names_content(tag, attr: str, pattern: str) -> bool:
+    if tag.name in ("nav", "header", "footer", "aside"):
+        return False
+    value = tag.get(attr)
+    value = " ".join(value) if isinstance(value, list) else str(value or "")
+    return bool(value and re.search(pattern, value, re.I) and not FURNITURE_NAME.search(value))
+
+
 def _sectioning_furniture(tag) -> bool:
     """A `<header>` or `<footer>` inside an `<article>`, `<main>` or `<section>` belongs
     to that content (an intro, a byline), not to the page's furniture (review round 2)."""
@@ -301,8 +316,8 @@ def extract_content(parsed: dict, cms: str) -> dict:
         containers = [
             soup.find("main")
             or soup.find("article")
-            or soup.find(attrs={"id": re.compile(r"content|main|article", re.I)})
-            or soup.find(attrs={"class": re.compile(r"content|article|post|entry", re.I)})
+            or soup.find(lambda tag: _names_content(tag, "id", r"content|main|article"))
+            or soup.find(lambda tag: _names_content(tag, "class", r"content|article|post|entry"))
             or soup
         ]
 

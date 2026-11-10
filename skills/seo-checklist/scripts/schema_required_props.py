@@ -93,7 +93,12 @@ def missing_rich_result_props(type_name: str, node: dict, path: str) -> list[str
     """What a node lacks of `RICH_RESULT_REQUIRED` and `RULED_REQUIRED`, each as it is
     printed; a property whose value is not of its kind is missing."""
     missing = []
-    for prop in RICH_RESULT_REQUIRED.get(type_name, ()) + RULED_REQUIRED.get(type_name, ()):
+    # The ruled headline is the page's own article's: a top-level or `@graph` node, or
+    # the page's `mainEntity`, not a cited work or a list's entry named by `name`
+    # (review round 4).
+    own = bool(re.fullmatch(r"\$\[\d+\](?:\.@graph\[\d+\])?(?:\.mainEntity(?:\[\d+\])?)?", path))
+    ruled = RULED_REQUIRED.get(type_name, ()) if own else ()
+    for prop in RICH_RESULT_REQUIRED.get(type_name, ()) + ruled:
         if isinstance(prop, tuple):
             if not any(value_ok(node, p) for p in prop):
                 missing.append(" or ".join(prop))
