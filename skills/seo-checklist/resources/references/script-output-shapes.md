@@ -342,8 +342,9 @@ that could not be checked when there are any.
 `score` — int
 `sourced_score` — int — `score` on a page naming at least one source, 0 on one naming none:
   what GO-145 and GEO-005 assert (F15 batch 5)
-`utility_page` — bool — the page's last path segment holds a privacy, contact or terms
-  stem (`eeat-terms.json`'s `privacy` and `contact` hrefs, `TERMS_STEMS`): GO-145's and
+`utility_page` — bool — every word of the page's slug begins with a privacy, contact or
+  terms stem (`eeat-terms.json`'s `privacy` and `contact` hrefs, `TERMS_STEMS`) or is one
+  of `UTILITY_SLUG_WORDS`, and one is a stem's own word: GO-145's and
   GEO-005's `applies_when`, N/A when true (F15 batch 6, the owner's ruling 1 on batch 5)
 `citation_capacity` — int — trusted links, cite/blockquote tags, footnote links, schema
   citations, and outbound links in a block that makes a claim or says "Source", or under a
@@ -749,8 +750,9 @@ title, including noindex pages. Unlike title duplication, absence is not competi
   IDs a `gtag/js` loader names, and GTM containers the page loads: GO-131's subject (F15
   batch 6)
 `duplicates[]` — array — the same ID configured or loaded more than once, a container
-  loaded more than twice, or a hardcoded ID a GTM container beside it also fires
-  (`kind: gtm_and_hardcoded`, the container's script read). **Absent** when such a
+  loaded more than twice, or a hardcoded ID that a GTM container beside it names in its
+  Google tag or GA4 configuration tag (`kind: gtm_and_hardcoded`, the container's script
+  read; an event tag is not one). **Absent** when such a
   container could not be read and nothing else is duplicated, so GO-132 is NO_DATA
 `duplicates_unread` — str — why, when `duplicates` is absent
 `withheld` — object — `{"duplicates": "blocked"}` when the guard refused the container

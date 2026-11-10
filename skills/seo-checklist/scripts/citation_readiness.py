@@ -74,37 +74,55 @@ def _declares_a_source(link) -> bool:
 # Utility pages (the owner's ruling 1 on F15 batch 5's questions): a privacy, terms or
 # contact page makes no claim a source could back, so GO-145 and GEO-005 are N/A there;
 # an about page makes claims about the business and is not one. Classified by the page's
-# own URL path with the vocabulary the plugin already holds for such links
+# own URL slug with the vocabulary the plugin already holds for such links
 # (`eeat-terms.json`'s `privacy` and `contact` href stems, every language), plus the
 # terms-of-service stems among its `trust` hrefs, named here because `trust` also holds
-# /about and /team. The page's last path segment, its extension dropped, contains a stem,
-# as `eeat_signal_checker` reads a link's href (`/taisykl` for taisyklės,
-# `politika-konfidencialnosti`): `/privacy-policy`, `/legal/terms.html` and `/kontakty`
-# are utility pages, `/privacy/why-we-bake` is not. Known limits: an article whose slug
-# holds a stem (`/contact-lenses-guide`, `/glossary-of-terms`) is read as one, and a page
+# /about and /team.
+#
+# The slug is the last path segment, its extension dropped, split into words at `-` and
+# `_`. It names a utility page when every word begins with a stem's word or is one of
+# the few words such slugs are written with (`UTILITY_SLUG_WORDS`), and one word begins
+# with a stem's own word, not only `policy`: `/privacy-policy`, `/terms-of-service`,
+# `/contact-us`, `/politika-konfidencialnosti` and `/kontakty` are utility pages;
+# `/privacy-tips-for-parents`, `/gdpr-compliance-checklist` and `/contact-lenses-guide`
+# are articles (review round 1: a substring match took them for policy pages). A page
 # reached only by a query (`?page_id=3`) is not classified.
 UTILITY_CONCEPTS = ("privacy", "contact")
 TERMS_STEMS = ("/terms", "/taisykl", "/salygos", "/usloviya", "/pravila")
+# Words a stem's own words share with any policy page, so none makes one alone.
+GENERIC_STEM_WORDS = frozenset({"policy", "politika"})
+# The other words a privacy, terms or contact slug is written with (English, Russian and
+# Lithuanian, the vocabulary's languages): "our-privacy-policy", "terms-and-conditions",
+# "usloviya-ispolzovaniya", "naudojimo-salygos".
+UTILITY_SLUG_WORDS = frozenset({
+    "our", "the", "of", "and", "us", "use", "service", "services", "conditions", "notice",
+    "statement", "policy", "policies", "page", "info", "information", "form",
+    "ispolzovaniya", "obrabotki", "naudojimo"})
 
 
-def _utility_stems() -> tuple[str, ...]:
+def _utility_stem_words() -> tuple[str, ...]:
     stems = set(TERMS_STEMS)
     for concepts in eeat_signal_checker._TERMS["languages"].values():
         for concept in UTILITY_CONCEPTS:
             stems.update(concepts.get(concept, {}).get("href", []))
-    return tuple(sorted(stem.strip("/").lower() for stem in stems))
+    return tuple(sorted({word for stem in stems
+                         for word in re.split(r"[-_]+", stem.strip("/").lower()) if word}))
 
 
-UTILITY_STEMS = _utility_stems()
+UTILITY_STEM_WORDS = _utility_stem_words()
 
 
 def utility_page(url: str) -> bool:
-    """Whether the page at `url` is a privacy, terms or contact page, by its path."""
+    """Whether the page at `url` is a privacy, terms or contact page, by its slug."""
     segments = [s for s in unquote(urlparse(url or "").path).lower().split("/") if s]
     if not segments:
         return False
-    last = re.sub(r"\.(?:html?|php|aspx?|jsp)$", "", segments[-1])
-    return any(stem in last for stem in UTILITY_STEMS)
+    slug = re.sub(r"\.(?:html?|php|aspx?|jsp)$", "", segments[-1])
+    words = [w for w in re.split(r"[-_]+", slug) if w]
+    named = [w for w in words if w.startswith(UTILITY_STEM_WORDS)]
+    return (bool(words)
+            and all(w in UTILITY_SLUG_WORDS or w.startswith(UTILITY_STEM_WORDS) for w in words)
+            and any(not w.startswith(tuple(GENERIC_STEM_WORDS)) for w in named))
 
 
 HIGH_TRUST_HOST_RE = re.compile(

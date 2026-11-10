@@ -21,7 +21,8 @@ except ImportError:
 # basis: measured — corpus=tools/calibration/mobile-viewport.json (StatCounter worldwide mobile screen resolutions, 2025-09..2026-09, CSS pixels); date=2026-10-20; method=the narrowest viewport width the list holds, 360, a quarter of its share, since a fixed width above it overflows every phone that wide. It was 390 (F11), so a 361-390px column passed MB-100 while overflowing on 25.7% (at 361px) to 48.9% (at 390px) of the listed share, which StatCounter counts in page views, not phones. The list folds a third of its share into "Other", and the rule was chosen after the earlier value was checked against it.
 MAX_FIXED_WIDTH_PX = 360
 
-RE_MEDIA = re.compile(r"@media\b([^{;]*)\{", re.I)
+# A container query too: a container at least 700px wide cannot sit on a 360px screen.
+RE_MEDIA = re.compile(r"@(?:media|container)\b([^{;]*)\{", re.I)
 # A lower bound on the viewport width: `min-width: 768px`, `48em`, or `width >= 768px`.
 RE_MIN_WIDTH = re.compile(
     r"min-width\s*:\s*([\d.]+)\s*(px|r?em)\b|\bwidth\s*>=?\s*([\d.]+)\s*(px|r?em)\b"
@@ -30,10 +31,13 @@ RE_MIN_WIDTH = re.compile(
 
 def _wide_only(prelude: str) -> bool:
     """Whether a media query's every alternative needs a viewport wider than
-    MAX_FIXED_WIDTH_PX, so nothing inside it applies on the narrowest phone."""
+    MAX_FIXED_WIDTH_PX, or is for print or speech, so nothing inside it applies on the
+    narrowest phone (review round 1: `@media print` widths failed MB-100)."""
     def floor(alternative: str) -> float:
         if re.search(r"\bnot\b", alternative, re.I):
             return 0.0
+        if re.match(r"\s*(?:only\s+)?(?:print|speech)\b", alternative, re.I):
+            return float("inf")
         floors = [0.0]
         for match in RE_MIN_WIDTH.finditer(alternative):
             value, unit = [part for part in match.groups() if part]

@@ -22,11 +22,18 @@ VALUE_NAMED_INPUT_TYPES = frozenset({"submit", "reset", "button"})
 
 
 def _text(tag) -> str:
-    """A label's own text: what it says, not what the controls inside it hold."""
-    return " ".join(
-        str(piece) for piece in tag.find_all(string=True)
-        if not piece.find_parent(["select", "textarea", "option", "script", "style"])
-    ).strip()
+    """A label's own text: what it says, not what the controls inside it hold, with an
+    image's `alt` read as its text (review round 1: an icon label named nothing)."""
+    if (tag.get("aria-label") or "").strip():
+        return tag["aria-label"].strip()
+    parts = []
+    for piece in tag.descendants:
+        if isinstance(piece, str):
+            if not piece.find_parent(["select", "textarea", "option", "script", "style"]):
+                parts.append(str(piece))
+        elif piece.name == "img" and (piece.get("alt") or "").strip():
+            parts.append(piece["alt"])
+    return " ".join(parts).strip()
 
 
 def accessible_name(field, soup) -> str:

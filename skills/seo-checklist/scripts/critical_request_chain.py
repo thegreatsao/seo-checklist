@@ -14,6 +14,7 @@ from seo_common import (BeautifulSoup, fetch_url, html_parser, load_source,
                         normalize_url,
                         require_bs4,
                         same_host)
+from third_party_script_audit import _classic_script
 
 
 def _is_cross_origin(url: str, page_url: str) -> bool:
@@ -76,7 +77,10 @@ def audit(source: str, fetch_css: bool = False, timeout: int = 15) -> dict:
 
     for script in soup.find_all("script", src=True):
         src = normalize_url(script.get("src"), url) if url else script.get("src")
-        blocking = not script.has_attr("async") and not script.has_attr("defer") and script.get("type") != "module"
+        # A data block (`type="text/plain"`, a consent manager's held script) never runs,
+        # so it blocks nothing (F15 batch 6, as SP-109 reads it).
+        blocking = (not script.has_attr("async") and not script.has_attr("defer")
+                    and _classic_script(script))
         # Where it sits decides what it costs, and until 0.50.0 this did not look.
         # A synchronous script in `<head>` stops the parser before anything has been
         # painted; the same tag before `</body>` blocks a parser that has already

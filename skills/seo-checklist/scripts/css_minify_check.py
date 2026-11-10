@@ -88,7 +88,10 @@ SMALL_FILE_BYTES = 2048  # suppress files too small to matter
 RE_COMMENT = re.compile(r"/\*.*?\*/", re.S)
 # `@import url(x)`, `@import "x"` (F15, TE-174's ruling: a <style> block's imports are
 # stylesheets the page loads).
-RE_IMPORT = re.compile(r"""@import\s+(?:url\(\s*)?["']?([^"')\s;]+)""", re.I)
+# A quoted URL is read to its closing quote: a `;` inside it is part of the URL
+# (`css2?family=Roboto:wght@400;700`, review round 1).
+RE_IMPORT = re.compile(r"""@import\s+(?:url\(\s*(?:"([^"]+)"|'([^']+)'|([^)\s]+))\s*\)"""
+                       r"""|"([^"]+)"|'([^']+)')""", re.I)
 
 
 def minification_signals(css: str) -> tuple[float, float, int]:
@@ -149,8 +152,8 @@ def check(url: str, timeout: int = 15) -> dict:
         if href:
             hrefs.append(urljoin(url, href))
     for style in soup.find_all("style"):
-        for imported in RE_IMPORT.findall(style.get_text() or ""):
-            hrefs.append(urljoin(url, imported))
+        for groups in RE_IMPORT.findall(style.get_text() or ""):
+            hrefs.append(urljoin(url, next(g for g in groups if g)))
     hrefs = list(dict.fromkeys(hrefs))
     result["truncated"] = len(hrefs) > MAX_SHEETS
     hrefs = hrefs[:MAX_SHEETS]

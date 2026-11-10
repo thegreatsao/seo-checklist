@@ -59,6 +59,25 @@ RE_GTM_SRC = re.compile(r"""((?:https?:)?//[^\s"'<>+]+?/gtm\.js|(?<=["'])/[^\s"'
                         re.I)
 GTM_DEFAULT = "https://www.googletagmanager.com/gtm.js"
 RE_MEASUREMENT_ID = re.compile(r"\bG-[A-Z0-9]{4,}\b")
+# The container tags that send a page view: the Google tag and the GA4 configuration
+# tag. A GA4 event tag (`__gaawe`) sending to the hardcoded ID beside a hardcoded config
+# is the ordinary correct setup, not a duplicate (review round 1 of F15 batch 6).
+RE_PAGEVIEW_TAG = re.compile(r'"function"\s*:\s*"__(?:googtag|gaawc)"')
+
+
+def pageview_ids(container: str) -> set[str]:
+    """The GA4 IDs a GTM container's page-view tags name: each such tag's own object."""
+    found = set()
+    for match in RE_PAGEVIEW_TAG.finditer(container):
+        start = container.rfind("{", 0, match.start())
+        depth, end = 0, start
+        while end < len(container):
+            depth += {"{": 1, "}": -1}.get(container[end], 0)
+            end += 1
+            if depth == 0:
+                break
+        found.update(m.upper() for m in RE_MEASUREMENT_ID.findall(container[start:end]))
+    return found
 # A container ID as GTM writes one, case-sensitive: `RE_GTM` above also reads a
 # `gtm-wrapper` class, and asking Google for container GTM-WRAPPER is a 404.
 RE_CONTAINER_ID = re.compile(r"\bGTM-[A-Z0-9]{4,}\b")
@@ -146,7 +165,7 @@ def check(url: str, timeout: int = 15) -> dict:
             if answer.status_code >= 400:
                 unread = (f"GTM container {cid} answered HTTP {answer.status_code}", None)
                 continue
-            fired = {m.upper() for m in RE_MEASUREMENT_ID.findall(answer.text)}
+            fired = pageview_ids(answer.text)
             for gid in sorted(hardcoded & fired):
                 duplicates.append({"id": gid, "count": 2,
                                              "kind": "gtm_and_hardcoded",

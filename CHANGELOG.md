@@ -12,26 +12,29 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `a2064d353ad0` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+Registry version: `1fc5514f671b` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4, `e2d01d02779d` after batch 5).
 
-F15 batch 6 (`e2d01d02779d` → `a2064d353ad0`) — security, speed and technical, and the owner's ruling 1 on batch 5's
+F15 batch 6 (`e2d01d02779d` → `1fc5514f671b`) — security, speed and technical, and the owner's ruling 1 on batch 5's
 questions. **Verdicts of a real audit can move**: GO-145 and GEO-005 are N/A on a privacy, terms or contact page, read
-by the page's last path segment holding one of `eeat-terms.json`'s privacy or contact stems or a terms stem (an about
-page keeps the rule); SE-114, SE-116 and TE-171 read the shared crawl and ask Safe Browsing about the entry and every
-URL it read, 500 to a request (a listed inner page fails; one unanswered request withholds a clean answer; N/A in
-`page` mode, which does not crawl); TE-178's script assertion is retired (its field was never written) and the market
+from the page's slug: every word of it begins with one of `eeat-terms.json`'s privacy or contact stems or a terms stem,
+or is a word such slugs are written with (`our`, `of`, `us`, …), so `/privacy-policy` and `/kontakty` are utility
+pages and `/blog/privacy-tips` is not (an about page keeps the rule); SE-114, SE-116 and TE-171 read the shared crawl and ask Safe Browsing about the entry and every
+URL it read, 500 to a request (a listed inner page fails; one unanswered request withholds a clean answer; `page`
+mode, which does not crawl, asks about the page alone); TE-178's script assertion is retired (its field was never written) and the market
 lens answers it; SE-120 asserts `hardening_gaps`, the three headers' values read (`'unsafe-inline'` with no nonce, hash
 or `'strict-dynamic'`, or `'unsafe-eval'`, in the policy scripts obey; a Permissions-Policy feature `=*`; `unsafe-url`
 as the last known Referrer-Policy token); GO-131 asserts `installed_by` (a Google tag loaded by its ID, or a GTM
-container the page loads, counts); GO-132 reads a GTM container beside a hardcoded GA4 tag and fails when it fires the
-same ID (NO_DATA when the container cannot be read); TE-181 validates the rendered DOM with the page's doctype put back
+container the page loads, counts); GO-132 reads a GTM container beside a hardcoded GA4 tag and fails when its Google
+tag or GA4 configuration tag names the same ID (an event tag sending to it is no duplicate; NO_DATA when the container
+cannot be read); TE-181 validates the rendered DOM with the page's doctype put back
 in front (the snippet records `doctype`; an artifact with neither is NO_DATA), after Nu was checked to report a missing
-doctype as an error; MB-100 no longer reads a width inside a media query, a `media` or `sizes` condition as a fixed
-width; MB-104 reads an icon on another origin under that origin's robots.txt; TE-180 resolves `aria-labelledby` to
-text, takes a blank label as no name, and reads image and button inputs; TE-174 reads `<style>` `@import`s, does not
+doctype as an error; MB-100 no longer reads a width inside a media query, a `media` or `sizes` condition, or a rule
+that never applies on a 360px phone (a `min-width` query above it, `print`, a wide `@container`) as a fixed width; MB-104 reads an icon on another origin under that origin's robots.txt; TE-180 resolves `aria-labelledby` to
+text, takes a blank label as no name (an image's `alt` in a label is text), and reads image and button inputs; TE-174 reads `<style>` `@import`s, does not
 judge an error page's body as CSS, and a sheet that cannot be read leaves a clean answer NO_DATA; SP-109 reads a
-`//host` script on its host and leaves data blocks (`type="text/plain"`) out; TECH-002 fails `font-display: block` and
+`//host` script on its host and leaves data blocks (`type="text/plain"`) out, and SP-110 counts no data block as
+parser-blocking; TECH-002 fails `font-display: block` and
 `auto` as it fails a missing value. `ga4_tag_checker.py` and `css_minify_check.py` no longer read an error page's body
 (GO-131, GO-132 and TE-174 NO_DATA on a page answering 4xx/5xx); `font_audit.py` no longer fetches a `<link>` with no
 href. Sentences for SE-116, TE-171, TE-179, TE-175, SP-110 (measures) and beside the fixes for SE-114, SE-120, GO-131,

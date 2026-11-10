@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import a11y_seo_checker  # noqa: E402
 import checklist_runner  # noqa: E402
 import citation_readiness  # noqa: E402
+import critical_request_chain  # noqa: E402
 import css_minify_check  # noqa: E402
 import domain_safety_check  # noqa: E402
 import favicon_check  # noqa: E402
@@ -181,15 +182,6 @@ class SafeBrowsingEveryCrawledUrl(unittest.TestCase):
         out = self.run_se("SE-114", [row(SITE), row(SITE + "a")])
         self.assertEqual(full_verdict("SE-114", out), NO_DATA)
 
-    def test_a_mode_without_the_crawl_makes_them_not_applicable(self):
-        items = [ITEMS[i] for i in ("SE-114", "SE-116", "TE-171")]
-        _, skipped = checklist_runner.build_plan(
-            items, {"url": SITE}, set(checklist_runner.MODE_CAPS["page"]), "page",
-            has_safe_browsing=True)
-        for item_id in ("SE-114", "SE-116", "TE-171"):
-            with self.subTest(item=item_id):
-                self.assertEqual(skipped[item_id][0], NA)
-
 
 class RetiredNeighbours(unittest.TestCase):
     def test_te_178_has_no_script_assertion_and_an_agent_answers_it(self):
@@ -302,7 +294,8 @@ class HardcodedBesideGtm(unittest.TestCase):
         return full_verdict("GO-132", run_item(ga4_tag_checker, "GO-132", routes))
 
     def test_the_container_firing_the_hardcoded_id_is_a_duplicate(self):
-        self.assertEqual(self.go('var data={"vtp_measurementId":"G-ABC123"};'), FAIL)
+        self.assertEqual(self.go('var data={"tags":[{"function":"__gaawc",'
+                                 '"vtp_measurementId":"G-ABC123"}]};'), FAIL)
 
     def test_a_container_firing_something_else_is_not(self):
         self.assertEqual(self.go('var data={"vtp_conversionId":"AW-1"};'), PASS)
@@ -409,7 +402,6 @@ class MediaQueriesAreNotWidths(unittest.TestCase):
     def test_a_fixed_width_still_fails(self):
         for css in ("<style>.wrap{width: 1024px}</style>",
                     "<style>@media (max-width: 767px){.wrap{min-width: 980px}}</style>",
-                    "<style>@media (min-width: 768px), print{.wrap{width: 980px}}</style>",
                     "<style>@media not all and (min-width: 768px){.wrap{width: 980px}}</style>",
                     "<style>@media (min-width: 300px){.wrap{width: 980px}}</style>",
                     '<div style="min-width: 800px">x</div>',
@@ -587,6 +579,90 @@ class FontDisplayBlock(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Review round 1 (a fresh-context Claude reviewer), each red first
+# ---------------------------------------------------------------------------
+
+class ReviewRound1(unittest.TestCase):
+    def test_an_article_whose_slug_holds_a_utility_word_keeps_the_rule(self):
+        body = UtilityPages.BODY
+        for path in ("/blog/how-to-choose-contact-lenses", "/blog/data-privacy-laws-2026",
+                     "/blog/gdpr-compliance-checklist", "/blog/privacy-tips-for-parents",
+                     "/blog/seo-terms-explained", "/blog/contactless-payments-guide",
+                     "/shop/hibiscus-sabdariffa-tea", "/blog/pravila-pitaniya"):
+            with self.subTest(path=path):
+                page = html(body, head='<link rel="canonical" href="' + path + '">')
+                self.assertEqual(page_verdict(citation_readiness, "GO-145", page, path=path),
+                                 FAIL)
+
+    def test_page_mode_asks_safe_browsing_about_the_page(self):
+        items = [ITEMS[i] for i in ("SE-114", "SE-116", "TE-171")]
+        plan, skipped = checklist_runner.build_plan(
+            items, {"url": SITE}, set(checklist_runner.MODE_CAPS["page"]), "page",
+            has_safe_browsing=True)
+        self.assertEqual(skipped, {})
+        self.assertEqual(list(plan), [("domain_safety_check.py", (SITE,))])
+
+    def test_sp_110_does_not_fail_a_data_block(self):
+        for kind in ("text/plain", "application/ld+json"):
+            with self.subTest(kind=kind):
+                page = html("<p>x</p>", head=f'<script type="{kind}" '
+                                             'src="https://cdn.example.net/stats.js"></script>')
+                self.assertEqual(page_verdict(critical_request_chain, "SP-110", page), PASS)
+        page = html("<p>x</p>", head='<script src="https://cdn.example.net/stats.js"></script>')
+        self.assertEqual(page_verdict(critical_request_chain, "SP-110", page), FAIL)
+
+    def go_132(self, container: str) -> str:
+        routes = {"/": html("<p>x</p>", head=GTAG + GTM), "/gtm.js": container}
+        return full_verdict("GO-132", run_item(ga4_tag_checker, "GO-132", routes))
+
+    def test_a_gtm_event_tag_to_the_hardcoded_id_is_no_duplicate(self):
+        self.assertEqual(self.go_132(
+            'var data={"tags":[{"function":"__gaawe","vtp_eventName":"cta_click",'
+            '"vtp_measurementIdOverride":"G-ABC123","tag_id":7}]};'), PASS)
+
+    def test_a_gtm_google_tag_or_config_to_the_hardcoded_id_is_one(self):
+        for tag in ('{"function":"__googtag","vtp_tagId":"G-ABC123","tag_id":3}',
+                    '{"function":"__gaawc","vtp_measurementId":"G-ABC123","vtp_sendPageView":true}'):
+            with self.subTest(tag=tag):
+                self.assertEqual(self.go_132('var data={"tags":[' + tag + ']};'), FAIL)
+
+    def test_a_label_named_by_an_images_alt_names_its_field(self):
+        out = run_item(a11y_seo_checker, "TE-180", {"/": html(
+            '<label><img src="a.png" alt="Search"><input type="search" name="q"></label>'
+            '<span id="n" aria-label="Email"></span><input aria-labelledby="n">')})
+        self.assertEqual(out["wcag_a"]["unnamed_fields"], 0)
+
+    def test_print_and_wide_container_rules_never_apply_on_a_phone(self):
+        for css in ("@media print { .page { width: 1000px } }",
+                    "@media screen and (min-width:992px), print {.c{width:960px}}",
+                    "@container (min-width:700px) {.c{width:680px}}",
+                    "@container card (min-width: 40em) {.c{width:600px}}"):
+            with self.subTest(css=css):
+                self.assertEqual(page_verdict(mobile_render_checker, "MB-100",
+                                              html("<p>x</p>", head=VIEWPORT + f"<style>{css}</style>")),
+                                 PASS)
+        self.assertEqual(page_verdict(mobile_render_checker, "MB-100", html(
+            "<p>x</p>", head=VIEWPORT + "<style>@media screen, print {.c{width:960px}}</style>")),
+            FAIL)
+
+    def test_a_quoted_import_url_is_read_whole(self):
+        url = "/css2?family=Roboto:wght@400;700&display=swap"
+        seen = []
+
+        def css():
+            seen.append(True)
+            return UNMINIFIED
+        out = run_item(css_minify_check, "TE-174", {
+            "/": html("<p>x</p>", head=f"<style>@import url('{url}');</style>"),
+            url: (200, {"Content-Type": "text/css"}, css)})
+        self.assertEqual([row["href"].split("/", 3)[-1] for row in out["stylesheets"]],
+                         [url.lstrip("/")])
+
+    def test_se_120_says_a_csp_that_does_not_restrict_scripts_is_a_gap(self):
+        self.assertIn("restricting scripts", ITEMS["SE-120"]["measures"])
+
+
+# ---------------------------------------------------------------------------
 # The sets the batch adds, held to their sources
 # ---------------------------------------------------------------------------
 
@@ -602,6 +678,18 @@ class TheSetsAreHeld(unittest.TestCase):
         self.assertLessEqual(set(TERMS_STEMS), trust)
         self.assertEqual(set(TERMS_STEMS), {"/terms", "/taisykl", "/salygos", "/usloviya",
                                             "/pravila"})
+        from citation_readiness import (GENERIC_STEM_WORDS, UTILITY_SLUG_WORDS,
+                                        UTILITY_STEM_WORDS)
+        # The stems' words that name no kind of page alone: "policy" (cookie-policy),
+        # "politika" (slapuku-politika, politika-cookie).
+        self.assertEqual(GENERIC_STEM_WORDS, {"policy", "politika"})
+        self.assertLessEqual(GENERIC_STEM_WORDS, set(UTILITY_STEM_WORDS))
+        # Review round 1: the words a privacy, terms or contact slug is written with,
+        # none of them a subject an article could be about.
+        self.assertEqual(UTILITY_SLUG_WORDS, {
+            "our", "the", "of", "and", "us", "use", "service", "services", "conditions",
+            "notice", "statement", "policy", "policies", "page", "info", "information",
+            "form", "ispolzovaniya", "obrabotki", "naudojimo"})
         from security_headers import (CSP_INLINE_OVERRIDES, HARDENING_HEADERS,
                                       REFERRER_POLICIES)
         # SE-120's title names these three headers.
