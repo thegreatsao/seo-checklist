@@ -19,7 +19,7 @@ F15 batch 6 (`e2d01d02779d` → `ca2f4a06b209`) — security, speed and technica
 questions. **Verdicts of a real audit can move**: GO-145 and GEO-005 are N/A on a privacy, terms or contact page, read
 from the page's slug (the one before an `index` page): every word of it is a privacy, terms or contact word in English,
 German, Russian or Lithuanian (`UTILITY_WORDS`, run-together forms such as `termsofuse` included; `get-in-touch`,
-`data-protection` and `publichnaya-oferta` read as one), a word such slugs are written with (`our`, `of`, `me`, …) or a
+`data-protection`, `conditions-of-use` and `publichnaya-oferta` read as one), a word such slugs are written with (`our`, `of`, `me`, …) or a
 number, the segment before an `/amp` page too, so `/privacy-policy-2`, `/contact-me` and `/kontakty` are utility pages
 and `/blog/privacy-tips`, `/kontaktlinsen` and `/oferta` are not (an about page keeps the rule); SE-114, SE-116 and TE-171 read the shared crawl and ask Safe Browsing about the entry and every
 URL it read, 500 to a request (a listed inner page fails; one unanswered request withholds a clean answer; `page`
@@ -32,7 +32,7 @@ container the page loads, counts); GO-132 reads a GTM container beside a hardcod
 tag or GA4 configuration tag names the same ID, through a variable too (an event tag sending to it is no duplicate, a
 commented-out snippet is no tag, nor a loader GTM itself wrote (`gtm=`); NO_DATA when the container cannot be
 read), and counts a container twice only when its script is loaded twice, not a `data-gtm-*` attribute, a `gtm-*` class
-or a mention in a noscript or config; TE-181 validates the rendered DOM with the page's doctype put back
+or a mention in a noscript, a config or a preload; TE-181 validates the rendered DOM with the page's doctype put back
 in front (the snippet records `doctype`; an artifact with neither is NO_DATA), after Nu was checked to report a missing
 doctype as an error; MB-100 no longer reads a width inside a media query, a `media` or `sizes` condition, or a rule
 that never applies on a 360px phone (a `min-width` or `min-device-width` query above it, `print`, a wide

@@ -93,7 +93,8 @@ UTILITY_WORDS = frozenset({
     "privacypolicy", "privacynotice", "cookiepolicy",
     # terms, and the legal notice a site publishes beside them
     "terms", "tos", "agb", "nutzungsbedingungen", "usloviya", "pravila", "soglashenie",
-    "taisykles", "salygos", "agreement", "legal", "impressum", "termsofuse", "termsofservice",
+    "taisykles", "salygos", "agreement", "legal", "impressum", "imprint", "termsofuse",
+    "termsofservice",
     "termsandconditions",
     # contact
     "contact", "contacts", "contactus", "kontakt", "kontakte", "kontakty", "kontaktai"})
@@ -103,13 +104,14 @@ UTILITY_WORDS = frozenset({
 # `oferta` alone is a Polish or Spanish offer page, so only the Russian public offer
 # (round 4).
 UTILITY_PHRASES = {"get-in-touch": "contact", "data-protection": "privacy",
-                   "publichnaya-oferta": "terms"}
+                   "publichnaya-oferta": "terms", "conditions-of-use": "terms"}
 # The other words such slugs are written with: "our-privacy-policy",
 # "terms-and-conditions", "usloviya-ispolzovaniya", "polzovatelskoe-soglashenie".
 UTILITY_SLUG_WORDS = frozenset({
     "our", "the", "of", "and", "us", "use", "service", "conditions", "notice",
     "statement", "policy", "policies", "page", "info", "information", "form", "sale",
-    "sales", "business", "website", "site", "me", "user", "data", "politika",
+    "sales", "business", "website", "site", "me", "user", "data", "general", "notices",
+    "online", "center", "centre", "declaration", "politika",
     "ispolzovaniya", "obrabotki",
     "polzovatelskoe", "naudojimo", "duomenu"})
 

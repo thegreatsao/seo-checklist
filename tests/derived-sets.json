@@ -628,15 +628,15 @@
       "read": [
         {
           "name": "UTILITY_WORDS",
-          "entries": 49
+          "entries": 50
         },
         {
           "name": "UTILITY_PHRASES",
-          "entries": 3
+          "entries": 4
         },
         {
           "name": "UTILITY_SLUG_WORDS",
-          "entries": 30
+          "entries": 36
         }
       ],
       "unread": [

@@ -897,6 +897,25 @@ class ReviewRound6(unittest.TestCase):
         self.assertIn("served HTML", ITEMS["GO-131"]["measures"])
 
 
+class ReviewRound7(unittest.TestCase):
+    def test_a_preload_of_the_container_is_no_second_load(self):
+        head = ('<link rel="preload" as="script" href="https://www.googletagmanager.com/gtm.js?id=GTM-XYZ9">'
+                + GTM)
+        out = run_item(ga4_tag_checker, "GO-132", {"/": html("<p>x</p>", head=head),
+                                                   "/gtm.js": "var x=1;"})
+        self.assertNotIn("gtm_container", [d["kind"] for d in out.get("duplicates") or []])
+
+    def test_more_common_utility_slugs(self):
+        for path in ("/imprint", "/general-terms-and-conditions", "/conditions-of-use",
+                     "/legal-notices", "/online-privacy-policy", "/privacy-center",
+                     "/cookie-declaration"):
+            with self.subTest(path=path):
+                self.assertEqual(ReviewRound2.both(self, path), NA)
+        for path in ("/conditions", "/online-courses", "/general-store", "/blog/skin-conditions"):
+            with self.subTest(path=path):
+                self.assertEqual(ReviewRound2.both(self, path), FAIL)
+
+
 # ---------------------------------------------------------------------------
 # The sets the batch adds, held to their sources
 # ---------------------------------------------------------------------------
@@ -919,11 +938,12 @@ class TheSetsAreHeld(unittest.TestCase):
                 words = fragment.split("-")
                 self.assertTrue(any(w in UTILITY_WORDS or any(u.startswith(w) for u in UTILITY_WORDS)
                                     for w in words), fragment)
-        self.assertEqual(len(UTILITY_WORDS), 49)
+        self.assertEqual(len(UTILITY_WORDS), 50)
         from citation_readiness import UTILITY_PHRASES
         # Review round 3: phrases whose words do not each name the page.
         self.assertEqual(UTILITY_PHRASES, {"get-in-touch": "contact", "data-protection": "privacy",
-                                           "publichnaya-oferta": "terms"})
+                                           "publichnaya-oferta": "terms",
+                                           "conditions-of-use": "terms"})
         self.assertLessEqual(set(UTILITY_PHRASES.values()), UTILITY_WORDS)
         self.assertEqual(UTILITY_WORDS & UTILITY_SLUG_WORDS, set())
         # Filler words name no kind of page: none is a subject an article is about.
@@ -931,7 +951,7 @@ class TheSetsAreHeld(unittest.TestCase):
             "our", "the", "of", "and", "us", "use", "service", "conditions",
             "notice", "statement", "policy", "policies", "page", "info", "information",
             "form", "sale", "sales", "business", "website", "site", "me", "user", "data",
-            "politika", "ispolzovaniya", "obrabotki", "polzovatelskoe", "naudojimo",
+            "general", "notices", "online", "center", "centre", "declaration", "politika", "ispolzovaniya", "obrabotki", "polzovatelskoe", "naudojimo",
             "duomenu"})
         from security_headers import (CSP_ANY_SOURCE, CSP_INLINE_OVERRIDES,
                                       HARDENING_HEADERS, REFERRER_POLICIES)
