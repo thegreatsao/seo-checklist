@@ -37,6 +37,24 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `skills/seo-checklist/scripts/` (robots, sitemaps, redirects, URLs) — graded 2026-11-10, F15 batch 4
+
+Read for the grade: `robots_checker.py` (`correctness_problems`, `crawled_paths`, `main`), `lib/robots_rules.py`
+(`parse`), `robots_path_tester.py` (`css_imports`, `discover_assets`, `probe_url`, `test_paths`), `sitemap_checker.py`,
+`seo_common.py` (`_sitemap_problems`, `google_robots_directives`), `indexability_matrix.py` (`snippet_controls`),
+`redirect_checker.py` (`walk`), `gsc_url_inspection.py`, `hreflang_checker.py` (`validate_lang_code`,
+`check_return_tags`, `run_hreflang_check`), `faceted_nav_audit.py` (`_facet_items`, `_spelling`, `audit`),
+`indexnow_checker.py` (`check_key_file`), and the batch-3 readers rulings 1 and 3 touched (`canonical_checker.py`,
+`link_profile.py`, `topical_cluster_mapper.py`, `site_crawl.py`'s `robots_blocked_urls`).
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `make check` on the batch's last commit (contract, batch 4 results); 83 tests in `tests/test_f15_batch4.py`, each review round red on the commit before it; 31 reverts of the batch's fixes each caught; Claude review round 7 "ship" |
+| Agent understandable | B | each rule names its item and the round that shaped it; AR-163's redirect control took four rounds (redirect away, another spelling, kept facet or query parameters) and now rests on two small helpers whose interplay is the rule |
+| Test stability | A | loopback sites and hand-built inventories; the two repeated-header tests patch `fetch_url` to report two `X-Robots-Tag` values, which a served route cannot send |
+| Architecture boundaries | A | `make check-arch` 3/3 |
+| Code conventions | A | ruff clean; derived sets and the threshold ledger moved only by declared constants (`MIN_PAGES_FOR_HUBS`, `MIN_PAGES_FOR_AVERAGE`, `MAX_STYLESHEETS_READ`, `SCRIPT_ADVICE`, `_RULES_WITH_ARGUMENT`) |
+
 ## `skills/seo-checklist/scripts/` (crawl inventory readers) — graded 2026-11-10, F15 batch 3
 
 Read for the grade: `site_crawl.py` (`page_key`, `_reduced`, `read_twice`, `same_page`, `_linked_spellings`,
