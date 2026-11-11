@@ -37,6 +37,21 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `skills/seo-checklist/scripts/` (Search Console and the links export) — graded 2026-11-11, F15 batch 7
+
+Read for the grade: `gsc_cannibalization.py` (`analyze`, the brand that sets queries aside; `_inferred_brand` gone),
+`gsc_links_csv.py` (`load`/`pick`, the single-CSV guess, `analyze`'s sort and absent keys), `gsc_checker.py`,
+`gsc_sitemap_reconcile.py` (read for their sentences), `font_audit.py` (`ICON_FONT_FAMILIES`, `icon_font`,
+`local_only`), `css_minify_check.py` (`own_sheet`, the landed URL), `tools/build_checklist.py` (`MEASURES`).
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `make check` on `d281c6e` and `266127e` (ci_local 27/27, check-arch 3/3, vcr red by design); `make verify-feature F=F15` on `266127e`, all three layers PASS, 3439 tests; 37 tests in `tests/test_f15_batch7.py`, each review round red on the commit before it; five census runs, each declared first, none moving; Claude review round 5 "ship" |
+| Agent understandable | B | each rule names its ruling and the round that shaped it; the links export's guesses (a named file with no count column, a lone CSV) need their comments to be read right |
+| Test stability | A | Search Console stood in by `_Query`; loopback pages; exports written to temp directories; no timing dependence |
+| Architecture boundaries | A | `make check-arch` 3/3; `css_minify_check` imports the runner's `registrable_domain` rather than a third copy |
+| Code conventions | A | ruff clean; `ICON_FONT_FAMILIES` held by a test (`audit_derived_sets`, unread closed sets 0); no new verdict-deciding number (139) |
+
 ## `skills/seo-checklist/scripts/` (security, speed and technical) — graded 2026-11-10, F15 batch 6
 
 Read for the grade: `domain_safety_check.py` (`crawled_urls`, `check_safe_browsing`), `security_headers.py`

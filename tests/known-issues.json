@@ -389,7 +389,7 @@
       "claim": "F03's second reading left 110 ruled items for F15; batches 1-7 repaired all of them (14, 18, 14, 18, 18, 18, 10), listed with their rulings in docs/sprint-20261109-F15.md, and F03 batch 6 re-reads them.",
       "probe": null,
       "state": "open",
-      "why": "The open list is the contract's Status table and audit_item_readings.py's stale count, both read every build; a probe here would restate the table, and the entry closes when make verify-feature F=F15 writes passing."
+      "why": "The open list is the contract's Status table and audit_item_readings.py's stale count, both read every build; a probe here would restate the table. make verify-feature F=F15 wrote passing on 2026-11-11; the entry stays open for the second readings F15 left stale, and closes when F03 batch 6 has re-read them."
     },
     "foreign-credit-keys-width": {
       "claim": "The boundary is ten keys wide, and the author of a book the page is only about is still read as the page's own.",
