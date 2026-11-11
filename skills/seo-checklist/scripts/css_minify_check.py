@@ -159,6 +159,9 @@ def check(url: str, timeout: int = 15) -> dict:
     html = page.text
 
     soup = BeautifulSoup(html, html_parser())
+    # Where the page landed, not where it was asked for: a site moved to another domain
+    # serves its own sheets from there, and its relative hrefs resolve there.
+    landed = getattr(page, "url", None) or url
     hrefs = []
     for link in soup.find_all("link"):
         rel = link.get("rel") or []
@@ -167,15 +170,12 @@ def check(url: str, timeout: int = 15) -> dict:
             continue
         href = link.get("href")
         if href:
-            hrefs.append(urljoin(url, href))
+            hrefs.append(urljoin(landed, href))
     for style in soup.find_all("style"):
         # A commented-out import is no sheet; `@import"a.css"` is one (review round 4).
         for groups in RE_IMPORT.findall(RE_COMMENT.sub("", style.get_text() or "")):
-            hrefs.append(urljoin(url, next(g for g in groups if g)))
+            hrefs.append(urljoin(landed, next(g for g in groups if g)))
     hrefs = list(dict.fromkeys(hrefs))
-    # Where the page landed, not where it was asked for: a site moved to another domain
-    # serves its own sheets from there.
-    landed = getattr(page, "url", None) or url
     result["third_party_sheets"] = [href for href in hrefs if not own_sheet(landed, href)]
     hrefs = [href for href in hrefs if own_sheet(landed, href)]
     result["truncated"] = len(hrefs) > MAX_SHEETS

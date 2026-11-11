@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "d0d8100d64b1",
+  "registry_version": "492fdb7594a4",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1603,7 +1603,7 @@
           "truthy": true
         }
       },
-      "measures": "That the homepage is the page with the most impressions for the site's most-searched branded query and averages position 1.5 or better: Search Console reports an average, and one that rounds to first is the reading of #1.",
+      "measures": "That the homepage is the page with most impressions for the site's most-searched branded query, averaging position 1.5 or better: Search Console reports averages, so that reads as #1. The rest of the results page is not read.",
       "effort": "medium",
       "fix": "Confirm the homepage ranks first for the branded query"
     },
@@ -1632,7 +1632,7 @@
           "lte": 3
         }
       },
-      "measures": "Non-branded queries where two or more pages with 10 impressions or more each sit within 3.0 average positions of each other; a query carrying a brand the operator gave or the homepage publishes is left out. Page copy is not read.",
+      "measures": "Non-branded queries on two or more pages with 10 impressions or more each, whose average positions span 3.0 or less; a query carrying a brand the operator gave or the homepage publishes is left out. Page copy is not read.",
       "effort": "medium",
       "fix": "Find keyword overuse and duplication across URLs"
     },
@@ -1825,7 +1825,7 @@
           "gt": 0
         }
       },
-      "measures": "The final HTTP status of each of the export's top linked pages on this site (the first 100), redirects followed: 4xx, 5xx or no answer is dead. A soft 404 answering 200 passes; the target's content is not read.",
+      "measures": "The final HTTP status, redirects followed, of the export's top linked pages on this site (the first 100): 4xx, 5xx, or no DNS, connection or TLS answer is dead; a timeout leaves one unchecked. A soft 404 answering 200 passes.",
       "effort": "high",
       "fix": "Redirect or restore pages that other sites still link to: 301 each dead URL to its closest live equivalent, or ask the linking site to update the link"
     },
@@ -3933,7 +3933,7 @@
           "gt": 0
         }
       },
-      "measures": "That every stylesheet on the page's own registrable domain that it links or @imports from a <style> block is minified; third-party sheets (Google Fonts) are left out, and an unread one leaves a pass undecided. Unused rules are not read.",
+      "measures": "That each stylesheet on the page's registrable domain, linked or @imported in a <style> block, is minified; any other domain's (Google Fonts, a platform's CDN) is left out; an unread one leaves a pass undecided. Unused rules are not read.",
       "effort": "low",
       "fix": "Minify and optimize CSS"
     },
@@ -4739,7 +4739,7 @@
           ]
         }
       },
-      "measures": "An @font-face hiding text (font-display missing, block or auto), except icon fonts: Font Awesome, Material Icons, Material Symbols, Glyphicons, Bootstrap Icons, Dashicons, Ionicons; a preload without crossorigin; an unfetched sheet.",
+      "measures": "Font-display missing, block or auto, outside icon fonts (Font Awesome, Line Awesome, Material Icons, Material Symbols, Glyphicons, Bootstrap Icons, Dashicons, Ionicons, eicons); preloads lacking crossorigin; unread sheets. Sizes unread.",
       "effort": "low",
       "fix": "Preload key fonts, use font-display: swap"
     },

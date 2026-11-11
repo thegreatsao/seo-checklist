@@ -12,19 +12,21 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `d0d8100d64b1` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+Registry version: `492fdb7594a4` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4, `e2d01d02779d` after batch 5,
-`ca2f4a06b209` after batch 6).
+`ca2f4a06b209` after batch 6, `d0d8100d64b1` at batch 7's first commit).
 
-F15 batch 7 (`ca2f4a06b209` → `d0d8100d64b1`) — Search Console and the links export, and the owner's rulings 1–2 on
+F15 batch 7 (`ca2f4a06b209` → `492fdb7594a4`) — Search Console and the links export, and the owner's rulings 1–2 on
 batch 6's questions. **Verdicts of a real audit can move**: MS-023 and KW-071 set a query aside as branded only by a
 brand the operator gave (`--brand`) or the homepage publishes; with neither, the highest-click query is no longer
 taken for the brand, so a split head query counts (and MS-023's count off a full page of rows is a floor, no longer
 withheld); BL-084 takes the largest referrer's share and the ten largest, whatever the export's order; BL-084, BL-086
 and BL-087 are NO_DATA on an export without a linking-sites sheet (an empty sheet still means no links); TECH-002 no
-longer reads `font-display` on an icon font's face (Font Awesome, Material Icons, Material Symbols, Glyphicons,
-Bootstrap Icons, Dashicons, Ionicons); TE-174 reads only stylesheets on the page's own registrable domain and lists
-the rest in `third_party_sheets` (a page with none of its own is N/A). Sentences for GO-139, KW-070, KW-071, BL-083,
+longer reads `font-display` on an icon font's face (Font Awesome, Line Awesome, Material Icons, Material Symbols,
+Glyphicons, Bootstrap Icons, Dashicons, Ionicons, Elementor's eicons); TE-174 reads only stylesheets on the page's own
+registrable domain, resolved against where the page landed, and lists the rest in `third_party_sheets` (a page with
+none of its own is N/A — a site serving its CSS from a platform's CDN domain, such as Webflow's, included); BL-084,
+BL-086 and BL-087 are NO_DATA on a lone CSV with no count column too. Sentences for GO-139, KW-070, KW-071, BL-083,
 BL-086, BL-087, GO-134 and GO-137 (measures), and beside TECH-002 and TE-174.
 
 F15 batch 6 (`e2d01d02779d` → `ca2f4a06b209`) — security, speed and technical, and the owner's ruling 1 on batch 5's

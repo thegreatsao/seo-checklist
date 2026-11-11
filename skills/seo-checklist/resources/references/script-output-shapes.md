@@ -420,7 +420,8 @@ that could not be checked when there are any.
   - item keys: href, bytes, minified (bool), ratio (float — bytes per line, the
     minification heuristic), status, error
 `third_party_sheets[]` — array of str — sheets on another registrable domain than the
-  page's (where it landed), listed and not read (F15 batch 7, the owner's ruling)
+  page's (where it landed; hrefs resolve against it), listed and not read — a platform's
+  CDN domain (Webflow's `website-files.com`) too (F15 batch 7, the owner's ruling)
 `checked` — int — the site's own sheets read; 0 makes TE-174 N/A
 `unminified_count` — int
 `truncated` — bool — the page links or `@import`s, of its own, (from a `<style>` block) more than

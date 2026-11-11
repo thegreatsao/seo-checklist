@@ -63,8 +63,8 @@ class IconFonts(unittest.TestCase):
 
     def test_the_closed_list_is_the_one_the_sentence_names(self):
         from font_audit import ICON_FONT_FAMILIES
-        named = ("Font Awesome", "Material Icons", "Material Symbols", "Glyphicons",
-                 "Bootstrap Icons", "Dashicons", "Ionicons")
+        named = ("Font Awesome", "Line Awesome", "Material Icons", "Material Symbols",
+                 "Glyphicons", "Bootstrap Icons", "Dashicons", "Ionicons", "eicons")
         self.assertEqual(ICON_FONT_FAMILIES,
                          tuple(name.lower().replace(" ", "") for name in named))
         for name in named:
@@ -120,8 +120,9 @@ class OwnStylesheets(unittest.TestCase):
         # The Public Suffix List's private section: two sites on one platform.
         self.assertFalse(own("https://alice.github.io/", "https://bob.github.io/a.css"))
 
-    def test_the_sentence_says_third_party_sheets_are_left_out(self):
-        self.assertIn("third-party", ITEMS["TE-174"]["measures"].lower())
+    def test_the_sentence_says_other_domains_are_left_out(self):
+        # Review round 1: not only third-party sheets, a platform's CDN domain too.
+        self.assertIn("any other domain", ITEMS["TE-174"]["measures"])
 
 
 # ---------------------------------------------------------------------------
@@ -257,6 +258,52 @@ class SearchConsoleSentences(unittest.TestCase):
 
     def test_go_137_says_pages_with_impressions_in_28_days(self):
         self.assertIn("pages with impressions in 28 days", ITEMS["GO-137"]["measures"])
+
+
+# ---------------------------------------------------------------------------
+# Review round 1 (a fresh-context Claude reviewer), each red first
+# ---------------------------------------------------------------------------
+
+class ReviewRound1(unittest.TestCase):
+    def test_kw_071_says_the_spread_of_every_page_is_read(self):
+        """The rule reads max minus min over the query's pages, not any close pair."""
+        self.assertIn("span", ITEMS["KW-071"]["measures"])
+
+    def test_a_page_moved_to_another_domain_keeps_its_own_relative_sheets(self):
+        out = run_item(css_minify_check, "TE-174", {
+            "/old": (301, {"Location": "{other}/new"}, ""),
+            "/new": html("<p>x</p>", head='<link rel="stylesheet" href="/big.css">'),
+            "/big.css": (200, CSS, UNMINIFIED)}, path="/old")
+        self.assertEqual(out["third_party_sheets"], [])
+        self.assertEqual(graded("TE-174", out), FAIL)
+
+    def test_te_174_says_any_other_domain_is_left_out(self):
+        sentence = ITEMS["TE-174"]["measures"]
+        self.assertNotIn("third-party", sentence)
+        self.assertIn("CDN", sentence)
+
+    def test_the_most_deployed_icon_fonts_after_font_awesome(self):
+        for family in ("eicons", '"Line Awesome Free"'):
+            with self.subTest(family=family):
+                self.assertEqual(IconFonts.tech(self, family), PASS)
+                self.assertIn(family.strip('"').replace(" Free", ""),
+                              ITEMS["TECH-002"]["measures"])
+
+    def test_one_csv_with_no_count_column_is_no_linking_sites_sheet(self):
+        out = links({"example.com-latest-links.csv":
+                     "Linking page,Last crawled\nhttps://a.example/p,2026-10-01\n"})
+        for item in ("BL-084", "BL-086", "BL-087"):
+            with self.subTest(item=item):
+                self.assertEqual(verdict(item, out), NO_DATA)
+
+    def test_each_sentence_says_what_it_does_not_read(self):
+        self.assertIn("not read", ITEMS["KW-070"]["measures"])
+        self.assertIn("unread", ITEMS["TECH-002"]["measures"])
+
+    def test_bl_083_says_a_timeout_is_unchecked_not_dead(self):
+        sentence = ITEMS["BL-083"]["measures"]
+        self.assertNotIn("no answer is dead", sentence)
+        self.assertIn("timeout", sentence)
 
 
 if __name__ == "__main__":

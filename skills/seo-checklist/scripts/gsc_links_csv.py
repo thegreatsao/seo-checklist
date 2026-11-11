@@ -135,11 +135,13 @@ def load(path: str) -> dict:
         "pages": pick(PAGE_SHEETS),
     }
     # A single unnamed CSV cannot be classified by filename; treat it as sites,
-    # which is the sheet people export most often, and say so in the output.
+    # which is the sheet people export most often, and say so in the output. One with
+    # no row counting anything is no such sheet: unread, not "no links" (review round 1).
     if all(rows is None for rows in found.values()) and sheets:
         only = parse_sheet(next(iter(sheets.values())))
-        found["sites"] = only
-        found["_assumed"] = "single unnamed CSV read as the top-linking-sites sheet"
+        if only:
+            found["sites"] = only
+            found["_assumed"] = "single unnamed CSV read as the top-linking-sites sheet"
     return found
 
 

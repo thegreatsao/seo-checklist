@@ -536,8 +536,8 @@ def analyze(site_url: str, credentials: str, days: int,
         "branded_spread": [],
         "contested": [],
         "branded": {},
-        # What `branded_spread` was classified by: the brand's names, or — with no
-        # name known — the old inference, said as such.
+        # What `branded_spread` was classified by: the brand's names, or `none` with
+        # no name known (nothing is set aside as branded then).
         "spread_brand": {"source": "none", "names": []},
         # Empty, not `{"cannibalized_queries": None, …}`. `eq` and `truthy` read a
         # None as a *failing value* rather than as silence, so pre-seeding the keys

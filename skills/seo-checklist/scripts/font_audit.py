@@ -35,8 +35,8 @@ FONT_EXTENSIONS = (".woff2", ".woff", ".ttf", ".otf", ".eot", ".ttc")
 # letter. A family is an icon font when, lower-cased with everything but letters and
 # digits dropped, it starts with one of these (`Font Awesome 6 Free`, `Material Icons
 # Outlined`). TECH-002's `measures` sentence names them; an icon font not listed is read.
-ICON_FONT_FAMILIES = ("fontawesome", "materialicons", "materialsymbols", "glyphicons",
-                      "bootstrapicons", "dashicons", "ionicons")
+ICON_FONT_FAMILIES = ("fontawesome", "lineawesome", "materialicons", "materialsymbols",
+                      "glyphicons", "bootstrapicons", "dashicons", "ionicons", "eicons")
 
 
 def icon_font(family: str | None) -> bool:

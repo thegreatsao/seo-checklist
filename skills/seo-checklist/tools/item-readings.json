@@ -1383,7 +1383,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`summary.contested_queries` counts non-branded Search Console queries where two or more of the site's pages, each with 10 impressions or more, sit within 3.0 average positions; the brand is one the operator supplied or the homepage publishes. Page copy is not read, and `measures` says so (F15, the ruling).",
+      "reading": "`summary.contested_queries` counts non-branded Search Console queries on two or more of the site's pages, each with 10 impressions or more, whose average positions span 3.0 or less; the brand is one the operator supplied or the homepage publishes. Page copy is not read, and `measures` says so (F15, the ruling).",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -1477,7 +1477,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`targets.broken_count` counts pages other sites link to (the Links export's top linked pages) whose final HTTP status, redirects followed, is 4xx, 5xx or no answer (0.107.0). A soft 404 needs the target's content, which is not read, and `measures` says so (F15, the ruling).",
+      "reading": "`targets.broken_count` counts pages other sites link to (the Links export's top linked pages) whose final HTTP status, redirects followed, is 4xx, 5xx or no DNS, connection or TLS answer (0.107.0); a timeout leaves one unchecked. A soft 404 needs the target's content, which is not read, and `measures` says so (F15, the ruling).",
       "shapes": {
         "conjunction": "The parenthetical is the fix; a redirected target is not counted as broken."
       },
@@ -3424,7 +3424,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`unminified_count` counts stylesheets on the page's own registrable domain that it loads and that are not minified; third-party sheets are left out (the owner's ruling on batch 6's question). Unused rules and critical-path CSS are not read, and `measures` says so.",
+      "reading": "`unminified_count` counts stylesheets on the page's own registrable domain that it loads and that are not minified; a sheet on any other domain, a platform's CDN included, is left out (the owner's ruling on batch 6's question). Unused rules are not read, and `measures` says so.",
       "shapes": {
         "conjunction": "Minify is read; the rest of optimize is what `measures` says is not.",
         "qualifier": "*Optimize* beyond minification is not read; `measures` says so."

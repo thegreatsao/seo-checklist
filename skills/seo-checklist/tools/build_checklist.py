@@ -678,7 +678,7 @@ MEASURES = {
     "CN-065": "That the page has exactly one non-empty H1.",
     "AR-147": "That the URL is at most 115 characters, five path segments and two query parameters. Whether its words describe the page is not read.",
     "GO-135": "URL Inspection's verdict on the audited URL: coverage, canonical, robots and indexing state. The API returns no rendered HTML, so that half is not read.",
-    "TE-174": "That every stylesheet on the page's own registrable domain that it links or @imports from a <style> block is minified; third-party sheets (Google Fonts) are left out, and an unread one leaves a pass undecided. Unused rules are not read.",
+    "TE-174": "That each stylesheet on the page's registrable domain, linked or @imported in a <style> block, is minified; any other domain's (Google Fonts, a platform's CDN) is left out; an unread one leaves a pass undecided. Unused rules are not read.",
     "CN-044": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
     # F15 batch 1: the owner's `measures` rulings on F03 batch 3, and the sentence
     # half of two fixes (MS-028, TE-166).
@@ -716,10 +716,10 @@ MEASURES = {
     "GO-132": "No GA4 ID configured or loaded twice, no GTM container loaded twice, and no hardcoded ID that a GTM container beside it names in its Google tag or GA4 configuration tag. Tags added at run time are not read.",
     "TE-181": "Nu validator errors in the rendered DOM, with the page's doctype put back in front of it. An artifact without the doctype key is not validated.",
     "MB-100": "A width=device-width viewport and no CSS width or min-width over 360px in the served HTML outside rules never applying on a 360px phone (min-width queries, print). Linked CSS and tap targets, which static CSS cannot judge, are not read.",
-    "TECH-002": "An @font-face hiding text (font-display missing, block or auto), except icon fonts: Font Awesome, Material Icons, Material Symbols, Glyphicons, Bootstrap Icons, Dashicons, Ionicons; a preload without crossorigin; an unfetched sheet.",
-    "KW-070": "That the homepage is the page with the most impressions for the site's most-searched branded query and averages position 1.5 or better: Search Console reports an average, and one that rounds to first is the reading of #1.",
-    "KW-071": "Non-branded queries where two or more pages with 10 impressions or more each sit within 3.0 average positions of each other; a query carrying a brand the operator gave or the homepage publishes is left out. Page copy is not read.",
-    "BL-083": "The final HTTP status of each of the export's top linked pages on this site (the first 100), redirects followed: 4xx, 5xx or no answer is dead. A soft 404 answering 200 passes; the target's content is not read.",
+    "TECH-002": "Font-display missing, block or auto, outside icon fonts (Font Awesome, Line Awesome, Material Icons, Material Symbols, Glyphicons, Bootstrap Icons, Dashicons, Ionicons, eicons); preloads lacking crossorigin; unread sheets. Sizes unread.",
+    "KW-070": "That the homepage is the page with most impressions for the site's most-searched branded query, averaging position 1.5 or better: Search Console reports averages, so that reads as #1. The rest of the results page is not read.",
+    "KW-071": "Non-branded queries on two or more pages with 10 impressions or more each, whose average positions span 3.0 or less; a query carrying a brand the operator gave or the homepage publishes is left out. Page copy is not read.",
+    "BL-083": "The final HTTP status, redirects followed, of the export's top linked pages on this site (the first 100): 4xx, 5xx, or no DNS, connection or TLS answer is dead; a timeout leaves one unchecked. A soft 404 answering 200 passes.",
     "BL-087": "At least five linking root domains in the export (rows of its linking-sites sheet). One export cannot track growth; comparing exports over time happens outside the audit.",
     "GO-134": "Errors (fail) and warnings (warn) Search Console records against the property's submitted sitemaps, the only issue report its API exposes; a property with none submitted has none. Coverage and manual actions are not read.",
     "GO-137": "Sitemap URLs that URL Inspection reports not indexed (up to 100 inspected), and pages with impressions in 28 days that no sitemap lists: the API has no list of indexed pages, so impressions stand in for one.",

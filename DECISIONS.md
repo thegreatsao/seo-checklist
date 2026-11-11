@@ -100,7 +100,12 @@ another site's domain is one the site cannot minify; judging it fails the site f
 - **Own sheets by exact host:** a site's `static.` or `cdn.` subdomain is its own build, so the host is too narrow.
 
 **Consequences:** a site whose only blocking faces are icon fonts passes TECH-002; a page whose only stylesheets are
-third-party has none of its own for TE-174 to read. An icon font missing from the list fails as before.
+on another registrable domain has none of its own for TE-174 to read, and that includes a site's own build served
+from a platform's CDN domain (every Webflow site's `cdn.prod.website-files.com`, GitHub's `githubassets.com`): N/A
+there, found by batch 7's review on live pages. An icon font missing from the list fails as before; the list is nine
+families (Font Awesome, Line Awesome, Material Icons, Material Symbols, Glyphicons, Bootstrap Icons, Dashicons,
+Ionicons, Elementor's eicons), as many as the 240-character sentence can name; Material Design Icons, Boxicons,
+Tabler, Simple Line Icons and slick still fail (batch 7's report asks the owner).
 
 ---
 
