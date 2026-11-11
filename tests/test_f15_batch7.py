@@ -17,6 +17,7 @@ SCRIPTS = os.path.join(ROOT, "skills", "seo-checklist", "scripts")
 sys.path.insert(0, SCRIPTS)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import harness  # noqa: E402,F401  (the switches and tripwire, run alone)
 import css_minify_check  # noqa: E402
 import font_audit  # noqa: E402
 import gsc_cannibalization  # noqa: E402
@@ -303,7 +304,32 @@ class ReviewRound1(unittest.TestCase):
     def test_bl_083_says_a_timeout_is_unchecked_not_dead(self):
         sentence = ITEMS["BL-083"]["measures"]
         self.assertNotIn("no answer is dead", sentence)
-        self.assertIn("timeout", sentence)
+        self.assertIn("unchecked", sentence)
+
+
+class ReviewRound2(unittest.TestCase):
+    def test_a_face_served_only_as_a_data_uri_downloads_nothing(self):
+        """Swiper's `swiper-icons`, bundled by Elementor and Spectra, has no font-display
+        and is inlined: like a `local()`-only face, it hides no text."""
+        face = ("@font-face{font-family:swiper-icons;src:url('data:application/font-woff;"
+                "charset=utf-8;base64,d09GRgABAAAAAAZgABAAAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')"
+                " format('woff');font-weight:400;font-style:normal}")
+        page = html("<p>x</p>", head=f"<style>{face}</style>")
+        self.assertEqual(page_verdict(font_audit, "TECH-002", page), PASS)
+        mixed = face.replace("format('woff')", "format('woff'),url(/x.woff2) format('woff2')")
+        page = html("<p>x</p>", head=f"<style>{mixed}</style>")
+        self.assertEqual(page_verdict(font_audit, "TECH-002", page), FAIL)
+
+    def test_an_idn_site_spelled_in_unicode_and_punycode_is_one_site(self):
+        own = css_minify_check.own_sheet
+        self.assertTrue(own("https://xn--80aswg.xn--p1ai/",
+                            "https://\u0441\u0430\u0439\u0442.\u0440\u0444/style.css"))
+        self.assertTrue(own("https://\u0441\u0430\u0439\u0442.\u0440\u0444/",
+                            "https://cdn.xn--80aswg.xn--p1ai/style.css"))
+        self.assertFalse(own("https://xn--80aswg.xn--p1ai/", "https://other.example/a.css"))
+
+    def test_bl_083_says_every_other_failure_is_unchecked(self):
+        self.assertIn("any other failure leaves one unchecked", ITEMS["BL-083"]["measures"])
 
 
 if __name__ == "__main__":

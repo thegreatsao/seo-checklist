@@ -63,8 +63,12 @@ def _extract_font_faces(css: str) -> list[dict]:
             "font_display": display_match.group(1).strip() if display_match else None,
             "urls": urls,
             # A face whose `src` is only `local()` downloads nothing, so it hides no
-            # text: next/font's size-adjusted fallback (review round 6).
-            "local_only": not urls and bool(re.search(r"\blocal\s*\(", block, re.I)),
+            # text: next/font's size-adjusted fallback (review round 6). Nor does one
+            # inlined whole as `data:` URIs: Swiper's `swiper-icons`, which Elementor
+            # and Spectra bundle (F15 batch 7, review round 2).
+            "local_only": (not urls and bool(re.search(r"\blocal\s*\(", block, re.I)))
+                          or (bool(urls) and all(u.strip().lower().startswith("data:")
+                                                 for u in urls)),
         })
     return faces
 

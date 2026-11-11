@@ -105,6 +105,10 @@ def own_sheet(page_url: str, href: str) -> bool:
     cannot. An address, which has no registrable domain, is its own host."""
     def site(url: str) -> str:
         host = (urlparse(url).hostname or "").lower()
+        try:    # one IDN spelled in Unicode or punycode is one site (review round 2)
+            host = host.encode("idna").decode("ascii")
+        except UnicodeError:
+            pass
         return registrable_domain(host) or host
     return site(page_url) == site(href)
 

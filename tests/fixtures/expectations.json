@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "registry_version": "492fdb7594a4",
+  "registry_version": "e8b3203a3f36",
   "declared_from": "item title plus fixture construction; never from a run",
   "sample": {
     "good": [

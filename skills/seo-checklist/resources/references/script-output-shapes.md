@@ -709,7 +709,8 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `issues[]` — array
 `fonts[]` — array
 `font_faces[]` — array — every face; an icon font's (`ICON_FONT_FAMILIES`, F15 batch 7)
-  and a `local()`-only one's `font_display` raise no finding
+  and a `local()`-only or `data:`-only one's (`local_only`, F15 batch 7) `font_display` raise
+  no finding
 `fetch_error` — NoneType
 
 ### freshness_checker.py

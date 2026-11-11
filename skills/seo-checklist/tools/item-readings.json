@@ -1477,7 +1477,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`targets.broken_count` counts pages other sites link to (the Links export's top linked pages) whose final HTTP status, redirects followed, is 4xx, 5xx or no DNS, connection or TLS answer (0.107.0); a timeout leaves one unchecked. A soft 404 needs the target's content, which is not read, and `measures` says so (F15, the ruling).",
+      "reading": "`targets.broken_count` counts pages other sites link to (the Links export's top linked pages) whose final HTTP status, redirects followed, is 4xx, 5xx or no DNS, connection or TLS answer (0.107.0); any other failure leaves one unchecked. A soft 404 needs the target's content, which is not read, and `measures` says so (F15, the ruling).",
       "shapes": {
         "conjunction": "The parenthetical is the fix; a redirected target is not counted as broken."
       },

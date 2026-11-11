@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "492fdb7594a4",
+  "registry_version": "e8b3203a3f36",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1825,7 +1825,7 @@
           "gt": 0
         }
       },
-      "measures": "The final HTTP status, redirects followed, of the export's top linked pages on this site (the first 100): 4xx, 5xx, or no DNS, connection or TLS answer is dead; a timeout leaves one unchecked. A soft 404 answering 200 passes.",
+      "measures": "The final HTTP status, redirects followed, of the export's top linked pages on this site (the first 100): 4xx, 5xx, or no DNS, connection or TLS answer is dead; any other failure leaves one unchecked. A soft 404 answering 200 passes.",
       "effort": "high",
       "fix": "Redirect or restore pages that other sites still link to: 301 each dead URL to its closest live equivalent, or ask the linking site to update the link"
     },
