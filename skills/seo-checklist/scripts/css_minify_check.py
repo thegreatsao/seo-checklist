@@ -21,12 +21,11 @@ import argparse
 import json
 import re
 import sys
-
-import idna  # requests' own dependency, for the IDNA 2008 spelling it uses
 from urllib.parse import urljoin, urlparse
 
 try:
     import requests  # noqa: F401  (kept for the shared dependency error contract)
+    import idna  # requests' own dependency, for the IDNA 2008 spelling it uses
 except ImportError:
     print("Error: requests library required. Install with: pip install requests")
     sys.exit(1)

@@ -349,5 +349,26 @@ class ReviewRound3(unittest.TestCase):
         self.assertTrue(own("https://www.example.com/", "https://my_cdn.example.com/a.css"))
 
 
+class ReviewRound4(unittest.TestCase):
+    def test_several_files_with_no_linking_sites_sheet_are_no_data(self):
+        """The guess is for a single unnamed CSV; an export of several files none of which
+        is the linking-sites sheet has no such sheet."""
+        out = links({"Top target pages.csv": "Target page,Incoming links,Linking sites\n"
+                                             "https://example.com/a,90,3\n"
+                                             "https://example.com/b,10,1\n",
+                     "Latest links.csv": "Linking page,Last crawled\nhttps://a.example/p,2026-10-01\n"})
+        for item in ("BL-084", "BL-086", "BL-087"):
+            with self.subTest(item=item):
+                self.assertEqual(verdict(item, out), NO_DATA)
+
+    def test_a_rejected_file_does_not_hide_the_real_sheet(self):
+        out = links({"websitesetup.org-latest-links.csv":
+                     "Linking page,Last crawled\nhttps://a.example/p,2026-10-01\n",
+                     "websitesetup.org-top-linking-sites.csv":
+                     "Site,Links\n" + "".join(f"s{n}.example,10\n" for n in range(6))})
+        self.assertEqual(out["linking_domains"], 6)
+        self.assertEqual(verdict("BL-086", out), PASS)
+
+
 if __name__ == "__main__":
     unittest.main()

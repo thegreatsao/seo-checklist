@@ -124,12 +124,14 @@ def load(path: str) -> dict:
     # None when the export holds no such sheet, [] when it holds an empty one: a missing
     # linking-sites sheet is an unread export, not a site nobody links to (F15, BL-086).
     # A file with rows past its header and no count in any is not the sheet either,
-    # whatever its name holds (`websitesetup.org-latest-links.csv`, review round 3).
+    # whatever its name holds (`websitesetup.org-latest-links.csv`, review round 3), and
+    # the next file whose name matches is tried (round 4).
     def pick(markers):
         for name, rows in sheets.items():
             if any(m in name for m in markers):
                 parsed = parse_sheet(rows)
-                return parsed if parsed or len(rows) <= 1 else None
+                if parsed or len(rows) <= 1:
+                    return parsed
         return None
 
     found = {
@@ -140,7 +142,8 @@ def load(path: str) -> dict:
     # A single unnamed CSV cannot be classified by filename; treat it as sites,
     # which is the sheet people export most often, and say so in the output. One with
     # no row counting anything is no such sheet: unread, not "no links" (review round 1).
-    if all(rows is None for rows in found.values()) and sheets:
+    # Only a single one: several files, none of them the sheet, have no such sheet (round 4).
+    if all(rows is None for rows in found.values()) and len(sheets) == 1:
         only = parse_sheet(next(iter(sheets.values())))
         if only:
             found["sites"] = only
