@@ -332,5 +332,22 @@ class ReviewRound2(unittest.TestCase):
         self.assertIn("any other failure leaves one unchecked", ITEMS["BL-083"]["measures"])
 
 
+class ReviewRound3(unittest.TestCase):
+    def test_a_sheet_named_for_sites_with_no_count_column_is_unread(self):
+        """A property whose domain holds `sites` names its latest-links file so that it
+        matches the linking-sites marker: rows with no count are still no such sheet."""
+        out = links({"websitesetup.org-latest-links.csv":
+                     "Linking page,Last crawled\nhttps://a.example/p,2026-10-01\n"})
+        for item in ("BL-084", "BL-086", "BL-087"):
+            with self.subTest(item=item):
+                self.assertEqual(verdict(item, out), NO_DATA)
+
+    def test_idna_2008_spellings_are_one_site(self):
+        own = css_minify_check.own_sheet
+        self.assertTrue(own("https://xn--strae-oqa.de/", "https://stra\u00dfe.de/style.css"))
+        self.assertTrue(own("https://stra\u00dfe.de/", "https://cdn.xn--strae-oqa.de/a.css"))
+        self.assertTrue(own("https://www.example.com/", "https://my_cdn.example.com/a.css"))
+
+
 if __name__ == "__main__":
     unittest.main()

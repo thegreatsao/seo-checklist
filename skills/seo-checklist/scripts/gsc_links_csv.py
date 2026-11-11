@@ -123,10 +123,13 @@ def load(path: str) -> dict:
 
     # None when the export holds no such sheet, [] when it holds an empty one: a missing
     # linking-sites sheet is an unread export, not a site nobody links to (F15, BL-086).
+    # A file with rows past its header and no count in any is not the sheet either,
+    # whatever its name holds (`websitesetup.org-latest-links.csv`, review round 3).
     def pick(markers):
         for name, rows in sheets.items():
             if any(m in name for m in markers):
-                return parse_sheet(rows)
+                parsed = parse_sheet(rows)
+                return parsed if parsed or len(rows) <= 1 else None
         return None
 
     found = {

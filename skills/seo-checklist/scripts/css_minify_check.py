@@ -21,6 +21,8 @@ import argparse
 import json
 import re
 import sys
+
+import idna  # requests' own dependency, for the IDNA 2008 spelling it uses
 from urllib.parse import urljoin, urlparse
 
 try:
@@ -105,10 +107,13 @@ def own_sheet(page_url: str, href: str) -> bool:
     cannot. An address, which has no registrable domain, is its own host."""
     def site(url: str) -> str:
         host = (urlparse(url).hostname or "").lower()
-        try:    # one IDN spelled in Unicode or punycode is one site (review round 2)
-            host = host.encode("idna").decode("ascii")
-        except UnicodeError:
-            pass
+        if not host.isascii():
+            # One IDN in Unicode or punycode is one site (review round 2), spelled as
+            # requests spells the landed URL: IDNA 2008, so ß stays ß (round 3).
+            try:
+                host = idna.encode(host, uts46=True).decode("ascii")
+            except (idna.IDNAError, UnicodeError):
+                pass
         return registrable_domain(host) or host
     return site(page_url) == site(href)
 
