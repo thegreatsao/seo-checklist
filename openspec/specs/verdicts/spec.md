@@ -708,10 +708,11 @@ the cap as control. The review of that change found the same shape in a count: K
 queries whose pages sit within three positions, and a page past the cap can widen a spread and
 end a contest, so its count off a full page is not a floor and the script withholds it
 (`test_a_contest_count_off_a_full_page_is_withheld`, whose whole-window control passes); MS-023's
-count of split queries is a floor against a supplied or published brand — a page only adds to a
-split — and its FAIL stands, and is withheld when the brand was inferred from the rows, which the
-API orders arbitrarily on equal clicks
-(`test_a_split_count_off_a_full_page_with_no_known_brand_is_withheld`).
+count of split queries is a floor — a page only adds to a split — and its FAIL stands. Until F15
+batch 7 it was withheld when no brand was supplied or published, since the brand was then inferred
+from the top-click row, which the API orders arbitrarily on equal clicks; F15 batch 7 dropped the
+inference (MS-023's ruling: only a supplied brand sets queries aside), so the count is a floor
+there too (`test_a_split_count_off_a_full_page_with_no_known_brand_is_a_floor`).
 
 **A crawled page that gave no answer, from F04.** The crawl marked itself truncated for a page
 its cap or depth left unread and, from 0.173.0, for one this audit's guard refused; a page that

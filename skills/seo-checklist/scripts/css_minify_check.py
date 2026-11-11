@@ -21,7 +21,7 @@ import argparse
 import json
 import re
 import sys
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 try:
     import requests  # noqa: F401  (kept for the shared dependency error contract)
@@ -44,6 +44,11 @@ try:
     from seo_common import read_as_url, fetch_error_kind, html_parser
 except ImportError:
     from scripts.seo_common import read_as_url, fetch_error_kind, html_parser
+
+try:
+    from checklist_runner import registrable_domain
+except ImportError:
+    from scripts.checklist_runner import registrable_domain
 
 # The three signals of minified CSS are read together. A corpus containing authored
 # CSS as well as generated build output matters here: generated source alone is much
@@ -94,6 +99,16 @@ RE_IMPORT = re.compile(r"""@import\s*(?:url\(\s*(?:"([^"]+)"|'([^']+)'|([^)\s]+)
                        r"""|"([^"]+)"|'([^']+)')""", re.I)
 
 
+def own_sheet(page_url: str, href: str) -> bool:
+    """A sheet on the page's own registrable domain (F15, the owner's ruling 2 on batch
+    6's questions): the site can minify it. A third-party sheet such as Google Fonts it
+    cannot. An address, which has no registrable domain, is its own host."""
+    def site(url: str) -> str:
+        host = (urlparse(url).hostname or "").lower()
+        return registrable_domain(host) or host
+    return site(page_url) == site(href)
+
+
 def minification_signals(css: str) -> tuple[float, float, int]:
     """Return the three structural signals consumed by ``looks_minified``."""
     if not css.strip():
@@ -122,6 +137,8 @@ def check(url: str, timeout: int = 15) -> dict:
     result = {
         "url": url,
         "stylesheets": [],
+        # Sheets on another registrable domain, listed and not read.
+        "third_party_sheets": [],
         "checked": 0,
         "unminified_count": 0,
         # Set below, once the page's stylesheets are known.
@@ -156,6 +173,11 @@ def check(url: str, timeout: int = 15) -> dict:
         for groups in RE_IMPORT.findall(RE_COMMENT.sub("", style.get_text() or "")):
             hrefs.append(urljoin(url, next(g for g in groups if g)))
     hrefs = list(dict.fromkeys(hrefs))
+    # Where the page landed, not where it was asked for: a site moved to another domain
+    # serves its own sheets from there.
+    landed = getattr(page, "url", None) or url
+    result["third_party_sheets"] = [href for href in hrefs if not own_sheet(landed, href)]
+    hrefs = [href for href in hrefs if own_sheet(landed, href)]
     result["truncated"] = len(hrefs) > MAX_SHEETS
     hrefs = hrefs[:MAX_SHEETS]
 
@@ -211,8 +233,8 @@ def check(url: str, timeout: int = 15) -> dict:
     if not hrefs:
         result["issues"].append({
             "severity": "low",
-            "message": "No external or imported stylesheets found (inline or "
-                       "JS-injected CSS is not evaluated here)",
+            "message": "No linked or imported stylesheet of the site's own found "
+                       "(third-party, inline or JS-injected CSS is not evaluated here)",
             "url": url,
         })
     for row in result["stylesheets"]:

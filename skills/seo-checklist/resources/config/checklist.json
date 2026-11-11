@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "ca2f4a06b209",
+  "registry_version": "d0d8100d64b1",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -1603,6 +1603,7 @@
           "truthy": true
         }
       },
+      "measures": "That the homepage is the page with the most impressions for the site's most-searched branded query and averages position 1.5 or better: Search Console reports an average, and one that rounds to first is the reading of #1.",
       "effort": "medium",
       "fix": "Confirm the homepage ranks first for the branded query"
     },
@@ -1631,6 +1632,7 @@
           "lte": 3
         }
       },
+      "measures": "Non-branded queries where two or more pages with 10 impressions or more each sit within 3.0 average positions of each other; a query carrying a brand the operator gave or the homepage publishes is left out. Page copy is not read.",
       "effort": "medium",
       "fix": "Find keyword overuse and duplication across URLs"
     },
@@ -1823,6 +1825,7 @@
           "gt": 0
         }
       },
+      "measures": "The final HTTP status of each of the export's top linked pages on this site (the first 100), redirects followed: 4xx, 5xx or no answer is dead. A soft 404 answering 200 passes; the target's content is not read.",
       "effort": "high",
       "fix": "Redirect or restore pages that other sites still link to: 301 each dead URL to its closest live equivalent, or ask the linking site to update the link"
     },
@@ -1886,7 +1889,7 @@
           "gte": 1
         }
       },
-      "measures": "That the Links export lists at least one linking site. Tracking the count over time happens outside the audit.",
+      "measures": "That the export's linking-sites sheet sums to at least one link: a sum of link counts, not of sites. An export without that sheet is NO_DATA. Link quality and the trend over time are not read.",
       "effort": "high",
       "fix": "Export Search Console -> Links periodically so the trend is visible; the count matters far less than who the links come from"
     },
@@ -1911,6 +1914,7 @@
           "gte": 5
         }
       },
+      "measures": "At least five linking root domains in the export (rows of its linking-sites sheet). One export cannot track growth; comparing exports over time happens outside the audit.",
       "effort": "high",
       "fix": "Grow the number of distinct referring domains — root domains move rankings, repeat links from the same site much less"
     },
@@ -2997,6 +3001,7 @@
           ]
         }
       },
+      "measures": "Errors (fail) and warnings (warn) Search Console records against the property's submitted sitemaps, the only issue report its API exposes; a property with none submitted has none. Coverage and manual actions are not read.",
       "effort": "low",
       "fix": "Resolve what Search Console reports as broken: errors against a submitted sitemap"
     },
@@ -3090,6 +3095,7 @@
           "gt": 0
         }
       },
+      "measures": "Sitemap URLs that URL Inspection reports not indexed (up to 100 inspected), and pages with impressions in 28 days that no sitemap lists: the API has no list of indexed pages, so impressions stand in for one.",
       "effort": "low",
       "fix": "Reconcile the sitemap with Google's index: fix or remove sitemap URLs Google has not indexed, and list the indexed pages that are missing from it"
     },
@@ -3143,7 +3149,7 @@
           "truthy": true
         }
       },
-      "measures": "Whether the site ranks first, with any of its pages, for its most-searched branded query in Search Console. The rest of the brand's results page — knowledge panel, reviews, other sites — is not read.",
+      "measures": "Whether the page with the most impressions for the site's most-searched branded query averages position 1.5 or better in Search Console, an average that rounds to first. Other pages and the rest of the brand's results page are not read.",
       "effort": "low",
       "fix": "Monitor and improve the brand SERP"
     },
@@ -3927,7 +3933,7 @@
           "gt": 0
         }
       },
-      "measures": "That every stylesheet the page links, or @imports from a <style> block, is minified; a sheet that cannot be read leaves a clean answer undecided. Unused rules and critical-path CSS are not read.",
+      "measures": "That every stylesheet on the page's own registrable domain that it links or @imports from a <style> block is minified; third-party sheets (Google Fonts) are left out, and an unread one leaves a pass undecided. Unused rules are not read.",
       "effort": "low",
       "fix": "Minify and optimize CSS"
     },
@@ -4733,7 +4739,7 @@
           ]
         }
       },
-      "measures": "An @font-face with no font-display, or block or auto, which hide text; a font preload without crossorigin; a stylesheet that cannot be fetched. Font file sizes are not read.",
+      "measures": "An @font-face hiding text (font-display missing, block or auto), except icon fonts: Font Awesome, Material Icons, Material Symbols, Glyphicons, Bootstrap Icons, Dashicons, Ionicons; a preload without crossorigin; an unfetched sheet.",
       "effort": "low",
       "fix": "Preload key fonts, use font-display: swap"
     },

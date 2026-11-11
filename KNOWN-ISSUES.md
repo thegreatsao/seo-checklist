@@ -442,18 +442,19 @@ name. A column called `url` would be read as "fix this page".
 ## 6. Smaller, but they will bite
 
 - **F03's second reading found 110 rules that decide less than their title, or a
-  `measures` sentence that misstates the code, and F15 is repairing them.** Codex read
-  every rule-carrying item a second time (F03 batches 3–5) and the owner ruled each
-  dispute: 74 code defects, 33 sentences, 1 assertion to retire, 2 not defects. Until F15
-  is `passing` a verdict on an item still listed may be narrower than its title says —
-  e.g. `BL-086` reads a missing links sheet as FAIL. Batch 1 (2026-11-09)
-  repaired the 14 items `parse_html.py` and `javascript_render_audit.py` carry, batch 2
-  (2026-11-09) the 18 that `rendered_audit.py` and its snippet, `pagespeed.py`,
-  `image_inventory.py` and `image_weight_audit.py` carry, batch 3 (2026-11-09) the 14
-  the crawl inventory readers carry, batch 4 (2026-11-10) the 18 of robots, sitemaps,
-  redirects and URLs, batch 5 (2026-11-10) the 18 of structured data and content, batch
-  6 (2026-11-10) the 18 of security, speed and technical; the open list, 10 items with
-  each ruling, is `docs/sprint-20261109-F15.md`.
+  `measures` sentence that misstates the code; F15 has repaired them, and F03 batch 6
+  re-reads them.** Codex read every rule-carrying item a second time (F03 batches 3–5)
+  and the owner ruled each dispute: 74 code defects, 33 sentences, 1 assertion to
+  retire, 2 not defects. Batch 1 (2026-11-09) repaired the 14 items `parse_html.py` and
+  `javascript_render_audit.py` carry, batch 2 (2026-11-09) the 18 that `rendered_audit.py`
+  and its snippet, `pagespeed.py`, `image_inventory.py` and `image_weight_audit.py` carry,
+  batch 3 (2026-11-09) the 14 the crawl inventory readers carry, batch 4 (2026-11-10) the
+  18 of robots, sitemaps, redirects and URLs, batch 5 (2026-11-10) the 18 of structured
+  data and content, batch 6 (2026-11-10) the 18 of security, speed and technical, batch 7
+  (2026-11-11) the 10 of Search Console and the links export
+  (`docs/sprint-20261109-F15.md`). Until F03 batch 6 the second readings of the items F15
+  changed are stale: counted by `audit_item_readings.py`, not yet re-read, so whether a
+  repair reads as its ruling meant is one reader's word.
   <!-- ki: f03-ruled-defects-open -->
 
 - **The four shapes this entry singled out are judged, and twenty constants are still

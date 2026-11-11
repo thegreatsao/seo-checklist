@@ -2514,7 +2514,7 @@ class MeasuresQualifications(unittest.TestCase):
         "AR-152": "That robots.txt declares at least one user-agent group. Whether its rules are the right ones is a judgement the audit does not make.",
         "CN-040": "That the page links to a privacy policy. Whether the policy is current is not read.",
         "SP-109": "Third-party scripts that block rendering: no async, defer or module; //host URLs read on their host; data blocks (text/plain) left out. The other speed traps are separate items.",
-        "BL-086": "That the Links export lists at least one linking site. Tracking the count over time happens outside the audit.",
+        "BL-086": "That the export's linking-sites sheet sums to at least one link: a sum of link counts, not of sites. An export without that sheet is NO_DATA. Link quality and the trend over time are not read.",
         "SP-111": "Chrome UX Report field data for desktop, read through PageSpeed Insights: the data the Search Console report is built from.",
         "SP-112": "Chrome UX Report field data for mobile, read through PageSpeed Insights: the data the Search Console report is built from.",
         "AR-155": "That the URL's path has no uppercase letters or underscores, no archive pattern and at most five segments, and that the URL has no parameters and at most 115 characters. Whether the words describe the page is not read.",
@@ -2522,7 +2522,7 @@ class MeasuresQualifications(unittest.TestCase):
         # 0.115.0: the four A.10 owed as statements rather than repairs.
         "AR-147": "That the URL is at most 115 characters, five path segments and two query parameters. Whether its words describe the page is not read.",
         "GO-135": "URL Inspection's verdict on the audited URL: coverage, canonical, robots and indexing state. The API returns no rendered HTML, so that half is not read.",
-        "TE-174": "That every stylesheet the page links, or @imports from a <style> block, is minified; a sheet that cannot be read leaves a clean answer undecided. Unused rules and critical-path CSS are not read.",
+        "TE-174": "That every stylesheet on the page's own registrable domain that it links or @imports from a <style> block is minified; third-party sheets (Google Fonts) are left out, and an unread one leaves a pass undecided. Unused rules are not read.",
         # 0.116.0: CN-044 repaired to contact routes, with a statement for *clear*.
         "CN-044": "That the page links to a contact page or offers a phone or email link. How clear the contact page is, is not read.",
         # 0.117.0: TE-180 repaired to level-A failures, with a statement for the rest.
@@ -2535,7 +2535,7 @@ class MeasuresQualifications(unittest.TestCase):
         "TE-175": "That the page is served over HTTPS and its served HTML references no http:// script, stylesheet, frame, object, image or media a browser blocks or upgrades. What scripts or CSS load later is not read.",
         # 0.122.0: GO-139 ranks the brand's own query; the rest of its results page is
         # not read.
-        "GO-139": "Whether the site ranks first, with any of its pages, for its most-searched branded query in Search Console. The rest of the brand's results page — knowledge panel, reviews, other sites — is not read.",
+        "GO-139": "Whether the page with the most impressions for the site's most-searched branded query averages position 1.5 or better in Search Console, an average that rounds to first. Other pages and the rest of the brand's results page are not read.",
         "MS-028": "That the page carries a meta description that is not empty or whitespace. Which pages are high-value, and whether they were filled first, is not read.",
         "TE-166": "That the page declares an icon: a link whose rel names icon or apple-touch-icon. Whether the file loads and meets Google's requirements is MB-104, which fetches it.",
         "AR-146": "That a paginated page's rel=prev and rel=next stay on this host and do not point at the page itself. The order of the series and its visible controls are not read.",
@@ -2584,7 +2584,13 @@ class MeasuresQualifications(unittest.TestCase):
         "GO-132": "No GA4 ID configured or loaded twice, no GTM container loaded twice, and no hardcoded ID that a GTM container beside it names in its Google tag or GA4 configuration tag. Tags added at run time are not read.",
         "TE-181": "Nu validator errors in the rendered DOM, with the page's doctype put back in front of it. An artifact without the doctype key is not validated.",
         "MB-100": "A width=device-width viewport and no CSS width or min-width over 360px in the served HTML outside rules never applying on a 360px phone (min-width queries, print). Linked CSS and tap targets, which static CSS cannot judge, are not read.",
-        "TECH-002": "An @font-face with no font-display, or block or auto, which hide text; a font preload without crossorigin; a stylesheet that cannot be fetched. Font file sizes are not read.",
+        "TECH-002": "An @font-face hiding text (font-display missing, block or auto), except icon fonts: Font Awesome, Material Icons, Material Symbols, Glyphicons, Bootstrap Icons, Dashicons, Ionicons; a preload without crossorigin; an unfetched sheet.",
+        "KW-070": "That the homepage is the page with the most impressions for the site's most-searched branded query and averages position 1.5 or better: Search Console reports an average, and one that rounds to first is the reading of #1.",
+        "KW-071": "Non-branded queries where two or more pages with 10 impressions or more each sit within 3.0 average positions of each other; a query carrying a brand the operator gave or the homepage publishes is left out. Page copy is not read.",
+        "BL-083": "The final HTTP status of each of the export's top linked pages on this site (the first 100), redirects followed: 4xx, 5xx or no answer is dead. A soft 404 answering 200 passes; the target's content is not read.",
+        "BL-087": "At least five linking root domains in the export (rows of its linking-sites sheet). One export cannot track growth; comparing exports over time happens outside the audit.",
+        "GO-134": "Errors (fail) and warnings (warn) Search Console records against the property's submitted sitemaps, the only issue report its API exposes; a property with none submitted has none. Coverage and manual actions are not read.",
+        "GO-137": "Sitemap URLs that URL Inspection reports not indexed (up to 100 inspected), and pages with impressions in 28 days that no sitemap lists: the API has no list of indexed pages, so impressions stand in for one.",
     }
 
     module = staticmethod(EveryRulelessItemSaysWhenItApplies.module)

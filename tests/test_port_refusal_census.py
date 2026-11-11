@@ -350,7 +350,8 @@ class PartsTheCensusDoesNotReach(unittest.TestCase):
         def get(url, **_kwargs):
             if ":8443" in url:
                 raise sh.NonStandardPort("Blocked: port 8443 of site.example")
-            return mock.Mock(status_code=200, text=html if url.endswith("/") else "a{b:c}")
+            return mock.Mock(status_code=200, url=url,
+                             text=html if url.endswith("/") else "a{b:c}")
 
         with mock.patch.object(css_minify_check, "safe_get", get):
             out = css_minify_check.check("https://site.example/")

@@ -982,7 +982,7 @@ class Cannibalization(unittest.TestCase):
             (("acme valley riversidė", "https://example.com/gallery"), 10, 100, 2.0),
             (("acmevalley reviews", "https://example.com/"), 50, 400, 1.3),
             (("acmevalley reviews", "https://example.com/reviews"), 8, 80, 4.0),
-        ]))
+        ]), brand=["Acme Valley Riverside"])
         self.assertEqual(out["cannibalized"], [])
         self.assertEqual({row["query"] for row in out["branded_spread"]},
                          {"acme valley riverside", "acme valley riversidė",
@@ -995,7 +995,7 @@ class Cannibalization(unittest.TestCase):
             (("fixture orchard riverside", "https://example.com/menu"), 30, 500, 1.4),
             (("fixture orchrd", "https://example.com/"), 50, 400, 1.3),
             (("fixture orchrd", "https://example.com/reviews"), 8, 80, 2.0),
-        ]))
+        ]), brand=["Fixture Orchard Riverside"])
         self.assertEqual(out["cannibalized"], [])
         self.assertEqual({row["query"] for row in out["branded_spread"]},
                          {"fixture orchard riverside", "fixture orchrd"})
@@ -1005,18 +1005,18 @@ class Cannibalization(unittest.TestCase):
             (("orchard", "https://example.com/"), 400, 2000, 1.2),
             (("orchid", "https://example.com/a"), 50, 400, 1.3),
             (("orchid", "https://example.com/b"), 30, 300, 1.6),
-        ]))
+        ]), brand=["Orchard"])
         self.assertEqual([row["query"] for row in out["cannibalized"]], ["orchid"])
 
     def test_a_four_character_real_word_is_never_near_matched(self):
-        """`acne` is one edit from the inferred `acme` brand and a real word.
+        """`acne` is one edit from the `acme` brand and a real word.
         No longer candidate can provide this guard for a distance-one matcher by
         definition, so the explicit short-term floor is the discriminating case."""
         out = self.analyze(self.rows([
             (("acme", "https://example.com/"), 400, 2000, 1.2),
             (("acne", "https://example.com/a"), 50, 400, 1.3),
             (("acne", "https://example.com/b"), 30, 300, 1.6),
-        ]))
+        ]), brand=["Acme"])
         self.assertEqual([row["query"] for row in out["cannibalized"]], ["acne"])
 
     def test_eleven_query_shape_keeps_only_two_real_contests(self):
@@ -1042,7 +1042,7 @@ class Cannibalization(unittest.TestCase):
             (("opening hours", "https://example.com/hours"), 8, 60, 2.0),
             (("directions", "https://example.com/contact"), 7, 50, 2.5),
         ])
-        out = self.analyze(self.rows(triples))
+        out = self.analyze(self.rows(triples), brand=["Fixture Orchard Riverside"])
         self.assertEqual(out["queries_analyzed"], 11)
         self.assertEqual(len(out["queries"]), 11)
         self.assertFalse(out["queries_truncated"])
@@ -1089,7 +1089,7 @@ class Cannibalization(unittest.TestCase):
              0, 20, 5.0)
             for index in range(1001)
         )
-        out = self.analyze(self.rows(triples))
+        out = self.analyze(self.rows(triples), brand=["Fixture Orchard"])
         self.assertEqual(out["queries_analyzed"], 1032)
         self.assertEqual(len(out["queries"]), 1000)
         self.assertTrue(out["queries_truncated"])
@@ -1107,8 +1107,8 @@ class Cannibalization(unittest.TestCase):
             (("acme valley", "https://example.com/other"), 400, 2000, 1.2),
             (("acme valley", "https://example.com/"), 30, 500, 2.0),
         ]))
-        # With no name known, the top query is a brand only if the homepage is where
-        # it lands — here it is not, so nothing is inferred and the split counts.
+        # With no name known nothing is set aside as branded (F15 batch 7, MS-023), so
+        # the split counts.
         self.assertEqual(out["spread_brand"], {"source": "none", "names": []})
         self.assertEqual([row["query"] for row in out["cannibalized"]],
                          ["acme valley"])
@@ -1131,7 +1131,7 @@ class Cannibalization(unittest.TestCase):
             (("acme valley", "https://example.com/en/"), 30, 500, 1.4),
             (("acme valley", "https://example.com/ru/"), 20, 300, 1.5),
         ]), alternate_urls=["https://example.com/", "https://example.com/en/",
-                            "https://example.com/ru/"])
+                            "https://example.com/ru/"], brand=["Acme Valley"])
         self.assertEqual(out["cannibalized"], [])
         self.assertEqual(out["branded_spread"][0]["page_count"], 1)
 
@@ -1215,19 +1215,17 @@ class Cannibalization(unittest.TestCase):
         self.assertEqual(full["summary"]["cannibalized_queries"], 4)
         self.assertEqual(verdict("MS-023", full), FAIL)
 
-    def test_a_split_count_off_a_full_page_with_no_known_brand_is_withheld(self):
-        """F11's last review: with no brand supplied or published, spreads are sorted
-        against a brand inferred from the top-click row, and the API orders rows with
-        equal clicks arbitrarily — in the review's case every row had zero clicks, and a
-        homepage row past the cap became the brand and moved four split queries out of
-        the count.
-        Off a full page with no known brand the count is withheld; below the cap it
-        stands."""
+    def test_a_split_count_off_a_full_page_with_no_known_brand_is_a_floor(self):
+        """F11's last review withheld this count: with no brand supplied or published,
+        spreads were sorted against a brand inferred from the top-click row, which the
+        API orders arbitrarily on equal clicks. F15 batch 7 dropped the inference
+        (MS-023's ruling), so nothing moves with rows past the cap: the count is a floor
+        and its FAIL stands, off a full page as below it."""
         head, _ = self._contested()
         quiet = [((q, p), 0, i, pos) for (q, p), _c, i, pos in head]
         full = self.analyze(self._a_full_page(*quiet))
-        self.assertNotIn("cannibalized_queries", full["summary"])
-        self.assertEqual(verdict("MS-023", full), NO_DATA)
+        self.assertEqual(full["summary"]["cannibalized_queries"], 4)
+        self.assertEqual(verdict("MS-023", full), FAIL)
         short = self.analyze(self.rows(quiet))
         self.assertEqual(verdict("MS-023", short), FAIL)
 
@@ -1325,7 +1323,8 @@ class Cannibalization(unittest.TestCase):
         ok, evidence = evaluate(ITEMS["KW-070"]["check"]["applies_when"], out)
         self.assertIsNone(ok)
         self.assertIn("pass --brand", evidence)
-        self.assertEqual(out["spread_brand"]["source"], "inferred")
+        # Nor is it a brand for the splits (F15 batch 7, MS-023's ruling).
+        self.assertEqual(out["spread_brand"]["source"], "none")
 
     def test_reordered_and_plural_forms_of_a_name_are_branded(self):
         match = self.mod._any_brand_match

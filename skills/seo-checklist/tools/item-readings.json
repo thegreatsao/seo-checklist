@@ -675,7 +675,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`summary.cannibalized_queries` counts Search Console queries classified cannibalised or contested between two or more of the site's pages.",
+      "reading": "`summary.cannibalized_queries` counts Search Console queries classified cannibalised or contested between two or more of the site's pages. A query carrying a brand the operator supplied or the homepage publishes is set aside as branded; with neither, none is (F15, the ruling: the highest-click query is no longer taken for the brand).",
       "shapes": {
         "conjunction": "Detecting is what the rule does; resolving is the fix."
       },
@@ -1350,8 +1350,8 @@
           "truthy": true
         }
       },
-      "verdict": "answers",
-      "reading": "`branded.homepage_ranks_first` is true when the page Google serves most for the site's most-searched branded query is the homepage (the root, or a locale alternate of it) and averages position 1.5 or better. Branded means the query carries a name the operator supplied with `--brand` or the homepage publishes — `WebSite`/organisation `name` and `alternateName`, `og:site_name` — in any word order (0.122.0; it had judged the highest-click query, which on a site with a generic head term is not its name). `branded.searched` false — nobody searched the name — is N/A; no name at all is NO_DATA.",
+      "verdict": "measures",
+      "reading": "`branded.homepage_ranks_first` is true when the page Google serves most for the site's most-searched branded query is the homepage (the root, or a locale alternate of it) and averages position 1.5 or better. Branded means the query carries a name the operator supplied with `--brand` or the homepage publishes — `WebSite`/organisation `name` and `alternateName`, `og:site_name` — in any word order (0.122.0; it had judged the highest-click query, which on a site with a generic head term is not its name). `branded.searched` false — nobody searched the name — is N/A; no name at all is NO_DATA. `measures` says Search Console's average of 1.5 or better is the reading of first (F15, the ruling).",
       "shapes": {
         "conjunction": "*Own your branded query* is the homepage being the page served for it; *homepage ranks #1* is that page averaging position 1.5 or better. `homepage_ranks_first` is both."
       },
@@ -1382,8 +1382,8 @@
           "lte": 3
         }
       },
-      "verdict": "answers",
-      "reading": "`summary.contested_queries` counts Search Console queries in the contested bucket: two or more of the site's pages ranking for one query.",
+      "verdict": "measures",
+      "reading": "`summary.contested_queries` counts non-branded Search Console queries where two or more of the site's pages, each with 10 impressions or more, sit within 3.0 average positions; the brand is one the operator supplied or the homepage publishes. Page copy is not read, and `measures` says so (F15, the ruling).",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -1476,8 +1476,8 @@
           "gt": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`targets.broken_count` counts pages other sites link to (the Links export's top linked pages) that now answer 4xx or not at all (0.107.0).",
+      "verdict": "measures",
+      "reading": "`targets.broken_count` counts pages other sites link to (the Links export's top linked pages) whose final HTTP status, redirects followed, is 4xx, 5xx or no answer (0.107.0). A soft 404 needs the target's content, which is not read, and `measures` says so (F15, the ruling).",
       "shapes": {
         "conjunction": "The parenthetical is the fix; a redirected target is not counted as broken."
       },
@@ -1509,7 +1509,7 @@
         }
       },
       "verdict": "answers",
-      "reading": "`concentration.top1_share_pct` is the share of links from the single largest linking domain.",
+      "reading": "`concentration.top1_share_pct` is the share of links from the single largest linking domain, whatever the export's row order (F15, the ruling); NO_DATA without a linking-sites sheet.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -1535,7 +1535,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`total_links` is the link count in the Links export; the rule can only say there are none, since tracking happens over time and quality is BL-084's and BL-087's.",
+      "reading": "`total_links` sums the link counts of the Links export's linking-sites sheet, absent (NO_DATA) when the export has no such sheet (F15); the rule can only say there are none, since tracking happens over time and quality is BL-084's and BL-087's, and `measures` says so.",
       "shapes": {
         "conjunction": "*Quality over quantity* is advice about reading the number; `measures` says what is read.",
         "existential": "At least one backlink; the count itself is reported, not judged.",
@@ -1564,8 +1564,8 @@
           "gte": 5
         }
       },
-      "verdict": "answers",
-      "reading": "`linking_domains` counts distinct linking root domains in the export, at least 5.",
+      "verdict": "measures",
+      "reading": "`linking_domains` counts linking root domains in the export, at least 5; one export cannot track growth, and `measures` says so (F15, the ruling). NO_DATA without a linking-sites sheet.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -2557,8 +2557,8 @@
           ]
         }
       },
-      "verdict": "answers",
-      "reading": "`issues` carries errors and warnings Search Console reports against submitted sitemaps (0.23).",
+      "verdict": "measures",
+      "reading": "`issues` carries errors and warnings Search Console reports against submitted sitemaps (0.23), the only issue report its API exposes; a property with none submitted has none, and `measures` says so (F15, the ruling).",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",
@@ -2658,8 +2658,8 @@
           "gt": 0
         }
       },
-      "verdict": "answers",
-      "reading": "`summary.unreconciled` counts sitemap URLs Google has not indexed plus indexed pages no sitemap lists (0.106.0).",
+      "verdict": "measures",
+      "reading": "`summary.unreconciled` counts sitemap URLs URL Inspection reports not indexed plus pages with impressions in 28 days that no sitemap lists (0.106.0); the API has no list of indexed pages, and `measures` says so (F15, the ruling).",
       "shapes": {
         "conjunction": "Indexed pages and sitemaps are the two sets compared."
       },
@@ -2718,7 +2718,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`branded.ranks_first` is the site's own page ranking first — average position 1.5 or better — for its most-searched branded query, identified as KW-070's is (0.122.0; it had been the highest-click query). The rest of the brand results page is not read, and `measures` says so.",
+      "reading": "`branded.ranks_first` is the page with the most impressions for the site's most-searched branded query (identified as KW-070's is) averaging position 1.5 or better; other pages are not read, nor the rest of the brand results page, and `measures` says so (F15, the ruling).",
       "shapes": {
         "conjunction": "*Monitor* and *improve* are one reading: the brand query's ranking over the Search Console window, which is what monitoring it shows and what improving it moves."
       },
@@ -3424,7 +3424,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`unminified_count` counts stylesheets the page loads that are not minified. Unused rules and critical-path CSS are not read, and `measures` says so.",
+      "reading": "`unminified_count` counts stylesheets on the page's own registrable domain that it loads and that are not minified; third-party sheets are left out (the owner's ruling on batch 6's question). Unused rules and critical-path CSS are not read, and `measures` says so.",
       "shapes": {
         "conjunction": "Minify is read; the rest of optimize is what `measures` says is not.",
         "qualifier": "*Optimize* beyond minification is not read; `measures` says so."
@@ -4152,7 +4152,7 @@
         }
       },
       "verdict": "measures",
-      "reading": "`issues` holds no critical, high or medium finding: an @font-face with no font-display, or block or auto (F15, the ruling), a font preload without crossorigin, a stylesheet that could not be fetched. `measures` says so.",
+      "reading": "`issues` holds no critical, high or medium finding: an @font-face with no font-display, or block or auto (F15, the ruling), outside the listed icon fonts (the owner's ruling on batch 6's question), a font preload without crossorigin, a stylesheet that could not be fetched. `measures` says so.",
       "shapes": {},
       "second_reading": {
         "reader": "codex gpt-6.1-sol high",

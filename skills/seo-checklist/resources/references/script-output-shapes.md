@@ -419,9 +419,11 @@ that could not be checked when there are any.
 `stylesheets[]` — array
   - item keys: href, bytes, minified (bool), ratio (float — bytes per line, the
     minification heuristic), status, error
-`checked` — int
+`third_party_sheets[]` — array of str — sheets on another registrable domain than the
+  page's (where it landed), listed and not read (F15 batch 7, the owner's ruling)
+`checked` — int — the site's own sheets read; 0 makes TE-174 N/A
 `unminified_count` — int
-`truncated` — bool — the page links or `@import`s (from a `<style>` block) more than
+`truncated` — bool — the page links or `@import`s, of its own, (from a `<style>` block) more than
   `MAX_SHEETS` stylesheets, so `unminified_count` counts only the first twelve; or a sheet
   could not be read (an error, a 4xx/5xx, a guard refusal), with `truncated_reason`
 `fetch_error` — str | null — also when the page answers 4xx/5xx, or no sheet could be read
@@ -705,7 +707,8 @@ title, including noindex pages. Unlike title duplication, absence is not competi
 `preconnect_count` — int
 `issues[]` — array
 `fonts[]` — array
-`font_faces[]` — array
+`font_faces[]` — array — every face; an icon font's (`ICON_FONT_FAMILIES`, F15 batch 7)
+  and a `local()`-only one's `font_display` raise no finding
 `fetch_error` — NoneType
 
 ### freshness_checker.py
@@ -798,9 +801,9 @@ of this file.
     positions_compared
 `branded_spread[]` / `contested[]` — arrays with the same item shape and
 human-facing 25-entry cap
-`spread_brand.source` — str (`operator`, `published`, `inferred`, or `none`) —
-  what `branded_spread` was classified by; `inferred` is the highest-click query
-  landing on the homepage, used only when no brand name is known
+`spread_brand.source` — str (`operator`, `published`, or `none`) — what
+  `branded_spread` was classified by; with `none` no query is set aside as branded (F15
+  batch 7: the highest-click query is no longer inferred as the brand)
 `spread_brand.names[]` — array of str
 `branded.checked` — bool
 `branded.brand_names[]` — array of str — `--brand` values, or the names the
@@ -820,8 +823,8 @@ human-facing 25-entry cap
 `summary.cannibalized_queries` — int
 `summary.contested_queries` — int — absent over a full page of rows (`truncated`, 0.174.0):
   a page past the cap can end a contest, so the count is not a floor; `truncated_reason`
-  says why. `summary.cannibalized_queries` is absent then too when no brand was supplied
-  or published, since a brand inferred from the rows can change with rows past the cap
+  says why. `summary.cannibalized_queries` stays: a row past the cap only adds a page to
+  a split, and since F15 batch 7 no brand is inferred from the rows, so it is a floor
 `issues[]` — array
 `error` — str | null
 
@@ -879,9 +882,11 @@ against a two-sheet export (top linking sites, top linking text).
 
 `source` — str, absolute path of the export
 `site` — str, whatever was passed as `--site`
-`linking_domains` — int
-`total_links` — int
-`top_sites[]` / `anchors[]` / `top_linked_pages[]` — arrays, capped at 50
+`linking_domains` — int — rows of the linking-sites sheet; absent when the export has
+  no such sheet (F15 batch 7), so BL-084, BL-086 and BL-087 are NO_DATA
+`total_links` — int — the sheet's link counts summed; absent with it
+`top_sites[]` / `anchors[]` / `top_linked_pages[]` — arrays, capped at 50; `top_sites`
+  largest first, whatever the export's order (F15 batch 7, BL-084)
   - item keys: name, count
 `anchor_profile.branded` / `.generic` / `.other` / `.classified` — int
 `concentration.top1_share_pct` — float | null

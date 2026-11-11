@@ -29,6 +29,20 @@ LARGE_FONT_BYTES = 100_000
 
 FONT_EXTENSIONS = (".woff2", ".woff", ".ttf", ".otf", ".eot", ".ttc")
 
+# A closed list of icon font families (F15, the owner's ruling 1 on
+# batch 6's questions, 2026-11-11). An icon font hides glyphs, not words: Font Awesome
+# ships `font-display: block` so a missing icon shows nothing rather than a stray
+# letter. A family is an icon font when, lower-cased with everything but letters and
+# digits dropped, it starts with one of these (`Font Awesome 6 Free`, `Material Icons
+# Outlined`). TECH-002's `measures` sentence names them; an icon font not listed is read.
+ICON_FONT_FAMILIES = ("fontawesome", "materialicons", "materialsymbols", "glyphicons",
+                      "bootstrapicons", "dashicons", "ionicons")
+
+
+def icon_font(family: str | None) -> bool:
+    key = re.sub(r"[^a-z0-9]", "", (family or "").lower())
+    return key.startswith(ICON_FONT_FAMILIES)
+
 
 def _font_format(url: str) -> str:
     path = urlparse(url).path.lower()
@@ -70,7 +84,7 @@ def _record_font_faces(
             font_files.append(normalize_url(font_url, base_url) if base_url else font_url)
 
         finding_url = {"url": stylesheet_url} if stylesheet_url else {}
-        if face["local_only"]:
+        if face["local_only"] or icon_font(face["family"]):
             continue
         display = re.sub(r"\s*!important\s*$", "", face["font_display"] or "",
                          flags=re.I).strip().lower()

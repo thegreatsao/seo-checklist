@@ -121,7 +121,8 @@ class TheShippedReadingsDescribeTheRegistry(unittest.TestCase):
         # TE-176.
         # F15 batch 6: ten more — SE-114, SE-116, TE-171, TE-179, SE-120, GO-131, GO-132,
         # TE-181, MB-100, TECH-002; TE-178's reading left with its retired rule (145 -> 144).
-        self.assertEqual(counts, {"answers": 57, "measures": 87, "owed": 0})
+        # F15 batch 7: six more — KW-070, KW-071, BL-083, BL-087, GO-134, GO-137.
+        self.assertEqual(counts, {"answers": 51, "measures": 93, "owed": 0})
 
     def test_the_file_keeps_the_shape_a_hand_edit_expects(self):
         """Line endings are normalised first: a Windows checkout writes CRLF, and how
@@ -341,8 +342,9 @@ class ASecondReadingIsOfTheCurrentReading(unittest.TestCase):
         # changed robots, sitemaps, redirects and URL scripts and the shared seo_common
         # and robots_rules: 89 stale now. F15 batch 5 changed the structured-data and
         # content scripts and seo_common: 109. F15 batch 6 changed the security, speed and
-        # technical scripts and retired TE-178's rule: 127 stale of 144.
-        self.assertEqual(counts, {"current": 17, "agree": 7, "disputed": 10, "stale": 127})
+        # technical scripts and retired TE-178's rule: 127 stale of 144. F15 batch 7 changed
+        # the Search Console and links-export readings and their scripts: 136.
+        self.assertEqual(counts, {"current": 8, "agree": 7, "disputed": 1, "stale": 136})
 
 
 class TheDigestCommand(unittest.TestCase):
@@ -367,8 +369,8 @@ class TheDigestCommand(unittest.TestCase):
     def test_the_summary_counts_second_readings(self):
         done = self.run_tool()
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertIn(f"second readings: 17 of {len(READINGS['items'])} current — 7 agree, "
-                      "10 disputed; 127 stale", done.stdout)
+        self.assertIn(f"second readings: 8 of {len(READINGS['items'])} current — 7 agree, "
+                      "1 disputed; 136 stale", done.stdout)
 
 
 class WhatTheSecondReaderIsShown(unittest.TestCase):

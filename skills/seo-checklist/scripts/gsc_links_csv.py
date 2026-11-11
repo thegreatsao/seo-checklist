@@ -121,11 +121,13 @@ def load(path: str) -> dict:
         with open(path, encoding="utf-8-sig", errors="replace") as f:
             sheets[os.path.basename(path).lower()] = _rows(f.read())
 
+    # None when the export holds no such sheet, [] when it holds an empty one: a missing
+    # linking-sites sheet is an unread export, not a site nobody links to (F15, BL-086).
     def pick(markers):
         for name, rows in sheets.items():
             if any(m in name for m in markers):
                 return parse_sheet(rows)
-        return []
+        return None
 
     found = {
         "sites": pick(SITE_SHEETS),
@@ -134,7 +136,7 @@ def load(path: str) -> dict:
     }
     # A single unnamed CSV cannot be classified by filename; treat it as sites,
     # which is the sheet people export most often, and say so in the output.
-    if not any(found.values()) and sheets:
+    if all(rows is None for rows in found.values()) and sheets:
         only = parse_sheet(next(iter(sheets.values())))
         found["sites"] = only
         found["_assumed"] = "single unnamed CSV read as the top-linking-sites sheet"
@@ -195,8 +197,6 @@ def analyze(path: str, site: str = "", check_targets: bool = False) -> dict:
     result = {
         "source": os.path.abspath(path),
         "site": site,
-        "linking_domains": 0,
-        "total_links": 0,
         "top_sites": [],
         "anchors": [],
         "top_linked_pages": [],
@@ -219,15 +219,19 @@ def analyze(path: str, site: str = "", check_targets: bool = False) -> dict:
         return result
 
     result["note"] = found.get("_assumed")
-    sites = found.get("sites") or []
+    # Largest first, whatever order the export came in: BL-084's share is the largest
+    # referrer's, and the top ten are the ten largest (F15, BL-084's ruling).
+    sites = sorted(found.get("sites") or [], key=lambda s: -s["count"])
     anchors = found.get("anchors") or []
     result["top_sites"] = sites[:50]
     result["anchors"] = anchors[:50]
     result["top_linked_pages"] = (found.get("pages") or [])[:50]
-    result["linking_domains"] = len(sites)
-    result["total_links"] = sum(s["count"] for s in sites)
+    if found.get("sites") is not None:
+        # Absent with no linking-sites sheet, so BL-084, BL-086 and BL-087 are NO_DATA.
+        result["linking_domains"] = len(sites)
+        result["total_links"] = sum(s["count"] for s in sites)
 
-    if sites and result["total_links"]:
+    if sites and result.get("total_links"):
         total = result["total_links"]
         result["concentration"]["top1_share_pct"] = round(100 * sites[0]["count"] / total, 1)
         result["concentration"]["top10_share_pct"] = round(
@@ -258,7 +262,7 @@ def analyze(path: str, site: str = "", check_targets: bool = False) -> dict:
             result["anchor_profile"]["other"] += a["count"]
         result["anchor_profile"]["classified"] += a["count"]
 
-    if not sites:
+    if found.get("sites") is None:
         result["issues"].append({
             "severity": "medium",
             "message": "no linking-sites sheet found in the export — re-export from "
@@ -315,8 +319,8 @@ def main():
     print(f"Links export: {result['source']}")
     if result["note"]:
         print(f"  note: {result['note']}")
-    print(f"  linking domains: {result['linking_domains']}")
-    print(f"  total links:     {result['total_links']}")
+    print(f"  linking domains: {result.get('linking_domains', 'no linking-sites sheet')}")
+    print(f"  total links:     {result.get('total_links', 'no linking-sites sheet')}")
     c = result["concentration"]
     if c["top1_share_pct"] is not None:
         print(f"  top domain share: {c['top1_share_pct']}%   top 10: {c['top10_share_pct']}%")

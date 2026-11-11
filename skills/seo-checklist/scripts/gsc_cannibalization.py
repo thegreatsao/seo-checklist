@@ -84,9 +84,9 @@ HIGH_SEVERITY_IMPRESSIONS = 100
 #  Search Analytics API returns up to 25,000 a request and pages past that, so the number
 #  is a request budget, not the API's. At it (a full page: the window may hold more) no
 #  answer it could decide is given as more than it is. MS-023's PASS is withheld by the
-#  runner, and with a supplied or published brand its WARN or FAIL is a floor — a row past
-#  the cap only adds a page to a split, so a WARN can become a FAIL with more rows, never
-#  a PASS; with the brand inferred from the rows its count is withheld too. KW-071's
+#  runner, and its WARN or FAIL is a floor — a row past the cap only adds a page to a
+#  split, so a WARN can become a FAIL with more rows, never a PASS (since F15 batch 7 no
+#  brand is inferred from the rows, so none can move with them). KW-071's
 #  count is withheld, since a page past the cap can widen a contest's spread and end it. KW-070 and GO-139, whose `truthy` answers the runner cannot withhold, lose
 #  `searched`, `ranks_first` and `homepage_ranks_first` here, with `branded.reason` (until
 #  F11 the branded query and its page were picked from the rows read). So moving it
@@ -271,7 +271,7 @@ def _brand_match(query: str, brand_query: str) -> tuple[str, int] | None:
         shorter_brand = "".join(brand_words[:2])
         if shorter_brand in query_form:
             return shorter_brand, 0
-    # The inferred brand often includes a location suffix. Preserve a substantial
+    # A brand name often includes a location suffix. Preserve a substantial
     # shorter form such as "acme valley" / "acmevalley" as the same brand.
     if query_form in brand_form and len(query_form) >= max(5, len(brand_form) // 2):
         return query_form, 0
@@ -433,19 +433,6 @@ def _is_homepage(page: str, homepage: str, alternate_urls: list[str]) -> bool:
             and bool(alternate_urls))
 
 
-def _inferred_brand(rows: list, homepage: str) -> str:
-    """The pre-0.122.0 guess, kept for one narrower job: with no published or
-    supplied name, the highest-click query counts as the brand *for classifying
-    spreads* when the homepage is the page it lands on. It never decides KW-070 or
-    GO-139 — that was the defect: a generic head term judged as the site's name."""
-    if not rows:
-        return ""
-    best = max(rows, key=lambda r: r["clicks"])
-    owner = max((r for r in rows if r["query"] == best["query"]),
-                key=lambda r: r["clicks"])
-    return best["query"] if _is_homepage(owner["page"], homepage, []) else ""
-
-
 def find_branded(rows: list, site_url: str, brand_names: list[str],
                  brand_source: str, alternate_urls: list[str] | None = None,
                  no_brand_reason: str = "") -> dict:
@@ -596,12 +583,11 @@ def analyze(site_url: str, credentials: str, days: int,
             f"window may hold more, and the brand's most-searched query and the page "
             f"that owns it may be among them")
     spreads = find_query_spreads(rows, alternate_urls)
+    # Only a brand the operator gave or the homepage publishes drops a query as branded
+    # (F15, MS-023's ruling): the top-click query once stood in for a missing name and
+    # swallowed a genuinely split query with it.
     if brand_names:
         result["spread_brand"] = {"source": brand_source, "names": brand_names}
-    else:
-        inferred = _inferred_brand(rows, homepage_of(site_url))
-        if inferred:
-            result["spread_brand"] = {"source": "inferred", "names": [inferred]}
     spread_brand = result["spread_brand"]["names"]
     result["branded_spread"] = [
         spread for spread in spreads
@@ -635,13 +621,9 @@ def analyze(site_url: str, credentials: str, days: int,
     if result["truncated"]:
         # Off a full page of rows (F11's reviews of batch 4). A contest is not a floor:
         # a page past the cap can widen a query's position spread and end it, so
-        # KW-071's count is withheld. A split is a floor only against a brand that does
-        # not come from the rows: a row past the cap only adds a page to a query, but a
-        # brand inferred from the top-click row can change with rows the API orders
-        # arbitrarily on equal clicks, and move queries out of the count.
+        # KW-071's count is withheld. A split is a floor: a row past the cap only adds a
+        # page to a query, and the brand that drops queries does not come from the rows.
         result["summary"].pop("contested_queries")
-        if result["spread_brand"]["source"] in ("inferred", "none"):
-            result["summary"].pop("cannibalized_queries")
         result["truncated_reason"] = (
             f"the request returned a full page of {ROW_LIMIT} query/page rows, so the "
             f"window may hold more")
