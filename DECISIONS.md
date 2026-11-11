@@ -76,6 +76,34 @@ that drift.
 
 ---
 
+### [2026-11-11] TECH-002 leaves icon fonts out; TE-174 reads only the site's own stylesheets
+
+**Decision:** The owner's rulings 1 and 2 on F15 batch 6's questions ("Принимаю, батч 7", 2026-11-11; the F15
+contract, "The owner's rulings on batch 6's questions"). TECH-002 does not fail an `@font-face` of an icon font for
+`font-display` (missing, `block` or `auto`): an icon font is recognised by a closed list of families (Font Awesome,
+Material Icons, Material Symbols and the like), and the item's `measures` sentence names the list. TE-174 counts only
+stylesheets on the page's own registrable domain (the bundled Public Suffix List, as the runner's Search Console
+property uses); a third-party sheet such as Google Fonts is left out, and its sentence says so. Done red first in F15
+batch 7. The owner also accepted batch 6's own decisions (ruling 4): the closed slug vocabulary for utility pages,
+`/cookies` read as one, a CSP with no script directive as an SE-120 gap, and Shopify's `GT-` IDs read as Merchant
+Center rather than GA4.
+
+**Why:** an icon font hides glyphs, not words: Font Awesome ships `font-display: block` on purpose, so that a missing
+icon shows nothing rather than a stray letter, and batch 6's literal reading failed every site using it. A sheet on
+another site's domain is one the site cannot minify; judging it fails the site for Google's build.
+
+**Alternatives rejected:**
+- **Keep both literal readings (batch 6):** a low FAIL on every Font Awesome site, and on every site loading Google
+  Fonts through a `<link>` or an `@import`.
+- **Detect an icon font by its glyphs (Private Use Area code points) or its file name:** needs the font file or a
+  guess; a closed family list is deterministic and states what it misses.
+- **Own sheets by exact host:** a site's `static.` or `cdn.` subdomain is its own build, so the host is too narrow.
+
+**Consequences:** a site whose only blocking faces are icon fonts passes TECH-002; a page whose only stylesheets are
+third-party has none of its own for TE-174 to read. An icon font missing from the list fails as before.
+
+---
+
 ### [2026-11-10] GO-145 and GEO-005 are N/A on utility pages (privacy, terms, contact)
 
 **Decision:** The owner's ruling 1 on F15 batch 5's questions ("Принимаю, батч 6", 2026-11-10; the F15 contract, "The
