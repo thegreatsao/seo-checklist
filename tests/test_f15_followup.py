@@ -151,5 +151,16 @@ class ReviewRound2(unittest.TestCase):
                          (FAIL, FAIL))
 
 
+class ReviewRound3(unittest.TestCase):
+
+    def test_flexslider_and_the_feather_webfont(self):
+        """FlexSlider 2's arrows (MetaSlider's default slider) and feather-webfont's
+        `feather-icons`, as their published CSS declares them."""
+        for family in ("flexslider-icon", '"feather-icons"'):
+            with self.subTest(family=family):
+                self.assertEqual(IconFontList.tech(self, family), PASS)
+        self.assertEqual(IconFontList.tech(self, "Feathergraphy"), FAIL)
+
+
 if __name__ == "__main__":
     unittest.main()
