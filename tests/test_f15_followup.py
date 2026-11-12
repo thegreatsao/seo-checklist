@@ -86,7 +86,7 @@ class UtilityPathRule(unittest.TestCase):
     def test_top_level_and_legal_pages_stay_utility_pages(self):
         for path in ("/terms", "/privacy-policy/", "/contact/index.html", "/legal",
                      "/legal/", "/legal/terms", "/legal/privacy-policy.html",
-                     "/legal/cookies/amp", "/LEGAL/Terms", "/legal/en/privacy"):
+                     "/legal/cookies/amp", "/LEGAL/Terms"):
             with self.subTest(path=path):
                 self.assertEqual(self.both(path), (NA, NA))
 
@@ -241,7 +241,27 @@ class PathRulingReviewRound1(unittest.TestCase):
         for item_id in ("GO-145", "GEO-005"):
             with self.subTest(item=item_id):
                 self.assertNotIn("без префикса", RU[item_id])
-                self.assertIn("не считая префикса языка", RU[item_id])
+                self.assertIn("префикс языка не в счёт", RU[item_id])
+
+
+
+class PathRulingReviewRound2(unittest.TestCase):
+
+    def both(self, path: str) -> tuple:
+        return UtilityPathRule.both(self, path)
+
+    def test_only_the_slug_directly_under_legal_counts(self):
+        """The ruling: "the segment directly under `/legal/`, `/policies/` or `/pages/`"."""
+        for path in ("/legal/glossary/terms", "/legal/blog/privacy", "/legal/a/b/contact",
+                     "/en/legal/glossary/terms", "/legal/en/privacy"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (FAIL, FAIL))
+
+    def test_the_regions_the_plugin_corrects_are_regions(self):
+        """`hreflang_checker.COMMON_REGION_MISTAKES`: `en-uk` is a common locale path."""
+        for path in ("/en-uk/privacy-policy", "/en-eu/privacy", "/en_UK/contact"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (NA, NA))
 
 
 if __name__ == "__main__":

@@ -12,17 +12,18 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `21e7b7daa7b7` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+Registry version: `0a51084d6399` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4, `e2d01d02779d` after batch 5,
 `ca2f4a06b209` after batch 6, `d0d8100d64b1` and `492fdb7594a4` within batch 7, `e8b3203a3f36` after batch 7,
 `2cad86e2fbbe` after the follow-up).
 
-F15 path-rule ruling (`2cad86e2fbbe` → `21e7b7daa7b7`) — the owner's ruling on the follow-up's question. **Verdicts of a
-real audit can move**: GO-145 and GEO-005 drop a leading language segment (`/en/`, `/en-us/`, `/pt-BR/`, `/zh-hant/`)
-before reading the slug, and read the slug directly under `/policies/` or `/pages/` as they read one under `/legal/`,
-so a Shopify store's `/policies/privacy-policy`, `/policies/terms-of-service`, `/pages/contact` and `/en/privacy` are
-N/A again; `/glossary/terms` and `/blog/privacy-tips` keep the rule, and so does `/policies/refund-policy` (`refund`
-is no listed word). Sentences beside both.
+F15 path-rule ruling (`2cad86e2fbbe` → `0a51084d6399`) — the owner's ruling on the follow-up's question. **Verdicts of a
+real audit can move**: GO-145 and GEO-005 drop a leading language segment (`/en/`, `/en-us/`, `/en-uk/`, `/pt-BR/`,
+`/zh-hant/`) before reading the slug, and read the slug as the first segment or directly under `/legal/`, `/policies/`
+or `/pages/`, so a Shopify store's `/policies/privacy-policy`, `/policies/terms-of-service`, `/pages/contact` and
+`/en/privacy` are N/A again, while a slug deeper under `/legal/` (`/legal/en/privacy`, `/legal/glossary/terms`) now
+keeps the rule; `/glossary/terms` and `/blog/privacy-tips` keep it too, and so does `/policies/refund-policy`
+(`refund` is no listed word). Sentences beside both.
 
 F15 follow-up (`e8b3203a3f36` → `2cad86e2fbbe`) — the owner's rulings 1 and 4 on batch 7's questions. **Verdicts of a
 real audit can move**: TECH-002 leaves out the icon fonts `ICON_FONT_FAMILIES` in `font_audit.py` lists, widened from

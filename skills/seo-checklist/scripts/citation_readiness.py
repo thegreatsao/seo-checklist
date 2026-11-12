@@ -10,7 +10,7 @@ import json
 import re
 from urllib.parse import unquote, urlparse
 
-from hreflang_checker import VALID_LANG_CODES, VALID_REGION_CODES
+from hreflang_checker import COMMON_REGION_MISTAKES, VALID_LANG_CODES, VALID_REGION_CODES
 from seo_common import (
     CONTRIBUTION_KEYS,
     in_page_furniture,
@@ -88,8 +88,9 @@ def _declares_a_source(link) -> bool:
 # on batch 7's questions, 2026-11-12): deeper, a utility word names a topic
 # (`/glossary/terms`). Widened the same day by the owner's ruling on the follow-up's
 # question ("Да, исправить"): a leading language segment (`/en/`, `/pt-BR/`) is dropped
-# first, and the slug directly under `/policies/` or `/pages/` (Shopify's built-in policy
-# and contact pages) counts too.
+# first, and the slug counts as the first segment or directly under `/legal/`, `/policies/`
+# or `/pages/` (Shopify's built-in policy and contact pages); `/legal/en/privacy` and
+# `/legal/glossary/terms` are content pages (review round 2).
 UTILITY_WORDS = frozenset({
     # privacy
     "privacy", "gdpr", "cookie", "cookies", "datenschutz", "datenschutzerklaerung",
@@ -140,17 +141,19 @@ def utility_page(url: str) -> bool:
     segments = [s for s in unquote(urlparse(url or "").path).lower().split("/") if s]
     # A front controller (Joomla's default `/index.php/contact`) or an AMP prefix is no
     # segment of the page's own path (review round 1 of the follow-up).
-    # A language segment is a two-letter ISO 639-1 code with an optional script and
-    # ISO 3166-1 or UN M.49 region (`en`, `en-us`, `zh-hant`, `es-419`); one only, at the
-    # start or after an `index.php`/`amp` prefix. A section name shaped like one is not
-    # (`/my-blog/`, `/en-xx/`: review round 1); `/hi-fi/` and `/to-do/` still are.
+    # A language segment is a two-letter ISO 639-1 code with an optional script and a
+    # region: ISO 3166-1, one the plugin corrects (`uk`, `eu`) or three digits (`es-419`);
+    # one only, at the start or after an `index.php`/`amp` prefix. A section name shaped
+    # like one is not (`/my-blog/`, `/en-xx/`: review round 1); `/hi-fi/` and `/to-do/`
+    # still are.
     language = False
     while len(segments) > 1:
         if segments[0] in ("index.php", "amp"):
             segments.pop(0)
         elif not language and (tag := LANGUAGE_SEGMENT_RE.fullmatch(segments[0])) \
                 and tag[1] in VALID_LANG_CODES \
-                and (not tag[2] or tag[2].isdigit() or tag[2].upper() in VALID_REGION_CODES):
+                and (not tag[2] or tag[2].isdigit() or tag[2].upper() in VALID_REGION_CODES
+                     or tag[2].upper() in COMMON_REGION_MISTAKES):
             segments.pop(0)
             language = True
         else:
@@ -158,8 +161,8 @@ def utility_page(url: str) -> bool:
     slugs = [re.sub(r"\.(?:html?|php|aspx?|jsp)$", "", s) for s in segments]
     while len(slugs) > 1 and slugs[-1] in ("index", "default", "amp"):
         slugs.pop()
-    if not slugs or (len(slugs) > 1 and segments[0] != "legal"
-                     and not (len(slugs) == 2 and segments[0] in ("policies", "pages"))):
+    if not slugs or (len(slugs) > 1
+                     and not (len(slugs) == 2 and segments[0] in ("legal", "policies", "pages"))):
         return False
     slug = re.sub(r"[-_]+", "-", slugs[-1]).strip("-")
     for phrase, word in UTILITY_PHRASES.items():
