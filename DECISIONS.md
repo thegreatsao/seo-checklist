@@ -94,9 +94,13 @@ the sentence says where it is. A utility word deeper in a path names a topic, no
 - **Keep the sentence naming every family (batch 7):** the list stops where the sentence ends, not where icon fonts do.
 - **Keep the slug rule at any depth (batch 6):** `/glossary/terms` and similar topic pages escape the citation items.
 
-**Consequences:** a family missing from the constant still fails, and adding one is a one-line edit with a test. A
-utility page below the top level outside `/legal/` keeps the rule and can fail, including one under a language prefix
-(`/en/privacy`) and a sub-page such as `/privacy/cookies`.
+**Consequences:** a family missing from the constant still fails, and adding one is a one-line edit with a test; a
+family that is an ordinary word (`star`, `slick`, `feather`, `lg`) matches only as the whole name (`WHOLE_NAME_ONLY`).
+A text face sharing an icon font's name is skipped too (Erbar's display face Phosphor). A front controller or an AMP
+prefix is no segment (`/index.php/contact`, `/amp/privacy` are top-level pages; the review found Joomla's default URLs
+lost), and trailing `index` and `amp` segments are dropped as before. A utility page below the top level outside
+`/legal/` keeps the rule and can fail, including one under a language prefix (`/en/privacy`) and a sub-page such as
+`/privacy/cookies`.
 
 ---
 

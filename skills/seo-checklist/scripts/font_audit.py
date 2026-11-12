@@ -47,7 +47,9 @@ ICON_FONT_FAMILIES = (
     "linearicons", "feather", "phosphor", "peicon7stroke", "eleganticons",
     # video.js, lightGallery, PrimeIcons, VS Code's codicons, Material Design Iconic Font,
     # and the Fontello and IcoMoon generators' default names (review round 1)
-    "videojs", "lg", "primeicons", "codicon", "materialdesigniconic", "fontello", "icomoon")
+    "videojs", "lg", "primeicons", "codicon", "materialdesigniconic", "fontello", "icomoon",
+    # Magento 2's Luma and Blank themes (review round 2)
+    "lumaicons", "iconsblanktheme")
 # Words a text family can start with: a prefix `star` would take "Stardos Stencil".
 WHOLE_NAME_ONLY = frozenset({"star", "slick", "feather", "lg"})
 

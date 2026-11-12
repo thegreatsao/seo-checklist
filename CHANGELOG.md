@@ -18,12 +18,12 @@ after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4, `e2d0
 
 F15 follow-up (`e8b3203a3f36` → `2cad86e2fbbe`) — the owner's rulings 1 and 4 on batch 7's questions. **Verdicts of a
 real audit can move**: TECH-002 leaves out the icon fonts `ICON_FONT_FAMILIES` in `font_audit.py` lists, widened from
-nine families to 35 — WooCommerce's `star` and `WooCommerce`, Divi's `ETmodules`, Material Design Icons, Boxicons,
+nine families to 37 — WooCommerce's `star` and `WooCommerce`, Divi's `ETmodules`, Material Design Icons, Boxicons,
 Tabler, Simple Line Icons, slick, Remix Icon, Themify, IcoFont, Typicons, Genericons, Foundation, Linearicons,
 Feather, Phosphor, Pe-icon-7-stroke, Elegant Icons, video.js, lightGallery, PrimeIcons, codicons, Material Design
-Iconic Font, Fontello and IcoMoon, as each project's CSS declares them (`star`, `slick`, `feather` and `lg` only as
+Iconic Font, Fontello, IcoMoon and Magento's `luma-icons` and `icons-blank-theme`, as each project's CSS declares them (`star`, `slick`, `feather` and `lg` only as
 the whole name); its sentence names three and the constant. GO-145 and GEO-005 read a utility slug only as the first
-path segment or under `/legal/` (a leading `index.php` or `amp` segment dropped), so `/glossary/terms`,
+path segment or under `/legal/` (a leading `index.php` or `amp` segment dropped, as are trailing `index` and `amp` ones), so `/glossary/terms`,
 `/blog/privacy` and `/en/privacy` keep the rule. Sentences beside all three.
 
 F15 batch 7 (`ca2f4a06b209` → `e8b3203a3f36`) — Search Console and the links export, and the owner's rulings 1–2 on

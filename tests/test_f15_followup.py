@@ -134,5 +134,22 @@ class ReviewRound1(unittest.TestCase):
                 self.assertEqual(IconFontList.tech(self, family), FAIL)
 
 
+class ReviewRound2(unittest.TestCase):
+
+    def test_magentos_default_icon_fonts(self):
+        """Luma's `@icons__font-name` and the Blank theme's, emitted with
+        `font-display: block` by Magento 2's `_icons.less`."""
+        for family in ("'luma-icons'", "'icons-blank-theme'"):
+            with self.subTest(family=family):
+                self.assertEqual(IconFontList.tech(self, family), PASS)
+
+    def test_every_trailing_index_and_amp_segment_is_dropped(self):
+        for path in ("/privacy/amp/index.html", "/contact/index.php/amp"):
+            with self.subTest(path=path):
+                self.assertEqual(UtilityPathRule.both(self, path), (NA, NA))
+        self.assertEqual(UtilityPathRule.both(self, "/glossary/terms/amp/index.html"),
+                         (FAIL, FAIL))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -135,7 +135,7 @@ def utility_page(url: str) -> bool:
     while len(segments) > 1 and segments[0] in ("index.php", "amp"):
         segments.pop(0)
     slugs = [re.sub(r"\.(?:html?|php|aspx?|jsp)$", "", s) for s in segments]
-    if len(slugs) > 1 and slugs[-1] in ("index", "default", "amp"):
+    while len(slugs) > 1 and slugs[-1] in ("index", "default", "amp"):
         slugs.pop()
     if not slugs or (len(slugs) > 1 and segments[0] != "legal"):
         return False
