@@ -106,8 +106,11 @@ A utility page below the top level outside `/legal/` keeps the rule and can fail
 **Widened by the owner's ruling, 2026-11-12 ("Да, исправить"):** a leading language segment (`en`, `en-us`, `pt-BR`,
 `zh-hant`) is dropped first, and a slug directly under `/policies/` or `/pages/` (Shopify's built-in policy and
 contact pages) counts as one under `/legal/` does; `/glossary/terms` and `/blog/privacy-tips` stay content pages.
-The language segment is a two-letter code in `hreflang_checker.VALID_LANG_CODES` with an optional script and region
-(`es-419`, `en_us` too); one only, so `/en/blog/privacy` stays content. `/legal/` keeps any depth (`/legal/en/privacy`
+The language segment is a two-letter code in `hreflang_checker.VALID_LANG_CODES` with an optional script (Hans, Hant,
+Latn, Cyrl) and a region in `VALID_REGION_CODES` or UN M.49 (`es-419`; `en_us` too); one only, so `/en/blog/privacy`
+stays content, and `/my-blog/` or `/en-xx/` is no language (review round 1). A section named like a valid tag
+(`/hi-fi/`, `/to-do/`, a plain `/hr/` or `/it/`) is still read as one: the ruling's two-letter code cannot tell them
+apart. `/legal/` keeps any depth (`/legal/en/privacy`
 was a utility page under ruling 4 and is not narrowed); `/policies/` and `/pages/` hold only their direct slug, as
 ruled. `refund` stays out of the slug words: the items name privacy, terms and contact pages (the owner's ruling 1 on
 batch 5's questions), so Shopify's `/policies/refund-policy` keeps the rule until the owner names it.

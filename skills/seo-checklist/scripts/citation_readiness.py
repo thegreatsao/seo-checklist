@@ -10,7 +10,7 @@ import json
 import re
 from urllib.parse import unquote, urlparse
 
-from hreflang_checker import VALID_LANG_CODES
+from hreflang_checker import VALID_LANG_CODES, VALID_REGION_CODES
 from seo_common import (
     CONTRIBUTION_KEYS,
     in_page_furniture,
@@ -130,7 +130,9 @@ UTILITY_SLUG_WORDS = frozenset({
     "ispolzovaniya", "obrabotki",
     "polzovatelskoe", "naudojimo", "duomenu"})
 
-LANGUAGE_SEGMENT_RE = re.compile(r"([a-z]{2})(?:[-_][a-z]{4})?(?:[-_](?:[a-z]{2}|\d{3}))?")
+# The scripts a language path names in practice (Chinese, Serbian, Uzbek, Azerbaijani).
+LANGUAGE_SEGMENT_RE = re.compile(
+    r"([a-z]{2})(?:[-_](?:hans|hant|latn|cyrl))?(?:[-_]([a-z]{2}|\d{3}))?")
 
 
 def utility_page(url: str) -> bool:
@@ -138,14 +140,17 @@ def utility_page(url: str) -> bool:
     segments = [s for s in unquote(urlparse(url or "").path).lower().split("/") if s]
     # A front controller (Joomla's default `/index.php/contact`) or an AMP prefix is no
     # segment of the page's own path (review round 1 of the follow-up).
-    # A language segment is a two-letter ISO 639-1 code, with an optional script and
-    # region (`en`, `en-us`, `zh-hant`, `es-419`); only one, and only at the start.
+    # A language segment is a two-letter ISO 639-1 code with an optional script and
+    # ISO 3166-1 or UN M.49 region (`en`, `en-us`, `zh-hant`, `es-419`); one only, at the
+    # start or after an `index.php`/`amp` prefix. A section name shaped like one is not
+    # (`/my-blog/`, `/en-xx/`: review round 1); `/hi-fi/` and `/to-do/` still are.
     language = False
     while len(segments) > 1:
         if segments[0] in ("index.php", "amp"):
             segments.pop(0)
         elif not language and (tag := LANGUAGE_SEGMENT_RE.fullmatch(segments[0])) \
-                and tag[1] in VALID_LANG_CODES:
+                and tag[1] in VALID_LANG_CODES \
+                and (not tag[2] or tag[2].isdigit() or tag[2].upper() in VALID_REGION_CODES):
             segments.pop(0)
             language = True
         else:

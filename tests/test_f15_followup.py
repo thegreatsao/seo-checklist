@@ -219,5 +219,30 @@ class PathRuling(unittest.TestCase):
                     self.assertLessEqual(len(sentence), 240)
 
 
+
+class PathRulingReviewRound1(unittest.TestCase):
+
+    def both(self, path: str) -> tuple:
+        return UtilityPathRule.both(self, path)
+
+    def test_a_section_shaped_like_a_language_tag_is_no_language(self):
+        """A script is one a language path names, a region an ISO 3166-1 or UN M.49 one."""
+        for path in ("/my-blog/privacy", "/my-shop/contact", "/en-blog/privacy",
+                     "/de-news/datenschutz", "/it-help/contact", "/en-xx/privacy",
+                     "/en-zz/privacy"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (FAIL, FAIL))
+        for path in ("/sr-latn-rs/privacy", "/zh-hans-cn/contact", "/es-419/privacy",
+                     "/zh-HK/terms"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (NA, NA))
+
+    def test_the_russian_sentence_drops_the_prefix_rather_than_requiring_none(self):
+        for item_id in ("GO-145", "GEO-005"):
+            with self.subTest(item=item_id):
+                self.assertNotIn("без префикса", RU[item_id])
+                self.assertIn("не считая префикса языка", RU[item_id])
+
+
 if __name__ == "__main__":
     unittest.main()
