@@ -44,9 +44,12 @@ ICON_FONT_FAMILIES = (
     "star", "woocommerce", "etmodules",
     "materialdesignicons", "boxicons", "tablericons", "simplelineicons", "slick",
     "remixicon", "themify", "icofont", "typicons", "genericons", "foundationicons",
-    "linearicons", "feather", "phosphor", "peicon7stroke", "eleganticons")
+    "linearicons", "feather", "phosphor", "peicon7stroke", "eleganticons",
+    # video.js, lightGallery, PrimeIcons, VS Code's codicons, Material Design Iconic Font,
+    # and the Fontello and IcoMoon generators' default names (review round 1)
+    "videojs", "lg", "primeicons", "codicon", "materialdesigniconic", "fontello", "icomoon")
 # Words a text family can start with: a prefix `star` would take "Stardos Stencil".
-WHOLE_NAME_ONLY = frozenset({"star", "slick", "feather"})
+WHOLE_NAME_ONLY = frozenset({"star", "slick", "feather", "lg"})
 
 
 def icon_font(family: str | None) -> bool:

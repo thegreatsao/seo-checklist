@@ -130,10 +130,14 @@ UTILITY_SLUG_WORDS = frozenset({
 def utility_page(url: str) -> bool:
     """Whether the page at `url` is a privacy, terms or contact page, by its slug."""
     segments = [s for s in unquote(urlparse(url or "").path).lower().split("/") if s]
+    # A front controller (Joomla's default `/index.php/contact`) or an AMP prefix is no
+    # segment of the page's own path (review round 1 of the follow-up).
+    while len(segments) > 1 and segments[0] in ("index.php", "amp"):
+        segments.pop(0)
     slugs = [re.sub(r"\.(?:html?|php|aspx?|jsp)$", "", s) for s in segments]
     if len(slugs) > 1 and slugs[-1] in ("index", "default", "amp"):
         slugs.pop()
-    if not slugs or (len(slugs) > 1 and slugs[0] != "legal"):
+    if not slugs or (len(slugs) > 1 and segments[0] != "legal"):
         return False
     slug = re.sub(r"[-_]+", "-", slugs[-1]).strip("-")
     for phrase, word in UTILITY_PHRASES.items():

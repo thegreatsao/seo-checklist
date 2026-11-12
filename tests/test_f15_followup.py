@@ -54,7 +54,7 @@ class IconFontList(unittest.TestCase):
 
     def test_the_whole_names_are_listed_families(self):
         from font_audit import ICON_FONT_FAMILIES, WHOLE_NAME_ONLY
-        self.assertEqual(WHOLE_NAME_ONLY, {"star", "slick", "feather"})
+        self.assertEqual(WHOLE_NAME_ONLY, {"star", "slick", "feather", "lg"})
         self.assertLessEqual(WHOLE_NAME_ONLY, set(ICON_FONT_FAMILIES))
 
     def test_the_sentence_names_three_and_the_constant(self):
@@ -99,6 +99,39 @@ class UtilityPathRule(unittest.TestCase):
                 with self.subTest(item=item_id, sentence=sentence):
                     self.assertIn("/legal/", sentence)
                     self.assertLessEqual(len(sentence), 240)
+
+
+class ReviewRound1(unittest.TestCase):
+
+    def both(self, path: str) -> tuple:
+        return UtilityPathRule.both(self, path)
+
+    def test_a_front_controller_or_amp_prefix_is_not_a_segment(self):
+        """Joomla's default URLs and WordPress PATHINFO permalinks put the page after
+        `index.php`; an AMP prefix mirrors the `/amp` suffix already dropped."""
+        for path in ("/index.php/privacy-policy", "/index.php/contact/", "/amp/privacy",
+                     "/index.php/legal/terms"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (NA, NA))
+        for path in ("/index.php/blog/privacy", "/amp/glossary/terms"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (FAIL, FAIL))
+
+    def test_a_legal_file_is_no_legal_folder(self):
+        for path in ("/legal.html/privacy", "/legal.php/terms"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (FAIL, FAIL))
+
+    def test_more_common_icon_fonts(self):
+        """As video.js, lightGallery, PrimeIcons, VS Code's codicons, Material Design
+        Iconic Font and the Fontello and IcoMoon generators declare them."""
+        for family in ("VideoJS", "lg", "primeicons", "codicon",
+                       "'Material-Design-Iconic-Font'", "fontello", "icomoon"):
+            with self.subTest(family=family):
+                self.assertEqual(IconFontList.tech(self, family), PASS)
+        for family in ("Lgothic", '"LG Smart"'):
+            with self.subTest(family=family):
+                self.assertEqual(IconFontList.tech(self, family), FAIL)
 
 
 if __name__ == "__main__":
