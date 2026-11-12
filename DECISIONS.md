@@ -76,6 +76,30 @@ that drift.
 
 ---
 
+### [2026-11-12] TECH-002's icon fonts are a named list the sentence points to; a utility page is a top-level or `/legal/` page
+
+**Decision:** The owner's rulings 1 and 4 on F15 batch 7's questions ("Принимаю, добивка", 2026-11-12; the F15
+contract, "The owner's rulings on batch 7's questions"). TECH-002's icon-font families are `ICON_FONT_FAMILIES` in
+`font_audit.py`, widened past what a sentence can name (WooCommerce, Divi, Material Design Icons, Boxicons and other
+common families); the `measures` sentence names three and refers to the constant. GO-145 and GEO-005 read a utility
+word in the slug as a utility page only when the slug is the first path segment, or when the path sits under
+`/legal/`.
+
+**Why:** the sentence's 240 characters held the list at nine families while every WooCommerce shop (`star`,
+`WooCommerce`) and every Divi site (`ETmodules`) still failed for an icon face; the constant is the closed list, and
+the sentence says where it is. A utility word deeper in a path names a topic, not the site's own policy page:
+`/glossary/terms` is a glossary entry.
+
+**Alternatives rejected:**
+- **Keep the sentence naming every family (batch 7):** the list stops where the sentence ends, not where icon fonts do.
+- **Keep the slug rule at any depth (batch 6):** `/glossary/terms` and similar topic pages escape the citation items.
+
+**Consequences:** a family missing from the constant still fails, and adding one is a one-line edit with a test. A
+utility page below the top level outside `/legal/` keeps the rule and can fail, including one under a language prefix
+(`/en/privacy`) and a sub-page such as `/privacy/cookies`.
+
+---
+
 ### [2026-11-11] TECH-002 leaves icon fonts out; TE-174 reads only the site's own stylesheets
 
 **Decision:** The owner's rulings 1 and 2 on F15 batch 6's questions ("Принимаю, батч 7", 2026-11-11; the F15
