@@ -19,12 +19,15 @@ after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4, `e2d0
 F15 follow-up (`e8b3203a3f36` → `2cad86e2fbbe`) — the owner's rulings 1 and 4 on batch 7's questions. **Verdicts of a
 real audit can move**: TECH-002 leaves out the icon fonts `ICON_FONT_FAMILIES` in `font_audit.py` lists, widened from
 nine families to 43 — WooCommerce's `star` and `WooCommerce`, Divi's `ETmodules`, Material Design Icons, Boxicons,
-Tabler, Simple Line Icons, slick, Remix Icon, Themify, IcoFont, Typicons, Genericons, Foundation, Linearicons,
-Feather, Phosphor, Pe-icon-7-stroke, Elegant Icons, video.js, lightGallery, PrimeIcons, codicons, Material Design
-Iconic Font, Fontello, IcoMoon, Magento's `luma-icons` and `icons-blank-theme`, FlexSlider, Squarespace's `squarespace-ui-font` and `social-icon-font`, Avada's `awb-icons` and Enfold's `entypo-fontello`, as each project's CSS declares them (`star`, `slick`, `feather` and `lg` only as
-the whole name); its sentence names three and the constant. GO-145 and GEO-005 read a utility slug only as the first
-path segment or under `/legal/` (a leading `index.php` or `amp` segment dropped, as are trailing `index` and `amp` ones), so `/glossary/terms`,
-`/blog/privacy` and `/en/privacy` keep the rule. Sentences beside all three.
+Tabler, Simple Line Icons, slick, Remix Icon, Themify, IcoFont, Typicons, Genericons, Foundation, Linearicons, Feather
+(`feather`, `feather-icons`), Phosphor, Pe-icon-7-stroke, Elegant Icons, video.js, lightGallery, PrimeIcons, codicons,
+Material Design Iconic Font, Fontello, IcoMoon, Magento's `luma-icons` and `icons-blank-theme`, FlexSlider,
+Squarespace's `squarespace-ui-font` and `social-icon-font`, Avada's `awb-icons` and Enfold's `entypo-fontello`, as
+each project's CSS declares them (`star`, `slick`, `feather` and `lg` only as the whole name); its sentence names
+three and the constant. GO-145 and GEO-005 read a utility slug only as the first path segment or under `/legal/` (a
+leading `index.php` or `amp` segment dropped, and every trailing `index`, `default` or `amp` one, where one was
+before), so `/glossary/terms`, `/blog/privacy`, `/en/privacy` and a Shopify store's `/policies/privacy-policy` keep
+the rule. Sentences beside all three.
 
 F15 batch 7 (`ca2f4a06b209` → `e8b3203a3f36`) — Search Console and the links export, and the owner's rulings 1–2 on
 batch 6's questions. **Verdicts of a real audit can move**: MS-023 and KW-071 set a query aside as branded only by a

@@ -37,6 +37,19 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `font_audit.py` and `citation_readiness.py` (the owner's rulings on batch 7's questions) — graded 2026-11-12, F15 follow-up
+
+Read for the grade: `font_audit.py` (`ICON_FONT_FAMILIES`, `WHOLE_NAME_ONLY`, `icon_font`), `citation_readiness.py`
+(`utility_page`), `tools/build_checklist.py` (`MEASURES` for TECH-002, GO-145, GEO-005).
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `tests/test_f15_followup.py` 15 tests, red on `6e79108` and on each review round's commit before its fix; five census runs, each declared first, none moving; Claude review round 5 "ship"; the final `make check` and `make verify-feature F=F15` in the contract, "Follow-up — results" |
+| Agent understandable | A | each family group names the CSS it comes from and the round that added it; the path rule's comment states the ruling and its language-prefix consequence |
+| Test stability | A | loopback pages; no network in tests; no timing dependence |
+| Architecture boundaries | A | `make check-arch` 3/3; no new module or import |
+| Code conventions | A | ruff clean; `ICON_FONT_FAMILIES` and `WHOLE_NAME_ONLY` read by a test (`audit_derived_sets`); no new verdict-deciding number |
+
 ## `skills/seo-checklist/scripts/` (Search Console and the links export) — graded 2026-11-11, F15 batch 7
 
 Read for the grade: `gsc_cannibalization.py` (`analyze`, the brand that sets queries aside; `_inferred_brand` gone),
