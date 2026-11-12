@@ -83,6 +83,9 @@ def _declares_a_source(link) -> bool:
 # `index` page — split into words at `-` and `_`, names a utility page when every word
 # is a utility word or a filler word, or a number (WordPress's `privacy-policy-2`), and
 # one is a utility word. A page reached only by a query (`?page_id=3`) is not classified.
+# The slug counts only as the first path segment or under `/legal/` (the owner's ruling 4
+# on batch 7's questions, 2026-11-12): deeper, a utility word names a topic
+# (`/glossary/terms`), and a language prefix (`/en/privacy`) is no exception.
 UTILITY_WORDS = frozenset({
     # privacy
     "privacy", "gdpr", "cookie", "cookies", "datenschutz", "datenschutzerklaerung",
@@ -130,7 +133,7 @@ def utility_page(url: str) -> bool:
     slugs = [re.sub(r"\.(?:html?|php|aspx?|jsp)$", "", s) for s in segments]
     if len(slugs) > 1 and slugs[-1] in ("index", "default", "amp"):
         slugs.pop()
-    if not slugs:
+    if not slugs or (len(slugs) > 1 and slugs[0] != "legal"):
         return False
     slug = re.sub(r"[-_]+", "-", slugs[-1]).strip("-")
     for phrase, word in UTILITY_PHRASES.items():

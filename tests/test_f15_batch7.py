@@ -58,7 +58,8 @@ class IconFonts(unittest.TestCase):
 
     def test_the_sentence_names_the_list(self):
         sentence = ITEMS["TECH-002"]["measures"]
-        for name in ("Font Awesome", "Material Icons", "Material Symbols"):
+        # Three since the owner's ruling 1 on batch 7's questions (tests/test_f15_followup.py).
+        for name in ("Font Awesome", "Material Icons", "WooCommerce"):
             with self.subTest(name=name):
                 self.assertIn(name, sentence)
 
@@ -66,11 +67,11 @@ class IconFonts(unittest.TestCase):
         from font_audit import ICON_FONT_FAMILIES
         named = ("Font Awesome", "Line Awesome", "Material Icons", "Material Symbols",
                  "Glyphicons", "Bootstrap Icons", "Dashicons", "Ionicons", "eicons")
-        self.assertEqual(ICON_FONT_FAMILIES,
+        # Widened past these nine by the owner's ruling 1 on batch 7's questions; the
+        # sentence names the constant instead of every family.
+        self.assertEqual(ICON_FONT_FAMILIES[:len(named)],
                          tuple(name.lower().replace(" ", "") for name in named))
-        for name in named:
-            with self.subTest(name=name):
-                self.assertIn(name, ITEMS["TECH-002"]["measures"])
+        self.assertIn("ICON_FONT_FAMILIES", ITEMS["TECH-002"]["measures"])
 
 
 # ---------------------------------------------------------------------------
@@ -287,8 +288,6 @@ class ReviewRound1(unittest.TestCase):
         for family in ("eicons", '"Line Awesome Free"'):
             with self.subTest(family=family):
                 self.assertEqual(IconFonts.tech(self, family), PASS)
-                self.assertIn(family.strip('"').replace(" Free", ""),
-                              ITEMS["TECH-002"]["measures"])
 
     def test_one_csv_with_no_count_column_is_no_linking_sites_sheet(self):
         out = links({"example.com-latest-links.csv":

@@ -29,19 +29,30 @@ LARGE_FONT_BYTES = 100_000
 
 FONT_EXTENSIONS = (".woff2", ".woff", ".ttf", ".otf", ".eot", ".ttc")
 
-# A closed list of icon font families (F15, the owner's ruling 1 on
-# batch 6's questions, 2026-11-11). An icon font hides glyphs, not words: Font Awesome
-# ships `font-display: block` so a missing icon shows nothing rather than a stray
-# letter. A family is an icon font when, lower-cased with everything but letters and
-# digits dropped, it starts with one of these (`Font Awesome 6 Free`, `Material Icons
-# Outlined`). TECH-002's `measures` sentence names them; an icon font not listed is read.
-ICON_FONT_FAMILIES = ("fontawesome", "lineawesome", "materialicons", "materialsymbols",
-                      "glyphicons", "bootstrapicons", "dashicons", "ionicons", "eicons")
+# A closed list of icon font families (F15, the owner's ruling 1 on batch 6's questions,
+# 2026-11-11, widened by ruling 1 on batch 7's, 2026-11-12). An icon font hides glyphs,
+# not words: Font Awesome ships `font-display: block` so a missing icon shows nothing
+# rather than a stray letter. A family is an icon font when, lower-cased with everything
+# but letters and digits dropped, it starts with one of these (`Font Awesome 6 Free`,
+# `Material Icons Outlined`, `Genericons-Neue`), or is one of `WHOLE_NAME_ONLY` exactly.
+# Each name is as the project's published CSS declares it. TECH-002's `measures`
+# sentence names three and points here; an icon font not listed is read.
+ICON_FONT_FAMILIES = (
+    "fontawesome", "lineawesome", "materialicons", "materialsymbols", "glyphicons",
+    "bootstrapicons", "dashicons", "ionicons", "eicons",
+    # WooCommerce (`star`, `WooCommerce`), Divi (`ETmodules`)
+    "star", "woocommerce", "etmodules",
+    "materialdesignicons", "boxicons", "tablericons", "simplelineicons", "slick",
+    "remixicon", "themify", "icofont", "typicons", "genericons", "foundationicons",
+    "linearicons", "feather", "phosphor", "peicon7stroke", "eleganticons")
+# Words a text family can start with: a prefix `star` would take "Stardos Stencil".
+WHOLE_NAME_ONLY = frozenset({"star", "slick", "feather"})
 
 
 def icon_font(family: str | None) -> bool:
     key = re.sub(r"[^a-z0-9]", "", (family or "").lower())
-    return key.startswith(ICON_FONT_FAMILIES)
+    return any(key == name if name in WHOLE_NAME_ONLY else key.startswith(name)
+               for name in ICON_FONT_FAMILIES)
 
 
 def _font_format(url: str) -> str:
