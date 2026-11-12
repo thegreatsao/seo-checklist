@@ -346,8 +346,9 @@ that could not be checked when there are any.
 `utility_page` — bool — every word of the page's slug (the segment before an `index`
   page) is a privacy, terms or contact word (`UTILITY_WORDS`, a `UTILITY_PHRASES` phrase
   read as one), a filler word (`UTILITY_SLUG_WORDS`) or a number, and one is a utility
-  word, and the slug is the first path segment or sits under `/legal/` (the owner's ruling 4
-  on batch 7): GO-145's and
+  word, and the slug, after a leading language segment, is the first path segment, sits
+  under `/legal/` or directly under `/policies/` or `/pages/` (the owner's ruling 4 on batch
+  7, widened by the owner's ruling on the follow-up's question): GO-145's and
   GEO-005's `applies_when`, N/A when true (F15 batch 6, the owner's ruling 1 on batch 5)
 `citation_capacity` — int — trusted links, cite/blockquote tags, footnote links, schema
   citations, and outbound links in a block that makes a claim or says "Source", or under a

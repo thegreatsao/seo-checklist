@@ -4,7 +4,9 @@ docs/sprint-20261109-F15.md, "The owner's rulings on batch 7's questions").
 1. TECH-002's icon fonts are the families `font_audit.ICON_FONT_FAMILIES` lists, widened
    past what a sentence can name; the `measures` sentence names three and the constant.
 4. GO-145 and GEO-005 read a utility word as a utility page only when the slug is the
-   first path segment, or when the path sits under `/legal/`.
+   first path segment, or when the path sits under `/legal/`. Widened by the owner's ruling on
+   the follow-up's question ("Да, исправить", 2026-11-12): a leading language segment is
+   dropped first, and a slug directly under `/policies/` or `/pages/` counts too.
 
 Each verdict is the item's real rule from the registry over the script's real output.
 """
@@ -75,7 +77,7 @@ class UtilityPathRule(unittest.TestCase):
                      for item in ("GO-145", "GEO-005"))
 
     def test_a_utility_word_below_the_top_level_is_a_content_page(self):
-        for path in ("/glossary/terms", "/blog/privacy", "/help/contact", "/en/privacy",
+        for path in ("/glossary/terms", "/blog/privacy", "/help/contact",
                      "/privacy/cookies", "/docs/terms-of-service", "/terms/a/apr.asp",
                      "/glossary/terms/amp"):
             with self.subTest(path=path):
@@ -171,6 +173,50 @@ class ReviewRound4(unittest.TestCase):
                        "'entypo-fontello'", "'entypo-fontello-enfold'"):
             with self.subTest(family=family):
                 self.assertEqual(IconFontList.tech(self, family), PASS)
+
+
+
+class PathRuling(unittest.TestCase):
+    """The owner's ruling on the follow-up's question, 2026-11-12 ("Да, исправить")."""
+
+    def both(self, path: str) -> tuple:
+        return UtilityPathRule.both(self, path)
+
+    def test_shopifys_built_in_policy_and_contact_pages_are_utility_pages(self):
+        for path in ("/policies/privacy-policy", "/policies/terms-of-service",
+                     "/pages/contact", "/POLICIES/Terms-Of-Service", "/pages/contact-us/",
+                     "/policies/contact-information", "/policies/legal-notice"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (NA, NA))
+
+    def test_a_leading_language_segment_is_dropped(self):
+        for path in ("/en/privacy", "/en-us/privacy-policy", "/pt-BR/terms",
+                     "/zh-hant/contact", "/en_us/privacy", "/de/impressum",
+                     "/fr/pages/contact", "/en/policies/privacy-policy", "/en-gb/legal/terms",
+                     "/en/legal/privacy", "/index.php/en/contact", "/en/privacy/index.html"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (NA, NA))
+
+    def test_content_paths_stay_content(self):
+        for path in ("/glossary/terms", "/blog/privacy-tips", "/en/glossary/terms",
+                     "/en/blog/privacy", "/pages/blog/privacy", "/policies/a/privacy",
+                     "/pages/about-us", "/eng/privacy", "/english/privacy", "/xx/privacy",
+                     "/en/pages/blog/privacy", "/en/privacy/cookies"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (FAIL, FAIL))
+
+    def test_a_refund_policy_is_no_listed_utility_page(self):
+        """The items name privacy, terms and contact pages (the owner's ruling 1 on batch
+        5's questions); `refund` is in no list, so Shopify's refund policy keeps the rule."""
+        self.assertEqual(self.both("/policies/refund-policy"), (FAIL, FAIL))
+
+    def test_the_sentences_state_the_widened_rule(self):
+        for item_id in ("GO-145", "GEO-005"):
+            for sentence in (ITEMS[item_id]["measures"], RU[item_id]):
+                with self.subTest(item=item_id, sentence=sentence):
+                    for folder in ("/legal/", "/policies/", "/pages/"):
+                        self.assertIn(folder, sentence)
+                    self.assertLessEqual(len(sentence), 240)
 
 
 if __name__ == "__main__":

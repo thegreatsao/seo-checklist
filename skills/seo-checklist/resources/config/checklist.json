@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registry_version": "2cad86e2fbbe",
+  "registry_version": "21e7b7daa7b7",
   "item_count": 217,
   "source": "Plerdy SEO Checklist (200) + 17 beyond-Plerdy checks",
   "categories": [
@@ -3260,7 +3260,7 @@
           "falsy": true
         }
       },
-      "measures": "A citation-readiness score of 25 if content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). N/A on a top-level or /legal/ slug made only of listed privacy, terms, contact and filler words, holding one.",
+      "measures": "25 if content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). N/A, past /en/, on a top-level, /legal/, /policies/, /pages/ slug made only of listed privacy, terms, contact, filler words, holding one.",
       "effort": "low",
       "fix": "Optimize for AI Overviews and zero-click: citability, facts, sources"
     },
@@ -4594,7 +4594,7 @@
           "falsy": true
         }
       },
-      "measures": "A citation-readiness score of 25 if content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). N/A on a top-level or /legal/ slug made only of listed privacy, terms, contact and filler words, holding one.",
+      "measures": "25 if content names a source (cite, blockquote, footnote, trusted or nearby link, schema citation). N/A, past /en/, on a top-level, /legal/, /policies/, /pages/ slug made only of listed privacy, terms, contact, filler words, holding one.",
       "effort": "medium",
       "fix": "Back factual claims with sources, add cite/blockquote, populate sameAs",
       "scores_with": "GO-145"

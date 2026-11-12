@@ -99,12 +99,18 @@ family that is an ordinary word (`star`, `slick`, `feather`, `lg`) matches only 
 A text face sharing an icon font's name is skipped too (Erbar's display face Phosphor). A front controller or an AMP
 prefix is no segment (`/index.php/contact`, `/amp/privacy` are top-level pages; the review found Joomla's default URLs
 lost), and every trailing `index`, `default` or `amp` segment is dropped (one was before: `/privacy/amp/index.html`).
-A utility page below the top level outside `/legal/` keeps the rule and can fail, including one under a language
-prefix (`/en/privacy`, `/en/legal/privacy`), a sub-page such as `/privacy/cookies`, and every Shopify store's built-in
-`/policies/privacy-policy`, `/policies/terms-of-service` and `/pages/contact` (found by the review; put to the owner).
+A utility page below the top level outside `/legal/` keeps the rule and can fail, such as a sub-page
+`/privacy/cookies`; the review found that this took in pages under a language prefix (`/en/privacy`,
+`/en/legal/privacy`) and every Shopify store's built-in `/policies/privacy-policy`, `/policies/terms-of-service` and
+`/pages/contact` (put to the owner).
 **Widened by the owner's ruling, 2026-11-12 ("Да, исправить"):** a leading language segment (`en`, `en-us`, `pt-BR`,
 `zh-hant`) is dropped first, and a slug directly under `/policies/` or `/pages/` (Shopify's built-in policy and
 contact pages) counts as one under `/legal/` does; `/glossary/terms` and `/blog/privacy-tips` stay content pages.
+The language segment is a two-letter code in `hreflang_checker.VALID_LANG_CODES` with an optional script and region
+(`es-419`, `en_us` too); one only, so `/en/blog/privacy` stays content. `/legal/` keeps any depth (`/legal/en/privacy`
+was a utility page under ruling 4 and is not narrowed); `/policies/` and `/pages/` hold only their direct slug, as
+ruled. `refund` stays out of the slug words: the items name privacy, terms and contact pages (the owner's ruling 1 on
+batch 5's questions), so Shopify's `/policies/refund-policy` keeps the rule until the owner names it.
 
 ---
 
