@@ -101,7 +101,8 @@ prefix is no segment (`/index.php/contact`, `/amp/privacy` are top-level pages; 
 lost), and every trailing `index`, `default` or `amp` segment is dropped (one was before: `/privacy/amp/index.html`).
 A utility page below the top level outside `/legal/` keeps the rule and can fail, including one under a language
 prefix (`/en/privacy`, `/en/legal/privacy`), a sub-page such as `/privacy/cookies`, and every Shopify store's built-in
-`/policies/privacy-policy`, `/policies/terms-of-service` and `/pages/contact` (found by the review; put to the owner).
+`/policies/privacy-policy`, `/policies/terms-of-service` and `/pages/contact` (found by the review; the owner kept
+the rule as ruled, 2026-11-12).
 
 ---
 
