@@ -99,8 +99,9 @@ family that is an ordinary word (`star`, `slick`, `feather`, `lg`) matches only 
 A text face sharing an icon font's name is skipped too (Erbar's display face Phosphor). A front controller or an AMP
 prefix is no segment (`/index.php/contact`, `/amp/privacy` are top-level pages; the review found Joomla's default URLs
 lost), and trailing `index` and `amp` segments are dropped as before. A utility page below the top level outside
-`/legal/` keeps the rule and can fail, including one under a language prefix (`/en/privacy`) and a sub-page such as
-`/privacy/cookies`.
+`/legal/` keeps the rule and can fail, including one under a language prefix (`/en/privacy`, `/en/legal/privacy`), a
+sub-page such as `/privacy/cookies`, and every Shopify store's built-in `/policies/privacy-policy`,
+`/policies/terms-of-service` and `/pages/contact` (found by the review; put to the owner).
 
 ---
 

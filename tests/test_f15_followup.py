@@ -162,5 +162,16 @@ class ReviewRound3(unittest.TestCase):
         self.assertEqual(IconFontList.tech(self, "Feathergraphy"), FAIL)
 
 
+class ReviewRound4(unittest.TestCase):
+
+    def test_platform_and_theme_defaults(self):
+        """Squarespace's generated `site.css` on every site, Avada's Fusion CSS and
+        Enfold's inline faces, as each declares them."""
+        for family in ("'squarespace-ui-font'", "'social-icon-font'", "awb-icons",
+                       "'entypo-fontello'", "'entypo-fontello-enfold'"):
+            with self.subTest(family=family):
+                self.assertEqual(IconFontList.tech(self, family), PASS)
+
+
 if __name__ == "__main__":
     unittest.main()

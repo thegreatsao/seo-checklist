@@ -51,7 +51,9 @@ ICON_FONT_FAMILIES = (
     # Magento 2's Luma and Blank themes (review round 2)
     "lumaicons", "iconsblanktheme",
     # FlexSlider 2 (MetaSlider's default), feather-webfont's `feather-icons` (round 3)
-    "flexslidericon", "feathericons")
+    "flexslidericon", "feathericons",
+    # Squarespace's platform faces, Avada (`awb-icons`), Enfold (`entypo-fontello`) (round 4)
+    "squarespaceuifont", "socialiconfont", "awbicons", "entypo")
 # Words a text family can start with: a prefix `star` would take "Stardos Stencil".
 WHOLE_NAME_ONLY = frozenset({"star", "slick", "feather", "lg"})
 
