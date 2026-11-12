@@ -452,7 +452,8 @@ name. A column called `url` would be read as "fix this page".
   18 of robots, sitemaps, redirects and URLs, batch 5 (2026-11-10) the 18 of structured
   data and content, batch 6 (2026-11-10) the 18 of security, speed and technical, batch 7
   (2026-11-11) the 10 of Search Console and the links export
-  (`docs/sprint-20261109-F15.md`); F15 is `passing` (2026-11-11). Until F03 batch 6 the second readings of the items F15
+  (`docs/sprint-20261109-F15.md`); F15 is `passing` (2026-11-11; reopened for the owner's follow-up rulings and
+  passing again 2026-11-12). Until F03 batch 6 the second readings of the items F15
   changed are stale: counted by `audit_item_readings.py`, not yet re-read, so whether a
   repair reads as its ruling meant is one reader's word.
   <!-- ki: f03-ruled-defects-open -->
