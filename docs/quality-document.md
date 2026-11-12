@@ -37,6 +37,19 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `citation_readiness.py` (the owner's ruling on the follow-up's path-rule question) — graded 2026-11-12, F15
+
+Read for the grade: `citation_readiness.py` (`utility_page`, `LANGUAGE_SEGMENT_RE`), `tools/build_checklist.py`
+(`MEASURES` for GO-145, GEO-005), `resources/i18n/ru.json`.
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `tests/test_f15_followup.py` 24 tests, red on `177e7f0` and on each review round's commit before its fix; census declared first, no move; Claude review round 3 "ship"; `make check` on `c1dc011` and `make verify-feature F=F15` in the contract, "Path-rule ruling — results" |
+| Agent understandable | A | the comment states the ruling, the language segment's shape and the cases it still takes (`/hi-fi/`) |
+| Test stability | A | loopback pages; no network in tests; no timing dependence |
+| Architecture boundaries | A | `make check-arch` 3/3; reuses `hreflang_checker`'s code tables, no new module |
+| Code conventions | B | ruff clean; the script list (Hans, Hant, Latn, Cyrl) is a regex alternation, which `audit_derived_sets` does not count as a set |
+
 ## `font_audit.py` and `citation_readiness.py` (the owner's rulings on batch 7's questions) — graded 2026-11-12, F15 follow-up
 
 Read for the grade: `font_audit.py` (`ICON_FONT_FAMILIES`, `WHOLE_NAME_ONLY`, `icon_font`), `citation_readiness.py`
