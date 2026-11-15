@@ -7,6 +7,9 @@ docs/sprint-20261109-F15.md, "The owner's rulings on batch 7's questions").
    first path segment, or when the path sits under `/legal/`. Widened by the owner's ruling on
    the follow-up's question ("Да, исправить", 2026-11-12): a leading language segment is
    dropped first, and a slug directly under `/policies/` or `/pages/` counts too.
+   Widened again by the owner's ruling on both path-rule edges ("Да, обе", 2026-11-15):
+   every page directly under `/policies/` and every page under `/legal/`, at any depth,
+   is a utility page whatever its slug.
 
 Each verdict is the item's real rule from the registry over the script's real output.
 """
