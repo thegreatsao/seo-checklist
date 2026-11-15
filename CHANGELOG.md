@@ -10,12 +10,18 @@ anything that changes what a run produces — including a change that makes the
 output *more* honest. A verdict that used to be `PASS` and is now `NO_DATA` is a
 breaking change for whoever read the old number, and saying so is the point.
 
-## Unreleased
+## 0.179.0 — F15: the 110 items ruled on after F03's second readings repaired; utility pages past a language prefix and under `/policies/` and `/legal/`; 43 icon fonts left out of TECH-002
 
 Registry version: `eb8281d02d6e` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4, `e2d01d02779d` after batch 5,
 `ca2f4a06b209` after batch 6, `d0d8100d64b1` and `492fdb7594a4` within batch 7, `e8b3203a3f36` after batch 7,
 `2cad86e2fbbe` after the follow-up, `0a51084d6399` after the path-rule ruling).
+
+F15 repaired, in seven batches and two follow-ups, the 110 items the owner ruled on after F03's second readings: a fix,
+a `measures` sentence saying what the rule decides, or a kept rule. Each batch was red-first and independently
+reviewed (batch 1 by Codex, the rest by a fresh-context Claude while Codex was paused). **Verdicts of a real audit can
+move**, each toward what the site serves; every census row that moves is named below. F03's second readings of the
+changed items are stale until F03 batch 6 re-reads them.
 
 F15 ruling on both path-rule edges (`0a51084d6399` → `eb8281d02d6e`) — the owner's ruling of 2026-11-15. **Verdicts of
 a real audit can move**: GO-145 and GEO-005 are N/A on every page directly under `/policies/`, whatever its slug, so

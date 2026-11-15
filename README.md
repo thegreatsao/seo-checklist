@@ -4,7 +4,7 @@ A deterministic SEO audit for Claude Code. One fixed registry of 217 checks, run
 the same way every time, with a status on every item and an honest account of
 what could not be decided.
 
-Version 0.178.0 — see [CHANGELOG.md](CHANGELOG.md). The second repo audit's twenty findings are fixed: an unread robots.txt is undecided rather than "no rules", sitemaps are told gzip by their bytes and decoded by their own declaration, canonicals are compared as a client sends them and read from the `Link` header too, two canonicals that disagree fail, run history compares only like runs, and the calibration gates refuse an empty corpus and stop comparing a constant with itself. Some verdicts of a real audit move, each toward what the site actually serves; the recorded census moves no row.
+Version 0.179.0 — see [CHANGELOG.md](CHANGELOG.md). The 110 items the owner ruled on after the second readings are repaired: each got a fix, a sentence saying what its rule decides, or a kept rule, every batch red-first and independently reviewed. GO-145 and GEO-005 treat privacy, terms and contact pages as utility pages past a language prefix (`/en/privacy`) and every page under `/policies/` and `/legal/`, and TECH-002 leaves 43 icon fonts out. Some verdicts of a real audit move, each toward what the site actually serves; the changelog names every census row that moves.
 
 [KNOWN-ISSUES.md](KNOWN-ISSUES.md) is the ranked list of what is still wrong,
 measured rather than suspected. Its largest entry closed in two halves: 0.9.0
