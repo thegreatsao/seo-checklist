@@ -113,7 +113,8 @@ Latn, Cyrl) and a region in `VALID_REGION_CODES` or `COMMON_REGION_MISTAKES` (`e
 one: the ruling's two-letter code cannot tell them apart. All three folders hold only their direct slug, as ruled,
 so `/legal/` narrows: `/legal/en/privacy` (a utility page under ruling 4) and `/legal/glossary/terms` are content
 pages (review round 2). `refund` stays out of the slug words: the items name privacy, terms and contact pages (the owner's ruling 1 on
-batch 5's questions), so Shopify's `/policies/refund-policy` keeps the rule until the owner names it.
+batch 5's questions), so Shopify's `/policies/refund-policy` keeps the rule; the owner ruled it so, 2026-11-15 ("Keep as content"), and
+`shipping` and `subscription` stay out with it.
 
 ---
 
