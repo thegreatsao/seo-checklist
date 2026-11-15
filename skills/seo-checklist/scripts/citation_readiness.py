@@ -89,8 +89,10 @@ def _declares_a_source(link) -> bool:
 # (`/glossary/terms`). Widened the same day by the owner's ruling on the follow-up's
 # question ("Да, исправить"): a leading language segment (`/en/`, `/pt-BR/`) is dropped
 # first, and the slug counts as the first segment or directly under `/legal/`, `/policies/`
-# or `/pages/` (Shopify's built-in policy and contact pages); `/legal/en/privacy` and
-# `/legal/glossary/terms` are content pages (review round 2).
+# or `/pages/` (Shopify's built-in policy and contact pages). Widened again by the owner's
+# ruling on both path-rule edges (2026-11-15, "Да, обе"): every page directly under
+# `/policies/` (Shopify's refund, shipping and subscription policies too) and every page
+# under `/legal/`, at any depth, is a utility page whatever its slug.
 UTILITY_WORDS = frozenset({
     # privacy
     "privacy", "gdpr", "cookie", "cookies", "datenschutz", "datenschutzerklaerung",
@@ -161,8 +163,12 @@ def utility_page(url: str) -> bool:
     slugs = [re.sub(r"\.(?:html?|php|aspx?|jsp)$", "", s) for s in segments]
     while len(slugs) > 1 and slugs[-1] in ("index", "default", "amp"):
         slugs.pop()
-    if not slugs or (len(slugs) > 1
-                     and not (len(slugs) == 2 and segments[0] in ("legal", "policies", "pages"))):
+    if not slugs:
+        return False
+    if len(slugs) > 1 and (segments[0] == "legal"
+                           or (len(slugs) == 2 and segments[0] == "policies")):
+        return True
+    if len(slugs) > 1 and not (len(slugs) == 2 and segments[0] == "pages"):
         return False
     slug = re.sub(r"[-_]+", "-", slugs[-1]).strip("-")
     for phrase, word in UTILITY_PHRASES.items():

@@ -12,10 +12,18 @@ breaking change for whoever read the old number, and saying so is the point.
 
 ## Unreleased
 
-Registry version: `0a51084d6399` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
+Registry version: `eb8281d02d6e` (was `bbc0b87fd8f2` at 0.178.0; `84e41c84ecaa` after F15 batch 1, `1733ee735260`
 after batch 2, `445b7ca058d2` after batch 3, `ecaf0dc17e56` after batch 4, `e2d01d02779d` after batch 5,
 `ca2f4a06b209` after batch 6, `d0d8100d64b1` and `492fdb7594a4` within batch 7, `e8b3203a3f36` after batch 7,
-`2cad86e2fbbe` after the follow-up).
+`2cad86e2fbbe` after the follow-up, `0a51084d6399` after the path-rule ruling).
+
+F15 ruling on both path-rule edges (`0a51084d6399` → `eb8281d02d6e`) — the owner's ruling of 2026-11-15. **Verdicts of
+a real audit can move**: GO-145 and GEO-005 are N/A on every page directly under `/policies/`, whatever its slug, so
+a Shopify store's `/policies/refund-policy`, `/policies/shipping-policy` and `/policies/subscription-policy` join its
+privacy and terms pages, and on every page under `/legal/` at any depth (`/legal/en/privacy`,
+`/legal/glossary/terms`), withdrawing the path-rule review's narrowing. No word joins the slug lists, so `/refund-policy`
+and `/pages/refund-policy` keep the rule; `/pages/`, the language prefix, `/glossary/terms` and `/blog/privacy-tips`
+are unchanged. Sentences beside both.
 
 F15 path-rule ruling (`2cad86e2fbbe` → `0a51084d6399`) — the owner's ruling on the follow-up's question. **Verdicts of a
 real audit can move**: GO-145 and GEO-005 drop a leading language segment (`/en/`, `/en-us/`, `/en-uk/`, `/pt-BR/`,

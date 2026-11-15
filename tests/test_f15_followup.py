@@ -90,10 +90,12 @@ class UtilityPathRule(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.both(path), (NA, NA))
 
-    def test_legal_holds_utility_words_only(self):
+    def test_legal_holds_utility_pages_only(self):
+        """Ruling 4 read `/legal/how-we-bake` as content; the owner's ruling of 2026-11-15
+        ("Да, обе") makes every page under `/legal/` a utility page."""
         for path in ("/legal/how-we-bake", "/legal/blog/post"):
             with self.subTest(path=path):
-                self.assertEqual(self.both(path), (FAIL, FAIL))
+                self.assertEqual(self.both(path), (NA, NA))
 
     def test_the_sentences_state_the_path_rule(self):
         for item_id in ("GO-145", "GEO-005"):
@@ -205,10 +207,12 @@ class PathRuling(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.both(path), (FAIL, FAIL))
 
-    def test_a_refund_policy_is_no_listed_utility_page(self):
-        """The items name privacy, terms and contact pages (the owner's ruling 1 on batch
-        5's questions); `refund` is in no list, so Shopify's refund policy keeps the rule."""
-        self.assertEqual(self.both("/policies/refund-policy"), (FAIL, FAIL))
+    def test_a_refund_policy_is_no_listed_utility_word(self):
+        """`refund` is in no list (the items name privacy, terms and contact pages, the
+        owner's ruling 1 on batch 5's questions): outside `/policies/` a refund slug keeps
+        the rule; under it the folder decides (the owner's ruling of 2026-11-15)."""
+        self.assertEqual(self.both("/refund-policy"), (FAIL, FAIL))
+        self.assertEqual(self.both("/policies/refund-policy"), (NA, NA))
 
     def test_the_sentences_state_the_widened_rule(self):
         for item_id in ("GO-145", "GEO-005"):
@@ -250,18 +254,63 @@ class PathRulingReviewRound2(unittest.TestCase):
     def both(self, path: str) -> tuple:
         return UtilityPathRule.both(self, path)
 
-    def test_only_the_slug_directly_under_legal_counts(self):
-        """The ruling: "the segment directly under `/legal/`, `/policies/` or `/pages/`"."""
+    def test_every_page_under_legal_counts(self):
+        """Round 2 read the ruling's "directly under `/legal/`" literally and made these
+        content pages; the owner's ruling of 2026-11-15 ("Да, обе") withdraws that."""
         for path in ("/legal/glossary/terms", "/legal/blog/privacy", "/legal/a/b/contact",
                      "/en/legal/glossary/terms", "/legal/en/privacy"):
             with self.subTest(path=path):
-                self.assertEqual(self.both(path), (FAIL, FAIL))
+                self.assertEqual(self.both(path), (NA, NA))
 
     def test_the_regions_the_plugin_corrects_are_regions(self):
         """`hreflang_checker.COMMON_REGION_MISTAKES`: `en-uk` is a common locale path."""
         for path in ("/en-uk/privacy-policy", "/en-eu/privacy", "/en_UK/contact"):
             with self.subTest(path=path):
                 self.assertEqual(self.both(path), (NA, NA))
+
+
+
+class BothEdgesRuling(unittest.TestCase):
+    """The owner's ruling on the path-rule questions, 2026-11-15 ("Да, обе"): every page
+    directly under `/policies/` and every page under `/legal/` at any depth is a utility
+    page, whatever its slug; nothing else changes."""
+
+    def both(self, path: str) -> tuple:
+        return UtilityPathRule.both(self, path)
+
+    def test_every_page_directly_under_policies_is_a_utility_page(self):
+        """Shopify's built-in policies section: refund, shipping, subscription, privacy, terms."""
+        for path in ("/policies/refund-policy", "/policies/shipping-policy",
+                     "/policies/subscription-policy", "/en/policies/refund-policy",
+                     "/POLICIES/Refund-Policy", "/policies/refund-policy/",
+                     "/en-gb/policies/shipping-policy.html"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (NA, NA))
+
+    def test_every_page_under_legal_is_a_utility_page(self):
+        for path in ("/legal/en/privacy", "/legal/glossary/terms", "/legal/a/b/c",
+                     "/en/legal/a/b/c", "/legal/how-we-bake/index.html"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (NA, NA))
+
+    def test_everything_else_stays_as_it_was(self):
+        for path in ("/glossary/terms", "/blog/privacy-tips", "/pages/about-us", "/policies",
+                     "/policies/", "/policies/index.html", "/my-policies/x",
+                     "/policies/a/privacy", "/pages/refund-policy", "/refund-policy",
+                     "/legal.html/privacy", "/en/blog/privacy", "/legalese/terms-of-art",
+                     "/blog/legal/x"):
+            with self.subTest(path=path):
+                self.assertEqual(self.both(path), (FAIL, FAIL))
+
+    def test_the_sentences_state_both_folders(self):
+        for item_id, words in (("GO-145", ("any /legal/", "/policies/x")),
+                               ("GEO-005", ("any /legal/", "/policies/x"))):
+            with self.subTest(item=item_id):
+                for word in words:
+                    self.assertIn(word, ITEMS[item_id]["measures"])
+                self.assertIn("/policies/x", RU[item_id])
+                for sentence in (ITEMS[item_id]["measures"], RU[item_id]):
+                    self.assertLessEqual(len(sentence), 240)
 
 
 if __name__ == "__main__":
