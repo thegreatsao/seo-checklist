@@ -37,6 +37,19 @@
 No other module has been scored. The module map is in `AGENTS.md`, "Architecture Boundaries". Grade a module the first
 time a feature touches it, from that session's own `make check` and review, not from this file's age.
 
+## `citation_readiness.py` (the owner's ruling on both path-rule edges) — graded 2026-11-15, F15
+
+Read for the grade: `citation_readiness.py` (`utility_page`), `tools/build_checklist.py` (`MEASURES` for GO-145,
+GEO-005), `resources/i18n/ru.json`.
+
+| Dimension | Grade | Basis |
+|---|---|---|
+| Verification passing | A | `tests/test_f15_followup.py` 28 tests, 6 red on `7a1dbf4` (22 failures with subtests); census declared first, no move; Claude review round 1 "ship"; `make check` and `make verify-feature F=F15` in the contract, "Both-edges ruling — results" |
+| Agent understandable | A | the comment names the ruling and its date; the two folder rules are one `if` apart from the slug rule |
+| Test stability | A | loopback pages; no network in tests; no timing dependence |
+| Architecture boundaries | A | `make check-arch` 3/3; no new module or dependency |
+| Code conventions | B | ruff clean; the folder names `legal`, `policies`, `pages` are literals in the function, not a counted set |
+
 ## `citation_readiness.py` (the owner's ruling on the follow-up's path-rule question) — graded 2026-11-12, F15
 
 Read for the grade: `citation_readiness.py` (`utility_page`, `LANGUAGE_SEGMENT_RE`), `tools/build_checklist.py`
