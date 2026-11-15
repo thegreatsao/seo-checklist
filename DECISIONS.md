@@ -115,6 +115,15 @@ so `/legal/` narrows: `/legal/en/privacy` (a utility page under ruling 4) and `/
 pages (review round 2). `refund` stays out of the slug words: the items name privacy, terms and contact pages (the owner's ruling 1 on
 batch 5's questions), so Shopify's `/policies/refund-policy` keeps the rule; the owner ruled it so, 2026-11-15 ("Keep as content"), and
 `shipping` and `subscription` stay out with it.
+**Widened again by the owner's ruling, 2026-11-15 ("Да, обе"), which supersedes "Keep as content" the same day:**
+every page directly under `/policies/` is a utility page whatever its slug (Shopify's built-in policies section:
+refund, shipping, subscription, privacy, terms), and no word joins the slug-word lists; every page under `/legal/`, at
+any depth, is a utility page (a legal section is legal by definition), so `/legal/en/privacy` and
+`/legal/glossary/terms` are utility pages and review round 2's narrowing is withdrawn. Nothing else changes: `/pages/`
+still needs a utility slug directly under it, the language prefix is still dropped, and `/glossary/terms`,
+`/blog/privacy-tips`, `/pages/about-us`, `/policies` itself and `/my-policies/x` stay content pages. Rejected: adding
+`refund`, `shipping` and `subscription` to the terms words, which would make such a slug a utility page outside the
+folder too (`/refund`, `/en/shipping`), where the ruling names only the folder.
 
 ---
 
